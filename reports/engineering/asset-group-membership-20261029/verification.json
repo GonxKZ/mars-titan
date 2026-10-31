@@ -1,0 +1,423 @@
+{
+ "schema_version": 1,
+ "date": "2026-10-29",
+ "issue": 783,
+ "scope": "asset_group_membership_v1_with_its_controls",
+ "implementation_commit": "bac08d6c472cabfbd98f7ce39ac27cda0f2051ed",
+ "base_commit": "bd4ab35dd8b5cc7d930eee8a8e847467bf7d12b7",
+ "scientific_experiments": 0,
+ "training_runs": 0,
+ "real_optimizer_steps": 0,
+ "final_test_opened": false,
+ "hold_sha256": "8a658080c1ac4e63847eba58b177020339da6ec47021cf26d2701830073c87fd",
+ "test_optimizers": "Las pruebas de H4 solo calculan gradientes con autograd. La medida de coste propaga una suma de cuadrados con un gancho de torch.optim que rechaza cualquier paso. Las mutaciones instalan el mismo gancho y cuentan cero intentos.",
+ "suites": [
+  {
+   "name": "targeted_with_coverage",
+   "tests": 818,
+   "failures": 0,
+   "errors": 0,
+   "skipped": 1,
+   "xml_sha256": "7f1ca0d0dfbe940c3494d4fcde1255d25ead0caf92b78362393f404ac24b3863",
+   "note": "H4, sus medidas de la ventana, la integración en el predictor, el recorrido, el entrenador y la medida de coste, en 2ad7700ef antes de fusionar develop."
+  },
+  {
+   "name": "regression_of_the_changed_paths_training",
+   "tests": 1891,
+   "failures": 0,
+   "errors": 0,
+   "skipped": 42,
+   "xml_sha256": "66a82f141b46c54e62f98986e650f6abfcd51df157548490f8a3d36d11700c4c",
+   "note": "Los 86 módulos de tests/training que importan los caminos cambiados, en 2ad7700ef."
+  },
+  {
+   "name": "regression_of_the_changed_paths_other",
+   "tests": 5436,
+   "failures": 0,
+   "errors": 0,
+   "skipped": 124,
+   "xml_sha256": "e6d608344be47d5a4bec130baae4794bf383abdb8d6eabe6da04946f44322398",
+   "note": "Los 272 módulos restantes que importan los caminos cambiados, en 2ad7700ef."
+  },
+  {
+   "name": "after_merging_c2_and_the_atomic_receipt",
+   "tests": 1299,
+   "failures": 0,
+   "errors": 0,
+   "skipped": 2,
+   "xml_sha256": "bf59c5b2c438850f5bd8e3746b74cc9df0b44bc8f41a43d9aeda3de999b22d18",
+   "note": "En 534f07dcc, tras fusionar develop con C2 y pasar la medida a atomic_json. La prueba que pedía un destino nuevo se retiró porque la pasada atómica cubre ese defecto."
+  },
+  {
+   "name": "after_merging_c3_r2_and_r3",
+   "tests": 1556,
+   "failures": 0,
+   "errors": 0,
+   "skipped": 2,
+   "xml_sha256": "1dbc7aaba31c0c6e33086143be9139a78e506c3dba93448ae9962832ced58a07",
+   "note": "En bac08d6c4, tras fusionar develop con C3, R2 y R3 y rechazar la combinación de H4 con C3, con las pruebas de esas piezas y de los recibos de coste."
+  }
+ ],
+ "quality": {
+  "tools": {
+   "coverage": "7.16.1",
+   "radon": "6.0.1",
+   "branch_coverage": true,
+   "python": "3.12.14",
+   "summarizer_sha256": "75cc60c88037e0bb17aff6e8ab666ce78b35d600d6c7ad217bf68b1afb4c4ec6"
+  },
+  "totals": {
+   "statements": 3099,
+   "covered_statements": 2611,
+   "branches": 1224,
+   "covered_branches": 922
+  },
+  "files": [
+   {
+    "path": "benchmarks/asset_groups_cost.py",
+    "source_sha256": "59f7e4fd71c7b9f712115fa418693184865647e3eb0aa85637471ec053f1bb17",
+    "statements": 127,
+    "covered_statements": 125,
+    "branches": 40,
+    "covered_branches": 38
+   },
+   {
+    "path": "src/mars_titan/data/asset_groups.py",
+    "source_sha256": "b06ee3715e005aa270a9e8868af9c33f4df1974ba8b0d79302ddb1f5fe27a14b",
+    "statements": 118,
+    "covered_statements": 118,
+    "branches": 8,
+    "covered_branches": 8
+   },
+   {
+    "path": "src/mars_titan/models/titans/asset_groups.py",
+    "source_sha256": "70c83c89199f0a382b7d66b25240dabd6716dbcc0f8e47e322528da445521841",
+    "statements": 120,
+    "covered_statements": 120,
+    "branches": 34,
+    "covered_branches": 34
+   },
+   {
+    "path": "src/mars_titan/models/titans/financial.py",
+    "source_sha256": "44972baa99ce4224fb16425328e886d6ba5aae4163e3a31b4fc7800c703e8885",
+    "statements": 927,
+    "covered_statements": 774,
+    "branches": 472,
+    "covered_branches": 346
+   },
+   {
+    "path": "src/mars_titan/models/titans/frozen_financial.py",
+    "source_sha256": "14bf69b6e80eadd68a9c40fc2122676dc2555c7ca3cb19d8ebab6b96b1bb6495",
+    "statements": 221,
+    "covered_statements": 185,
+    "branches": 122,
+    "covered_branches": 92
+   },
+   {
+    "path": "src/mars_titan/training/dust/financial.py",
+    "source_sha256": "f58edd30fed2f64fb1833c56d0b5502edcd42554a1e750cc21f549cb104bcef6",
+    "statements": 241,
+    "covered_statements": 223,
+    "branches": 84,
+    "covered_branches": 64
+   },
+   {
+    "path": "src/mars_titan/training/financial_run.py",
+    "source_sha256": "273c84e96e1bd3d0528fe350a35676a421085b892babef7d4aaa824dc651181a",
+    "statements": 950,
+    "covered_statements": 782,
+    "branches": 398,
+    "covered_branches": 292
+   },
+   {
+    "path": "src/mars_titan/training/mars_titan_walk_forward.py",
+    "source_sha256": "7bdf0839219a6898db75068431dea3e1dc239ec93292c351279bed606b62d307",
+    "statements": 367,
+    "covered_statements": 259,
+    "branches": 52,
+    "covered_branches": 37
+   },
+   {
+    "path": "src/mars_titan/training/search_cases.py",
+    "source_sha256": "2aea403142249f5276fde4feee1b79caaa62598afe838f0df5568d4e3f572dde",
+    "statements": 28,
+    "covered_statements": 25,
+    "branches": 14,
+    "covered_branches": 11
+   }
+  ],
+  "max_crap": 859.6229462213877,
+  "quality_sha256": "b30cdf634274bed30583ff72ba758f943d75b87aacdd4907932fef2e6a024538",
+  "limits": "CRAP y cobertura localizan complejidad poco comprobada. No demuestran ausencia de errores."
+ },
+ "changed": {
+  "base": "bd4ab35dd8b5cc7d930eee8a8e847467bf7d12b7",
+  "head": "bac08d6c472cabfbd98f7ce39ac27cda0f2051ed",
+  "functions": 40,
+  "max_crap": 859.6229462213877,
+  "changed_executable_lines": 342,
+  "changed_covered_lines": 341,
+  "highest": [
+   {
+    "path": "src/mars_titan/models/titans/financial.py",
+    "function": "FinancialConfig.__post_init__",
+    "cyclomatic_complexity": 132,
+    "crap": 859.6229462213877,
+    "changed_executable_lines": 10,
+    "changed_covered_lines": 10,
+    "changed_missing_lines": [],
+    "changed_missing_branches": []
+   },
+   {
+    "path": "src/mars_titan/models/titans/financial.py",
+    "function": "FinancialPredictor._prepare",
+    "cyclomatic_complexity": 58,
+    "crap": 71.37370729524673,
+    "changed_executable_lines": 2,
+    "changed_covered_lines": 2,
+    "changed_missing_lines": [],
+    "changed_missing_branches": []
+   },
+   {
+    "path": "src/mars_titan/models/titans/financial.py",
+    "function": "FinancialPredictor.__init__",
+    "cyclomatic_complexity": 37,
+    "crap": 37.52661758076634,
+    "changed_executable_lines": 1,
+    "changed_covered_lines": 1,
+    "changed_missing_lines": [],
+    "changed_missing_branches": []
+   },
+   {
+    "path": "src/mars_titan/models/titans/financial.py",
+    "function": "FinancialConfig.identity",
+    "cyclomatic_complexity": 33,
+    "crap": 33.85652799271734,
+    "changed_executable_lines": 5,
+    "changed_covered_lines": 5,
+    "changed_missing_lines": [],
+    "changed_missing_branches": []
+   },
+   {
+    "path": "benchmarks/asset_groups_cost.py",
+    "function": "run",
+    "cyclomatic_complexity": 22,
+    "crap": 22.01128862973761,
+    "changed_executable_lines": 36,
+    "changed_covered_lines": 35,
+    "changed_missing_lines": [
+     156
+    ],
+    "changed_missing_branches": [
+     [
+      155,
+      156
+     ]
+    ]
+   }
+  ],
+  "uncovered": [
+   {
+    "path": "benchmarks/asset_groups_cost.py",
+    "function": "run",
+    "cyclomatic_complexity": 22,
+    "crap": 22.01128862973761,
+    "changed_executable_lines": 36,
+    "changed_covered_lines": 35,
+    "changed_missing_lines": [
+     156
+    ],
+    "changed_missing_branches": [
+     [
+      155,
+      156
+     ]
+    ]
+   }
+  ],
+  "unmeasured": [
+   {
+    "path": "benchmarks/asset_groups_cost.py",
+    "function": "measure.<locals>.call"
+   }
+  ],
+  "note": "Funciones con líneas cambiadas frente a develop (base_commit) en bac08d6c4, con su CRAP y la cobertura de esas líneas.",
+  "changed_sha256": "ace244c9e21d9ff397d75325509e9c0b987d87a29dd964f25eb3e5f9a3e49006"
+ },
+ "mutations": {
+  "tree_commit": "2ad7700ef47c2d622eb73d3af86b522a84d5803b",
+  "planned": 88,
+  "killed": 88,
+  "optimizer_attempts": 0,
+  "hold_sha256_unchanged": true,
+  "recipes_sha256": "b60d75148db7939d9f0b47a9f1ebf784a0bbcd535340c823b60f4ddccde14fa8",
+  "executor_sha256": "da39ab8caebbec9ac7cc2ac7bae9251b3a6f11731c78fc623368e963868c3700",
+  "source_sha256": {
+   "src/mars_titan/training/mars_titan_walk_forward.py": "06b5d91e7e54129378d33331b94384ab0ec7fc99418bc7cfcbe6a02162c26740",
+   "src/mars_titan/data/asset_groups.py": "b06ee3715e005aa270a9e8868af9c33f4df1974ba8b0d79302ddb1f5fe27a14b",
+   "src/mars_titan/training/financial_run.py": "d34b625991b0cba5b742801d96be4ac57743e773f2b8e309b0410bc2a9aaa8a5",
+   "src/mars_titan/models/titans/frozen_financial.py": "bc7ed7600d9d13b0d0faad0ce4949310ce7675df896f5db44b897d6580ed9448",
+   "src/mars_titan/models/titans/financial.py": "b0ec41d08d4f925af1a190fe14204c82187d626c18eac0e5902ced1367a42700",
+   "src/mars_titan/training/dust/financial.py": "3cfbdcdb83a01fd279b13433f30db6557cd0d6ad60cdad7267ba5e52c5344f95",
+   "src/mars_titan/training/search_cases.py": "2a44db29161cc2ac25aa31e350174b971bc6ec9670e7f41ec4161368cf5f4c37",
+   "src/mars_titan/models/titans/asset_groups.py": "70c83c89199f0a382b7d66b25240dabd6716dbcc0f8e47e322528da445521841",
+   "benchmarks/asset_groups_cost.py": "e9e9284631ea660af88d9afa0ef265bd2f61dde4e08e7c3c9e2730ad676e10e5"
+  },
+  "cases": [
+   "volatility_ddof_0",
+   "returns_ignore_presence",
+   "enough_strict",
+   "momentum_fixed_ends",
+   "momentum_last_without_flip",
+   "spread_abs_instead_of_zero",
+   "spread_next_close",
+   "spread_without_range",
+   "spread_pairs_strict",
+   "market_without_enough",
+   "market_deviation_not_centred",
+   "deviation_not_centred",
+   "used_strict",
+   "variance_without_tolerance",
+   "residual_without_tolerance",
+   "beta_kept_when_irregular",
+   "residual_without_beta",
+   "residual_not_normalized",
+   "midranks_full_ties",
+   "midranks_smaller_counts_invalid",
+   "midranks_equal_counts_invalid",
+   "midranks_count_every_row",
+   "buckets_without_half_shift",
+   "buckets_lower_weight_swapped",
+   "buckets_upper_not_clamped",
+   "buckets_keep_invalid_rows",
+   "bucket_validity_ignored",
+   "bucket_validity_of_volatility",
+   "farthest_from_the_origin",
+   "farthest_mean_with_invalid_rows",
+   "farthest_keeps_the_mean_distance",
+   "farthest_includes_invalid_rows",
+   "fcm_weights_not_squared",
+   "fcm_invalid_rows_move_centres",
+   "fcm_centres_not_normalized",
+   "fcm_exponent_three",
+   "fcm_output_keeps_invalid_rows",
+   "embedding_bottom_components",
+   "embedding_not_normalized",
+   "embedding_reads_invalid_rows",
+   "family_widths_reversed",
+   "output_not_zeroed",
+   "seed_not_derived",
+   "generator_not_forked",
+   "pool_not_normalized",
+   "readback_not_divided",
+   "norm_skipped",
+   "residual_dropped",
+   "sessions_ignore_instant",
+   "sessions_ignore_market",
+   "shuffle_not_applied",
+   "shuffle_ignores_instant",
+   "shuffle_ignores_seed",
+   "families_constant",
+   "buckets_lower_bound",
+   "clusters_upper_bound",
+   "observations_upper_bound",
+   "iterations_lower_bound",
+   "sector_fields_unchecked",
+   "parse_accepts_partial_dict",
+   "sector_point_in_time",
+   "config_type_unchecked",
+   "sector_map_rule_dropped",
+   "dtype_unchecked",
+   "extra_state_unchecked",
+   "prices_shape_unchecked",
+   "autocast_unchecked",
+   "prepare_skips_h4",
+   "prepare_reads_the_ranked_window",
+   "session_level_without_h4",
+   "c5_combination_allowed",
+   "f5_combination_allowed",
+   "presence_window_unchecked",
+   "sector_map_without_h4_control",
+   "predictor_without_module",
+   "identity_without_h4",
+   "identity_without_sectors",
+   "frozen_consumer_accepts_h4",
+   "dust_accepts_h4",
+   "run_code_without_h4",
+   "walk_parent_accepts_h4",
+   "walk_frozen_parent_accepts_h4",
+   "registry_without_asset_groups",
+   "registry_without_sector_map",
+   "benchmark_single_order",
+   "benchmark_guard_missing",
+   "benchmark_sector_map_one_shape",
+   "benchmark_output_overwrites"
+  ],
+  "summary_sha256": "e4458c5f39dd3c907eaf61b9fe167aa3d4dc4f884dc584b3aec96d2cacc959c3",
+  "scope": "Ochenta y ocho defectos dirigidos de H4, de sus medidas de la ventana, de su integración en el predictor, el recorrido, el entrenador y la medida de coste, cada uno con una fase en verde antes, la mutación y otra fase en verde después, en una copia aislada del árbol. La receta benchmark_output_overwrites apuntaba a una prueba retirada en 534f07dcc. Su defecto lo cubre la pasada atómica. No es una puntuación global.",
+  "additional": [
+   {
+    "tree_commit": "534f07dcc502206a334d32dc6ae4b475f591c38e",
+    "planned": 4,
+    "killed": 4,
+    "recipes_sha256": "346b3457d05a725dd7d4368d4e1de3de2461fcbff0da33ccfe74d4412d442915",
+    "executor_sha256": "b0e048218c7496cc8760409fb449fb93650a87c27d9c094466e8d29eaef8b562",
+    "source_sha256": {
+     "benchmarks/asset_groups_cost.py": "59f7e4fd71c7b9f712115fa418693184865647e3eb0aa85637471ec053f1bb17"
+    },
+    "cases": [
+     "asset_groups_cost__destination_overwritten",
+     "asset_groups_cost__folder_not_created",
+     "asset_groups_cost__measured_before_refusal",
+     "asset_groups_cost__nan_written"
+    ],
+    "summary_sha256": "4d3064b81ef8ec31b092d345cfe382ed10d52dfb6a94b71e68c754c599bf0188",
+    "scope": "Las cuatro mutaciones de #802 para la medida de H4 tras pasarla a atomic_json."
+   },
+   {
+    "tree_commit": "35e034a4d8c69a0888ea4067b2d2fdf17dba5881",
+    "planned": 5,
+    "killed": 5,
+    "recipes_sha256": "ca7ab515c6f5c3ba6062c9cd514875fbfaeee4a085e1ae6bbbc7715200471e88",
+    "executor_sha256": "b0e048218c7496cc8760409fb449fb93650a87c27d9c094466e8d29eaef8b562",
+    "source_sha256": {
+     "benchmarks/asset_groups_cost.py": "59f7e4fd71c7b9f712115fa418693184865647e3eb0aa85637471ec053f1bb17"
+    },
+    "cases": [
+     "measure__forward_with_gradient",
+     "measure__gradients_kept",
+     "measure__not_synchronized",
+     "measure__warmup_in_samples",
+     "measure__warmup_skipped"
+    ],
+    "summary_sha256": "e2b55aeefeb84225f0b680289c9fe2c408a753383a54a44716db958ebca4683b",
+    "scope": "Cinco defectos del calentamiento y de cada tipo de llamada de la medida: sin calentamiento, calentamiento dentro de las muestras, avance con gradiente, gradientes conservados y llamadas sin sincronizar."
+   },
+   {
+    "tree_commit": "bac08d6c472cabfbd98f7ce39ac27cda0f2051ed",
+    "planned": 1,
+    "killed": 1,
+    "recipes_sha256": "b93ffec3cf4a2557f37b8d1af0feb03763a654b2e7a54e7e82aae2d4183361e9",
+    "executor_sha256": "b0e048218c7496cc8760409fb449fb93650a87c27d9c094466e8d29eaef8b562",
+    "source_sha256": {
+     "src/mars_titan/models/titans/financial.py": "44972baa99ce4224fb16425328e886d6ba5aae4163e3a31b4fc7800c703e8885"
+    },
+    "cases": [
+     "financial__h4_with_c3_accepted"
+    ],
+    "summary_sha256": "b440ab1332d3ba225e22e48156f3b119675a9c130480d1ca85c5659f2460e6de",
+    "scope": "Aceptar H4 junto a C3, que mezclan las filas de la sesión de dos formas."
+   }
+  ]
+ },
+ "native_link": {
+  "source_commit": "39abf2c99",
+  "preset": "native-candidate-cuda",
+  "used_by": "targeted_with_coverage, regression_of_the_changed_paths_training, regression_of_the_changed_paths_other, after_merging_c2_and_the_atomic_receipt, after_merging_c3_r2_and_r3",
+  "sha256": "9fda744aa9c6672f9fb47c0896a5e9b19fc8795cdbfff42b944ed751953b1046"
+ },
+ "cost": {
+  "receipt": "cost-cpu.json",
+  "sha256": "5601ac9674c928539eec3b990dc1a3c1d245f2dcac24e91915c02340061c0f5b"
+ }
+}

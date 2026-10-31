@@ -1,0 +1,52 @@
+{
+  "schema_version": 1,
+  "kind": "session_rank_objective_variants",
+  "issue": 749,
+  "variant": "mac_online",
+  "base_head": "scalar",
+  "base_loss": "mae",
+  "default_enabled": false,
+  "final_test_access": false,
+  "status": "declared_not_trained",
+  "requirements": {
+    "block_rows": "at_least_the_rows_of_every_decision_instant",
+    "accumulation_rows": "none_or_at_least_all_flows_of_the_segment",
+    "input_policy": "historical_masked"
+  },
+  "arms": {
+    "absolute_error_control": {
+      "role": "control",
+      "predictor_changes": {}
+    },
+    "session_rank_inputs": {
+      "role": "variant",
+      "control": "absolute_error_control",
+      "predictor_changes": {
+        "session_rank_inputs": "session_rank_inputs_v1"
+      }
+    },
+    "session_ic_objective": {
+      "role": "variant",
+      "control": "absolute_error_control",
+      "predictor_changes": {
+        "session_ic_objective": {
+          "minimum_rows": 8,
+          "scale_weight": 1.0,
+          "initial_scale": 0.001
+        }
+      }
+    },
+    "session_rank_inputs_and_ic_objective": {
+      "role": "variant",
+      "control": "absolute_error_control",
+      "predictor_changes": {
+        "session_rank_inputs": "session_rank_inputs_v1",
+        "session_ic_objective": {
+          "minimum_rows": 8,
+          "scale_weight": 1.0,
+          "initial_scale": 0.001
+        }
+      }
+    }
+  }
+}

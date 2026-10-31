@@ -1,0 +1,312 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "Análisis de la criba de variantes (#746)",
+    "quality_profile": "showcase",
+    "viewBox": [
+      1300,
+      592
+    ],
+    "legend": {
+      "entries": {
+        "external": {
+          "label": "Entradas"
+        },
+        "backend": {
+          "label": "Cálculo"
+        },
+        "database": {
+          "label": "Memoria y estado"
+        },
+        "frontend": {
+          "label": "Salida"
+        },
+        "security": {
+          "label": "Control o protección"
+        },
+        "cloud": {
+          "label": "Evaluación"
+        }
+      }
+    }
+  },
+  "components": [
+    {
+      "id": "sealed",
+      "type": "security",
+      "label": "Test de 2024",
+      "sublabel": "se rechaza al leer",
+      "pos": [
+        40,
+        40
+      ],
+      "size": [
+        180,
+        72
+      ]
+    },
+    {
+      "id": "runs",
+      "type": "database",
+      "label": "Predicciones",
+      "sublabel": "huella de cada Parquet",
+      "pos": [
+        40,
+        230
+      ],
+      "size": [
+        180,
+        72
+      ]
+    },
+    {
+      "id": "maturity",
+      "type": "external",
+      "label": "Madurez de la vista",
+      "sublabel": "tres tramos de G y S",
+      "pos": [
+        40,
+        420
+      ],
+      "size": [
+        180,
+        72
+      ]
+    },
+    {
+      "id": "case",
+      "type": "security",
+      "label": "Caso por validación",
+      "sublabel": "IC de G común a las semillas",
+      "pos": [
+        300,
+        40
+      ],
+      "size": [
+        180,
+        72
+      ]
+    },
+    {
+      "id": "stages",
+      "type": "backend",
+      "label": "Etapas de salida",
+      "sublabel": "A1, A2, A3 y C4 con G",
+      "pos": [
+        300,
+        420
+      ],
+      "size": [
+        180,
+        72
+      ]
+    },
+    {
+      "id": "series",
+      "type": "backend",
+      "label": "Series por sesión",
+      "sublabel": "semillas promediadas",
+      "pos": [
+        560,
+        230
+      ],
+      "size": [
+        180,
+        72
+      ],
+      "tag": "2019 a 2022"
+    },
+    {
+      "id": "family",
+      "type": "cloud",
+      "label": "Paso descendente",
+      "sublabel": "Romano-Wolf, 16 días",
+      "pos": [
+        820,
+        230
+      ],
+      "size": [
+        180,
+        72
+      ]
+    },
+    {
+      "id": "decision",
+      "type": "frontend",
+      "label": "Decisión",
+      "sublabel": "principal y exigidos",
+      "pos": [
+        1080,
+        230
+      ],
+      "size": [
+        180,
+        72
+      ]
+    },
+    {
+      "id": "robust",
+      "type": "cloud",
+      "label": "Robustez",
+      "sublabel": "8 y 32 días, Holm, familias",
+      "pos": [
+        1080,
+        40
+      ],
+      "size": [
+        180,
+        72
+      ]
+    },
+    {
+      "id": "common",
+      "type": "cloud",
+      "label": "Familia común",
+      "sublabel": "referencias frente a controles",
+      "pos": [
+        820,
+        420
+      ],
+      "size": [
+        180,
+        72
+      ],
+      "tag": "seis contrastes de IC"
+    },
+    {
+      "id": "report",
+      "type": "frontend",
+      "label": "Informe común",
+      "sublabel": "fuera de las decisiones",
+      "pos": [
+        1080,
+        420
+      ],
+      "size": [
+        180,
+        72
+      ]
+    }
+  ],
+  "connections": [
+    {
+      "id": "sealed-runs",
+      "from": "sealed",
+      "to": "runs",
+      "label": "sin acceso",
+      "variant": "dashed",
+      "labelAt": [
+        150,
+        171
+      ]
+    },
+    {
+      "id": "runs-case",
+      "from": "runs",
+      "to": "case",
+      "label": "correcciones",
+      "labelDy": -10
+    },
+    {
+      "id": "runs-series",
+      "from": "runs",
+      "to": "series",
+      "label": "ajustes y lectores",
+      "variant": "emphasis",
+      "labelDy": -14
+    },
+    {
+      "id": "runs-stages",
+      "from": "runs",
+      "to": "stages",
+      "label": "referencia B",
+      "labelDy": 10
+    },
+    {
+      "id": "maturity-stages",
+      "from": "maturity",
+      "to": "stages"
+    },
+    {
+      "id": "case-series",
+      "from": "case",
+      "to": "series"
+    },
+    {
+      "id": "stages-series",
+      "from": "stages",
+      "to": "series"
+    },
+    {
+      "id": "series-family",
+      "from": "series",
+      "to": "family",
+      "label": "contrastes",
+      "labelDy": -14
+    },
+    {
+      "id": "family-decision",
+      "from": "family",
+      "to": "decision",
+      "label": "ajustado",
+      "variant": "emphasis",
+      "labelDy": -14
+    },
+    {
+      "id": "decision-robust",
+      "from": "decision",
+      "to": "robust",
+      "label": "se publica",
+      "variant": "dashed",
+      "labelAt": [
+        1222,
+        171
+      ]
+    },
+    {
+      "id": "series-common",
+      "from": "series",
+      "to": "common",
+      "label": "controles comunes",
+      "labelDy": 10
+    },
+    {
+      "id": "common-report",
+      "from": "common",
+      "to": "report",
+      "label": "se publica",
+      "variant": "dashed",
+      "labelDy": -14
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "Diseño",
+      "items": [
+        "IC con al menos tres activos y MAE con el λ de G",
+        "Semillas promediadas y orígenes en una sola serie",
+        "Mediana pasada, regla y LightGBM como controles comunes"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "Protecciones",
+      "items": [
+        "Protección antes de leer y todos los trabajos terminados",
+        "Cada trabajo reproduce las filas de su vista",
+        "El caso de una corrección se elige sin mirar S"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "Estado",
+      "items": [
+        "Probado con paneles sintéticos de respuesta conocida",
+        "LightGBM probado con un doble que no ajusta",
+        "Sin ejecutar con predicciones reales"
+      ]
+    }
+  ]
+}

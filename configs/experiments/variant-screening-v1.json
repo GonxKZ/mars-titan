@@ -1,0 +1,539 @@
+{
+  "schema_version": 1,
+  "kind": "variant_screening_protocol_v1",
+  "issue": 746,
+  "study_issue": 742,
+  "status": "registered_before_opening_s",
+  "default_enabled": false,
+  "final_test_access": false,
+  "learning_hold": "every_job_checks_the_global_hold_before_reading_sources",
+  "population": {
+    "market": "US",
+    "assets_per_origin": 256,
+    "cohort_kind": "screening_origin_cohorts_v1",
+    "cohort_salt": "mars-titan-variant-screening-v1",
+    "input_policy": "historical_masked_2000_v1"
+  },
+  "origins": [
+    {"year": 2019, "fold": "fold-014"},
+    {"year": 2020, "fold": "fold-015"},
+    {"year": 2021, "fold": "fold-016"},
+    {"year": 2022, "fold": "fold-017"}
+  ],
+  "partitions": {
+    "fit": "last_12_months_of_the_fold_train",
+    "validation": "common_epoch_selection_with_session_ic",
+    "calibration": "market_lambda_conformal_corrections_thresholds_and_output_stages",
+    "screening": "evaluation_year_of_each_origin",
+    "screening_blocks": "calendar_quarters_of_each_evaluation_year",
+    "confirmation": {
+      "fold": "fold-018",
+      "year": 2023,
+      "opened_by_the_screening": false,
+      "reused_development": true
+    },
+    "final_test": {"start": "2024-01-01", "opened": false}
+  },
+  "seeds": [42, 43, 44, 45, 46],
+  "fit": {
+    "fit_months": 12,
+    "epochs": 12,
+    "stopping": "common_epoch",
+    "selection": "common_epoch_session_ic_v1",
+    "search_case": "lr1e-3",
+    "precision": "fp32_strict",
+    "sdpa_backend": "MATH",
+    "updates_note": "Con 256 activos, unas 250 sesiones de ajuste y bloques de 1.024 filas, cada época hace unas 62 actualizaciones y el presupuesto unas 740, del orden de las 685 de los pilotos de octubre"
+  },
+  "selection": {
+    "rule": "common_epoch_session_ic_v1",
+    "applies_to": ["fit", "reader"],
+    "metric": "session_ic",
+    "partition": "validation",
+    "eligible_epochs": "every_trained_epoch_from_1_to_the_budget",
+    "seed_aggregation": "mean_of_the_seeds_in_each_session_defined_by_all_of_them",
+    "smoothing_radius": 1,
+    "ties": "earliest_epoch",
+    "combined_outputs": "epoch_chosen_with_the_session_ic_of_the_combination",
+    "correction_cases": "case_with_the_highest_mean_validation_session_ic_common_to_the_seeds",
+    "sensitivity": "the_session_mae_best_epoch_of_each_seed_is_reported_and_never_emitted",
+    "retention": "every_epoch_state_is_pinned_until_its_window_confirms_its_predictions_and_then_released",
+    "versions": {
+      "epochs": [3, 6, 9, 12],
+      "models": ["references/quantile_reference", "F1/laplace_scale_head", "F4/session_ic_objective", "F5/auxiliary_horizons", "C6/competition"],
+      "partitions": ["calibration", "evaluation"],
+      "consumer": "version_arbiter_v1 de #789",
+      "reason": "La referencia B y cuatro variantes que cambian la pérdida, el objetivo, la supervisión auxiliar y la memoria. F2 y F3 ya promedian en el tiempo los pesos, así que el árbitro se compara con ellas sobre la referencia en lugar de aplicarse encima"
+    },
+    "rule_check": {
+      "partition": "validation",
+      "choose_months": 4,
+      "measure_months": 2,
+      "compared": ["common_epoch_session_ic_v1", "session_mae_best_epoch_of_each_seed", "last_epoch"],
+      "bound": "best_epoch_of_the_measured_months_reported_as_a_bound_with_future_information",
+      "device": "cpu_only"
+    },
+    "amendment": {
+      "date": "2026-10-28",
+      "issue": 746,
+      "registered_before_opening_s": true,
+      "previous_rule": "best_validation_session_mae_within_the_fixed_budget",
+      "reason": "El contraste principal se juzga con el IC por sesión y el MAE de un residuo diario premia las predicciones pequeñas, así que podía quedarse con épocas que apenas ordenan los activos. Elegir el máximo de doce valores ruidosos por semilla añade sesgo de selección. Una época común para las semillas, suavizada con sus vecinas, reduce la varianza del criterio y mantiene iguales las actualizaciones",
+      "sources": ["Cawley y Talbot (2010), JMLR 11", "Ranjan y otros (2024), NeurIPS", "Gulrajani y Lopez-Paz (2021), ICLR"]
+    }
+  },
+  "references": {
+    "quantile_reference": {
+      "runner": "fit",
+      "base_recipe": "configs/titans/chronological-training-historical-sequence-v1.json",
+      "predictor_changes": {},
+      "recipe_changes": {},
+      "role": "Referencia B con la cabeza de cuantiles y pinball. Es el padre de las correcciones y la fuente de las etapas de salida"
+    },
+    "scalar_reference": {
+      "runner": "fit",
+      "base_recipe": "configs/titans/chronological-training-historical-sequence-v1.json",
+      "head": "scalar",
+      "loss": "mae",
+      "predictor_changes": {},
+      "recipe_changes": {},
+      "role": "Referencia con la cabeza escalar y MAE de los objetivos de salida"
+    },
+    "regional_reference": {
+      "runner": "fit",
+      "base_recipe": "configs/experiments/regional-fusion-recipe-v1.json",
+      "predictor_changes": {
+        "regional_fusion": {"topology": "ring", "routing": "attention", "cycles": 2, "local_steps": 2, "summary": true, "local_gain": 0.25, "summary_gain": 0.25}
+      },
+      "recipe_changes": {},
+      "role": "Operador regional en anillo con resumen que sustituyen C1 y C6"
+    },
+    "reader_reference": {
+      "runner": "reader",
+      "parent": "quantile_reference",
+      "recipe": "configs/titans/episodic-readout-historical-masked.json",
+      "components": {"episodic_bank": "m1"},
+      "recipe_changes": {},
+      "role": "Lector M1 con K = 1 sobre el padre congelado. Es el ancla de E2"
+    }
+  },
+  "contrast": {
+    "primary": {
+      "metric": "session_ic",
+      "definition": "Media sobre las sesiones de S de la correlación de Pearson por sesión entre la predicción emitida y el residuo, promediada entre semillas, del modelo menos la de su control",
+      "minimum_assets": 3,
+      "direction": "greater",
+      "margin": 0.0
+    },
+    "amplitude": {
+      "metric": "session_mae_calibrated",
+      "definition": "MAE por sesión de λ·predicción con λ por mercado elegido en la calibración de su origen, del modelo menos el de su control",
+      "direction": "less",
+      "margin": 0.0,
+      "applies_to": "variants_that_cannot_change_the_order_within_a_session_by_construction"
+    },
+    "secondary": [
+      "session_rank_ic",
+      "session_mae_calibrated",
+      "session_mae_raw",
+      "session_mae_minus_zero"
+    ],
+    "seed_aggregation": "mean_of_the_seed_metrics_in_each_session",
+    "origins_aggregation": "the_screening_sessions_of_the_four_origins_form_one_2019_2022_series"
+  },
+  "inference": {
+    "resampling": "circular_block_bootstrap_of_utc_days",
+    "block_days": 16,
+    "sensitivity_block_days": [8, 32],
+    "replicates": 2000,
+    "seed": 20261023,
+    "confidence": 0.95,
+    "family_correction": "romano_wolf_stepdown_max_t",
+    "robustness": "holm_on_the_bootstrap_p_values",
+    "required_contrasts": "intersection_union_every_required_control_must_pass_without_further_correction",
+    "minimum_detectable_effect": {"alpha": 0.05, "power": 0.8}
+  },
+  "families": {
+    "declared": "primary_contrast_of_every_catalog_entry_with_its_metric",
+    "sensitivity": [
+      "one_family_per_catalog_group",
+      "every_declared_contrast_of_the_screening"
+    ],
+    "reason": "La fase 0 mostró que la conclusión sobre el IC cambiaba al redefinir la familia. Se publican las tres definiciones y decide la declarada"
+  },
+  "decision": {
+    "passes": "simultaneous_interval_of_the_declared_family_excludes_zero_in_the_favourable_direction_with_16_day_blocks_and_every_required_contrast_passes",
+    "reported": "survival_with_8_and_32_day_blocks_holm_and_both_sensitivity_families",
+    "after": "Pasar la criba no confirma una mejora. La confirmación con 2023, 128 activos y China por separado necesita otra aprobación"
+  },
+  "common_controls": {
+    "registered_before_opening_s": true,
+    "date": "2026-10-28",
+    "models": {
+      "zero": {
+        "runner": "analysis",
+        "description": "Predice un residuo cero"
+      },
+      "past_median": {
+        "runner": "analysis",
+        "identity": "past_median_v1",
+        "lag_sessions": 2,
+        "window": 60,
+        "min_labels": 20,
+        "labels": "validation_calibration_and_evaluation_labels_of_quantile_reference_each_mature_before_its_first_use",
+        "description": "Mediana de las 60 últimas etiquetas del activo con dos sesiones de retraso, como en la fase 0. El análisis exige que cada etiqueta haya madurado antes de la primera decisión que la usa"
+      },
+      "momentum_reversal": {
+        "runner": "rule",
+        "config": {"identity": "momentum_reversal_v1", "reversal_sessions": 5, "combination": "mean_of_centered_session_ranks"},
+        "description": "Regla sin aprendizaje sobre la ventana de precios: media de los rangos centrados por sesión de la reversión de cinco sesiones y del momentum de la ventana sin esas sesiones"
+      },
+      "lightgbm": {
+        "runner": "tabular",
+        "config": {
+          "identity": "same_inputs_lightgbm_v1",
+          "source": {
+            "repository": "microsoft/qlib",
+            "commit": "54355232463878d2eebb91fe0ee5fa7fa1f5976c",
+            "workflow": "examples/benchmarks/LightGBM/workflow_config_lightgbm_Alpha158.yaml",
+            "workflow_sha256": "0cbe1f729f43a2b8cd735759e6244c2e9f8db967555bfe24a7143fce4605d680",
+            "model": "qlib/contrib/model/gbdt.py",
+            "model_sha256": "a1afddb3bb965d108a916565b57e474cfddc55ce029f781765876e825623ad39",
+            "handler": "qlib/contrib/data/handler.py",
+            "handler_sha256": "b621481c6009c39066c67c71390fd2bea635f56daf9f2c4e38817eff268e3232"
+          },
+          "parameters": {"objective": "mse", "verbosity": -1, "colsample_bytree": 0.8879, "learning_rate": 0.2, "subsample": 0.8789, "lambda_l1": 205.6999, "lambda_l2": 580.9768, "max_depth": 8, "num_leaves": 210, "num_threads": 8, "deterministic": true, "force_col_wise": true},
+          "max_rounds": 1000,
+          "checkpoint_rounds": 10,
+          "features": "price_window_modalities_and_presence_v1",
+          "label": "session_zscore_of_the_residual"
+        },
+        "description": "LightGBM con los parámetros de Qlib sobre Alpha158 y las entradas de la criba. Ajusta las cinco semillas con las filas de los meses de ajuste, con el residuo normalizado en cada sesión como la etiqueta de Qlib, y elige sus rondas cada 10 con la época común del IC de validación"
+      }
+    },
+    "family": {
+      "role": "reported_outside_the_decisions",
+      "metric": "session_ic",
+      "contrasts": [
+        ["quantile_reference", "past_median"],
+        ["quantile_reference", "momentum_reversal"],
+        ["quantile_reference", "lightgbm"],
+        ["scalar_reference", "past_median"],
+        ["scalar_reference", "momentum_reversal"],
+        ["scalar_reference", "lightgbm"]
+      ],
+      "reason": "Sitúa las dos referencias frente a controles sencillos y frente a un modelo tabular con las mismas entradas. Se publica con su propio paso descendente y no cambia ninguna decisión del catálogo"
+    },
+    "other_controls": {
+      "reference": "quantile_reference o scalar_reference según la cabeza del modelo",
+      "nadaraya_watson": "control de B1 en su declaración"
+    }
+  },
+  "catalog": {
+    "A1": {
+      "identity": "scale_shrink_v1",
+      "runner": "output",
+      "source": "quantile_reference",
+      "metric": "session_mae_calibrated",
+      "arms": {
+        "shrink": {"stage": "market_lambda_of_the_calibration"},
+        "raw": {"stage": "none"}
+      },
+      "primary": ["shrink", "zero"],
+      "reported": [["shrink", "raw"]],
+      "note": "Un λ positivo por mercado no cambia el orden dentro de una sesión, así que el IC no puede descartarla"
+    },
+    "A2": {
+      "identity": "neutral_abstention_v1",
+      "runner": "output",
+      "source": "quantile_reference",
+      "metric": "session_mae_calibrated",
+      "arms": {
+        "abstention": {"stage": {"neutral_abstention_v1": {"nominal": 0.8, "min_rows": 1000, "random_seed": 20261023, "volatility_window": 60, "volatility_min_labels": 20}}},
+        "random": {"stage": "matched_control", "control": "random"},
+        "small_prediction": {"stage": "matched_control", "control": "small_prediction"},
+        "past_volatility": {"stage": "matched_control", "control": "past_volatility"},
+        "seed_disagreement": {"stage": "matched_control", "control": "seed_disagreement"},
+        "median": {"stage": "none"}
+      },
+      "primary": ["abstention", "random"],
+      "required": [["abstention", "small_prediction"], ["abstention", "past_volatility"], ["abstention", "seed_disagreement"]],
+      "reported": [["abstention", "median"], ["abstention", "zero"]]
+    },
+    "A3": {
+      "identity": "regime_weighted_conformal_v1",
+      "runner": "output",
+      "source": "quantile_reference",
+      "metric": "session_mae_calibrated",
+      "arms": {
+        "context": {"stage": {"regime_weighted_conformal_v1": {"bandwidth": 0.5, "lookback_days": 120, "regime_days": 30, "min_rows": 1000, "seed": 20261027}}, "weighting": "context", "then": "A2.abstention"},
+        "uniform": {"stage": {"regime_weighted_conformal_v1": {"bandwidth": 0.5, "lookback_days": 120, "regime_days": 30, "min_rows": 1000, "seed": 20261027}}, "weighting": "uniform", "then": "A2.abstention"},
+        "shuffled": {"stage": {"regime_weighted_conformal_v1": {"bandwidth": 0.5, "lookback_days": 120, "regime_days": 30, "min_rows": 1000, "seed": 20261027}}, "weighting": "shuffled", "then": "A2.abstention"}
+      },
+      "primary": ["context", "uniform"],
+      "required": [["context", "shuffled"]],
+      "reported": [["context", "A2.abstention"]],
+      "note": "A3 solo recalibra intervalos. Se contrasta a través de la abstención de A2. La cobertura y el interval score por año se publican como diagnóstico"
+    },
+    "A4": {
+      "identity": "opponent_heads_v1",
+      "runner": "fit",
+      "declaration": "configs/experiments/opponent-heads-v1.json",
+      "metric": "session_ic",
+      "primary": ["quantile_opponents", "quantile_symmetric_control"],
+      "required": [],
+      "reported": [["expectile_opponents", "expectile_symmetric_control"], ["quantile_symmetric_control", "absolute_error_reference"]]
+    },
+    "B1": {
+      "identity": "redundant_area_memory_v1",
+      "runner": "correction",
+      "declaration": "configs/experiments/redundant-area-memory-v1.json",
+      "parent": "quantile_reference",
+      "metric": "session_ic",
+      "primary": ["area_memory", "single_area_same_coordinates"],
+      "required": [["area_memory", "identical_areas"], ["area_memory", "shuffled_labels"]],
+      "reported": [["area_memory", "nadaraya_watson"], ["area_memory", "linear_codec"], ["area_memory", "zero_memory"]]
+    },
+    "B2": {
+      "identity": "area_query_bridge_v1",
+      "runner": "correction",
+      "declaration": "configs/experiments/area-query-bridge-v1.json",
+      "parent": "quantile_reference",
+      "metric": "session_ic",
+      "primary": ["bridge", "no_bridge"],
+      "required": [["bridge", "same_maps_zero_gain"]],
+      "reported": [["bridge", "shuffled_correspondence"]]
+    },
+    "B3": {
+      "identity": "role_bound_keys_v1",
+      "runner": "correction",
+      "declaration": "configs/experiments/role-bound-keys-v1.json",
+      "parent": "quantile_reference",
+      "metric": "session_ic",
+      "primary": ["bound_regime", "constant_role"],
+      "required": [["bound_regime", "projected_concat"]],
+      "reported": [["bound_regime", "bound_calendar"], ["bound_regime", "no_binding"], ["bound_regime", "linear_bound"], ["bridge_bound", "bridge_no_binding"]]
+    },
+    "B4": {
+      "identity": "lesion_protocol_v1",
+      "runner": "diagnostic",
+      "declaration": "configs/experiments/lesion-protocol-v1.json",
+      "status": "diagnostic_after_b1_and_b2_outside_the_family"
+    },
+    "C1": {
+      "identity": "region_axis_mixing_v1",
+      "runner": "fit",
+      "base_recipe": "configs/experiments/regional-fusion-recipe-v1.json",
+      "metric": "session_ic",
+      "arms": {
+        "talking_heads": {"predictor_changes": {"regional_variant": {"operator": {"topology": "ring", "routing": "attention", "cycles": 2, "local_steps": 2, "summary": true, "local_gain": 0.25, "summary_gain": 0.25}, "mixing": "talking_heads"}}},
+        "no_mixing": {"predictor_changes": {"regional_variant": {"operator": {"topology": "ring", "routing": "attention", "cycles": 2, "local_steps": 2, "summary": true, "local_gain": 0.25, "summary_gain": 0.25}, "mixing": "none"}}}
+      },
+      "primary": ["talking_heads", "no_mixing"],
+      "reported": [["talking_heads", "regional_reference"]]
+    },
+    "C2": {
+      "identity": "axial_time_region_v1",
+      "runner": "fit",
+      "status": "pending_implementation"
+    },
+    "C3": {
+      "identity": "fractal_shared_operator_v1",
+      "runner": "fit",
+      "status": "pending_implementation"
+    },
+    "C4": {
+      "identity": "pit_region_gate_v1",
+      "runner": "output",
+      "source": "quantile_reference",
+      "metric": "session_ic",
+      "arms": {
+        "residual_correlation": {"stage": {"pit_region_gate_v1": {"regions": "residual_correlation", "clusters": 8, "window": 126, "min_labels": 60, "seed": 20261027}}},
+        "permuted": {"stage": {"pit_region_gate_v1": {"regions": "permuted", "clusters": 8, "window": 126, "min_labels": 60, "seed": 20261027}}},
+        "market": {"stage": {"pit_region_gate_v1": {"regions": "market", "clusters": 8, "window": 126, "min_labels": 60, "seed": 20261027}}},
+        "current_sector": {"stage": {"pit_region_gate_v1": {"regions": "current_sector", "clusters": 8, "window": 126, "min_labels": 60, "seed": 20261027}}}
+      },
+      "primary": ["residual_correlation", "permuted"],
+      "reported": [["residual_correlation", "market"], ["current_sector", "residual_correlation"]],
+      "note": "current_sector usa fichas actuales con fuga y solo mide cuánto aportaría esa etiqueta"
+    },
+    "C5": {
+      "identity": "cross_asset_attention_v1",
+      "runner": "fit",
+      "declaration": "configs/experiments/cross-asset-attention-v1.json",
+      "metric": "session_ic",
+      "primary": ["cross_asset_attention", "self_only_control"],
+      "reported": [["self_only_control", "reference"]]
+    },
+    "C6": {
+      "identity": "shared_workspace_v1",
+      "runner": "fit",
+      "base_recipe": "configs/experiments/regional-fusion-recipe-v1.json",
+      "metric": "session_ic",
+      "arms": {
+        "competition": {"predictor_changes": {"regional_variant": {"operator": {"topology": "ring", "routing": "attention", "cycles": 2, "local_steps": 2, "summary": true, "local_gain": 0.25, "summary_gain": 0.25}, "slots": 2, "write": "competition", "write_top_k": 2}}},
+        "dense": {"predictor_changes": {"regional_variant": {"operator": {"topology": "ring", "routing": "attention", "cycles": 2, "local_steps": 2, "summary": true, "local_gain": 0.25, "summary_gain": 0.25}, "slots": 2, "write": "dense", "write_top_k": null}}}
+      },
+      "primary": ["competition", "dense"],
+      "reported": [["competition", "regional_reference"], ["dense", "regional_reference"]]
+    },
+    "D1": {
+      "identity": "nested_equal_depth_v1",
+      "runner": "reader",
+      "declaration": "configs/experiments/nested-equal-depth-v1.json",
+      "parent": "quantile_reference",
+      "recipe": "configs/titans/episodic-readout-historical-masked.json",
+      "metric": "session_ic",
+      "primary": ["nested_k2_j2_final", "flat_k4_j1_final"],
+      "reported": [["nested_k2_j2_per_step", "flat_k4_j1_per_step"], ["nested_k2_j2_per_step", "nested_k2_j2_final"], ["flat_k4_j1_per_step", "flat_k4_j1_final"], ["nested_k2_j2_final", "flat_k1_j4_final"]]
+    },
+    "D2": {
+      "identity": "shared_evidence_bridge_adaptive_v1",
+      "runner": "reader",
+      "declaration": "configs/experiments/adaptive-bridge-depth-v1.json",
+      "parent": "quantile_reference",
+      "recipe": "configs/titans/episodic-readout-historical-masked.json",
+      "metric": "session_ic",
+      "primary": ["adaptive_j4", "fixed_j4"],
+      "reported": [["fixed_j4", "fixed_j1"]],
+      "note": "fixed_j4 es el mismo modelo que D1/flat_k1_j4_final y comparte sus trabajos. La tolerancia se fija antes de abrir datos"
+    },
+    "E1": {
+      "identity": "multiscale_mature_mixture_v1",
+      "runner": "correction",
+      "declaration": "configs/experiments/multiscale-mature-mixture-v1.json",
+      "parent": "quantile_reference",
+      "metric": "session_ic",
+      "primary": ["adaptive", "uniform"],
+      "required": [["adaptive", "single_quarter"], ["adaptive", "replicated_quarter"]],
+      "reported": [["adaptive", "no_mixture"], ["adaptive", "historical_retention"], ["area_adaptive", "area_uniform"], ["bridge_adaptive", "bridge_uniform"], ["role_bridge_adaptive", "role_bridge_uniform"]]
+    },
+    "E2": {
+      "identity": "spaced_utility_consolidation_v1",
+      "runner": "spaced",
+      "declaration": "configs/experiments/spaced-utility-comparison-v1.json",
+      "parent": "reader_reference",
+      "metric": "session_ic",
+      "primary": ["utility", "permuted_utility"],
+      "required": [["utility", "reservoir"]],
+      "reported": [["utility", "uniform_frontier"], ["utility", "recent"], ["utility", "baseline"]]
+    },
+    "E3": {
+      "identity": "salience_write_budget_v1",
+      "runner": "correction_profile",
+      "declaration": "configs/experiments/salience-correction-window-v1.json",
+      "parent": "quantile_reference",
+      "argument": "salience",
+      "metric": "session_ic",
+      "primary": ["standardized_error", "uniform"],
+      "required": [["standardized_error", "absolute_error"]],
+      "reported": [["standardized_error", "baseline"]]
+    },
+    "E4": {
+      "identity": "regime_evidence_gate_v1",
+      "runner": "correction_profile",
+      "declaration": "configs/experiments/regime-evidence-gate-window-v1.json",
+      "parent": "quantile_reference",
+      "argument": "regime_gate",
+      "metric": "session_ic",
+      "primary": ["cusum", "matched_constant"],
+      "reported": [["cusum", "baseline"]]
+    },
+    "F1": {
+      "identity": "laplace_scale_head_v1",
+      "runner": "fit",
+      "declaration": "configs/experiments/laplace-scale-head-v1.json",
+      "metric": "session_ic",
+      "primary": ["laplace_scale_head", "absolute_error_control"]
+    },
+    "F2": {
+      "identity": "seed_ema_ensemble_v1",
+      "runner": "fit",
+      "declaration": "configs/experiments/seed-ema-ensemble-v1.json",
+      "metric": "session_ic",
+      "primary": ["weight_ema_fast", "single_seed_reference"],
+      "reported": [["weight_ema_slow", "single_seed_reference"], ["seed_mean", "single_seed_matched_updates"]],
+      "combinations": {
+        "seed_mean": {
+          "source": "single_seed_reference",
+          "size": 3,
+          "replicates": "every_subset_of_the_screening_seeds"
+        }
+      },
+      "note": "Cada semilla de la criba hace de semilla única y single_seed_reference es el mismo ajuste que la referencia B. La media de semillas promedia las diez ternas de las cinco semillas de la criba y su control multiplica por tres las actualizaciones"
+    },
+    "F3": {
+      "identity": "schedule_free_v1_and_shrink_perturb_v1",
+      "runner": "fit",
+      "declaration": "configs/experiments/schedule-free-shrink-perturb-v1.json",
+      "metric": "session_ic",
+      "primary": ["schedule_free", "adamw_reference"],
+      "continuation": {
+        "parent": "adamw_reference",
+        "primary": [
+          ["shrink_perturb", "continuation_control"],
+          ["shrink_only", "continuation_control"],
+          ["perturb_only", "continuation_control"]
+        ],
+        "reported": [
+          ["continuation_control", "adamw_reference"],
+          ["shrink_perturb", "adamw_reference"]
+        ],
+        "date": "2026-10-28",
+        "note": "Enmienda registrada antes de abrir S. Cada continuación del origen k empieza en el estado que adamw_reference, el mismo trabajo que quantile_reference, eligió en el origen k − 1 con la misma semilla, así que 2019 no tiene continuaciones. Los tres contrastes con la continuación directa forman una familia propia sobre las sesiones de 2020 a 2022, fuera de la familia declarada y de sus sensibilidades. Los dos contrastes con el ajuste desde cero solo se publican"
+      }
+    },
+    "F4": {
+      "identity": "session_rank_inputs_v1_and_session_ic_objective_v1",
+      "runner": "fit",
+      "declaration": "configs/experiments/session-rank-objective-v1.json",
+      "base_recipe": "configs/titans/chronological-training-historical-sequence-v1.json",
+      "metric": "session_ic",
+      "primary": ["session_ic_objective", "absolute_error_control"],
+      "reported": [["session_rank_inputs", "absolute_error_control"], ["session_rank_inputs_and_ic_objective", "absolute_error_control"]]
+    },
+    "F5": {
+      "identity": "auxiliary_horizons_v1",
+      "runner": "fit",
+      "declaration": "configs/experiments/auxiliary-horizons-v1.json",
+      "metric": "session_ic",
+      "primary": ["auxiliary_horizons", "weight_zero_control"]
+    },
+    "G1": {
+      "identity": "posthoc_self_edit_v1",
+      "runner": "output",
+      "status": "after_the_screening_needs_its_own_approval"
+    },
+    "G2": {
+      "identity": "calibrated_quantile_rule_v1",
+      "runner": "policy",
+      "status": "own_financial_criterion_outside_the_family"
+    },
+    "G3": {
+      "identity": "asof_ledger_audit",
+      "runner": "audit",
+      "status": "validity_check_outside_the_family"
+    }
+  },
+  "budget": {
+    "max_total_gpu_hours": 150,
+    "max_job_seconds": 5400,
+    "max_job_updates": 20000,
+    "concurrent_gpu_jobs": 1,
+    "gpu": "exclusive_lease_without_other_compute_processes",
+    "accounting": "every_attempt_is_charged_and_never_refunded"
+  },
+  "cost_reference": {
+    "receipts": [
+      "reports/research/local-capture-20261020/development-v1/README.md",
+      "reports/research/refinement-development-20261019/completed-v1/phase-costs.json"
+    ],
+    "fit_seconds_per_fit_row_epoch": 0.00073,
+    "validation_rows_per_second": 1980.0,
+    "inference_rows_per_second": 3143.0,
+    "reader_window_seconds": 382.0,
+    "rule_window_seconds": 600.0,
+    "tabular_window_seconds": 5400.0,
+    "note": "Medidas de pilotos con 64 y 256 activos y otra carga concurrente. Un ajuste usa el coste por fila y época del piloto de captura local, una corrección el caudal de inferencia de 256 activos en sus tres tramos y un lector la media de los lectores episódicos de la ronda de refinamientos. La regla y LightGBM no tienen piloto: sus valores son cotas declaradas por origen, la de LightGBM igual al límite de un trabajo, porque su ajuste no puede medirse mientras rige el bloqueo. Es una estimación conservadora, no un coste medido de la criba"
+  }
+}

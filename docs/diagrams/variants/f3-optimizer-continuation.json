@@ -1,0 +1,64 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "F3 · AdamW sin calendario y continuación con contracción",
+    "quality_profile": "showcase",
+    "viewBox": [1300, 592],
+    "legend": {
+      "entries": {
+        "external": {"label": "Entradas"},
+        "backend": {"label": "Cálculo"},
+        "database": {"label": "Memoria y estado"},
+        "frontend": {"label": "Salida"},
+        "security": {"label": "Control o protección"},
+        "cloud": {"label": "Evaluación"}
+      }
+    }
+  },
+  "components": [
+    {"id": "inputs", "type": "external", "label": "Receta y filas", "sublabel": "mismos casos de tasa", "pos": [40, 230], "size": [180, 72]},
+    {"id": "free", "type": "backend", "label": "AdamW sin calendario", "sublabel": "schedulefree 1.4.1, z e y", "pos": [300, 40], "size": [180, 72]},
+    {"id": "point", "type": "frontend", "label": "Punto promediado x", "sublabel": "valida, elige y se emite", "pos": [560, 40], "size": [180, 72]},
+    {"id": "adamw", "type": "security", "label": "Control AdamW", "sublabel": "misma tasa y pasos", "pos": [820, 40], "size": [180, 72]},
+    {"id": "parent", "type": "database", "label": "Padre de la etapa", "sublabel": "estado elegido en k − 1", "pos": [300, 420], "size": [180, 72]},
+    {"id": "shrink", "type": "backend", "label": "θ ← λθ + sθ₀", "sublabel": "θ₀ propio de cada semilla", "pos": [560, 420], "size": [180, 72]},
+    {"id": "direct", "type": "security", "label": "Continuación directa", "sublabel": "λ = 1 y s = 0", "pos": [820, 420], "size": [180, 72]},
+    {"id": "screen", "type": "cloud", "label": "Comparación", "sublabel": "IC por sesión", "pos": [1080, 230], "size": [180, 72]}
+  ],
+  "connections": [
+    {"id": "inputs-free", "from": "inputs", "to": "free"},
+    {"id": "inputs-parent", "from": "inputs", "to": "parent", "label": "etapa k"},
+    {"id": "free-point", "from": "free", "to": "point"},
+    {"id": "point-screen", "from": "point", "to": "screen", "variant": "emphasis"},
+    {"id": "adamw-screen", "from": "adamw", "to": "screen", "label": "control", "variant": "dashed"},
+    {"id": "parent-shrink", "from": "parent", "to": "shrink"},
+    {"id": "shrink-screen", "from": "shrink", "to": "screen", "variant": "emphasis"},
+    {"id": "direct-screen", "from": "direct", "to": "screen", "label": "control", "variant": "dashed"}
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "Mecanismo",
+      "items": [
+        "x se calcula fuera de sitio con lerp(y, z, 1 − 1/β₁), sin redondear y",
+        "La contracción suma una inicialización nueva escalada antes del primer paso",
+        "Fuentes: Defazio et al. (2024), Ash y Adams (2020)"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "Control que la descarta",
+      "items": ["AdamW con la misma tasa y las mismas actualizaciones", "Continuación directa de la misma etapa, y solo contraer o solo perturbar"]
+    },
+    {
+      "dot": "amber",
+      "title": "Estado",
+      "items": [
+        "Implementado y comprobado en CPU, sin entrenar ni evaluar",
+        "λ = 0,6 y s = 0,01, valores del ejemplo en línea del artículo",
+        "Continuaciones de 2020 a 2022 en una familia propia de la criba"
+      ]
+    }
+  ]
+}

@@ -433,10 +433,41 @@ class KlpoRun {
     }
 
     Json fresh_state() const {
-        return Json{{"schema_version", 1},          {"identity_sha256", identity_sha256_},
-                    {"status", "running"},          {"wave_steps", Json::array()},
-                    {"evaluations", 0},             {"stale_evaluations", 0},
-                    {"evaluated_waves", nullptr},   {"best", nullptr}};
+        auto state = Json{{"schema_version", 1},          {"identity_sha256", identity_sha256_},
+                          {"status", "running"},          {"wave_steps", Json::array()},
+                          {"evaluations", 0},             {"stale_evaluations", 0},
+                          {"evaluated_waves", nullptr},   {"best", nullptr}};
+        if (config_.learning.group) {
+            state["group_waves"] = Json::array();
+        }
+        return state;
+    }
+
+    // Grupos de la oleada lista, publicados antes de cualquier pausa o actualización, de modo
+    // que también constan con --stop-after y sin pasos de optimizador. La actualización usa
+    // todos los episodios de la oleada: el DAPO estático no tiene muestreo dinámico y ningún
+    // grupo se descarta por su resultado. El recuento queda publicado para que una variante
+    // con filtrado tuviera que declararlo. Una oleada repetida tras un corte debe formar los
+    // mismos grupos que la primera vez.
+    void record_groups(std::size_t wave) {
+        const auto groups = group_wave(controller_->wave(), *config_.learning.group);
+        const auto trace = group_wave_trace(groups);
+        const Json entry{{"wave", wave},
+                         {"episodes", groups.labels.size()},
+                         {"groups", trace.groups},
+                         {"smallest_group", trace.smallest_group},
+                         {"largest_group", trace.largest_group},
+                         {"flat_groups", trace.flat_groups},
+                         {"discarded_groups", 0},
+                         {"sampled_decisions", groups.sampled_decisions}};
+        const auto& recorded = state_.at("group_waves");
+        if (recorded.size() > wave) {
+            require(recorded.at(wave) == entry, "Una oleada repetida no forma los mismos grupos");
+            return;
+        }
+        auto next = state_;
+        next["group_waves"].push_back(entry);
+        write_state(next);
     }
 
     void write_state(const Json& next) {
@@ -458,6 +489,22 @@ class KlpoRun {
         for (const auto& value : steps) {
             require(count(value) > 0 && count(value) <= wave_transitions_,
                     "Una oleada confirmada declara pasos imposibles");
+        }
+        if (config_.learning.group) {
+            // Cada oleada consumida publicó sus grupos al estar lista, y la oleada en curso
+            // puede haberlos publicado antes de un corte.
+            require(state_.contains("group_waves") && state_.at("group_waves").is_array(),
+                    "La selección de un objetivo de grupo no publica sus grupos");
+            const auto& groups = state_.at("group_waves");
+            require(groups.size() >= consumed && groups.size() <= consumed + 1,
+                    "Los grupos publicados no corresponden a las oleadas confirmadas");
+            for (std::size_t index = 0; index < groups.size(); ++index) {
+                require(count(groups.at(index).at("wave")) == index &&
+                            count(groups.at(index).at("discarded_groups")) == 0,
+                        "Los grupos publicados de una oleada son incoherentes");
+            }
+        } else {
+            require(!state_.contains("group_waves"), "KLPO no publica grupos de oleada");
         }
         const auto evaluations = count(state_.at("evaluations"));
         const auto& evaluated = state_.at("evaluated_waves");
@@ -618,6 +665,9 @@ class KlpoRun {
                 static_cast<void>(controller_->collect_tick());
                 break;
             case KlpoLearningPhase::ready:
+                if (config_.learning.group) {
+                    record_groups(consumed);
+                }
                 // La pausa se confirma antes de la actualización, nunca dentro de ella.
                 if (stop_requested()) {
                     static_cast<void>(controller_->save(*store_));
@@ -671,6 +721,9 @@ class KlpoRun {
                     {"parent_frozen", true},
                     {"final_test_opened", false},
                     {"invocation_seconds", elapsed_seconds(started_)}};
+        if (config_.learning.group) {
+            report["group_waves"] = state_.at("group_waves");
+        }
         atomic_json_file(options_.output / "run.json", report);
         return report;
     }

@@ -1,0 +1,14 @@
+--- a/cost_probe.py
++++ b/cost_probe.py
+@@ -178,9 +178,8 @@
+             seconds_without_imports=time.perf_counter() - started,
+             peak_rss_kib=resource.getrusage(resource.RUSAGE_SELF).ru_maxrss,
+             timing_scope=(
+-                "Lectura, ordenación y puntuación B4. Excluye crear fixtures, "
+-                "comparación posterior, importaciones y carga de la referencia. "
+-                "El tiempo total incluye fixtures y comparación."
++                "Lectura, ordenación y puntuación B4. Excluye crear fixtures, comparación posterior, "
++                "importaciones y carga de la referencia. El tiempo total incluye fixtures y comparación."
+             ),
+             limits=[
+                 "Fixtures de 32 sesiones con 64/256/1024 activos, cinco condiciones "

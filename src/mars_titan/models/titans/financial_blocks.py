@@ -6,6 +6,12 @@ from dataclasses import replace
 
 import torch
 
+from .axial_time_region import (
+    RegionHistory,
+    history_tensors,
+    join_history_rows,
+    map_history_rows,
+)
 from .config import bounded_integer, canonical, require_identity
 from .financial import FinancialState
 from .state import (
@@ -31,24 +37,31 @@ REFERENCE_FIELDS = {
 
 
 def _tensors(state):
-    return (state.observed_steps,) + (mac_tensors(state.mac) if state.mac else ())
+    return (
+        (state.observed_steps,)
+        + (mac_tensors(state.mac) if state.mac else ())
+        + (history_tensors(state.regions) if state.regions is not None else ())
+    )
+
+
+def _payload_fields(predictor):
+    """Campos del payload. El historial de C2 solo aparece cuando el predictor lo declara."""
+    fields = {
+        "schema_version",
+        "configuration",
+        "parameter_id",
+        "flow_ids",
+        "last_sample_ids",
+        "last_prediction_at",
+        "observed_steps",
+        "mac",
+    }
+    return fields | {"regions"} if predictor.axial_time_region is not None else fields
 
 
 def _decode(predictor, payload, *, device):
     """Validar las fuentes sin copiar sus tensores ni transferirlos de dispositivo."""
-    value = require_payload(
-        payload,
-        {
-            "schema_version",
-            "configuration",
-            "parameter_id",
-            "flow_ids",
-            "last_sample_ids",
-            "last_prediction_at",
-            "observed_steps",
-            "mac",
-        },
-    )
+    value = require_payload(payload, _payload_fields(predictor))
     require_identity(value["configuration"], predictor.get_extra_state())
     state = FinancialState(
         predictor._config_id(),
@@ -90,6 +103,13 @@ def _decode(predictor, payload, *, device):
         )
     elif value["mac"] is not None:
         raise ValueError("El control directo no admite estado MAC")
+    if predictor.axial_time_region is not None:
+        regions = require_payload(value["regions"], {"schema_version", "blocks", "present"})
+        state = replace(state, regions=RegionHistory(regions["blocks"], regions["present"]))
+        predictor.axial_time_region.validate_history(
+            state.regions, len(state.flow_ids), device=device
+        )
+        predictor.axial_time_region.validate_counts(state.regions, state.observed_steps)
     predictor._check_bytes(predictor._usage(state)["total_bytes"])
     predictor._validate_state(state, device=device)
     return state
@@ -102,6 +122,9 @@ def _copy_to(state, device):
     mac = state.mac
     if mac:
         mac = map_mac_rows(mac, lambda value: copy(value, device))
+    regions = state.regions
+    if regions is not None:
+        regions = map_history_rows(regions, lambda value: copy(value, device))
     return replace(
         state,
         flow_ids=tuple(state.flow_ids),
@@ -109,6 +132,7 @@ def _copy_to(state, device):
         last_prediction_at=tuple(state.last_prediction_at),
         observed_steps=copy(state.observed_steps, "cpu"),
         mac=mac,
+        regions=regions,
     )
 
 
@@ -145,6 +169,10 @@ def _cpu_payload(predictor, copied):
             payload["mac"]["memory"]["levels"] = copied.mac.memory.levels
         if predictor.mac.config.memory.plasticity is not None:
             payload["mac"]["memory"]["modulation"] = copied.mac.memory.modulation
+    if copied.regions is not None:
+        payload["regions"] = dict(
+            schema_version=1, blocks=copied.regions.blocks, present=copied.regions.present
+        )
     return payload
 
 
@@ -213,6 +241,14 @@ def _gather_cpu(predictor, blocks, flow_ids, *, max_source_bytes=512 * 1024**2):
                 for state, row in selected
             ]
         )
+    regions = selected[0][0].regions
+    if regions is not None:
+        regions = join_history_rows(
+            [
+                map_history_rows(state.regions, lambda value, row=row: value[row : row + 1])
+                for state, row in selected
+            ]
+        )
     result = FinancialState(
         predictor._config_id(),
         predictor._parameter_id,
@@ -221,6 +257,7 @@ def _gather_cpu(predictor, blocks, flow_ids, *, max_source_bytes=512 * 1024**2):
         moments,
         collect(lambda state: state.observed_steps),
         mac,
+        regions,
     )
     predictor._validate_state(result, device=torch.device("cpu"))
     return result

@@ -88,6 +88,21 @@ class FinancialDustAdapter:
             "regional_fusion",
             "regional_execution",
             "memory_bank_readout",
+            "regional_variant",
+            "holographic_network",
+            "axial_time_region",
+            "fractal_shared_operator",
+            "cross_asset_attention",
+            "asset_groups",
+            "laplace_scale_head",
+            "auxiliary_horizons",
+            "session_rank_inputs",
+            "session_ic_objective",
+            "opponent_heads",
+            "mature_reliability",
+            "memory_huber",
+            "memory_time_scales",
+            "differential_attention",
         )
         if (
             config.variant != "transformer_direct"
@@ -105,8 +120,16 @@ class FinancialDustAdapter:
                     "session_context",
                     "regional_fusion",
                     "regional_execution",
+                    "regional_variant",
+                    "holographic_network",
+                    "axial_time_region",
+                    "fractal_shared_operator",
                     "presence_modulation",
                     "fusion_branch",
+                    "cross_asset_attention",
+                    "asset_groups",
+                    "output_objective",
+                    "auxiliary_heads",
                 )
             )
             or type(predictor.price_encoder) is not CompactPriceTransformer

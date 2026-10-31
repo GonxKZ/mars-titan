@@ -1,0 +1,65 @@
+{
+ "schema_version": 1,
+ "kind": "calibrated_quantile_rule_cost",
+ "issue": 748,
+ "measured_at": "2026-10-27T22:54:45+00:00",
+ "commit": "6c7b8eabb32938939e18f4d726372ed834a55c4e",
+ "sources_sha256": {
+  "src/mars_titan/simulation/calibrated_quantile_rule.py": "ef3d5d157093d795bc0a84830003797e26235b6975602caa732b3d6f98e67b0b",
+  "benchmarks/calibrated_quantile_rule_cost.py": "e6e85c8567635df7d78531c1a6c05353ac6db980b806918254885b3763f322b9"
+ },
+ "data": "cintas sintéticas con semilla fija, solo para fijar formas. Nada se ajusta",
+ "environment": {
+  "cpu": "AMD Ryzen 9 8945HS w/ Radeon 780M Graphics",
+  "cpu_count": 16,
+  "python": "3.12.14",
+  "numpy": "2.5.3",
+  "load_average_at_start": [
+   49.82421875,
+   44.0859375,
+   36.693359375
+  ],
+  "load_average_at_end": [
+   46.5595703125,
+   43.927734375,
+   36.91748046875
+  ],
+  "concurrent_load": "otras sesiones comparten la máquina, ver las cargas medias"
+ },
+ "not_measured": [
+  "motor contable nativo, sin binarios compilados vigentes",
+  "GPU, porque la regla no tiene tensores",
+  "cintas reconstruidas con datos reales, bloqueadas con la evaluación científica",
+  "energía, sin instrumento adecuado"
+ ],
+ "cases": {
+  "assets_64": {
+   "assets": 64,
+   "sessions": 252,
+   "compare": {
+    "median_s": 2.2419254519045353,
+    "min_s": 2.06381743401289,
+    "repeats": 3
+   },
+   "rule_decision_s": 1.7477603163570165e-05,
+   "steps": {
+    "calibrated_quantile_rule_v1": 251,
+    "no_trade": 251
+   }
+  },
+  "assets_256": {
+   "assets": 256,
+   "sessions": 252,
+   "compare": {
+    "median_s": 8.529670638032258,
+    "min_s": 8.355198247823864,
+    "repeats": 3
+   },
+   "rule_decision_s": 1.2581927003338932e-05,
+   "steps": {
+    "calibrated_quantile_rule_v1": 251,
+    "no_trade": 251
+   }
+  }
+ }
+}

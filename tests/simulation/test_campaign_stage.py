@@ -545,6 +545,30 @@ def _reverse(job, report):
     return report
 
 
+def _finished(change):
+    """Alterar el primer episodio terminado de cada informe, si lo tiene."""
+
+    def mutate(job, report):
+        for index, record in enumerate(report["evaluation"]):
+            if record["status"] != "failed":
+                report["evaluation"][index] = change(dict(record))
+                break
+        return report
+
+    return mutate
+
+
+def _multiplied(record):
+    # El patrimonio se multiplica por mil en la primera sesión y el retorno lo acompaña, así
+    # que el contrato del episodio se cumple y solo la cota del entorno puede detectarlo.
+    nav = [record["equity"]["nav"][0]] + [value * 1000 for value in record["equity"]["nav"][1:]]
+    return dict(record, equity=dict(record["equity"], nav=nav), net_return=nav[-1] / nav[0] - 1)
+
+
+def _rotation(record):
+    return dict(record, turnover=record["turnover"] + 10**6)
+
+
 INVALID = {
     "drops_an_episode": (_pop, "cada coste"),
     "predictor_mae": (_selection(metric="session_mae"), "criterio de cartera"),
@@ -561,6 +585,8 @@ INVALID = {
     "failed_without_reason": (_episode(status="failed", reason=None), "motivo"),
     "costs_reordered": (_reverse, "coste 0"),
     "unknown_status": (_episode(status="skipped"), "coste 0"),
+    "growth_beyond_future_information": (_finished(_multiplied), "cota con información futura"),
+    "rotation_beyond_participation": (_finished(_rotation), "capacidad de la participación"),
 }
 
 
@@ -1165,3 +1191,49 @@ def test_the_stage_runs_on_the_platform_of_the_base_receipts_it_reads():
     assert campaign_stage.base_platform(legacy, laptop(), "rtx4070-laptop")["unrecorded"] == 1
     with pytest.raises(ValueError, match="no corresponde al perfil"):
         campaign_stage.base_platform(legacy, desktop(), "rtx4070-laptop")
+
+
+def test_group_objectives_publish_complete_groups_for_every_wave():
+    """Un objetivo de grupo publica, por oleada, grupos de dos o más episodios sin descartes."""
+    job = dict(id="US/US/fold-012/gru/grpo_outcome/fit-s42")
+    entry = dict(
+        wave=0,
+        episodes=16,
+        groups=2,
+        smallest_group=8,
+        largest_group=8,
+        flat_groups=1,
+        discarded_groups=0,
+        sampled_decisions=120,
+    )
+    waves = [entry, dict(entry, wave=1)]
+    campaign_stage._groups(job, waves, 2, 16)
+    broken = [
+        None,
+        [entry],
+        [entry, entry],
+        [entry, dict(entry, wave=1, discarded_groups=1)],
+        [entry, dict(entry, wave=1, episodes=15)],
+        [entry, dict(entry, wave=1, groups=9)],
+        [entry, dict(entry, wave=1, groups=0)],
+        [entry, dict(entry, wave=1, smallest_group=1)],
+        [entry, dict(entry, wave=1, flat_groups=3)],
+        [entry, dict(entry, wave=1, flat_groups=-1)],
+    ]
+    for groups in broken:
+        with pytest.raises(ValueError, match="grupos completos de cada oleada"):
+            campaign_stage._groups(job, groups, 2, 16)
+    # El ejecutor nativo lleva los grupos del binario al informe del ajuste.
+    run = dict(
+        best=dict(actor_sha256="a" * 64),
+        consumed_waves=2,
+        group_waves=waves,
+        evaluations=3,
+        transitions=10,
+        optimizer_steps=0,
+    )
+    policies = dict(selection=dict(metric="mean_log_growth"))
+    executor = native_policy_runs.NativePolicyExecutor("native_group_relative")
+    assert executor.fit_report(job, run, policies)["groups"] == waves
+    klpo = native_policy_runs.NativePolicyExecutor("native_klpo")
+    assert "groups" not in klpo.fit_report(job, dict(run, group_waves=None), policies)

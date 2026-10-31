@@ -1,0 +1,88 @@
+{
+  "schema_version": 1,
+  "verified_at": "2026-10-26T23:19:37.095593+00:00",
+  "source_base_commit": "eeef5ba6cc08b89a49210c0b7d00849a7200b363",
+  "kind": "lesion_protocol_technical_core",
+  "implementation_status": "core_only_session_window_integration_pending",
+  "sources_sha256": {
+    "src/mars_titan/memory/area_memory.py": "4a2013705a289a32d4c290b48897cca67af3e04c0c8a12b7e56a155444ee19d5",
+    "src/mars_titan/memory/area_query_bridge.py": "d29e43eb6aec0f067a3560893cb16ba1447b87a4dc35bf922b3a5e741bc6fb2a",
+    "src/mars_titan/memory/associative_memory.py": "100f880063579e3f72b483bce159b53a856968a46274a3a48994c598625dce91",
+    "src/mars_titan/memory/role_binding.py": "fe949e4b0ad499da9d1e011cd82f8343d43317486348bf491967ee92454851fe",
+    "src/mars_titan/memory/multiscale_mixture.py": "fb06a9607f44513c5c2961cffd9d9af0f6d12df1d58ad9e7fb258503389a3df2",
+    "src/mars_titan/memory/lesion_protocol.py": "4fe7f3a82db4c41b8f108a16e2fec6e2f1f759c990e75d156e21e00a74ebdc3d",
+    "src/mars_titan/memory/lesion_ledger.py": "a71d726af049dec81fee3def79a60be0ba9ebd3ce45aa05733852b4d6a9b5578",
+    "src/mars_titan/evaluation/session_metrics.py": "6fab04d73ff8d43a2d7029f95e667faa4a0f4d3fc541ce8c48d32b8f3d435115",
+    "tests/memory/test_lesion_reads.py": "bd5802bc60db9d7eb7a7d5c7ea730f9edff523d7a82b0457231a425f59f8bc6e",
+    "tests/memory/test_lesion_protocol.py": "73485aeff86132380013b832bbe571c1ae0887091adc68a11bef737edb73bdb6",
+    "tests/memory/test_lesion_ledger.py": "d8a1dd303315c34eed8aa1c3c0bbfc086f40b6f48c9312c01c0d223021f6d73c",
+    "benchmarks/lesion_read_cost.py": "b39813ae01e30755a23934b075d7b457d5cdc585cae5f51c8c668a2b8c303011",
+    "benchmarks/area_memory_cost.py": "36fbd8314e25175ba79a2a0539c612d69498e26a7e8afa081bed5889c97ea905"
+  },
+  "tests": {
+    "prior_regressions_and_first_core": {
+      "total": 318,
+      "passed": 318,
+      "failure": 0,
+      "error": 0,
+      "skipped": 0,
+      "xml_sha256": "8f0e3716b7b048251d9aed3e3abe429e12e761ed8cc9779e54460ee3c116562f"
+    },
+    "refactored_core": {
+      "total": 57,
+      "passed": 57,
+      "failure": 0,
+      "error": 0,
+      "skipped": 0,
+      "xml_sha256": "dc003bbea64f2d0f511e60c241a78899900474b9ce4dca9eca798004a065412c"
+    },
+    "semantic_restore": {
+      "total": 34,
+      "passed": 34,
+      "failure": 0,
+      "error": 0,
+      "skipped": 0,
+      "xml_sha256": "2203cd98631d7e1b0de8c0622b195a494f853fa52804d5221744814b7530c6b6"
+    },
+    "distinct_prior_regressions": 264,
+    "distinct_current_core": 69,
+    "distinct_total": 333,
+    "existing_cuda_deselected": 5
+  },
+  "quality": {
+    "totals": {
+      "statements": 285,
+      "covered_statements": 272,
+      "branches": 120,
+      "covered_branches": 107
+    },
+    "max_function_crap": 28.114302376439714,
+    "tools": {
+      "coverage": "7.16.1",
+      "radon": "6.0.1",
+      "branch_coverage": true,
+      "python": "3.12.14",
+      "summarizer_sha256": "75cc60c88037e0bb17aff6e8ab666ce78b35d600d6c7ad217bf68b1afb4c4ec6"
+    }
+  },
+  "disabled_bitwise_regressions": 15,
+  "mutations": {
+    "planned": 9,
+    "killed": 9,
+    "optimizer_attempts": 0,
+    "initial_survivor_recorded": true
+  },
+  "scientific_training_executed": false,
+  "scientific_results": null,
+  "final_test_access": false,
+  "hold_unchanged": true,
+  "hold_sha256": "8a658080c1ac4e63847eba58b177020339da6ec47021cf26d2701830073c87fd",
+  "regression_native_sha256": "22fdb1fdbaa7faee9f2c3de7240608ea60bfa271151430771591906f90d709d1",
+  "limits": [
+    "Los helpers y el registro están probados por separado. No se ha integrado B4 en sesión o ventana.",
+    "No se han ejecutado curvas predictivas ni el análisis de incertidumbre de B4.",
+    "Se conservan cinco comprobaciones CUDA previas sin ejecutar. El contrato de los helpers es CPU FP64.",
+    "Los costes excluyen predictor, régimen, registro durable, colas y transferencias GPU.",
+    "No hay mejora medida de generalización ni evidencia de reproducir memoria biológica."
+  ]
+}

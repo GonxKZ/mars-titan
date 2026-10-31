@@ -1,0 +1,70 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "G2 · Políticas financieras sobre cuantiles calibrados",
+    "quality_profile": "showcase",
+    "viewBox": [1240, 592],
+    "legend": {
+      "entries": {
+        "backend": {"label": "Cálculo"},
+        "database": {"label": "Memoria y estado"},
+        "security": {"label": "Control o protección"},
+        "cloud": {"label": "Evaluación"}
+      }
+    }
+  },
+  "components": [
+    {"id": "quantiles", "type": "database", "label": "Cuantiles calibrados", "sublabel": "fuera de muestra", "pos": [40, 230], "size": [180, 72]},
+    {
+      "id": "environment",
+      "type": "security",
+      "label": "Entornos auditados",
+      "sublabel": "costes y máscaras (#365)",
+      "pos": [300, 230],
+      "size": [180, 72]
+    },
+    {"id": "rule", "type": "backend", "label": "Regla no aprendida", "sublabel": "intervalo sin el cero", "pos": [560, 40], "size": [180, 72]},
+    {"id": "noop", "type": "backend", "label": "No operar", "sublabel": "control", "pos": [560, 420], "size": [180, 72]},
+    {
+      "id": "later",
+      "type": "backend",
+      "label": "PPO y KLPO",
+      "sublabel": "tras la fase 2",
+      "tag": "con aprobación",
+      "pos": [560, 230],
+      "size": [180, 72]
+    },
+    {"id": "reward", "type": "cloud", "label": "Recompensa neta", "sublabel": "PBO y Sharpe deflactado", "pos": [820, 230], "size": [180, 72]}
+  ],
+  "connections": [
+    {"id": "quantiles-environment", "from": "quantiles", "to": "environment"},
+    {"id": "environment-rule", "from": "environment", "to": "rule", "variant": "emphasis"},
+    {"id": "environment-noop", "from": "environment", "to": "noop", "variant": "dashed"},
+    {"id": "environment-later", "from": "environment", "to": "later", "variant": "dashed"},
+    {"id": "rule-reward", "from": "rule", "to": "reward", "variant": "emphasis"},
+    {"id": "noop-reward", "from": "noop", "to": "reward", "label": "control", "variant": "dashed"},
+    {"id": "later-reward", "from": "later", "to": "reward", "variant": "dashed"}
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "Mecanismo",
+      "items": [
+        "Las políticas parten de cuantiles calibrados y separados del predictor",
+        "La recompensa descuenta costes de transacción",
+        "Fuente: PPO (2017), KLPO (2026), QR-DQN (2018)"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "Control que la descarta",
+      "items": ["Regla no aprendida y no operar", "Probabilidad de sobreajuste del backtest y Sharpe deflactado"]
+    },
+    {
+      "dot": "amber",
+      "title": "Estado",
+      "items": ["Regla y control en #748, conectados a los entornos de #365", "PPO y KLPO solo tras la fase 2 y con nueva aprobación"]
+    }
+  ]
+}

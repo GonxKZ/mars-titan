@@ -1,0 +1,240 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "B2 · Puente de consulta entre áreas (area_query_bridge_v1)",
+    "quality_profile": "showcase",
+    "viewBox": [
+      1300,
+      592
+    ],
+    "legend": {
+      "entries": {
+        "external": {
+          "label": "Entradas"
+        },
+        "backend": {
+          "label": "Cálculo"
+        },
+        "database": {
+          "label": "Memoria y estado"
+        },
+        "security": {
+          "label": "Control o protección"
+        },
+        "cloud": {
+          "label": "Evaluación"
+        }
+      }
+    },
+    "repository": {
+      "url": "https://github.com/GonxKZ/mars-titan",
+      "revision": "4d4dd7b116bc8246c761d4512136a0986cc86a42"
+    }
+  },
+  "components": [
+    {
+      "id": "observation",
+      "type": "external",
+      "label": "Una observación k",
+      "sublabel": "Identidad compartida",
+      "pos": [
+        40,
+        230
+      ],
+      "size": [
+        180,
+        72
+      ]
+    },
+    {
+      "id": "query_a",
+      "type": "backend",
+      "label": "Consulta del área a",
+      "sublabel": "q_a = φ_a(k)",
+      "pos": [
+        300,
+        40
+      ],
+      "size": [
+        180,
+        72
+      ],
+      "sources": [
+        {
+          "path": "src/mars_titan/memory/area_memory.py"
+        }
+      ]
+    },
+    {
+      "id": "query_b",
+      "type": "backend",
+      "label": "Consulta del área b",
+      "sublabel": "q_b = φ_b(k)",
+      "pos": [
+        300,
+        230
+      ],
+      "size": [
+        180,
+        72
+      ]
+    },
+    {
+      "id": "map_ab",
+      "type": "database",
+      "label": "Mapa T_ab",
+      "sublabel": "Rasgos maduros, sin etiquetas",
+      "pos": [
+        560,
+        40
+      ],
+      "size": [
+        180,
+        72
+      ],
+      "sources": [
+        {
+          "path": "src/mars_titan/memory/area_query_bridge.py"
+        }
+      ]
+    },
+    {
+      "id": "mix_b",
+      "type": "backend",
+      "label": "Consulta combinada",
+      "sublabel": "unit((1−γ)q_b + γm_b)",
+      "pos": [
+        560,
+        230
+      ],
+      "size": [
+        180,
+        72
+      ]
+    },
+    {
+      "id": "area_b",
+      "type": "database",
+      "label": "Memoria W_b",
+      "sublabel": "Corrección financiera madura",
+      "pos": [
+        820,
+        230
+      ],
+      "size": [
+        180,
+        72
+      ]
+    },
+    {
+      "id": "screen",
+      "type": "cloud",
+      "label": "Media de áreas y criba",
+      "sublabel": "IC por sesión frente al control",
+      "pos": [
+        1080,
+        230
+      ],
+      "size": [
+        180,
+        72
+      ]
+    },
+    {
+      "id": "controls",
+      "type": "security",
+      "label": "Controles",
+      "sublabel": "Mismas filas y receta",
+      "pos": [
+        820,
+        420
+      ],
+      "size": [
+        180,
+        72
+      ]
+    }
+  ],
+  "connections": [
+    {
+      "id": "observation-query-a",
+      "from": "observation",
+      "to": "query_a"
+    },
+    {
+      "id": "observation-query-b",
+      "from": "observation",
+      "to": "query_b"
+    },
+    {
+      "id": "query-a-map",
+      "from": "query_a",
+      "to": "map_ab",
+      "label": "q_a"
+    },
+    {
+      "id": "map-mix",
+      "from": "map_ab",
+      "to": "mix_b",
+      "label": "m_b",
+      "labelDy": 24
+    },
+    {
+      "id": "query-b-mix",
+      "from": "query_b",
+      "to": "mix_b",
+      "label": "q_b"
+    },
+    {
+      "id": "mix-area-b",
+      "from": "mix_b",
+      "to": "area_b",
+      "label": "q_b⁺",
+      "variant": "emphasis"
+    },
+    {
+      "id": "area-b-screen",
+      "from": "area_b",
+      "to": "screen",
+      "label": "Lectura",
+      "variant": "emphasis"
+    },
+    {
+      "id": "controls-screen",
+      "from": "controls",
+      "to": "screen",
+      "label": "Control",
+      "variant": "dashed"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "Una arista del anillo",
+      "items": [
+        "Se muestra a→b con un paso síncrono",
+        "T_ab asocia rasgos del mismo dato, sin copiar episodios",
+        "La consulta se mezcla antes de leer W_b"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "Controles",
+      "items": [
+        "B1 sin puente",
+        "Mismos mapas con γ = 0",
+        "Correspondencias barajadas con RNG propio"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "Estado",
+      "items": [
+        "Implementado y comprobado en CPU",
+        "CUDA y comparación predictiva pendientes",
+        "Sin mejora predictiva medida"
+      ]
+    }
+  ]
+}

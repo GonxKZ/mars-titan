@@ -1,0 +1,420 @@
+{
+ "schema_version": 1,
+ "planned": 8,
+ "killed": 8,
+ "optimizer_attempts": 0,
+ "runs": [
+  {
+   "recipes_sha256": "d74b20c4c8f5060640aae81b47c56bde020f3cf25ff60716384631e6f5c6986e",
+   "executor_sha256": "1afc32561b3a137b97afbe29c0b57601223e7a9d1ddef2d936828f1a58d1417e",
+   "cases": 7
+  },
+  {
+   "recipes_sha256": "bc25126d044a4b597c1fea06b76c5113b94067a9492669bdb7d5bd7e2d96f0d7",
+   "executor_sha256": "0ab5b01ed7bd3286f391edcdece6e3c4ca7959499422be63f77b614992195e49",
+   "cases": 1
+  }
+ ],
+ "source_sha256": {
+  "src/mars_titan/memory/salience_budget.py": "e189da10cd37e439d9e7229c2a2bbfe64a12e389b0d2bbbb29db680f16014957",
+  "src/mars_titan/memory/salience_session.py": "c47dc1d212a17c3e1131e94cf04f57cdbd5ba4b23ea03e774741e1ceda03e182",
+  "src/mars_titan/memory/financial_session.py": "d902916dea707526041ec3ced5dab6b6e3020840c1eb8f899c7cda3ce4d45f85"
+ },
+ "convention": "G1 y G2 ejecutan la prueba sobre la copia intacta antes y después. M1 sobre la copia con un único fragmento cambiado. Las fases usan el enlace nativo compilado existente y CPU.",
+ "cases": [
+  {
+   "id": "write_every_outcome_despite_the_quota",
+   "path": "src/mars_titan/memory/financial_session.py",
+   "status": "killed_with_green_controls",
+   "phases": [
+    {
+     "phase": "G1",
+     "nodeid": "tests/memory/test_salience_session.py::test_zero_quota_keeps_all_mature_errors_without_writing_the_memory",
+     "exit_code": 0,
+     "elapsed_s": 11.91,
+     "xml_counts": {
+      "total": 1,
+      "failure": 0,
+      "error": 0,
+      "skipped": 0
+     },
+     "optimizer_attempts": 0,
+     "expected_text_found": false
+    },
+    {
+     "phase": "M1",
+     "nodeid": "tests/memory/test_salience_session.py::test_zero_quota_keeps_all_mature_errors_without_writing_the_memory",
+     "exit_code": 1,
+     "elapsed_s": 8.07,
+     "xml_counts": {
+      "total": 1,
+      "failure": 1,
+      "error": 0,
+      "skipped": 0
+     },
+     "optimizer_attempts": 0,
+     "expected_text_found": true
+    },
+    {
+     "phase": "G2",
+     "nodeid": "tests/memory/test_salience_session.py::test_zero_quota_keeps_all_mature_errors_without_writing_the_memory",
+     "exit_code": 0,
+     "elapsed_s": 8.5,
+     "xml_counts": {
+      "total": 1,
+      "failure": 0,
+      "error": 0,
+      "skipped": 0
+     },
+     "optimizer_attempts": 0,
+     "expected_text_found": false
+    }
+   ]
+  },
+  {
+   "id": "score_with_the_label_instead_of_the_issued_point",
+   "path": "src/mars_titan/memory/salience_session.py",
+   "status": "killed_with_green_controls",
+   "phases": [
+    {
+     "phase": "G1",
+     "nodeid": "tests/memory/test_salience_session.py::test_priority_uses_the_final_emission_and_the_write_value_still_uses_the_core",
+     "exit_code": 0,
+     "elapsed_s": 9.08,
+     "xml_counts": {
+      "total": 1,
+      "failure": 0,
+      "error": 0,
+      "skipped": 0
+     },
+     "optimizer_attempts": 0,
+     "expected_text_found": false
+    },
+    {
+     "phase": "M1",
+     "nodeid": "tests/memory/test_salience_session.py::test_priority_uses_the_final_emission_and_the_write_value_still_uses_the_core",
+     "exit_code": 1,
+     "elapsed_s": 8.99,
+     "xml_counts": {
+      "total": 1,
+      "failure": 1,
+      "error": 0,
+      "skipped": 0
+     },
+     "optimizer_attempts": 0,
+     "expected_text_found": true
+    },
+    {
+     "phase": "G2",
+     "nodeid": "tests/memory/test_salience_session.py::test_priority_uses_the_final_emission_and_the_write_value_still_uses_the_core",
+     "exit_code": 0,
+     "elapsed_s": 8.99,
+     "xml_counts": {
+      "total": 1,
+      "failure": 0,
+      "error": 0,
+      "skipped": 0
+     },
+     "optimizer_attempts": 0,
+     "expected_text_found": false
+    }
+   ]
+  },
+  {
+   "id": "require_decision_order_across_publications",
+   "path": "src/mars_titan/memory/salience_budget.py",
+   "status": "killed_with_green_controls",
+   "phases": [
+    {
+     "phase": "G1",
+     "nodeid": "tests/memory/test_salience_session.py::test_late_earlier_decisions_are_observed_and_missing_labels_are_finalized_without_errors",
+     "exit_code": 0,
+     "elapsed_s": 8.71,
+     "xml_counts": {
+      "total": 1,
+      "failure": 0,
+      "error": 0,
+      "skipped": 0
+     },
+     "optimizer_attempts": 0,
+     "expected_text_found": false
+    },
+    {
+     "phase": "M1",
+     "nodeid": "tests/memory/test_salience_session.py::test_late_earlier_decisions_are_observed_and_missing_labels_are_finalized_without_errors",
+     "exit_code": 1,
+     "elapsed_s": 10.19,
+     "xml_counts": {
+      "total": 1,
+      "failure": 1,
+      "error": 0,
+      "skipped": 0
+     },
+     "optimizer_attempts": 0,
+     "expected_text_found": true
+    },
+    {
+     "phase": "G2",
+     "nodeid": "tests/memory/test_salience_session.py::test_late_earlier_decisions_are_observed_and_missing_labels_are_finalized_without_errors",
+     "exit_code": 0,
+     "elapsed_s": 10.86,
+     "xml_counts": {
+      "total": 1,
+      "failure": 0,
+      "error": 0,
+      "skipped": 0
+     },
+     "optimizer_attempts": 0,
+     "expected_text_found": false
+    }
+   ]
+  },
+  {
+   "id": "allow_skipped_generations",
+   "path": "src/mars_titan/memory/salience_budget.py",
+   "status": "killed_with_green_controls",
+   "phases": [
+    {
+     "phase": "G1",
+     "nodeid": "tests/memory/test_committed_salience_budget.py::test_repeated_skipped_or_backward_generations_do_not_publish[3-3]",
+     "exit_code": 0,
+     "elapsed_s": 3.02,
+     "xml_counts": {
+      "total": 1,
+      "failure": 0,
+      "error": 0,
+      "skipped": 0
+     },
+     "optimizer_attempts": 0,
+     "expected_text_found": false
+    },
+    {
+     "phase": "M1",
+     "nodeid": "tests/memory/test_committed_salience_budget.py::test_repeated_skipped_or_backward_generations_do_not_publish[3-3]",
+     "exit_code": 1,
+     "elapsed_s": 2.51,
+     "xml_counts": {
+      "total": 1,
+      "failure": 1,
+      "error": 0,
+      "skipped": 0
+     },
+     "optimizer_attempts": 0,
+     "expected_text_found": true
+    },
+    {
+     "phase": "G2",
+     "nodeid": "tests/memory/test_committed_salience_budget.py::test_repeated_skipped_or_backward_generations_do_not_publish[3-3]",
+     "exit_code": 0,
+     "elapsed_s": 3.2,
+     "xml_counts": {
+      "total": 1,
+      "failure": 0,
+      "error": 0,
+      "skipped": 0
+     },
+     "optimizer_attempts": 0,
+     "expected_text_found": false
+    }
+   ]
+  },
+  {
+   "id": "reconcile_memory_writes_with_applied_labels",
+   "path": "src/mars_titan/memory/financial_session.py",
+   "status": "killed_with_green_controls",
+   "phases": [
+    {
+     "phase": "G1",
+     "nodeid": "tests/memory/test_salience_session.py::test_recovery_preserves_the_budget_and_next_prediction[committed]",
+     "exit_code": 0,
+     "elapsed_s": 9.92,
+     "xml_counts": {
+      "total": 1,
+      "failure": 0,
+      "error": 0,
+      "skipped": 0
+     },
+     "optimizer_attempts": 0,
+     "expected_text_found": false
+    },
+    {
+     "phase": "M1",
+     "nodeid": "tests/memory/test_salience_session.py::test_recovery_preserves_the_budget_and_next_prediction[committed]",
+     "exit_code": 1,
+     "elapsed_s": 8.87,
+     "xml_counts": {
+      "total": 1,
+      "failure": 1,
+      "error": 0,
+      "skipped": 0
+     },
+     "optimizer_attempts": 0,
+     "expected_text_found": true
+    },
+    {
+     "phase": "G2",
+     "nodeid": "tests/memory/test_salience_session.py::test_recovery_preserves_the_budget_and_next_prediction[committed]",
+     "exit_code": 0,
+     "elapsed_s": 10.27,
+     "xml_counts": {
+      "total": 1,
+      "failure": 0,
+      "error": 0,
+      "skipped": 0
+     },
+     "optimizer_attempts": 0,
+     "expected_text_found": false
+    }
+   ]
+  },
+  {
+   "id": "drop_the_salience_runtime_contract",
+   "path": "src/mars_titan/memory/financial_session.py",
+   "status": "killed_with_green_controls",
+   "phases": [
+    {
+     "phase": "G1",
+     "nodeid": "tests/memory/test_salience_session.py::test_changed_runtime_or_resume_policy_is_rejected",
+     "exit_code": 0,
+     "elapsed_s": 8.09,
+     "xml_counts": {
+      "total": 1,
+      "failure": 0,
+      "error": 0,
+      "skipped": 0
+     },
+     "optimizer_attempts": 0,
+     "expected_text_found": false
+    },
+    {
+     "phase": "M1",
+     "nodeid": "tests/memory/test_salience_session.py::test_changed_runtime_or_resume_policy_is_rejected",
+     "exit_code": 1,
+     "elapsed_s": 8.72,
+     "xml_counts": {
+      "total": 1,
+      "failure": 1,
+      "error": 0,
+      "skipped": 0
+     },
+     "optimizer_attempts": 0,
+     "expected_text_found": true
+    },
+    {
+     "phase": "G2",
+     "nodeid": "tests/memory/test_salience_session.py::test_changed_runtime_or_resume_policy_is_rejected",
+     "exit_code": 0,
+     "elapsed_s": 8.19,
+     "xml_counts": {
+      "total": 1,
+      "failure": 0,
+      "error": 0,
+      "skipped": 0
+     },
+     "optimizer_attempts": 0,
+     "expected_text_found": false
+    }
+   ],
+   "note": "El mutante quita la configuración E3 de la comprobación de cada paso, pero la conserva en el contrato registrado al construir la sesión. Falla ya en el primer paso, así que solo demuestra que ambas partes deben coincidir. Por eso se añadió contract_without_configuration."
+  },
+  {
+   "id": "empty_events_do_not_advance_the_generation",
+   "path": "src/mars_titan/memory/salience_budget.py",
+   "status": "killed_with_green_controls",
+   "phases": [
+    {
+     "phase": "G1",
+     "nodeid": "tests/memory/test_salience_session.py::test_warmup_and_prefix_exclusions_advance_the_clock_without_fabricating_labels",
+     "exit_code": 0,
+     "elapsed_s": 8.04,
+     "xml_counts": {
+      "total": 1,
+      "failure": 0,
+      "error": 0,
+      "skipped": 0
+     },
+     "optimizer_attempts": 0,
+     "expected_text_found": false
+    },
+    {
+     "phase": "M1",
+     "nodeid": "tests/memory/test_salience_session.py::test_warmup_and_prefix_exclusions_advance_the_clock_without_fabricating_labels",
+     "exit_code": 1,
+     "elapsed_s": 10.33,
+     "xml_counts": {
+      "total": 1,
+      "failure": 1,
+      "error": 0,
+      "skipped": 0
+     },
+     "optimizer_attempts": 0,
+     "expected_text_found": true
+    },
+    {
+     "phase": "G2",
+     "nodeid": "tests/memory/test_salience_session.py::test_warmup_and_prefix_exclusions_advance_the_clock_without_fabricating_labels",
+     "exit_code": 0,
+     "elapsed_s": 13.76,
+     "xml_counts": {
+      "total": 1,
+      "failure": 0,
+      "error": 0,
+      "skipped": 0
+     },
+     "optimizer_attempts": 0,
+     "expected_text_found": false
+    }
+   ]
+  },
+  {
+   "id": "contract_without_configuration",
+   "path": "src/mars_titan/memory/salience_session.py",
+   "status": "killed_with_green_controls",
+   "phases": [
+    {
+     "phase": "G1",
+     "nodeid": "tests/memory/test_salience_session.py::test_changed_runtime_or_resume_policy_is_rejected",
+     "exit_code": 0,
+     "elapsed_s": 15.14,
+     "xml_counts": {
+      "total": 1,
+      "failure": 0,
+      "error": 0,
+      "skipped": 0
+     },
+     "optimizer_attempts": 0,
+     "expected_text_found": false
+    },
+    {
+     "phase": "M1",
+     "nodeid": "tests/memory/test_salience_session.py::test_changed_runtime_or_resume_policy_is_rejected",
+     "exit_code": 1,
+     "elapsed_s": 16.26,
+     "xml_counts": {
+      "total": 1,
+      "failure": 1,
+      "error": 0,
+      "skipped": 0
+     },
+     "optimizer_attempts": 0,
+     "expected_text_found": true
+    },
+    {
+     "phase": "G2",
+     "nodeid": "tests/memory/test_salience_session.py::test_changed_runtime_or_resume_policy_is_rejected",
+     "exit_code": 0,
+     "elapsed_s": 14.74,
+     "xml_counts": {
+      "total": 1,
+      "failure": 0,
+      "error": 0,
+      "skipped": 0
+     },
+     "optimizer_attempts": 0,
+     "expected_text_found": false
+    }
+   ],
+   "note": "Sin la configuración en el contrato, la sesión no detecta el cambio de cupo con su mensaje. Lo rechaza después la restauración del estado E3 con otro error y la prueba falla por el mensaje esperado."
+  }
+ ]
+}

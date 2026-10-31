@@ -38,6 +38,14 @@ _ADAPTER = (
     "`recorder` registra los gradientes sin cambiar pesos"
 )
 
+# Pruebas CUDA del ejecutor de ventanas que completan actualizaciones reales sobre la vista
+# corta del fixture con la protección permitida de `allowed_child` (#745).
+_WINDOWS = "tests/training/test_window_variants.py::"
+_WINDOW_UPDATES = (
+    "ejecuta en CUDA el ejecutor de variantes por ventana sobre la vista corta del fixture con "
+    "la protección permitida de `allowed_child` y actualiza pesos de verdad"
+)
+
 INVENTORY = {
     "tests/training/test_campaign_a_joint.py::"
     "test_integrity_recounts_the_rows_the_joint_design_drops": (
@@ -66,6 +74,12 @@ INVENTORY = {
     _POLICY_TAPES + "test_double_dqn_selects_and_evaluates_the_chosen_state_without_updates": (
         "ajusta Double DQN con 32 transiciones, por debajo de su calentamiento, para recorrer "
         "la selección cerrada y su evaluación con --audit-run"
+    ),
+    _POLICY_TAPES + "test_group_objectives_publish_their_groups_before_any_update": (
+        "lanza el ajuste KLPO de cada objetivo de grupo, que crea su Adam, y lo pausa con "
+        "--stop-after al tener lista la primera oleada, para comprobar que publica sus grupos "
+        "sin ningún paso de optimizador y los repite al reanudar. Supera las 32 transiciones "
+        "del diagnóstico en CPU, así que necesita cuda:0"
     ),
     _POLICY_TAPES + "test_klpo_collects_a_full_wave_and_pauses_before_update_ready": (
         "recoge una oleada KLPO con el controlador y su Adam terminal y fabrica una selección "
@@ -145,12 +159,6 @@ INVENTORY = {
         "ejecuta el ajuste y el traslado de la campaña reducida con PT1 sobre la protección "
         "rebajada de su fixture, porque los dos ejecutores se detienen con ella"
     ),
-    "tests/training/test_mars_titan_correction.py::"
-    "test_kalman_window_estimates_its_noise_once_and_its_carry_reuses_it": (
-        "ejecuta la ventana B6 con la regla kalman y su traslado sobre el padre que ajusta la "
-        "fixture del módulo con el optimizador que no modifica pesos, y los dos ejecutores se "
-        "detienen con la protección"
-    ),
     "tests/training/test_mars_titan_campaign.py::"
     "test_correction_frozen_parent_reproduces_the_carry_and_predicts_the_next_validation": (
         "traslada como padre congelado una ventana B6 de la campaña B reducida, que el fixture "
@@ -228,6 +236,22 @@ INVENTORY = {
         "ejecuta cuatro ajustes CUDA de dos épocas sobre dos activos sintéticos, regenera "
         "sus predicciones y comprueba la publicación desde agregados con el historial real "
         "de esos ajustes técnicos"
+    ),
+    _WINDOWS + "test_resume_admission_preserves_confirmed_runtime": _WINDOW_UPDATES,
+    _WINDOWS + "test_full_short_epochs_seal_configuration_before_first_update": _WINDOW_UPDATES,
+    _WINDOWS
+    + "test_six_published_routes_complete_fixture_updates_and_recover_checkpoint": _WINDOW_UPDATES,
+    _WINDOWS + "test_resume_restores_exact_optimizer_rng_cursor_and_weights": _WINDOW_UPDATES,
+    _WINDOWS
+    + "test_selection_can_keep_initial_checkpoint_without_stopping_fixed_updates": _WINDOW_UPDATES,
+    _WINDOWS + "test_timeout_is_partial_and_has_recoverable_confirmed_checkpoint": _WINDOW_UPDATES,
+    _WINDOWS + "test_fp32_strict_is_applied_and_enforced_before_checkpoint": _WINDOW_UPDATES,
+    _WINDOWS
+    + "test_selected_session_artifacts_reuse_predictions_and_completed_resume_verifies_them": (
+        _WINDOW_UPDATES
+    ),
+    _WINDOWS + "test_published_precomputed_recipe_completes_fixture_updates_and_checkpoint": (
+        _WINDOW_UPDATES
     ),
 }
 
@@ -311,6 +335,7 @@ _WARMUP = (
     "el entrenador PPO de Python avanza menos transiciones que el calentamiento y el "
     "recorrido, así que no actualiza, y el gancho de torch.optim sigue activo"
 )
+_REAL_HOLD = "lee la protección real por su ruta y se detiene si no bloquea o cambia su huella"
 _RETIRED = "comprueba que la campaña B retirada se rechaza antes de llegar a ningún ejecutor"
 _COUNTED = "las pasadas de ajuste solo cuentan actualizaciones y la validación es fija"
 _CLOSES = "solo apunta la variable a una protección que bloquea"
@@ -329,7 +354,54 @@ _REUSES = (
 # `learning_doubles_module`, `allowed_hold`) y a la variable o la ruta de la protección. La
 # guarda exige que coincidan, así que un uso nuevo necesita declararse aquí con su motivo.
 DOUBLES = {
+    "tests/tooling/test_variant_screening_study.py": (
+        2,
+        "el motor de la criba llama a ejecutores dobles que solo escriben su run.json, también "
+        "el ajuste que espera la época común, sin construir modelos ni ejecutar pasos de "
+        "optimizador",
+    ),
+    "tests/models/test_qlib_lightgbm.py": (
+        1,
+        "sustituye el módulo lightgbm por un doble que recorre las rondas y devuelve un booster "
+        "de predicción fija, así que no estima ningún parámetro",
+    ),
+    "tests/models/test_session_ridge.py": (
+        1,
+        "sustituye `Ridge` de scikit-learn por un doble que predice una columna fija según su "
+        "alpha, así que no estima ningún coeficiente",
+    ),
+    "tests/training/test_signal_ceiling.py": (
+        1,
+        "Ridge y LightGBM son dobles de predicción fija sobre la vista corta del fixture, así "
+        "que el origen se recorre entero sin ajustar ningún modelo",
+    ),
+    "tests/training/test_signal_ceiling_cli.py": (
+        1,
+        "la verificación de las cohortes y cada origen son dobles que devuelven informes "
+        "sintéticos, así que el script solo une sus series",
+    ),
+    "tests/training/test_common_control_windows.py": (
+        4,
+        "la regla no ajusta nada y el ajuste de LightGBM es un doble de predicción fija sobre la "
+        "vista corta del fixture",
+    ),
+    "tests/training/test_salience_correction_window.py": (
+        1,
+        "recorre la corrección E3 con un padre de pesos literales, sin construir entrenadores "
+        "ni ejecutar pasos de optimizador",
+    ),
+    "tests/training/test_regime_gate_correction_window.py": (
+        1,
+        "recorre la corrección E4 con un padre de pesos literales, sin construir entrenadores "
+        "ni ejecutar pasos de optimizador",
+    ),
+    "tests/training/test_area_correction_bounded.py": (1, _RECORDER),
     "tests/conftest.py": (2, _DEFINES),
+    "tests/training/test_window_variants.py": (
+        1,
+        "el fixture `allowed_child` escribe la protección permitida. Las pruebas que actualizan "
+        "pesos están en el inventario y las demás se rechazan antes del primer forward",
+    ),
     "tests/tooling/test_neural_plasticity_analysis.py": (
         1,
         "analiza predicciones y checkpoints mínimos escritos por el fixture, sin abrir "
@@ -403,9 +475,10 @@ DOUBLES = {
     "tests/training/test_candidate_walk_forward.py": (2, _RECORDER),
     "tests/training/test_cm_v1_factorial.py": (3, _RECORDER),
     "tests/training/test_external_shared_cuda.py": (1, _ESTIMATOR),
-    "tests/training/test_joint_stop_trainers.py": (4, _COUNTED),
+    "tests/training/test_joint_stop_trainers.py": (6, _COUNTED),
     "tests/training/test_mars_titan_correction.py": (4, _RECORDER),
-    "tests/training/test_mars_titan_run.py": (9, _RECORDER),
+    "tests/training/test_mars_titan_run.py": (10, _RECORDER),
+    "tests/training/test_mars_session_inputs.py": (1, _RECORDER),
     "tests/training/test_mars_titan_walk_forward.py": (3, _RECORDER),
     "tests/training/test_masked_campaign.py": (1, _CAMPAIGN),
     "tests/training/test_masked_campaign_joint.py": (1, _CAMPAIGN),
@@ -424,6 +497,7 @@ DOUBLES = {
     "tests/training/test_titans_walk_forward.py": (5, _RECORDER),
 }
 REDIRECTIONS = {
+    "tests/memory/test_lesion_inference.py": (1, _CLOSES),
     "tests/conftest.py": (3, _FIXTURES),
     "tests/tooling/test_cuda_test_runner.py": (
         2,
@@ -469,4 +543,21 @@ REDIRECTIONS = {
     "tests/training/test_rolling_retention.py": (9, _REUSES),
     "tests/training/test_titans_campaign.py": (1, _RECORDER),
     "tests/training/test_titans_walk_forward.py": (1, _RECORDER),
+    "tests/training/test_window_variant_cli.py": (1, _CLOSES),
+    "tests/training/test_window_variants.py": (
+        2,
+        "apunta la variable a la protección permitida de `allowed_child` y, en la prueba del "
+        "orden de comprobaciones, a una que bloquea",
+    ),
+    "benchmarks/hierarchical_bridge_cuda.py": (1, _REAL_HOLD),
+    "benchmarks/nonlinear_bridge_cuda.py": (
+        2,
+        "lee la protección de MARS_TITAN_TRAINING_HOLD o la real, registra su huella antes y"
+        " después y la pasa sin cambios a cada proceso hijo, que no calculan gradientes ni"
+        " usan optimizador",
+    ),
+    "benchmarks/regional_decision_cuda.py": (1, _REAL_HOLD),
+    "benchmarks/regional_program_cuda.py": (1, _REAL_HOLD),
+    "benchmarks/regional_program_session_cuda.py": (1, _REAL_HOLD),
+    "reports/engineering/regional-geometry-20261022/cost.py": (1, _REAL_HOLD),
 }

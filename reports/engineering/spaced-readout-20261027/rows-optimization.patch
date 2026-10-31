@@ -1,0 +1,25 @@
+--- a/src/mars_titan/memory/spaced_utility_readout.py
++++ b/src/mars_titan/memory/spaced_utility_readout.py
+@@ -23 +23 @@
+-from .spaced_utility import _flow, _integer, _require, _rows
++from .spaced_utility import _flow, _integer, _require
+@@ -71 +71,3 @@
+-            type(label_not_before) is dict and set(label_not_before) == set(self.flow_ids),
++            type(label_not_before) is dict
++            and len(label_not_before) == len(self.flow_ids)
++            and set(label_not_before) == set(self.flow_ids),
+@@ -72,0 +75,7 @@
++        )
++        _require(
++            all(
++                at is None or (_integer(at) and at > self.cutoff)
++                for at in label_not_before.values()
++            ),
++            "La maduración prevista E2 debe ser posterior a la decisión",
+@@ -76 +85,2 @@
+-        rows = [
++        _validate_host_rows(points, identifiers)
++        return [
+@@ -85,2 +94,0 @@
+-        _rows(rows, self.cutoff, {episode for ids in identifiers for episode in ids})
+-        return rows

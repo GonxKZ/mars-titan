@@ -1,0 +1,41 @@
+{
+  "repositories": {
+    "Objective": {
+      "root": ".",
+      "test_path": "tests/memory/test_lesion_study.py",
+      "test_sha256": "3d9571651bba247d839fc1a6764dd4a261bef1c14ea844825cf9ea039f3e51f6"
+    }
+  },
+  "sources": {
+    "subject": {
+      "path": "src/mars_titan/memory/lesion_study.py",
+      "sha256": "9ce4efe69d5cb20e9268b5e82cc4cbe83fd24eb3923a25605fb56a53add00b1c"
+    }
+  },
+  "recipes": [
+    {
+      "id": "change_analysis_on_resume",
+      "family": "Objective",
+      "source_key": "subject",
+      "nodeid": "tests/memory/test_lesion_study.py::test_cli_reuses_the_window_and_freezes_analysis_before_execution[cpu-completed-0]",
+      "anchor": "if previous != declaration:",
+      "replacement": "if False:",
+      "expected_failure": {
+        "exception_type": "Failed",
+        "longrepr_contains": "DID NOT RAISE"
+      }
+    },
+    {
+      "id": "hash_different_bytes_after_selection",
+      "family": "Objective",
+      "source_key": "subject",
+      "nodeid": "tests/memory/test_lesion_study.py::test_variant_fingerprint_belongs_to_the_bytes_read_even_if_the_file_changes",
+      "anchor": "return Path(value[\"recipe\"]), value[\"components\"], digest",
+      "replacement": "return Path(value[\"recipe\"]), value[\"components\"], sha256(Path(path))",
+      "expected_failure": {
+        "exception_type": "AssertionError",
+        "longrepr_contains": "assert"
+      }
+    }
+  ]
+}

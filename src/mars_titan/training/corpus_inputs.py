@@ -859,6 +859,17 @@ class CorpusDataset:
         check_row_positions(positions, absent)
         return positions, absent
 
+    def asset_prices(self, asset):
+        """OHLCV y disponibilidad en µs de un activo, comprobados con su huella al leerlos.
+
+        Son los arrays de la caché de la edición, así que se leen sin modificarlos.
+        """
+        return self._prices(asset)
+
+    def market_calendar(self, market):
+        """Decisiones en µs del calendario declarado del mercado y posiciones de sus ausencias."""
+        return self._calendar(market)
+
     def price_windows(self, asset, prices, available, ends):
         """Ventanas de entrada que terminan en las filas `ends`, según el contrato de la edición."""
         if self.price_window is None:

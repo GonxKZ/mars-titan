@@ -1,0 +1,69 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "Referencia Transformer compacta",
+    "quality_profile": "showcase",
+    "viewBox": [1300, 402],
+    "legend": {
+      "entries": {"external": {"label": "Entradas"}, "backend": {"label": "Cálculo"}, "frontend": {"label": "Salida"}}
+    }
+  },
+  "components": [
+    {"id": "prices", "type": "external", "label": "Ventana de precios", "sublabel": "[B, T, F], T ≤ 512", "pos": [40, 40], "size": [180, 72]},
+    {"id": "others", "type": "external", "label": "Otras modalidades", "sublabel": "proyecciones comunes", "pos": [40, 230], "size": [180, 72]},
+    {
+      "id": "embed",
+      "type": "backend",
+      "label": "Proyección y posiciones",
+      "sublabel": "D = 32, 64 o 128, sinusoidales",
+      "pos": [300, 40],
+      "size": [180, 72]
+    },
+    {
+      "id": "encoder",
+      "type": "backend",
+      "label": "TransformerEncoderLayer",
+      "sublabel": "1 o 2 capas, máscara causal",
+      "tag": "normalización previa",
+      "pos": [560, 40],
+      "size": [180, 72]
+    },
+    {"id": "last", "type": "backend", "label": "Último token", "sublabel": "[B, D] tras la norma final", "pos": [820, 40], "size": [180, 72]},
+    {"id": "fusion", "type": "backend", "label": "Fusión común", "sublabel": "la de las referencias", "pos": [820, 230], "size": [180, 72]},
+    {"id": "head", "type": "frontend", "label": "Cabeza escalar", "sublabel": "o de cuantiles", "pos": [1080, 230], "size": [180, 72]}
+  ],
+  "connections": [
+    {"id": "prices-embed", "from": "prices", "to": "embed"},
+    {"id": "embed-encoder", "from": "embed", "to": "encoder", "label": "tokens", "variant": "emphasis"},
+    {"id": "encoder-last", "from": "encoder", "to": "last", "label": "[B, T, D]"},
+    {"id": "last-fusion", "from": "last", "to": "fusion", "label": "precios", "labelDy": 24},
+    {"id": "others-fusion", "from": "others", "to": "fusion"},
+    {"id": "fusion-head", "from": "fusion", "to": "head", "label": "estado", "variant": "emphasis"}
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "Configuración",
+      "items": ["1, 2, 4 u 8 cabezas y FFN de 2D o 4D", "Sin dropout en atención ni FFN", "Hasta 256 ventanas y B·T²·cabezas·capas ≤ 2²⁴"]
+    },
+    {
+      "dot": "amber",
+      "title": "Papel en la comparación",
+      "items": [
+        "Separa el cambio de codificador de la memoria neuronal",
+        "Comparte proyecciones, fusión y cabeza con la GRU",
+        "Control directo titans_transformer_direct en A v2"
+      ]
+    },
+    {
+      "dot": "violet",
+      "title": "Estado",
+      "items": [
+        "Contrato del codificador guardado en _extra_state",
+        "Prefijo, recuperación y gradiente futuro nulo comprobados en CUDA",
+        "Sin resultado que acredite mejora"
+      ]
+    }
+  ]
+}

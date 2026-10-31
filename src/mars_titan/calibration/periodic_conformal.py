@@ -17,6 +17,7 @@ de t no interviene en ninguna corrección emitida en t o antes.
 import numpy as np
 
 from mars_titan.calibration import conformal_quantiles as cqr
+from mars_titan.environments.cohorts import FINAL_TEST_START_US
 
 METHOD = "cqr_periodic_refit_matured_rows_v1"
 DAY_MICROSECONDS = 86_400_000_000
@@ -46,6 +47,11 @@ def _rows(part, quantile_width, label):
         and matures_at.dtype.kind in "iu"
         and bool(np.all(matures_at > prediction_at)),
         f"El tramo de {label} necesita columnas alineadas y madurez posterior a cada predicción",
+    )
+    # Igual que PT2, la alternativa periódica no lee el test reservado de 2024.
+    _require(
+        bool(np.all(matures_at < FINAL_TEST_START_US)),
+        f"El tramo de {label} entra en el test reservado de 2024",
     )
     return target, quantiles, groups, prediction_at.astype(np.int64), matures_at.astype(np.int64)
 

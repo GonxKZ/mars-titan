@@ -18,7 +18,9 @@ import torch
 
 from mars_titan.data.input_policy import HISTORICAL_MASKED
 from mars_titan.data.storage import sha256
+from mars_titan.evaluation import scale_diagnostics as sd
 from mars_titan.evaluation import walk_forward_comparison as comparison
+from mars_titan.evaluation.forecast_panel import ForecastPanel
 from mars_titan.evaluation.splits import build_folds, stopping_rule
 from mars_titan.memory.financial_session import FinancialPhase
 from mars_titan.models.quantile_head import QUANTILE_COLUMNS
@@ -29,6 +31,7 @@ from mars_titan.training.corpus_inputs import CorpusDataset
 from mars_titan.training.financial_run import ChronologicalTrainer
 from mars_titan.training.learning_hold import LearningHoldError
 from mars_titan.training.temporal_corpus import prepare_temporal_corpus
+from mars_titan.training.walk_forward_phases import months_before
 from mars_titan.training.window_indices import SHARED_INDICES_ENV
 from tests.learning_hold_lowering import allowed_hold, lowers_learning_hold
 from tests.learning_traces.parity import EVERY_STEP, metrics, same_rows, trace_rows
@@ -262,6 +265,79 @@ def test_phases_cover_each_v2_fold_with_a_warmup_bounded_by_its_partition(path, 
     first = wf.window_phases(folds[0], warmup)["validation"]
     clipped = warmup == 60 and protocol["first_validation_start"] == "2004-04-01"
     assert (first.warmup_start == micros("2000-01-01")) == clipped
+
+
+@pytest.mark.parametrize("fit", [1, 6, 12])
+@pytest.mark.parametrize("warmup", [0, 12])
+def test_bounded_fit_reads_its_last_months_after_their_warmup(fit, warmup):
+    protocol = json.loads(
+        (CONFIGS / "evaluation/historical-masked-us-walk-forward-v2.json").read_text()
+    )
+    origin = micros("2000-01-01")
+    for fold in build_folds(protocol):
+        full, bounded = wf.window_phases(fold, warmup), wf.window_phases(fold, warmup, fit)
+        assert {name: bounded[name] for name in wf.PREDICTED} == {
+            name: full[name] for name in wf.PREDICTED
+        }
+        train, first = bounded["train"], months_before(fold["train"][1], fit)
+        assert train.decision_start == max(origin, micros(first))
+        assert train.warmup_start == max(origin, micros(months_before(first, warmup)))
+        assert (train.decision_end, train.close_at) == (full["train"].decision_end,) * 2
+        assert train.decision_end - train.decision_start <= 366 * 86_400_000_000
+
+
+@pytest.mark.parametrize("value", [0, 13, True, 1.0, "12"])
+def test_bounded_fit_rejects_months_outside_one_year(value):
+    fold = build_folds(PROTOCOL)[0]
+    with pytest.raises(ValueError, match="fit_months"):
+        wf.window_phases(fold, 1, value)
+    document = dict(walk_forward=dict(warmup_months=1, fit_months=value))
+    with pytest.raises(ValueError, match="fit_months"):
+        wf.walk_forward_options(document, bounded_fit=True)
+
+
+def test_only_paths_that_apply_a_bounded_fit_accept_it():
+    document = dict(walk_forward=dict(warmup_months=12, fit_months=12))
+    with pytest.raises(ValueError, match="ajuste acotado"):
+        wf.walk_forward_options(document)
+    assert wf.walk_forward_options(document, bounded_fit=True)["fit_months"] == 12
+    assert wf.memory_policy(12, None) == wf.memory_policy(12)
+    assert "fit_months" not in wf.memory_policy(12)
+    bounded = wf.memory_policy(12, 12)
+    assert bounded["fit_months"] == 12 and bounded["train"] != wf.memory_policy(12)["train"]
+
+
+def test_bounded_fit_ignores_inputs_before_its_warmup(base, tmp_path):
+    """Con un mes de ajuste y uno de calentamiento, nada anterior a julio llega al ajuste.
+
+    Se alteran las entradas no de precio de las filas anteriores al 3 de julio, el primer día
+    hábil del calentamiento.
+    """
+    bounded = recipe(tmp_path, walk_forward=dict(warmup_months=1, fit_months=1))
+    reports, factories = {}, {}
+    with unfused_attention():
+        for name, changes in (
+            ("clean", {}),
+            ("before", dict(perturb_before=decision("2023-07-03"))),
+        ):
+            view, protocol = views(tmp_path / name, **changes)
+            reports[name], factories[name] = window(
+                view, protocol, bounded, tmp_path / name / "run"
+            )
+    train = reports["clean"]["identity"]["phases"]["train"]
+    assert (train["warmup_start"], train["decision_start"], train["decision_end"]) == (
+        micros("2023-07-01"),
+        micros("2023-08-01"),
+        micros("2023-09-01"),
+    )
+    assert reports["clean"]["identity"]["memory_policy"]["fit_months"] == 1
+    clean, before = factories["clean"].records, factories["before"].records
+    assert clean and len(clean) == len(before)
+    for one, two in zip(clean, before, strict=True):
+        for a, b in zip(one, two, strict=True):
+            assert (a is None and b is None) or torch.equal(a, b)
+    # El ajuste completo de la base empieza en el origen y aplica más actualizaciones.
+    assert len(base["runs"]["mac_online"][1].records) > len(clean)
 
 
 def test_controls_write_three_partitions_that_the_comparison_accepts(base, tmp_path):
@@ -904,3 +980,268 @@ def test_titans_posttraining_traces_the_adapter_and_keeps_its_rows(base, tmp_pat
     # Solo la corrección del prefijo persistente recibe gradiente.
     assert groups == {"predictor.mac"}
     assert "memory.alpha.mean" in metrics(rows, "train")
+
+
+COMMON = dict(RULE, stopping="common_epoch", max_epochs=2)
+SCORING = dict(min_assets=3, predictions=True)
+
+
+def test_common_epoch_window_waits_then_emits_its_epoch_and_versions(base, tmp_path, monkeypatch):
+    output = tmp_path / "common"
+    options = dict(stopping=COMMON, epoch_scoring=SCORING)
+    with pytest.raises(ValueError, match="junto con la época común"):
+        window(base["view"], base["protocol"], base["recipe"], output, versions=[2], **options)
+    with pytest.raises(ValueError, match="cómo se puntúa"):
+        window(base["view"], base["protocol"], base["recipe"], output, stopping=COMMON)
+    with pytest.raises(ValueError, match="solo existe con la época común"):
+        window(base["view"], base["protocol"], base["recipe"], output, epoch_scoring=SCORING)
+    assert not output.exists()
+    with unfused_attention():
+        report, _ = window(base["view"], base["protocol"], base["recipe"], output, **options)
+    assert report["status"] == "awaiting_joint_stop" and report["individual_stop_epoch"] == 2
+    assert report["predictions"] == {} and report["request"]["epoch_scoring"] == SCORING
+    fit = json.loads((output / "fit" / "run.json").read_text())
+    assert sorted(fit["epoch_states"]) == ["1", "2"]
+    for entry in fit["history"][1:]:
+        scored = entry["validation"]
+        # El IC del ajuste es el del análisis sobre la predicción guardada de esa época.
+        panel = ForecastPanel.from_arrow(
+            pq.read_table(output / scored["epoch_predictions"]["path"])
+        )
+        values, defined = sd.session_correlations(panel, panel.prediction, min_assets=3)
+        assert scored["session_ic_values"] == values.tolist() and defined.any()
+        assert scored["session_ic_defined"] == defined.tolist()
+        assert scored["session_mae_values"] == sd.session_mae(panel, panel.prediction).tolist()
+        assert scored["cohort_sha256"] == panel.cohort_sha256
+        assert scored["session_time"] == panel.session_time.tolist()
+        assert np.mean(scored["session_mae_values"]) == pytest.approx(scored["session_mae"])
+        assert scored["session_ic"] == pytest.approx(values[defined].mean())
+    loaded = []
+    original = ChronologicalTrainer.load_epoch
+
+    def recorded(self, report, epoch):
+        loaded.append(epoch)
+        return original(self, report, epoch)
+
+    monkeypatch.setattr(ChronologicalTrainer, "load_epoch", recorded)
+    with unfused_attention():
+        for broken in ([1], [2, 2], [3]):
+            with pytest.raises(ValueError, match="versiones"):
+                window(
+                    base["view"],
+                    base["protocol"],
+                    base["recipe"],
+                    output,
+                    joint_epoch=1,
+                    versions=broken,
+                    **options,
+                )
+        final, _ = window(
+            base["view"],
+            base["protocol"],
+            base["recipe"],
+            output,
+            joint_epoch=1,
+            versions=[2],
+            **options,
+        )
+    assert final["status"] == "completed" and final["fit"]["best_epoch"] == 1
+    assert loaded == [2] and final["released_state_bytes"] > 0
+    versions = final["versions"]
+    assert versions["epochs"] == [2] and sorted(versions["predictions"]["2"]) == [
+        "calibration",
+        "evaluation",
+    ]
+    for name, record in versions["predictions"]["2"].items():
+        # Con el optimizador doble los pesos no cambian, así que cada versión repite las filas.
+        version = pq.read_table(output / record["path"]).sort_by("sample_id")
+        main = pq.read_table(output / f"{name}-predictions.parquet").sort_by("sample_id")
+        assert version.equals(main) and record["rows"] == final["predictions"][name]["rows"]
+    # Solo queda el estado elegido de la época común.
+    assert len(list((output / "fit" / "checkpoints").glob("state-*.pt"))) == 1
+    again, _ = window(
+        base["view"],
+        base["protocol"],
+        base["recipe"],
+        output,
+        joint_epoch=1,
+        versions=[2],
+        **options,
+    )
+    assert again == final
+    (output / versions["predictions"]["2"]["evaluation"]["path"]).write_bytes(b"PAR1 x PAR1")
+    with pytest.raises(ValueError, match="predicciones confirmadas"):
+        window(
+            base["view"],
+            base["protocol"],
+            base["recipe"],
+            output,
+            joint_epoch=1,
+            versions=[2],
+            **options,
+        )
+
+
+# Dos ventanas mensuales seguidas. La validación de la primera acaba cuando empieza la de la
+# segunda, así que la segunda puede continuar desde el estado elegido de la primera (F3).
+TWO_WINDOWS = dict(
+    PROTOCOL, validation_months=1, calibration_months=1, evaluation_months=1, step_months=1
+)
+SHRINK = dict(shrink=0.6, noise=0.01, seed=1)
+
+
+def two_windows(root):
+    """Vistas de las dos ventanas del protocolo técnico de continuación."""
+    corpus = chronological_corpus(root / "corpus", assets=3, first="2023-06-01", last="2023-12-29")
+    protocol = root / "protocol.json"
+    protocol.write_text(json.dumps(TWO_WINDOWS))
+    prepare_temporal_corpus(
+        corpus,
+        protocol,
+        None,
+        None,
+        root / "views",
+        input_policy=HISTORICAL_MASKED,
+        recover_annual_boundaries=True,
+    )
+    return root / "views", protocol
+
+
+def stage(views, protocol, fold, recipe_path, output, *, variant="mac_online", **options):
+    return wf.run_titans_window(
+        views / fold / "manifest.json",
+        protocol,
+        fold,
+        recipe_path,
+        variant=variant,
+        seed=42,
+        output=output,
+        device="cpu",
+        indices=output.with_name(f"{output.name}-indices"),
+        optimizer_factory=Factory(),
+        **options,
+    )
+
+
+def shrink_recipe(root):
+    document = json.loads(recipe(root).read_text())
+    document["recipe"]["shrink_perturb"] = SHRINK
+    path = root / "shrink.json"
+    path.write_text(json.dumps(document))
+    return path
+
+
+def edited_parent(source, destination, change):
+    """Copia del padre con su informe cambiado, sin tocar sus estados ni sus predicciones."""
+    import shutil
+
+    shutil.copytree(source, destination)
+    report = json.loads((destination / "run.json").read_text())
+    change(report)
+    (destination / "run.json").write_text(json.dumps(report))
+    return destination
+
+
+def test_a_continuation_starts_from_the_chosen_state_of_its_parent(tmp_path, monkeypatch):
+    from mars_titan.training.shrink_perturb import ShrinkPerturb
+
+    views, protocol = two_windows(tmp_path)
+    quantile, shrink = recipe(tmp_path), shrink_recipe(tmp_path)
+    build, fresh = wf._predictor, []
+
+    def scaled(*args, **kwargs):
+        # El doble del optimizador no mueve pesos, así que el padre parte de unos fijados a
+        # mano. Su estado elegido es entonces distinto de una inicialización nueva.
+        predictor, pairing = build(*args, **kwargs)
+        fresh.append(predictor._parameter_id)
+        with torch.no_grad():
+            for value in predictor.parameters():
+                value.mul_(0.875)
+        predictor._seal_parameters()
+        return predictor, pairing
+
+    with monkeypatch.context() as patch, unfused_attention():
+        patch.setattr(wf, "_predictor", scaled)
+        parent = stage(views, protocol, "fold-000", quantile, tmp_path / "parent")
+    assert parent["status"] == "completed"
+    with unfused_attention():
+        child = stage(
+            views, protocol, "fold-001", shrink, tmp_path / "child", initial=tmp_path / "parent"
+        )
+    assert child["status"] == "completed"
+    assert child["request"]["initial"] == dict(
+        run_id=parent["run_id"], checkpoint_sha256=parent["checkpoint"]["sha256"]
+    )
+    assert "initial" not in parent["request"]
+    parent_fit = json.loads((tmp_path / "parent" / "fit" / "run.json").read_text())
+    child_fit = json.loads((tmp_path / "child" / "fit" / "run.json").read_text())
+    start = parent_fit["identity"]["initial_parameters_sha256"]
+    # Una inicialización nueva de la misma semilla no tiene los pesos fijados del padre.
+    assert fresh and start not in fresh
+    assert child_fit["identity"]["initial_parameters_sha256"] == start
+    record = child_fit["shrink_perturb"]
+    assert record["parameters_before_sha256"] == start
+    assert record["fresh_seed"] == ShrinkPerturb(**SHRINK).fresh_seed(42)
+    assert record["parameters_after_sha256"] not in (start, record["fresh_parameters_sha256"])
+    with unfused_attention():
+        again = stage(
+            views, protocol, "fold-001", shrink, tmp_path / "child", initial=tmp_path / "parent"
+        )
+    assert again == child
+    # Otro padre cambia la petición de la ventana ya completada.
+    other = edited_parent(
+        tmp_path / "parent", tmp_path / "other", lambda report: report.update(run_id="0" * 64)
+    )
+    with pytest.raises(ValueError, match="petición de la ventana ha cambiado"):
+        stage(views, protocol, "fold-001", shrink, tmp_path / "child", initial=other)
+    # Un padre de la misma ventana vio la validación de la continuación.
+    with pytest.raises(ValueError, match="no acaba antes de la validación"):
+        stage(views, protocol, "fold-000", quantile, tmp_path / "same", initial=tmp_path / "parent")
+    # Un padre de otra semilla, sin terminar o con otro estado elegido no se acepta.
+    seeded = edited_parent(
+        tmp_path / "parent", tmp_path / "seeded", lambda report: report["request"].update(seed=43)
+    )
+    with pytest.raises(ValueError, match="padre de su semilla"):
+        stage(views, protocol, "fold-001", quantile, tmp_path / "seed", initial=seeded)
+    paused = edited_parent(
+        tmp_path / "parent", tmp_path / "paused", lambda report: report.update(status="paused")
+    )
+    with pytest.raises(ValueError, match="no es una ventana de Titans-MAC completada"):
+        stage(views, protocol, "fold-001", quantile, tmp_path / "pause", initial=paused)
+    changed = edited_parent(
+        tmp_path / "parent",
+        tmp_path / "changed",
+        lambda report: report["checkpoint"].update(sha256="f" * 64),
+    )
+    with pytest.raises(ValueError):
+        stage(views, protocol, "fold-001", quantile, tmp_path / "state", initial=changed)
+    # Unas predicciones confirmadas del padre que han cambiado también lo invalidan.
+    broken = edited_parent(tmp_path / "parent", tmp_path / "broken", lambda report: None)
+    (broken / "evaluation-predictions.parquet").write_bytes(b"PAR1 x PAR1")
+    with pytest.raises(ValueError, match="predicciones confirmadas"):
+        stage(views, protocol, "fold-001", quantile, tmp_path / "rows", initial=broken)
+    # Con otra cabeza, el estado del padre no corresponde a la arquitectura del predictor.
+    scalar = recipe(tmp_path, SCALAR_RECIPE)
+    with pytest.raises(ValueError, match="arquitectura del predictor"):
+        stage(views, protocol, "fold-001", scalar, tmp_path / "scalar", initial=tmp_path / "parent")
+    assert not any((tmp_path / name / "fit").exists() for name in ("same", "seed", "pause"))
+    assert not (tmp_path / "rows" / "fit").exists()
+
+
+def test_the_shrink_of_f3_only_runs_as_a_continuation_of_mac_online(tmp_path):
+    views, protocol = two_windows(tmp_path)
+    shrink = shrink_recipe(tmp_path)
+    with pytest.raises(ValueError, match="solo se aplica a una continuación"):
+        stage(views, protocol, "fold-001", shrink, tmp_path / "alone")
+    # La comprobación llega antes de leer el padre, que aquí no existe.
+    with pytest.raises(ValueError, match="sin control local ni emparejamiento"):
+        stage(
+            views,
+            protocol,
+            "fold-001",
+            shrink,
+            tmp_path / "frozen",
+            variant="mac_frozen",
+            initial=tmp_path / "absent",
+        )
+    assert not (tmp_path / "alone").exists() and not (tmp_path / "frozen").exists()

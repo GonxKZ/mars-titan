@@ -1,0 +1,87 @@
+{
+  "schema_version": 1,
+  "kind": "technical_verification",
+  "verified_at_utc": "2026-10-27T05:41:51.754699+00:00",
+  "issue": 750,
+  "base_commit": "404b916492230c73bf7a4fb976fd4439e6bc87a6",
+  "implementation_status": "standard_k1_producer_and_evidence_core_only",
+  "tests": {
+    "tests": 207,
+    "errors": 0,
+    "failures": 0,
+    "skipped": 0,
+    "deselected_cuda": 4,
+    "new_producer_cases": 60,
+    "test_classes": {
+      "tests.memory.test_spaced_utility_readout": 60,
+      "tests.memory.test_spaced_utility": 51,
+      "tests.models.titans.test_episodic_readout": 79,
+      "tests.models.titans.test_episodic_readout_fixed_episodes": 17
+    },
+    "pytest_seconds": 13.637,
+    "junit_sha256": "383e28d036bc52bb25c911efa4e6ca578f26e88c5060ed75959b0564728bdfdc",
+    "selection": "Los cuatro archivos de la orden documentada, con -m not cuda. Sin suite completa.",
+    "overlap": "Incluye las 51 pruebas del registro y se solapa con baterías anteriores, no se suma a ellas."
+  },
+  "quality": {
+    "path": "quality.json",
+    "sha256": "59bd6cbd18a26aecbcd1ba6c589a5336c9d96b5987fad684096a962da571f814",
+    "statements": 88,
+    "covered_statements": 88,
+    "branches": 10,
+    "covered_branches": 10,
+    "max_function_crap": 17.0
+  },
+  "mutations": {
+    "path": "mutation-results.json",
+    "sha256": "85da1197fea75f94a3bf9aaee99be40e2bf4cd25c3b443f3a156d67dfd87f9e6",
+    "planned": 8,
+    "killed": 8,
+    "optimizer_attempts": 0
+  },
+  "cost": {
+    "path": "cost.json",
+    "sha256": "7eaf04321408c4701b9d32a119f59b7dee80f6f79752762cacc3d45682c21ac9"
+  },
+  "optimization": {
+    "path": "rows-comparison.json",
+    "sha256": "3918766c2a5b90de13c213544a2fa85237bf46bd091f0b84f03154c5fd231272",
+    "accepted": true
+  },
+  "baseline_sources": {
+    "path": "preserved-sources.json",
+    "sha256": "b8ace08a5880bd794b1b5f2e7ce19f98dbdce53ce5c9d3bffd943ebb23c31fe4",
+    "modules": 34,
+    "all_equal": true
+  },
+  "parity": {
+    "path": "parity.json",
+    "sha256": "cf1e330aa455448220bf08f4412b590455285dd741458c4cd5ff03f389b94e6d",
+    "cases": 14
+  },
+  "sources": {
+    "src/mars_titan/memory/spaced_utility_readout.py": "353d5ddd12d8f8d0487f811386587f1ebc8737c31045f302e0f4a121e0eec848",
+    "tests/memory/test_spaced_utility_readout.py": "0fc098d80cdc936587240352df22e7460e6ce17d06265842f97b0ecc02d18b19",
+    "tests/models/titans/test_financial_adapter.py": "c793c84a7f69b790592520eee4bde57c8a879d9c9e4cb7945dbff60cfdeb1c17",
+    "reports/engineering/spaced-readout-20261027/cost_probe.py": "5b614202895dce2da3dbaeb5e9dafaf85680b81d0c2715146924faf9ea039e27",
+    "reports/engineering/spaced-readout-20261027/compare_rows.py": "2565b61d04471df30423bcc9196d26a9d9392b575aad2e81dcfe4222c8dc914c",
+    "reports/engineering/spaced-readout-20261027/rows-optimization.patch": "afba09aa1818bab2cbca71842e305d520cfd98ae13e4f43625b254820f280b40",
+    "docs/experiments/spaced-utility-consolidation-v1.md": "410a3535c5238340291f139ff0e73756d3b711fb7b0b51663ce56dbcc92ec9c4",
+    "README.md": "5872ce42de0e197acd42f56e35bd9400a30ddcc713c4be63a2c481fb056de85c"
+  },
+  "hold_sha256": "8a658080c1ac4e63847eba58b177020339da6ec47021cf26d2701830073c87fd",
+  "limits": [
+    "Sin selector de retención, conexión a sesión y ventana ni persistencia en el bundle financiero.",
+    "El productor regional y K2/K4 activos necesitan contratos propios. Se rechazan en este productor.",
+    "Dos casos CUDA nuevos están pendientes. Los cuatro casos CUDA de esta selección se excluyen expresamente.",
+    "Costes de lector y filas sobre fixtures compactos. No incluyen MAC, ledger, consolidación, disco ni GPU.",
+    "La comparación de 34 fuentes no sustituye recuperar todas las campañas y variantes.",
+    "Sin entrenamientos científicos, acceso al test final ni cambio de la protección. No hay mejora predictiva medida.",
+    "La cobertura y ocho mutaciones dirigidas no prueban ausencia de otros fallos."
+  ],
+  "checks": {
+    "ruff": "passed",
+    "format": "passed",
+    "repository": "passed"
+  }
+}

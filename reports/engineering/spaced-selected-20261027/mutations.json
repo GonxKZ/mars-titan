@@ -1,0 +1,318 @@
+{
+  "schema_version": 1,
+  "status": "passed",
+  "scope": "Cinco mutaciones dirigidas, sin atribuir cobertura universal de mutantes.",
+  "sources": {
+    "loader": {
+      "path": "src/mars_titan/training/spaced_selected.py",
+      "sha256": "0f81b24e1642a57ecb9ff166618c2416fc81f80306b182e0bb2e133bfd03cc1d"
+    }
+  },
+  "test_path": "tests/memory/test_spaced_selected.py",
+  "test_sha256": "d58ca690f41799ee626a71161896af530da49c52bed2678784783e62a7c09362",
+  "recipes": [
+    {
+      "id": "trust_declared_parameter_digest",
+      "family": "Objective",
+      "source_key": "loader",
+      "nodeid": "tests/memory/test_spaced_selected.py::test_resealed_weights_cannot_change_the_selected_tensor_contract[digest]",
+      "anchor": "_parameters_digest(reader) == state[\"readout_sha256\"]",
+      "replacement": "True",
+      "expected_failure": {
+        "exception_type": "Failed",
+        "longrepr_contains": "DID NOT RAISE"
+      }
+    },
+    {
+      "id": "accept_boolean_selected_schema",
+      "family": "Objective",
+      "source_key": "loader",
+      "nodeid": "tests/memory/test_spaced_selected.py::test_resealed_descriptor_still_needs_the_original_semantics[<lambda>0]",
+      "anchor": "and type(selected.get(\"schema_version\")) is int",
+      "replacement": "and True",
+      "expected_failure": {
+        "exception_type": "Failed",
+        "longrepr_contains": "DID NOT RAISE"
+      }
+    },
+    {
+      "id": "hash_oversized_checkpoint",
+      "family": "Objective",
+      "source_key": "loader",
+      "nodeid": "tests/memory/test_spaced_selected.py::test_oversized_checkpoint_is_rejected_before_hashing_its_payload",
+      "anchor": "0 < checkpoint.stat().st_size <= MAX_STATE_BYTES",
+      "replacement": "0 < checkpoint.stat().st_size",
+      "expected_failure": {
+        "exception_type": "Failed",
+        "longrepr_contains": "presupuesto"
+      }
+    },
+    {
+      "id": "load_latest_instead_of_selected_best",
+      "family": "Objective",
+      "source_key": "loader",
+      "nodeid": "tests/memory/test_spaced_selected.py::test_selected_weights_are_exact_frozen_and_do_not_restore_rng_or_optimizer",
+      "anchor": "selection=\"best\",",
+      "replacement": "selection=\"latest\",",
+      "expected_failure": {
+        "exception_type": "ValueError",
+        "longrepr_contains": "seleccionado"
+      }
+    },
+    {
+      "id": "ignore_postload_source_changes",
+      "family": "Objective",
+      "source_key": "loader",
+      "nodeid": "tests/memory/test_spaced_selected.py::test_source_change_during_construction_is_detected_before_return",
+      "anchor": "all(sha256(path) == value for path, value in pins)",
+      "replacement": "True",
+      "expected_failure": {
+        "exception_type": "Failed",
+        "longrepr_contains": "DID NOT RAISE"
+      }
+    }
+  ],
+  "executor_sha256": "e36afde1d356cc7a187574841de51ef861eb32e7d8fcc9d64735858e1e206467",
+  "cases": [
+    {
+      "id": "trust_declared_parameter_digest",
+      "status": "killed_with_green_controls",
+      "phases": [
+        {
+          "phase": "G1",
+          "returncode": 0,
+          "elapsed_s": 4.124599913135171,
+          "counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0,
+          "xml_sha256": "f5dfe1e30e2ba0b8a169c74e9c3c173949774f28ff79affea7226023f1bf4ae3",
+          "events_sha256": "246ccd4ef27d72c3971275a943feae8753c87ca368ade7818ae7d9db805033a9"
+        },
+        {
+          "phase": "M1",
+          "returncode": 1,
+          "elapsed_s": 4.62370403110981,
+          "counts": {
+            "total": 1,
+            "failure": 1,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0,
+          "xml_sha256": "bd474091a49f2bb05ba7abb4e41d4f754088c739c268b70cd05c78718de5dbee",
+          "events_sha256": "8b5520821a0a47ac1347d68341fc879eaf8ca55200971563209dd6c9b286d8af"
+        },
+        {
+          "phase": "G2",
+          "returncode": 0,
+          "elapsed_s": 4.224353654077277,
+          "counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0,
+          "xml_sha256": "09ed90f0bbcefc997ba242d6079863ed3f410332f085928218009b09cdd551cc",
+          "events_sha256": "ac1d890957d7f4727c33287f5d3647ba4cd03a7b9553dad95f79230befe4c4bb"
+        }
+      ]
+    },
+    {
+      "id": "accept_boolean_selected_schema",
+      "status": "killed_with_green_controls",
+      "phases": [
+        {
+          "phase": "G1",
+          "returncode": 0,
+          "elapsed_s": 3.972560982918367,
+          "counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0,
+          "xml_sha256": "d656875c3cab0f7de76a2217fa963c3ae6fe4b886bebadebce2e1f0eeac9ee7b",
+          "events_sha256": "cde5461031336aa7a6dae4b7981c237a3d418b86c4ba3563737401c67800ccc1"
+        },
+        {
+          "phase": "M1",
+          "returncode": 1,
+          "elapsed_s": 3.5710459949914366,
+          "counts": {
+            "total": 1,
+            "failure": 1,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0,
+          "xml_sha256": "ac5826a42fb0c64e2faafff66c67cc6ebd07f2810d2d67b6c61a53946c2a7622",
+          "events_sha256": "d01cdfff763852c0b9b8a27723361001811c91e76f6bff5f1897fc93fa1281a2"
+        },
+        {
+          "phase": "G2",
+          "returncode": 0,
+          "elapsed_s": 4.123302967986092,
+          "counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0,
+          "xml_sha256": "17fe81b7e716ce4e2d5f24a93538e25690c2e14be31a8cbee4cc5959bf2db3b4",
+          "events_sha256": "925a79d1d8ad599230ee062c613e79367911a494f26ff2bffa0360f79e2a48f3"
+        }
+      ]
+    },
+    {
+      "id": "hash_oversized_checkpoint",
+      "status": "killed_with_green_controls",
+      "phases": [
+        {
+          "phase": "G1",
+          "returncode": 0,
+          "elapsed_s": 4.274329118896276,
+          "counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0,
+          "xml_sha256": "d985b1ef56a288729ef3b29e5fdbe64d34b0ea82ac054251fcc8a7c6e0bd584d",
+          "events_sha256": "521be8d4f4c7772bdb0d96b9d876056bbe9d3f3da20c23b4e1af1a9034e9102b"
+        },
+        {
+          "phase": "M1",
+          "returncode": 1,
+          "elapsed_s": 3.672711431980133,
+          "counts": {
+            "total": 1,
+            "failure": 1,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0,
+          "xml_sha256": "89f0f266f0b3258bc5be51febf8ccf5fe91fae00da4314a0903ecd0b0502b8e2",
+          "events_sha256": "def77ccd4caf42dbcb74c43067103c7257665eef8a02a1f744d35caaed5cb527"
+        },
+        {
+          "phase": "G2",
+          "returncode": 0,
+          "elapsed_s": 3.7233628830872476,
+          "counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0,
+          "xml_sha256": "681f0299d5b9b063bbac1ad2c6a52c8f7697220cc5a9c9b07f1becd9a7db25f5",
+          "events_sha256": "5735a0884267cabf2a47f6f0e1006a4995f47de56fafcdbc6a7a92f07bbada79"
+        }
+      ]
+    },
+    {
+      "id": "load_latest_instead_of_selected_best",
+      "status": "killed_with_green_controls",
+      "phases": [
+        {
+          "phase": "G1",
+          "returncode": 0,
+          "elapsed_s": 4.17347619519569,
+          "counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0,
+          "xml_sha256": "55e6823d48ff59e8d803396381e845675ce80670d78b996488596cbb4573f1c7",
+          "events_sha256": "d2db8e4de902b6e7573e1f1368b963cade5d23df9837b6e8a6808f84c7be29fc"
+        },
+        {
+          "phase": "M1",
+          "returncode": 1,
+          "elapsed_s": 4.12520206393674,
+          "counts": {
+            "total": 1,
+            "failure": 1,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0,
+          "xml_sha256": "7fc77046eff5ab6b607136973fb0016939b6f98d4856c5ca2296cb1abf344176",
+          "events_sha256": "54ff48bd543b6ebabf9919676d59cda1c471eaf35b301eb7c89024b5beb32209"
+        },
+        {
+          "phase": "G2",
+          "returncode": 0,
+          "elapsed_s": 3.7740813607815653,
+          "counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0,
+          "xml_sha256": "5a30f6fc970699b9ee8ddfaa53e1d28cd01ad8a7fa2d34a419a38e24f7a9460d",
+          "events_sha256": "51bd74af0d13312e14f2f81781e69b7e5b7fb371b9b6bd325de81f0d1edeaead"
+        }
+      ]
+    },
+    {
+      "id": "ignore_postload_source_changes",
+      "status": "killed_with_green_controls",
+      "phases": [
+        {
+          "phase": "G1",
+          "returncode": 0,
+          "elapsed_s": 3.8741747008170933,
+          "counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0,
+          "xml_sha256": "151e46de37fc37a9246ddc70055fa3dac3fdec2e35c2f4dba50cdc4f0811b367",
+          "events_sha256": "f581405aaa6a6fec722c8cc63841ca602c2899cc6efe85bb1a4881dcb8a88e1c"
+        },
+        {
+          "phase": "M1",
+          "returncode": 1,
+          "elapsed_s": 4.275581837864593,
+          "counts": {
+            "total": 1,
+            "failure": 1,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0,
+          "xml_sha256": "344e422902cb48d4a3325ed72cc48be985cd1094d1d123ecc27ebd29bf484518",
+          "events_sha256": "90255dbc27b94d721991eb7752ac3f81bcbed03ca7947fa86e28c0d0dc29e32d"
+        },
+        {
+          "phase": "G2",
+          "returncode": 0,
+          "elapsed_s": 3.673786591971293,
+          "counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0,
+          "xml_sha256": "8ccd7661a10e8991882d78140e5ba67c305dc7051a00281965b201c33c077042",
+          "events_sha256": "6a85703316b82008b4524cd5a22c4e6a30f32944b1f5f5c4e22028d840c02591"
+        }
+      ]
+    }
+  ]
+}

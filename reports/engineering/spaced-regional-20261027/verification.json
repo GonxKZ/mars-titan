@@ -1,0 +1,107 @@
+{
+  "schema_version": 1,
+  "recorded_at_utc": "2026-10-27T12:54:54.142568+00:00",
+  "kind": "technical_regional_spaced_readout_without_training",
+  "base_commit": "da4c205a463717492adc6b875fcd43bb28ec24f5",
+  "tests": {
+    "distinct_passed": 365,
+    "new_regional_producer": 142,
+    "regressions": 223,
+    "skipped": 0,
+    "cuda_deselected_total": 89,
+    "new_cuda_pending": 3,
+    "full_suite_executed": false,
+    "xml_sha256": "ce299d03bc09ebe737f477fac45d8fb2d2a0a717a2d6075d351f7b8bd4239b22"
+  },
+  "quality": {
+    "path": "quality.json",
+    "tools": {
+      "coverage": "7.16.1",
+      "radon": "6.0.1",
+      "branch_coverage": true,
+      "python": "3.12.14",
+      "summarizer_sha256": "75cc60c88037e0bb17aff6e8ab666ce78b35d600d6c7ad217bf68b1afb4c4ec6"
+    },
+    "totals": {
+      "statements": 79,
+      "covered_statements": 79,
+      "branches": 14,
+      "covered_branches": 14
+    },
+    "max_crap": 16.0
+  },
+  "mutations": {
+    "path": "mutations.json",
+    "planned": 9,
+    "killed": 9,
+    "optimizer_attempts": 0,
+    "phases": "G1/M1/G2"
+  },
+  "cost": {
+    "path": "cost.json",
+    "passes": 2,
+    "cases_per_pass": 8,
+    "matched_pairs_per_pass": 96,
+    "measured_pairs_per_pass": 80
+  },
+  "benchmark_output_checks": {
+    "new_parent_created": true,
+    "existing_destination_refused": true,
+    "existing_bytes_unchanged": true,
+    "returncode": 1
+  },
+  "checks": {
+    "ruff_check": "passed",
+    "ruff_format": {
+      "status": "passed",
+      "files": 2077
+    },
+    "repository": {
+      "status": "passed",
+      "files": 4171,
+      "references": 361,
+      "tasks": 64
+    }
+  },
+  "sources": {
+    "src/mars_titan/memory/spaced_regional_readout.py": "e1a8a2b507724cc3014b91589cce450974187b5070cb4bdfcc88987bc2171ab2",
+    "src/mars_titan/memory/spaced_utility_readout.py": "ad507d327322b5cbb4499e32be197bdde480a4da5c28f1b1f42a5688ab49ae3b",
+    "src/mars_titan/models/titans/evidence_bridge.py": "36e81235b1c2f88000606b4df975698d820ad06497f4ff63e459d482eff471cf",
+    "src/mars_titan/models/titans/bridge_recurrence.py": "eff1e08489860b6b380503602be375b21d948af3b41a802025d2d9942b7d95ab",
+    "src/mars_titan/models/titans/bridge_hierarchy.py": "5b6fd9732862b0a6c6c11ea3e052d366bcca14bf7c2d97697ed63d64f41aaf84",
+    "src/mars_titan/models/titans/regional_episode_readout.py": "15bcce538b607f65f281df94cadfd64db87d3d55b9f7d5df67542b2e89f60c36",
+    "tests/memory/test_spaced_regional_readout.py": "2eeb220a126f6eff52c7e4369dc04f6b26dfc5048ffba104471ce14fa3d1f343",
+    "tests/memory/test_spaced_utility_readout.py": "3a80c981180e9616cf37b86b33edf69e5f014a050247dc6aec225064eee490de",
+    "tests/models/titans/test_episodic_readout.py": "4251563092e3f230ae8d566353a3116d31b37551b84abd0d78fc87c6314ca728",
+    "tests/models/titans/test_financial_adapter.py": "c793c84a7f69b790592520eee4bde57c8a879d9c9e4cb7945dbff60cfdeb1c17",
+    "reports/engineering/spaced-regional-20261027/cost_probe.py": "cc4fc15b75863c65cee09e3833e02666dc47c4d9a2fde4705251f6c736252ce6",
+    "reports/engineering/spaced-readout-20261027/cost_probe.py": "5b614202895dce2da3dbaeb5e9dafaf85680b81d0c2715146924faf9ea039e27"
+  },
+  "preserved_canonical_sources": {
+    "count": 34,
+    "manifest_path": "reports/engineering/spaced-selected-20261027/verification.json",
+    "manifest_sha256": "c65abebf157c9734def0b96e08c9eca727f351854fbc63aa8f6aaf1872f768e5"
+  },
+  "artifacts": {
+    "quality.json": "9898a42707d4aa4f20c66300737fe95a7cef53407c791734f8c2698477725f33",
+    "mutations.json": "b1c4a10e7e43e72756d40e7976f68e33e9990b939dbc991afa3fa292f6ce1167",
+    "cost.json": "cefcffd729e1e8c0fed2ad1272c707321967979c5d379c49d2b669f0943418e2"
+  },
+  "hold_sha256": "8a658080c1ac4e63847eba58b177020339da6ec47021cf26d2701830073c87fd",
+  "cuda_executed": false,
+  "scientific_training_executed": false,
+  "predictive_improvement_measured": false,
+  "final_test_access": false,
+  "regional_producer_implemented": true,
+  "regional_session_integrated": false,
+  "regional_window_integrated": false,
+  "limits": [
+    "Solo K1 y evaluación sin diferenciación. La ruta apagada conserva las opciones anteriores.",
+    "Suprimir un episodio elimina su contribución en todas las regiones, sin reemplazarlo por otro candidato.",
+    "La lectura original permanece intacta. El diagnóstico recalcula una proyección del pool y la consulta, compartidas entre supresiones.",
+    "Se conservan los límites de memoria y la cuota total de actualizaciones antes de leer.",
+    "La integración regional en sesión durable, cargador y estudio por ventanas sigue pendiente.",
+    "Las pruebas y medidas usan fixtures explícitos, sin entrenamientos ni resultados de generalización.",
+    "GPU ocupada por otros procesos, sin reserva exclusiva. Las tres pruebas CUDA nuevas siguen sin ejecutar."
+  ]
+}

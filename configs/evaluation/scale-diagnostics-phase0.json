@@ -1,0 +1,116 @@
+{
+  "schema_version": 1,
+  "kind": "scale_diagnostics_phase0",
+  "status": "declared_before_reading_results",
+  "declared_at_utc": "2026-10-23T19:15:00Z",
+  "issue": 743,
+  "study_issue": 742,
+  "final_test_opened": false,
+  "optimizer_steps": 0,
+  "question": "Si los predictores de los pilotos ordenan los residuos y pierden frente a cero por exceso de amplitud",
+  "fit_partition": ["calibration"],
+  "sensitivity_fit_partition": ["validation", "calibration"],
+  "evaluation_partition": "evaluation",
+  "shrinkage": {
+    "objective": "session_mae",
+    "range": [0.0, 1.0],
+    "scope": "market",
+    "ties": "smallest_minimizer",
+    "solver": "weighted_median_of_target_over_prediction"
+  },
+  "past_median": {
+    "lag_sessions": 2,
+    "window": 60,
+    "min_labels": 20,
+    "partitions": ["validation", "calibration", "evaluation"]
+  },
+  "bootstrap": {
+    "method": "circular_block_bootstrap_utc_days",
+    "block_length": 16,
+    "sensitivity_block_lengths": [8, 32],
+    "replicates": 2000,
+    "seed": 20261023,
+    "confidence": 0.95,
+    "multiplicity": "max_absolute_studentized_within_cohort_family"
+  },
+  "minimum_detectable_effect": {
+    "candidates": [8, 26, 32],
+    "alpha": 0.05,
+    "power": 0.8,
+    "test": "one_sided_bonferroni_with_ar1_effective_sessions"
+  },
+  "rule": {
+    "primary_source": "point_loss_controls",
+    "statistic": "mean_session_pearson_ic",
+    "distinguishable": "simultaneous_interval_lower_bound_above_zero",
+    "if_none_distinguishable": "La criba usará el IC como contraste principal y el informe dirá que batir a cero no es alcanzable con estas entradas",
+    "otherwise": "El contraste principal sigue siendo el MAE calibrado con lambda fijado en G y el diagnóstico estima la amplitud que sobra"
+  },
+  "sources": [
+    {
+      "name": "point_loss_controls",
+      "inventory": "reports/research/point-loss-controls-20261020/development-v1/artifacts.json",
+      "directory": "point-loss-controls-20261020"
+    },
+    {
+      "name": "quantile_multiseed",
+      "inventory": "reports/research/quantile-multiseed-20261020/development-v1/artifacts.json",
+      "directory": "quantile-multiseed-20261020"
+    },
+    {
+      "name": "quantile_routing",
+      "inventory": "reports/research/quantile-routing-20261020/development-v1/artifacts.json",
+      "directory": "dendritic-readout-20261020"
+    },
+    {
+      "name": "local_capture",
+      "inventory": "reports/research/local-capture-20261020/development-v1/artifacts.json",
+      "directory": "local-capture-20261020"
+    },
+    {
+      "name": "neural_plasticity",
+      "inventory": "reports/research/neural-plasticity-20261020/development-v2/artifacts.json",
+      "directory": "neural-plasticity-20261020"
+    },
+    {
+      "name": "key_competition",
+      "inventory": "reports/research/key-competition-20261020/development-v1/artifacts.json",
+      "directory": "key-competition-20261020"
+    },
+    {
+      "name": "combined_memory",
+      "layout": "runs",
+      "directory": "combined-study-20261018/study/runs/fold-018"
+    },
+    {
+      "name": "refinement_n64_original",
+      "layout": "refinement",
+      "directory": "adaptive-refinement-20261018/study-n64-original-v4"
+    },
+    {
+      "name": "refinement_n64_geometry",
+      "layout": "refinement",
+      "directory": "adaptive-refinement-20261018/study-n64-geometry-v4"
+    },
+    {
+      "name": "refinement_n256_original",
+      "layout": "refinement",
+      "directory": "adaptive-refinement-20261018/study-n256-original-v4"
+    },
+    {
+      "name": "refinement_n256_geometry",
+      "layout": "refinement",
+      "directory": "adaptive-refinement-20261018/study-n256-geometry-v4"
+    }
+  ],
+  "excluded": [
+    {
+      "directory": "microstudy-20261018",
+      "reason": "Cuatro activos por sesión no permiten un IC transversal útil y su ventana de 2005 no comparte población con el resto"
+    },
+    {
+      "directory": "adaptive-refinement-20261018/study-*-v3",
+      "reason": "Versiones sustituidas por las v4 publicadas en refinement-development-20261019"
+    }
+  ]
+}

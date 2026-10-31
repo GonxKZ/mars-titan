@@ -1,0 +1,77 @@
+{
+  "repositories": {
+    "Objective": {
+      "root": ".",
+      "test_path": "tests/memory/test_lesion_reads.py",
+      "test_sha256": "bd5802bc60db9d7eb7a7d5c7ea730f9edff523d7a82b0457231a425f59f8bc6e"
+    }
+  },
+  "sources": {
+    "area": {
+      "path": "src/mars_titan/memory/area_memory.py",
+      "sha256": "4a2013705a289a32d4c290b48897cca67af3e04c0c8a12b7e56a155444ee19d5"
+    },
+    "bridge": {
+      "path": "src/mars_titan/memory/area_query_bridge.py",
+      "sha256": "d29e43eb6aec0f067a3560893cb16ba1447b87a4dc35bf922b3a5e741bc6fb2a"
+    },
+    "ledger": {
+      "path": "src/mars_titan/memory/lesion_ledger.py",
+      "sha256": "a71d726af049dec81fee3def79a60be0ba9ebd3ce45aa05733852b4d6a9b5578"
+    },
+    "mixture": {
+      "path": "src/mars_titan/memory/multiscale_mixture.py",
+      "sha256": "fb06a9607f44513c5c2961cffd9d9af0f6d12df1d58ad9e7fb258503389a3df2"
+    }
+  },
+  "recipes": [
+    {
+      "id": "ignore_coordinate_mask",
+      "family": "Objective",
+      "source_key": "bridge",
+      "nodeid": "tests/memory/test_lesion_reads.py::test_bridge_applies_coordinate_mask_to_unmasked_input_queries",
+      "anchor": "current = torch.where(coordinates[:, None, :], current, 0.0)",
+      "replacement": "current = current",
+      "expected_failure": {
+        "exception_type": "AssertionError",
+        "longrepr_contains": "not close"
+      }
+    },
+    {
+      "id": "keep_lesioned_bridge_edges",
+      "family": "Objective",
+      "source_key": "bridge",
+      "nodeid": "tests/memory/test_lesion_reads.py::test_lesions_match_restricted_operators_at_every_bridge_step[active_mean-2]",
+      "anchor": "if mask is not None and not (mask[a] and mask[(a + 1) % self.areas]):",
+      "replacement": "if False:",
+      "expected_failure": {
+        "exception_type": "AssertionError",
+        "longrepr_contains": "not close"
+      }
+    },
+    {
+      "id": "discard_active_area_denominator",
+      "family": "Objective",
+      "source_key": "area",
+      "nodeid": "tests/memory/test_lesion_reads.py::test_lesions_match_restricted_operators_at_every_bridge_step[active_mean-2]",
+      "anchor": "if reduction == \"active_mean\" and mask is not None",
+      "replacement": "if False",
+      "expected_failure": {
+        "exception_type": "AssertionError",
+        "longrepr_contains": "not close"
+      }
+    },
+    {
+      "id": "discard_zero_gain_normalization",
+      "family": "Objective",
+      "source_key": "bridge",
+      "nodeid": "tests/memory/test_lesion_reads.py::test_zero_gain_keeps_the_declared_normalization_after_coordinate_removal",
+      "anchor": "current = unit_rows(current)",
+      "replacement": "current = current",
+      "expected_failure": {
+        "exception_type": "AssertionError",
+        "longrepr_contains": "not close"
+      }
+    }
+  ]
+}

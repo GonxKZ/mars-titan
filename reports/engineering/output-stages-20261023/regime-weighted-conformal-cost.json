@@ -1,0 +1,237 @@
+{
+ "schema_version": 1,
+ "kind": "regime_weighted_conformal_cost",
+ "issue": 748,
+ "measured_at": "2026-10-27T21:13:15+00:00",
+ "commit": "8833b68c2b1ec8ccba39e219dac723c4cb9ff4eb",
+ "sources_sha256": {
+  "src/mars_titan/calibration/regime_weighted_conformal.py": "ac301d3b0a43182de0a3e73ce233dfddb6d534c0d7f7ac36922a520c3826a28b",
+  "src/mars_titan/calibration/conformal_quantiles.py": "31417509744c33189ea9edaf8fbb991db1cac01cea2a90e866e7d4b11fea9a68",
+  "benchmarks/regime_weighted_conformal_cost.py": "a647ec0a4afd565a839765d48bc3d81526ce66a10f6ab59e6f077977a9fa1535"
+ },
+ "data": "sintéticos con semilla fija, solo para fijar formas. Nada se ajusta ni evalúa",
+ "environment": {
+  "cpu": "AMD Ryzen 9 8945HS w/ Radeon 780M Graphics",
+  "cpu_count": 16,
+  "threads": {
+   "omp": null,
+   "openblas": null
+  },
+  "python": "3.12.14",
+  "numpy": "2.5.3",
+  "load_average_at_start": [
+   8.5107421875,
+   12.16748046875,
+   17.8642578125
+  ],
+  "load_average_at_end": [
+   4.552734375,
+   7.0126953125,
+   11.0810546875
+  ],
+  "concurrent_load": "otras sesiones comparten la máquina, ver las cargas medias"
+ },
+ "not_measured": [
+  "forward y backward, porque la etapa no tiene tensores ni parámetros entrenables",
+  "GPU, por el mismo motivo",
+  "lectura de Parquet y alineación con la vista, que hará la criba",
+  "energía, sin instrumento adecuado"
+ ],
+ "cases": {
+  "quarter_256": {
+   "assets": 256,
+   "evaluated_sessions": 63,
+   "evaluated_rows": 16128,
+   "config": {
+    "bandwidth": 0.5,
+    "lookback_days": 120,
+    "regime_days": 30,
+    "min_rows": 1000,
+    "seed": 20261027
+   },
+   "fit": {
+    "median_s": 0.013049649074673653,
+    "min_s": 0.012782214907929301,
+    "repeats": 3
+   },
+   "context": {
+    "replay": {
+     "median_s": 30.341113773873076,
+     "min_s": 23.64221138996072,
+     "repeats": 3
+    },
+    "numpy_peak_bytes": 22169472,
+    "past_rows": {
+     "min": 16128,
+     "max": 30720
+    },
+    "effective_rows": {
+     "min": 1.1119055463431944,
+     "mean": 3013.340659639985
+    }
+   },
+   "uniform": {
+    "replay": {
+     "median_s": 0.797851799055934,
+     "min_s": 0.7734933779574931,
+     "repeats": 3
+    },
+    "numpy_peak_bytes": 7005681,
+    "past_rows": {
+     "min": 16128,
+     "max": 30720
+    },
+    "effective_rows": {
+     "min": 16128.0,
+     "mean": 24003.04761904762
+    }
+   },
+   "shuffled": {
+    "replay": {
+     "median_s": 31.606839156942442,
+     "min_s": 31.136619876138866,
+     "repeats": 3
+    },
+    "numpy_peak_bytes": 22165749,
+    "past_rows": {
+     "min": 16128,
+     "max": 30720
+    },
+    "effective_rows": {
+     "min": 1.1119055463431946,
+     "mean": 3013.3406596399836
+    }
+   }
+  },
+  "half_year_256": {
+   "assets": 256,
+   "evaluated_sessions": 126,
+   "evaluated_rows": 32256,
+   "config": {
+    "bandwidth": 0.5,
+    "lookback_days": 120,
+    "regime_days": 30,
+    "min_rows": 1000,
+    "seed": 20261027
+   },
+   "fit": {
+    "median_s": 0.006820125970989466,
+    "min_s": 0.006522094830870628,
+    "repeats": 3
+   },
+   "context": {
+    "replay": {
+     "median_s": 100.00346536491998,
+     "min_s": 97.50571956904605,
+     "repeats": 3
+    },
+    "numpy_peak_bytes": 24410050,
+    "past_rows": {
+     "min": 16128,
+     "max": 30720
+    },
+    "effective_rows": {
+     "min": 1.000000008923564,
+     "mean": 6553.115496957205
+    }
+   },
+   "uniform": {
+    "replay": {
+     "median_s": 1.9429139730054885,
+     "min_s": 1.722595433006063,
+     "repeats": 3
+    },
+    "numpy_peak_bytes": 10555897,
+    "past_rows": {
+     "min": 16128,
+     "max": 30720
+    },
+    "effective_rows": {
+     "min": 16128.0,
+     "mean": 27361.52380952381
+    }
+   },
+   "shuffled": {
+    "replay": {
+     "median_s": 80.05932166799903,
+     "min_s": 50.05450292886235,
+     "repeats": 3
+    },
+    "numpy_peak_bytes": 24410879,
+    "past_rows": {
+     "min": 16128,
+     "max": 30720
+    },
+    "effective_rows": {
+     "min": 1.000000008923564,
+     "mean": 6553.1154969572
+    }
+   }
+  },
+  "one_session_4200": {
+   "assets": 4200,
+   "evaluated_sessions": 1,
+   "evaluated_rows": 4200,
+   "config": {
+    "bandwidth": 0.5,
+    "lookback_days": 120,
+    "regime_days": 30,
+    "min_rows": 1000,
+    "seed": 20261027
+   },
+   "fit": {
+    "median_s": 0.15392998605966568,
+    "min_s": 0.15392998605966568,
+    "repeats": 1
+   },
+   "context": {
+    "replay": {
+     "median_s": 42.484726808965206,
+     "min_s": 42.484726808965206,
+     "repeats": 1
+    },
+    "numpy_peak_bytes": 50103831,
+    "past_rows": {
+     "min": 264600,
+     "max": 264600
+    },
+    "effective_rows": {
+     "min": 70.60454687133216,
+     "mean": 58857.55961882468
+    }
+   },
+   "uniform": {
+    "replay": {
+     "median_s": 0.32630763622000813,
+     "min_s": 0.32630763622000813,
+     "repeats": 1
+    },
+    "numpy_peak_bytes": 46134559,
+    "past_rows": {
+     "min": 264600,
+     "max": 264600
+    },
+    "effective_rows": {
+     "min": 264600.0,
+     "mean": 264600.0
+    }
+   },
+   "shuffled": {
+    "replay": {
+     "median_s": 44.319883490912616,
+     "min_s": 44.319883490912616,
+     "repeats": 1
+    },
+    "numpy_peak_bytes": 50104255,
+    "past_rows": {
+     "min": 264600,
+     "max": 264600
+    },
+    "effective_rows": {
+     "min": 70.60454687133215,
+     "mean": 58857.55961882468
+    }
+   }
+  }
+ }
+}

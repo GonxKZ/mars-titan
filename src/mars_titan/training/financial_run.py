@@ -17,24 +17,33 @@ import importlib
 import json
 import math
 import time
-from contextlib import closing
+from contextlib import closing, contextmanager
 from dataclasses import asdict, dataclass, field, replace
 from datetime import UTC, datetime
 from pathlib import Path
 
+import numpy as np
 import torch
 
 from mars_titan import nvtx_ranges
 from mars_titan.budget_training import validate_loss
+from mars_titan.data.input_policy import MODALITIES
 from mars_titan.data.storage import atomic_json, outside_source, sha256
 from mars_titan.evaluation.session_metrics import SessionErrors
 from mars_titan.learning_traces.hooks import observing, traced_update
 from mars_titan.memory.financial_observations import FinancialObservationSource
+from mars_titan.memory.mature_reliability import ReliabilitySignal
 from mars_titan.models.predictive_adaptation import is_adapter_name
 from mars_titan.models.quantile_head import PINBALL, QUANTILE_HEAD, pinball_loss
+from mars_titan.models.titans.auxiliary_horizons import auxiliary_errors
+from mars_titan.models.titans.axial_time_region import join_history_rows, map_history_rows
 from mars_titan.models.titans.config import MAX_BLOCK_ROWS, canonical
 from mars_titan.models.titans.financial import VARIANTS, FinancialPredictor, FinancialState
-from mars_titan.models.titans.financial_inputs import DecisionBatch, validated_cpu_batches
+from mars_titan.models.titans.financial_inputs import (
+    DecisionBatch,
+    device_tensor,
+    validated_cpu_batches,
+)
 from mars_titan.models.titans.frozen_financial import _implementation, _numerics
 from mars_titan.models.titans.state import (
     deferred_checks,
@@ -52,12 +61,22 @@ from .checkpoints import (
     restore_rng,
     save_training_state,
 )
+from .common_epoch import chosen_state
+from .determinism import (
+    TORCH_DETERMINISTIC,
+    declared_determinism,
+    valid_determinism,
+)
+from .horizon_labels import HorizonLabels
 from .input_pipeline import prepared
 from .kernel_policy import declared_policy, require_policy, valid_precision
 from .learning_hold import require_learning_allowed
 from .quantile_objectives import POINT_OBJECTIVES, QUANTILE_OBJECTIVES, point_objective
+from .schedule_free import AveragedPoint, ScheduleFree, is_schedule_free
 from .selection import (
     AWAIT,
+    CHRONOLOGICAL_MODES,
+    COMMON_EPOCH,
     FINISH,
     VALIDATION_PLATEAU,
     advance_selection,
@@ -67,6 +86,8 @@ from .selection import (
     initial_selection,
     validate_selection,
 )
+from .shrink_perturb import ShrinkPerturb, shrink_perturb
+from .weight_averaging import ShadowWeights, WeightAverage, applied
 
 RECIPE = "titans_financial_chronological_v1"
 _OWN_MODULES = (
@@ -74,13 +95,39 @@ _OWN_MODULES = (
     "mars_titan.memory.financial_observations",
     "mars_titan.training.checkpoints",
     "mars_titan.training.selection",
+    "mars_titan.training.common_epoch",
     "mars_titan.training.quantile_objectives",
+    "mars_titan.training.horizon_labels",
     "mars_titan.evaluation.session_metrics",
+)
+# F2 y F3 de #749, en el orden de la receta. Su código entra en la identidad si se declaran.
+_WEIGHT_OPTIONS = dict(
+    weight_average=WeightAverage, schedule_free=ScheduleFree, shrink_perturb=ShrinkPerturb
+)
+_WEIGHT_MODULES = dict(
+    weight_average="mars_titan.training.weight_averaging",
+    schedule_free="mars_titan.training.schedule_free",
+    shrink_perturb="mars_titan.training.shrink_perturb",
+)
+# Variantes de #751 cuyo código solo entra en la identidad cuando el predictor las declara.
+_PREDICTOR_MODULES = dict(
+    regional_variant="mars_titan.models.titans.regional_variants",
+    cross_asset_attention="mars_titan.models.titans.cross_asset_attention",
+    axial_time_region="mars_titan.models.titans.axial_time_region",
+    fractal_shared_operator="mars_titan.models.titans.fractal_shared_operator",
+    asset_groups="mars_titan.models.titans.asset_groups",
 )
 
 
 # Marca de una predicción del tramo cuyo grafo se recalcula al actualizar.
 _REPLAY = object()
+# Contadores de F5. Solo aparecen si el predictor declara las cabezas auxiliares.
+_AUXILIARY_COUNTERS = (
+    "auxiliary_labels",
+    "auxiliary_labels_in_loss",
+    "auxiliary_labels_discarded",
+    "auxiliary_loss_sum",
+)
 
 
 def _default_selection():
@@ -114,11 +161,23 @@ class ChronologicalRecipe:
     # None ajusta solo con las etiquetas. Una fracción w suma la distancia a las salidas de un
     # profesor en las filas de ajuste con peso w y deja 1 − w a la tarea (#57).
     distillation_weight: float | None = None
+    # None valida con los pesos del ajuste. Un objeto declara la media exponencial de F2
+    # (#749), con la que se valida, se elige y se emite.
+    weight_average: dict | None = None
+    # None ajusta con AdamW. Un objeto declara AdamW sin calendario de F3 (#749).
+    schedule_free: dict | None = None
+    # None empieza con los pesos recibidos. Un objeto declara la contracción y el ruido de
+    # F3 (#749), aplicados una vez antes del primer paso de una ejecución nueva.
+    shrink_perturb: dict | None = None
+    # None conserva el determinismo del proceso. `torch_deterministic_algorithms_v1` activa el
+    # modo determinista de PyTorch y de cuDNN al construir el recorrido y entra en su
+    # identidad (#794).
+    determinism: str | None = None
 
     def __post_init__(self):
         # Los controles puntuales conservan la cabeza y validan los mismos hiperparámetros.
         validate_loss("mae" if self.loss in QUANTILE_OBJECTIVES else self.loss, self.huber_delta)
-        validate_selection(self.selection, epochs=self.epochs)
+        validate_selection(self.selection, epochs=self.epochs, modes=CHRONOLOGICAL_MODES)
         distillation.checked_weight(self.distillation_weight)
         if self.loss in POINT_OBJECTIVES and self.distillation_weight is not None:
             raise ValueError("El control de solo mediana no admite destilación de las colas")
@@ -150,6 +209,25 @@ class ChronologicalRecipe:
             raise ValueError(
                 "La receta necesita truncamiento, presupuesto, optimizador y parada válidos"
             )
+        if not valid_determinism(self.determinism):
+            raise ValueError(f"El determinismo de la receta es None o {TORCH_DETERMINISTIC}")
+        self.weight_options()
+
+    def weight_options(self):
+        """Configuraciones de F2 y F3 sobre los pesos del ajuste, o None si no se declaran."""
+        options = {}
+        for name, kind in _WEIGHT_OPTIONS.items():
+            value = getattr(self, name)
+            if value is not None and (type(value) is not dict or set(value) != set(asdict(kind()))):
+                raise ValueError(f"{name} debe declarar toda su configuración")
+            options[name] = None if value is None else kind(**value)
+        if options["weight_average"] is not None and options["schedule_free"] is not None:
+            raise ValueError("La media exponencial y el ajuste sin calendario promedian dos veces")
+        if self.weight_decay_anchor is not None and (
+            options["schedule_free"] is not None or options["shrink_perturb"] is not None
+        ):
+            raise ValueError("El decaimiento anclado solo se combina con AdamW sin contracción")
+        return options
 
     def _bounded(self):
         return (
@@ -168,17 +246,26 @@ class ChronologicalRecipe:
             fields["gradient_accumulation"] = "flow_blocks_replayed_from_segment_start_v1"
         if fields["precision"] is None:
             fields.pop("precision")
+        if fields["determinism"] is None:
+            fields.pop("determinism")
         if fields["weight_decay_anchor"] is None:
             fields.pop("weight_decay_anchor")
         if fields["distillation_weight"] is None:
             fields.pop("distillation_weight")
         else:
             fields["distillation_distance"] = distillation.DISTANCE
+        # F2 y F3 solo aparecen si se declaran, con la identidad de su configuración.
+        options = self.weight_options()
+        for name, option in options.items():
+            if option is None:
+                fields.pop(name)
+            else:
+                fields[name] = option.identity()
         return dict(
             schema_version=1,
             recipe=RECIPE,
             **fields,
-            optimizer="AdamW",
+            optimizer="AdamW" if options["schedule_free"] is None else "AdamWScheduleFree",
             truncation_unit="decision_instants_per_differentiable_segment",
             label_rule="loss_only_after_maturity_event_then_next_segment_update",
             loss_reduction="mean_over_matured_labels_of_segment",
@@ -244,7 +331,11 @@ def _detached(state, parameter_id=None):
     if mac is not None:
         # Todos los tensores del estado MAC, también las ventanas de la convolución causal.
         mac = map_mac_rows(mac, lambda value: value.detach())
-    return replace(state, parameter_id=parameter_id or state.parameter_id, mac=mac)
+    regions = state.regions
+    if regions is not None:
+        # El historial de C2 corta su grafo en el mismo punto que MAC.
+        regions = map_history_rows(regions, lambda value: value.detach())
+    return replace(state, parameter_id=parameter_id or state.parameter_id, mac=mac, regions=regions)
 
 
 class FlowStates:
@@ -323,13 +414,19 @@ class FlowStates:
             else:
                 runs.append([block, row, row + 1])
 
-        state, mac = first.state, None
+        state, mac, regions = first.state, None, None
         if state.mac is not None:
             parts = [
                 map_mac_rows(block.state.mac, lambda value, a=start, b=stop: value[a:b])
                 for block, start, stop in runs
             ]
             mac = parts[0] if len(parts) == 1 else join_mac_rows(parts)
+        if state.regions is not None:
+            pieces = [
+                map_history_rows(block.state.regions, lambda value, a=start, b=stop: value[a:b])
+                for block, start, stop in runs
+            ]
+            regions = pieces[0] if len(pieces) == 1 else join_history_rows(pieces)
         return FinancialState(
             state.config_id,
             state.parameter_id,
@@ -338,6 +435,7 @@ class FlowStates:
             tuple(block.state.last_prediction_at[row] for block, row in entries),
             torch.tensor([block.steps[row] for block, row in entries], dtype=torch.int64),
             mac,
+            regions,
         )
 
 
@@ -382,9 +480,9 @@ class _Pass:
     targets: list = field(default_factory=list)
     used: list = field(default_factory=list)
     instants: int = 0
-    # Con acumulación: lotes del tramo en orden, con el plan de C de su evento, y estado de
-    # cada flujo al empezarlo. None indica un flujo nuevo dentro del tramo. Se vacían en
-    # cada actualización.
+    # Con acumulación: lotes del tramo en orden, con el plan de C de su evento y la señal
+    # de #791 que leyeron, y estado de cada flujo al empezarlo. None indica un flujo nuevo
+    # dentro del tramo. Se vacían en cada actualización.
     segment: list = field(default_factory=list)
     starts: dict = field(default_factory=dict)
     # Con la penalización C, un elemento por grupo lógico medido del tramo: su término con
@@ -392,6 +490,10 @@ class _Pass:
     penalties: list = field(default_factory=list)
     # Con PT4, el contexto de mercado del recorrido. Entre eventos no guarda nada pendiente.
     context: object = None
+    # Con F5, el registro de etiquetas auxiliares del recorrido de ajuste.
+    horizons: object = None
+    # Con #791, la señal de fiabilidad madura del recorrido.
+    reliability: object = None
 
 
 class ChronologicalInference:
@@ -419,6 +521,25 @@ class ChronologicalInference:
             raise ValueError(
                 "La cabeza de cuantiles requiere pinball o un control puntual identificado"
             )
+        # Un objetivo de salida de #749 sustituye la pérdida MAE de la cabeza escalar, que es
+        # su control declarado. La destilación supone las salidas escalares o de cuantiles.
+        self.objective = predictor.output_objective
+        if self.objective is not None and (
+            recipe.loss != "mae" or recipe.distillation_weight is not None
+        ):
+            raise ValueError("El objetivo de salida sustituye la pérdida mae sin destilación")
+        # F1 y A4 son otros objetivos de salida. Solo se distinguen para rechazar el
+        # postentrenamiento, que todavía no tiene un contraste declarado para ellos.
+        self.undeclared_posttraining = (
+            predictor.config.laplace_scale_head is not None
+            or predictor.config.opponent_heads is not None
+        )
+        # Las filas emitidas llevan cinco niveles con la cabeza de cuantiles o con F1.
+        self.emits_levels = self.quantiles or hasattr(self.objective, "levels")
+        # F5 solo cambia el ajuste. La inferencia y la validación no lo usan.
+        self.horizons = predictor.config.auxiliary_horizons
+        # #791 cambia el ajuste y la inferencia, así que los dos recorridos llevan su señal.
+        self.reliability = predictor.config.mature_reliability
         if torch.backends.mha.get_fastpath_enabled() or torch.is_inference_mode_enabled():
             raise ValueError("El recorrido exige fastpath=False declarado y sin inference_mode")
         if (
@@ -431,8 +552,16 @@ class ChronologicalInference:
             raise ValueError("El recorrido admite cpu o cuda:0 explícitos")
         self.predictor, self.recipe = predictor, recipe
         self.audit = [] if audit else None
-        # La política se aplica antes de calcular nada y antes de registrar `_numerics`.
+        # La política se aplica antes de calcular nada y antes de registrar `_numerics`, que
+        # guarda también las banderas del determinismo.
         self.kernel_policy = declared_policy(recipe.precision)
+        self.determinism = declared_determinism(recipe.determinism)
+
+    def _signal(self, run):
+        """Señal de #791 del recorrido, creada al usarla por primera vez, o None."""
+        if self.reliability is not None and run.reliability is None:
+            run.reliability = ReliabilitySignal(self.reliability)
+        return run.reliability
 
     def _observe(self, run, source, event, *, differentiable, blocks=None):
         """Predecir cada bloque desde el estado previo de sus flujos, sin efectos cruzados.
@@ -455,9 +584,20 @@ class ChronologicalInference:
         with nvtx_ranges.phase("titans.control_plan"):
             plan = self._control_plan(run, source, event, validated) if self.penalized else {}
         measured, emitted = [], []
+        ledger = None
+        if differentiable and self.horizons is not None:
+            if run.horizons is None:
+                run.horizons = HorizonLabels(self.horizons)
+                for key in _AUXILIARY_COUNTERS:
+                    run.counters.setdefault(key, 0)
+            ledger = run.horizons
+            ledger.observe(flow.split("/", 1)[0] for cpu in validated for flow in cpu.flow_ids)
+        # Las operaciones por sesión solo admiten el instante completo en un único bloque.
+        complete = len(validated) == 1
         if self.uses_context and run.context is None:
             run.context = predictor.initial_context(differentiable=grad)
         context = dict(context=run.context) if self.uses_context else {}
+        signal, surprises = self._signal(run), []
         # Las comprobaciones de finitud de todos los bloques del evento se resuelven juntas
         # al final, antes de volver al recorrido, que es el único que aplica pasos, guarda
         # checkpoints o cierra recibos. Así no se espera a la GPU tras cada bloque.
@@ -466,6 +606,14 @@ class ChronologicalInference:
                 batch = DecisionBatch.from_validated(
                     cpu, device=self.device, dtype=predictor.head.weight.dtype
                 )
+                options = dict(plan)
+                if signal is not None:
+                    # Todos los bloques del evento leen la misma señal, la de sus etiquetas.
+                    options["reliability"] = torch.tensor(
+                        signal.values(batch.flow_ids),
+                        dtype=predictor.head.weight.dtype,
+                        device=self.device,
+                    )
                 new = tuple(flow for flow in batch.flow_ids if flow not in run.flows)
                 if new:
                     run.flows.put(predictor.initial_state(new, differentiable=grad))
@@ -474,11 +622,16 @@ class ChronologicalInference:
                         if flow not in run.starts:
                             # La repetición parte del estado sin grafo de cada flujo al empezar.
                             run.starts[flow] = None if flow in new else run.flows.handle(flow)
-                    run.segment.append((batch, plan))
+                    run.segment.append((batch, options, complete))
                 state = run.flows.gather(batch.flow_ids)
                 with nvtx_ranges.phase("titans.prepare"), torch.set_grad_enabled(grad):
                     prepared = predictor.prepare(
-                        batch, state, differentiable=grad, **plan, **context
+                        batch,
+                        state,
+                        differentiable=grad,
+                        session_complete=complete,
+                        **options,
+                        **context,
                     )
                 if self.uses_context:
                     # Los bloques siguientes del evento leen el mismo contexto confirmado.
@@ -496,27 +649,46 @@ class ChronologicalInference:
                     continue
                 # El error y la selección usan la mediana emitida. La pérdida usa los cinco niveles.
                 # `unbind` deja un solo nodo de autograd para las filas del bloque.
-                graphs = (
-                    prepared.quantiles if self.quantiles else prepared.point_predictions
-                ).unbind()
+                graphs = self._graphs(prepared).unbind()
                 if grad:
                     for row, key in enumerate(
                         zip(batch.flow_ids, batch.prediction_at, strict=True)
                     ):
                         run.graphs[key] = _REPLAY if accumulate else graphs[row]
                 emitted.append((batch, prepared))
+                if prepared.surprise is not None:
+                    surprises.append((batch.flow_ids, prepared.surprise))
                 run.counters["predictions"] += size
+                if ledger is not None:
+                    ledger.remember(cpu)
             if self.uses_context:
                 # La sesión se escribe una vez, después de emitir todas sus predicciones.
                 with nvtx_ranges.phase("titans.context"), torch.set_grad_enabled(grad):
                     run.context = predictor.commit_context(context["context"], differentiable=grad)
             with nvtx_ranges.phase("titans.emit"):
                 self._emit(run, source, emitted)
+            if surprises:
+                # El control de sorpresa la registra al emitir y la leen los eventos siguientes.
+                losses = torch.cat([loss for _, loss in surprises]).tolist()
+                signal.observe([flow for flows, _ in surprises for flow in flows], losses)
             if measured:
                 with nvtx_ranges.phase("titans.penalty"):
                     self._penalty(run, measured, keep=grad, replay=accumulate)
         if event.inputs and not warmup:
             run.instants += 1
+
+    def _graphs(self, prepared):
+        """Salidas por fila que entran en la pérdida del tramo."""
+        if self.quantiles:
+            return prepared.quantiles
+        if self.objective is not None:
+            return prepared.outputs
+        return prepared.point_predictions
+
+    def _levels(self, prepared):
+        if self.quantiles:
+            return prepared.quantiles.detach()
+        return self.objective.levels(prepared.outputs)
 
     def _emit(self, run, source, emitted):
         """Registrar las predicciones emitidas del evento con una sola copia al anfitrión.
@@ -530,8 +702,8 @@ class ChronologicalInference:
             [prepared.point_predictions.detach() for _, prepared in emitted]
         ).tolist()
         levels = None
-        if run.rows is not None and self.quantiles:
-            levels = torch.cat([prepared.quantiles.detach() for _, prepared in emitted]).tolist()
+        if run.rows is not None and self.emits_levels:
+            levels = torch.cat([self._levels(prepared) for _, prepared in emitted]).tolist()
         keys = [
             key
             for batch, _ in emitted
@@ -603,12 +775,16 @@ class ChronologicalInference:
 
     def _labels(self, run, event, *, train):
         """Resolver etiquetas maduras contra la predicción emitida y su grafo vigente."""
-        markets, moments, errors = [], [], []
+        markets, moments, errors, matured = [], [], [], []
         for flow, decision_at, value in event.labels:
             key = flow, decision_at
             if key not in run.pending:
                 raise ValueError("El label no tiene una predicción emitida pendiente")
             issued = run.pending.pop(key)
+            if self.reliability is not None:
+                matured.append((flow, issued, value))
+            if train and run.horizons is not None:
+                run.counters["auxiliary_labels"] += run.horizons.mature(flow, decision_at, value)
             markets.append(flow.split("/", 1)[0])
             moments.append(decision_at)
             errors.append(issued - value)
@@ -627,6 +803,9 @@ class ChronologicalInference:
             run.predictions.append(graph)
             run.targets.append(value)
             run.used.append((flow, decision_at, event.at))
+        signal = self._signal(run)
+        if signal is not None:
+            signal.settle(matured)
         for start in range(0, len(errors), 4096):
             run.errors.update(
                 markets[start : start + 4096],
@@ -638,6 +817,8 @@ class ChronologicalInference:
         run.counters["unresolved"] = len(run.pending)
         run.flows.clear()
         run.context = None
+        run.horizons = None
+        run.reliability = None
         run.pending.clear()
         run.graphs.clear()
         run.levels.clear()
@@ -712,6 +893,9 @@ class ChronologicalTrainer(ChronologicalInference):
     # Trazas por paso con el contrato común (`learning_traces.hooks.TrainingTraces`). Con
     # None, `traced_update` y `observing` son bloques vacíos.
     traces = None
+    # Puntuación de cada validación con la parada `common_epoch` (#746), que la exige. La
+    # asigna la ventana con un `common_epoch.EpochValidation`.
+    epoch_scorer = None
 
     def _trace_modules(self):
         """Módulos del recorrido para las trazas. Solo se agrupan los parámetros ajustables."""
@@ -773,6 +957,21 @@ class ChronologicalTrainer(ChronologicalInference):
             not isinstance(posttraining, dict) or pairing is not None or not posttraining
         ):
             raise ValueError("El postentrenamiento se declara como un objeto sin emparejamiento")
+        if posttraining is not None and (self.undeclared_posttraining or self.horizons is not None):
+            raise ValueError("F1, F5 y A4 no tienen todavía un postentrenamiento declarado")
+        options = recipe.weight_options()
+        self.weight_average = options["weight_average"]
+        self.schedule_free = options["schedule_free"]
+        self.shrink = options["shrink_perturb"]
+        # Con F2 o F3 se emiten otros pesos que los del ajuste y el estado guarda ambos.
+        self.emits_other_weights = self.weight_average is not None or self.schedule_free is not None
+        if posttraining is not None and any(option is not None for option in options.values()):
+            raise ValueError("F2 y F3 no tienen todavía un postentrenamiento declarado")
+        if self.shrink is not None and (
+            predictor.local_control is not None
+            or self.shrink.fresh_seed(predictor.config.seed) == predictor.config.seed
+        ):
+            raise ValueError("F3 contrae sin control local y con θ₀ de otra semilla")
         self.roles = parameter_roles(predictor)
         if "adapters" in self.roles and posttraining is None:
             raise ValueError("Un predictor con adaptadores solo se ajusta en el postentrenamiento")
@@ -791,12 +990,29 @@ class ChronologicalTrainer(ChronologicalInference):
             for role, names in self.roles.items()
             if names
         ]
+        if optimizer_factory is None and self.schedule_free is not None:
+
+            def optimizer_factory(values):
+                return self.schedule_free.build(
+                    values, learning_rate=recipe.learning_rate, weight_decay=recipe.weight_decay
+                )
+
         factory = optimizer_factory or anchored_decay.recipe_factory(recipe)
         self.optimizer = factory(groups)
         listed = [id(p) for group in self.optimizer.param_groups for p in group["params"]]
-        trainable = {id(named[name]) for names in self.roles.values() for name in names}
+        self.trainable = {name: named[name] for names in self.roles.values() for name in names}
+        trainable = {id(value) for value in self.trainable.values()}
         if len(listed) != len(set(listed)) or set(listed) != trainable or not trainable:
             raise ValueError("El optimizador debe cubrir exactamente el ajuste externo")
+        if isinstance(self.optimizer, torch.optim.Optimizer) and is_schedule_free(
+            self.optimizer
+        ) != (self.schedule_free is not None):
+            raise ValueError("El optimizador no es el que declara la receta para F3")
+        # Con F2 la sombra se crea al empezar o reanudar, después de la contracción de F3.
+        self.shadow = None
+        self.averaged_point = (
+            None if self.schedule_free is None else AveragedPoint(self.optimizer, self.trainable)
+        )
         self.identity = dict(
             schema_version=1,
             recipe=recipe.identity(),
@@ -821,6 +1037,8 @@ class ChronologicalTrainer(ChronologicalInference):
         if self.kernel_policy is not None:
             # Sin precisión declarada la identidad conserva su forma anterior.
             self.identity["kernel_policy"] = self.kernel_policy
+        if self.determinism is not None:
+            self.identity["determinism"] = self.determinism
         control = predictor.local_control
         if control is not None:
             # Sin control local, la identidad conserva literalmente su forma anterior.
@@ -859,6 +1077,35 @@ class ChronologicalTrainer(ChronologicalInference):
 
     def _code(self):
         own = {name: sha256(Path(importlib.import_module(name).__file__)) for name in _OWN_MODULES}
+        for option, name in _PREDICTOR_MODULES.items():
+            if getattr(self.predictor.config, option) is not None:
+                own[name] = sha256(Path(importlib.import_module(name).__file__))
+        # H1 de #783 también, con el catálogo macro del que salen sus familias.
+        if self.predictor.config.holographic_network is not None:
+            module = importlib.import_module("mars_titan.models.titans.holographic_network")
+            own[module.__name__] = sha256(Path(module.__file__))
+            own["data/catalogs/macro-indicators.csv"] = sha256(module.CATALOG)
+        # C3 agrupa sus sectores con el módulo común de C4, que también entra en la identidad.
+        if self.predictor.config.fractal_shared_operator is not None:
+            name = "mars_titan.data.correlation_regions"
+            own[name] = sha256(Path(importlib.import_module(name).__file__))
+        # H4 de #783 añade también el módulo de las medidas de la ventana.
+        if self.predictor.config.asset_groups is not None:
+            name = "mars_titan.data.asset_groups"
+            own[name] = sha256(Path(importlib.import_module(name).__file__))
+        # #791 añade el acumulador de su señal. Sus puertas ya están en `_implementation`,
+        # porque `financial` importa siempre su configuración.
+        if self.predictor.config.mature_reliability is not None:
+            name = "mars_titan.memory.mature_reliability"
+            own[name] = sha256(Path(importlib.import_module(name).__file__))
+        for option, name in _WEIGHT_MODULES.items():
+            # F2 y F3 solo añaden su código si la receta los declara.
+            if getattr(self.recipe, option) is not None:
+                own[name] = sha256(Path(importlib.import_module(name).__file__))
+        # El determinismo de #794 también, con el módulo que lo activa y lo comprueba.
+        if self.recipe.determinism is not None:
+            name = "mars_titan.training.determinism"
+            own[name] = sha256(Path(importlib.import_module(name).__file__))
         return {
             **_implementation(kronlstm=self.predictor.config.temporal_encoder is not None),
             **own,
@@ -872,8 +1119,19 @@ class ChronologicalTrainer(ChronologicalInference):
             raise ValueError("El código o la configuración numérica cambiaron durante el recorrido")
         require_policy(self.recipe.precision, self.kernel_policy)
 
+    def _task_loss(self, prediction, target, keys):
+        """Pérdida del tramo. Con la cabeza de cuantiles, `prediction` es [etiquetas, 5].
+
+        Con un objetivo de salida, `prediction` son sus salidas y `keys` los pares (flujo,
+        decisión) de cada fila, que identifican su sesión (mercado e instante).
+        """
+        if self.objective is not None:
+            sessions = [(flow.split("/", 1)[0], at) for flow, at in keys]
+            return self.objective.loss(prediction, target, sessions)
+        return self._loss(prediction, target)
+
     def _loss(self, prediction, target):
-        """Pérdida del tramo. Con la cabeza de cuantiles, `prediction` es [etiquetas, 5]."""
+        """Pérdida anterior sin objetivo por sesión, con su interfaz de dos tensores."""
         functional = torch.nn.functional
         if self.recipe.loss == PINBALL:
             return pinball_loss(prediction, target)
@@ -901,8 +1159,9 @@ class ChronologicalTrainer(ChronologicalInference):
         """
         prediction = torch.stack(run.predictions)
         target = torch.tensor(run.targets, dtype=prediction.dtype, device=prediction.device)
-        loss = self._loss(prediction, target)
-        objective = self._distilled(loss, prediction, [(flow, at) for flow, at, _ in run.used])
+        keys = [(flow, at) for flow, at, _ in run.used]
+        loss = self._task_loss(prediction, target, keys)
+        objective = self._distilled(loss, prediction, keys)
         if run.penalties:
             objective = objective + torch.stack(run.penalties).mean()
         if not torch.isfinite(objective).item():
@@ -931,6 +1190,17 @@ class ChronologicalTrainer(ChronologicalInference):
         }
         controlled = [flow for flows in run.penalties for flow in flows]
         order = list(dict.fromkeys([*(flow for flow, _, _ in run.used), *controlled]))
+        sessions = predictor.session_level or (
+            self.objective is not None and not self.objective.row_decomposable
+        )
+        if sessions:
+            # Las operaciones por sesión repiten cada instante entero, también las filas sin
+            # etiqueta en el tramo, y su pérdida no es una suma de términos por bloque.
+            order = list(
+                dict.fromkeys([*order, *(f for batch, _, _ in run.segment for f in batch.flow_ids)])
+            )
+            if len(order) > size:
+                raise ValueError("Las operaciones por sesión necesitan repetir todos los flujos")
         total, replayed = 0.0, 0
         for start in range(0, len(order), size):
             group = order[start : start + size]
@@ -945,24 +1215,28 @@ class ChronologicalTrainer(ChronologicalInference):
             # juntas antes de su backward, en lugar de esperar a la GPU tras cada lote.
             with deferred_checks():
                 members, graphs, penalties = set(group), {}, []
-                for batch, plan in run.segment:
+                for batch, plan, whole in run.segment:
                     rows = [i for i, flow in enumerate(batch.flow_ids) if flow in members]
                     if not rows:
                         continue
+                    # Solo la selección de todas las filas de un instante completo lo sigue siendo.
+                    complete = whole and len(rows) == len(batch.flow_ids)
                     batch = batch.select(rows)
+                    if "reliability" in plan:
+                        plan = dict(plan, reliability=plan["reliability"][rows])
                     new = tuple(flow for flow in batch.flow_ids if flow not in states)
                     if new:
                         states.put(predictor.initial_state(new, differentiable=True))
                     state = states.gather(batch.flow_ids)
                     with torch.enable_grad():
-                        prepared = predictor.prepare(batch, state, differentiable=True, **plan)
+                        prepared = predictor.prepare(
+                            batch, state, differentiable=True, session_complete=complete, **plan
+                        )
                     states.put(prepared.next_state)
                     if prepared.local_control is not None:
                         penalties.append(prepared.local_control.penalty)
                         replayed += len(prepared.local_control.flow_ids)
-                    outputs = (
-                        prepared.quantiles if self.quantiles else prepared.point_predictions
-                    ).unbind()
+                    outputs = self._graphs(prepared).unbind()
                     for row, key in enumerate(
                         zip(batch.flow_ids, batch.prediction_at, strict=True)
                     ):
@@ -979,7 +1253,7 @@ class ChronologicalTrainer(ChronologicalInference):
                         dtype=prediction.dtype,
                         device=prediction.device,
                     )
-                    task = self._loss(prediction, target)
+                    task = self._task_loss(prediction, target, keys)
                     share = len(keys) / len(run.used)
                     loss = task * share
                     total += float(loss.detach())
@@ -995,11 +1269,62 @@ class ChronologicalTrainer(ChronologicalInference):
             raise ValueError("La repetición del tramo no reproduce los flujos medidos de C")
         return torch.tensor(total)
 
+    def _auxiliary(self, run):
+        """Sumar al gradiente el término de F5 con las etiquetas auxiliares entregadas.
+
+        El token de cada decisión se calcula una vez, con los parámetros vigentes y las
+        entradas guardadas al emitirla, para todos sus horizontes maduros. Se procesa por
+        bloques de hasta `accumulation_rows` decisiones o del lote del predictor. Cada bloque
+        divide su suma por todas las etiquetas auxiliares del tramo, así que la suma de los
+        bloques es su media. Con peso cero no se calcula nada y el gradiente es el de la
+        referencia.
+        """
+        ready, config = run.horizons.take(), self.horizons
+        labels = sum(len(heads) for _, heads, _ in ready)
+        run.counters["auxiliary_labels_in_loss"] += labels
+        if not ready or config.weight == 0:
+            return
+        predictor = self.predictor
+        dtype, limit = predictor.head.weight.dtype, predictor.config.max_batch
+        size = min(self.recipe.accumulation_rows or limit, limit)
+        total = 0.0
+        for start in range(0, len(ready), size):
+            values, heads, targets = zip(*ready[start : start + size], strict=True)
+            inputs = {
+                name: device_tensor(
+                    np.stack([row[name] for row in values]),
+                    self.device,
+                    torch.bool if name == "presence" else dtype,
+                )
+                for name in (*MODALITIES, "presence")
+            }
+            presence = inputs.pop("presence")
+            # Una fila del token por decisión y una entrada de la pérdida por horizonte.
+            rows = torch.tensor(
+                [index for index, names in enumerate(heads) for _ in names], device=self.device
+            )
+            heads = torch.tensor([head for names in heads for head in names], device=self.device)
+            targets = torch.tensor(
+                [value for row in targets for value in row], dtype=dtype, device=self.device
+            )
+            with deferred_checks():
+                outputs = predictor.auxiliary_heads(predictor.fused_tokens(inputs, presence))
+                errors = auxiliary_errors(
+                    outputs.index_select(0, rows), targets, heads, config.horizons
+                )
+                term = config.weight * errors.sum() / labels
+                require_true(torch.isfinite(term), "El término auxiliar no es finito")
+            term.backward()
+            total += float(term.detach())
+        run.counters["auxiliary_loss_sum"] += total
+
     def _update(self, run, at):
         """Un paso con las etiquetas maduras del tramo y truncamiento de todos los flujos."""
         if run.predictions:
             with nvtx_ranges.phase("titans.backward"):
                 loss = self._replay(run) if self.recipe.accumulation_rows else self._backward(run)
+                if run.horizons is not None:
+                    self._auxiliary(run)
             if run.penalties:
                 run.counters["control_groups_in_objective"] = run.counters.get(
                     "control_groups_in_objective", 0
@@ -1015,6 +1340,8 @@ class ChronologicalTrainer(ChronologicalInference):
                 with nvtx_ranges.phase("titans.optimizer"):
                     self.optimizer.step()
                     self.optimizer.zero_grad(set_to_none=True)
+                    if self.shadow is not None:
+                        self.shadow.update(self.trainable)
                     # El paso es la única modificación admitida de los parámetros. Se sella
                     # de nuevo.
                     self.predictor._seal_parameters()
@@ -1029,6 +1356,10 @@ class ChronologicalTrainer(ChronologicalInference):
             run.counters["control_groups_discarded"] = run.counters.get(
                 "control_groups_discarded", 0
             ) + len(run.penalties)
+        if run.horizons is not None and run.horizons.ready:
+            # Igual que C, F5 no añade pasos: sin etiquetas principales se descartan.
+            discarded = run.horizons.take()
+            run.counters["auxiliary_labels_discarded"] += sum(len(row[1]) for row in discarded)
         parameter_id = self.predictor._parameter_id
         with nvtx_ranges.phase("titans.truncate"):
             run.flows.detach(parameter_id)
@@ -1082,6 +1413,8 @@ class ChronologicalTrainer(ChronologicalInference):
                     self._labels(run, event, train=True)
                 decision = bool(event.inputs) and event.at >= source.phase.decision_start
                 if (decision and run.instants == self.recipe.truncation) or event.close_phase:
+                    if event.close_phase and run.horizons is not None:
+                        run.horizons.flush()
                     before = self.global_step
                     with nvtx_ranges.phase("titans.update"):
                         self._update(run, event.at)
@@ -1131,11 +1464,25 @@ class ChronologicalTrainer(ChronologicalInference):
                 if self.uses_context
                 else {}
             ),
+            **(
+                dict(horizons=None if run.horizons is None else run.horizons.export())
+                if self.horizons is not None
+                else {}
+            ),
+            **(
+                dict(reliability=None if run.reliability is None else run.reliability.export())
+                if self.reliability is not None
+                else {}
+            ),
         )
 
     def _restore(self, payload):
         if self.uses_context != ("context" in payload):
             raise ValueError("El recorrido guardado no corresponde al contexto del predictor")
+        if (self.horizons is not None) != ("horizons" in payload):
+            raise ValueError("El recorrido guardado no corresponde a las cabezas auxiliares")
+        if (self.reliability is not None) != ("reliability" in payload):
+            raise ValueError("El recorrido guardado no corresponde a la señal de fiabilidad")
         run = _Pass()
         for item in payload["fast"]:
             run.flows.put(self.predictor.restore_state(item, device=self.device))
@@ -1153,7 +1500,70 @@ class ChronologicalTrainer(ChronologicalInference):
         run.counters = dict(payload["counters"])
         if self.uses_context and payload["context"] is not None:
             run.context = self.predictor.restore_context(payload["context"])
+        if self.horizons is not None and payload["horizons"] is not None:
+            run.horizons = HorizonLabels.restore(self.horizons, payload["horizons"])
+        if self.reliability is not None and payload["reliability"] is not None:
+            run.reliability = ReliabilitySignal.restore(self.reliability, payload["reliability"])
         return run
+
+    def _emission(self):
+        """Origen de los pesos emitidos con F2 o F3, o None si se emiten los del ajuste."""
+        return self.shadow if self.shadow is not None else self.averaged_point
+
+    @contextmanager
+    def _emitted_weights(self):
+        """Validar con los pesos que se eligen y se emiten, y volver después a los del ajuste."""
+        source = self._emission()
+        if source is None:
+            yield
+            return
+        try:
+            with applied(dict(self.predictor.named_parameters()), source.emitted()):
+                self.predictor._seal_parameters()
+                yield
+        finally:
+            self.predictor._seal_parameters()
+
+    def _model_states(self):
+        """Pesos del estado guardado, con los emitidos en `model`.
+
+        Con F2 o F3, `trained_model` guarda además los del ajuste, que son los que se
+        recuperan al reanudar. Los consumidores del estado elegido leen `model`.
+        """
+        model = self.predictor.state_dict()
+        source = self._emission()
+        if source is None:
+            return dict(model=model)
+        states = dict(model=model, trained_model=self.predictor.state_dict())
+        for name, value in source.emitted().items():
+            model[name] = value.detach().clone()
+        if self.shadow is not None:
+            states["weight_average"] = self.shadow.state_dict()
+        return states
+
+    def _start_weights(self, report, state=None):
+        """Aplicar F3 a una ejecución nueva y crear o recuperar la sombra de F2."""
+        if state is None and self.shrink is not None:
+            before = self.predictor._parameter_id
+            seed = self.shrink.fresh_seed(self.predictor.config.seed)
+            fresh = type(self.predictor)(
+                replace(self.predictor.config, seed=seed),
+                device=self.device,
+                dtype=self.predictor.head.weight.dtype,
+            )
+            shrink_perturb(self.trainable, dict(fresh.named_parameters()), self.shrink)
+            self.predictor._seal_parameters()
+            report["shrink_perturb"] = dict(
+                configuration=self.shrink.identity(),
+                fresh_seed=seed,
+                parameters_before_sha256=before,
+                fresh_parameters_sha256=fresh._parameter_id,
+                parameters_after_sha256=self.predictor._parameter_id,
+            )
+        if self.weight_average is not None:
+            self.shadow = ShadowWeights(self.weight_average, self.trainable)
+            if state is not None:
+                self.shadow.load_state_dict(state["weight_average"])
 
     def _load_best(self, report, directory=None):
         """Dejar el predictor con el estado seleccionado que acredita el informe.
@@ -1170,17 +1580,32 @@ class ChronologicalTrainer(ChronologicalInference):
         self.predictor.load_state_dict(state["model"])
         return state
 
+    def load_epoch(self, report, epoch):
+        """Dejar cargado el estado fijado de una época evaluada con la época común."""
+        state = load_training_state(
+            self.output / "checkpoints",
+            expected_identity=self.identity,
+            selection="pinned",
+            expected_sha256=report["epoch_states"][str(epoch)]["sha256"],
+        )
+        self.predictor.load_state_dict(state["model"])
+        return state
+
     def run(self, *, resume=False, stop=None, joint_epoch=None):
         """Recorrer épocas hasta la paciencia declarada o el presupuesto fijo.
 
         Con la meseta conjunta, el ajuste espera en su primera meseta (`AWAIT`) hasta que se
-        reanuda con la época común del grupo (`joint_epoch`).
+        reanuda con la época común del grupo (`joint_epoch`). Con la época común, espera tras
+        la última época y `joint_epoch` elige el estado fijado de una de ellas.
         """
         output, checkpoints = self.output, self.output / "checkpoints"
         if isinstance(self.optimizer, torch.optim.Optimizer):
             require_learning_allowed("ChronologicalTrainer.run de Titans-MAC")
         if type(resume) is not bool or output.is_symlink() or output.exists() != resume:
             raise ValueError("Usa una ejecución nueva o solicita continuar una existente")
+        common = self.recipe.selection.get("stopping") == COMMON_EPOCH
+        if common and self.epoch_scorer is None:
+            raise ValueError("La época común necesita puntuar cada validación con su IC")
         stop = stop or StopRequest()
         report_path = output / "run.json"
         cursor, run = dict(epoch=0, phase="validation"), None
@@ -1189,8 +1614,11 @@ class ChronologicalTrainer(ChronologicalInference):
             if report["identity"] != self.identity:
                 raise ValueError("La identidad o configuración de la ejecución ha cambiado")
             state = load_training_state(checkpoints, expected_identity=self.identity)
-            self.predictor.load_state_dict(state["model"])
+            # Con F2 o F3 se reanuda con los pesos del ajuste, no con los emitidos.
+            trained = "trained_model" if self.emits_other_weights else "model"
+            self.predictor.load_state_dict(state[trained])
             self.optimizer.load_state_dict(state["optimizer"])
+            self._start_weights(report, state)
             restore_rng(state["rng"], str(self.device))
             self.global_step, cursor = state["global_step"], state["cursor"]
             self.selection, self.history = state["selection"], state["history"]
@@ -1220,13 +1648,15 @@ class ChronologicalTrainer(ChronologicalInference):
                 attempts=[],
             )
             bind_joint_epoch(report, joint_epoch, self.recipe.selection, self.recipe.epochs)
+            self._start_weights(report)
 
-        def save(position, current=None, *, best=False):
+        def save(position, current=None, *, best=False, pin=None):
+            # `pin` es la época evaluada cuyo estado se conserva hasta fijar la época común.
             self._check_runtime()
             state = dict(
                 global_step=self.global_step,
                 cursor=position,
-                model=self.predictor.state_dict(),
+                **self._model_states(),
                 optimizer=self.optimizer.state_dict(),
                 rng=capture_rng(str(self.device)),
                 selection=self.selection,
@@ -1236,11 +1666,15 @@ class ChronologicalTrainer(ChronologicalInference):
             )
             if self.traces is not None:
                 state["traces"] = self.traces.checkpoint()
-            path = save_training_state(checkpoints, state, identity=self.identity, best=best)
+            path = save_training_state(
+                checkpoints, state, identity=self.identity, best=best, pin=pin is not None
+            )
             reference = dict(path=str(path.relative_to(output)), sha256=sha256(path))
             report.update(recovery_checkpoint=reference, global_step=self.global_step)
             if best:
                 report["best_checkpoint"] = reference
+            if pin is not None:
+                report.setdefault("epoch_states", {})[str(pin)] = reference
             report.update(selection=self.selection, history=self.history, cursor=position)
             atomic_json(report_path, report)
 
@@ -1265,7 +1699,12 @@ class ChronologicalTrainer(ChronologicalInference):
                         save(cursor)
                         continue
                 if cursor["phase"] == "validation":
-                    metrics = self.evaluate(self.validation, stop=stop)
+                    # La época común puntúa las filas de esta misma validación desde la época 1.
+                    rows = self.epoch_scorer.rows() if common and epoch >= 1 else None
+                    with self._emitted_weights():
+                        metrics = self.evaluate(self.validation, stop=stop, rows=rows)
+                    if rows is not None:
+                        metrics.update(self.epoch_scorer.score(epoch, rows, metrics))
                     if self.trace is not None or self.traces is not None:
                         event = dict(
                             kind="validation",
@@ -1305,7 +1744,11 @@ class ChronologicalTrainer(ChronologicalInference):
                         else dict(epoch=epoch, phase="train", event=0, stage="start")
                     )
                     # Con AWAIT, el cursor ya confirmado espera al grupo al empezar la época.
-                    save(cursor, best=self.selection["last_improved"])
+                    save(
+                        cursor,
+                        best=self.selection["last_improved"],
+                        pin=epoch if rows is not None else None,
+                    )
                     if stop.requested and not finished:
                         raise Paused
                     continue
@@ -1313,14 +1756,23 @@ class ChronologicalTrainer(ChronologicalInference):
                 run = None
                 cursor = dict(epoch=epoch + 1, phase="validation")
                 save(cursor)
+            chosen = (
+                chosen_state(
+                    checkpoints, self.identity, report, self.history, self.selection, joint_epoch
+                )
+                if common
+                else dict(
+                    best_epoch=self.selection["best_epoch"],
+                    best_score=self.selection["best_score"],
+                )
+            )
+            report.update(chosen)
             self._load_best(report)
             report.update(
                 status="completed",
                 stopped_early=cursor["epoch"] < self.recipe.epochs,
                 stopping=self.recipe.selection.get("stopping", VALIDATION_PLATEAU),
                 plateau_epoch=self.selection.get("plateau_epoch"),
-                best_epoch=self.selection["best_epoch"],
-                best_score=self.selection["best_score"],
                 finished_at_utc=datetime.now(UTC).isoformat(),
             )
             return report

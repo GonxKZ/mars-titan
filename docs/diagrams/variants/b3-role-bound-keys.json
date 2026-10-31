@@ -1,0 +1,221 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "B3 · Claves ligadas a roles (role_bound_keys_v1)",
+    "quality_profile": "showcase",
+    "viewBox": [
+      1300,
+      592
+    ],
+    "legend": {
+      "entries": {
+        "external": {
+          "label": "Entradas"
+        },
+        "backend": {
+          "label": "Cálculo"
+        },
+        "database": {
+          "label": "Memoria y estado"
+        },
+        "security": {
+          "label": "Control o protección"
+        },
+        "cloud": {
+          "label": "Evaluación"
+        }
+      }
+    }
+  },
+  "components": [
+    {
+      "id": "key",
+      "type": "external",
+      "label": "Clave del codec",
+      "sublabel": "codec normalizado, 64 valores",
+      "pos": [
+        40,
+        230
+      ],
+      "size": [
+        180,
+        72
+      ]
+    },
+    {
+      "id": "roles",
+      "type": "database",
+      "label": "Rol de la decisión",
+      "sublabel": "régimen observable",
+      "tag": "o calendario",
+      "pos": [
+        40,
+        40
+      ],
+      "size": [
+        180,
+        72
+      ]
+    },
+    {
+      "id": "bind",
+      "type": "backend",
+      "label": "Producto bipolar",
+      "sublabel": "inversa solo de la clave",
+      "pos": [
+        300,
+        230
+      ],
+      "size": [
+        180,
+        72
+      ]
+    },
+    {
+      "id": "memory",
+      "type": "database",
+      "label": "B6, B1 o B2",
+      "sublabel": "corrección madura",
+      "pos": [
+        560,
+        230
+      ],
+      "size": [
+        180,
+        72
+      ]
+    },
+    {
+      "id": "partial",
+      "type": "external",
+      "label": "Cola pendiente",
+      "sublabel": "clave y ruta de la decisión",
+      "pos": [
+        560,
+        40
+      ],
+      "size": [
+        180,
+        72
+      ]
+    },
+    {
+      "id": "unbind",
+      "type": "backend",
+      "label": "Lectura asociativa",
+      "sublabel": "suma a la predicción núcleo",
+      "pos": [
+        820,
+        230
+      ],
+      "size": [
+        180,
+        72
+      ]
+    },
+    {
+      "id": "screen",
+      "type": "cloud",
+      "label": "Comparación pendiente",
+      "sublabel": "ventanas y controles",
+      "pos": [
+        1080,
+        230
+      ],
+      "size": [
+        180,
+        72
+      ]
+    },
+    {
+      "id": "controls",
+      "type": "security",
+      "label": "Controles",
+      "sublabel": "rol constante y sin ligadura",
+      "tag": "concatenación a 64 valores",
+      "pos": [
+        820,
+        420
+      ],
+      "size": [
+        180,
+        72
+      ]
+    }
+  ],
+  "connections": [
+    {
+      "id": "key-bind",
+      "from": "key",
+      "to": "bind"
+    },
+    {
+      "id": "roles-bind",
+      "from": "roles",
+      "to": "bind",
+      "label": "roles"
+    },
+    {
+      "id": "bind-memory",
+      "from": "bind",
+      "to": "memory",
+      "label": "escritura",
+      "variant": "emphasis"
+    },
+    {
+      "id": "partial-unbind",
+      "from": "partial",
+      "to": "unbind",
+      "label": "ruta guardada"
+    },
+    {
+      "id": "memory-unbind",
+      "from": "memory",
+      "to": "unbind",
+      "variant": "emphasis"
+    },
+    {
+      "id": "unbind-screen",
+      "from": "unbind",
+      "to": "screen",
+      "label": "emisión"
+    },
+    {
+      "id": "controls-screen",
+      "from": "controls",
+      "to": "screen",
+      "label": "control",
+      "variant": "dashed"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "Operador",
+      "items": [
+        "La clave se multiplica por signos del rol antes de DPFP",
+        "El mismo producto invierte la ligadura, no la memoria",
+        "Fuente: Kanerva (2009), páginas 147 y 156"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "Controles",
+      "items": [
+        "Calendario, rol constante y B1 sin ligadura",
+        "Concatenación proyectada con la misma dimensión",
+        "B2 con y sin B3 conserva sus mapas"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "Estado",
+      "items": [
+        "Régimen y calendario integrados con fixtures CPU",
+        "Sectores históricos y comparación predictiva pendientes",
+        "Coste O(D) del producto, sin afirmación de mejora"
+      ]
+    }
+  ]
+}

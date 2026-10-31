@@ -35,7 +35,7 @@ import os
 import time
 from contextlib import contextmanager
 from dataclasses import asdict
-from datetime import UTC, datetime
+from datetime import UTC, date, datetime
 from pathlib import Path
 
 import numpy as np
@@ -61,14 +61,21 @@ from mars_titan.models.titans.financial_inputs import FINAL_TEST_US
 from mars_titan.models.titans.local_control import MACProjectionConfig
 
 from .candidate_walk_forward import check_view_rows
-from .checkpoints import StopRequest
+from .checkpoints import StopRequest, load_training_state, release_recovery_states
+from .common_epoch import (
+    VERSIONED,
+    EpochValidation,
+    bind_versions,
+    checked_scoring,
+    version_path,
+)
 from .corpus_inputs import CorpusDataset
 from .financial_run import ChronologicalRecipe, ChronologicalTrainer, Paused, load_recipe
 from .learning_hold import require_learning_allowed
 from .search_cases import case_options, checked_predictor_changes, checked_search_cases
-from .selection import AWAIT, campaign_rule, with_rule
+from .selection import AWAIT, CHRONOLOGICAL_MODES, campaign_rule, with_rule
 from .temporal_contract import temporal_contracts
-from .walk_forward_phases import PREDICTED, checked_warmup, window_phases
+from .walk_forward_phases import PREDICTED, checked_fit_months, checked_warmup, window_phases
 from .window_indices import index_root, phase_sources
 
 KIND = "titans_walk_forward_window"
@@ -79,6 +86,8 @@ _CODE = (
     "mars_titan.training.search_cases",
     "mars_titan.training.titans_walk_forward",
     "mars_titan.training.financial_run",
+    "mars_titan.training.common_epoch",
+    "mars_titan.training.horizon_labels",
     "mars_titan.memory.financial_observations",
     "mars_titan.models.titans.financial",
     "mars_titan.models.titans.mac",
@@ -87,6 +96,17 @@ _CODE = (
     "mars_titan.models.titans.causal_convolution",
     "mars_titan.models.titans.key_competition",
     "mars_titan.models.titans.key_competition_config",
+    "mars_titan.models.titans.session_ranks",
+    "mars_titan.models.titans.session_ic_objective",
+    "mars_titan.models.titans.output_objectives",
+    "mars_titan.models.titans.laplace_scale",
+    "mars_titan.models.titans.opponent_heads",
+    "mars_titan.models.titans.auxiliary_horizons",
+    "mars_titan.models.titans.reliability_gates",
+    "mars_titan.memory.mature_reliability",
+    "mars_titan.models.titans.huber_memory",
+    "mars_titan.models.titans.scale_invariant_time",
+    "mars_titan.models.titans.differential_attention",
     "mars_titan.models.quantile_head",
     "mars_titan.models.quantile_routing",
 )
@@ -97,9 +117,12 @@ def _require(condition, message):
         raise ValueError(message)
 
 
-def memory_policy(warmup_months):
-    """Declarar la política de estado de las cuatro variantes en todos los recorridos."""
-    return dict(
+def memory_policy(warmup_months, fit_months=None):
+    """Declarar la política de estado de las cuatro variantes en todos los recorridos.
+
+    Con un ajuste acotado la política lo declara. Sin él conserva su forma anterior.
+    """
+    policy = dict(
         name=MEMORY_POLICY,
         reset="initial_fast_state_and_empty_queue_at_each_pass",
         train="from_fold_train_start_without_warmup",
@@ -109,29 +132,44 @@ def memory_policy(warmup_months):
         labels="compared_with_the_issued_prediction_after_maturity_never_written",
         mature_financial_errors="not_admitted_bank_disabled",
     )
+    if fit_months is not None:
+        policy.update(
+            train="last_fit_months_of_the_fold_train_after_warmup_inputs_without_labels",
+            fit_months=checked_fit_months(fit_months),
+        )
+    return policy
 
 
-def walk_forward_options(document):
-    """Leer la sección `walk_forward`: calentamiento y casos de búsqueda opcionales.
+def walk_forward_options(document, *, bounded_fit=False):
+    """Leer la sección `walk_forward`: calentamiento, ajuste acotado y casos de búsqueda.
 
     Cada caso de `search_cases` sustituye los mismos hiperparámetros de `SEARCHED`, que
     entonces no aparecen en `recipe`. Así ningún valor base queda sin usar o sin elegir.
+    `fit_months` acota el ajuste a los meses finales del tramo de entrenamiento. Solo lo
+    aceptan los recorridos que lo aplican (`bounded_fit`), y los demás lo rechazan.
     """
     options = document.get("walk_forward")
     _require(
         isinstance(options, dict)
-        and {"warmup_months"} <= set(options) <= {"warmup_months", "search_cases"},
+        and {"warmup_months"} <= set(options) <= {"warmup_months", "search_cases", "fit_months"},
         "La receta necesita walk_forward.warmup_months entero entre 0 y 60",
     )
     checked_warmup(options["warmup_months"])
+    if "fit_months" in options:
+        _require(bounded_fit, "Este recorrido no aplica el ajuste acotado de la receta")
+        checked_fit_months(options["fit_months"])
     if "search_cases" in options:
         checked_search_cases(options["search_cases"], document["recipe"], ChronologicalRecipe)
     return options
 
 
 def case_recipe(document, search_case):
-    """Receta cronológica del caso elegido. Sin casos declarados, la de la receta."""
-    cases = walk_forward_options(document).get("search_cases")
+    """Receta cronológica del caso elegido. Sin casos declarados, la de la receta.
+
+    Solo lee los casos, así que admite una receta con ajuste acotado. Quien construya las
+    fases vuelve a leer las opciones y decide si lo aplica.
+    """
+    cases = walk_forward_options(document, bounded_fit=True).get("search_cases")
     return ChronologicalRecipe(**case_options(document["recipe"], cases, search_case))
 
 
@@ -169,9 +207,9 @@ def _recipe(path, rule, search_case=None, stopping=None):
         "La receta no aplica la regla de selección y parada del protocolo",
     )
     return (
-        with_rule(recipe, campaign_rule(rule, stopping)),
+        with_rule(recipe, campaign_rule(rule, stopping, modes=CHRONOLOGICAL_MODES)),
         document,
-        walk_forward_options(document),
+        walk_forward_options(document, bounded_fit=True),
     )
 
 
@@ -267,12 +305,15 @@ def _request(
     local_control=None,
     stopping=None,
     predictor_changes=None,
+    epoch_scoring=None,
+    initial=None,
 ):
     """Construye una petición verificable sin abrir la vista, con huellas de archivos y código.
 
     El caso de búsqueda solo aparece si la receta los declara, el control C solo si se pide,
-    la regla de parada solo si la campaña declara una parada temprana y los cambios del
-    predictor solo si el modelo los declara, de modo que las demás peticiones conservan su
+    la regla de parada solo si la campaña declara una parada temprana, los cambios del
+    predictor solo si el modelo los declara, la puntuación por época solo con la época
+    común y el padre solo en una continuación, de modo que las demás peticiones conservan su
     forma anterior.
     """
     request = dict(
@@ -293,6 +334,10 @@ def _request(
         request["stopping_rule"] = dict(stopping)
     if predictor_changes is not None:
         request[CHANGES] = checked_predictor_changes(predictor_changes)
+    if epoch_scoring is not None:
+        request["epoch_scoring"] = dict(epoch_scoring)
+    if initial is not None:
+        request["initial"] = dict(initial)
     return request
 
 
@@ -350,14 +395,58 @@ def checked_tables(rows, metrics, dataset, partition):
     return tables
 
 
+def _confirmed_records(report):
+    """Registros de las predicciones confirmadas, también las de las versiones."""
+    yield from report["predictions"].values()
+    for partitions in report.get("versions", {}).get("predictions", {}).values():
+        yield from partitions.values()
+
+
 def _verify(output, report):
     """Comprobar las predicciones confirmadas, presentes, compactadas o liberadas."""
-    for record in report["predictions"].values():
+    for record in _confirmed_records(report):
         path = output / record["path"]
         safe_destination(path)
         prediction_files.verify(
             path, record["sha256"], label="Han cambiado las predicciones confirmadas"
         )
+
+
+def _parent_window(initial, fold, seed):
+    """Informe de la ventana padre de una continuación, comprobado antes de abrir la vista.
+
+    El padre es una ventana de Titans-MAC completada con la misma semilla y sin abrir el test
+    final. Su validación es la última información que pudo influir en su estado elegido, así
+    que tiene que acabar antes de que empiece la validación de esta ventana.
+    """
+    report, _ = read_manifest(initial / "run.json", 16 * 1024**2)
+    _require(
+        report.get("kind") == KIND
+        and report.get("status") == "completed"
+        and report.get("final_test_opened") is False
+        and isinstance(report.get("checkpoint"), dict),
+        "El padre de la continuación no es una ventana de Titans-MAC completada",
+    )
+    _require(report["request"]["seed"] == seed, "La continuación parte del padre de su semilla")
+    parent = report["identity"]["window"]
+    _require(
+        date.fromisoformat(parent["validation"][1]) <= date.fromisoformat(fold["validation"][0]),
+        "La validación del padre no acaba antes de la validación de la continuación",
+    )
+    return report
+
+
+def _parent_state(initial, report):
+    """Pesos del estado elegido del padre, con la identidad de su ajuste y su huella."""
+    _verify(initial, report)
+    fit, _ = read_manifest(initial / "fit/run.json", 16 * 1024**2)
+    state = load_training_state(
+        initial / "fit/checkpoints",
+        expected_identity=fit["identity"],
+        selection="best",
+        expected_sha256=report["checkpoint"]["sha256"],
+    )
+    return state["model"]
 
 
 def run_titans_window(
@@ -378,8 +467,11 @@ def run_titans_window(
     stopping=None,
     joint_epoch=None,
     predictor_changes=None,
+    epoch_scoring=None,
+    versions=None,
     traces=None,
     trace_family="titans_mac",
+    initial=None,
 ):
     """Ajustar una variante en una ventana y escribir sus predicciones por fila.
 
@@ -392,9 +484,16 @@ def run_titans_window(
     meseta conjunta la ventana devuelve `awaiting_joint_stop` en la primera meseta y se
     completa al reanudarla con la época común del grupo (`joint_epoch`).
     `predictor_changes` son las extensiones del núcleo que declara el modelo, como PT1.
-    `traces` declara las trazas de #448 (cadencia y presupuesto), que se escriben en
-    `output/traces` sin entrar en la identidad, y `trace_family` su familia (los núcleos de
-    CM-v1 usan `cm_v1_core`).
+    Con la época común (#746), `epoch_scoring` declara la puntuación de cada validación
+    (`common_epoch.checked_scoring`), la ventana espera tras la última época y `joint_epoch`
+    es la época común del grupo. `versions` son otras épocas cuya calibración y evaluación
+    se emiten también. `traces` declara las trazas de #448 (cadencia y presupuesto), que se
+    escriben en `output/traces` sin entrar en la identidad, y `trace_family` su familia (los
+    núcleos de CM-v1 usan `cm_v1_core`). `initial` es la carpeta de una ventana completada de
+    la misma variante y semilla en un origen anterior. El ajuste empieza entonces con su
+    estado elegido en lugar de una inicialización nueva, como las continuaciones de F3
+    (#749), y la petición guarda su ejecución y la huella de ese estado. La contracción de F3
+    solo se admite en una continuación.
     """
     require_learning_allowed("run_titans_window de Titans-MAC")
     _require(variant in VARIANTS, "La variante no pertenece a los controles de Titans-MAC")
@@ -409,7 +508,24 @@ def run_titans_window(
     view, output = Path(view), Path(output)
     protocol_document, protocol_sha, rule, fold = _protocol(protocol, window, seed)
     chronological, document, options = _recipe(recipe, rule, search_case, stopping)
-    rule = campaign_rule(rule, stopping)
+    rule = campaign_rule(rule, stopping, modes=CHRONOLOGICAL_MODES)
+    scoring = checked_scoring(epoch_scoring, rule)
+    _require(
+        versions is None or (scoring is not None and joint_epoch is not None),
+        "Las versiones llegan junto con la época común",
+    )
+    _require(
+        initial is not None or chronological.shrink_perturb is None,
+        "La contracción de F3 solo se aplica a una continuación desde su padre",
+    )
+    parent = None
+    if initial is not None:
+        initial = Path(initial)
+        _require(
+            local_control is None and variant == document["pairing_source"],
+            "La continuación parte de su padre sin control local ni emparejamiento",
+        )
+        parent = _parent_window(initial, fold, seed)
     request = _request(
         view,
         protocol_sha,
@@ -422,6 +538,10 @@ def run_titans_window(
         local_control,
         stopping,
         predictor_changes,
+        scoring,
+        None
+        if parent is None
+        else dict(run_id=parent["run_id"], checkpoint_sha256=parent["checkpoint"]["sha256"]),
     )
     safe_destination(output)
     report_path = output / "run.json"
@@ -448,7 +568,7 @@ def run_titans_window(
     _check_view(dataset, protocol_document, fold)
     for protected in (*dataset.roots.values(), view.parent):
         outside_source(protected, output)
-    phases = window_phases(fold, options["warmup_months"])
+    phases = window_phases(fold, options["warmup_months"], options.get("fit_months"))
     sources = _sources(dataset, phases, Path(indices) if indices else index_root(dataset, output))
     specification = sources["train"].specification()
     predictor, pairing = _predictor(
@@ -460,6 +580,9 @@ def run_titans_window(
         request.get("local_control"),
         request.get(CHANGES),
     )
+    if parent is not None:
+        # Solo cambian las huellas de la entrada. La arquitectura y la semilla son las del padre.
+        _carried_parameters(_parent_state(initial, parent), predictor)
     trainer = ChronologicalTrainer(
         predictor,
         chronological,
@@ -469,6 +592,13 @@ def run_titans_window(
         optimizer_factory=optimizer_factory,
         pairing=pairing,
     )
+    if scoring is not None:
+        trainer.epoch_scorer = EpochValidation(
+            lambda: PredictionRows(trainer.emits_levels),
+            lambda rows, metrics: checked_tables(rows, metrics, dataset, "validation"),
+            min_assets=scoring["min_assets"],
+            directory=output / "epochs" if scoring["predictions"] else None,
+        )
     identity = dict(
         schema_version=1,
         kind=KIND,
@@ -476,7 +606,7 @@ def run_titans_window(
         window=fold,
         stopping_rule=rule,
         recipe=document,
-        memory_policy=memory_policy(options["warmup_months"]),
+        memory_policy=memory_policy(options["warmup_months"], options.get("fit_months")),
         phases={name: asdict(phase) for name, phase in phases.items()},
         indices={name: source.identity for name, source in sources.items()},
         fit_run_id=trainer.run_id,
@@ -533,7 +663,7 @@ def run_titans_window(
                 continue
             if stop.requested:
                 raise Paused
-            rows = PredictionRows(trainer.quantiles)
+            rows = PredictionRows(trainer.emits_levels)
             metrics = trainer.predict_partition(sources[name], rows, stop=stop)
             tables = checked_tables(rows, metrics, dataset, name)
             if name == "validation":
@@ -559,6 +689,14 @@ def run_titans_window(
                 metrics=metrics,
             )
             atomic_json(report_path, report)
+        if scoring is not None:
+
+            def emit(name):
+                rows = PredictionRows(trainer.emits_levels)
+                metrics = trainer.predict_partition(sources[name], rows, stop=stop)
+                return checked_tables(rows, metrics, dataset, name), rows.count, metrics
+
+            emit_versions(output, report, trainer, fit, versions, emit, stop)
         report.update(status="completed", finished_at_utc=datetime.now(UTC).isoformat())
         return report
     except Paused:
@@ -570,6 +708,44 @@ def run_titans_window(
     finally:
         report["attempts"].append(dict(seconds=time.perf_counter() - started))
         atomic_json(report_path, report)
+
+
+def emit_versions(output, report, trainer, fit, versions, emit, stop):
+    """Emitir las versiones pedidas y liberar después los estados fijados de la época común.
+
+    `emit(tramo)` predice el tramo con el estado cargado y devuelve sus tablas conciliadas
+    con la vista, sus filas y sus métricas. Cada tramo confirmado queda en el informe, así
+    que una reanudación continúa por el primero que falte.
+    """
+    bound = bind_versions(
+        report, versions, epochs=trainer.recipe.epochs, common=fit["common_epoch"]
+    )
+    atomic_json(output / "run.json", report)
+    for epoch in bound["epochs"]:
+        confirmed = bound["predictions"].setdefault(str(epoch), {})
+        if len(confirmed) == len(VERSIONED):
+            continue
+        trainer.load_epoch(fit, epoch)
+        for name in VERSIONED:
+            if name in confirmed:
+                continue
+            if stop.requested:
+                raise Paused
+            tables, count, metrics = emit(name)
+            path = version_path(output, epoch, name)
+            written = atomic_parquet_batches(path, tables)
+            _require(written == count, f"El Parquet de {name} no conserva sus filas")
+            confirmed[name] = dict(
+                path=str(path.relative_to(output)),
+                sha256=sha256(path),
+                rows=written,
+                bytes=path.stat().st_size,
+                metrics=metrics,
+            )
+            atomic_json(output / "run.json", report)
+    # Ya no hace falta ningún otro estado: queda solo el elegido de la época común.
+    released = release_recovery_states(output / "fit" / "checkpoints")
+    report["released_state_bytes"] = report.get("released_state_bytes", 0) + released
 
 
 CARRY_KIND = "titans_carried_predictions"
@@ -724,7 +900,7 @@ def carry_titans(
     inference = ChronologicalInference(predictor, chronological)
     predictions = {}
     for name in partitions:
-        rows = PredictionRows(inference.quantiles)
+        rows = PredictionRows(inference.emits_levels)
         metrics = inference.predict(sources[name], rows, stop=stop)
         tables = checked_tables(rows, metrics, dataset, name)
         path = output / f"{name}-predictions.parquet"

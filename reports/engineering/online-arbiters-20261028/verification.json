@@ -1,0 +1,556 @@
+{
+ "schema_version": 1,
+ "date": "2026-10-28",
+ "issue": 789,
+ "scope": "adanormalhedge_core_version_arbiter_and_model_combination",
+ "base_commit": "ada94bfdc6fdd6190fc3698177c5d573d0b0927d",
+ "scientific_experiments": 0,
+ "training_runs": 0,
+ "real_optimizer_steps": 0,
+ "final_test_opened": false,
+ "screening_predictions_read": false,
+ "hold_sha256": "8a658080c1ac4e63847eba58b177020339da6ec47021cf26d2701830073c87fd",
+ "test_runners": {
+  "pytest": "9.1.1",
+  "xdist": "3.8.0",
+  "coverage": "7.16.1",
+  "numpy": "2.5.3",
+  "pyarrow": "25.0.1",
+  "python": "3.12.14"
+ },
+ "suites": [
+  {
+   "name": "arbiters_and_cost_with_coverage",
+   "tests": 73,
+   "failures": 0,
+   "errors": 0,
+   "skipped": 0,
+   "xml_sha256": "ef1376eeadf10730d7f186c9bcd58d30d1276b25b4ceda183780b10899ba580a",
+   "note": "Pruebas del núcleo, de los árbitros y de su medida de coste con medida de cobertura sobre el árbol final, tras integrar C5 y la corrección de #795."
+  },
+  {
+   "name": "evaluation_benchmarks_and_hold_regression",
+   "tests": 1681,
+   "failures": 0,
+   "errors": 0,
+   "skipped": 7,
+   "xml_sha256": "e9368e15e729da07c6f82a8f20ae47a9ea47fd7b4095ffa686e9683e02f1526b",
+   "modules": [
+    "tests/evaluation",
+    "tests/benchmarks",
+    "tests/test_learning_hold_guard.py",
+    "tests/test_learning_hold_lowering.py"
+   ],
+   "note": "Regresión sobre el árbol final con tres procesos. Las siete omisiones son de scoringrules, del grupo opcional reference, que no está instalado en el entorno."
+  }
+ ],
+ "coverage": {
+  "tool": "coverage 7.16.1 con ramas y Radon 6.0.1",
+  "convention": "C² × (1 − cobertura de sentencias)³ + C.",
+  "files": [
+   {
+    "path": "benchmarks/online_arbiters_cost.py",
+    "source_sha256": "b50e6cb642e58454a5b917835a3a492f64bbf1a80a33148909a892af1e0634c7",
+    "statements": 89,
+    "covered_statements": 72,
+    "branches": 28,
+    "covered_branches": 22
+   },
+   {
+    "path": "src/mars_titan/evaluation/online_arbiters.py",
+    "source_sha256": "c482994c291a4b95ee3b9a9fadc9a7294b48c640476a6696320169e434e437d7",
+    "statements": 238,
+    "covered_statements": 238,
+    "branches": 42,
+    "covered_branches": 42
+   }
+  ],
+  "module_functions": [
+   {
+    "function": "stage_options",
+    "complexity": 19,
+    "statements": 16,
+    "covered_statements": 16,
+    "branches": 2,
+    "covered_branches": 2,
+    "crap": 19.0
+   },
+   {
+    "function": "online_mixture",
+    "complexity": 16,
+    "statements": 27,
+    "covered_statements": 27,
+    "branches": 8,
+    "covered_branches": 8,
+    "crap": 16.0
+   },
+   {
+    "function": "mature_mixture",
+    "complexity": 15,
+    "statements": 23,
+    "covered_statements": 23,
+    "branches": 6,
+    "covered_branches": 6,
+    "crap": 15.0
+   },
+   {
+    "function": "AdaNormalHedge.start",
+    "complexity": 4,
+    "statements": 4,
+    "covered_statements": 4,
+    "branches": 0,
+    "covered_branches": 0,
+    "crap": 4.0
+   },
+   {
+    "function": "_shuffled",
+    "complexity": 4,
+    "statements": 15,
+    "covered_statements": 15,
+    "branches": 6,
+    "covered_branches": 6,
+    "crap": 4.0
+   },
+   {
+    "function": "_instant",
+    "complexity": 3,
+    "statements": 8,
+    "covered_statements": 8,
+    "branches": 0,
+    "covered_branches": 0,
+    "crap": 3.0
+   },
+   {
+    "function": "AdaNormalHedge.distribution",
+    "complexity": 3,
+    "statements": 9,
+    "covered_statements": 9,
+    "branches": 4,
+    "covered_branches": 4,
+    "crap": 3.0
+   },
+   {
+    "function": "standardized",
+    "complexity": 3,
+    "statements": 8,
+    "covered_statements": 8,
+    "branches": 4,
+    "covered_branches": 4,
+    "crap": 3.0
+   },
+   {
+    "function": "session_losses",
+    "complexity": 3,
+    "statements": 5,
+    "covered_statements": 5,
+    "branches": 0,
+    "covered_branches": 0,
+    "crap": 3.0
+   },
+   {
+    "function": "_reliability",
+    "complexity": 3,
+    "statements": 8,
+    "covered_statements": 8,
+    "branches": 4,
+    "covered_branches": 4,
+    "crap": 3.0
+   },
+   {
+    "function": "_require",
+    "complexity": 2,
+    "statements": 2,
+    "covered_statements": 2,
+    "branches": 2,
+    "covered_branches": 2,
+    "crap": 2.0
+   },
+   {
+    "function": "_awake",
+    "complexity": 2,
+    "statements": 3,
+    "covered_statements": 3,
+    "branches": 0,
+    "covered_branches": 0,
+    "crap": 2.0
+   },
+   {
+    "function": "AdaNormalHedge.update",
+    "complexity": 2,
+    "statements": 8,
+    "covered_statements": 8,
+    "branches": 2,
+    "covered_branches": 2,
+    "crap": 2.0
+   },
+   {
+    "function": "AdaNormalHedgeTV.distribution",
+    "complexity": 2,
+    "statements": 7,
+    "covered_statements": 7,
+    "branches": 2,
+    "covered_branches": 2,
+    "crap": 2.0
+   },
+   {
+    "function": "AdaNormalHedgeTV.update",
+    "complexity": 2,
+    "statements": 9,
+    "covered_statements": 9,
+    "branches": 2,
+    "covered_branches": 2,
+    "crap": 2.0
+   },
+   {
+    "function": "uniform_mixture",
+    "complexity": 2,
+    "statements": 3,
+    "covered_statements": 3,
+    "branches": 0,
+    "covered_branches": 0,
+    "crap": 2.0
+   },
+   {
+    "function": "potential",
+    "complexity": 1,
+    "statements": 5,
+    "covered_statements": 5,
+    "branches": 0,
+    "covered_branches": 0,
+    "crap": 1.0
+   },
+   {
+    "function": "weights",
+    "complexity": 1,
+    "statements": 5,
+    "covered_statements": 5,
+    "branches": 0,
+    "covered_branches": 0,
+    "crap": 1.0
+   },
+   {
+    "function": "AdaNormalHedge.options",
+    "complexity": 1,
+    "statements": 1,
+    "covered_statements": 1,
+    "branches": 0,
+    "covered_branches": 0,
+    "crap": 1.0
+   },
+   {
+    "function": "AdaNormalHedge.potential_bound",
+    "complexity": 1,
+    "statements": 3,
+    "covered_statements": 3,
+    "branches": 0,
+    "covered_branches": 0,
+    "crap": 1.0
+   },
+   {
+    "function": "AdaNormalHedgeTV.start",
+    "complexity": 1,
+    "statements": 3,
+    "covered_statements": 3,
+    "branches": 0,
+    "covered_branches": 0,
+    "crap": 1.0
+   },
+   {
+    "function": "AdaNormalHedgeTV.options",
+    "complexity": 1,
+    "statements": 1,
+    "covered_statements": 1,
+    "branches": 0,
+    "covered_branches": 0,
+    "crap": 1.0
+   },
+   {
+    "function": "AdaNormalHedgeTV._copies",
+    "complexity": 1,
+    "statements": 2,
+    "covered_statements": 2,
+    "branches": 0,
+    "covered_branches": 0,
+    "crap": 1.0
+   },
+   {
+    "function": "AdaNormalHedgeTV._start_weights",
+    "complexity": 1,
+    "statements": 2,
+    "covered_statements": 2,
+    "branches": 0,
+    "covered_branches": 0,
+    "crap": 1.0
+   },
+   {
+    "function": "AdaNormalHedgeTV.potential_bound",
+    "complexity": 1,
+    "statements": 6,
+    "covered_statements": 6,
+    "branches": 0,
+    "covered_branches": 0,
+    "crap": 1.0
+   },
+   {
+    "function": "_ordered",
+    "complexity": 1,
+    "statements": 3,
+    "covered_statements": 3,
+    "branches": 0,
+    "covered_branches": 0,
+    "crap": 1.0
+   }
+  ],
+  "max_crap_of_the_module": 19.0,
+  "uncovered": {
+   "module": "ninguna sentencia ni rama sin cubrir en online_arbiters.py",
+   "benchmark": "main y run, la entrada de línea de órdenes y la recogida del entorno, que se ejecutaron al medir el coste y no tienen prueba propia"
+  }
+ },
+ "mutations": {
+  "scope": "Dieciocho recetas sobre online_arbiters.py, cada una con su prueba: madurez de las sesiones, pesos y magnitudes de las dos formas, prior de la nota 1, opciones que duermen, prior 1/τ², pérdida y sesiones que puntúan, ventana de fiabilidad, margen, tipificación, estado por mercado, control desordenado y validación de la declaración. Se ejecutaron sobre el árbol anterior a integrar develop, que no cambia online_arbiters.py ni sus pruebas (mismas huellas).",
+  "planned": 18,
+  "killed": 18,
+  "optimizer_attempts": 0,
+  "hold_sha256_unchanged": true,
+  "recipes_sha256": "ed6d9549dd095869902e66cad00d1989dbeb2963bd858920587623c6ead21826",
+  "source_sha256": {
+   "src/mars_titan/evaluation/online_arbiters.py": "c482994c291a4b95ee3b9a9fadc9a7294b48c640476a6696320169e434e437d7"
+  },
+  "cases": [
+   {
+    "id": "immature_losses_reach_a_decision",
+    "status": "killed_with_green_controls"
+   },
+   {
+    "id": "a_session_maturing_at_the_decision_waits",
+    "status": "killed_with_green_controls"
+   },
+   {
+    "id": "weight_without_the_positive_part",
+    "status": "killed_with_green_controls"
+   },
+   {
+    "id": "magnitude_with_signed_regret",
+    "status": "killed_with_green_controls"
+   },
+   {
+    "id": "uniform_fallback_instead_of_the_prior",
+    "status": "killed_with_green_controls"
+   },
+   {
+    "id": "a_sleeping_option_accumulates_regret",
+    "status": "killed_with_green_controls"
+   },
+   {
+    "id": "tracking_without_the_inverse_square_prior",
+    "status": "killed_with_green_controls"
+   },
+   {
+    "id": "tracking_magnitude_with_signed_regret",
+    "status": "killed_with_green_controls"
+   },
+   {
+    "id": "the_loss_rewards_a_negative_ic",
+    "status": "killed_with_green_controls"
+   },
+   {
+    "id": "a_thin_session_scores",
+    "status": "killed_with_green_controls"
+   },
+   {
+    "id": "reliability_over_every_mature_session",
+    "status": "killed_with_green_controls"
+   },
+   {
+    "id": "the_margin_is_ignored",
+    "status": "killed_with_green_controls"
+   },
+   {
+    "id": "raw_predictions_are_mixed",
+    "status": "killed_with_green_controls"
+   },
+   {
+    "id": "one_state_for_every_market",
+    "status": "killed_with_green_controls"
+   },
+   {
+    "id": "the_shuffled_control_reads_immature_sessions",
+    "status": "killed_with_green_controls"
+   },
+   {
+    "id": "the_shuffled_control_keeps_the_time_order",
+    "status": "killed_with_green_controls"
+   },
+   {
+    "id": "an_enabled_declaration_is_accepted",
+    "status": "killed_with_green_controls"
+   },
+   {
+    "id": "a_negative_shuffled_seed_is_accepted",
+    "status": "killed_with_green_controls"
+   }
+  ]
+ },
+ "cost": {
+  "receipt_sha256": "f6c3e27a5281c633c30ea1635b0dfa3fee02b574d729fcd9a41f876b6db83b82",
+  "protocol": {
+   "kind": "online_arbiters_cost_v1",
+   "device": "cpu",
+   "dtype": "float64",
+   "markets": [
+    "US",
+    "CN"
+   ],
+   "assets_per_session": 128,
+   "maturity": "each label matures five sessions after its decision",
+   "shapes": [
+    {
+     "sessions_per_market": 64,
+     "options": 5,
+     "modes": [
+      "version_arbiter",
+      "shuffled_control",
+      "uniform_mixture"
+     ]
+    },
+    {
+     "sessions_per_market": 320,
+     "options": 5,
+     "modes": [
+      "version_arbiter",
+      "shuffled_control",
+      "uniform_mixture"
+     ]
+    },
+    {
+     "sessions_per_market": 320,
+     "options": 32,
+     "modes": [
+      "model_combination",
+      "simple_mean"
+     ]
+    }
+   ],
+   "reliability_window_sessions": 21,
+   "min_assets": 3,
+   "shuffled_seed": 20261028,
+   "warmup": 1,
+   "repetitions": 5,
+   "orders": "each shape runs its modes in the declared order and then reversed",
+   "memory": "tracemalloc peak of one separate call"
+  },
+  "load_average_1min": {
+   "start": 9.8583984375,
+   "end": 7.0771484375
+  },
+  "summary": [
+   {
+    "mode": "version_arbiter",
+    "sessions": 64,
+    "options": 5,
+    "p50_s": 0.092641767,
+    "p95_s": 0.096980964
+   },
+   {
+    "mode": "shuffled_control",
+    "sessions": 64,
+    "options": 5,
+    "p50_s": 0.436346078,
+    "p95_s": 0.532049807
+   },
+   {
+    "mode": "uniform_mixture",
+    "sessions": 64,
+    "options": 5,
+    "p50_s": 0.0223518745,
+    "p95_s": 0.025426207
+   },
+   {
+    "mode": "version_arbiter",
+    "sessions": 320,
+    "options": 5,
+    "p50_s": 0.4830335315,
+    "p95_s": 0.551410886
+   },
+   {
+    "mode": "shuffled_control",
+    "sessions": 320,
+    "options": 5,
+    "p50_s": 11.612944791499999,
+    "p95_s": 23.088683033
+   },
+   {
+    "mode": "uniform_mixture",
+    "sessions": 320,
+    "options": 5,
+    "p50_s": 0.110660058,
+    "p95_s": 0.131309401
+   },
+   {
+    "mode": "model_combination",
+    "sessions": 320,
+    "options": 32,
+    "p50_s": 2.6828404040000002,
+    "p95_s": 3.117158494
+   },
+   {
+    "mode": "simple_mean",
+    "sessions": 320,
+    "options": 32,
+    "p50_s": 0.741459917,
+    "p95_s": 0.874199382
+   }
+  ],
+  "memory": [
+   {
+    "mode": "version_arbiter",
+    "sessions": 64,
+    "options": 5,
+    "peak_bytes": 1312152
+   },
+   {
+    "mode": "shuffled_control",
+    "sessions": 64,
+    "options": 5,
+    "peak_bytes": 1312152
+   },
+   {
+    "mode": "uniform_mixture",
+    "sessions": 64,
+    "options": 5,
+    "peak_bytes": 1443752
+   },
+   {
+    "mode": "version_arbiter",
+    "sessions": 320,
+    "options": 5,
+    "peak_bytes": 6555032
+   },
+   {
+    "mode": "shuffled_control",
+    "sessions": 320,
+    "options": 5,
+    "peak_bytes": 6555032
+   },
+   {
+    "mode": "uniform_mixture",
+    "sessions": 320,
+    "options": 5,
+    "peak_bytes": 7210920
+   },
+   {
+    "mode": "model_combination",
+    "sessions": 320,
+    "options": 32,
+    "peak_bytes": 41951848
+   },
+   {
+    "mode": "simple_mean",
+    "sessions": 320,
+    "options": 32,
+    "peak_bytes": 42603576
+   }
+  ]
+ }
+}

@@ -264,13 +264,15 @@ def test_every_test_that_reaches_an_optimizer_step_carries_the_label():
     expected = stepping_tests(found)
     assert expected - labelled == set(), "Pruebas con pasos de optimizador sin la etiqueta"
     assert labelled - expected == set(), "Etiqueta en pruebas sin pasos de optimizador"
-    # Las seis pruebas de PPO y del adaptador, más los programas del control de adaptadores.
+    # Las pruebas de PPO, el replay de las variantes de valor y el adaptador, más los programas
+    # del control de adaptadores.
     assert {
         "ppo_policy",
         "ppo_training",
         "ppo_collection",
         "ppo_gru_packing",
         "ppo_variant_state",
+        "value_replay",
         "adapter_control",
         "adapter_control_cli",
         "adapter_control_cuda",

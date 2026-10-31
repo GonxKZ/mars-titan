@@ -9,7 +9,7 @@ from torch import nn
 from torch.nn.attention import SDPBackend, sdpa_kernel
 
 from mars_titan.data.input_policy import masked_inputs
-from mars_titan.data.price_windows import gate_price_window
+from mars_titan.data.price_windows import PRICE_WINDOW_CHANNELS, gate_price_window
 from mars_titan.data.sector_map import SectorMap
 from mars_titan.models.baselines.multimodal import (
     HEADS,
@@ -23,6 +23,21 @@ from mars_titan.models.baselines.multimodal import (
 from mars_titan.models.quantile_head import CONTRACT, QUANTILE_HEAD, QuantileHead, median
 from mars_titan.models.quantile_routing import QuantileRouting
 
+from .asset_groups import (
+    CURRENT_SECTOR,
+    AssetGroupMembership,
+    AssetGroupsConfig,
+    parse_asset_groups,
+)
+from .auxiliary_horizons import AuxiliaryHeads, AuxiliaryHorizons
+from .axial_time_region import (
+    AxialTimeRegion,
+    AxialTimeRegionConfig,
+    RegionHistory,
+    history_tensors,
+    map_history_rows,
+    parse_axial_time_region,
+)
 from .bank_readout import BankReadoutConfig
 from .config import (
     ATTENTION_LAYOUTS,
@@ -40,6 +55,13 @@ from .config import (
     canonical,
     require_identity,
 )
+from .cross_asset_attention import (
+    CrossAssetAttention,
+    CrossAssetAttentionConfig,
+    parse_cross_asset_attention,
+)
+from .differential_attention import DIFFERENTIAL_ATTENTION
+from .differential_attention import identity as differential_identity
 from .financial_inputs import (
     FINAL_TEST_US,
     FLOW_ID,
@@ -47,9 +69,24 @@ from .financial_inputs import (
     DecisionBatch,
     FinancialInputSpec,
 )
+from .fractal_shared_operator import (
+    FractalSharedOperator,
+    FractalSharedOperatorConfig,
+    parse_fractal_shared_operator,
+)
+from .holographic_network import (
+    HolographicNetwork,
+    HolographicNetworkConfig,
+    area_layout,
+    parse_holographic_network,
+)
+from .huber_memory import HuberMemory
 from .key_competition_config import KeyCompetition
+from .laplace_scale import LaplaceScaleHead
 from .local_control import MACProjectionConfig, MACProjectionControl, ProjectedMACResult
 from .mac import TitansMAC
+from .opponent_heads import OpponentHeads
+from .output_objectives import build_objective, check_objectives, objective_identity
 from .presence_modulation import (
     FILM,
     PRESENCE_MODULATIONS,
@@ -77,7 +114,18 @@ from .regional_hierarchy import (
     RegionalHierarchyConfig,
     validate_hierarchy_operator_config,
 )
+from .regional_variants import (
+    RegionAxisMixingConfig,
+    SharedWorkspaceConfig,
+    build_regional_variant,
+    parse_regional_variant,
+)
+from .reliability_gates import MatureReliability, ReliabilityGates
+from .scale_invariant_time import ScaleInvariantTime
 from .session_context import SECTOR_MEAN, SESSION_CONTEXTS, SessionContext
+from .session_ic_objective import SessionICObjective
+from .session_ranks import SESSION_RANK_INPUTS, rank_session_inputs
+from .session_ranks import identity as session_rank_identity
 from .state import (
     MACState,
     check_differentiable,
@@ -147,8 +195,69 @@ class FinancialConfig:
     regional_execution: RegionalExecutionConfig | RegionalHierarchyConfig | None = None
     memory_bank_readout: BankReadoutConfig | None = None
     temporal_encoder: str | None = None
+    # C1 o C6 de #751: sustituyen al operador regional y no se combinan con él.
+    regional_variant: RegionAxisMixingConfig | SharedWorkspaceConfig | None = None
+    # H1, H2 o H3 de #783: red de redes holográfica en la modulación de la fusión. Sin
+    # declararla, la identidad y el cálculo no cambian.
+    holographic_network: HolographicNetworkConfig | None = None
+    # C2 de #751: atención axial en el tiempo de cada flujo y entre sus regiones, con un
+    # historial de bloques en el estado. Sin declararla, la identidad y el cálculo no cambian.
+    axial_time_region: AxialTimeRegionConfig | None = None
+    # C3 de #751: el mismo operador recorre mercado, sectores estadísticos, activos y hojas de
+    # cada sesión antes de la fusión. Sin declararlo, la identidad y el cálculo no cambian.
+    fractal_shared_operator: FractalSharedOperatorConfig | None = None
+    # F4 de #749: entradas en rangos gaussianos por sesión y pérdida de IC por sesión con
+    # cabeza de escala. Sin declararlas, la identidad y el cálculo no cambian.
+    session_rank_inputs: str | None = None
+    session_ic_objective: SessionICObjective | None = None
+    # C5 de #751: atención entre los activos de la misma sesión tras MAC. Sin declararla, la
+    # identidad y el cálculo no cambian.
+    cross_asset_attention: CrossAssetAttentionConfig | None = None
+    # H4 de #783: grupos de activos de la sesión con la ventana pasada, tras MAC. Su control
+    # de fuga lee el sector actual de sector_map. Sin declararla, la identidad y el cálculo
+    # no cambian.
+    asset_groups: AssetGroupsConfig | None = None
+    # F1 de #749: escala de Laplace, otro objetivo de salida excluyente con el de IC.
+    laplace_scale_head: LaplaceScaleHead | None = None
+    # F5 de #749: cabezas auxiliares de horizontes largos. Sin declararlas nada cambia.
+    auxiliary_horizons: AuxiliaryHorizons | None = None
+    # A4 de #749: cabezas oponentes con integrador neutral, otro objetivo de salida.
+    opponent_heads: OpponentHeads | None = None
+    # #791: fiabilidad madura en las puertas de escritura y olvido de Titans. Sin
+    # declararla, la identidad y el cálculo no cambian.
+    mature_reliability: MatureReliability | None = None
+    # R1, U2 y U1 de #786 sobre el núcleo: pérdida de Huber, semividas geométricas y atención
+    # diferencial. Sin declararlas, la identidad y el cálculo no cambian.
+    memory_huber: HuberMemory | None = None
+    memory_time_scales: ScaleInvariantTime | None = None
+    differential_attention: str | None = None
 
     def __post_init__(self):
+        self._check_input_contract()
+        self._check_memory_gates()
+        self._check_memory_multiscale()
+        self._check_memory_plasticity()
+        self._check_key_competition()
+        self._check_session_context()
+        self._check_presence_modulation()
+        self._check_regional_fusion()
+        self._check_regional_execution()
+        self._check_regional_variant()
+        self._check_holographic_network()
+        self._check_axial_time_region()
+        self._check_fractal_shared_operator()
+        self._check_memory_bank_readout()
+        self._check_session_rank_inputs()
+        check_objectives(self)
+        self._check_session_mixers()
+        self._check_auxiliary_horizons()
+        self._check_mature_reliability()
+        self._check_core_variants()
+        self._check_memory_projections()
+        self._check_runtime_limits()
+
+    def _check_input_contract(self):
+        """Entrada, codificador, cabeza y disposición de atención."""
         if self.temporal_encoder is not None and (
             type(self.temporal_encoder) is not str
             or self.temporal_encoder not in _TEMPORAL_ENCODERS
@@ -170,6 +279,9 @@ class FinancialConfig:
             raise ValueError("La ruta de cuantiles necesita QuantileRouting y quantile_head_v1")
         if self.attention_layout not in ATTENTION_LAYOUTS:
             raise ValueError("attention_layout no pertenece a las disposiciones admitidas")
+
+    def _check_memory_gates(self):
+        """Puertas y estabilidad antes de invertir sus tasas iniciales."""
         if isinstance(self.gate_bias, dict):
             # Las recetas JSON declaran los tres valores de forma explícita.
             if set(self.gate_bias) != {field.name for field in fields(GateBias)}:
@@ -191,6 +303,9 @@ class FinancialConfig:
             if not isinstance(self.gate_bias, GateBias):
                 raise ValueError("gate_bias debe ser GateBias, sus tres valores o None")
             self.gate_bias.logits(MemoryConfig.theta_max, self.memory_stability)
+
+    def _check_memory_multiscale(self):
+        """Forma y acoplamiento de la memoria multiescala."""
         if isinstance(self.memory_multiscale, dict):
             # Las recetas JSON declaran la forma y el acoplamiento de forma explícita.
             if set(self.memory_multiscale) != {field.name for field in fields(MemoryMultiscale)}:
@@ -202,6 +317,9 @@ class FinancialConfig:
             self.memory_multiscale, MemoryMultiscale
         ):
             raise ValueError("memory_multiscale debe ser MemoryMultiscale, sus valores o None")
+
+    def _check_memory_plasticity(self):
+        """Plasticidad y su dependencia de la cascada."""
         if isinstance(self.memory_plasticity, dict):
             expected = {field.name for field in fields(MemoryPlasticity)}
             required = expected - {"gradient_contract", "capture_scope"}
@@ -217,6 +335,9 @@ class FinancialConfig:
                 self.memory_multiscale is None or self.memory_multiscale.form != "cascade"
             ):
                 raise ValueError("La captura neuronal necesita la cascada multiescala")
+
+    def _check_key_competition(self):
+        """Transformación de claves y capacidad retenida."""
         if isinstance(self.memory_key_competition, dict):
             if set(self.memory_key_competition) != {field.name for field in fields(KeyCompetition)}:
                 raise ValueError("memory_key_competition necesita center, retained y selection")
@@ -231,6 +352,9 @@ class FinancialConfig:
             retained = self.memory_key_competition.retained
             if retained is not None and retained > self.hidden_size:
                 raise ValueError("retained supera hidden_size")
+
+    def _check_session_context(self):
+        """Contexto, mapa sectorial y grupos de activos."""
         if isinstance(self.sector_map, dict):
             if set(self.sector_map) != {"source"}:
                 raise ValueError("sector_map declara solo la carpeta de las fichas en source")
@@ -245,10 +369,21 @@ class FinancialConfig:
             raise ValueError(
                 "session_context admite market_memory_v1 o sector_mean_v1 con mac_online"
             )
-        if (self.session_context == SECTOR_MEAN) != isinstance(self.sector_map, SectorMap) or (
+        object.__setattr__(self, "asset_groups", parse_asset_groups(self.asset_groups))
+        sectors = self.session_context == SECTOR_MEAN or (
+            self.asset_groups is not None and self.asset_groups.mode == CURRENT_SECTOR
+        )
+        if sectors != isinstance(self.sector_map, SectorMap) or (
             self.sector_map is not None and not isinstance(self.sector_map, SectorMap)
         ):
-            raise ValueError("sector_map acompaña solo y siempre al control sectorial")
+            raise ValueError("sector_map acompaña solo y siempre a los controles sectoriales")
+        if self.asset_groups is not None and self.inputs.dimensions["prices"] != len(
+            PRICE_WINDOW_CHANNELS
+        ):
+            raise ValueError("H4 necesita la ventana de precios de la v3.1 con el bit de presencia")
+
+    def _check_presence_modulation(self):
+        """Modulación de presencia con la política de máscaras."""
         if self.presence_modulation is not None and (
             not isinstance(self.presence_modulation, str)
             or self.presence_modulation not in PRESENCE_MODULATIONS
@@ -257,6 +392,9 @@ class FinancialConfig:
             raise ValueError(
                 "presence_modulation admite film_v1 o wide_fusion_v1 con la política con máscaras"
             )
+
+    def _check_regional_fusion(self):
+        """Declaración y exclusiones de la fusión regional."""
         if isinstance(self.regional_fusion, dict):
             if set(self.regional_fusion) != {field.name for field in fields(RegionalFusionConfig)}:
                 raise ValueError("regional_fusion debe declarar toda su configuración")
@@ -270,6 +408,9 @@ class FinancialConfig:
                 )
             if self.presence_modulation is not None:
                 raise ValueError("La combinación de fusión regional y PT6 necesita otro contraste")
+
+    def _check_regional_execution(self):
+        """Ejecución regional y operador compatible."""
         if isinstance(self.regional_execution, dict):
             object.__setattr__(
                 self,
@@ -294,6 +435,47 @@ class FinancialConfig:
                 and self.session_context is None
             ):
                 raise ValueError("La selección contextual necesita un padre PT4 explícito")
+
+    def _check_regional_variant(self):
+        """Variantes regionales y sus exclusiones."""
+        object.__setattr__(self, "regional_variant", parse_regional_variant(self.regional_variant))
+        if self.regional_variant is not None and (
+            self.variant != "mac_online"
+            or self.regional_fusion is not None
+            or self.regional_execution is not None
+            or self.presence_modulation is not None
+        ):
+            raise ValueError(
+                "La variante regional se declara sobre mac_online, sustituye al operador "
+                "regional y no se combina con PT6"
+            )
+
+    def _check_holographic_network(self):
+        """Red de áreas y familias que exige la representación."""
+        object.__setattr__(
+            self, "holographic_network", parse_holographic_network(self.holographic_network)
+        )
+        if self.holographic_network is not None:
+            if (
+                self.variant != "mac_online"
+                or self.regional_fusion is not None
+                or self.regional_execution is not None
+                or self.regional_variant is not None
+                or self.presence_modulation is not None
+            ):
+                raise ValueError(
+                    "La red holográfica se declara sobre mac_online, ocupa la modulación de "
+                    "la fusión y no se combina con el operador regional, C1, C6 ni PT6"
+                )
+            # Falla al declarar si la edición no tiene las familias de las áreas.
+            area_layout(
+                self.holographic_network.areas,
+                self.inputs.representation,
+                masked=masked_inputs(self.inputs.input_policy),
+            )
+
+    def _check_memory_bank_readout(self):
+        """Lectura de los bancos y sus contrastes permitidos."""
         if isinstance(self.memory_bank_readout, dict):
             expected = {f.name for f in fields(BankReadoutConfig)}
             if not expected - {"write_gradient"} <= set(self.memory_bank_readout) <= expected:
@@ -310,12 +492,97 @@ class FinancialConfig:
                 raise ValueError("El lector necesita bancos EMA o réplicas identificados")
             if self.memory_plasticity is not None or self.memory_stability is not None:
                 raise ValueError("El lector con plasticidad o PT1 necesita otro contraste")
+
+    def _check_session_rank_inputs(self):
+        """Rangos por sesión bajo la política de máscaras."""
+        if self.session_rank_inputs is not None and (
+            type(self.session_rank_inputs) is not str
+            or self.session_rank_inputs != SESSION_RANK_INPUTS
+            or not masked_inputs(self.inputs.input_policy)
+        ):
+            raise ValueError(
+                "session_rank_inputs admite session_rank_inputs_v1 con la política con máscaras"
+            )
+
+    def _check_session_mixers(self):
+        """Exclusiones entre los operadores que mezclan activos."""
+        object.__setattr__(
+            self, "cross_asset_attention", parse_cross_asset_attention(self.cross_asset_attention)
+        )
+        # H4 y C5 son dos formas de mezclar los activos de la sesión y se comparan entre sí.
+        if self.asset_groups is not None and self.cross_asset_attention is not None:
+            raise ValueError("H4 y C5 son alternativas y no se combinan")
+        # C3 y C5 mezclan los activos de la sesión y su combinación sería otro contraste.
+        if self.fractal_shared_operator is not None and self.cross_asset_attention is not None:
+            raise ValueError("C3 no se combina con la atención entre activos de C5")
+        # H4 y C3 también mezclan las filas de la sesión, cada uno con su propia agrupación.
+        if self.asset_groups is not None and self.fractal_shared_operator is not None:
+            raise ValueError("H4 y C3 mezclan la sesión de dos formas y no se combinan")
+
+    def _check_auxiliary_horizons(self):
+        """Cabezas auxiliares y operaciones que impiden recalcular su token."""
+        if isinstance(self.auxiliary_horizons, dict):
+            if set(self.auxiliary_horizons) != {f.name for f in fields(AuxiliaryHorizons)}:
+                raise ValueError(
+                    "auxiliary_horizons debe declarar horizons, weight y maturity_slack"
+                )
+            object.__setattr__(
+                self, "auxiliary_horizons", AuxiliaryHorizons(**self.auxiliary_horizons)
+            )
+        if self.auxiliary_horizons is not None:
+            if type(self.auxiliary_horizons) is not AuxiliaryHorizons:
+                raise ValueError(
+                    "auxiliary_horizons necesita AuxiliaryHorizons, sus valores o None"
+                )
+            # El token se vuelve a calcular fila a fila al madurar la etiqueta. La fusión
+            # regional y sus variantes C1 y C6 mezclan las filas del bloque emitido, y C2
+            # necesita el historial del flujo en la emisión.
+            if (
+                self.regional_fusion is not None
+                or self.regional_execution is not None
+                or self.regional_variant is not None
+                or self.axial_time_region is not None
+            ):
+                raise ValueError(
+                    "Las cabezas auxiliares con fusión regional necesitan otro contraste"
+                )
+            # Las operaciones por sesión, C3 y la atención entre activos de C5 usan todas las
+            # filas emitidas de la sesión, que el cálculo fila a fila de F5 no reproduce.
+            if (
+                self.session_rank_inputs is not None
+                or self.session_ic_objective is not None
+                or self.cross_asset_attention is not None
+                or self.asset_groups is not None
+                or self.fractal_shared_operator is not None
+            ):
+                raise ValueError(
+                    "Las cabezas auxiliares con operaciones por sesión necesitan otro contraste"
+                )
+
+    def _check_mature_reliability(self):
+        """Señal de fiabilidad y núcleo que la admite."""
+        if isinstance(self.mature_reliability, dict):
+            if set(self.mature_reliability) != {f.name for f in fields(MatureReliability)}:
+                raise ValueError("mature_reliability debe declarar todos sus campos")
+            object.__setattr__(
+                self, "mature_reliability", MatureReliability(**self.mature_reliability)
+            )
+        if self.mature_reliability is not None and (
+            type(self.mature_reliability) is not MatureReliability or self.variant != "mac_online"
+        ):
+            raise ValueError("mature_reliability necesita MatureReliability y mac_online")
+
+    def _check_memory_projections(self):
+        """Normalización residual y proyecciones de memoria."""
         if type(self.memory_residual_layer_norm) is not bool:
             raise ValueError("memory_residual_layer_norm debe ser booleano")
         if not isinstance(self.memory_projections, str) or (
             self.memory_projections not in MEMORY_PROJECTIONS
         ):
             raise ValueError("memory_projections debe ser linear_v1 o " + PAPER_PROJECTIONS)
+
+    def _check_runtime_limits(self):
+        """Dimensiones, semilla, presupuesto y banco permitido."""
         validate_architecture(self.hidden_size, self.layers, 0.0)
         bounded_integer(self.seed, "semilla", 0, 2**32 - 1)
         bounded_integer(self.persistent_tokens, "prefijo", 0, 64)
@@ -327,6 +594,74 @@ class FinancialConfig:
             or self.refinements != 1
         ):
             raise ValueError("Esta pieza admite únicamente banco desactivado y K=1")
+
+    def _check_axial_time_region(self):
+        """C2 sobre mac_online, sin el operador regional, C1, C6, PT6 ni la red holográfica."""
+        object.__setattr__(
+            self, "axial_time_region", parse_axial_time_region(self.axial_time_region)
+        )
+        if self.axial_time_region is not None and (
+            self.variant != "mac_online"
+            or self.regional_fusion is not None
+            or self.regional_execution is not None
+            or self.regional_variant is not None
+            or self.presence_modulation is not None
+            or self.holographic_network is not None
+        ):
+            raise ValueError(
+                "C2 se declara sobre mac_online, ocupa la modulación de la fusión y no se "
+                "combina con el operador regional, C1, C6, PT6 ni la red holográfica"
+            )
+
+    def _check_fractal_shared_operator(self):
+        """C3 sobre mac_online, sin el operador regional, C1, C2, C6, PT6 ni la red holográfica."""
+        object.__setattr__(
+            self,
+            "fractal_shared_operator",
+            parse_fractal_shared_operator(self.fractal_shared_operator),
+        )
+        if self.fractal_shared_operator is not None and (
+            self.variant != "mac_online"
+            or self.regional_fusion is not None
+            or self.regional_execution is not None
+            or self.regional_variant is not None
+            or self.axial_time_region is not None
+            or self.presence_modulation is not None
+            or self.holographic_network is not None
+        ):
+            raise ValueError(
+                "C3 se declara sobre mac_online, ocupa la modulación de la fusión y no se "
+                "combina con el operador regional, C1, C2, C6, PT6 ni la red holográfica"
+            )
+
+    def _check_core_variants(self):
+        """R1 y U2 cambian la escritura de la memoria y U1 la atención de MAC."""
+        for name, kind in (
+            ("memory_huber", HuberMemory),
+            ("memory_time_scales", ScaleInvariantTime),
+        ):
+            value = getattr(self, name)
+            if isinstance(value, dict):
+                if set(value) != {f.name for f in fields(kind)}:
+                    raise ValueError(f"{name} debe declarar todos sus campos")
+                object.__setattr__(self, name, kind(**value))
+            elif value is not None and type(value) is not kind:
+                raise ValueError(f"{name} necesita {kind.__name__}, sus valores o None")
+        if (
+            self.memory_huber is not None or self.memory_time_scales is not None
+        ) and self.variant != "mac_online":
+            raise ValueError("La pérdida de Huber y las semividas geométricas necesitan mac_online")
+        if self.memory_time_scales is not None:
+            if self.gate_bias is None:
+                raise ValueError("memory_time_scales reparte la semivida de gate_bias")
+            self.memory_time_scales.alpha_logits(
+                self.gate_bias, self.hidden_size, MemoryConfig.theta_max, self.memory_stability
+            )
+        if self.differential_attention is not None and (
+            self.differential_attention != DIFFERENTIAL_ATTENTION
+            or self.variant == "transformer_direct"
+        ):
+            raise ValueError(f"differential_attention admite {DIFFERENTIAL_ATTENTION} con MAC")
 
     def identity(self):
         result = dict(
@@ -387,8 +722,37 @@ class FinancialConfig:
             result.update(regional_fusion=self.regional_fusion.identity())
         if self.regional_execution is not None:
             result.update(regional_execution=self.regional_execution.identity())
+        if self.regional_variant is not None:
+            result.update(regional_variant=self.regional_variant.identity())
+        if self.holographic_network is not None:
+            result.update(holographic_network=self.holographic_network.identity())
+        if self.axial_time_region is not None:
+            result.update(axial_time_region=self.axial_time_region.identity())
+        if self.fractal_shared_operator is not None:
+            result.update(fractal_shared_operator=self.fractal_shared_operator.identity())
         if self.memory_bank_readout is not None:
             result.update(memory_bank_readout=self.memory_bank_readout.identity())
+        if self.session_rank_inputs is not None:
+            result.update(session_rank_inputs=session_rank_identity())
+        result.update(objective_identity(self))
+        if self.cross_asset_attention is not None:
+            result.update(cross_asset_attention=self.cross_asset_attention.identity())
+        if self.asset_groups is not None:
+            groups = self.asset_groups.identity()
+            # El control sectorial guarda la huella del reparto que lee.
+            if self.asset_groups.mode == CURRENT_SECTOR:
+                groups.update(sectors=self.sector_map.identity())
+            result.update(asset_groups=groups)
+        if self.auxiliary_horizons is not None:
+            result.update(auxiliary_horizons=self.auxiliary_horizons.identity())
+        if self.mature_reliability is not None:
+            result.update(mature_reliability=self.mature_reliability.identity())
+        if self.memory_huber is not None:
+            result.update(memory_huber=self.memory_huber.identity())
+        if self.memory_time_scales is not None:
+            result.update(memory_time_scales=self.memory_time_scales.identity())
+        if self.differential_attention is not None:
+            result.update(differential_attention=differential_identity())
         # PT4 solo aparece si se declara. El control sectorial guarda la huella del reparto.
         if self.session_context is not None:
             result.update(
@@ -428,6 +792,8 @@ class FinancialState:
     last_prediction_at: tuple[int, ...]
     observed_steps: torch.Tensor
     mac: MACState | None
+    # Solo con C2 de #751: los bloques de las emisiones anteriores de cada flujo.
+    regions: RegionHistory | None = None
 
 
 @dataclass(frozen=True)
@@ -443,6 +809,10 @@ class PreparedDecisions:
     quantiles: torch.Tensor | None = None
     # Solo con PT4: el contexto con los tokens de este bloque pendientes de su sesión.
     next_context: object = None
+    # Solo con un objetivo de salida de #749: [flujos, k] salidas que usa su pérdida.
+    outputs: torch.Tensor | None = None
+    # Solo con el control de sorpresa de #791: [flujos] pérdida asociativa sin grafo.
+    surprise: torch.Tensor | None = None
 
 
 @dataclass(frozen=True)
@@ -474,6 +844,16 @@ class FinancialPredictor(nn.Module):
             or config.hidden_size > 64
         ):
             raise ValueError("El control local requiere MAC online de dimensión hasta 64")
+        # C vuelve a calcular la escritura de MAC sin la señal de #791.
+        if local_control is not None and config.mature_reliability is not None:
+            raise ValueError("La fiabilidad madura no se combina con el control local")
+        # El presupuesto de C está contrastado con el núcleo sin las variantes de #786.
+        if local_control is not None and (
+            config.memory_huber is not None
+            or config.memory_time_scales is not None
+            or config.differential_attention is not None
+        ):
+            raise ValueError("Las variantes del núcleo de #786 necesitan su propio contraste con C")
         self.config = config
         self.masked = masked_inputs(config.inputs.input_policy)
         with torch.device("cpu"), torch.random.fork_rng(devices=[]):
@@ -545,6 +925,45 @@ class FinancialPredictor(nn.Module):
             if config.regional_execution is not None
             else None
         )
+        self.regional_variant = (
+            build_regional_variant(
+                config.hidden_size,
+                config.regional_variant,
+                seed=config.seed,
+                max_batch=config.max_batch,
+            )
+            if config.regional_variant is not None
+            else None
+        )
+        # H1 deriva su semilla de la del predictor y no consume el generador global.
+        self.holographic_network = (
+            HolographicNetwork(
+                config.hidden_size,
+                config.holographic_network,
+                config.inputs.representation,
+                seed=config.seed,
+                max_batch=config.max_batch,
+                masked=self.masked,
+            )
+            if config.holographic_network is not None
+            else None
+        )
+        # C2 deriva su semilla de la del predictor y no consume el generador global.
+        self.axial_time_region = (
+            AxialTimeRegion(
+                config.hidden_size, config.axial_time_region, seed=config.seed, dtype=dtype
+            )
+            if config.axial_time_region is not None
+            else None
+        )
+        # C3 tampoco consume el generador global: su semilla deriva de la del predictor.
+        self.fractal_shared_operator = (
+            FractalSharedOperator(
+                config.hidden_size, config.fractal_shared_operator, seed=config.seed, dtype=dtype
+            )
+            if config.fractal_shared_operator is not None
+            else None
+        )
         # PT4 tampoco usa el generador global: su memoria y su consulta tienen semilla propia.
         self.session_context = (
             SessionContext(
@@ -584,6 +1003,8 @@ class FinancialPredictor(nn.Module):
                         plasticity=config.memory_plasticity,
                         key_competition=config.memory_key_competition,
                         bank_readout=config.memory_bank_readout,
+                        huber=config.memory_huber,
+                        time_scales=config.memory_time_scales,
                     ),
                     heads=4,
                     persistent_tokens=config.persistent_tokens,
@@ -591,6 +1012,7 @@ class FinancialPredictor(nn.Module):
                     memory_mode=config.variant.removeprefix("mac_"),
                     parameter_seed=config.seed,
                     attention_layout=config.attention_layout,
+                    differential_attention=config.differential_attention,
                 ),
                 dtype=dtype,
             )
@@ -599,9 +1021,57 @@ class FinancialPredictor(nn.Module):
             if local_control is not None
             else None
         )
+        # Los objetivos de #749 se crean al final y sin el generador global.
+        self.output_objective = build_objective(config, dtype=dtype)
+        self.cross_asset_attention = (
+            CrossAssetAttention(
+                config.hidden_size, config.cross_asset_attention, seed=config.seed, dtype=dtype
+            )
+            if config.cross_asset_attention is not None
+            else None
+        )
+        self.asset_groups = (
+            AssetGroupMembership(
+                config.hidden_size,
+                config.asset_groups,
+                seed=config.seed,
+                sector_map=config.sector_map
+                if config.asset_groups.mode == CURRENT_SECTOR
+                else None,
+                dtype=dtype,
+            )
+            if config.asset_groups is not None
+            else None
+        )
+        # #791 empieza con pesos nulos y no consume ningún generador.
+        self.reliability_gates = (
+            ReliabilityGates(config.mature_reliability, dtype=dtype)
+            if config.mature_reliability is not None
+            else None
+        )
+        # F5 usa su propio generador derivado de la semilla, como PT6.
+        self.auxiliary_heads = (
+            AuxiliaryHeads(
+                config.hidden_size, config.auxiliary_horizons, seed=config.seed, dtype=dtype
+            )
+            if config.auxiliary_horizons is not None
+            else None
+        )
         self.to(device=device, dtype=dtype)
         self._seal_parameters()
         self.register_load_state_dict_post_hook(self._after_load)
+
+    @property
+    def session_level(self):
+        """Si alguna operación necesita todas las filas de la sesión en el mismo bloque."""
+        objective = self.output_objective
+        return (
+            self.config.session_rank_inputs is not None
+            or self.cross_asset_attention is not None
+            or self.asset_groups is not None
+            or self.fractal_shared_operator is not None
+            or (objective is not None and objective.session_level)
+        )
 
     def _signature(self):
         return tuple(
@@ -650,6 +1120,10 @@ class FinancialPredictor(nn.Module):
         regional = self._regional_component()
         if regional is not None:
             regional.validate_geometry()
+        self._regional_variant_component()
+        self._holographic_component()
+        self._axial_component()
+        self._fractal_component()
         execution = self._regional_execution_component()
         if type(execution) is RegionalHierarchy:
             execution.validate_payload(execution.state_dict(), "")
@@ -659,6 +1133,69 @@ class FinancialPredictor(nn.Module):
         self._parameter_id = self._parameter_digest()
         self._parameter_signature = self._signature()
         self._regional_program_signature = self._program_signature()
+
+    def _regional_variant_component(self):
+        declared, module = self.config.regional_variant, self.regional_variant
+        if declared is None and module is None:
+            return None
+        if (
+            declared is None
+            or module is None
+            or module.config != declared
+            or module.hidden_size != self.config.hidden_size
+            or module.max_batch != self.config.max_batch
+            or module.readout.weight.device != self.head.weight.device
+            or module.readout.weight.dtype != self.head.weight.dtype
+        ):
+            raise ValueError("La variante regional no corresponde a la configuración declarada")
+        return module
+
+    def _holographic_component(self):
+        declared, module = self.config.holographic_network, self.holographic_network
+        if declared is None and module is None:
+            return None
+        if (
+            declared is None
+            or type(module) is not HolographicNetwork
+            or module.config != declared
+            or module.hidden_size != self.config.hidden_size
+            or module.max_batch != self.config.max_batch
+            or module.readout.weight.device != self.head.weight.device
+            or module.readout.weight.dtype != self.head.weight.dtype
+        ):
+            raise ValueError("La red holográfica no corresponde a la configuración declarada")
+        return module
+
+    def _axial_component(self):
+        declared, module = self.config.axial_time_region, self.axial_time_region
+        if declared is None and module is None:
+            return None
+        if (
+            declared is None
+            or type(module) is not AxialTimeRegion
+            or module.config != declared
+            or module.hidden_size != self.config.hidden_size
+            or module.time_out.weight.device != self.head.weight.device
+            or module.time_out.weight.dtype != self.head.weight.dtype
+        ):
+            raise ValueError("C2 no corresponde a la configuración declarada")
+        return module
+
+    def _fractal_component(self):
+        declared, module = self.config.fractal_shared_operator, self.fractal_shared_operator
+        if declared is None and module is None:
+            return None
+        if (
+            declared is None
+            or type(module) is not FractalSharedOperator
+            or module.config != declared
+            or module.hidden_size != self.config.hidden_size
+            or module.seed != self.config.seed
+            or module.reference.device != self.head.weight.device
+            or module.reference.dtype != self.head.weight.dtype
+        ):
+            raise ValueError("C3 no corresponde a la configuración declarada")
+        return module
 
     def _parameter_digest(self):
         fingerprints = {
@@ -831,6 +1368,12 @@ class FinancialPredictor(nn.Module):
         result = (
             self.regional_fusion.operation_counts(rows)
             if self.regional_fusion is not None and self.regional_execution is None
+            else self.regional_variant.operation_counts(rows)
+            if self.regional_variant is not None
+            else self.holographic_network.operation_counts(rows)
+            if self.holographic_network is not None
+            else self.axial_time_region.operation_counts(rows)
+            if self.axial_time_region is not None
             else {}
         )
         if self.mac is not None and self.mac.memory.bank_readout is not None:
@@ -854,7 +1397,8 @@ class FinancialPredictor(nn.Module):
             * self.head.weight.element_size()
             + 8
         )
-        return fast + 8
+        history = 0 if self.axial_time_region is None else self.axial_time_region.bytes_per_flow()
+        return fast + history + 8
 
     def _metadata(self, flows, ids, moments):
         return dict(
@@ -917,6 +1461,8 @@ class FinancialPredictor(nn.Module):
         tensors = [state.observed_steps]
         if state.mac:
             tensors.extend(mac_tensors(state.mac))
+        if state.regions is not None:
+            tensors.extend(history_tensors(state.regions))
         tensor_bytes = self._storage_bytes(tensors)
         metadata = self._metadata_bytes(
             state.flow_ids, state.last_sample_ids, state.last_prediction_at
@@ -949,6 +1495,9 @@ class FinancialPredictor(nn.Module):
             (-1,) * size,
             torch.zeros(size, dtype=torch.int64, device="cpu"),
             self.mac.initial_state(size, differentiable=differentiable) if self.mac else None,
+            None
+            if self.axial_time_region is None
+            else self.axial_time_region.initial_history(size),
         )
 
     def _check_flows(self, ids):
@@ -982,6 +1531,12 @@ class FinancialPredictor(nn.Module):
             require_true((steps == expected.to(steps.device)).all(), message)
         elif state.mac is not None:
             raise ValueError("El control directo no admite estado MAC")
+        if self.axial_time_region is not None:
+            self.axial_time_region.validate_history(
+                state.regions, len(state.flow_ids), device=device
+            )
+        elif state.regions is not None:
+            raise ValueError("Sin C2 el estado no admite historial de regiones")
         self._check_bytes(self._usage(state)["total_bytes"])
 
     def _validate_cursor(self, state):
@@ -1030,6 +1585,9 @@ class FinancialPredictor(nn.Module):
         mac = state.mac
         if mac:
             mac = map_mac_rows(mac, lambda value: value[indices])
+        regions = state.regions
+        if regions is not None:
+            regions = map_history_rows(regions, lambda value: value[indices])
         return replace(
             state,
             flow_ids=tuple(flow_ids),
@@ -1037,6 +1595,7 @@ class FinancialPredictor(nn.Module):
             last_prediction_at=tuple(state.last_prediction_at[i] for i in indices),
             observed_steps=state.observed_steps[indices],
             mac=mac,
+            regions=regions,
         )
 
     def initial_context(self, *, differentiable=False):
@@ -1120,6 +1679,94 @@ class FinancialPredictor(nn.Module):
             )
         return token, pending, execution.trace
 
+    def _fuse(self, price, inputs, presence):
+        modulation = (
+            self.regional_fusion
+            if self.regional_fusion is not None
+            else self.regional_variant
+            if self.regional_variant is not None
+            else self.presence_modulation
+        )
+        if self.holographic_network is not None:
+            # Los bloques por familia leen las entradas y los codificadores de la referencia.
+            def modulation(blocks, presence):
+                return self.holographic_network(blocks, presence, inputs, self.encoders)
+
+        return fuse_modalities(
+            price,
+            inputs,
+            self.encoders,
+            self.fusion,
+            presence if self.masked else None,
+            modulation=modulation,
+            branch=self.fusion_branch,
+        )
+
+    def _axial_fuse(self, price, inputs, presence, history):
+        """Token fusionado con C2 y el historial que deja la emisión."""
+        following = None
+
+        def modulation(blocks, presence):
+            nonlocal following
+            modulated, following = self.axial_time_region(blocks, presence, history)
+            return modulated
+
+        token = fuse_modalities(
+            price,
+            inputs,
+            self.encoders,
+            self.fusion,
+            presence if self.masked else None,
+            modulation=modulation,
+            branch=self.fusion_branch,
+        )
+        return token, following
+
+    def _fractal_fuse(self, price, batch, prices):
+        """Token fusionado con C3 sobre las sesiones del bloque.
+
+        `prices` es la ventana recibida, antes de los rangos de F4, porque los sectores
+        estadísticos se forman con sus rendimientos diarios.
+        """
+
+        def modulation(blocks, presence):
+            return self.fractal_shared_operator(
+                blocks, presence, batch.flow_ids, batch.prediction_at, prices
+            )
+
+        return fuse_modalities(
+            price,
+            batch.inputs,
+            self.encoders,
+            self.fusion,
+            batch.presence if self.masked else None,
+            modulation=modulation,
+            branch=self.fusion_branch,
+        )
+
+    def fused_tokens(self, inputs, presence):
+        """Tokens fusionados de filas independientes, sin MAC ni estado de flujo.
+
+        F5 los vuelve a calcular al madurar una etiqueta auxiliar. Coinciden con los que
+        devuelve `prepare` para las mismas entradas y parámetros.
+        """
+        if (
+            self.regional_fusion is not None
+            or self.regional_execution is not None
+            or self.regional_variant is not None
+        ):
+            raise ValueError("La fusión regional no se calcula fila a fila")
+        if self.axial_time_region is not None:
+            raise ValueError("C2 necesita el historial de cada flujo y no se calcula fila a fila")
+        if self.fractal_shared_operator is not None:
+            raise ValueError("C3 necesita todas las filas de la sesión y no se calcula fila a fila")
+        price, checks = self.price_encoder.encode_last(gate_price_window(inputs["prices"]))
+        for value, message in checks:
+            require_finite(value, message)
+        token = self._fuse(price, inputs, presence)
+        check_finite(token, "El token fusionado")
+        return token
+
     def prepare(
         self,
         batch,
@@ -1130,11 +1777,16 @@ class FinancialPredictor(nn.Module):
         control_context_id=None,
         context=None,
         context_selection=None,
+        session_complete=False,
+        reliability=None,
     ):
         """Predecir un bloque desde el estado de sus flujos y proponer el estado siguiente.
 
         Las comprobaciones de datos en CUDA se resuelven juntas antes de devolver, con el
         mismo error y mensaje que en su línea, para no esperar al dispositivo en cada una.
+        `session_complete=True` declara que el bloque contiene todas las filas de su instante,
+        condición que exigen las operaciones por sesión de #749. Con #791, `reliability` es
+        la señal de fiabilidad del mercado de cada fila, [filas, consumidores, velocidades].
         """
         with deferred_checks():
             return self._prepare(
@@ -1145,6 +1797,8 @@ class FinancialPredictor(nn.Module):
                 control_context_id=control_context_id,
                 context=context,
                 context_selection=context_selection,
+                session_complete=session_complete,
+                reliability=reliability,
             )
 
     def _prepare(
@@ -1157,6 +1811,8 @@ class FinancialPredictor(nn.Module):
         control_context_id,
         context,
         context_selection=None,
+        session_complete=False,
+        reliability=None,
     ):
         check_differentiable(differentiable)
         if torch.is_inference_mode_enabled():
@@ -1183,6 +1839,15 @@ class FinancialPredictor(nn.Module):
                 raise ValueError("Las entradas y los parámetros necesitan el mismo dispositivo")
         if any(value.dtype != self.head.weight.dtype for value in batch.inputs.values()):
             raise ValueError("Las entradas y los parámetros necesitan la misma precisión")
+        if self.session_level and session_complete is not True:
+            raise ValueError("Las operaciones por sesión necesitan la sesión completa en un bloque")
+        markets = tuple(flow.split("/", 1)[0] for flow in batch.flow_ids)
+        received = batch
+        if self.config.session_rank_inputs is not None:
+            # Rangos entre las filas del bloque, que son todas las de su instante y mercado.
+            batch = batch.derived(
+                rank_session_inputs(batch.inputs, markets), self.config.session_rank_inputs
+            )
         if self.local_control is None:
             if control_selection is not None or control_context_id is not None:
                 raise ValueError("El predictor anterior no admite una selección de C")
@@ -1190,6 +1855,13 @@ class FinancialPredictor(nn.Module):
             self.local_control._resolve_selection(
                 control_selection, control_context_id, batch.flow_ids, state.observed_steps
             )
+        if self.reliability_gates is None:
+            if reliability is not None:
+                raise ValueError("El predictor no declara la señal de fiabilidad madura")
+        elif reliability is None:
+            raise ValueError("El predictor declara la fiabilidad madura y necesita su señal")
+        else:
+            self.reliability_gates.validate(reliability, len(batch.flow_ids))
         if (self.session_context is None) != (context is None):
             raise ValueError("PT4 recibe su contexto de sesión y el núcleo no admite ninguno")
         if context is not None:
@@ -1216,22 +1888,21 @@ class FinancialPredictor(nn.Module):
             )
             for value, message in encoder_checks:
                 require_finite(value, message)
+            next_regions = None
             if self.regional_execution is not None:
                 token, next_context, regional_trace = self._program_fusion(
                     price, batch, context, context_selection
                 )
-            else:
-                token = fuse_modalities(
-                    price,
-                    batch.inputs,
-                    self.encoders,
-                    self.fusion,
-                    batch.presence if self.masked else None,
-                    modulation=self.regional_fusion
-                    if self.regional_fusion is not None
-                    else self.presence_modulation,
-                    branch=self.fusion_branch,
+            elif self.axial_time_region is not None:
+                token, next_regions = self._axial_fuse(
+                    price, batch.inputs, batch.presence, state.regions
                 )
+                next_context = context
+            elif self.fractal_shared_operator is not None:
+                token = self._fractal_fuse(price, batch, received.inputs["prices"])
+                next_context = context
+            else:
+                token = self._fuse(price, batch.inputs, batch.presence)
                 next_context = context
             check_finite(token, "El token fusionado")
             observed = token
@@ -1257,12 +1928,29 @@ class FinancialPredictor(nn.Module):
                     extra = torch.zeros_like(token).index_copy(0, positions, part)
                 observed = token + extra
                 check_finite(observed, "El token con su contexto de sesión")
+            gates, sink = {}, None
+            if self.reliability_gates is not None:
+                gates = dict(gate_shift=self.reliability_gates(reliability))
+                if self.config.mature_reliability.source == "titans_surprise":
+                    sink = gates["surprise"] = []
             if self.mac:
                 encoded, next_mac = self.mac(
-                    observed.unsqueeze(1), state.mac, differentiable=differentiable
+                    observed.unsqueeze(1), state.mac, differentiable=differentiable, **gates
                 )
             else:
                 encoded, next_mac = token, None
+            if self.cross_asset_attention is not None:
+                # Mezcla las filas de cada mercado e instante del bloque, que es la sesión entera.
+                encoded = self.cross_asset_attention(encoded, markets, batch.prediction_at)
+            if self.asset_groups is not None:
+                # Los grupos salen de la ventana recibida, sin los rangos de F4.
+                encoded = self.asset_groups(
+                    encoded,
+                    received.inputs["prices"],
+                    batch.flow_ids,
+                    markets,
+                    batch.prediction_at,
+                )
             if self.local_control is not None:
                 local_result = self.local_control(
                     self.mac,
@@ -1274,13 +1962,16 @@ class FinancialPredictor(nn.Module):
                     context_id=control_context_id,
                     differentiable=differentiable,
                 )
-            quantiles = None
+            quantiles = outputs = None
             if self.config.head == QUANTILE_HEAD:
                 quantiles = self.head(encoded)
                 check_finite(quantiles, "Los cuantiles")
                 point = median(quantiles)
             else:
                 point = self.head(encoded).squeeze(-1)
+                if self.output_objective is not None:
+                    outputs, point = self.output_objective(point, encoded, markets)
+                    check_finite(outputs, "Las salidas del objetivo")
             check_finite(point, "La predicción")
             working = encoded.clone() if differentiable else encoded.detach().clone()
         next_state = replace(
@@ -1289,6 +1980,7 @@ class FinancialPredictor(nn.Module):
             last_prediction_at=batch.prediction_at,
             observed_steps=state.observed_steps + 1,
             mac=next_mac,
+            regions=next_regions,
         )
         prepared_type = (
             RegionalPreparedDecisions if regional_trace is not None else PreparedDecisions
@@ -1298,11 +1990,13 @@ class FinancialPredictor(nn.Module):
             token.detach().clone(),
             next_state,
             hashlib.sha256(canonical([self._config_id(), self._parameter_id]).encode()).hexdigest(),
-            batch.input_digest,
+            received.input_digest,
             working,
             local_result,
             quantiles,
             next_context,
+            outputs,
+            surprise=None if sink is None else sink[0],
             **({"regional_trace": regional_trace} if regional_trace is not None else {}),
         )
 
@@ -1318,6 +2012,18 @@ class FinancialPredictor(nn.Module):
             last_prediction_at=state.last_prediction_at,
             observed_steps=state.observed_steps.clone(),
             mac=self.mac.export_state(state.mac) if self.mac else None,
+            # La clave solo aparece con C2, así que el payload anterior no cambia.
+            **(
+                {}
+                if state.regions is None
+                else dict(
+                    regions=dict(
+                        schema_version=1,
+                        blocks=state.regions.blocks.detach().clone(),
+                        present=state.regions.present.clone(),
+                    )
+                )
+            ),
         )
 
     def export_state_cpu(self, state):

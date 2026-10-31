@@ -1,4 +1,13 @@
-"""Lectura episódica posterior a MAC, sin admisión ni estado persistente propio."""
+"""Lectura episódica posterior a MAC, sin admisión ni estado persistente propio.
+
+R3 de #786 (`familiarity_gate_v1`) adapta las señales de novedad del hipocampo. La
+familiaridad de una lectura es el coseno medio entre la consulta y los episodios que la
+forman, con los pesos de su atención y sin gradiente. La puerta 2σ(a·f + b) escala el cambio
+de cada refinamiento, de modo que la memoria pesa menos si los episodios se parecen poco al
+presente. Su control usa la misma puerta con la familiaridad sustituida por una constante
+aprendida, 2σ(b). Los dos parámetros empiezan en cero y la puerta en uno, así que el lector
+empieza siendo el de referencia.
+"""
 
 import hashlib
 import math
@@ -22,6 +31,9 @@ if TYPE_CHECKING:
 # pasos siguientes los episodios de la primera lectura y solo recalcula sus pesos.
 EPISODE_SELECTIONS = ("per_step", "first_read")
 REFINEMENT_INITIALIZATIONS = ("pytorch_default", "zero_refinement")
+# R3 de #786: `familiarity` es la puerta que depende de la familiaridad de cada fila y
+# `constant` su control, con la misma puerta sin ese término.
+FAMILIARITY_GATES = ("familiarity", "constant")
 
 
 @dataclass(frozen=True)
@@ -38,6 +50,7 @@ class EpisodicReadoutConfig:
     episode_selection: str = "per_step"
     refinement_initialization: str = "pytorch_default"
     evidence_bridge: "EvidenceBridgeConfig | None" = None
+    familiarity_gate: str | None = None
 
     def __post_init__(self):
         _digest_id(self.codec_id, "El codec")
@@ -64,6 +77,17 @@ class EpisodicReadoutConfig:
         ):
             raise ValueError("La temperatura debe ser finita y pertenecer a [1e-4, 100]")
         object.__setattr__(self, "temperature", float(self.temperature))
+        # Sin banco no hay episodios que pesar, y las lecturas regionales no tienen una sola
+        # familiaridad por fila.
+        if self.familiarity_gate is not None and (
+            type(self.familiarity_gate) is not str
+            or self.familiarity_gate not in FAMILIARITY_GATES
+            or self.mode != "bank"
+            or self.evidence_bridge is not None
+        ):
+            raise ValueError(
+                "R3 declara la puerta familiarity o constant sobre el banco y sin puente regional"
+            )
         if self.evidence_bridge is not None:
             from .evidence_bridge import EvidenceBridgeConfig
 
@@ -88,6 +112,7 @@ class EpisodicReadoutConfig:
         # El modo anterior conserva literalmente su identidad y su huella.
         episodes = fields.pop("episode_selection")
         initialization = fields.pop("refinement_initialization")
+        gate = fields.pop("familiarity_gate")
         fields.pop("evidence_bridge")
         result = dict(
             **fields,
@@ -109,6 +134,17 @@ class EpisodicReadoutConfig:
             )
         if initialization != "pytorch_default":
             result["refinement_initialization"] = initialization
+        if gate is not None:
+            result.update(
+                familiarity_gate=gate,
+                familiarity="attention_weighted_cosine_of_query_and_read_episodes_no_gradient",
+                gate="two_sigmoid_of_weight_times_familiarity_plus_bias"
+                if gate == "familiarity"
+                else "two_sigmoid_of_bias",
+                gate_initialization="zero_parameters_gate_one_reference_reader",
+                gated="tanh_change_of_each_refinement_before_its_step",
+                without_episodes="reference_step",
+            )
         if self.evidence_bridge is not None:
             result.update(
                 schema_version=2,
@@ -129,6 +165,8 @@ class EpisodeRead:
     weights: torch.Tensor
     ids: torch.Tensor
     presence: torch.Tensor
+    # Solo con la puerta de R3: [filas, 1], el coseno medio de la lectura sin gradiente.
+    familiarity: torch.Tensor | None = None
 
 
 @dataclass(frozen=True)
@@ -142,6 +180,8 @@ class _SelectedEpisodes:
 class ReadoutResult:
     state: torch.Tensor
     reads: tuple[EpisodeRead, ...]
+    # El estado tras cada refinamiento, en orden. El último es `state`.
+    states: tuple[torch.Tensor, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -179,6 +219,11 @@ class EpisodicReadout(nn.Module):
                 # Se conservan los sorteos de las proyecciones y la ruta anterior del RNG.
                 nn.init.zeros_(self.refinement.weight)
                 nn.init.zeros_(self.refinement.bias)
+            if config.familiarity_gate is not None:
+                # Con a = b = 0 la puerta vale 2σ(0) = 1. Los ceros no consumen el generador.
+                self.familiarity_bias = nn.Parameter(torch.zeros((), dtype=dtype))
+                if config.familiarity_gate == "familiarity":
+                    self.familiarity_weight = nn.Parameter(torch.zeros((), dtype=dtype))
         self.evidence_bridge = None
         if config.evidence_bridge is not None:
             from .evidence_bridge import SharedEvidenceBridge
@@ -247,6 +292,9 @@ class EpisodicReadout(nn.Module):
         per_step = batch * (
             neighbors * (64 * (8 + size) + (65 + width) * size + 32) + (12 * width + 128) * size
         )
+        if self.config.familiarity_gate is not None:
+            # Cosenos, su producto por los pesos, familiaridad, puerta y cambio escalado.
+            per_step += batch * (2 * neighbors + width + 4) * size
         total = 65536 + selection + per_step * refinements * (4 if differentiable else 1)
         if self.evidence_bridge is not None:
             total += refinements * self.evidence_bridge.estimated_bytes(
@@ -354,6 +402,7 @@ class EpisodicReadout(nn.Module):
                 raise ValueError("Las rutas con caché anterior no admiten vistas regionales")
             return regional_read(self, state, snapshot, context_id, cutoff, positions)
         count = 0 if snapshot is None else min(snapshot.count, self.config.neighbors)
+        gated = self.config.familiarity_gate == "familiarity"
         if count == 0:
             return (
                 EpisodeRead(
@@ -361,6 +410,8 @@ class EpisodicReadout(nn.Module):
                     state.new_empty((len(state), 0)),
                     torch.empty((len(state), 0), dtype=torch.int64, device=state.device),
                     torch.zeros((len(state), 1), dtype=torch.bool, device=state.device),
+                    # Sin episodios la puerta no actúa y la familiaridad queda en cero.
+                    state.new_zeros((len(state), 1)) if gated else None,
                 ),
                 None,
                 None,
@@ -369,7 +420,8 @@ class EpisodicReadout(nn.Module):
         check_finite(raw, "La consulta episódica")
         query = _normalize(raw)
         if cached is not None:
-            logits = (cached.keys * query.unsqueeze(1)).sum(-1) / self.config.temperature
+            similarity = (cached.keys * query.unsqueeze(1)).sum(-1)
+            logits = similarity / self.config.temperature
             weights = logits.softmax(-1)
             read = (cached.projected * weights.unsqueeze(-1)).sum(1)
             check_finite(read, "La lectura episódica")
@@ -379,6 +431,7 @@ class EpisodicReadout(nn.Module):
                     weights,
                     cached.ids,
                     torch.ones((len(state), 1), dtype=torch.bool, device=state.device),
+                    _familiarity(similarity, weights) if gated else None,
                 ),
                 None,
                 cached,
@@ -401,7 +454,8 @@ class EpisodicReadout(nn.Module):
         selected_keys = (
             keys.index_select(0, flat).reshape(len(state), count, 64).to(dtype=state.dtype)
         )
-        logits = (selected_keys * query.unsqueeze(1)).sum(-1) / self.config.temperature
+        similarity = (selected_keys * query.unsqueeze(1)).sum(-1)
+        logits = similarity / self.config.temperature
         weights = logits.softmax(-1)
         selected_values = torch.cat(
             (
@@ -422,6 +476,7 @@ class EpisodicReadout(nn.Module):
                 weights,
                 selected_ids,
                 torch.ones((len(state), 1), dtype=torch.bool, device=state.device),
+                _familiarity(similarity, weights) if gated else None,
             ),
             indices,
             _SelectedEpisodes(selected_keys, projected, selected_ids),
@@ -481,6 +536,16 @@ class EpisodicReadout(nn.Module):
             ~((read.values != 0) & ~read.presence).any(),
             "Una lectura ausente necesita relleno cero",
         )
+        if self.config.familiarity_gate == "familiarity":
+            familiarity = getattr(read, "familiarity", None)
+            if (
+                not isinstance(familiarity, torch.Tensor)
+                or familiarity.shape != (len(state), 1)
+                or familiarity.dtype != state.dtype
+                or familiarity.device != state.device
+            ):
+                raise ValueError("R3 necesita la familiaridad de cada fila de la lectura")
+            check_finite(familiarity, "La familiaridad de la lectura")
         return self._step(state, base, read)
 
     def _step(self, state, base, read):
@@ -488,9 +553,25 @@ class EpisodicReadout(nn.Module):
         joined = torch.cat((state, base, read.values, read.presence.to(dtype=state.dtype)), dim=-1)
         update = self.refinement(joined)
         check_finite(update, "La actualización de trabajo")
-        result = state + self.step_logit.sigmoid() * update.tanh()
+        change = update.tanh()
+        if self.config.familiarity_gate is not None:
+            # La puerta escala el cambio antes del paso. Con la puerta en uno el producto es
+            # exacto y el estado y los gradientes compartidos coinciden con la referencia.
+            change = self._familiarity_gate(read) * change
+        result = state + self.step_logit.sigmoid() * change
         check_finite(result, "El estado refinado")
         return result
+
+    def _familiarity_gate(self, read):
+        """2σ(a·f + b) por fila, 2σ(b) en el control y 1 en las filas sin episodios."""
+        logit = self.familiarity_bias
+        if self.config.familiarity_gate == "familiarity":
+            familiarity = getattr(read, "familiarity", None)
+            if familiarity is None:
+                raise ValueError("R3 necesita la familiaridad de cada fila de la lectura")
+            logit = self.familiarity_weight * familiarity + logit
+        gate = 2 * logit.sigmoid()
+        return torch.where(read.presence, gate, torch.ones_like(gate))
 
     def forward(self, z_base, snapshot=None, *, context_id=None, cutoff=None, differentiable=False):
         """Refinar el estado de trabajo con K lecturas del banco.
@@ -516,7 +597,7 @@ class EpisodicReadout(nn.Module):
         fixed = self.config.episode_selection == "first_read"
         with torch.set_grad_enabled(differentiable):
             base = z_base if differentiable else z_base.detach()
-            state, reads, positions = base, [], None
+            state, reads, states, positions = base, [], [], None
             for step in range(self.config.refinements):
                 read, chosen = self._read(
                     state, snapshot, context_id, cutoff, positions, repeated=step > 0
@@ -532,11 +613,24 @@ class EpisodicReadout(nn.Module):
                 # que el refinamiento no vuelve a validarla.
                 state = self._step(state, base, read)
                 reads.append(read)
+                states.append(state)
         if self.evidence_bridge is not None:
             from .regional_episode_readout import BridgedReadoutResult
 
-            return BridgedReadoutResult(state, tuple(reads))
-        return ReadoutResult(state, tuple(reads))
+            return BridgedReadoutResult(state, tuple(reads), tuple(states))
+        return ReadoutResult(state, tuple(reads), tuple(states))
+
+
+def _familiarity(similarity, weights):
+    """Coseno medio entre la consulta y los episodios de la lectura, con sus pesos.
+
+    No lleva gradiente: la puerta aprende a usar la familiaridad, pero la consulta no se
+    ajusta para fabricarla.
+    """
+    with torch.no_grad():
+        familiarity = (weights * similarity).sum(-1, keepdim=True)
+    check_finite(familiarity, "La familiaridad de la lectura")
+    return familiarity
 
 
 def apply_episodic_readout(
@@ -582,20 +676,26 @@ def _apply_episodic_readout(
         cutoff=cutoff,
         differentiable=differentiable,
     )
-    quantiles = None
     with torch.set_grad_enabled(differentiable):
-        output = head(result.state)
-        if isinstance(head, QuantileHead):
-            if output.shape != (len(result.state), len(LEVELS)):
-                raise ValueError("La cabeza de cuantiles debe devolver cinco niveles por flujo")
-            check_finite(output, "Los cuantiles refinados")
-            quantiles, predictions = output, median(output)
-        else:
-            predictions = output.squeeze(-1)
-    if predictions.shape != (len(result.state),):
+        predictions, quantiles = head_predictions(head, result.state)
+    return EpisodicPrediction(predictions, result, quantiles)
+
+
+def head_predictions(head, state):
+    """Predicción puntual y, con `QuantileHead`, cuantiles de un estado de trabajo."""
+    quantiles = None
+    output = head(state)
+    if isinstance(head, QuantileHead):
+        if output.shape != (len(state), len(LEVELS)):
+            raise ValueError("La cabeza de cuantiles debe devolver cinco niveles por flujo")
+        check_finite(output, "Los cuantiles refinados")
+        quantiles, predictions = output, median(output)
+    else:
+        predictions = output.squeeze(-1)
+    if predictions.shape != (len(state),):
         raise ValueError("La cabeza debe devolver una salida escalar por flujo")
     check_finite(predictions, "La predicción refinada")
-    return EpisodicPrediction(predictions, result, quantiles)
+    return predictions, quantiles
 
 
 def copy_readout_parameters(source, target):

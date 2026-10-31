@@ -1,0 +1,1096 @@
+{
+  "cases": {
+    "b6_proximal": {
+      "configuration": {
+        "schema_version": 1,
+        "kind": "mature_scalar_correction",
+        "memory": {
+          "rule": "proximal",
+          "key_size": 64,
+          "value_size": 1,
+          "rate": 0.25,
+          "forgetting": 0.01,
+          "schema_version": 1,
+          "kind": "mature_associative_memory",
+          "dtype": "float64",
+          "device": "cpu",
+          "key_constraint": "l2_norm_at_most_1",
+          "key_norm_tolerance": 1e-06,
+          "order": "label_available_at_then_decision_at_then_id",
+          "write_cursor": "strictly_increasing_canonical_key",
+          "empty_cohort": "unchanged_without_forgetting",
+          "update": "cohort_cholesky_lapack_without_inverse",
+          "weights": "declared_nonnegative_sum_one"
+        },
+        "key": "codec",
+        "key_normalization": "l2_fp64_of_codec_key_inputs",
+        "value": "mature_label_minus_core_prediction",
+        "read": "matrix_of_previous_generation_for_the_whole_event",
+        "ids": "write_count_plus_offset_in_native_canonical_outcome_order",
+        "proximal_weights": "uniform_over_event_cohort"
+      },
+      "stages": [
+        {
+          "before": "076a27c79e5ace2a3d47f9dd2e83e4ff6ea8872b3c2218f66c92b89b55f36560",
+          "after": "2e8381a314a527918066744df9120fafc2dd14dcda8d3b4d52ae7c38cff3861e",
+          "matrix_sha256": "e90ba28ec3b4c4ebbe20fcefff9fb5d52b32b8400e4d7d2305f18905cf1eb75a",
+          "writes": 7,
+          "cursor": [
+            10,
+            5,
+            7
+          ]
+        },
+        {
+          "before": "0163506f544a82f46c0e020819d6715b1ae87f21796c52d6caf526a4657338a8",
+          "after": "c21da9ee10a75abe804ec665840dd3ea18e4411f842c3bc65b09dbe5f755082f",
+          "matrix_sha256": "5d72a0dca29925a5fe3b612b1793b8ca88b9a56222d1102197aa5e9f9735c94b",
+          "writes": 40,
+          "cursor": [
+            20,
+            15,
+            40
+          ]
+        }
+      ]
+    },
+    "b6_delta": {
+      "configuration": {
+        "schema_version": 1,
+        "kind": "mature_scalar_correction",
+        "memory": {
+          "rule": "delta",
+          "key_size": 64,
+          "value_size": 1,
+          "rate": 0.25,
+          "forgetting": 0.01,
+          "schema_version": 1,
+          "kind": "mature_associative_memory",
+          "dtype": "float64",
+          "device": "cpu",
+          "key_constraint": "l2_norm_at_most_1",
+          "key_norm_tolerance": 1e-06,
+          "order": "label_available_at_then_decision_at_then_id",
+          "write_cursor": "strictly_increasing_canonical_key",
+          "empty_cohort": "unchanged_without_forgetting",
+          "update": "sequential_rank_one",
+          "weights": null
+        },
+        "key": "codec",
+        "key_normalization": "l2_fp64_of_codec_key_inputs",
+        "value": "mature_label_minus_core_prediction",
+        "read": "matrix_of_previous_generation_for_the_whole_event",
+        "ids": "write_count_plus_offset_in_native_canonical_outcome_order",
+        "proximal_weights": "uniform_over_event_cohort"
+      },
+      "stages": [
+        {
+          "before": "076a27c79e5ace2a3d47f9dd2e83e4ff6ea8872b3c2218f66c92b89b55f36560",
+          "after": "a78b2b29a628827e10c56788c01cc71f4c92c920fe52c0cd6eeab61e91f4ca66",
+          "matrix_sha256": "0943b88f3d91c5088e7253bd2a15a533d07f0727061f75227ae610cdc9f94fb2",
+          "writes": 7,
+          "cursor": [
+            10,
+            5,
+            7
+          ]
+        },
+        {
+          "before": "795badb21d2cc5e28abf367539d044086aecbef692f7b62cd2cf637b741bef48",
+          "after": "1255e5ddf9c0361447e6ad0da7ab49a24f8a787c1412e56f0764d9018c1a6940",
+          "matrix_sha256": "720ee91d63403fc64c7de8dd8fe07cfce1dcb79b80812aaf488e76dad7340a60",
+          "writes": 40,
+          "cursor": [
+            20,
+            15,
+            40
+          ]
+        }
+      ]
+    },
+    "b1_proximal": {
+      "configuration": {
+        "schema_version": 1,
+        "kind": "mature_scalar_correction",
+        "memory": {
+          "rule": "proximal",
+          "key_size": 64,
+          "value_size": 1,
+          "rate": 0.25,
+          "forgetting": 0.01,
+          "schema_version": 1,
+          "kind": "mature_associative_memory",
+          "dtype": "float64",
+          "device": "cpu",
+          "key_constraint": "l2_norm_at_most_1",
+          "key_norm_tolerance": 1e-06,
+          "order": "label_available_at_then_decision_at_then_id",
+          "write_cursor": "strictly_increasing_canonical_key",
+          "empty_cohort": "unchanged_without_forgetting",
+          "update": "cohort_cholesky_lapack_without_inverse",
+          "weights": "declared_nonnegative_sum_one"
+        },
+        "key": "codec",
+        "key_normalization": "l2_fp64_of_codec_key_inputs",
+        "value": "mature_label_minus_core_prediction",
+        "read": "matrix_of_previous_generation_for_the_whole_event",
+        "ids": "write_count_plus_offset_in_native_canonical_outcome_order",
+        "proximal_weights": "uniform_over_event_cohort",
+        "areas": {
+          "areas": 3,
+          "shifts": 1,
+          "permutation": "seeded_random",
+          "seed": 7,
+          "labels": "mature",
+          "kind": "redundant_area_memory_v1",
+          "feature_map": "dpfp_of_permuted_key_then_l2_or_zero",
+          "permutation_generator": "numpy_pcg64_seed_permutation_per_area_in_order",
+          "read": "mean_over_active_areas",
+          "label_shuffle": null
+        }
+      },
+      "stages": [
+        {
+          "before": "076a27c79e5ace2a3d47f9dd2e83e4ff6ea8872b3c2218f66c92b89b55f36560",
+          "after": "55a9722509e4e292f48411f29278a02f1ade2ccb688050f965113f5ba486403c",
+          "matrix_sha256": "16057a163b6838c1e7113ebd440d0373905299a47d9d90ece7b928cc5184b5f7",
+          "writes": 7,
+          "cursor": [
+            10,
+            5,
+            7
+          ]
+        },
+        {
+          "before": "490d79c7609a425b4f6e3cb89a768a1be8558c0f437eae4dcb8e2edbe220604f",
+          "after": "0157b8c8f29070710258856315406aaceeb8b5dc6e05a5c0cffeecfb3d52aba3",
+          "matrix_sha256": "5e784115291d3ec2c2a91c114eff3f6cff2e5bbda11aa33bd13582efe2edc731",
+          "writes": 40,
+          "cursor": [
+            20,
+            15,
+            40
+          ]
+        }
+      ]
+    },
+    "b1_delta": {
+      "configuration": {
+        "schema_version": 1,
+        "kind": "mature_scalar_correction",
+        "memory": {
+          "rule": "delta",
+          "key_size": 64,
+          "value_size": 1,
+          "rate": 0.25,
+          "forgetting": 0.01,
+          "schema_version": 1,
+          "kind": "mature_associative_memory",
+          "dtype": "float64",
+          "device": "cpu",
+          "key_constraint": "l2_norm_at_most_1",
+          "key_norm_tolerance": 1e-06,
+          "order": "label_available_at_then_decision_at_then_id",
+          "write_cursor": "strictly_increasing_canonical_key",
+          "empty_cohort": "unchanged_without_forgetting",
+          "update": "sequential_rank_one",
+          "weights": null
+        },
+        "key": "codec",
+        "key_normalization": "l2_fp64_of_codec_key_inputs",
+        "value": "mature_label_minus_core_prediction",
+        "read": "matrix_of_previous_generation_for_the_whole_event",
+        "ids": "write_count_plus_offset_in_native_canonical_outcome_order",
+        "proximal_weights": "uniform_over_event_cohort",
+        "areas": {
+          "areas": 3,
+          "shifts": 1,
+          "permutation": "seeded_random",
+          "seed": 7,
+          "labels": "mature",
+          "kind": "redundant_area_memory_v1",
+          "feature_map": "dpfp_of_permuted_key_then_l2_or_zero",
+          "permutation_generator": "numpy_pcg64_seed_permutation_per_area_in_order",
+          "read": "mean_over_active_areas",
+          "label_shuffle": null
+        }
+      },
+      "stages": [
+        {
+          "before": "076a27c79e5ace2a3d47f9dd2e83e4ff6ea8872b3c2218f66c92b89b55f36560",
+          "after": "31f832b67102bfb26ff87539ad0fbdd917bdf9401b8ab8d9b3765c82507874c3",
+          "matrix_sha256": "3f6f68512249630899fea3ef71430aa62b7750ed9947d3faadad64d8ebaeca06",
+          "writes": 7,
+          "cursor": [
+            10,
+            5,
+            7
+          ]
+        },
+        {
+          "before": "51795b2a32c511f51a6a5cd79ad3e3749ec75de4df27f236ce2163e2dc902c0b",
+          "after": "6d23f01cc002b57f89780d9c27f6882771a0c112fe4836de3ed900e33d7a69e3",
+          "matrix_sha256": "f4da75807c39d6f7ae6cbdf856690793325da17e63b8a666b8258af602ec3705",
+          "writes": 40,
+          "cursor": [
+            20,
+            15,
+            40
+          ]
+        }
+      ]
+    },
+    "b1_shuffled": {
+      "configuration": {
+        "schema_version": 1,
+        "kind": "mature_scalar_correction",
+        "memory": {
+          "rule": "proximal",
+          "key_size": 64,
+          "value_size": 1,
+          "rate": 0.25,
+          "forgetting": 0.01,
+          "schema_version": 1,
+          "kind": "mature_associative_memory",
+          "dtype": "float64",
+          "device": "cpu",
+          "key_constraint": "l2_norm_at_most_1",
+          "key_norm_tolerance": 1e-06,
+          "order": "label_available_at_then_decision_at_then_id",
+          "write_cursor": "strictly_increasing_canonical_key",
+          "empty_cohort": "unchanged_without_forgetting",
+          "update": "cohort_cholesky_lapack_without_inverse",
+          "weights": "declared_nonnegative_sum_one"
+        },
+        "key": "codec",
+        "key_normalization": "l2_fp64_of_codec_key_inputs",
+        "value": "mature_label_minus_core_prediction",
+        "read": "matrix_of_previous_generation_for_the_whole_event",
+        "ids": "write_count_plus_offset_in_native_canonical_outcome_order",
+        "proximal_weights": "uniform_over_event_cohort",
+        "areas": {
+          "areas": 3,
+          "shifts": 1,
+          "permutation": "seeded_random",
+          "seed": 7,
+          "labels": "shuffled_within_cohort",
+          "kind": "redundant_area_memory_v1",
+          "feature_map": "dpfp_of_permuted_key_then_l2_or_zero",
+          "permutation_generator": "numpy_pcg64_seed_permutation_per_area_in_order",
+          "read": "mean_over_active_areas",
+          "label_shuffle": "numpy_pcg64_seed_and_first_canonical_id_permutation_of_values"
+        }
+      },
+      "stages": [
+        {
+          "before": "076a27c79e5ace2a3d47f9dd2e83e4ff6ea8872b3c2218f66c92b89b55f36560",
+          "after": "fca222d4d33df349e3cc1c387fef3197512b45a295054eba0116a6c321369639",
+          "matrix_sha256": "b73d8e871d3724af669f53cf77241a3dc08ccd7656a9ea0866cdf8c2603542d5",
+          "writes": 7,
+          "cursor": [
+            10,
+            5,
+            7
+          ]
+        },
+        {
+          "before": "a8b260a5628c2e799ea3ab1f0663ae00c5e2ceefdaa0fb5bfe378ad4af20eb02",
+          "after": "a00b774e52328e560b9026c6f0f28aa95eccd7da0d45a4d3cf6801a05da9ee3c",
+          "matrix_sha256": "78ae5458b27a34f933eae445004453d5591ff585eb3af0fb20dd603a67bb1de5",
+          "writes": 40,
+          "cursor": [
+            20,
+            15,
+            40
+          ]
+        }
+      ]
+    },
+    "b2_proximal": {
+      "configuration": {
+        "schema_version": 1,
+        "kind": "mature_scalar_correction",
+        "memory": {
+          "rule": "proximal",
+          "key_size": 64,
+          "value_size": 1,
+          "rate": 0.25,
+          "forgetting": 0.01,
+          "schema_version": 1,
+          "kind": "mature_associative_memory",
+          "dtype": "float64",
+          "device": "cpu",
+          "key_constraint": "l2_norm_at_most_1",
+          "key_norm_tolerance": 1e-06,
+          "order": "label_available_at_then_decision_at_then_id",
+          "write_cursor": "strictly_increasing_canonical_key",
+          "empty_cohort": "unchanged_without_forgetting",
+          "update": "cohort_cholesky_lapack_without_inverse",
+          "weights": "declared_nonnegative_sum_one"
+        },
+        "key": "codec",
+        "key_normalization": "l2_fp64_of_codec_key_inputs",
+        "value": "mature_label_minus_core_prediction",
+        "read": "matrix_of_previous_generation_for_the_whole_event",
+        "ids": "write_count_plus_offset_in_native_canonical_outcome_order",
+        "proximal_weights": "uniform_over_event_cohort",
+        "areas": {
+          "areas": 3,
+          "shifts": 1,
+          "permutation": "seeded_random",
+          "seed": 7,
+          "labels": "mature",
+          "kind": "redundant_area_memory_v1",
+          "feature_map": "dpfp_of_permuted_key_then_l2_or_zero",
+          "permutation_generator": "numpy_pcg64_seed_permutation_per_area_in_order",
+          "read": "mean_over_active_areas",
+          "label_shuffle": null
+        },
+        "query_bridge": {
+          "gain": 0.25,
+          "steps": 1,
+          "targets": "aligned",
+          "seed": 0,
+          "kind": "area_query_bridge_v1",
+          "topology": "source_a_to_target_a_plus_one_modulo_areas",
+          "update": "synchronous_unit_convex_mix_of_current_query_and_translated_source",
+          "target": "same_mature_observation_feature_in_the_next_area",
+          "label_values": "not_used_by_the_query_map",
+          "shuffle": "numpy_pcg64_domain_178_seed_first_canonical_id_and_source_area"
+        }
+      },
+      "stages": [
+        {
+          "before": "076a27c79e5ace2a3d47f9dd2e83e4ff6ea8872b3c2218f66c92b89b55f36560",
+          "after": "72f084d7b5f73b860f1bc57827ebf2ace57ae80c781157ad2845acc5ee799fa3",
+          "matrix_sha256": "97e0bcd3e6eb7f64d1a522459928a68c96a51d2db3506789c1e58f547b176b04",
+          "writes": 7,
+          "cursor": [
+            10,
+            5,
+            7
+          ]
+        },
+        {
+          "before": "b6125e12c6b5dacd52881f563fc39a0caee79f8867d384ce23b91b3649d04952",
+          "after": "efc9faed47f8df9e087aa99ecfa196df9e3ef3095852925d37fd012d718ac03e",
+          "matrix_sha256": "3d75e185398b7a6d505d85442fbaed088dbee9593560c03de99e71c8cc3651ef",
+          "writes": 40,
+          "cursor": [
+            20,
+            15,
+            40
+          ]
+        }
+      ]
+    },
+    "b2_zero_gain": {
+      "configuration": {
+        "schema_version": 1,
+        "kind": "mature_scalar_correction",
+        "memory": {
+          "rule": "proximal",
+          "key_size": 64,
+          "value_size": 1,
+          "rate": 0.25,
+          "forgetting": 0.01,
+          "schema_version": 1,
+          "kind": "mature_associative_memory",
+          "dtype": "float64",
+          "device": "cpu",
+          "key_constraint": "l2_norm_at_most_1",
+          "key_norm_tolerance": 1e-06,
+          "order": "label_available_at_then_decision_at_then_id",
+          "write_cursor": "strictly_increasing_canonical_key",
+          "empty_cohort": "unchanged_without_forgetting",
+          "update": "cohort_cholesky_lapack_without_inverse",
+          "weights": "declared_nonnegative_sum_one"
+        },
+        "key": "codec",
+        "key_normalization": "l2_fp64_of_codec_key_inputs",
+        "value": "mature_label_minus_core_prediction",
+        "read": "matrix_of_previous_generation_for_the_whole_event",
+        "ids": "write_count_plus_offset_in_native_canonical_outcome_order",
+        "proximal_weights": "uniform_over_event_cohort",
+        "areas": {
+          "areas": 3,
+          "shifts": 1,
+          "permutation": "seeded_random",
+          "seed": 7,
+          "labels": "mature",
+          "kind": "redundant_area_memory_v1",
+          "feature_map": "dpfp_of_permuted_key_then_l2_or_zero",
+          "permutation_generator": "numpy_pcg64_seed_permutation_per_area_in_order",
+          "read": "mean_over_active_areas",
+          "label_shuffle": null
+        },
+        "query_bridge": {
+          "gain": 0.0,
+          "steps": 1,
+          "targets": "aligned",
+          "seed": 0,
+          "kind": "area_query_bridge_v1",
+          "topology": "source_a_to_target_a_plus_one_modulo_areas",
+          "update": "synchronous_unit_convex_mix_of_current_query_and_translated_source",
+          "target": "same_mature_observation_feature_in_the_next_area",
+          "label_values": "not_used_by_the_query_map",
+          "shuffle": "numpy_pcg64_domain_178_seed_first_canonical_id_and_source_area"
+        }
+      },
+      "stages": [
+        {
+          "before": "076a27c79e5ace2a3d47f9dd2e83e4ff6ea8872b3c2218f66c92b89b55f36560",
+          "after": "55a9722509e4e292f48411f29278a02f1ade2ccb688050f965113f5ba486403c",
+          "matrix_sha256": "97e0bcd3e6eb7f64d1a522459928a68c96a51d2db3506789c1e58f547b176b04",
+          "writes": 7,
+          "cursor": [
+            10,
+            5,
+            7
+          ]
+        },
+        {
+          "before": "490d79c7609a425b4f6e3cb89a768a1be8558c0f437eae4dcb8e2edbe220604f",
+          "after": "0157b8c8f29070710258856315406aaceeb8b5dc6e05a5c0cffeecfb3d52aba3",
+          "matrix_sha256": "3d75e185398b7a6d505d85442fbaed088dbee9593560c03de99e71c8cc3651ef",
+          "writes": 40,
+          "cursor": [
+            20,
+            15,
+            40
+          ]
+        }
+      ]
+    },
+    "b2_shuffled": {
+      "configuration": {
+        "schema_version": 1,
+        "kind": "mature_scalar_correction",
+        "memory": {
+          "rule": "proximal",
+          "key_size": 64,
+          "value_size": 1,
+          "rate": 0.25,
+          "forgetting": 0.01,
+          "schema_version": 1,
+          "kind": "mature_associative_memory",
+          "dtype": "float64",
+          "device": "cpu",
+          "key_constraint": "l2_norm_at_most_1",
+          "key_norm_tolerance": 1e-06,
+          "order": "label_available_at_then_decision_at_then_id",
+          "write_cursor": "strictly_increasing_canonical_key",
+          "empty_cohort": "unchanged_without_forgetting",
+          "update": "cohort_cholesky_lapack_without_inverse",
+          "weights": "declared_nonnegative_sum_one"
+        },
+        "key": "codec",
+        "key_normalization": "l2_fp64_of_codec_key_inputs",
+        "value": "mature_label_minus_core_prediction",
+        "read": "matrix_of_previous_generation_for_the_whole_event",
+        "ids": "write_count_plus_offset_in_native_canonical_outcome_order",
+        "proximal_weights": "uniform_over_event_cohort",
+        "areas": {
+          "areas": 3,
+          "shifts": 1,
+          "permutation": "seeded_random",
+          "seed": 7,
+          "labels": "mature",
+          "kind": "redundant_area_memory_v1",
+          "feature_map": "dpfp_of_permuted_key_then_l2_or_zero",
+          "permutation_generator": "numpy_pcg64_seed_permutation_per_area_in_order",
+          "read": "mean_over_active_areas",
+          "label_shuffle": null
+        },
+        "query_bridge": {
+          "gain": 0.25,
+          "steps": 1,
+          "targets": "shuffled_within_cohort",
+          "seed": 0,
+          "kind": "area_query_bridge_v1",
+          "topology": "source_a_to_target_a_plus_one_modulo_areas",
+          "update": "synchronous_unit_convex_mix_of_current_query_and_translated_source",
+          "target": "same_mature_observation_feature_in_the_next_area",
+          "label_values": "not_used_by_the_query_map",
+          "shuffle": "numpy_pcg64_domain_178_seed_first_canonical_id_and_source_area"
+        }
+      },
+      "stages": [
+        {
+          "before": "076a27c79e5ace2a3d47f9dd2e83e4ff6ea8872b3c2218f66c92b89b55f36560",
+          "after": "a8d07656078481b2f17ceff2eb565d1ae6ddea29a36149eb319712b4b2d90408",
+          "matrix_sha256": "6fbe83ea2065085986b294bfc0176cca8b3e16a9c89e61050f406d7b84c013f8",
+          "writes": 7,
+          "cursor": [
+            10,
+            5,
+            7
+          ]
+        },
+        {
+          "before": "efa4f45351d29eba723e14e6b4b89c2a98d27ef9127f48951accf24931f6ee88",
+          "after": "0d3c12b4df3763d612dd4e42cf1ac08a331d405d31c7657220a54a57981fbbe8",
+          "matrix_sha256": "1bd4a914bf2551c6fa741f109d0519bf0b8cd63dc6935af3bd67968a33b26b21",
+          "writes": 40,
+          "cursor": [
+            20,
+            15,
+            40
+          ]
+        }
+      ]
+    },
+    "b2_both_shuffled": {
+      "configuration": {
+        "schema_version": 1,
+        "kind": "mature_scalar_correction",
+        "memory": {
+          "rule": "proximal",
+          "key_size": 64,
+          "value_size": 1,
+          "rate": 0.25,
+          "forgetting": 0.01,
+          "schema_version": 1,
+          "kind": "mature_associative_memory",
+          "dtype": "float64",
+          "device": "cpu",
+          "key_constraint": "l2_norm_at_most_1",
+          "key_norm_tolerance": 1e-06,
+          "order": "label_available_at_then_decision_at_then_id",
+          "write_cursor": "strictly_increasing_canonical_key",
+          "empty_cohort": "unchanged_without_forgetting",
+          "update": "cohort_cholesky_lapack_without_inverse",
+          "weights": "declared_nonnegative_sum_one"
+        },
+        "key": "codec",
+        "key_normalization": "l2_fp64_of_codec_key_inputs",
+        "value": "mature_label_minus_core_prediction",
+        "read": "matrix_of_previous_generation_for_the_whole_event",
+        "ids": "write_count_plus_offset_in_native_canonical_outcome_order",
+        "proximal_weights": "uniform_over_event_cohort",
+        "areas": {
+          "areas": 3,
+          "shifts": 1,
+          "permutation": "seeded_random",
+          "seed": 7,
+          "labels": "shuffled_within_cohort",
+          "kind": "redundant_area_memory_v1",
+          "feature_map": "dpfp_of_permuted_key_then_l2_or_zero",
+          "permutation_generator": "numpy_pcg64_seed_permutation_per_area_in_order",
+          "read": "mean_over_active_areas",
+          "label_shuffle": "numpy_pcg64_seed_and_first_canonical_id_permutation_of_values"
+        },
+        "query_bridge": {
+          "gain": 0.25,
+          "steps": 1,
+          "targets": "shuffled_within_cohort",
+          "seed": 0,
+          "kind": "area_query_bridge_v1",
+          "topology": "source_a_to_target_a_plus_one_modulo_areas",
+          "update": "synchronous_unit_convex_mix_of_current_query_and_translated_source",
+          "target": "same_mature_observation_feature_in_the_next_area",
+          "label_values": "not_used_by_the_query_map",
+          "shuffle": "numpy_pcg64_domain_178_seed_first_canonical_id_and_source_area"
+        }
+      },
+      "stages": [
+        {
+          "before": "076a27c79e5ace2a3d47f9dd2e83e4ff6ea8872b3c2218f66c92b89b55f36560",
+          "after": "02d72e2e8cbd049f5c80f5efca4048e266e2e1936da54e342ee0ddd2e951ab62",
+          "matrix_sha256": "53b0ebbeac31c66b6cf44e441524046e656236b9cbb07ebc0463c4770e3d52dd",
+          "writes": 7,
+          "cursor": [
+            10,
+            5,
+            7
+          ]
+        },
+        {
+          "before": "792c39129f80521ddf2fa17b524c8a8205f0a89e92fc2ab20e77e3c5a76fc62f",
+          "after": "9f189728c606ccca73b91dbfe8faa92a62f4de15b0acbc8a2558b99fb970fdfb",
+          "matrix_sha256": "2a1b04545168bd11c5e1eeecb7348b920e049eec5073810728a14d12c141e4bd",
+          "writes": 40,
+          "cursor": [
+            20,
+            15,
+            40
+          ]
+        }
+      ]
+    },
+    "b2_delta": {
+      "configuration": {
+        "schema_version": 1,
+        "kind": "mature_scalar_correction",
+        "memory": {
+          "rule": "delta",
+          "key_size": 64,
+          "value_size": 1,
+          "rate": 0.25,
+          "forgetting": 0.01,
+          "schema_version": 1,
+          "kind": "mature_associative_memory",
+          "dtype": "float64",
+          "device": "cpu",
+          "key_constraint": "l2_norm_at_most_1",
+          "key_norm_tolerance": 1e-06,
+          "order": "label_available_at_then_decision_at_then_id",
+          "write_cursor": "strictly_increasing_canonical_key",
+          "empty_cohort": "unchanged_without_forgetting",
+          "update": "sequential_rank_one",
+          "weights": null
+        },
+        "key": "codec",
+        "key_normalization": "l2_fp64_of_codec_key_inputs",
+        "value": "mature_label_minus_core_prediction",
+        "read": "matrix_of_previous_generation_for_the_whole_event",
+        "ids": "write_count_plus_offset_in_native_canonical_outcome_order",
+        "proximal_weights": "uniform_over_event_cohort",
+        "areas": {
+          "areas": 3,
+          "shifts": 1,
+          "permutation": "seeded_random",
+          "seed": 7,
+          "labels": "mature",
+          "kind": "redundant_area_memory_v1",
+          "feature_map": "dpfp_of_permuted_key_then_l2_or_zero",
+          "permutation_generator": "numpy_pcg64_seed_permutation_per_area_in_order",
+          "read": "mean_over_active_areas",
+          "label_shuffle": null
+        },
+        "query_bridge": {
+          "gain": 0.25,
+          "steps": 1,
+          "targets": "aligned",
+          "seed": 0,
+          "kind": "area_query_bridge_v1",
+          "topology": "source_a_to_target_a_plus_one_modulo_areas",
+          "update": "synchronous_unit_convex_mix_of_current_query_and_translated_source",
+          "target": "same_mature_observation_feature_in_the_next_area",
+          "label_values": "not_used_by_the_query_map",
+          "shuffle": "numpy_pcg64_domain_178_seed_first_canonical_id_and_source_area"
+        }
+      },
+      "stages": [
+        {
+          "before": "076a27c79e5ace2a3d47f9dd2e83e4ff6ea8872b3c2218f66c92b89b55f36560",
+          "after": "2b20855a791a7fa204e363fcfccdbc28f581b3644c39ac7cc1211f3e4935459b",
+          "matrix_sha256": "e4608a5cb5e71ca725d1ac93529d8d7d0d4505ac562de6172797156668053c9b",
+          "writes": 7,
+          "cursor": [
+            10,
+            5,
+            7
+          ]
+        },
+        {
+          "before": "1e657e8a6d6905c07dc8ea286b5f52067bef36be939c5044ead9dbc0843771ea",
+          "after": "641388cddd240cf2d9dc78c8afd8e12d0c5b8894907598c0747543c2444eb58f",
+          "matrix_sha256": "6d0bf014644c45adb3d195b3717588df868e1ebd152d629c5bdaf8f131b4dda1",
+          "writes": 40,
+          "cursor": [
+            20,
+            15,
+            40
+          ]
+        }
+      ]
+    },
+    "b2_two_steps": {
+      "configuration": {
+        "schema_version": 1,
+        "kind": "mature_scalar_correction",
+        "memory": {
+          "rule": "proximal",
+          "key_size": 64,
+          "value_size": 1,
+          "rate": 0.25,
+          "forgetting": 0.01,
+          "schema_version": 1,
+          "kind": "mature_associative_memory",
+          "dtype": "float64",
+          "device": "cpu",
+          "key_constraint": "l2_norm_at_most_1",
+          "key_norm_tolerance": 1e-06,
+          "order": "label_available_at_then_decision_at_then_id",
+          "write_cursor": "strictly_increasing_canonical_key",
+          "empty_cohort": "unchanged_without_forgetting",
+          "update": "cohort_cholesky_lapack_without_inverse",
+          "weights": "declared_nonnegative_sum_one"
+        },
+        "key": "codec",
+        "key_normalization": "l2_fp64_of_codec_key_inputs",
+        "value": "mature_label_minus_core_prediction",
+        "read": "matrix_of_previous_generation_for_the_whole_event",
+        "ids": "write_count_plus_offset_in_native_canonical_outcome_order",
+        "proximal_weights": "uniform_over_event_cohort",
+        "areas": {
+          "areas": 3,
+          "shifts": 1,
+          "permutation": "seeded_random",
+          "seed": 7,
+          "labels": "mature",
+          "kind": "redundant_area_memory_v1",
+          "feature_map": "dpfp_of_permuted_key_then_l2_or_zero",
+          "permutation_generator": "numpy_pcg64_seed_permutation_per_area_in_order",
+          "read": "mean_over_active_areas",
+          "label_shuffle": null
+        },
+        "query_bridge": {
+          "gain": 0.25,
+          "steps": 2,
+          "targets": "aligned",
+          "seed": 0,
+          "kind": "area_query_bridge_v1",
+          "topology": "source_a_to_target_a_plus_one_modulo_areas",
+          "update": "synchronous_unit_convex_mix_of_current_query_and_translated_source",
+          "target": "same_mature_observation_feature_in_the_next_area",
+          "label_values": "not_used_by_the_query_map",
+          "shuffle": "numpy_pcg64_domain_178_seed_first_canonical_id_and_source_area"
+        }
+      },
+      "stages": [
+        {
+          "before": "076a27c79e5ace2a3d47f9dd2e83e4ff6ea8872b3c2218f66c92b89b55f36560",
+          "after": "7d3a8f485c248b5f51f01d7954fde5116198e90c927cee007452d58023e54f59",
+          "matrix_sha256": "97e0bcd3e6eb7f64d1a522459928a68c96a51d2db3506789c1e58f547b176b04",
+          "writes": 7,
+          "cursor": [
+            10,
+            5,
+            7
+          ]
+        },
+        {
+          "before": "dd7076c4538e6fe61a02790aa1518720008dd916c8e4cd0e8f09bf7d0c7b4bcd",
+          "after": "f48061ad3fa5903af7788d9e125767806555287288b2ec8f6dbaf24ea6be7ebe",
+          "matrix_sha256": "3d75e185398b7a6d505d85442fbaed088dbee9593560c03de99e71c8cc3651ef",
+          "writes": 40,
+          "cursor": [
+            20,
+            15,
+            40
+          ]
+        }
+      ]
+    },
+    "b2_four_steps": {
+      "configuration": {
+        "schema_version": 1,
+        "kind": "mature_scalar_correction",
+        "memory": {
+          "rule": "proximal",
+          "key_size": 64,
+          "value_size": 1,
+          "rate": 0.25,
+          "forgetting": 0.01,
+          "schema_version": 1,
+          "kind": "mature_associative_memory",
+          "dtype": "float64",
+          "device": "cpu",
+          "key_constraint": "l2_norm_at_most_1",
+          "key_norm_tolerance": 1e-06,
+          "order": "label_available_at_then_decision_at_then_id",
+          "write_cursor": "strictly_increasing_canonical_key",
+          "empty_cohort": "unchanged_without_forgetting",
+          "update": "cohort_cholesky_lapack_without_inverse",
+          "weights": "declared_nonnegative_sum_one"
+        },
+        "key": "codec",
+        "key_normalization": "l2_fp64_of_codec_key_inputs",
+        "value": "mature_label_minus_core_prediction",
+        "read": "matrix_of_previous_generation_for_the_whole_event",
+        "ids": "write_count_plus_offset_in_native_canonical_outcome_order",
+        "proximal_weights": "uniform_over_event_cohort",
+        "areas": {
+          "areas": 3,
+          "shifts": 1,
+          "permutation": "seeded_random",
+          "seed": 7,
+          "labels": "mature",
+          "kind": "redundant_area_memory_v1",
+          "feature_map": "dpfp_of_permuted_key_then_l2_or_zero",
+          "permutation_generator": "numpy_pcg64_seed_permutation_per_area_in_order",
+          "read": "mean_over_active_areas",
+          "label_shuffle": null
+        },
+        "query_bridge": {
+          "gain": 0.25,
+          "steps": 4,
+          "targets": "aligned",
+          "seed": 0,
+          "kind": "area_query_bridge_v1",
+          "topology": "source_a_to_target_a_plus_one_modulo_areas",
+          "update": "synchronous_unit_convex_mix_of_current_query_and_translated_source",
+          "target": "same_mature_observation_feature_in_the_next_area",
+          "label_values": "not_used_by_the_query_map",
+          "shuffle": "numpy_pcg64_domain_178_seed_first_canonical_id_and_source_area"
+        }
+      },
+      "stages": [
+        {
+          "before": "076a27c79e5ace2a3d47f9dd2e83e4ff6ea8872b3c2218f66c92b89b55f36560",
+          "after": "723d3bd5171eede2ae54eff5f9f50ce5305112cf2322648004027a2d0e7efcef",
+          "matrix_sha256": "97e0bcd3e6eb7f64d1a522459928a68c96a51d2db3506789c1e58f547b176b04",
+          "writes": 7,
+          "cursor": [
+            10,
+            5,
+            7
+          ]
+        },
+        {
+          "before": "6dee29944a05a73c234b12c096b5dd41c4a49ac16658928343882787d031a3b0",
+          "after": "34c7409e541b1ac87aae7a10a293bd45d33722b419c5b80d898b32e773a45cfd",
+          "matrix_sha256": "3d75e185398b7a6d505d85442fbaed088dbee9593560c03de99e71c8cc3651ef",
+          "writes": 40,
+          "cursor": [
+            20,
+            15,
+            40
+          ]
+        }
+      ]
+    },
+    "b2_wide": {
+      "configuration": {
+        "schema_version": 1,
+        "kind": "mature_scalar_correction",
+        "memory": {
+          "rule": "proximal",
+          "key_size": 64,
+          "value_size": 1,
+          "rate": 0.25,
+          "forgetting": 0.01,
+          "schema_version": 1,
+          "kind": "mature_associative_memory",
+          "dtype": "float64",
+          "device": "cpu",
+          "key_constraint": "l2_norm_at_most_1",
+          "key_norm_tolerance": 1e-06,
+          "order": "label_available_at_then_decision_at_then_id",
+          "write_cursor": "strictly_increasing_canonical_key",
+          "empty_cohort": "unchanged_without_forgetting",
+          "update": "cohort_cholesky_lapack_without_inverse",
+          "weights": "declared_nonnegative_sum_one"
+        },
+        "key": "codec",
+        "key_normalization": "l2_fp64_of_codec_key_inputs",
+        "value": "mature_label_minus_core_prediction",
+        "read": "matrix_of_previous_generation_for_the_whole_event",
+        "ids": "write_count_plus_offset_in_native_canonical_outcome_order",
+        "proximal_weights": "uniform_over_event_cohort",
+        "areas": {
+          "areas": 2,
+          "shifts": 4,
+          "permutation": "seeded_random",
+          "seed": 7,
+          "labels": "mature",
+          "kind": "redundant_area_memory_v1",
+          "feature_map": "dpfp_of_permuted_key_then_l2_or_zero",
+          "permutation_generator": "numpy_pcg64_seed_permutation_per_area_in_order",
+          "read": "mean_over_active_areas",
+          "label_shuffle": null
+        },
+        "query_bridge": {
+          "gain": 0.25,
+          "steps": 1,
+          "targets": "aligned",
+          "seed": 0,
+          "kind": "area_query_bridge_v1",
+          "topology": "source_a_to_target_a_plus_one_modulo_areas",
+          "update": "synchronous_unit_convex_mix_of_current_query_and_translated_source",
+          "target": "same_mature_observation_feature_in_the_next_area",
+          "label_values": "not_used_by_the_query_map",
+          "shuffle": "numpy_pcg64_domain_178_seed_first_canonical_id_and_source_area"
+        }
+      },
+      "stages": [
+        {
+          "before": "076a27c79e5ace2a3d47f9dd2e83e4ff6ea8872b3c2218f66c92b89b55f36560",
+          "after": "38450880fd17317b621d8bff3127858d729682b1190d7858c0377b1b76339ae6",
+          "matrix_sha256": "bc6b6f588c61c094fe9c713b37c53adfb7893e358e3189b3762f2e24375096df",
+          "writes": 7,
+          "cursor": [
+            10,
+            5,
+            7
+          ]
+        },
+        {
+          "before": "710b0f893c01c96b301f97381b377322549d39d9f807b6578845d130546fe3bd",
+          "after": "0ba58632ab17449469855965cc685ea27e4efdcb84540186e394d86d87dfd300",
+          "matrix_sha256": "6ba20443d099a0705159eb7881749952da781fd43763a2f3fbb959d3eec6fe06",
+          "writes": 40,
+          "cursor": [
+            20,
+            15,
+            40
+          ]
+        }
+      ]
+    },
+    "b2_no_forgetting": {
+      "configuration": {
+        "schema_version": 1,
+        "kind": "mature_scalar_correction",
+        "memory": {
+          "rule": "proximal",
+          "key_size": 64,
+          "value_size": 1,
+          "rate": 0.25,
+          "forgetting": 0.0,
+          "schema_version": 1,
+          "kind": "mature_associative_memory",
+          "dtype": "float64",
+          "device": "cpu",
+          "key_constraint": "l2_norm_at_most_1",
+          "key_norm_tolerance": 1e-06,
+          "order": "label_available_at_then_decision_at_then_id",
+          "write_cursor": "strictly_increasing_canonical_key",
+          "empty_cohort": "unchanged_without_forgetting",
+          "update": "cohort_cholesky_lapack_without_inverse",
+          "weights": "declared_nonnegative_sum_one"
+        },
+        "key": "codec",
+        "key_normalization": "l2_fp64_of_codec_key_inputs",
+        "value": "mature_label_minus_core_prediction",
+        "read": "matrix_of_previous_generation_for_the_whole_event",
+        "ids": "write_count_plus_offset_in_native_canonical_outcome_order",
+        "proximal_weights": "uniform_over_event_cohort",
+        "areas": {
+          "areas": 3,
+          "shifts": 1,
+          "permutation": "seeded_random",
+          "seed": 7,
+          "labels": "mature",
+          "kind": "redundant_area_memory_v1",
+          "feature_map": "dpfp_of_permuted_key_then_l2_or_zero",
+          "permutation_generator": "numpy_pcg64_seed_permutation_per_area_in_order",
+          "read": "mean_over_active_areas",
+          "label_shuffle": null
+        },
+        "query_bridge": {
+          "gain": 0.25,
+          "steps": 1,
+          "targets": "aligned",
+          "seed": 0,
+          "kind": "area_query_bridge_v1",
+          "topology": "source_a_to_target_a_plus_one_modulo_areas",
+          "update": "synchronous_unit_convex_mix_of_current_query_and_translated_source",
+          "target": "same_mature_observation_feature_in_the_next_area",
+          "label_values": "not_used_by_the_query_map",
+          "shuffle": "numpy_pcg64_domain_178_seed_first_canonical_id_and_source_area"
+        }
+      },
+      "stages": [
+        {
+          "before": "076a27c79e5ace2a3d47f9dd2e83e4ff6ea8872b3c2218f66c92b89b55f36560",
+          "after": "72f084d7b5f73b860f1bc57827ebf2ace57ae80c781157ad2845acc5ee799fa3",
+          "matrix_sha256": "97e0bcd3e6eb7f64d1a522459928a68c96a51d2db3506789c1e58f547b176b04",
+          "writes": 7,
+          "cursor": [
+            10,
+            5,
+            7
+          ]
+        },
+        {
+          "before": "b6125e12c6b5dacd52881f563fc39a0caee79f8867d384ce23b91b3649d04952",
+          "after": "88fbff50f1eeac3aebe2cb5f828901a8cc239f8809494c794e6031558237932d",
+          "matrix_sha256": "d3d4f92a791d12045cc06a0b141151fafd887a766b04e9f21e92b60287ffa565",
+          "writes": 40,
+          "cursor": [
+            20,
+            15,
+            40
+          ]
+        }
+      ]
+    },
+    "b2_no_rate": {
+      "configuration": {
+        "schema_version": 1,
+        "kind": "mature_scalar_correction",
+        "memory": {
+          "rule": "proximal",
+          "key_size": 64,
+          "value_size": 1,
+          "rate": 0.0,
+          "forgetting": 0.01,
+          "schema_version": 1,
+          "kind": "mature_associative_memory",
+          "dtype": "float64",
+          "device": "cpu",
+          "key_constraint": "l2_norm_at_most_1",
+          "key_norm_tolerance": 1e-06,
+          "order": "label_available_at_then_decision_at_then_id",
+          "write_cursor": "strictly_increasing_canonical_key",
+          "empty_cohort": "unchanged_without_forgetting",
+          "update": "cohort_cholesky_lapack_without_inverse",
+          "weights": "declared_nonnegative_sum_one"
+        },
+        "key": "codec",
+        "key_normalization": "l2_fp64_of_codec_key_inputs",
+        "value": "mature_label_minus_core_prediction",
+        "read": "matrix_of_previous_generation_for_the_whole_event",
+        "ids": "write_count_plus_offset_in_native_canonical_outcome_order",
+        "proximal_weights": "uniform_over_event_cohort",
+        "areas": {
+          "areas": 3,
+          "shifts": 1,
+          "permutation": "seeded_random",
+          "seed": 7,
+          "labels": "mature",
+          "kind": "redundant_area_memory_v1",
+          "feature_map": "dpfp_of_permuted_key_then_l2_or_zero",
+          "permutation_generator": "numpy_pcg64_seed_permutation_per_area_in_order",
+          "read": "mean_over_active_areas",
+          "label_shuffle": null
+        },
+        "query_bridge": {
+          "gain": 0.25,
+          "steps": 1,
+          "targets": "aligned",
+          "seed": 0,
+          "kind": "area_query_bridge_v1",
+          "topology": "source_a_to_target_a_plus_one_modulo_areas",
+          "update": "synchronous_unit_convex_mix_of_current_query_and_translated_source",
+          "target": "same_mature_observation_feature_in_the_next_area",
+          "label_values": "not_used_by_the_query_map",
+          "shuffle": "numpy_pcg64_domain_178_seed_first_canonical_id_and_source_area"
+        }
+      },
+      "stages": [
+        {
+          "before": "076a27c79e5ace2a3d47f9dd2e83e4ff6ea8872b3c2218f66c92b89b55f36560",
+          "after": "076a27c79e5ace2a3d47f9dd2e83e4ff6ea8872b3c2218f66c92b89b55f36560",
+          "matrix_sha256": "2e32afe9088afe13df51c621b359754edb44bc85c6eedfe2cdd758c5f66d8189",
+          "writes": 7,
+          "cursor": [
+            10,
+            5,
+            7
+          ]
+        },
+        {
+          "before": "076a27c79e5ace2a3d47f9dd2e83e4ff6ea8872b3c2218f66c92b89b55f36560",
+          "after": "076a27c79e5ace2a3d47f9dd2e83e4ff6ea8872b3c2218f66c92b89b55f36560",
+          "matrix_sha256": "2e32afe9088afe13df51c621b359754edb44bc85c6eedfe2cdd758c5f66d8189",
+          "writes": 40,
+          "cursor": [
+            20,
+            15,
+            40
+          ]
+        }
+      ]
+    }
+  },
+  "sources_sha256": {
+    "mars_titan.memory.area_memory": "1858461dbe879449a24bf7ffdbe1e1e9781b071f451097cf28167550460b37af",
+    "mars_titan.memory.area_query_bridge": "2733cc1996839233eea8d8343c658e805ae89ecdf787fd86ca408c299145d23a",
+    "mars_titan.memory.associative_memory": "ac60739dece56bd3fe3bba05c2e3cd94d94ea36a5a6e201a66b2452c1195a59a"
+  },
+  "torch": "2.14.0+cu130"
+}

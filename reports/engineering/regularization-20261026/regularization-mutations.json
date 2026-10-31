@@ -1,0 +1,49 @@
+{
+  "repositories": {
+    "Objective": {
+      "root": ".",
+      "test_path": "tests/training/test_regularization_profiles.py",
+      "test_sha256": "993544ce8d5e4af52ab5baac4aed1422c16440b77a22372019619a25da740676"
+    }
+  },
+  "sources": {
+    "adamw": {
+      "path": "src/mars_titan/training/anchored_decay.py",
+      "sha256": "6eb96360f654021355aa48d8475f8f85f43c9bcec824bce07a3de06e4ea90714"
+    },
+    "fusion": {
+      "path": "src/mars_titan/models/baselines/multimodal.py",
+      "sha256": "bf3f688a7f347b4b00c18fc71d66a601e3057260646a0152995da8593b564dde"
+    },
+    "selection": {
+      "path": "src/mars_titan/training/selection.py",
+      "sha256": "3d1fd15d6de2ea5e4a3a3510860cd341de9778b77f639d5b3e234475df99253a"
+    }
+  },
+  "recipes": [
+    {
+      "id": "ignore_weight_decay",
+      "family": "Objective",
+      "source_key": "adamw",
+      "nodeid": "tests/training/test_regularization_profiles.py::test_profile_reaches_adamw_and_has_its_own_identity_without_updates[lr1e-4-0.001-path1]",
+      "anchor": "weight_decay=recipe.weight_decay,",
+      "replacement": "weight_decay=0.0,",
+      "expected_failure": {
+        "exception_type": "AssertionError",
+        "longrepr_contains": "assert"
+      }
+    },
+    {
+      "id": "remove_fusion_dropout",
+      "family": "Objective",
+      "source_key": "fusion",
+      "nodeid": "tests/training/test_regularization_profiles.py::test_reference_dropout_stays_in_fusion_and_is_disabled_for_evaluation[0.1]",
+      "anchor": "nn.Dropout(dropout)",
+      "replacement": "nn.Dropout(0.0)",
+      "expected_failure": {
+        "exception_type": "AssertionError",
+        "longrepr_contains": "assert"
+      }
+    }
+  ]
+}

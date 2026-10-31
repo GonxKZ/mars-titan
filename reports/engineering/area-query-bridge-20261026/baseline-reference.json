@@ -1,0 +1,267 @@
+{
+  "cases": {
+    "proximal/b6": {
+      "reads_sha256": [
+        "e5a00aa9991ac8a5ee3109844d84a55583bd20572ad3ffcd42792f3c36b183ad",
+        "e19187e56abe5cc1feede5bcd1ac2c02d53a6ad135c01aa68f7aee5e0ec0d2a7",
+        "f793b8f162d2ea83dba21147b032ebaaa02290ef02134647b3ae5560049f6bd9",
+        "6264c798e129b0a32dc4f52252477a8adf48d7f4126b4ab79efe3db072d2ee37"
+      ],
+      "matrix_sha256": "bd9963f763e32b7375065cf356d81156cd6c0fff69aa170a7d5920fb2f1dba76",
+      "writes": 256,
+      "cursor": [
+        20,
+        15,
+        256
+      ],
+      "configuration": {
+        "rule": "proximal",
+        "key_size": 64,
+        "value_size": 1,
+        "rate": 0.25,
+        "forgetting": 0.01,
+        "schema_version": 1,
+        "kind": "mature_associative_memory",
+        "dtype": "float64",
+        "device": "cpu",
+        "key_constraint": "l2_norm_at_most_1",
+        "key_norm_tolerance": 1e-06,
+        "order": "label_available_at_then_decision_at_then_id",
+        "write_cursor": "strictly_increasing_canonical_key",
+        "empty_cohort": "unchanged_without_forgetting",
+        "update": "cohort_cholesky_lapack_without_inverse",
+        "weights": "declared_nonnegative_sum_one"
+      }
+    },
+    "proximal/areas": {
+      "reads_sha256": [
+        "e5a00aa9991ac8a5ee3109844d84a55583bd20572ad3ffcd42792f3c36b183ad",
+        "1685df9732b1aaaad896b95d20c0bee7648e745e6d9bbe3f0081a0ed9a43c089",
+        "1fb9764bf4291b1f29805a6a5c7f55fb082f747fcb4fa84f34e05702eabc8ccb",
+        "98c5a77febd0d7a34c4080484d84d2753d5842c64d4f39bc8623269b5f2b1273"
+      ],
+      "matrix_sha256": "f589465a1f3c9d794123a11284acd41a0d95b8d8ed6420d72774e69f05bc19c1",
+      "writes": 256,
+      "cursor": [
+        20,
+        15,
+        256
+      ],
+      "configuration": {
+        "rule": {
+          "rule": "proximal",
+          "key_size": 64,
+          "value_size": 1,
+          "rate": 0.25,
+          "forgetting": 0.01,
+          "schema_version": 1,
+          "kind": "mature_associative_memory",
+          "dtype": "float64",
+          "device": "cpu",
+          "key_constraint": "l2_norm_at_most_1",
+          "key_norm_tolerance": 1e-06,
+          "order": "label_available_at_then_decision_at_then_id",
+          "write_cursor": "strictly_increasing_canonical_key",
+          "empty_cohort": "unchanged_without_forgetting",
+          "update": "cohort_cholesky_lapack_without_inverse",
+          "weights": "declared_nonnegative_sum_one"
+        },
+        "layout": {
+          "areas": 4,
+          "shifts": 1,
+          "permutation": "seeded_random",
+          "seed": 7,
+          "labels": "mature",
+          "kind": "redundant_area_memory_v1",
+          "feature_map": "dpfp_of_permuted_key_then_l2_or_zero",
+          "permutation_generator": "numpy_pcg64_seed_permutation_per_area_in_order",
+          "read": "mean_over_active_areas",
+          "label_shuffle": null
+        }
+      }
+    },
+    "proximal/shuffled_areas": {
+      "reads_sha256": [
+        "e5a00aa9991ac8a5ee3109844d84a55583bd20572ad3ffcd42792f3c36b183ad",
+        "c2565a4b458bfbaf5497dbbab6a34c5d398e28c369a6be657d938d3b54a32987",
+        "0ae609198f5b75c28173f2e14b3b64990c9943c90b017b3c105f42328225ca73",
+        "408f0aaabbd872a0e0ffd373ab6c2055b7ca56524fd31fc41dc8493e3fdd9597"
+      ],
+      "matrix_sha256": "c920016f8fa1efd324624d6c83904c2ebdff7d0f247ba0aed888e94b073d989e",
+      "writes": 256,
+      "cursor": [
+        20,
+        15,
+        256
+      ],
+      "configuration": {
+        "rule": {
+          "rule": "proximal",
+          "key_size": 64,
+          "value_size": 1,
+          "rate": 0.25,
+          "forgetting": 0.01,
+          "schema_version": 1,
+          "kind": "mature_associative_memory",
+          "dtype": "float64",
+          "device": "cpu",
+          "key_constraint": "l2_norm_at_most_1",
+          "key_norm_tolerance": 1e-06,
+          "order": "label_available_at_then_decision_at_then_id",
+          "write_cursor": "strictly_increasing_canonical_key",
+          "empty_cohort": "unchanged_without_forgetting",
+          "update": "cohort_cholesky_lapack_without_inverse",
+          "weights": "declared_nonnegative_sum_one"
+        },
+        "layout": {
+          "areas": 4,
+          "shifts": 1,
+          "permutation": "seeded_random",
+          "seed": 7,
+          "labels": "shuffled_within_cohort",
+          "kind": "redundant_area_memory_v1",
+          "feature_map": "dpfp_of_permuted_key_then_l2_or_zero",
+          "permutation_generator": "numpy_pcg64_seed_permutation_per_area_in_order",
+          "read": "mean_over_active_areas",
+          "label_shuffle": "numpy_pcg64_seed_and_first_canonical_id_permutation_of_values"
+        }
+      }
+    },
+    "delta/b6": {
+      "reads_sha256": [
+        "e5a00aa9991ac8a5ee3109844d84a55583bd20572ad3ffcd42792f3c36b183ad",
+        "beb53558696fa523f3507bdc48a061afbdaefb37634c90cb434a03dfcfaafcd3",
+        "35f7a2e383e5107bac09f28c7dfe94aeade9220e566caaa4e7a883593ba07da9",
+        "75093db368a25e591b570d2da2a2c40b4266a4350f7e54fcca2235e584f0baa5"
+      ],
+      "matrix_sha256": "707ae67d8e57a130edc87c25932afebb91c11134064e4f1040fc31c199d5f315",
+      "writes": 256,
+      "cursor": [
+        20,
+        15,
+        256
+      ],
+      "configuration": {
+        "rule": "delta",
+        "key_size": 64,
+        "value_size": 1,
+        "rate": 0.25,
+        "forgetting": 0.01,
+        "schema_version": 1,
+        "kind": "mature_associative_memory",
+        "dtype": "float64",
+        "device": "cpu",
+        "key_constraint": "l2_norm_at_most_1",
+        "key_norm_tolerance": 1e-06,
+        "order": "label_available_at_then_decision_at_then_id",
+        "write_cursor": "strictly_increasing_canonical_key",
+        "empty_cohort": "unchanged_without_forgetting",
+        "update": "sequential_rank_one",
+        "weights": null
+      }
+    },
+    "delta/areas": {
+      "reads_sha256": [
+        "e5a00aa9991ac8a5ee3109844d84a55583bd20572ad3ffcd42792f3c36b183ad",
+        "4f29f7c5d1f28d26e39096080f4bd13c3f2958e5fe3091c79f403c68ee42bb66",
+        "4f2ee6b383ef2c9707e3010707f56981eacd8f8d83b3f1ef5c28dae4142620e4",
+        "f744b89f3784274961fec2f9a7d136fc4fe4221568fd7ef3295545866f418620"
+      ],
+      "matrix_sha256": "ae2569fe2b1c38408fcaa1c57c51f317e3254645783c5b7f4a63a3bc8517f189",
+      "writes": 256,
+      "cursor": [
+        20,
+        15,
+        256
+      ],
+      "configuration": {
+        "rule": {
+          "rule": "delta",
+          "key_size": 64,
+          "value_size": 1,
+          "rate": 0.25,
+          "forgetting": 0.01,
+          "schema_version": 1,
+          "kind": "mature_associative_memory",
+          "dtype": "float64",
+          "device": "cpu",
+          "key_constraint": "l2_norm_at_most_1",
+          "key_norm_tolerance": 1e-06,
+          "order": "label_available_at_then_decision_at_then_id",
+          "write_cursor": "strictly_increasing_canonical_key",
+          "empty_cohort": "unchanged_without_forgetting",
+          "update": "sequential_rank_one",
+          "weights": null
+        },
+        "layout": {
+          "areas": 4,
+          "shifts": 1,
+          "permutation": "seeded_random",
+          "seed": 7,
+          "labels": "mature",
+          "kind": "redundant_area_memory_v1",
+          "feature_map": "dpfp_of_permuted_key_then_l2_or_zero",
+          "permutation_generator": "numpy_pcg64_seed_permutation_per_area_in_order",
+          "read": "mean_over_active_areas",
+          "label_shuffle": null
+        }
+      }
+    },
+    "delta/shuffled_areas": {
+      "reads_sha256": [
+        "e5a00aa9991ac8a5ee3109844d84a55583bd20572ad3ffcd42792f3c36b183ad",
+        "6423ee4da18aeb431a1671d5deb025bfc1f5c5472926e1b2eb32ad619d32276c",
+        "c689c3ca69a9d2a157ce797d59e6a657c5ca0dcab38ddeb4093febdb99497516",
+        "050420f62321589dff2ddd52583d060a6080c0161de41aee0941a6cc77cad9f3"
+      ],
+      "matrix_sha256": "d6c3643218d0482a4342d27ccae333e54e580b4567bebb0436de1b90423db12f",
+      "writes": 256,
+      "cursor": [
+        20,
+        15,
+        256
+      ],
+      "configuration": {
+        "rule": {
+          "rule": "delta",
+          "key_size": 64,
+          "value_size": 1,
+          "rate": 0.25,
+          "forgetting": 0.01,
+          "schema_version": 1,
+          "kind": "mature_associative_memory",
+          "dtype": "float64",
+          "device": "cpu",
+          "key_constraint": "l2_norm_at_most_1",
+          "key_norm_tolerance": 1e-06,
+          "order": "label_available_at_then_decision_at_then_id",
+          "write_cursor": "strictly_increasing_canonical_key",
+          "empty_cohort": "unchanged_without_forgetting",
+          "update": "sequential_rank_one",
+          "weights": null
+        },
+        "layout": {
+          "areas": 4,
+          "shifts": 1,
+          "permutation": "seeded_random",
+          "seed": 7,
+          "labels": "shuffled_within_cohort",
+          "kind": "redundant_area_memory_v1",
+          "feature_map": "dpfp_of_permuted_key_then_l2_or_zero",
+          "permutation_generator": "numpy_pcg64_seed_permutation_per_area_in_order",
+          "read": "mean_over_active_areas",
+          "label_shuffle": "numpy_pcg64_seed_and_first_canonical_id_permutation_of_values"
+        }
+      }
+    }
+  },
+  "sources_sha256": {
+    "src/mars_titan/memory/area_memory.py": "e93a1fe16e747ab739d039227cc5f3c23970b3acdf45f811b3f76981458e2ed6",
+    "src/mars_titan/memory/associative_memory.py": "76697c5ea4a6f62dd5aa79cba1756bece64ac4297ecd76ff0a481d853cd4805a"
+  },
+  "runtime": {
+    "torch": "2.14.0+cu130",
+    "numpy": "2.5.3",
+    "threads": 2
+  }
+}

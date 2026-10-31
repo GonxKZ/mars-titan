@@ -1,0 +1,41 @@
+{
+  "repositories": {
+    "Objective": {
+      "root": ".",
+      "test_path": "tests/memory/test_coefficient_decay.py",
+      "test_sha256": "2fd8eb1e556988b34fb0ace7274462039a17acfaed63086e6776395d9620a3a7"
+    }
+  },
+  "sources": {
+    "mixture": {
+      "path": "src/mars_titan/memory/multiscale_mixture.py",
+      "sha256": "b0d9e06dc12bff72547a36e3dd6072104c0ac0b59079c090750a2b0ee28cb282"
+    },
+    "window": {
+      "path": "src/mars_titan/training/mars_titan_correction.py",
+      "sha256": "98e410a0a0e6715afecfb3ff90720467cfd258d4478188f1a49ba5a753d6557e"
+    },
+    "session": {
+      "path": "src/mars_titan/memory/financial_session.py",
+      "sha256": "eed3908005359ea76dd5bbbfb1316659c82b2640ca71934ec2de64056fd3566f"
+    },
+    "area": {
+      "path": "src/mars_titan/memory/area_memory.py",
+      "sha256": "7c7ed879884bafc5a7aa12f4ec8f22aad1a883862cb8fe9871b24411586acc4d"
+    }
+  },
+  "recipes": [
+    {
+      "id": "omit_bridge_decay",
+      "family": "Objective",
+      "source_key": "area",
+      "nodeid": "tests/memory/test_coefficient_decay.py::test_decay_preserves_metadata_and_scales_all_coefficients[areas2-bridge2-None]",
+      "anchor": "self._bridge.decay_coefficients(factor)",
+      "replacement": "self._bridge",
+      "expected_failure": {
+        "exception_type": "AssertionError",
+        "longrepr_contains": "torch.equal"
+      }
+    }
+  ]
+}

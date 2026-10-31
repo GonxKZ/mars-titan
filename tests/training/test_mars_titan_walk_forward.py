@@ -15,13 +15,23 @@ import pytest
 import torch
 
 from mars_titan.data.storage import sha256
+from mars_titan.evaluation import scale_diagnostics as sd
+from mars_titan.evaluation.forecast_panel import ForecastPanel
 from mars_titan.memory.mars_titan_variant import load_declaration, select_variant
 from mars_titan.models.quantile_head import QUANTILE_COLUMNS
 from mars_titan.training import mars_titan_walk_forward as mw
 from mars_titan.training.learning_hold import LearningHoldError
 from tests.learning_traces.parity import EVERY_STEP, metrics, same_rows, trace_rows
 from tests.suite_support import skip_without_episodic_native
-from tests.training.test_titans_walk_forward import RULE, Factory, recipe, views, window
+from tests.training.test_titans_walk_forward import (
+    COMMON,
+    RULE,
+    SCORING,
+    Factory,
+    recipe,
+    views,
+    window,
+)
 from tests.training.test_titans_walk_forward import (
     learning_doubles_module as learning_doubles_module,
 )
@@ -99,6 +109,39 @@ def base(tmp_path_factory, learning_doubles_module):
 
 def table(folder, partition):
     return pq.read_table(folder / f"{partition}-predictions.parquet").sort_by("sample_id")
+
+
+def test_bounded_reader_keeps_parent_phases_rows_and_recovery(tmp_path):
+    """El lector hereda el mes de ajuste y recupera el mismo resultado sin modificar pesos."""
+    view, protocol = views(tmp_path / "data")
+    core_recipe = recipe(tmp_path, walk_forward=dict(warmup_months=1, fit_months=1))
+    parent = tmp_path / "parent"
+    parent_report, _ = window(view, protocol, core_recipe, parent)
+    plan = readout_recipe(tmp_path)
+    reference = tmp_path / "reference"
+    expected, _ = mars(view, parent, plan, reference)
+    assert expected["identity"]["phases"] == parent_report["identity"]["phases"]
+    assert expected["identity"]["indices"] == parent_report["identity"]["indices"]
+    assert expected["identity"]["memory_policy"]["fit_months"] == 1
+
+    recorder = Factory()
+
+    class StopAfterThree:
+        @property
+        def requested(self):
+            return sum(item.calls for item in recorder.instances[-1:]) >= 3
+
+    resumed = tmp_path / "resumed"
+    paused, _ = mars(view, parent, plan, resumed, stop=StopAfterThree(), optimizer_factory=recorder)
+    assert paused["status"] == "paused"
+    restored, _ = mars(view, parent, plan, resumed, optimizer_factory=recorder)
+    assert restored["status"] == "completed"
+    assert restored["identity"]["phases"] == expected["identity"]["phases"]
+    for partition in ("validation", "calibration", "evaluation"):
+        actual, target = table(resumed, partition), table(reference, partition)
+        assert actual.equals(target)
+        for name in ("sample_id", "prediction_at", "target"):
+            assert actual[name].equals(table(parent, partition)[name])
 
 
 def test_context_parent_requires_a_consumer_with_session_lifecycle(tmp_path):
@@ -371,3 +414,35 @@ def test_traces_keep_the_reader_bit_for_bit_and_resume_without_duplicates(base, 
     final, _ = mars(base["view"], base["parent"], base["plan"], resumed, **options)
     assert final["status"] == "completed"
     assert same_rows(rows, trace_rows(resumed / "traces")[1])
+
+
+def test_common_epoch_reader_waits_then_emits_its_epoch_and_versions(base, tmp_path):
+    output = tmp_path / "common"
+    options = dict(stopping=COMMON, epoch_scoring=SCORING)
+    with pytest.raises(ValueError, match="junto con la época común"):
+        mars(base["view"], base["parent"], base["plan"], output, versions=[2], **options)
+    with pytest.raises(ValueError, match="cómo se puntúa"):
+        mars(base["view"], base["parent"], base["plan"], output, stopping=COMMON)
+    report, _ = mars(base["view"], base["parent"], base["plan"], output, **options)
+    assert report["status"] == "awaiting_joint_stop" and report["predictions"] == {}
+    fit = json.loads((output / "fit" / "run.json").read_text())
+    assert sorted(fit["epoch_states"]) == ["1", "2"]
+    for entry in fit["history"][1:]:
+        scored = entry["validation"]
+        # El IC del lector es el del análisis sobre la predicción guardada de esa época.
+        panel = ForecastPanel.from_arrow(
+            pq.read_table(output / scored["epoch_predictions"]["path"])
+        )
+        values, defined = sd.session_correlations(panel, panel.prediction, min_assets=3)
+        assert scored["session_ic_values"] == values.tolist() and defined.any()
+        assert scored["session_ic_defined"] == defined.tolist()
+    final, _ = mars(
+        base["view"], base["parent"], base["plan"], output, joint_epoch=1, versions=[2], **options
+    )
+    assert final["status"] == "completed" and final["released_state_bytes"] > 0
+    assert final["versions"]["epochs"] == [2]
+    for name, record in final["versions"]["predictions"]["2"].items():
+        # Con el registrador los pesos no cambian, así que cada versión repite las filas.
+        version = pq.read_table(output / record["path"]).sort_by("sample_id")
+        assert version.equals(table(output, name))
+    assert len(list((output / "fit" / "checkpoints").glob("state-*.pt"))) == 1

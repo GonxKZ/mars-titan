@@ -1,0 +1,30 @@
+{
+  "schema_version": 1,
+  "checked_at": "2026-10-26",
+  "sources": [
+    {
+      "url": "https://proceedings.mlr.press/v48/danihelka16.pdf",
+      "sha256": "8c0a5e8e291d4f244a162f3ffe2e43f63e26ffa768f1b251a6602e4c31509b16",
+      "inspected": "Sección 3, ecuaciones 6 a 8, contraste visual de las trazas complejas y su lectura media."
+    },
+    {
+      "url": "https://proceedings.mlr.press/v139/schlag21a/schlag21a.pdf",
+      "sha256": "207db79c22d7d063e6f81df614050d96a33172a631c7b2df7e75308b74f78f38",
+      "inspected": "Regla delta, normalización y DPFP, incluida la ecuación 37."
+    },
+    {
+      "url": "https://proceedings.mlr.press/v139/schlag21a/schlag21a-supp.pdf",
+      "sha256": "ec04c07aeafade9064f82936688c4b9270df0efeabb39722a63a12e372ddc25b",
+      "inspected": "Listado 1, página 2 del suplemento, con roll positivo."
+    },
+    {
+      "url": "https://epubs.siam.org/doi/abs/10.1137/1109020",
+      "inspected": "Datos bibliográficos de Nadaraya (1964). No se afirma una lectura completa del artículo."
+    },
+    {
+      "url": "https://www.jstor.org/stable/25049340",
+      "inspected": "Datos bibliográficos de Watson (1964). No se afirma una lectura completa del artículo."
+    }
+  ],
+  "scope": "Se contrastan las operaciones utilizadas, sin revisión completa de toda la literatura ni garantía de novedad. No se ejecutó Lean ni se atribuye una garantía financiera a las fuentes."
+}
