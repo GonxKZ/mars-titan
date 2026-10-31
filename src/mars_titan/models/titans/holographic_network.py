@@ -56,6 +56,15 @@ cuántos bloques se parte la modalidad, así que 5, 19 y 38 áreas son comparabl
 en cero, así que el predictor emite al construirse lo mismo que sin la red. El estado de
 trabajo se reinicia en cada llamada, cada fila se calcula sola y el forward no actualiza
 parámetros.
+
+Pesos rápidos de P1 (#784). Con `edge_bias` [filas, aristas], el peso de cada par de áreas
+distintas que une la topología se suma al logit de atención de la consulta i sobre la clave j
+en todos los pasos del puente, y `traces` recibe la media de esas probabilidades de atención
+en los ciclos y pasos, sin grafo. La traza de un área ausente vale cero, porque su consulta
+solo evita una fila vacía en la máscara y su estado se descarta. Los pesos y su regla viven
+fuera de la red, en
+`mars_titan.memory.three_factor_bridge`. Con pesos nulos la máscara real de ceros y −∞ da la
+misma atención que la booleana, así que la salida no cambia.
 """
 
 import csv
@@ -134,6 +143,9 @@ class HolographicNetworkConfig:
     local_gain: float = 0.25
     summary_gain: float = 0.25
     levels: int = 1
+    # Peso de la pérdida propia de cada área. None no crea las predicciones por área y con
+    # 0.0 las áreas votan en la salida, pero solo aprenden a través de ella.
+    area_predictions: float | None = None
 
     def __post_init__(self):
         if type(self.kind) is not str or self.kind not in KINDS:
@@ -166,9 +178,17 @@ class HolographicNetworkConfig:
             )
         if type(self.levels) is not int or self.levels != 1:
             raise ValueError(
-                "Los niveles 2 y 3 necesitan los grupos de activos de H4 y el estado de "
-                "régimen, que todavía no existen"
+                "Los niveles 2 y 3 necesitan integrar los grupos de activos de H4 y el estado "
+                "de régimen, que todavía no están conectados a esta red"
             )
+        if self.area_predictions is not None:
+            if self.kind == HIDDEN_GROUPS_ONLY:
+                raise ValueError("H3 no tiene áreas del catálogo que puedan predecir")
+            weight = self.area_predictions
+            if type(weight) is not float or not 0 <= weight <= 4:
+                raise ValueError(
+                    "El peso de las predicciones por área debe ser un decimal entre 0 y 4"
+                )
 
     @property
     def catalog_areas(self):
@@ -184,9 +204,20 @@ class HolographicNetworkConfig:
             membership = "softmax_over_areas_of_catalog_log_weights"
             if self.kind == HOLOGRAPHIC_NETWORK:
                 membership += "_plus_learned_delta_from_zero"
+        fields = asdict(self)
+        # El campo opcional solo aparece declarado, así que las identidades anteriores no cambian.
+        if self.area_predictions is None:
+            fields.pop("area_predictions")
+        else:
+            fields.update(
+                area_votes="linear_head_per_area_on_the_normalized_final_area_state_up_from_zero",
+                area_readout="learned_softmax_over_present_areas_from_equal_weights",
+                area_output="reference_point_plus_the_weighted_mean_of_the_area_votes",
+                area_loss="weight_times_mean_point_loss_of_each_present_area_with_detached_reference",
+            )
         return dict(
             schema_version=1,
-            **asdict(self),
+            **fields,
             seed_family=_SEED_FAMILY,
             family_blocks="modality_encoder_applied_to_the_family_columns_only",
             membership=membership,
@@ -213,7 +244,9 @@ def parse_holographic_network(raw):
     if type(raw) is HolographicNetworkConfig:
         raw.__post_init__()
         return raw
-    if isinstance(raw, dict) and set(raw) == set(HolographicNetworkConfig.__dataclass_fields__):
+    fields = set(HolographicNetworkConfig.__dataclass_fields__)
+    # Las declaraciones anteriores no nombran el campo opcional de las predicciones por área.
+    if isinstance(raw, dict) and set(raw) in (fields, fields - {"area_predictions"}):
         return HolographicNetworkConfig(**raw)
     raise ValueError("holographic_network debe declarar toda su configuración o ser None")
 
@@ -337,6 +370,17 @@ def area_edges(count, topology):
     return edges
 
 
+def plastic_edges(config):
+    """Pares (i, j) de áreas distintas que une la topología, en orden de filas.
+
+    Son las aristas en las que P1 de #784 guarda pesos rápidos y trazas. H3 no tiene áreas,
+    así que tampoco tiene aristas.
+    """
+    areas = config.catalog_areas
+    edges = area_edges(areas, config.topology).tolist()
+    return tuple((i, j) for i in range(areas) for j in range(areas) if i != j and edges[i][j])
+
+
 def node_edges(config):
     """Máscara [nodos, nodos]: las áreas según su topología y cada ranura con todos."""
     areas, nodes = config.catalog_areas, config.nodes
@@ -344,6 +388,16 @@ def node_edges(config):
     if areas:
         edges[:areas, :areas] = area_edges(areas, config.topology)
     return edges
+
+
+@dataclass(frozen=True)
+class AreaVotes:
+    """Votos de las áreas de una llamada: desplazamiento [R], votos, presencia y pesos [R, A]."""
+
+    shift: torch.Tensor
+    votes: torch.Tensor
+    alive: torch.Tensor
+    weights: torch.Tensor
 
 
 class HolographicNetwork(nn.Module):
@@ -363,6 +417,8 @@ class HolographicNetwork(nn.Module):
             raise ValueError("El rango de los ajustes debe ser menor que la dimensión")
         self.config, self.hidden_size, self.max_batch = config, hidden_size, max_batch
         self.layout = area_layout(config.areas, representation, masked=masked)
+        # Las aristas de P1 no son buffers: no entran en la huella de parámetros de H1.
+        self.plastic_edges, self._plastic_index = plastic_edges(config), {}
         areas, blocks = config.catalog_areas, len(self.layout.blocks)
         derived = hashlib.sha256(f"{_SEED_FAMILY}/{seed}".encode()).digest()
         scale = 1 / math.sqrt(hidden_size)
@@ -394,6 +450,13 @@ class HolographicNetwork(nn.Module):
                 self.area_norm = nn.LayerNorm(hidden_size)
                 if config.kind == HOLOGRAPHIC_NETWORK:
                     self.membership_delta = nn.Parameter(torch.zeros(areas, blocks))
+            # Los votos por área empiezan en cero y la lectura con pesos iguales, así que la
+            # salida coincide al construirse con la de H1 sin predicciones por área.
+            if config.area_predictions is not None:
+                self.area_vote_norm = nn.LayerNorm(hidden_size)
+                self.area_vote_weight = nn.Parameter(torch.zeros(areas, hidden_size))
+                self.area_vote_bias = nn.Parameter(torch.zeros(areas))
+                self.area_vote_logits = nn.Parameter(torch.zeros(areas))
         nn.init.zeros_(self.readout.weight)
         # La estructura deriva de la configuración y de la disposición, que fija la identidad,
         # así que sus buffers no viajan en el checkpoint.
@@ -439,10 +502,14 @@ class HolographicNetwork(nn.Module):
         """Evaluaciones de nodos y resúmenes del puente, incluidas las filas enmascaradas."""
         bounded_integer(rows, "filas del trabajo holográfico", 0, MAX_BLOCK_ROWS)
         config = self.config
-        return dict(
+        counts = dict(
             holographic_node_evaluations=rows * config.nodes * config.cycles * config.local_steps,
             holographic_summary_evaluations=rows * config.cycles if config.summary else 0,
         )
+        # Solo con las predicciones por área, para no cambiar los recuentos anteriores.
+        if config.area_predictions is not None:
+            counts["holographic_area_votes"] = rows * config.areas
+        return counts
 
     def _checked(self, blocks, presence, inputs, encoders):
         reference = self.qkv.weight
@@ -488,6 +555,33 @@ class HolographicNetwork(nn.Module):
                     )
         return presence
 
+    def _plastic(self, device):
+        """Índices de destino y origen de las aristas plásticas en el dispositivo."""
+        index = self._plastic_index.get(device)
+        if index is None:
+            pairs = torch.tensor(self.plastic_edges, dtype=torch.int64)
+            index = self._plastic_index[device] = (pairs[:, 0].to(device), pairs[:, 1].to(device))
+        return index
+
+    def _checked_bias(self, blocks, edge_bias, traces):
+        if edge_bias is None and traces is None:
+            return
+        if (
+            not self.plastic_edges
+            or not isinstance(edge_bias, torch.Tensor)
+            or edge_bias.layout != torch.strided
+            or edge_bias.shape != (len(blocks), len(self.plastic_edges))
+            or edge_bias.dtype != blocks.dtype
+            or edge_bias.device != blocks.device
+            or edge_bias.requires_grad
+            or type(traces) is not list
+            or traces
+        ):
+            raise ValueError(
+                "Los pesos rápidos del puente necesitan [filas, aristas] sin grafo y una lista "
+                "vacía para sus trazas"
+            )
+
     def _source_blocks(self, blocks, presence, inputs, encoders):
         """Bloques [B, bloques, H] de la disposición, a cero en las modalidades ausentes."""
         if not self.family_blocks:
@@ -503,8 +597,42 @@ class HolographicNetwork(nn.Module):
             parts.append(F.silu(projected) * present[:, None, None])
         return torch.cat(parts, dim=1)
 
-    def forward(self, blocks, presence, inputs=None, encoders=None):
+    def forward(self, blocks, presence, inputs=None, encoders=None, edge_bias=None, traces=None):
+        return self._run(blocks, presence, inputs, encoders, edge_bias, traces)[0]
+
+    def forward_with_votes(self, blocks, presence, inputs=None, encoders=None):
+        """Salida de la red y votos de sus áreas, solo con las predicciones por área."""
+        if self.config.area_predictions is None:
+            raise ValueError("La red holográfica no declara predicciones por área")
+        result, states, alive = self._run(blocks, presence, inputs, encoders)
+        return result, self.area_votes(states, alive)
+
+    def area_votes(self, states, alive):
+        """Voto de cada área presente y su media con la lectura aprendida.
+
+        Con s_ra el estado final del área a en la fila r,
+
+            δ_ra = w_a · LayerNorm(s_ra) + c_a,   ω_ra = softmax_a(ℓ_a) sobre las presentes,
+
+        y la salida se desplaza en Σ_a ω_ra δ_ra. w, c y ℓ empiezan en cero. Un área ausente
+        no vota y una fila sin áreas presentes no se desplaza.
+        """
+        votes = (
+            torch.einsum("rah,ah->ra", self.area_vote_norm(states), self.area_vote_weight)
+            + self.area_vote_bias
+        )
+        votes = torch.where(alive, votes, 0)
+        present = alive.any(1, keepdim=True)
+        # Una fila sin áreas reparte entre todas y se anula después. Así la softmax no recibe
+        # solo -inf, que daría NaN también en el gradiente.
+        allowed = alive | ~present
+        logits = self.area_vote_logits.expand_as(votes).masked_fill(~allowed, -math.inf)
+        weights = torch.softmax(logits, dim=1) * present
+        return AreaVotes((weights * votes).sum(1), votes, alive, weights)
+
+    def _run(self, blocks, presence, inputs, encoders, edge_bias=None, traces=None):
         presence = self._checked(blocks, presence, inputs, encoders)
+        self._checked_bias(blocks, edge_bias, traces)
         if torch.is_autocast_enabled(blocks.device.type):
             raise ValueError("La red holográfica exige FP32 o FP64 explícitos, sin autocast")
         config, areas = self.config, self.config.catalog_areas
@@ -545,6 +673,15 @@ class HolographicNetwork(nn.Module):
             itself = torch.eye(config.nodes, dtype=torch.bool, device=blocks.device)
             edges = (self.edges & alive.unsqueeze(1)) | (itself & ~alive.unsqueeze(-1))
             edges = edges.unsqueeze(1)
+            attention, trace = edges, None
+            if edge_bias is not None:
+                check_finite(edge_bias, "Los pesos rápidos del puente")
+                target, source = self._plastic(blocks.device)
+                bias = blocks.new_zeros(len(blocks), config.nodes, config.nodes)
+                bias[:, target, source] = edge_bias
+                # Misma atención que la máscara booleana con pesos nulos.
+                attention = torch.where(edges, bias.unsqueeze(1), -math.inf)
+                trace = blocks.new_zeros(len(blocks), len(self.plastic_edges))
             count = alive.sum(1, keepdim=True).clamp_min(1).to(blocks.dtype)
             local = initial
             summary = blocks.new_zeros(len(blocks), self.hidden_size)
@@ -554,8 +691,14 @@ class HolographicNetwork(nn.Module):
                     normalized = self.local_norm(local + context)
                     q, k, v = self.qkv(normalized).chunk(3, dim=-1)
                     messages = F.scaled_dot_product_attention(
-                        q.unsqueeze(1), k.unsqueeze(1), v.unsqueeze(1), attn_mask=edges
+                        q.unsqueeze(1), k.unsqueeze(1), v.unsqueeze(1), attn_mask=attention
                     ).squeeze(1)
+                    if trace is not None:
+                        # Probabilidades del paso, con la escala 1/√H de SDPA y sin grafo.
+                        with torch.no_grad():
+                            logits = q @ k.transpose(-1, -2)
+                            logits = logits / math.sqrt(self.hidden_size) + attention.squeeze(1)
+                            trace += torch.softmax(logits, dim=-1)[:, target, source]
                     local = torch.where(
                         mask, local + config.local_gain * self.local_out(messages), 0
                     )
@@ -566,6 +709,10 @@ class HolographicNetwork(nn.Module):
                         active.unsqueeze(-1), summary + config.summary_gain * update, summary
                     )
                     context = self.summary_to_local(summary).unsqueeze(1)
+            if trace is not None:
+                # La consulta de un área ausente no cuenta: su estado se anula en cada paso.
+                trace = torch.where(alive[:, target], trace, 0)
+                traces.append(trace / (config.cycles * config.local_steps))
             change = local - initial
             back = context.expand(-1, len(self.layout.blocks), -1)
             if areas:
@@ -582,4 +729,6 @@ class HolographicNetwork(nn.Module):
             # comprueba cada paso. En CPU, las ocho comprobaciones de dos ciclos eran el
             # 15 % del forward.
             check_finite(result, "La salida de la red holográfica")
-        return result
+        if not areas:
+            return result, None, None
+        return result, local[:, :areas], alive[:, :areas]

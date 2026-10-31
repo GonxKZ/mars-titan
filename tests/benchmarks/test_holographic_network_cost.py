@@ -39,5 +39,39 @@ def test_a_small_run_covers_every_arm_and_keeps_the_optimizer_closed(monkeypatch
     assert len(result["records"]) == 2 * len(expected)
     assert set(result["parameters"]) == set(modes) and result["memory"] == "not_measured_on_cpu"
     assert result["parameters"]["h1_19_areas"] > result["parameters"]["h2_19_areas"]
+    # Las predicciones por área añaden su normalización, los votos, sus sesgos y la lectura.
+    votes = 2 * cost.HIDDEN + 19 * cost.HIDDEN + 2 * 19
+    for name in ("h1_19_areas_area_predictions", "h1_19_areas_area_readout_only"):
+        assert result["parameters"][name] == result["parameters"]["h1_19_areas"] + votes
     with pytest.raises(RuntimeError, match="optimizador"):
         cost.forbid_optimizer_steps(None, (), {})
+
+
+def test_the_voting_arms_propagate_through_the_same_nonzero_votes(monkeypatch):
+    monkeypatch.setattr(cost, "ROWS", (8,))
+    monkeypatch.setattr(cost, "WARMUP", 0)
+    monkeypatch.setattr(cost, "REPETITIONS", 1)
+    measure, seen = cost.measure, {}
+
+    def recording(module, encoders, arguments, kind, synchronize):
+        samples = measure(module, encoders, arguments, kind, synchronize)
+        if kind == "backward" and module.config.area_predictions is not None:
+            seen[module.config.area_predictions] = {
+                name: (value.detach().clone(), value.grad)
+                for name, value in module.named_parameters()
+                if name.startswith("area_vote") or name == "readout.weight"
+            }
+        return samples
+
+    monkeypatch.setattr(cost, "measure", recording)
+    cost.run("cpu")
+    declared = {raw.get("area_predictions") for raw in cost.arms().values()} - {None}
+    assert set(seen) == declared == {0.0, 0.5}
+    first, second = seen.values()
+    for name in ("area_vote_weight", "area_vote_logits"):
+        assert first[name][0].abs().sum() > 0
+        torch.testing.assert_close(first[name][0], second[name][0], rtol=0, atol=0)
+        # El desplazamiento entra en la pérdida, así que los votos y su lectura reciben gradiente.
+        assert all(values[name][1].abs().sum() > 0 for values in seen.values())
+    # La salida de la red también sigue en la pérdida de los modelos que votan.
+    assert all(values["readout.weight"][1].abs().sum() > 0 for values in seen.values())

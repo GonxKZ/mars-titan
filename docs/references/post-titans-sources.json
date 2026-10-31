@@ -3580,5 +3580,26 @@
       6
     ],
     "verification_date": "2026-10-28"
+  },
+  {
+    "id": "gerstner2018eligibility",
+    "title": "Eligibility Traces and Plasticity on Behavioral Time Scales: Experimental Support of NeoHebbian Three-Factor Learning Rules",
+    "authors": [
+      "Wulfram Gerstner",
+      "Marco Lehmann",
+      "Vasiliki Liakoni",
+      "Dane Corneil",
+      "Johanni Brea"
+    ],
+    "year": 2018,
+    "url": "https://doi.org/10.3389/fncir.2018.00053",
+    "access": "Revisión publicada. Leídas en arXiv:1801.05219v1 la ecuación 1 de la traza de elegibilidad (página 3), la ecuación 2 del cambio de peso con el tercer factor y su papel de señal global sin índice de neurona (página 6), y la definición del tercer factor como desviación de su media móvil y como recompensa menos recompensa esperada (página 7).",
+    "redistribution": "unknown",
+    "relevance": "Forma de la regla de tres factores de P1 (#784) y del tercer factor de la fiabilidad madura (#791). No se replica el cerebro y la traducción algorítmica necesita su propio control.",
+    "phase": [
+      3,
+      6
+    ],
+    "verification_date": "2026-10-29"
   }
 ]

@@ -1,0 +1,179 @@
+{
+ "schema_version": 1,
+ "date": "2026-10-31",
+ "issue": 783,
+ "status": "targeted_cpu_verified_broad_regression_and_cuda_pending",
+ "implementation_commit": "a74cd99cb5419c5fbb951d3b784e16a7cdd7ea92",
+ "base_commit": "90ec2f05bc982aa8bfc03ebbfca4d217d4a3623c",
+ "device": "cpu",
+ "cuda_cases_not_executed": 9,
+ "training_runs": 0,
+ "real_optimizer_steps": 0,
+ "scientific_experiments": 0,
+ "final_test_opened": false,
+ "hold_sha256": "8a658080c1ac4e63847eba58b177020339da6ec47021cf26d2701830073c87fd",
+ "limits": [
+  "Solo el consumidor financiero declara la habilitación de H1. El consumidor de mecanismos conserva su contrato anterior.",
+  "Los votos son anteriores al lector episódico, no se identifican con la predicción finalmente emitida.",
+  "Las comprobaciones amplias anteriores corresponden al código previo a este registro. La nueva regresión se preparará tras #801.",
+  "Los nueve casos CUDA están preparados y no ejecutados. GPU ocupada, 771 MiB libres en el preflight.",
+  "No se declara revisión independiente ni mejora predictiva.",
+  "Los cambios de código generan otra identidad de runtime. Se conservan los runtimes históricos y se valida la carga de pesos, sin prometer reanudación transparente entre versiones."
+ ],
+ "suites": [
+  {
+   "name": "frozen_holographic_and_original",
+   "tests": 66,
+   "failures": 0,
+   "errors": 0,
+   "skipped": 0,
+   "xml_sha256": "e8fb4d0a9fbd1efc046bfe28bb6e89746232814ca9e7ece282e71760495b86fe",
+   "note": "66 CPU aprobados, cero omisiones. Nueve casos CUDA excluidos explícitamente."
+  },
+  {
+   "name": "mechanism_consumer_regression",
+   "tests": 71,
+   "failures": 0,
+   "errors": 0,
+   "skipped": 0,
+   "xml_sha256": "866577dd44fe07fcacce152a9abc1d4df8fb02f39590c1b86f2551f9c793d2d5",
+   "note": "71 CPU aprobados. 46 casos CUDA excluidos explícitamente. No se habilita H1 en esa receta."
+  }
+ ],
+ "quality": {
+  "tools": {
+   "coverage": "7.16.1",
+   "radon": "6.0.1",
+   "branch_coverage": true,
+   "python": "3.12.14",
+   "summarizer_sha256": "75cc60c88037e0bb17aff6e8ab666ce78b35d600d6c7ad217bf68b1afb4c4ec6"
+  },
+  "totals": {
+   "statements": 369,
+   "covered_statements": 312,
+   "branches": 134,
+   "covered_branches": 93
+  },
+  "files": [
+   {
+    "path": "src/mars_titan/models/titans/frozen_financial.py",
+    "source_sha256": "e1ee2d089b2fbd9595f7516c480ebd1b9a41f9716a0ac84e74a795fa338a0328",
+    "statements": 236,
+    "covered_statements": 192,
+    "branches": 130,
+    "covered_branches": 93
+   },
+   {
+    "path": "tests/models/titans/test_frozen_holographic.py",
+    "source_sha256": "c68fd2c775041dae1e3acf7cbd5f6c3adba27136932cae05635aaec310a63187",
+    "statements": 133,
+    "covered_statements": 120,
+    "branches": 4,
+    "covered_branches": 0
+   }
+  ],
+  "max_crap": 80.89986282578877,
+  "quality_sha256": "d220b12d97e9d68632273079167c26aaf7ac3e472b4a169fd9483648b143d985",
+  "limits": "CRAP y cobertura localizan complejidad poco comprobada. No demuestran ausencia de errores."
+ },
+ "changed": {
+  "base": "90ec2f05bc982aa8bfc03ebbfca4d217d4a3623c",
+  "head": "a74cd99cb5419c5fbb951d3b784e16a7cdd7ea92",
+  "functions": 7,
+  "max_crap": 39.55794939226892,
+  "changed_executable_lines": 19,
+  "changed_covered_lines": 19,
+  "highest": [
+   {
+    "path": "src/mars_titan/models/titans/frozen_financial.py",
+    "function": "_execution_signature",
+    "cyclomatic_complexity": 38,
+    "crap": 39.55794939226892,
+    "changed_executable_lines": 1,
+    "changed_covered_lines": 1,
+    "changed_missing_lines": [],
+    "changed_missing_branches": []
+   },
+   {
+    "path": "src/mars_titan/models/titans/frozen_financial.py",
+    "function": "_module_settings",
+    "cyclomatic_complexity": 23,
+    "crap": 35.69753499089667,
+    "changed_executable_lines": 2,
+    "changed_covered_lines": 2,
+    "changed_missing_lines": [],
+    "changed_missing_branches": []
+   },
+   {
+    "path": "src/mars_titan/models/titans/frozen_financial.py",
+    "function": "FrozenFinancialConsumer.__init__",
+    "cyclomatic_complexity": 21,
+    "crap": 29.945905334335084,
+    "changed_executable_lines": 5,
+    "changed_covered_lines": 5,
+    "changed_missing_lines": [],
+    "changed_missing_branches": []
+   },
+   {
+    "path": "src/mars_titan/models/titans/frozen_financial.py",
+    "function": "FrozenFinancialConsumer.prepare",
+    "cyclomatic_complexity": 11,
+    "crap": 12.57622633828618,
+    "changed_executable_lines": 0,
+    "changed_covered_lines": 0,
+    "changed_missing_lines": [],
+    "changed_missing_branches": []
+   },
+   {
+    "path": "src/mars_titan/models/titans/frozen_financial.py",
+    "function": "FrozenFinancialConsumer.verify",
+    "cyclomatic_complexity": 10,
+    "crap": 10.137174211248286,
+    "changed_executable_lines": 1,
+    "changed_covered_lines": 1,
+    "changed_missing_lines": [],
+    "changed_missing_branches": []
+   }
+  ],
+  "uncovered": [],
+  "unmeasured": [],
+  "note": "Siete funciones de producción cambiadas frente a 90ec2f05b. El CRAP del resto aparece en quality.",
+  "changed_sha256": "d105d9931bdd181e631621e070d4657b44a2bc5b631aa39dacda628da622b403"
+ },
+ "mutations": {
+  "tree_commit": "a74cd99cb5419c5fbb951d3b784e16a7cdd7ea92",
+  "planned": 16,
+  "killed": 16,
+  "optimizer_attempts": 0,
+  "hold_sha256_unchanged": true,
+  "recipes_sha256": "4cb12b100c6f7e093d252c06028d1296631611fa2052ce6919a5a6e1e8c38405",
+  "executor_sha256": "bfa72f6c37147213214c19f2b00e6625fa9b2e397a27ad20bb67d26c3cbd055c",
+  "source_sha256": {
+   "src/mars_titan/models/titans/frozen_financial.py": "e1ee2d089b2fbd9595f7516c480ebd1b9a41f9716a0ac84e74a795fa338a0328"
+  },
+  "cases": [
+   "registered_graph_is_still_rejected",
+   "constructor_does_not_register_holographic_methods",
+   "holographic_methods_are_implicitly_enabled_for_all_consumers",
+   "graph_runtime_settings_are_not_frozen",
+   "declared_graph_need_not_match_the_installed_one",
+   "graph_hidden_size_is_not_conciliated",
+   "graph_batch_limit_is_not_conciliated",
+   "constructor_omits_the_holographic_source",
+   "plain_reference_tracks_an_unused_graph_source",
+   "strong_check_does_not_reread_the_source",
+   "strong_check_does_not_check_predictor_buffer_bytes",
+   "area_predictions_are_dropped_at_the_frozen_boundary",
+   "area_votes_are_dropped_at_the_frozen_boundary",
+   "area_predictions_are_mislabeled_as_post_readout",
+   "warmup_exposes_unissued_area_predictions",
+   "verification_forgets_the_registered_graph"
+  ],
+  "summary_sha256": "abc5a9ad53f29b87ea407a64f5b23dfb25057509325f6d9e9c5ab4fe56d7352a",
+  "scope": "16 defectos de registro, configuración, dimensiones, ámbito por consumidor, código, buffers y salida anterior al lector. G1/M1/G2 en copia aislada."
+ },
+ "cost": {
+  "receipt": "reports/engineering/frozen-holographic-20261031/cost-cpu.json",
+  "sha256": "f01423f69a829b36f5f00ad62161eb73fb2038ae7860245d3c6a054720003800"
+ }
+}

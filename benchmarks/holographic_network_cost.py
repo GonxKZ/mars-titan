@@ -10,7 +10,9 @@ macro son Linear + SiLU, como en la referencia.
 `forward` es la inferencia sin gradiente. `backward` añade la propagación de una suma de
 cuadrados hasta los parámetros de la red y de los codificadores, sin optimizador. Un gancho
 de `torch.optim` rechaza cualquier paso. La lectura W_o y los ajustes U se fijan iguales y
-distintos de cero en todos los modelos, para que el gradiente recorra el puente. Las dos
+distintos de cero en todos los modelos, para que el gradiente recorra el puente. Los modelos
+con predicciones por área llaman a `forward_with_votes`, con los votos y su lectura también
+distintos de cero, y la suma de cuadrados incluye su desplazamiento. Las dos
 pasadas invierten el orden de los modelos y comparten proceso con las aplicaciones que ya
 existan, así que los percentiles son descriptivos. La salida debe ser nueva.
 """
@@ -67,6 +69,7 @@ def protocol(device):
         warmup=WARMUP,
         repetitions=REPETITIONS,
         readout="same_nonzero_readout_and_area_adapters_in_every_arm",
+        votes="forward_with_votes_and_the_same_nonzero_votes_in_every_voting_arm",
         optimizer_steps="forbidden by a torch.optim pre-hook",
     )
 
@@ -120,14 +123,25 @@ def measure(module, encoders, arguments, kind, synchronize):
 
     blocks, presence, family = arguments
 
+    def outputs():
+        """Salida de la red y, en los modelos que votan, el desplazamiento de sus votos."""
+        if module.config.area_predictions is None:
+            return (module(blocks, presence, family, encoders),)
+        result, votes = module.forward_with_votes(blocks, presence, family, encoders)
+        return result, votes.shift
+
     def call():
         if kind == "forward":
             with torch.no_grad():
-                module(blocks, presence, family, encoders)
+                outputs()
         else:
             module.zero_grad(set_to_none=True)
             encoders.zero_grad(set_to_none=True)
-            module(blocks, presence, family, encoders).square().sum().backward()
+            # Sin votos, la pérdida es la misma suma de cuadrados de la medida anterior.
+            loss, *shifts = (value.square().sum() for value in outputs())
+            for value in shifts:
+                loss = loss + value
+            loss.backward()
         synchronize()
 
     for _ in range(WARMUP):
@@ -174,6 +188,20 @@ def run(device):
                 module.area_up.copy_(
                     torch.randn(module.area_up.shape, generator=generator).to(device) / 4
                 )
+    # Los votos y su lectura salen del mismo generador después de los ajustes, así que los
+    # modelos sin votos conservan los valores de la medida anterior. Los modelos que votan
+    # con el mismo número de áreas reciben los mismos valores.
+    votes = {}
+    for module in modules.values():
+        if module.config.area_predictions is None:
+            continue
+        for name in ("area_vote_weight", "area_vote_logits"):
+            value = getattr(module, name)
+            key = (name, tuple(value.shape))
+            if key not in votes:
+                votes[key] = torch.randn(value.shape, generator=generator) / 4
+            with torch.no_grad():
+                value.copy_(votes[key].to(device))
     with torch.random.fork_rng(devices=[]):
         torch.manual_seed(SEED)
         encoders = nn.ModuleDict(
