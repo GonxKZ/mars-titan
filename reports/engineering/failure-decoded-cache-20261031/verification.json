@@ -2,7 +2,7 @@
  "schema_version": 1,
  "date": "2026-10-31",
  "issue": 790,
- "status": "candidate_cache_verified_paired_cost_in_progress",
+ "status": "candidate_cache_verified_paired_cost_completed",
  "implementation_commit": "2d18bd63dfcca69f68eb407f9a1d88de3e25c54d",
  "base_commit": "a25bb15c3",
  "device": "cpu",
@@ -12,11 +12,11 @@
  "final_test_opened": false,
  "scope": "Caché optativa de una entrada decodificada durante el evento, con archivo verificado y copias independientes.",
  "limits": [
-  "La caché está desactivada por defecto. Su beneficio todavía se está midiendo.",
+  "La caché sigue desactivada por defecto. El coste observado corresponde a fixtures CPU y tres repeticiones por configuración.",
   "La selección de 270 casos y las 18 pruebas posteriores del arnés se solapan. No se suman como casos únicos.",
   "La contabilidad usa sys.getsizeof de objetos retenidos. No mide RSS ni toda la memoria transitoria.",
   "Cada acierto relee y verifica el archivo. La caché no se serializa y se descarta al salir del evento.",
-  "La medida emparejada 64/256 está en marcha y no se presenta como completada.",
+  "La comparación emparejada terminó con 64 casos. La fluctuación de los controles impide atribuir toda la diferencia a la caché.",
   "No hay mejora predictiva medida. El aprendizaje y el test final permanecen bloqueados."
  ],
  "suites": [
@@ -286,5 +286,9 @@
     "scope": "Dos defectos de separación y presencia de ambos presupuestos, detectados con controles verdes."
    }
   ]
+ },
+ "cost": {
+  "receipt": "reports/engineering/failure-decoded-cache-20261031/cost-cpu.json",
+  "sha256": "0a606cd827b4905d70128566f337b86105465a3f411d625185cad9fc6f13e1bb"
  }
 }

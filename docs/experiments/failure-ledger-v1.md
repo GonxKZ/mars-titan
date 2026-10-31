@@ -157,12 +157,29 @@ uv --no-cache run --no-sync python -m benchmarks.failure_session_cost \
 
 El [perfil diagnóstico posterior](../../reports/engineering/failure-cost-driver-20261031/profile-cpu.json) recorre cuatro casos de 256 activos con instrumentación. Registra 84 restauraciones del libro, con 16,60 s acumulados, y 52 806 reconstrucciones de contexto, con 9,57 s. Las consultas geométricas suman 1,33 s en 2560 llamadas. También aparecen verificaciones de procedencia y serialización entre los recorridos costosos compartidos. Los tiempos acumulados se solapan y no corresponden solo al intervalo de decisión.
 
-La siguiente hipótesis técnica es evitar reconstrucciones repetidas del mismo estado confirmado dentro de una generación, conservando la verificación de huellas y el aislamiento de las propuestas. El perfil no demuestra que esa modificación vaya a acelerar el recorrido. Necesita una referencia, pruebas adversariales y una repetición del coste con el mismo protocolo antes de adoptarse.
+El perfil motivó evitar reconstrucciones repetidas del mismo estado confirmado dentro de una generación, conservando la verificación de huellas y el aislamiento de las propuestas. La opción y su comparación posterior se describen a continuación.
 
-## Caché de decodificación propuesta
+## Caché de decodificación optativa
 
 `decoded_cache_bytes=0` conserva la referencia sin caché y es el valor por defecto. Un presupuesto positivo permite guardar una sola decodificación durante el evento. La clave incluye contrato, diseño, configuración y referencia completa del artefacto. Cada acierto relee y verifica el archivo antes de reutilizarla. Las propuestas reciben copias independientes de diccionarios, contextos, emisiones y fallos. Solo se comparten bytes y escalares inmutables. La entrada se descarta al terminar el evento, también si falla, y no se serializa.
 
 El presupuesto cuenta objetos retenidos mediante `sys.getsizeof`. No es un límite del RSS ni de toda la memoria transitoria de las copias. Si no cabe una entrada, se usa la restauración completa. El origen y el presupuesto forman parte de la identidad de la configuración cuando se activa la opción.
 
-El [recibo de la propuesta](../../reports/engineering/failure-decoded-cache-20261031/verification.json) conserva la selección de 270 casos y las 18 pruebas del arnés actualizado, ambas sin omisiones y con solapamiento explícito. Se detectaron once defectos de caché y dos del protocolo de presupuestos con controles verdes. Las quince funciones cambiadas están medidas. La comparación de coste sobre los mismos fixtures está en marcha. La opción no se considera una aceleración demostrada ni una mejora predictiva.
+El [recibo](../../reports/engineering/failure-decoded-cache-20261031/verification.json) conserva la selección de 270 casos y las 18 pruebas del arnés actualizado, ambas sin omisiones y con solapamiento explícito. Se detectaron once defectos de caché y dos del protocolo de presupuestos con controles verdes. Las quince funciones cambiadas están medidas.
+
+La [comparación emparejada](../../reports/engineering/failure-decoded-cache-20261031/cost-cpu.json), con código `2d18bd63d`, terminó sus 64 casos. Hay 16 calentamientos excluidos y 48 casos medidos, con tres repeticiones por configuración. Se comparten fuente y modelos por tamaño entre los presupuestos de cero y 8 MiB, con controles adicionales sin S2. Coinciden las predicciones, estados neuronales, episodios y cuantiles entre ambos presupuestos, incluida la siguiente transición tras recuperar. Los parámetros y el RNG no cambian y no hubo intentos de optimizador.
+
+| Activos | Consumidor con S2 | Sin caché, mediana en s | Caché de 8 MiB, mediana en s | Cambio de la mediana |
+| --- | --- | --- | --- | --- |
+| 64 | Escalar | 1,372 | 1,213 | −11,54 % |
+| 64 | Mecanismos | 1,696 | 1,359 | −19,86 % |
+| 256 | Escalar | 4,921 | 3,902 | −20,70 % |
+| 256 | Mecanismos | 5,518 | 4,253 | −22,93 % |
+
+Las doce diferencias emparejadas con S2 fueron negativas, aunque la dispersión es considerable. En el escalar de 256 activos, los cambios por repetición fueron del −27,79 %, −23,99 % y −0,50 %. Los controles sin S2 también fluctúan aunque la opción de caché no interviene en su recorrido. Sus medianas cambian entre un −17,36 % y un +4,50 % al cambiar la etiqueta del presupuesto. Los resultados son descriptivos y no justifican atribuir toda la diferencia a la caché ni generalizar la magnitud a otras cargas.
+
+El bucle completo duró 967,47 s y el comando externo 971,72 s. Los picos globales fueron 869 720 KiB dentro del proceso y 948 132 KiB en la medida externa. No se midió el pico por configuración, por lo que no se afirma ahorro de RAM. El coste de recuperación, los rangos y las muestras constan en el recibo. La caché es temporal, por lo que una diferencia de reapertura no demuestra reutilización entre procesos.
+
+Se conserva el protocolo CPU FP64, un hilo, banco M1 de 64 episodios, lector K1 y fixtures compactos con un indicador macro y padres sin entrenar. Había otras aplicaciones activas. Durante las últimas repeticiones también hubo inventario de disco y retirada de temporales, sin aislar el almacenamiento. No se midieron energía ni VRAM. La opción sigue desactivada por defecto y no hay mejora predictiva medida.
+
+Para repetir la comparación, el comando anterior admite `--decoded-cache-bytes 8388608 --compare-decoded-cache`, siempre con una salida nueva. Los datos científicos y el test final permanecen fuera de esta comprobación técnica.
