@@ -123,3 +123,34 @@ Se hicieron tres repeticiones de cada configuración, alternando su orden. Cada 
 Los intervalos de la tabla son el mínimo y el máximo de las tres medianas, no intervalos de confianza. Con 4096 fallos, el trabajo completo medido del libro pasa de 10,15 a 13,91 s sin caché a 5,35 a 7,64 s con caché. No incluye la carga inicial de Python. El [recibo de coste](../../reports/engineering/failure-ledger-20261031/cost.json) registra también tiempo de proceso, dispersión, percentiles y pico de RSS. RSS incluye imports y fixtures, y no se presenta como memoria atribuible solo al libro. No se han medido energía, transferencias GPU ni latencia de `FinancialSession`.
 
 El productor y la conexión operativa con el predictor están implementados. Las composiciones indicadas, la procedencia auditada de los ajustes, el coste completo y el estudio predictivo siguen pendientes. No hay una mejora financiera medida.
+
+## Coste de la sesión durable, 31 de octubre de 2026
+
+El [coste integral CPU](../../reports/engineering/failure-cost-driver-20261031/cost-cpu.json) usa el arnés `benchmarks.failure_session_cost` del commit `7483e0327`. Terminaron 32 casos con 64 y 256 activos, cuatro configuraciones por tamaño, un calentamiento excluido y tres repeticiones medidas. Se comparan por separado el predictor escalar y el consumidor de mecanismos, con S2 activado y desactivado. Todos usan banco M1 de 64 episodios y lector K1. El libro S2 tiene capacidad igual al número de activos y claves en caché.
+
+Se comparte la misma fuente manual dentro de cada tamaño. Los hashes de predicciones, estado neuronal, episodios retenidos y cuantiles coinciden entre los controles de cada familia, también en la siguiente transición tras recuperar. Los parámetros compartidos y el RNG permanecen iguales. No hubo pasos de optimizador y la protección de aprendizaje conserva su huella.
+
+| Activos | Consumidor | Decisión sin S2, mediana en s | Con S2, mediana en s | Sobrecoste de la mediana |
+| --- | --- | --- | --- | --- |
+| 64 | Escalar | 0,622 | 2,130 | +242,27 % |
+| 64 | Mecanismos | 0,951 | 1,966 | +106,73 % |
+| 256 | Escalar | 1,650 | 5,117 | +210,23 % |
+| 256 | Mecanismos | 1,940 | 5,607 | +188,96 % |
+
+Son tiempos de `FinancialSession.step` con lotes CPU ya preparados. Incluyen la emisión y el feedback de la cuarta decisión. No incluyen adquisición ni codificación de noticias e imágenes originales. La ejecución usa CPU FP64, un hilo numérico y el perfil power-saver, con otras aplicaciones presentes. Las tres muestras de 256 activos van de 1,604 a 2,004 s sin S2 y de 4,682 a 5,604 s con S2 en el predictor escalar. En mecanismos van de 1,939 a 2,329 s y de 5,075 a 6,492 s. Estos rangos no son intervalos de confianza ni estimaciones fiables de las colas de latencia.
+
+La mediana de reapertura pasa de 0,633 a 2,175 s en el escalar de 256 activos y de 0,981 a 2,186 s en mecanismos. El libro añade 260 992 bytes lógicos con 64 activos y 1 043 968 con 256. No incluyen toda la memoria de los objetos Python ni equivalen al RSS. Los bytes persistidos por caso y las muestras completas constan en el recibo.
+
+El bucle medido y sus comprobaciones duraron 555,13 s. El tiempo externo del comando fue de 560,06 s. El pico RSS registrado dentro del proceso fue de 864 400 KiB y el máximo externo del comando fue de 944 700 KiB. Se conservan ambos contadores sin atribuir su diferencia a una causa no medida. Ninguno representa el pico individual de una variante. No se midieron energía ni VRAM.
+
+El fixture tiene modalidades compactas y un solo indicador macro. Los padres no están entrenados. La medida muestra un sobrecoste de esta implementación y justifica perfilarla antes de optimizar. No demuestra latencia sobre el corpus completo ni mejora predictiva. Las variantes siguen desactivadas por defecto.
+
+El comando requiere el binario nativo verificado y un `TMPDIR` en disco. Crea una salida externa nueva y conserva los protocolos y las mediciones. Las carpetas propias de los casos técnicos terminados se retiran, mientras que las fuentes y los casos fallidos se conservan.
+
+```bash
+uv --no-cache run --no-sync python -m benchmarks.failure_session_cost \
+  --repository "$PWD" \
+  --native "${MARS_TITAN_EPISODIC_NATIVE:?}" \
+  --output "$(mktemp -d "${TMPDIR:?}/failure-cost.XXXXXX")/run" \
+  --sizes 64 256 --warmup 1 --repeats 3 --seconds 1800 --run
+```

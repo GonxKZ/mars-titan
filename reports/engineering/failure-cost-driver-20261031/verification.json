@@ -2,7 +2,7 @@
  "schema_version": 1,
  "date": "2026-10-31",
  "issue": 790,
- "status": "benchmark_verified_cost_run_in_progress",
+ "status": "benchmark_verified_cpu_cost_completed_scientific_study_pending",
  "implementation_commit": "7483e0327ea892a6c5e460041653c05906f0bbc2",
  "base_commit": "4e81dc826",
  "device": "cpu",
@@ -12,7 +12,7 @@
  "final_test_opened": false,
  "scope": "Arnés técnico de coste integral S2 con banco M1, lector K1 y recuperación.",
  "limits": [
-  "La medida64/256 todavía está en marcha y no se publica como resultado completado.",
+  "Se completaron 32 casos técnicos con 64 y 256 activos: ocho calentamientos y 24 casos medidos. Las fuentes y la paridad están conciliadas. No es un estudio predictivo.",
   "La cobertura une pruebas del resumen y una ejecución CLI instrumentada con cuatro activos. Los tiempos de esa ejecución no son resultados de coste publicados.",
   "Las 13 pruebas incluyen dos ejecuciones nativas reales con y sin calentamiento.",
   "El pico RSS del arnés corresponde al proceso completo, no a cada configuración.",
@@ -261,5 +261,9 @@
   ],
   "summary_sha256": "74953bb4398ecd1330bd37f2da89d3509b69313bb76a0690bff90cbba8761123",
   "scope": "Nueve defectos dirigidos detectados con G1/M1/G2 verdes, sin optimizador."
+ },
+ "cost": {
+  "receipt": "reports/engineering/failure-cost-driver-20261031/cost-cpu.json",
+  "sha256": "362fd7a06cf83e324fd90da264975252b2201b57b88c704bbca67e76e9e13aac"
  }
 }
