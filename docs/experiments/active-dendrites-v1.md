@@ -1,6 +1,6 @@
 # Modulación contextual por segmentos dendríticos, N2
 
-Están implementados el operador neuronal `ActiveDendrites`, su contexto de régimen observable y la conexión con `FinancialPredictor` y `FinancialSession`. N2 se aplica después del contexto compartido de sesión y antes de MAC. El predictor admite el Transformer directo y los controles MAC desactivado, congelado y en línea. La sesión durable se ha comprobado con MAC en línea y M0–M3. El consumidor de mecanismos y E2 todavía rechazan N2. No se han realizado entrenamientos, comparaciones predictivas ni medidas de coste del recorrido con N2.
+Están implementados el operador neuronal `ActiveDendrites`, su contexto de régimen observable y la conexión con `FinancialPredictor` y `FinancialSession`. N2 se aplica después del contexto compartido de sesión y antes de MAC. El predictor admite el Transformer directo y los controles MAC desactivado, congelado y en línea. La sesión durable se ha comprobado con MAC en línea y M0–M3 y dispone de una medida técnica con fixtures de 64/256 activos. El consumidor de mecanismos y E2 todavía rechazan N2. No se han realizado entrenamientos ni comparaciones predictivas.
 
 La referencia es [Iyer y colaboradores, 2022](https://www.frontiersin.org/journals/neurorobotics/articles/10.3389/fnbot.2022.846219/full), secciones 3 y 6.3. Sus segmentos proyectan un contexto y el de mayor respuesta absoluta modula la activación, conservando el signo. El artículo también usa kWTA y conexiones dispersas. Este componente conserva la selección contextual, pero cambia la modulación y no incorpora esas otras piezas. No reproduce sus experimentos ni acredita sus resultados en finanzas. Se inspeccionaron esas secciones y partes de los resultados y la discusión, no el artículo completo. No se incorporó código de la implementación externa.
 
@@ -49,7 +49,7 @@ La asignación discreta no transporta gradientes hacia los precios a través del
 
 El último modo es un control de muestreo del pasado. No es una permutación global del tramo ni conserva la distribución del régimen contemporáneo. El contraste también cambia recencia y número de rendimientos usados para clasificar. Estas diferencias forman parte de su interpretación. Permutar filas del mismo mercado, que comparten contexto, sería un control equivalente y no se usa.
 
-El contexto se reconstruye desde el lote y no añade historial a los pesos rápidos. El predictor invocado con una sesión completa puede copiar los precios de CUDA a CPU para reutilizar la referencia NumPy. El recorrido durable prepara el contexto sobre los inputs CPU antes de transferir cada bloque. Todavía no se han medido los costes ni las transferencias de estos recorridos y no se atribuye una aceleración a esa organización.
+El contexto se reconstruye desde el lote y no añade historial a los pesos rápidos. El predictor invocado con una sesión completa puede copiar los precios de CUDA a CPU para reutilizar la referencia NumPy. El recorrido durable prepara el contexto sobre los inputs CPU antes de transferir cada bloque. Su coste CPU con fixtures se recoge al final. Las transferencias CUDA no están medidas y no se atribuye una aceleración a esa organización.
 
 El [recibo de integración](../../reports/engineering/dendritic-regime-20261031/verification.json) registra 240 casos CPU aprobados y seis casos CUDA excluidos. Comprueban predicción y gradientes reales en los cuatro modos del predictor, FP32 y FP64, paridad inicial y del estado MAC, recuperación de la siguiente decisión, separación de identidades, orden de filas, fuentes anteriores a los rangos, fechas futuras y desbordamientos. La configuración se admite en las recetas comunes del predictor. Los casos incluyen los 41 del operador anterior y no se suman como pruebas nuevas independientes.
 
@@ -75,7 +75,7 @@ El [recibo de sesión](../../reports/engineering/dendritic-session-20261031/veri
 
 Los módulos `dendritic_context`, `dendritic_regime` y `dendritic_session` cubren, en conjunto, sus 206 sentencias y 56 ramas. Las 32 funciones cambiadas están medidas. La cobertura de los archivos existentes sigue siendo parcial y el CRAP máximo es 212,82 en el constructor del consumidor de mecanismos. El enlace nativo utilizado es el existente, identificado por su SHA-256. No se atribuye una compilación nueva ni una comprobación CUDA a esos resultados.
 
-Quedan el consumidor de mecanismos, E2 y otras composiciones aún no comprobadas, CUDA, el coste del recorrido completo y la integración en el estudio científico. El control local C sigue rechazándose porque necesita una comparación sobre el operador modulado real. No se cierra N2 ni la issue de N1, N2 y BDH. No hay mejora predictiva medida.
+Quedan el consumidor de mecanismos, E2 y otras composiciones aún no comprobadas, CUDA, el coste representativo del corpus completo y la integración en el estudio científico. El control local C sigue rechazándose porque necesita una comparación sobre el operador modulado real. No se cierra N2 ni la issue de N1, N2 y BDH. No hay mejora predictiva medida.
 
 ## Medidor técnico de coste
 
