@@ -121,7 +121,9 @@ def _restore_emissions(book, payload):
             or _key(context) in decisions
         ):
             raise ValueError("La emisión S2 no concuerda con su origen, cursor o corte")
-        emissions[context.context_id] = _Emission(context, _number(row["prediction"]))
+        emissions[context.context_id] = _Emission(
+            context, _number(row["prediction"]), book.configuration.cache_keys
+        )
         decisions.add(_key(context))
     if list(emissions) != sorted(emissions):
         raise ValueError("Las emisiones S2 no conservan su orden canónico")

@@ -7,7 +7,7 @@ ni realiza ajustes. Sus bytes lógicos no equivalen al pico de RAM del proceso.
 
 import hashlib
 import math
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, field
 
 import numpy as np
 
@@ -52,12 +52,13 @@ class FailureLedgerConfig(FingerprintOnce):
     block_size: int = 128
     geometry: str = "associated"
     seed: int = 0
+    cache_keys: bool = False
 
     def __post_init__(self):
-        for field in ("threshold_manifest_id", "source_manifest_id"):
-            _digest_id(getattr(self, field), field)
-        for field in ("threshold_fitted_until", "source_fitted_until"):
-            _clock(getattr(self, field))
+        for name in ("threshold_manifest_id", "source_manifest_id"):
+            _digest_id(getattr(self, name), name)
+        for name in ("threshold_fitted_until", "source_fitted_until"):
+            _clock(getattr(self, name))
         for name, lower, upper in (
             ("capacity", 1, 40960),
             ("max_pending", 1, 40960),
@@ -71,6 +72,8 @@ class FailureLedgerConfig(FingerprintOnce):
             raise ValueError("El umbral debe ser positivo y el ancho del núcleo debe estar acotado")
         if not 0 <= _number(self.strength) <= 1 or self.geometry not in ("associated", "shuffled"):
             raise ValueError("La intensidad y la geometría S2 no son válidas")
+        if type(self.cache_keys) is not bool:
+            raise ValueError("La caché de claves S2 necesita una opción booleana explícita")
 
     def identity(self):
         return dict(
@@ -97,6 +100,18 @@ class FailureScore:
 class _Emission:
     context: FailureContext
     prediction: float
+    cache_keys: bool
+    _key_cache: bytes = field(init=False, repr=False)
+
+    def __post_init__(self):
+        # El contexto ya es inmutable. La caché se reconstruye desde él al recuperar.
+        raw = self.context.normalized_key().tobytes() if self.cache_keys else b""
+        object.__setattr__(self, "_key_cache", raw)
+
+    def normalized_key(self):
+        if self.cache_keys:
+            return np.frombuffer(self._key_cache, dtype=np.float64)
+        return self.context.normalized_key()
 
 
 @dataclass(frozen=True)
@@ -170,16 +185,18 @@ class FailureLedger:
         pending = self._pending if pending is None else pending
         retained = self._retained if retained is None else retained
         last = self._last if last is None else last
-        contexts = {e.context.context_id: e.context for e in pending.values()}
+        emissions = {e.context.context_id: e for e in pending.values()}
         records = {r.emission.context.context_id: r for r in (*retained, *self._snapshot)}
-        contexts.update({key: r.emission.context for key, r in records.items()})
+        emissions.update({key: r.emission for key, r in records.items()})
         total = 8 * len(pending) + 32 * len(records)
         total += sum(len(flow.encode()) + 8 for flow in last)
-        for context in contexts.values():
+        for emission in emissions.values():
+            context = emission.context
             payload = context.export()
             total += sum(len(value) for value in payload.values() if type(value) is bytes)
             total += sum(len(value.encode()) for value in payload.values() if type(value) is str)
             total += 24
+            total += len(emission._key_cache)
         return total
 
     def _budget(self, pending, retained, last):
@@ -202,7 +219,7 @@ class FailureLedger:
             key = _key(context)
             if context.prediction_at <= last.get(context.flow_id, -1):
                 raise ValueError("La emisión S2 repite una decisión o retrocede su flujo")
-            pending[key] = _Emission(context, _number(prediction))
+            pending[key] = _Emission(context, _number(prediction), self.configuration.cache_keys)
             last[context.flow_id] = context.prediction_at
         self._budget(pending, self._retained, last)
         self._pending, self._last = pending, last
@@ -262,7 +279,7 @@ class FailureLedger:
         size, config = len(records), self.configuration
         for start in range(0, size, config.block_size):
             selected = indices[start : start + config.block_size]
-            keys = np.stack([records[i].emission.context.normalized_key() for i in selected])
+            keys = np.stack([records[i].emission.normalized_key() for i in selected])
             # La resta directa evita distancias negativas por cancelación en 2−2q·c.
             distances = np.square(keys - query).sum(1)
             severity = np.array(
