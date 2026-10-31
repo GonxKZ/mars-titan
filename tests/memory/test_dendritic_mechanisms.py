@@ -288,3 +288,33 @@ def test_standalone_collection_builds_the_whole_source_and_refuses_its_replaceme
                 builder.add(block, run._fast_store.gather(run.fast_state(), flows))
             assert len(builder.finish().payload()["groups"][0]["candidates"]) == 36
         assert run.snapshot() == before
+
+
+@pytest.mark.cuda
+def test_cuda_mechanisms_reproduce_the_next_fp32_prediction_after_resume(native, source, tmp_path):
+    assert torch.cuda.is_available(), "La comprobación necesita CUDA disponible"
+    prior = torch.backends.cuda.matmul.allow_tf32, torch.backends.cudnn.allow_tf32
+    torch.backends.cuda.matmul.allow_tf32 = torch.backends.cudnn.allow_tf32 = False
+    try:
+        points = []
+        for name, device in (("cpu", "cpu"), ("gpu", "cuda:0")):
+            base = engine(source, "observable", dtype=torch.float32, device=device)
+            consumer = FrozenMechanismConsumer(base.predictor, readout=base.readout)
+            assert consumer.predictor.head.weight.dtype is torch.float32
+            assert consumer.predictor.head.weight.device == torch.device(device)
+            path = tmp_path / name
+            run = open_session(native, source, consumer, path)
+            run.step(source["batches"][125], [], kind="warmup")
+            first = run.step(source["batches"][126], [])
+            second = run.step(source["batches"][127], feedback(native, first.predictions, 127))
+            trace, snapshot = run.dendritic_event(), run.snapshot()
+            run.close()
+            run = open_session(native, source, consumer, path, resume=True)
+            assert run.snapshot() == snapshot and run.dendritic_event() == trace
+            final = run.step(source["batches"][128], feedback(native, second.predictions, 128))
+            points.append(torch.tensor([p.value for p in final.predictions]))
+            run.close()
+        # Tolerancia técnica FP32 de los fixtures N2. No cambia la del corpus.
+        torch.testing.assert_close(points[0], points[1], rtol=2e-5, atol=2e-5)
+    finally:
+        torch.backends.cuda.matmul.allow_tf32, torch.backends.cudnn.allow_tf32 = prior
