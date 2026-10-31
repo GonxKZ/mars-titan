@@ -1,0 +1,406 @@
+{
+ "schema_version": 1,
+ "date": "2026-10-31",
+ "issue": 785,
+ "status": "mature_source_verified_native_publication_pending",
+ "implementation_commit": "817e12908a5e5bf7c1217ce98ae5666b044d5783",
+ "base_commit": "0b430e83112bd1800acebccaaf3cbd16b59a309b",
+ "device": "cpu",
+ "training_runs": 0,
+ "scientific_experiments": 0,
+ "real_optimizer_steps": 0,
+ "final_test_opened": false,
+ "scope": "Fuente funcional N1 por mercado e instante: RMS de residuo maduro, CUSUM saturado de error emitido, snapshot anterior al instante, control pasado y recuperación.",
+ "limits": [
+  "La fuente todavía no está conectada a la publicación nativa ni habilita los consumidores N1. La comparación predictiva sigue sin ejecutar.",
+  "MatureWrite y el contador aplicado no prueban por sí solos que el punto fue realmente emitido o que no se repite históricamente. El registro nativo debe verificar procedencia, unicidad y contador.",
+  "La ventana cuenta instantes con resultados por mercado, no filas, sesiones de calendario ni observaciones temporales independientes.",
+  "RMS de residuo es una proxy y no una desviación típica centrada ni una identificación de incertidumbre aleatoria. Puede ser alto con predicción perfecta.",
+  "CUSUM saturado y normalizado propio, sin heredar niveles de falsa alarma o garantías estadísticas del algoritmo clásico. Escalas y límites son parámetros preespecificables.",
+  "El control shuffled_past_prefix elige de las W parejas observadas anteriores. No es una permutación global ni conserva distribución contemporánea o recencia.",
+  "El checksum detecta cambios de bytes. No autentica una historia falsa autoconsistente. La cadena de confianza corresponde al ejecutor y sus artefactos.",
+  "Los snapshots contienen metadata y huellas que no deben utilizarse como entradas predictivas. La señal numérica es solo su pareja de valores por flujo.",
+  "La primera pasada detectó 18/19 mutaciones. Se reforzó un fixture antes constante con un salto del residuo y predicción perfecta. La repetición del mismo defecto fue detectada con controles verdes.",
+  "No se han medido latencia, RAM/VRAM o coste de publicación ni mejora predictiva. No se ha ejecutado trabajo GPU ni aprendizaje."
+ ],
+ "static_checks": [
+  {
+   "command": "uv --no-cache run --no-sync ruff check .",
+   "exit_code": 0,
+   "log_sha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18"
+  },
+  {
+   "command": "uv --no-cache run --no-sync ruff format --check .",
+   "exit_code": 0,
+   "log_sha256": "485cc2584f83ad3cda49383b76f16341158c9941f7dcf6fc4d48ea18df5de40d"
+  },
+  {
+   "command": "uv --no-cache run --no-sync python scripts/check_repository.py",
+   "exit_code": 0,
+   "log_sha256": "33a62f4f078c1384cf3484ca11e9fbd4eeccf90dc0a30d09eb65240bda10e0d0"
+  }
+ ],
+ "suites": [
+  {
+   "name": "source_and_existing_signal_regression",
+   "tests": 172,
+   "failures": 0,
+   "errors": 0,
+   "skipped": 0,
+   "xml_sha256": "e96bc01f7f772b5b11e8c2266d5fb3dc91fe00cfbe01255f977b19b4caf74303",
+   "note": "172 CPU correctos, cero omisiones y un CUDA anterior excluido. Casos manuales, orden y generaciones del mismo instante, recuperación, control pasado, presupuestos y numeración extrema."
+  }
+ ],
+ "quality": {
+  "tools": {
+   "coverage": "7.16.1",
+   "radon": "6.0.1",
+   "branch_coverage": true,
+   "python": "3.12.14",
+   "summarizer_sha256": "75cc60c88037e0bb17aff6e8ab666ce78b35d600d6c7ad217bf68b1afb4c4ec6"
+  },
+  "totals": {
+   "statements": 204,
+   "covered_statements": 189,
+   "branches": 66,
+   "covered_branches": 53
+  },
+  "files": [
+   {
+    "path": "src/mars_titan/memory/neuromodulation_source.py",
+    "source_sha256": "0e7ab912a5123bfa8ff0d6e6b3ebde7497022be086b38b4ec1146a104619eabf",
+    "statements": 204,
+    "covered_statements": 189,
+    "branches": 66,
+    "covered_branches": 53
+   }
+  ],
+  "max_crap": 30.28571428571429,
+  "quality_sha256": "c657c141f7303a5aa4d8b1818b67c59f661386a3269a6656c339326f98f89f3b",
+  "limits": "CRAP y cobertura localizan complejidad poco comprobada. No demuestran ausencia de errores."
+ },
+ "changed": {
+  "base": "0b430e83112bd1800acebccaaf3cbd16b59a309b",
+  "head": "817e12908a5e5bf7c1217ce98ae5666b044d5783",
+  "functions": 20,
+  "max_crap": 30.28571428571429,
+  "changed_executable_lines": 169,
+  "changed_covered_lines": 154,
+  "highest": [
+   {
+    "path": "src/mars_titan/memory/neuromodulation_source.py",
+    "function": "NeuromodulationSource._checked_base",
+    "cyclomatic_complexity": 28,
+    "crap": 30.28571428571429,
+    "changed_executable_lines": 22,
+    "changed_covered_lines": 19,
+    "changed_missing_lines": [
+     272,
+     277,
+     308
+    ],
+    "changed_missing_branches": [
+     [
+      271,
+      272
+     ],
+     [
+      276,
+      277
+     ],
+     [
+      302,
+      308
+     ]
+    ]
+   },
+   {
+    "path": "src/mars_titan/memory/neuromodulation_source.py",
+    "function": "NeuromodulationSource.restore",
+    "cyclomatic_complexity": 19,
+    "crap": 22.70880249856168,
+    "changed_executable_lines": 24,
+    "changed_covered_lines": 19,
+    "changed_missing_lines": [
+     339,
+     352,
+     353,
+     354,
+     360
+    ],
+    "changed_missing_branches": [
+     [
+      338,
+      339
+     ],
+     [
+      351,
+      352
+     ],
+     [
+      352,
+      353
+     ],
+     [
+      352,
+      354
+     ],
+     [
+      356,
+      360
+     ]
+    ]
+   },
+   {
+    "path": "src/mars_titan/memory/neuromodulation_source.py",
+    "function": "NeuromodulationSource.snapshot",
+    "cyclomatic_complexity": 12,
+    "crap": 12.0,
+    "changed_executable_lines": 10,
+    "changed_covered_lines": 10,
+    "changed_missing_lines": [],
+    "changed_missing_branches": []
+   },
+   {
+    "path": "src/mars_titan/memory/neuromodulation_source.py",
+    "function": "NeuromodulationSource._following",
+    "cyclomatic_complexity": 11,
+    "crap": 11.009944933015534,
+    "changed_executable_lines": 24,
+    "changed_covered_lines": 23,
+    "changed_missing_lines": [
+     178
+    ],
+    "changed_missing_branches": [
+     [
+      177,
+      178
+     ]
+    ]
+   },
+   {
+    "path": "src/mars_titan/memory/neuromodulation_source.py",
+    "function": "NeuromodulationSource._validated",
+    "cyclomatic_complexity": 9,
+    "crap": 9.016486871565235,
+    "changed_executable_lines": 18,
+    "changed_covered_lines": 17,
+    "changed_missing_lines": [
+     142
+    ],
+    "changed_missing_branches": [
+     [
+      137,
+      142
+     ]
+    ]
+   }
+  ],
+  "uncovered": [
+   {
+    "path": "src/mars_titan/memory/neuromodulation_source.py",
+    "function": "NeuromodulationSource._checked_base",
+    "cyclomatic_complexity": 28,
+    "crap": 30.28571428571429,
+    "changed_executable_lines": 22,
+    "changed_covered_lines": 19,
+    "changed_missing_lines": [
+     272,
+     277,
+     308
+    ],
+    "changed_missing_branches": [
+     [
+      271,
+      272
+     ],
+     [
+      276,
+      277
+     ],
+     [
+      302,
+      308
+     ]
+    ]
+   },
+   {
+    "path": "src/mars_titan/memory/neuromodulation_source.py",
+    "function": "NeuromodulationSource.restore",
+    "cyclomatic_complexity": 19,
+    "crap": 22.70880249856168,
+    "changed_executable_lines": 24,
+    "changed_covered_lines": 19,
+    "changed_missing_lines": [
+     339,
+     352,
+     353,
+     354,
+     360
+    ],
+    "changed_missing_branches": [
+     [
+      338,
+      339
+     ],
+     [
+      351,
+      352
+     ],
+     [
+      352,
+      353
+     ],
+     [
+      352,
+      354
+     ],
+     [
+      356,
+      360
+     ]
+    ]
+   },
+   {
+    "path": "src/mars_titan/memory/neuromodulation_source.py",
+    "function": "NeuromodulationSource._following",
+    "cyclomatic_complexity": 11,
+    "crap": 11.009944933015534,
+    "changed_executable_lines": 24,
+    "changed_covered_lines": 23,
+    "changed_missing_lines": [
+     178
+    ],
+    "changed_missing_branches": [
+     [
+      177,
+      178
+     ]
+    ]
+   },
+   {
+    "path": "src/mars_titan/memory/neuromodulation_source.py",
+    "function": "NeuromodulationSource._validated",
+    "cyclomatic_complexity": 9,
+    "crap": 9.016486871565235,
+    "changed_executable_lines": 18,
+    "changed_covered_lines": 17,
+    "changed_missing_lines": [
+     142
+    ],
+    "changed_missing_branches": [
+     [
+      137,
+      142
+     ]
+    ]
+   },
+   {
+    "path": "src/mars_titan/memory/neuromodulation_source.py",
+    "function": "_unit",
+    "cyclomatic_complexity": 3,
+    "crap": 4.125,
+    "changed_executable_lines": 7,
+    "changed_covered_lines": 4,
+    "changed_missing_lines": [
+     42,
+     45,
+     46
+    ],
+    "changed_missing_branches": [
+     [
+      41,
+      42
+     ],
+     [
+      43,
+      45
+     ]
+    ]
+   },
+   {
+    "path": "src/mars_titan/memory/neuromodulation_source.py",
+    "function": "NeuromodulationSource.__init__",
+    "cyclomatic_complexity": 2,
+    "crap": 2.032,
+    "changed_executable_lines": 6,
+    "changed_covered_lines": 5,
+    "changed_missing_lines": [
+     123
+    ],
+    "changed_missing_branches": [
+     [
+      122,
+      123
+     ]
+    ]
+   },
+   {
+    "path": "src/mars_titan/memory/neuromodulation_source.py",
+    "function": "NeuromodulationSnapshot.record",
+    "cyclomatic_complexity": 1,
+    "crap": 2.0,
+    "changed_executable_lines": 2,
+    "changed_covered_lines": 1,
+    "changed_missing_lines": [
+     115
+    ],
+    "changed_missing_branches": []
+   }
+  ],
+  "unmeasured": [],
+  "note": "Veinte funciones nuevas medidas, ninguna sin medir. Cobertura parcial de errores de validación, no una garantía de ausencia de defectos.",
+  "changed_sha256": "5ecd2a55231de58305e9dc6e372da7a0641a2aa7b68f4bccb6bfa73b438651cb"
+ },
+ "mutations": {
+  "tree_commit": "817e12908a5e5bf7c1217ce98ae5666b044d5783",
+  "planned": 19,
+  "killed": 19,
+  "optimizer_attempts": 0,
+  "hold_sha256_unchanged": true,
+  "recipes_sha256": "e7a14856896fda3c8bc9969bc5b815fdb5b34c1d6464c61a5258047613ac77c2",
+  "executor_sha256": "585770bd22aefb97276410ac73dcc669a4990224d3c0f857968679fdb87715a2",
+  "source_sha256": {
+   "src/mars_titan/memory/neuromodulation_source.py": "0e7ab912a5123bfa8ff0d6e6b3ebde7497022be086b38b4ec1146a104619eabf"
+  },
+  "cases": [
+   "same_instant_reads_the_current_state",
+   "split_publication_uses_an_already_updated_base",
+   "partial_publication_discards_earlier_rows",
+   "residual_volatility_is_replaced_by_forecast_error",
+   "cusum_ignores_the_issued_prediction",
+   "the_standardization_uses_current_errors",
+   "generation_replay_is_allowed",
+   "applied_counter_is_ignored",
+   "the_current_normalized_pair_is_used_by_the_control",
+   "control_seed_is_ignored",
+   "snapshot_can_read_future_state",
+   "same_instant_duplicate_is_accepted",
+   "source_budget_is_ignored",
+   "restore_ignores_configuration",
+   "restore_ignores_checksum",
+   "restore_accepts_boolean_schema",
+   "window_size_is_not_checked",
+   "history_disagrees_with_current_statistics",
+   "saved_signal_is_not_checked"
+  ],
+  "summary_sha256": "a01633dfc95b59bd53d6d10cb80a20ac6085776f5d5b282dbb110ad37842e492",
+  "scope": "Diecinueve defectos de snapshots, estadísticas, errores, orden, controles, contadores, configuración e integridad. La pasada inicial tuvo un superviviente, que se repite abajo.",
+  "first_pass_killed": 18,
+  "reruns": [
+   {
+    "tree_commit": "817e12908a5e5bf7c1217ce98ae5666b044d5783",
+    "cases": [
+     "cusum_ignores_the_issued_prediction"
+    ],
+    "killed": 1,
+    "recipes_sha256": "636473ccd64bf7e3fbac5e805442b669158cf359afbac761871b6253db2044f9",
+    "source_sha256": {
+     "src/mars_titan/memory/neuromodulation_source.py": "0e7ab912a5123bfa8ff0d6e6b3ebde7497022be086b38b4ec1146a104619eabf"
+    },
+    "summary_sha256": "97a93806d769644b6a76a56824117c3e72d104724e7f298305fcce5862d9d4c8",
+    "reason": "Una serie constante ocultaba confundir error con residuo al dividir por su propia escala. El fixture reforzado cambia el residuo manteniendo la predicción perfecta y detecta la sustitución de error por target."
+   }
+  ]
+ }
+}
