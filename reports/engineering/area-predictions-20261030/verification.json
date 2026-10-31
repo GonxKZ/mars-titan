@@ -960,5 +960,11 @@
   "modules_scope": "353 módulos restantes, en 45 tandas. Se solapan con comprobaciones anteriores. No se suman como observaciones científicas independientes.",
   "source_manifest_sha256": "0b816e8fce89f9db8fd9d38ad9724f1037ad763db02af625c0e7d08402706b9a"
  },
- "updated_date": "2026-10-31"
+ "updated_date": "2026-10-31",
+ "latest_revision": {
+  "implementation_commit": "a74cd99cb",
+  "receipt": "reports/engineering/frozen-holographic-20261031/verification.json",
+  "status": "targeted_cpu_verified_broad_regression_and_cuda_pending",
+  "note": "Los resultados de este recibo principal siguen vinculados a sus fuentes anteriores. No acreditan la nueva revisión del consumidor congelado."
+ }
 }
