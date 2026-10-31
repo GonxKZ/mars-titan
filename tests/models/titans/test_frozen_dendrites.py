@@ -77,6 +77,52 @@ def test_shared_neural_options_reject_a_view_from_another_snapshot():
         neural_options(model, batch, context_id="b" * 64, dendritic_context=view)
 
 
+@pytest.mark.parametrize("plain", [False, True])
+def test_shared_neural_options_refuse_an_unregistered_view(plain):
+    from mars_titan.models.titans.frozen_financial import neural_options
+
+    model, cpu, _, plan = frame()
+    view = plan.view(cpu) if plain else object()
+    if plain:
+        model = FinancialPredictor(
+            replace(model.config, active_dendrites=None), dtype=torch.float64
+        )
+    batch = DecisionBatch.from_validated(cpu, dtype=torch.float64)
+    with pytest.raises(ValueError, match="no admite esta vista N2"):
+        neural_options(model, batch, context_id="a" * 64, dendritic_context=view)
+
+
+def test_shared_neural_options_keep_the_existing_local_control_selection():
+    from mars_titan.models.titans.frozen_financial import neural_options
+    from mars_titan.models.titans.local_control import MACProjectionConfig
+
+    parent, batch = configured()
+    model = (
+        FinancialPredictor(
+            replace(parent.config, active_dendrites=None),
+            local_control=MACProjectionConfig(
+                mode="diagnostic", rank=1, grid_size=4, max_flows=1, frequency=1
+            ),
+            dtype=torch.float64,
+        )
+        .eval()
+        .requires_grad_(False)
+    )
+    consumer = FrozenFinancialConsumer(model)
+    context_id = "c" * 64
+    selection = model.local_control.select_flows(
+        batch.flow_ids, torch.zeros(len(batch.flow_ids), dtype=torch.int64), context_id=context_id
+    )
+    assert len(selection.selected_flow_ids) == 1
+    result = consumer.prepare(
+        batch, model.initial_state(batch.flow_ids), context_id=context_id, selection=selection
+    )
+    assert result.local_control.flow_ids == selection.selected_flow_ids
+    assert result.local_control.operators.shape == (1, 1, 1)
+    with pytest.raises(ValueError, match="sin C"):
+        neural_options(parent, batch, context_id=context_id, selection=selection)
+
+
 def test_one_event_context_drives_all_blocks_and_matches_the_full_group():
     model, cpu, _, plan = frame()
     consumer = FrozenFinancialConsumer(model.eval().requires_grad_(False))
