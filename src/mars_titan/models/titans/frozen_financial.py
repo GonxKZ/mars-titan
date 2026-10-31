@@ -18,6 +18,7 @@ from .episodic_readout import EpisodicReadout, apply_episodic_readout
 from .episodic_snapshot import EpisodeSnapshot
 from .evidence_bridge import SharedEvidenceBridge
 from .financial import FinancialPredictor, _tensor_digest
+from .holographic_network import HolographicNetwork
 from .laplace_scale import LaplaceScale
 from .local_control import MACProjectionControl
 from .opponent_heads import OpponentSpread
@@ -86,10 +87,12 @@ _KRON_MODULES = (
 )
 
 
-def _implementation(*, hierarchy=False, kronlstm=False):
+def _implementation(*, hierarchy=False, kronlstm=False, holographic=False):
     sources = _SOURCE_MODULES + ((RegionalHierarchy.__module__,) if hierarchy else ())
     if kronlstm:
         sources += _KRON_MODULES
+    if holographic:
+        sources += (HolographicNetwork.__module__,)
     return {
         name: hashlib.sha256(Path(importlib.import_module(name).__file__).read_bytes()).hexdigest()
         for name in sources
@@ -181,6 +184,8 @@ def _module_settings(module):
     elif type(module) is RegionalFusion:
         fields = ("hidden_size", "max_batch")
         settings["regional_fusion"] = module.config.identity()
+    elif type(module) is HolographicNetwork:
+        settings["holographic_network"] = module.get_extra_state()
     elif type(module) in (RegionalExecution, RegionalHierarchy):
         fields = ("hidden_size", "max_batch")
         settings["regional_execution"] = module.config.identity()
@@ -236,7 +241,23 @@ def _validate_intervention(readout):
     bridge.validate_payload(bridge.state_dict())
 
 
-def _execution_signature(models):
+def _holographic_scope(predictor):
+    declared, installed = predictor.config.holographic_network, predictor.holographic_network
+    if declared is None and installed is None:
+        return False
+    if (
+        type(installed) is not HolographicNetwork
+        or declared is None
+        or type(installed.config) is not type(declared)
+        or installed.config != declared
+        or installed.hidden_size != predictor.config.hidden_size
+        or installed.max_batch != predictor.config.max_batch
+    ):
+        raise ValueError("La red holográfica no corresponde a la configuración del predictor")
+    return True
+
+
+def _execution_signature(models, *, holographic=False):
     from torch.nn.modules import module as torch_module
 
     if torch.backends.mha.get_fastpath_enabled():
@@ -271,6 +292,7 @@ def _execution_signature(models):
                     kind.__module__.startswith("torch.nn.")
                     or kind.__module__ in sources
                     or kind is RegionalHierarchy
+                    or (holographic and kind is HolographicNetwork)
                 )
                 or origin is None
                 or getattr(origin, kind.__name__, None) is not kind
@@ -338,6 +360,8 @@ class FrozenPreparation:
     readout: object
     local_control: object
     quantiles: torch.Tensor | None = None
+    pre_readout_area_predictions: torch.Tensor | None = None
+    pre_readout_area_votes: object = None
 
 
 class FrozenFinancialConsumer:
@@ -365,9 +389,7 @@ class FrozenFinancialConsumer:
         # Este consumidor aún no registra la fuente ni la configuración de C5 (#751).
         if predictor.cross_asset_attention is not None:
             raise ValueError("El consumidor congelado aún no registra la atención entre activos")
-        # Tampoco registra la red holográfica de #783.
-        if predictor.holographic_network is not None:
-            raise ValueError("El consumidor congelado aún no registra la red holográfica")
+        holographic = _holographic_scope(predictor)
         # Tampoco el historial de regiones de C2 en el estado de cada flujo.
         if predictor.axial_time_region is not None:
             raise ValueError("El consumidor congelado aún no registra el historial de C2")
@@ -391,11 +413,13 @@ class FrozenFinancialConsumer:
         self.predictor, self.readout = predictor, readout
         _validate_intervention(readout)
         self._models = (("predictor", predictor),) + ((("readout", readout),) if readout else ())
-        self._signature, modes = _execution_signature(self._models)
+        self._signature, modes = _execution_signature(self._models, holographic=holographic)
         self._flags = _numerics()
         predictor.verify_parameter_identity()
         self._readout_id = self._readout_digest()
-        self._code = _implementation(kronlstm=predictor.config.temporal_encoder is not None)
+        self._code = _implementation(
+            kronlstm=predictor.config.temporal_encoder is not None, holographic=holographic
+        )
         self._identity = dict(
             schema_version=1,
             recipe="frozen_financial_mac_then_episodic_v1",
@@ -412,6 +436,8 @@ class FrozenFinancialConsumer:
             memory_updates="once_per_observation",
             local_control_scope="mac_transition_before_episodic_readout",
         )
+        if holographic and predictor.holographic_network.config.area_predictions is not None:
+            self._identity["area_predictions_scope"] = "pre_episodic_readout"
         self.model_id = hashlib.sha256(canonical(self._identity).encode()).hexdigest()
 
     def _readout_digest(self):
@@ -431,7 +457,9 @@ class FrozenFinancialConsumer:
     def verify(self, *, strong=True):
         if type(strong) is not bool:
             raise ValueError("La verificación necesita un modo explícito")
-        signature, _ = _execution_signature(self._models)
+        signature, _ = _execution_signature(
+            self._models, holographic=self.predictor.holographic_network is not None
+        )
         if (
             signature != self._signature
             or _numerics() != self._flags
@@ -444,7 +472,10 @@ class FrozenFinancialConsumer:
             self.predictor.verify_parameter_identity()
             if (
                 self._readout_digest() != self._readout_id
-                or _implementation(kronlstm=self.predictor.config.temporal_encoder is not None)
+                or _implementation(
+                    kronlstm=self.predictor.config.temporal_encoder is not None,
+                    holographic=self.predictor.holographic_network is not None,
+                )
                 != self._code
             ):
                 raise ValueError("El código o los pesos del lector cambiaron durante la sesión")
@@ -495,4 +526,6 @@ class FrozenFinancialConsumer:
             result.readout,
             prepared.local_control,
             result.quantiles,
+            prepared.area_predictions,
+            prepared.area_votes,
         )
