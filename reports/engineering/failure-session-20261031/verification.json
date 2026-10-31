@@ -1,0 +1,359 @@
+{
+ "schema_version": 1,
+ "date": "2026-10-31",
+ "issue": 790,
+ "status": "operational_session_cpu_verified_remaining_controls_cuda_and_study_pending",
+ "implementation_commit": "752e6766bc7e5d69fd9768a5acacc79788acee30",
+ "base_commit": "ca1c6824a",
+ "device": "cpu",
+ "hold_sha256": "8a658080c1ac4e63847eba58b177020339da6ec47021cf26d2701830073c87fd",
+ "training_runs": 0,
+ "real_optimizer_steps": 0,
+ "scientific_experiments": 0,
+ "final_test_opened": false,
+ "scope": "S2 en emisión, maduración, censura, recuperación, rollback y publicación financiera. Configuración desactivada por defecto.",
+ "limits": [
+  "La frontera de ajuste se declara y debe proceder de un manifiesto auditado. Vincular el consumidor congelado no prueba por sí solo procedencia fuera de muestra.",
+  "La atenuación con B4 o E2 y el consumidor de mecanismos necesitan una composición propia y se rechazan.",
+  "Faltan la ruta CUDA, el estudio científico, el exportador analítico y la medida de coste del recorrido completo.",
+  "El adaptador uint8 reutiliza carga restringida. Los contextos anteriores tenían buffers bytes que el serializador ordenado no admite. No se amplía la allowlist ni se desactiva weights_only.",
+  "El centinela terminal de 2024 permite cerrar/restaurar, no emitir ni consultar una predicción de ese periodo ni admitir sus etiquetas.",
+  "La selección no cubre toda la clase financiera. CRAP alto en funciones extensas se conserva como diagnóstico.",
+  "No se declara revisión independiente ni mejora predictiva.",
+  "Los recibos anteriores conservan sus fuentes. Las 16 mutaciones de esta revisión no equivalen a repetir todos los defectos históricos."
+ ],
+ "suites": [
+  {
+   "name": "operational_session_and_core",
+   "tests": 188,
+   "failures": 0,
+   "errors": 0,
+   "skipped": 0,
+   "xml_sha256": "62fe65aa0576d36802d92145c1281f0770bf06a0fd506389847e312711cbec8c",
+   "note": "188 CPU aprobados, cero omisiones, 25 casos nuevos de sesión y 163 de núcleo/productor. Incluye fallo before_commit y replay."
+  },
+  {
+   "name": "original_financial_controls",
+   "tests": 3,
+   "failures": 0,
+   "errors": 0,
+   "skipped": 0,
+   "xml_sha256": "6e4f7db735cf93d55ab942fbc7fdc6587837d3b005cd5b3c5f2b7781db64976b",
+   "note": "Tres controles originales CPU aprobados, sin omisiones. No se suman como observaciones temporales independientes."
+  }
+ ],
+ "quality": {
+  "tools": {
+   "coverage": "7.16.1",
+   "radon": "6.0.1",
+   "branch_coverage": true,
+   "python": "3.12.14",
+   "summarizer_sha256": "75cc60c88037e0bb17aff6e8ab666ce78b35d600d6c7ad217bf68b1afb4c4ec6"
+  },
+  "totals": {
+   "statements": 2556,
+   "covered_statements": 2202,
+   "branches": 758,
+   "covered_branches": 520
+  },
+  "files": [
+   {
+    "path": "src/mars_titan/memory/failure_context.py",
+    "source_sha256": "d1da9dec492f609c35316a427f37fc1df8281e21c580e4e0bea0e2e719f70dab",
+    "statements": 156,
+    "covered_statements": 156,
+    "branches": 48,
+    "covered_branches": 48
+   },
+   {
+    "path": "src/mars_titan/memory/failure_ledger.py",
+    "source_sha256": "8cc59fc0723b425c4556068a4710cc8f04f01947ea7fd0c3bb5549b1bcddd55b",
+    "statements": 216,
+    "covered_statements": 215,
+    "branches": 60,
+    "covered_branches": 59
+   },
+   {
+    "path": "src/mars_titan/memory/failure_ledger_state.py",
+    "source_sha256": "0ec0db93c00e881ceadfabf38ab11cf18ce25ae3df62241e74f525cd830959bf",
+    "statements": 115,
+    "covered_statements": 115,
+    "branches": 48,
+    "covered_branches": 48
+   },
+   {
+    "path": "src/mars_titan/memory/failure_producer.py",
+    "source_sha256": "7303c0a3cf8a3f0ec1957666ccefc11ee2eb21878f019b9b02abddc86c576440",
+    "statements": 105,
+    "covered_statements": 97,
+    "branches": 36,
+    "covered_branches": 31
+   },
+   {
+    "path": "src/mars_titan/memory/failure_session.py",
+    "source_sha256": "69c1841a02e586454086c18eaf54ce50dd413a636aff4e8e847f20d6d4533fc2",
+    "statements": 110,
+    "covered_statements": 106,
+    "branches": 46,
+    "covered_branches": 41
+   },
+   {
+    "path": "src/mars_titan/memory/financial_session.py",
+    "source_sha256": "23e34240d0c82d4369f957aaeccbc2378562477ad5e0fe546c6ea427d380fce4",
+    "statements": 789,
+    "covered_statements": 453,
+    "branches": 404,
+    "covered_branches": 179
+   },
+   {
+    "path": "tests/memory/test_failure_context.py",
+    "source_sha256": "0d61f000a895591f6af90479a3bc8f47b103216ecb97de1532e4b90e9b5bb581",
+    "statements": 121,
+    "covered_statements": 119,
+    "branches": 4,
+    "covered_branches": 4
+   },
+   {
+    "path": "tests/memory/test_failure_context_math.py",
+    "source_sha256": "3b503d6e5e73210e11bc5994b7543ccf36aad035e26f8ec3f1efeb56c620e90e",
+    "statements": 19,
+    "covered_statements": 19,
+    "branches": 0,
+    "covered_branches": 0
+   },
+   {
+    "path": "tests/memory/test_failure_ledger.py",
+    "source_sha256": "5eabd67d85712ee1695378cbe6e5e8e6c493c0ef9027416e74dc9feb8266dacb",
+    "statements": 379,
+    "covered_statements": 377,
+    "branches": 44,
+    "covered_branches": 44
+   },
+   {
+    "path": "tests/memory/test_failure_ledger_cache.py",
+    "source_sha256": "65f47fe3fb0225092d8da789f268d39fd5548abdeca5a41cd82b26cfea0fa63b",
+    "statements": 49,
+    "covered_statements": 48,
+    "branches": 8,
+    "covered_branches": 7
+   },
+   {
+    "path": "tests/memory/test_failure_producer.py",
+    "source_sha256": "e5ceecd9ca66c707e58512d17e4c4c7fbe8b4029881b39afa92c3dab35e1c711",
+    "statements": 173,
+    "covered_statements": 173,
+    "branches": 34,
+    "covered_branches": 33
+   },
+   {
+    "path": "tests/memory/test_failure_session.py",
+    "source_sha256": "f5fb6c5e860411fe7436e51bf1988c0b3d5705e3b2437507be801d5c8216c991",
+    "statements": 270,
+    "covered_statements": 270,
+    "branches": 20,
+    "covered_branches": 20
+   },
+   {
+    "path": "tests/memory/test_failure_zero_keys.py",
+    "source_sha256": "6c8cf0fabd693a288d5ce1ec30e588f89525c9f02bb564ed4afb59ea6a6d3703",
+    "statements": 54,
+    "covered_statements": 54,
+    "branches": 6,
+    "covered_branches": 6
+   }
+  ],
+  "max_crap": 548.0945468749999,
+  "quality_sha256": "0bd14caae4434e47d788225ecca7391c4a262d95d9aa10886719568d10fb9a58",
+  "limits": "CRAP y cobertura localizan complejidad poco comprobada. No demuestran ausencia de errores."
+ },
+ "changed": {
+  "base": "ca1c6824a1dcc0d3316d96fc9357aaac3447ec29",
+  "head": "752e6766bc7e5d69fd9768a5acacc79788acee30",
+  "functions": 23,
+  "max_crap": 548.0945468749999,
+  "changed_executable_lines": 123,
+  "changed_covered_lines": 119,
+  "highest": [
+   {
+    "path": "src/mars_titan/memory/financial_session.py",
+    "function": "FinancialSession._prepare_event",
+    "cyclomatic_complexity": 67,
+    "crap": 548.0945468749999,
+    "changed_executable_lines": 6,
+    "changed_covered_lines": 6,
+    "changed_missing_lines": [],
+    "changed_missing_branches": []
+   },
+   {
+    "path": "src/mars_titan/memory/financial_session.py",
+    "function": "FinancialSession.__init__",
+    "cyclomatic_complexity": 57,
+    "crap": 224.38028098154876,
+    "changed_executable_lines": 8,
+    "changed_covered_lines": 8,
+    "changed_missing_lines": [],
+    "changed_missing_branches": []
+   },
+   {
+    "path": "src/mars_titan/memory/financial_session.py",
+    "function": "FinancialSession._resolve",
+    "cyclomatic_complexity": 49,
+    "crap": 197.04271405480569,
+    "changed_executable_lines": 2,
+    "changed_covered_lines": 2,
+    "changed_missing_lines": [],
+    "changed_missing_branches": []
+   },
+   {
+    "path": "src/mars_titan/memory/financial_session.py",
+    "function": "FinancialSession._verify_bundle",
+    "cyclomatic_complexity": 45,
+    "crap": 120.00000000000003,
+    "changed_executable_lines": 2,
+    "changed_covered_lines": 2,
+    "changed_missing_lines": [],
+    "changed_missing_branches": []
+   },
+   {
+    "path": "src/mars_titan/memory/financial_session.py",
+    "function": "FinancialSession._settlement_proposal",
+    "cyclomatic_complexity": 16,
+    "crap": 37.807103999999995,
+    "changed_executable_lines": 2,
+    "changed_covered_lines": 2,
+    "changed_missing_lines": [],
+    "changed_missing_branches": [
+     [
+      1117,
+      1121
+     ]
+    ]
+   }
+  ],
+  "uncovered": [
+   {
+    "path": "src/mars_titan/memory/financial_session.py",
+    "function": "FinancialSession._settlement_proposal",
+    "cyclomatic_complexity": 16,
+    "crap": 37.807103999999995,
+    "changed_executable_lines": 2,
+    "changed_covered_lines": 2,
+    "changed_missing_lines": [],
+    "changed_missing_branches": [
+     [
+      1117,
+      1121
+     ]
+    ]
+   },
+   {
+    "path": "src/mars_titan/memory/failure_session.py",
+    "function": "resolve",
+    "cyclomatic_complexity": 10,
+    "crap": 10.02962962962963,
+    "changed_executable_lines": 16,
+    "changed_covered_lines": 15,
+    "changed_missing_lines": [
+     201
+    ],
+    "changed_missing_branches": [
+     [
+      200,
+      201
+     ]
+    ]
+   },
+   {
+    "path": "src/mars_titan/memory/failure_session.py",
+    "function": "configure",
+    "cyclomatic_complexity": 8,
+    "crap": 8.70233196159122,
+    "changed_executable_lines": 10,
+    "changed_covered_lines": 8,
+    "changed_missing_lines": [
+     61,
+     71
+    ],
+    "changed_missing_branches": [
+     [
+      60,
+      61
+     ],
+     [
+      70,
+      71
+     ]
+    ]
+   },
+   {
+    "path": "src/mars_titan/memory/failure_session.py",
+    "function": "verify",
+    "cyclomatic_complexity": 5,
+    "crap": 5.390625,
+    "changed_executable_lines": 5,
+    "changed_covered_lines": 4,
+    "changed_missing_lines": [
+     230
+    ],
+    "changed_missing_branches": [
+     [
+      227,
+      230
+     ]
+    ]
+   },
+   {
+    "path": "src/mars_titan/memory/failure_session.py",
+    "function": "settlement",
+    "cyclomatic_complexity": 2,
+    "crap": 2.0,
+    "changed_executable_lines": 5,
+    "changed_covered_lines": 5,
+    "changed_missing_lines": [],
+    "changed_missing_branches": [
+     [
+      192,
+      194
+     ]
+    ]
+   }
+  ],
+  "unmeasured": [],
+  "note": "23 funciones de producción cambiadas desde ca1c6824a. Máximo CRAP 548,09 en _prepare_event. No se presenta como calidad total acreditada.",
+  "changed_sha256": "4c3a356778f5f6747956369bf4ec818e65f776595ebbd80eb465467d7d3b578a"
+ },
+ "mutations": {
+  "tree_commit": "752e6766bc7e5d69fd9768a5acacc79788acee30",
+  "planned": 16,
+  "killed": 16,
+  "optimizer_attempts": 0,
+  "hold_sha256_unchanged": true,
+  "recipes_sha256": "2370c9fc4f12b4c0a67805553a0a004b25de5e401884676a0b0eba058035bd2e",
+  "executor_sha256": "414d1bf6372efe543fabd4c132d1d42e7a71bb8c5d318ab8041814f219a17888",
+  "source_sha256": {
+   "src/mars_titan/memory/failure_ledger_state.py": "0ec0db93c00e881ceadfabf38ab11cf18ce25ae3df62241e74f525cd830959bf",
+   "src/mars_titan/memory/failure_session.py": "69c1841a02e586454086c18eaf54ce50dd413a636aff4e8e847f20d6d4533fc2",
+   "src/mars_titan/memory/financial_session.py": "23e34240d0c82d4369f957aaeccbc2378562477ad5e0fe546c6ea427d380fce4"
+  },
+  "cases": [
+   "session_source_provenance_is_not_checked",
+   "constant_control_bounds_are_not_checked",
+   "warmup_is_treated_as_an_emitted_decision",
+   "shrink_mode_never_changes_the_point",
+   "book_records_the_point_before_attenuation",
+   "mature_feedback_ignores_the_actual_emission",
+   "mature_results_are_not_resolved",
+   "finalized_predictions_remain_retrievable",
+   "wire_dtype_is_not_validated",
+   "wire_size_is_not_validated_before_copy",
+   "wire_encoding_is_not_validated",
+   "terminal_settlement_uses_a_prediction_clock",
+   "terminal_checkpoint_cannot_be_recovered",
+   "pruning_drops_the_confirmed_failure_book",
+   "constant_mode_uses_no_attenuation",
+   "warmup_advances_the_failure_clock"
+  ],
+  "summary_sha256": "9bfd78b04751a77a9164eb5c94c31d68cbd5cfe3a672c8c58b0fd2af9d9dea9e",
+  "scope": "16 defectos dirigidos actuales, G1/M1/G2 aislados: procedencia, política, emisión, maduración, cierre, formato, poda y calentamiento."
+ }
+}

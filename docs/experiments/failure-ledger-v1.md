@@ -10,7 +10,7 @@ La actividad de las áreas reproduce la máscara estructural de H1. Un área per
 
 Las edades redondeadas no permiten reconstruir fechas exactas de publicación. Las fechas individuales quedan desconocidas salvo que una fuente las aporte. Una fecha conocida no puede superar la disponibilidad de la entrada ni acompañar a un concepto ausente. Se conserva el contrato histórico de ausencias y se rechaza el test reservado de 2024.
 
-`memory.failure_ledger` implementa el libro y `memory.failure_ledger_state` su recuperación. El consumo de la señal en `FinancialSession` está pendiente. Disponer de estas piezas no completa S2, S3, el meta-etiquetado ni el recuerdo durante entrenamiento.
+`memory.failure_ledger` implementa el libro y `memory.failure_ledger_state` su recuperación. `memory.failure_session` lo compone con `FinancialSession`, desactivado por defecto. Disponer de estas piezas no completa S3, el meta-etiquetado ni el recuerdo durante entrenamiento. El estudio científico y las comprobaciones pendientes de S2 siguen separados.
 
 ## Libro y publicación por corte
 
@@ -36,7 +36,21 @@ El registro congelado de H1 de #783 se incorpora como dependencia experimental d
 
 El catálogo se lee con un límite de 2 MiB y 682 filas. Sus indicadores deben ser únicos y pertenecer a las doce familias admitidas. La actividad se contrasta con los buffers estructurales del consumidor H1/H2/H3 y sus áreas o ranuras. Las fechas macro individuales siguen desconocidas salvo que una fuente verificada las aporte. No se deducen del logaritmo de la edad.
 
-La [verificación del productor](../../reports/engineering/failure-producer-20261031/verification.json) registra 163 casos CPU sin omisiones, 45 del productor y 118 del núcleo, con los codecs reales de 64 y 128 dimensiones. Sus 16 defectos dirigidos se detectan con controles verdes. Las seis funciones de producción nuevas están medidas, con CRAP máximo 20,18. Este diagnóstico no garantiza ausencia de errores. La integración con emisión, maduración, recuperación y publicación atómica de `FinancialSession` todavía está pendiente. Tampoco está integrado el exportador analítico Arrow/DuckDB ni el estudio científico.
+La [verificación del productor](../../reports/engineering/failure-producer-20261031/verification.json) registra 163 casos CPU sin omisiones, 45 del productor y 118 del núcleo, con los codecs reales de 64 y 128 dimensiones. Sus 16 defectos dirigidos se detectan con controles verdes. Las seis funciones de producción nuevas están medidas, con CRAP máximo 20,18. Este diagnóstico no garantiza ausencia de errores.
+
+## Ciclo financiero implementado y límites
+
+La opción `failure_memory` de `FinancialSession` recibe `FailureSessionConfig`. `None` conserva la ruta sin S2. La política identifica el consumidor congelado, el catálogo y las fronteras declaradas de ajuste del predictor y del umbral G, anteriores al inicio de decisiones. La vinculación de identidades no demuestra por sí sola cómo se ajustó el modelo. Esa procedencia debe contrastarse con el manifiesto auditado.
+
+`confidence_only` registra la señal y conserva el punto. `shrink_point` multiplica el punto de entrada a S2 por su confianza heurística. `constant_shrink` ofrece una contracción constante predeclarada, de 0,75 por defecto, como control distinto. No se ha elegido ese valor con una evaluación científica. El control guarda los puntos de entrada y los factores usados, sin sustituir la predicción finalmente emitida al calcular el error maduro.
+
+El libro se publica dentro del mismo bundle que los estados y las predicciones. Su pendiente debe coincidir con `NativePrediction.value` al resolver resultados, exclusiones y finalizaciones. El calentamiento no emite registros S2 y puede preceder al ajuste declarado. El centinela de cierre de 2024 solo permite liquidar y restaurar el estado. Las predicciones, consultas y etiquetas de 2024 continúan fuera de esta variante de desarrollo.
+
+Los buffers se transportan como tensores `uint8` CPU de almacenamiento propio y tamaño exacto. Al recuperarlos vuelven a ser bytes inmutables. Esto permite reutilizar el serializador ordenado y su carga restringida, sin ampliar la lista de clases permitidas ni usar `weights_only=False`. Antes de decodificar se comprueban esquema, capacidad, tipo, forma y tamaño.
+
+La [verificación de sesión](../../reports/engineering/failure-session-20261031/verification.json) registra 188 casos CPU sin omisiones y tres controles financieros originales. Incluye los 163 anteriores, así que las selecciones no se suman como muestras independientes. Sus 16 defectos dirigidos se detectan con controles verdes. Se comprueban la recuperación de Titans y GRU, paridad sin atenuación, error del punto real, orden de activos, instantánea común, calentamiento, cierre y replay tras un fallo antes del commit. Las 23 funciones cambiadas están medidas. `_prepare_event` mantiene CRAP 548,09 por su complejidad y recorridos aún no cubiertos en esta selección. No se afirma que toda la clase esté comprobada.
+
+La atenuación combinada con B4 o E2 y el consumidor de mecanismos se rechazan hasta definir su composición sin romper diagnósticos, cuantiles ni mediana. Faltan las comprobaciones CUDA de esta ruta, la regresión amplia correspondiente, el coste completo, el exportador analítico Arrow/DuckDB y el estudio científico. No hay mejora predictiva medida y la variante no se activa por defecto.
 
 ## Regla propuesta y control contrastable
 
