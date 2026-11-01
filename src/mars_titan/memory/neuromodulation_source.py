@@ -4,7 +4,7 @@ import copy
 import hashlib
 import json
 import math
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, replace
 
 import numpy as np
 
@@ -107,12 +107,51 @@ class NeuromodulationSnapshot:
     selection: str
     flow_ids: tuple[str, ...]
     signals: tuple[tuple[float, float], ...]
+    context_id: str | None = None
 
     def array(self):
         return np.array(self.signals, dtype=np.float64)
 
     def record(self):
         return asdict(self)
+
+    def select(self, flows):
+        positions = {f: i for i, f in enumerate(self.flow_ids)}
+        if (
+            type(flows) not in (tuple, list)
+            or not flows
+            or any(type(f) is not str for f in flows)
+            or len(set(flows)) != len(flows)
+            or any(f not in positions for f in flows)
+        ):
+            raise ValueError("La vista N1 no pertenece al snapshot del evento")
+        return replace(
+            self, flow_ids=tuple(flows), signals=tuple(self.signals[positions[f]] for f in flows)
+        )
+
+    def validate(self, flows, at, config, context_id):
+        def hexadecimal(x):
+            return type(x) is str and len(x) == 64 and all(c in "0123456789abcdef" for c in x)
+
+        if (
+            self.configuration_id != _digest(config.identity())
+            or tuple(flows) != self.flow_ids
+            or at != self.prediction_at
+            or self.context_id != context_id
+            or not hexadecimal(context_id)
+            or not hexadecimal(self.state_id)
+            or type(self.generation) is not int
+            or self.generation < 0
+            or (self.cutoff is not None and (type(self.cutoff) is not int or self.cutoff > at))
+            or self.selection != ("before_instant" if self.cutoff == at else "after_publication")
+            or len(self.signals) != len(flows)
+            or any(
+                len(v) != 2
+                or any(type(x) is not float or not math.isfinite(x) or not 0 <= x <= 1 for x in v)
+                for v in self.signals
+            )
+        ):
+            raise ValueError("El snapshot N1 no corresponde a la fuente, filas y contexto")
 
 
 class NeuromodulationSource:
@@ -227,7 +266,7 @@ class NeuromodulationSource:
         result._current = self._following(base, all_rows)
         return result
 
-    def snapshot(self, flows, *, prediction_at):
+    def snapshot(self, flows, *, prediction_at, context_id=None):
         _integer(prediction_at, 0, MAX_TIME, "La decisión de consulta N1")
         if (
             type(flows) not in (tuple, list)
@@ -252,6 +291,7 @@ class NeuromodulationSource:
             "before_instant" if same else "after_publication",
             tuple(flows),
             values,
+            context_id,
         )
 
     def export(self):

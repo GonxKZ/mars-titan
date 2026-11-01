@@ -31,6 +31,7 @@ from . import (
     kernel_memory,
     lesion_session,
     multiscale_mixture,
+    neuromodulation_session,
     paired_proximal,
     regimes,
     regional_session_work,
@@ -135,6 +136,8 @@ def _check_callbacks(instance):
         asdict(instance._collection_config) if instance._collection_config is not None else None,
         _canonical(instance._regional_config),
     )
+    if instance._neuromodulation_config is not None:
+        current += (_canonical(instance._neuromodulation_config.identity()),)
     if instance._lesion_plan is not None:
         current += (lesion_session.signature(instance._lesion_plan),)
     if instance._salience_config is not None:
@@ -249,6 +252,7 @@ class FinancialSession(EpisodicSession):
             )
         self.associative = associative
         self._salience_config = salience_session.configure(salience, associative)
+        self._neuromodulation_config = neuromodulation_session.configure(consumer, binding)
         self._lesion_plan = lesion_session.configure(lesions, associative)
         if type(binding) is spaced_session.SpacedTitansBinding and (
             associative is not None or lesions is not None or self._regional_config is not None
@@ -312,6 +316,8 @@ class FinancialSession(EpisodicSession):
             code.update(lesion_session.code())
         if self._salience_config is not None:
             code.update(salience_session.code())
+        if self._neuromodulation_config is not None:
+            code.update(neuromodulation_session.code())
         self.model_id = _digest(dict(consumer=consumer.identity(), integration=code))
         contract = dict(
             schema_version=2,
@@ -369,6 +375,8 @@ class FinancialSession(EpisodicSession):
             contract["lesions"] = self._lesion_plan.identity()
         if self._salience_config is not None:
             contract["salience"] = salience_session.contract(self._salience_config)
+        if self._neuromodulation_config is not None:
+            contract["neuromodulation"] = self._neuromodulation_config.identity()
         if spaced_session.enabled(self):
             contract.update(
                 schema_version=3,
@@ -399,6 +407,8 @@ class FinancialSession(EpisodicSession):
             asdict(mechanism_collection) if mechanism_collection is not None else None,
             _canonical(self._regional_config),
         )
+        if self._neuromodulation_config is not None:
+            self._runtime_contract += (_canonical(self._neuromodulation_config.identity()),)
         if self._lesion_plan is not None:
             self._runtime_contract += (lesion_session.signature(self._lesion_plan),)
         if self._salience_config is not None:
@@ -498,6 +508,8 @@ class FinancialSession(EpisodicSession):
             fields.add("lesions")
         if self._salience_config is not None:
             fields.add("salience")
+        if self._neuromodulation_config is not None:
+            fields.update(neuromodulation_session.FIELDS)
         if spaced_session.enabled(self):
             fields.add("spaced")
         if type(self._binding) is MechanismBinding:
@@ -670,6 +682,23 @@ class FinancialSession(EpisodicSession):
 
     def spaced_event(self):
         return spaced_session.inspect_state(self, event=True)
+
+    def neuromodulation_state(self):
+        """Copia del estado N1 confirmado, nunca de resultados pendientes."""
+        _check_callbacks(self)
+        if self._neuromodulation_config is None:
+            return None
+        return neuromodulation_session.state(self, self._bundle(self.snapshot()["state"])).export()
+
+    def neuromodulation_snapshot(self):
+        """Señal anterior utilizada por las decisiones de la generación actual."""
+        _check_callbacks(self)
+        bundle = self._bundle(self.snapshot()["state"])
+        return (
+            None
+            if bundle is None or self._neuromodulation_config is None
+            else self._read(bundle["control"], "control").get("neuromodulation_snapshot")
+        )
 
     def mechanism_event(self, generation):
         _check_callbacks(self)
@@ -929,6 +958,12 @@ class FinancialSession(EpisodicSession):
         )
         snapshot = None if warmup else self._binding.snapshot(bank, context_id, cutoff)
         options = {}
+        neuromodulation_refs = {}
+        if self._neuromodulation_config is not None:
+            neuromodulation_refs, source = neuromodulation_session.before(self, bundle)
+            options["neuromodulation_snapshot"] = source.snapshot(
+                tuple(r.flow_id for r in rows), prediction_at=cutoff, context_id=context_id
+            )
         if type(self._binding) is MechanismBinding:
             options["auxiliary"] = self._binding.restore(self, bundle)
         values, fast, control = self._binding.prepare_event(
@@ -1025,6 +1060,7 @@ class FinancialSession(EpisodicSession):
             extra["regional_work"] = self._inflight["regional_work"]
         proposal = dict(
             **extra,
+            **neuromodulation_refs,
             generation=state["generation"] + 1,
             cutoff=cutoff,
             bank=bundle["bank"] if bundle else None,
@@ -1086,6 +1122,9 @@ class FinancialSession(EpisodicSession):
         else:
             fast, pending = bundle["fast"], bundle["pending"]
         extra = {}
+        if self._neuromodulation_config is not None:
+            references, _ = neuromodulation_session.before(self, bundle)
+            extra.update(references)
         if self._salience_config is not None:
             extra["salience"] = bundle["salience"] if bundle else None
         if spaced_session.enabled(self):
@@ -1261,6 +1300,8 @@ class FinancialSession(EpisodicSession):
         bundle = dict(
             proposed, bank=bank_ref, pending=self._stage(pending, "pending"), inputs=sources
         )
+        if self._neuromodulation_config is not None:
+            bundle = neuromodulation_session.resolve(self, bundle, outcomes)
         if self._salience_config is not None:
             bundle["salience"] = salience_ref
         if spaced_session.enabled(self):
@@ -1401,6 +1442,8 @@ class FinancialSession(EpisodicSession):
             or (seen and seen != set(observed))
         ):
             raise ValueError("Las evidencias y el control no concilian con las observaciones")
+        if self._neuromodulation_config is not None:
+            neuromodulation_session.verify(self, bundle, control, observed)
         if self._regional_work is not None:
             regional_session_work.verify_bundle(
                 self, bundle, control, regional_rows, event_kind=event_kind
@@ -1431,6 +1474,8 @@ class FinancialSession(EpisodicSession):
             spaced_session.verify_confirmed(self, bundle, record)
         if self._salience_config is not None:
             salience_session.verify_confirmed(self, bundle, snapshot, record)
+        if self._neuromodulation_config is not None:
+            neuromodulation_session.verify_confirmed(self, bundle, snapshot, record)
         self._check_observed(bundle, snapshot["observed"])
         if type(self._binding) is MechanismBinding:
             event = self._binding.history.read_event(
@@ -1504,6 +1549,8 @@ class FinancialSession(EpisodicSession):
                 names += ("lesions",)
             if self._salience_config is not None:
                 names += ("salience",)
+            if self._neuromodulation_config is not None:
+                names += neuromodulation_session.FIELDS
             if spaced_session.enabled(self):
                 names += ("spaced",)
             if type(self._binding) is MechanismBinding:
