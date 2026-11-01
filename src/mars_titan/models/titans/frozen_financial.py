@@ -9,15 +9,21 @@ from pathlib import Path
 
 import torch
 
+from mars_titan.memory.neuromodulation_source import (
+    NeuromodulationSnapshot,
+    NeuromodulationSourceConfig,
+)
 from mars_titan.models.quantile_head import QuantileHead
 from mars_titan.models.quantile_routing import QuantileRouting
 
 from .bank_readout import BankReadout
 from .config import canonical
+from .dual_neuromodulation import DualNeuromodulation
 from .episodic_readout import EpisodicReadout, apply_episodic_readout
 from .episodic_snapshot import EpisodeSnapshot
 from .evidence_bridge import SharedEvidenceBridge
 from .financial import FinancialPredictor, _tensor_digest
+from .financial_inputs import device_tensor
 from .laplace_scale import LaplaceScale
 from .local_control import MACProjectionControl
 from .opponent_heads import OpponentSpread
@@ -83,12 +89,18 @@ _KRON_MODULES = (
     "mars_titan.models.kronlstm.price_encoder",
     "mars_titan.models.kronlstm.precomputed",
 )
+_DUAL_MODULES = (
+    "mars_titan.models.titans.dual_neuromodulation",
+    "mars_titan.memory.neuromodulation_source",
+)
 
 
-def _implementation(*, hierarchy=False, kronlstm=False):
+def _implementation(*, hierarchy=False, kronlstm=False, neuromodulation=False):
     sources = _SOURCE_MODULES + ((RegionalHierarchy.__module__,) if hierarchy else ())
     if kronlstm:
         sources += _KRON_MODULES
+    if neuromodulation:
+        sources += _DUAL_MODULES
     return {
         name: hashlib.sha256(Path(importlib.import_module(name).__file__).read_bytes()).hexdigest()
         for name in sources
@@ -175,6 +187,8 @@ def _module_settings(module):
         fields = ("inplace",)
     elif type(module) is FinancialPredictor:
         fields = ("masked",)
+    elif type(module) is DualNeuromodulation:
+        settings["dual_neuromodulation"] = module.config.identity()
     elif type(module) in (SessionScale, LaplaceScale, OpponentSpread):
         settings["output_objective"] = module.config.identity()
     elif type(module) is RegionalFusion:
@@ -259,6 +273,10 @@ def _execution_signature(models):
         )
         else ()
     )
+    if any(
+        type(model) is FinancialPredictor and model.dual_gates is not None for _, model in models
+    ):
+        sources += _DUAL_MODULES
     # Las instancias de una clase comparten sus métodos. La caché vive solo en esta llamada.
     class_methods = {}
     for prefix, model in models:
@@ -348,11 +366,19 @@ class FrozenFinancialConsumer:
     la comprobación fuerte por el control barato durante una sesión.
     """
 
-    def __init__(self, predictor, *, readout=None):
+    def __init__(self, predictor, *, readout=None, neuromodulation_source=None):
         if type(predictor) is not FinancialPredictor or (
             readout is not None and type(readout) is not EpisodicReadout
         ):
             raise ValueError("El consumidor necesita el predictor y lector identificados")
+        if (
+            predictor.dual_gates is not None
+            and type(neuromodulation_source) is not NeuromodulationSourceConfig
+        ):
+            raise ValueError("El consumidor N1 necesita una fuente madura registrada")
+        if predictor.dual_gates is None and neuromodulation_source is not None:
+            raise ValueError("El consumidor sin N1 no admite esa fuente madura")
+        self.neuromodulation_source = neuromodulation_source
         if predictor.config.session_context is not None:
             raise ValueError("Este consumidor no gestiona el ciclo de sesión del contexto PT4")
         if predictor.regional_execution is not None:
@@ -394,7 +420,10 @@ class FrozenFinancialConsumer:
         self._flags = _numerics()
         predictor.verify_parameter_identity()
         self._readout_id = self._readout_digest()
-        self._code = _implementation(kronlstm=predictor.config.temporal_encoder is not None)
+        self._code = _implementation(
+            kronlstm=predictor.config.temporal_encoder is not None,
+            neuromodulation=neuromodulation_source is not None,
+        )
         self._identity = dict(
             schema_version=1,
             recipe="frozen_financial_mac_then_episodic_v1",
@@ -411,6 +440,8 @@ class FrozenFinancialConsumer:
             memory_updates="once_per_observation",
             local_control_scope="mac_transition_before_episodic_readout",
         )
+        if neuromodulation_source is not None:
+            self._identity["neuromodulation_source"] = neuromodulation_source.identity()
         self.model_id = hashlib.sha256(canonical(self._identity).encode()).hexdigest()
 
     def _readout_digest(self):
@@ -430,6 +461,13 @@ class FrozenFinancialConsumer:
     def verify(self, *, strong=True):
         if type(strong) is not bool:
             raise ValueError("La verificación necesita un modo explícito")
+        config = self.neuromodulation_source
+        if config is not None and type(config) is not NeuromodulationSourceConfig:
+            raise ValueError("La fuente N1 perdió su tipo registrado")
+        if (None if config is None else config.identity()) != self._identity.get(
+            "neuromodulation_source"
+        ):
+            raise ValueError("La fuente N1 cambió fuera de su identidad")
         signature, _ = _execution_signature(self._models)
         if (
             signature != self._signature
@@ -443,7 +481,10 @@ class FrozenFinancialConsumer:
             self.predictor.verify_parameter_identity()
             if (
                 self._readout_digest() != self._readout_id
-                or _implementation(kronlstm=self.predictor.config.temporal_encoder is not None)
+                or _implementation(
+                    kronlstm=self.predictor.config.temporal_encoder is not None,
+                    neuromodulation=config is not None,
+                )
                 != self._code
             ):
                 raise ValueError("El código o los pesos del lector cambiaron durante la sesión")
@@ -458,6 +499,7 @@ class FrozenFinancialConsumer:
         warmup=False,
         selection=None,
         session_complete=False,
+        neuromodulation_snapshot=None,
     ):
         self.verify(strong=False)
         if type(warmup) is not bool or len(set(batch.prediction_at)) != 1:
@@ -465,6 +507,19 @@ class FrozenFinancialConsumer:
         if warmup and snapshot is not None:
             raise ValueError("El calentamiento no consulta un banco episódico")
         options = {}
+        if self.neuromodulation_source is not None:
+            if type(neuromodulation_snapshot) is not NeuromodulationSnapshot:
+                raise ValueError("El consumidor N1 necesita un snapshot maduro del evento")
+            neuromodulation_snapshot.validate(
+                batch.flow_ids, batch.prediction_at[0], self.neuromodulation_source, context_id
+            )
+            options["neuromodulation"] = device_tensor(
+                neuromodulation_snapshot.array(),
+                self.predictor.head.weight.device,
+                self.predictor.head.weight.dtype,
+            )
+        elif neuromodulation_snapshot is not None:
+            raise ValueError("El consumidor sin N1 no admite ese snapshot")
         if self.predictor.local_control is not None:
             options.update(control_selection=selection, control_context_id=context_id)
         elif selection is not None:

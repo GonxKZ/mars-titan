@@ -62,6 +62,7 @@ from .cross_asset_attention import (
 )
 from .differential_attention import DIFFERENTIAL_ATTENTION
 from .differential_attention import identity as differential_identity
+from .dual_neuromodulation import DualNeuromodulation, DualNeuromodulationConfig
 from .financial_inputs import (
     FINAL_TEST_US,
     FLOW_ID,
@@ -226,6 +227,8 @@ class FinancialConfig:
     # #791: fiabilidad madura en las puertas de escritura y olvido de Titans. Sin
     # declararla, la identidad y el cálculo no cambian.
     mature_reliability: MatureReliability | None = None
+    # N1 convierte dos señales externas en desplazamientos de theta y alpha.
+    dual_neuromodulation: DualNeuromodulationConfig | None = None
     # R1, U2 y U1 de #786 sobre el núcleo: pérdida de Huber, semividas geométricas y atención
     # diferencial. Sin declararlas, la identidad y el cálculo no cambian.
     memory_huber: HuberMemory | None = None
@@ -252,6 +255,7 @@ class FinancialConfig:
         self._check_session_mixers()
         self._check_auxiliary_horizons()
         self._check_mature_reliability()
+        self._check_dual_neuromodulation()
         self._check_core_variants()
         self._check_memory_projections()
         self._check_runtime_limits()
@@ -572,6 +576,20 @@ class FinancialConfig:
         ):
             raise ValueError("mature_reliability necesita MatureReliability y mac_online")
 
+    def _check_dual_neuromodulation(self):
+        config = self.dual_neuromodulation
+        if isinstance(config, dict):
+            if set(config) != {f.name for f in fields(DualNeuromodulationConfig)}:
+                raise ValueError("N1 necesita todos los campos de su configuración")
+            config = DualNeuromodulationConfig(**config)
+            object.__setattr__(self, "dual_neuromodulation", config)
+        if config is not None and (
+            type(config) is not DualNeuromodulationConfig
+            or self.variant != "mac_online"
+            or self.mature_reliability is not None
+        ):
+            raise ValueError("N1 requiere MAC online y un control independiente de fiabilidad")
+
     def _check_memory_projections(self):
         """Normalización residual y proyecciones de memoria."""
         if type(self.memory_residual_layer_norm) is not bool:
@@ -747,6 +765,8 @@ class FinancialConfig:
             result.update(auxiliary_horizons=self.auxiliary_horizons.identity())
         if self.mature_reliability is not None:
             result.update(mature_reliability=self.mature_reliability.identity())
+        if self.dual_neuromodulation is not None:
+            result.update(dual_neuromodulation=self.dual_neuromodulation.identity())
         if self.memory_huber is not None:
             result.update(memory_huber=self.memory_huber.identity())
         if self.memory_time_scales is not None:
@@ -847,6 +867,8 @@ class FinancialPredictor(nn.Module):
         # C vuelve a calcular la escritura de MAC sin la señal de #791.
         if local_control is not None and config.mature_reliability is not None:
             raise ValueError("La fiabilidad madura no se combina con el control local")
+        if local_control is not None and config.dual_neuromodulation is not None:
+            raise ValueError("N1 con C necesita medir el operador realmente modulado")
         # El presupuesto de C está contrastado con el núcleo sin las variantes de #786.
         if local_control is not None and (
             config.memory_huber is not None
@@ -1047,6 +1069,11 @@ class FinancialPredictor(nn.Module):
         self.reliability_gates = (
             ReliabilityGates(config.mature_reliability, dtype=dtype)
             if config.mature_reliability is not None
+            else None
+        )
+        self.dual_gates = (
+            DualNeuromodulation(config.dual_neuromodulation)
+            if config.dual_neuromodulation is not None
             else None
         )
         # F5 usa su propio generador derivado de la semilla, como PT6.
@@ -1269,6 +1296,14 @@ class FinancialPredictor(nn.Module):
 
     def _check_parameters(self):
         self._check_temporal_encoder()
+        if self.config.dual_neuromodulation is None:
+            if self.dual_gates is not None:
+                raise ValueError("El predictor sin N1 no admite esas puertas")
+        elif (
+            type(self.dual_gates) is not DualNeuromodulation
+            or self.dual_gates.config != self.config.dual_neuromodulation
+        ):
+            raise ValueError("Las puertas N1 cambiaron fuera de su configuración")
         if self._program_signature() != self._regional_program_signature:
             raise ValueError("El programa regional cambió fuera de una carga identificada")
         if self._signature() != self._parameter_signature:
@@ -1779,6 +1814,7 @@ class FinancialPredictor(nn.Module):
         context_selection=None,
         session_complete=False,
         reliability=None,
+        neuromodulation=None,
     ):
         """Predecir un bloque desde el estado de sus flujos y proponer el estado siguiente.
 
@@ -1799,6 +1835,7 @@ class FinancialPredictor(nn.Module):
                 context_selection=context_selection,
                 session_complete=session_complete,
                 reliability=reliability,
+                neuromodulation=neuromodulation,
             )
 
     def _prepare(
@@ -1813,6 +1850,7 @@ class FinancialPredictor(nn.Module):
         context_selection=None,
         session_complete=False,
         reliability=None,
+        neuromodulation=None,
     ):
         check_differentiable(differentiable)
         if torch.is_inference_mode_enabled():
@@ -1862,6 +1900,15 @@ class FinancialPredictor(nn.Module):
             raise ValueError("El predictor declara la fiabilidad madura y necesita su señal")
         else:
             self.reliability_gates.validate(reliability, len(batch.flow_ids))
+        if self.dual_gates is None:
+            if neuromodulation is not None:
+                raise ValueError("El predictor no declara las señales N1")
+        elif neuromodulation is None:
+            raise ValueError("El predictor N1 necesita sus señales explícitas")
+        else:
+            self.dual_gates.validate(
+                neuromodulation, len(batch.flow_ids), reference=self.head.weight
+            )
         if (self.session_context is None) != (context is None):
             raise ValueError("PT4 recibe su contexto de sesión y el núcleo no admite ninguno")
         if context is not None:
@@ -1933,6 +1980,8 @@ class FinancialPredictor(nn.Module):
                 gates = dict(gate_shift=self.reliability_gates(reliability))
                 if self.config.mature_reliability.source == "titans_surprise":
                     sink = gates["surprise"] = []
+            if self.dual_gates is not None:
+                gates = dict(gate_shift=self.dual_gates(neuromodulation))
             if self.mac:
                 encoded, next_mac = self.mac(
                     observed.unsqueeze(1), state.mac, differentiable=differentiable, **gates
