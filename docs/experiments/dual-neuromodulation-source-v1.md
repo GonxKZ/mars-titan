@@ -1,10 +1,10 @@
 # Fuente financiera madura para N1
 
-`NeuromodulationSource` implementa el estado de señales previsto para [N1](dual-neuromodulation-v1.md). Recibe filas `MatureWrite` y produce un snapshot por flujo. La conexión con el registro y la publicación del ejecutor nativo sigue pendiente. El contador recibido y un dataclass no prueban por sí solos que una predicción fue emitida ni que un resultado no se repite históricamente. Los consumidores N1 continúan sin habilitarse automáticamente.
+`NeuromodulationSource` implementa el estado de señales previsto para [N1](dual-neuromodulation-v1.md). Recibe filas `MatureWrite` y produce un snapshot por flujo. `neuromodulation_session` lo conecta al enlace ordinario de Titans en `FinancialSession`. El contador recibido y un dataclass no prueban por sí solos la procedencia. El enlace obtiene las filas de resultados nativos y comprueba su concordancia al recuperar. N1 sigue desactivado por defecto.
 
 ## Estadísticas y orden
 
-Cada fila contiene flujo, fecha de predicción, disponibilidad, punto emitido y residuo maduro. Toda la disponibilidad se valida antes de leer valores financieros. Se rechazan fechas futuras, filas repetidas en el instante, cortes que retroceden, generaciones no consecutivas o un contador aplicado que no concilia con los nuevos resultados. El registro nativo debe confirmar después ese contador y la procedencia de las filas.
+Cada fila contiene flujo, fecha de predicción, disponibilidad, punto emitido y residuo maduro. Toda la disponibilidad se valida antes de leer valores financieros. Se rechazan fechas futuras, filas repetidas en el instante, cortes que retroceden, generaciones no consecutivas o un contador aplicado que no concilia con los nuevos resultados. La recuperación contrasta ese contador y las filas con el registro nativo de la generación confirmada.
 
 Las filas se ordenan por disponibilidad, decisión y flujo. Se agrupan por mercado y corte de publicación. Para cada grupo se calculan RMS del residuo, RMS del error `target-issued` y media del error absoluto. Se utiliza escalado antes de sumar, para evitar que cuadrados o sumas intermedias desborden cuando sus resultados serían finitos. Un error financiero no representable se rechaza y no modifica el estado previo.
 
@@ -46,4 +46,20 @@ La primera pasada detectó 18 de 19 mutaciones. La sustitución de error por res
 
 El módulo cubre 189 de 204 sentencias y 53 de 66 ramas. Las veinte funciones nuevas están medidas y el CRAP máximo es 30,29 en la validación del estado base. La cobertura de errores de validación es parcial. No se han medido latencia, RAM/VRAM ni calidad predictiva y no se ha ejecutado aprendizaje.
 
-El siguiente enlace debe contrastar las filas con predicciones nativas realmente emitidas, conservar los snapshots del evento y confirmar el estado con memoria y cola pendientes. También debe reproducir la señal siguiente al recuperar y detectar referencias de otra configuración. Hasta entonces esta fuente no completa la variante financiera N1.
+## Publicación con la sesión nativa
+
+La sesión conserva dos referencias, `neuromodulation_before` y `neuromodulation`. La primera reproduce el snapshot usado para predecir. La segunda incorpora los resultados que el ejecutor aplicó después de emitir. Se guardan con el banco, los pesos rápidos y la cola pendiente en la misma generación. No se encadena una copia completa de todas las generaciones.
+
+El contrato identifica la configuración y los módulos de fuente y enlace. Cada bloque recibe una vista de las mismas parejas por identidad de flujo. Cambiar el tamaño de bloque no recalcula estadísticas ni permite que un activo vea resultados procesados durante la predicción de otro. El calentamiento no inventa predicciones emitidas. Una liquidación sin observaciones actualiza resultados y no crea un snapshot de decisión.
+
+Al recuperar se comprueban generación, corte y traza anterior. El enlace vuelve a construir las filas desde `record.feedback`, incluidos el punto emitido y el objetivo, y exige el contador `snapshot.applied` del ejecutor. Recalcula el estado posterior completo y lo compara con el conservado. Esto detecta una modificación del punto emitido aunque se haya recalculado el checksum de la fuente. Los checksums siguen sin ser autenticación frente a quien pueda sustituir de forma coordinada todos los artefactos del ejecutor.
+
+La poda conserva las referencias anterior y posterior que necesitan los checkpoints retenidos. Un fallo antes de confirmar no publica el avance. Se comprueban recuperación, repetición del siguiente evento, orden de activos, bloques de una y cuatro filas, admisión M0–M3 y control pasado. Con coeficientes nulos, las predicciones y los estados rápidos coinciden exactamente con la referencia sin N1. Una señal madura no nula cambia los pesos rápidos y deja intactos los parámetros compartidos.
+
+Esta integración no completa todos los cruces de variantes. El enlace de mecanismos y E2 todavía necesitan registro propio. No se han ejecutado sus mezclas con N1, la ruta CUDA, medidas de coste integral ni comparaciones predictivas.
+
+El [recibo de la integración nativa](../../reports/engineering/neuromodulation-native-20261101/verification.json), del 1 de noviembre, conserva 317 identificadores de caso CPU distintos. La selección principal pasa 309 casos y excluye 54 CUDA. La ampliación pasa 28 y la inspección inicial uno, con 21 identificadores compartidos. Son 338 ejecuciones, no 338 casos distintos. No hubo omisiones en esas selecciones.
+
+Se detectaron 18 mutaciones distintas con G1 y G2 verdes y M1 rojo. La primera pasada detectó 13 de 14 y dejó inconcluyente la supresión de la comprobación de generación: otra validación seguía rechazando el estado. El caso reforzado cambia también la traza para que coincida con la generación alterada y detecta el defecto por separado. Se añadieron cuatro defectos de registro, configuración e inspección inicial. La repetición no cuenta como un defecto nuevo. No hubo intentos de optimizador y la protección de aprendizaje conservó su huella.
+
+`neuromodulation_session.py` cubre sus 42 sentencias y 10 ramas. Los cinco archivos seleccionados cubren 1216 de 1555 sentencias y 476 de 724 ramas. Las 29 funciones modificadas están medidas. El CRAP máximo es 376,97 en la función preexistente `FinancialSession._prepare_event`, con cuatro líneas ejecutables nuevas cubiertas. La cobertura del resto de esa función sigue siendo parcial. Estas cifras no sustituyen la comprobación funcional ni demuestran ausencia de errores. Se reutilizó el binario nativo existente, sin modificarlo ni recompilarlo.
