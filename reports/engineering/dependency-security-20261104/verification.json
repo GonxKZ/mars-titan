@@ -1,0 +1,115 @@
+{
+  "schema_version": 1,
+  "date": "2026-11-04",
+  "kind": "dependency_security_verification",
+  "original_lock_sha256": "057168e3758e5ff7cda7aee6df41f61d40783368220e21562b5db4e9ed85812d",
+  "updated_lock_sha256": "dd001d1f8f7f81f9e33eb0f2f34636c3c64d1663b293c597048004a6e26f25ab",
+  "pyproject_sha256": "8abdaa4f9bd90516e965820be2f36fce40dcd7074f567dffd0648f6857d17524",
+  "changed_dependency_versions": [
+    {
+      "package": "certifi",
+      "marker": "",
+      "before": "2026.7.22",
+      "after": "2026.10.18"
+    },
+    {
+      "package": "filelock",
+      "marker": "",
+      "before": "4.0.0",
+      "after": "4.2.1"
+    },
+    {
+      "package": "nbconvert",
+      "marker": "",
+      "before": "7.17.1",
+      "after": "7.17.2"
+    },
+    {
+      "package": "pillow",
+      "marker": "",
+      "before": "12.3.0",
+      "after": "13.0.0"
+    },
+    {
+      "package": "setuptools",
+      "marker": "",
+      "before": "84.0.0",
+      "after": "84.1.0"
+    },
+    {
+      "package": "tornado",
+      "marker": "",
+      "before": "6.5.10",
+      "after": "6.6"
+    }
+  ],
+  "installed_versions": {
+    "pillow": "13.0.0",
+    "filelock": "4.2.1",
+    "certifi": "2026.10.18",
+    "nbconvert": "7.17.2",
+    "setuptools": "84.1.0",
+    "tornado": "6.6",
+    "torch": "2.14.0+cu130",
+    "numpy": "2.5.3",
+    "pyarrow": "25.0.1"
+  },
+  "advisory_query": {
+    "service": "OSV through uv audit 0.12.16",
+    "before": {
+      "audited_packages": 192,
+      "vulnerabilities": 80,
+      "adverse_statuses": 0
+    },
+    "after": {
+      "audited_packages": 192,
+      "vulnerabilities": 0,
+      "adverse_statuses": 0
+    },
+    "raw_before_sha256": "760485234395d244391f54f8bbb7f3501046bac66ead3c23afea7fb977c8d5a5",
+    "raw_after_sha256": "d605de093e072350eee182f71456e352d2534dc8e37ac24743a4d76cef9969b0"
+  },
+  "behavioural_tests": {
+    "dependency-regression.xml": 341,
+    "dependency-numerical.xml": 224
+  },
+  "configuration_mutants": 6,
+  "chart_controls": {
+    "count": 3,
+    "png_bytes_equal": true,
+    "pixels_equal": true,
+    "vectors_equal": true
+  },
+  "package_api_checks": {
+    "exclusive_lock": true,
+    "reacquisition": true,
+    "notebook_export": true,
+    "notebook_execution": false,
+    "certificate_bundle_loaded": true,
+    "setuptools_metadata": true,
+    "tornado_coroutine": true
+  },
+  "global_cutoff": "2026-09-26T23:59:59Z",
+  "six_package_cutoff": "2026-11-04T00:00:00Z",
+  "code_functions_changed": 0,
+  "coverage_crap": "No aplica a las restricciones y al lock. Las funciones del modelo no cambian.",
+  "optimizer_steps": 0,
+  "scientific_runs": 0,
+  "final_test_opened": false,
+  "limitations": [
+    "Los cero avisos describen la base consultada y no una garantía frente a vulnerabilidades desconocidas.",
+    "Tres controles de imagen no acreditan equivalencia de todos los formatos de Pillow.",
+    "No se modifican los runtimes históricos ni se recalculan resultados predictivos."
+  ],
+  "code_commit": "7a47189593e6e48a7f3b6e6ee381c5b1a6717505",
+  "raw_artifact_sha256": {
+    "uv-audit-before.json": "760485234395d244391f54f8bbb7f3501046bac66ead3c23afea7fb977c8d5a5",
+    "uv-audit-after.json": "d605de093e072350eee182f71456e352d2534dc8e37ac24743a4d76cef9969b0",
+    "dependency-regression.xml": "fb2aa9ed1a1732b405251707ac6961bc766e1d8a921e4a8241057f10c4d1c32c",
+    "dependency-numerical.xml": "a0db46d8dc8b153ae9f07ce5c45a386af3d840f1b4ff5880a1b8ce0f9cbb207f",
+    "dependency-api.json": "2699a7cbb1db78732a89fef13b588650ed9986e79c99c3fa8a7ef3676a897ee5",
+    "dependency-mutations.json": "392b6ac3890136073fd963d4e43b8f7ba9b1ee9d4aabb1c9e466c16b0901065b",
+    "chart-before.json": "446b0751fc1d72d5410998b29a1c6641f45c2d72458bb970bbbde06170364214",
+    "chart-after.json": "1961ffe5e47209a3940e396589534ba4b5e7a3aa8e956fff340b6fa59927c866"
+  }
+}

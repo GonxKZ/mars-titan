@@ -1,0 +1,110 @@
+[
+  {
+    "package": "certifi",
+    "requested_version": "2026.7.22",
+    "expectation": "La versión vulnerable debe ser rechazada por el resolver",
+    "original": {
+      "resolver_exit_code": 1,
+      "rejected": true
+    },
+    "mutant": {
+      "resolver_exit_code": 0,
+      "rejected": false,
+      "policy_violation_observed": true
+    },
+    "restored": {
+      "resolver_exit_code": 1,
+      "rejected": true
+    }
+  },
+  {
+    "package": "filelock",
+    "requested_version": "4.0.0",
+    "expectation": "La versión vulnerable debe ser rechazada por el resolver",
+    "original": {
+      "resolver_exit_code": 1,
+      "rejected": true
+    },
+    "mutant": {
+      "resolver_exit_code": 0,
+      "rejected": false,
+      "policy_violation_observed": true
+    },
+    "restored": {
+      "resolver_exit_code": 1,
+      "rejected": true
+    }
+  },
+  {
+    "package": "nbconvert",
+    "requested_version": "7.17.1",
+    "expectation": "La versión vulnerable debe ser rechazada por el resolver",
+    "original": {
+      "resolver_exit_code": 1,
+      "rejected": true
+    },
+    "mutant": {
+      "resolver_exit_code": 0,
+      "rejected": false,
+      "policy_violation_observed": true
+    },
+    "restored": {
+      "resolver_exit_code": 1,
+      "rejected": true
+    }
+  },
+  {
+    "package": "pillow",
+    "requested_version": "12.3.0",
+    "expectation": "La versión vulnerable debe ser rechazada por el resolver",
+    "original": {
+      "resolver_exit_code": 1,
+      "rejected": true
+    },
+    "mutant": {
+      "resolver_exit_code": 0,
+      "rejected": false,
+      "policy_violation_observed": true
+    },
+    "restored": {
+      "resolver_exit_code": 1,
+      "rejected": true
+    }
+  },
+  {
+    "package": "setuptools",
+    "requested_version": "84.0.0",
+    "expectation": "La versión vulnerable debe ser rechazada por el resolver",
+    "original": {
+      "resolver_exit_code": 1,
+      "rejected": true
+    },
+    "mutant": {
+      "resolver_exit_code": 0,
+      "rejected": false,
+      "policy_violation_observed": true
+    },
+    "restored": {
+      "resolver_exit_code": 1,
+      "rejected": true
+    }
+  },
+  {
+    "package": "tornado",
+    "requested_version": "6.5.10",
+    "expectation": "La versión vulnerable debe ser rechazada por el resolver",
+    "original": {
+      "resolver_exit_code": 1,
+      "rejected": true
+    },
+    "mutant": {
+      "resolver_exit_code": 0,
+      "rejected": false,
+      "policy_violation_observed": true
+    },
+    "restored": {
+      "resolver_exit_code": 1,
+      "rejected": true
+    }
+  }
+]
