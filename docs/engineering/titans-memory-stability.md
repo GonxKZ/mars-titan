@@ -106,6 +106,17 @@ $$
 
 Módulos `clip_rows` y `NeuralMemory.update`. Pruebas `test_row_clip_scales_long_rows_to_the_limit_and_leaves_the_rest_exactly` y `test_gradients_match_finite_differences_in_fp64`.
 
+El cálculo divide primero cada fila por el máximo entre su mayor componente absoluta y G.
+Así evita desbordar al elevar componentes finitas al cuadrado y conserva la dirección en
+los extremos de FP32 y FP64. La escala auxiliar se separa del grafo porque se cancela en la
+fila recortada. Las filas que no necesitan recorte se devuelven directamente, incluidos los
+ceros con signo. Para conservar derivadas finitas, G debe ser un número normal en la
+precisión de la memoria. Se comprueba al construirla y al usarla tras convertir su tipo.
+`tests/models/titans/test_clip_rows_extremes.py` cubre extremos, vistas, derivadas de primer
+y segundo orden y la escritura asociativa completa en CPU y CUDA. Esta corrección cambia
+el orden de operaciones del recorte activo y puede cambiar sus últimos bits. No cambia la
+ruta con PT1 desactivado ni acredita una mejora predictiva.
+
 **(P4) Equivalencia con Huber en la memoria lineal.** La pérdida de Huber como sesgo atencional procede de Yaad, en MIRAS (Behrouz et al., 2026). La equivalencia exacta es derivación propia. Con una capa, clave unitaria y residuo r = Wk − v, el gradiente es 2 r kᵀ y
 
 $$

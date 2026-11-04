@@ -27,17 +27,29 @@ from .state import (
 MAX_SHARED_ROWS = 16384
 
 
+def _check_clip_precision(limit: float | None, dtype: torch.dtype) -> None:
+    if limit is not None and limit < torch.finfo(dtype).tiny:
+        raise ValueError("El límite de recorte debe ser normal en la precisión de la memoria")
+
+
 def clip_rows(gradient: Tensor, limit: float) -> Tensor:
     """Reescala cada fila del gradiente para que su norma euclídea no supere `limit` (PT1).
 
-    Las filas que ya cumplen la cota se multiplican exactamente por 1. La rama que `where`
-    descarta usa la norma al cuadrado acotada por debajo, de modo que su derivada es finita
-    también en una fila nula y el grafo de segundo orden no produce NaN.
+    Escalar por el máximo de la fila evita elevar al cuadrado valores extremos. El factor
+    se separa del grafo porque se cancela en la expresión recortada. Las filas descartadas
+    usan una norma auxiliar unitaria para que sus derivadas sean finitas incluso en cero. Las filas
+    que ya cumplen conservan sus bits y sus derivadas, sin reasignar una dirección nula.
     """
-    squared = gradient.square().sum(dim=-1, keepdim=True)
-    bound = limit * limit
-    scale = torch.where(squared > bound, limit * squared.clamp(min=bound).rsqrt(), 1.0)
-    return gradient * scale
+    _check_clip_precision(limit, gradient.dtype)
+    maximum = gradient.detach().abs().amax(dim=-1, keepdim=True)
+    scale = maximum.clamp(min=limit)
+    normalized = gradient / scale
+    squared = normalized.square().sum(dim=-1, keepdim=True)
+    needs_clip = (maximum > limit) | (squared > 1)
+    inverse_norm = torch.where(needs_clip, squared, torch.ones_like(squared)).rsqrt()
+    # El orden también evita perder componentes subnormales que un límite mayor que 1 amplía.
+    clipped = normalized * limit if limit <= 1 else gradient * (limit / scale)
+    return torch.where(needs_clip, clipped * inverse_norm, gradient)
 
 
 class NeuralMemory(nn.Module):
@@ -59,6 +71,8 @@ class NeuralMemory(nn.Module):
             raise ValueError("Se necesita MemoryConfig")
         if dtype not in (torch.float32, torch.float64):
             raise ValueError("La memoria admite float32 y float64")
+        if config.stability is not None:
+            _check_clip_precision(config.stability.gradient_clip, dtype)
         if config.plasticity is not None and not (
             torch.finfo(dtype).tiny <= config.plasticity.epsilon <= torch.finfo(dtype).max
         ):
@@ -118,6 +132,8 @@ class NeuralMemory(nn.Module):
             raise ValueError("La memoria admite float32 y float64")
         if torch.is_autocast_enabled(reference.device.type):
             raise ValueError("El núcleo exige precisión explícita, sin autocast")
+        if self.config.stability is not None:
+            _check_clip_precision(self.config.stability.gradient_clip, reference.dtype)
         return reference
 
     def _check_size(self, batch_size: int) -> None:
