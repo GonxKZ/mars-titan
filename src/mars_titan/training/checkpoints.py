@@ -106,15 +106,49 @@ def _intact(directory, record):
     )
 
 
-def _tensor_bytes(value):
+def _tensor_storage_bytes(value, storages):
+    """Contar los almacenamientos serializados, conservando vistas y alias.
+
+    COO guarda índices y valores por separado. Los formatos comprimidos guardan también
+    sus dos índices. Los tensores meta no escriben datos y los cuantizados por canal
+    incluyen los tensores de escala y de punto cero.
+    """
+    if value.device.type == "meta":
+        return 0
+    if value.layout == torch.sparse_coo:
+        return _tensor_bytes((value._indices(), value._values()), storages)
+    if value.layout in (torch.sparse_csr, torch.sparse_bsr):
+        return _tensor_bytes((value.crow_indices(), value.col_indices(), value.values()), storages)
+    if value.layout in (torch.sparse_csc, torch.sparse_bsc):
+        return _tensor_bytes((value.ccol_indices(), value.row_indices(), value.values()), storages)
+    if value.layout != torch.strided:
+        raise ValueError("El formato del tensor no admite un presupuesto de almacenamiento")
+    storage = value.untyped_storage()
+    size = 0 if storage in storages else storage.nbytes()
+    storages.add(storage)
+    if value.is_quantized and value.qscheme() in (
+        torch.per_channel_affine,
+        torch.per_channel_affine_float_qparams,
+    ):
+        size += _tensor_bytes(
+            (value.q_per_channel_scales(), value.q_per_channel_zero_points()), storages
+        )
+    return size
+
+
+def _tensor_bytes(value, storages=None):
+    if storages is None:
+        storages = set()
     if isinstance(value, torch.Tensor):
         if value.is_cuda:
             torch.cuda.synchronize(value.device)
-        return value.numel() * value.element_size()
+        return _tensor_storage_bytes(value, storages)
     if isinstance(value, dict):
-        return sum(_tensor_bytes(k) + _tensor_bytes(v) for k, v in value.items())
+        return sum(
+            _tensor_bytes(k, storages) + _tensor_bytes(v, storages) for k, v in value.items()
+        )
     if isinstance(value, (list, tuple)):
-        return sum(_tensor_bytes(v) for v in value)
+        return sum(_tensor_bytes(v, storages) for v in value)
     if value is None or type(value) in (bool, int, float, str):
         return len(value.encode()) if isinstance(value, str) else 16
     raise ValueError("El estado solo admite tensores y tipos simples compatibles con weights_only")

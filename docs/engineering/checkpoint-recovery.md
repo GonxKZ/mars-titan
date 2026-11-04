@@ -70,6 +70,13 @@ huérfanos para convertirlos en estados válidos. Una identidad distinta impide
 la carga y el guardado. La reserva de espacio previa no garantiza que otro
 proceso no agote el disco durante la escritura.
 
+El presupuesto previo cuenta los almacenamientos completos que PyTorch serializa, incluso
+si una vista tiene un solo elemento o está vacía. Varias vistas del mismo almacenamiento
+se cuentan una vez y conservan sus alias al cargar. Los formatos dispersos cuentan índices
+y valores, los cuantizados por canal incluyen sus parámetros y los tensores meta no
+reservan datos inexistentes. A esa estimación se añaden 1 MiB para metadatos y 16 MiB de
+reserva de disco. El límite real del archivo se vuelve a comprobar antes de publicarlo.
+
 El guardado comprueba también una carga restringida antes de publicar el
 manifiesto. Un objeto serializable que el cargador no admita no reemplaza un
 estado válido.
