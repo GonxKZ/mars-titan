@@ -6,9 +6,14 @@ MODALITIES = ("prices", "news", "charts", "fundamentals", "macro")
 
 
 def _contains_complex(values: np.ndarray) -> bool:
-    return np.iscomplexobj(values) or (
-        values.dtype.kind == "O"
-        and any(isinstance(value, (complex, np.complexfloating)) for value in values.flat)
+    if np.iscomplexobj(values):
+        return True
+    if values.dtype.names:
+        return any(_contains_complex(values[name]) for name in values.dtype.names)
+    return values.dtype.kind == "O" and any(
+        isinstance(value, (complex, np.complexfloating))
+        or (isinstance(value, (np.ndarray, np.void)) and _contains_complex(np.asarray(value)))
+        for value in values.flat
     )
 
 
