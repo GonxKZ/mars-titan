@@ -151,3 +151,23 @@ def test_meta_tensor_does_not_reserve_nonexistent_dense_data(tmp_path, monkeypat
     assert path.stat().st_size < MIB
     restored = checkpoints.load_training_state(tmp_path, expected_identity=IDENTITY)["value"]
     assert restored.device.type == "meta" and restored.shape == value.shape
+
+
+@pytest.mark.cuda
+def test_cuda_storage_is_reserved_before_copying_and_aliases_survive_loading(tmp_path, monkeypatch):
+    backing = torch.arange(MIB, dtype=torch.float32, device="cuda:0")
+    state = {"global_step": 1, "views": [backing[1::2], backing[100:102]]}
+    constrained_disk(monkeypatch, 20 * MIB)
+    with pytest.raises(OSError) as error:
+        checkpoints.save_training_state(tmp_path, state, identity=IDENTITY)
+    assert error.value.errno == errno.ENOSPC and not (tmp_path / ".pending.pt").exists()
+    constrained_disk(monkeypatch, 24 * MIB)
+    path = checkpoints.save_training_state(tmp_path, state, identity=IDENTITY)
+    assert 4 * MIB < path.stat().st_size < 5 * MIB
+    first, second = checkpoints.load_training_state(tmp_path, expected_identity=IDENTITY)["views"]
+    assert first.device.type == second.device.type == "cpu"
+    assert first.stride() == (2,) and first.storage_offset() == 1
+    assert second.storage_offset() == 100
+    torch.testing.assert_close(first, torch.arange(1, MIB, 2, dtype=torch.float32), rtol=0, atol=0)
+    torch.testing.assert_close(second, torch.tensor([100.0, 101.0]), rtol=0, atol=0)
+    assert first.untyped_storage().data_ptr() == second.untyped_storage().data_ptr()
