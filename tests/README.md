@@ -70,6 +70,11 @@ Cada prueba protege una propiedad concreta. La cobertura y las pruebas de mutaci
 
 ## Protección del aprendizaje
 
+Las campañas simuladas de CPU inyectan una identidad de plataforma fija mediante
+`tests.hardware.platform_doubles`. Sus regresiones rechazan cualquier consulta accidental
+a la GPU real. La prueba `test_this_machine_reports_a_consistent_identity` consulta el
+hardware real por separado y debe fallar si el controlador y NVML son incompatibles.
+
 La protección local `~/.local/state/mars-titan/training-hold-2000.json`, o la ruta indicada en `MARS_TITAN_TRAINING_HOLD`, bloquea el aprendizaje mientras no declare `training_allowed: true`. Un archivo ausente no bloquea y un valor que no sea booleano detiene la ejecución. Python la lee con `learning_blocked()` y `require_learning_allowed()` en `src/mars_titan/training/learning_hold.py`. Los ejecutables nativos usan la misma variable y la misma ruta mediante `native/src/learning_hold.cpp`.
 
 ### Puntos de entrada protegidos

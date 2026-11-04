@@ -26,6 +26,7 @@ from mars_titan.training import campaign_chain
 from mars_titan.training import masked_campaign as engine
 from mars_titan.training.label_maturity import FIT_PARTITIONS, label_maturity
 from mars_titan.training.learning_hold import HOLD_ENV
+from tests.hardware.platform_doubles import laptop
 from tests.learning_hold_lowering import allowed_hold
 from tests.posttraining import campaign_fixture
 from tests.simulation import unadjusted_edition_fixture as edition_fixture
@@ -153,6 +154,7 @@ def base_campaign(root, variant, *, ending=None):
             executors=campaign_fixture.executors(),
             lease=campaign_fixture.CpuLease,
             stop=SimpleNamespace(requested=False),
+            platform=laptop(),
         )
     assert summary["status"] == "completed"
     assets = {
@@ -352,6 +354,7 @@ def executors(learner, backend="python"):
 
 def run(base, output, learner, *, stop=None, backend="python", chain_output=None, **options):
     options.setdefault("listing_status", base.listing_status)
+    options.setdefault("platform", laptop())
     return campaign_stage.run_stage(
         base.stage,
         base.views,

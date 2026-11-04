@@ -457,7 +457,7 @@ DOUBLES = {
     "tests/posttraining/test_readout_adapters.py": (1, _RECORDER),
     "tests/simulation/rl_stage_fixture.py": (1, _CAMPAIGN),
     "tests/simulation/test_adaptive_campaign.py": (1, _LAUNCHER),
-    "tests/simulation/test_campaign_stage.py": (24, _SCRIPTED),
+    "tests/simulation/test_campaign_stage.py": (25, _SCRIPTED),
     "tests/simulation/test_native_ppo_launcher.py": (1, _LAUNCHER),
     "tests/simulation/test_policy_recovery.py": (2, _WARMUP),
     "tests/simulation/test_stage_report.py": (5, _SCRIPTED),

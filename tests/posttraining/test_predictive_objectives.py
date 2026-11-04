@@ -24,6 +24,7 @@ from mars_titan.posttraining import chronological_matrix as cm
 from mars_titan.posttraining import predictive_objectives as predictive
 from mars_titan.posttraining.run import validate_case
 from mars_titan.training import campaign_chain
+from tests.hardware.platform_doubles import laptop
 from tests.posttraining.campaign_fixture import CpuLease, base_campaign
 from tests.posttraining.real_only import real_data_only
 from tests.posttraining.test_adapter_matrix import parent
@@ -315,6 +316,7 @@ def test_the_stage_fits_each_objective_with_the_continuation_updates(staged, tmp
             lease=CpuLease,
             stop=SimpleNamespace(requested=False),
             device="cpu",
+            platform=laptop(),
         )
     assert summary["status"] == "completed"
     # Cuatro adaptadores, la continuación completa, la anclada y los seis objetivos.

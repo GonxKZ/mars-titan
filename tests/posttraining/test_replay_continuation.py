@@ -37,6 +37,7 @@ from mars_titan.posttraining.parent_cache import ParentCache
 from mars_titan.posttraining.replay_inputs import ReplayInputs
 from mars_titan.posttraining.run import case_code, validate_case
 from mars_titan.training import campaign_chain
+from tests.hardware.platform_doubles import laptop
 from tests.posttraining.campaign_fixture import CpuLease, base_campaign
 from tests.posttraining.real_only import real_data_only
 from tests.posttraining.test_adapter_matrix import parent
@@ -720,6 +721,7 @@ def test_the_stage_runs_the_three_controls_with_equal_updates(staged, tmp_path, 
             lease=CpuLease,
             stop=SimpleNamespace(requested=False),
             device="cpu",
+            platform=laptop(),
         )
     assert summary["status"] == "completed"
     assert summary["planned"]["training_jobs"] == 9

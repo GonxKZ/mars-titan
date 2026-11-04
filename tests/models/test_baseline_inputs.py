@@ -56,3 +56,39 @@ def test_nonfinite_values_cannot_be_masked_by_concatenation():
     inputs["macro"][0] = np.nan
     with pytest.raises(ValueError):
         module().feature_vector(inputs)
+
+
+@pytest.mark.parametrize(
+    ("x", "y"),
+    [
+        (np.ones(2), np.ones(2)),
+        (np.ones((0, 2)), np.ones(0)),
+        (np.ones((4097, 1)), np.ones(4097)),
+        (np.ones((1, 0)), np.ones(1)),
+        (np.ones((1, 4097)), np.ones(1)),
+        (np.ones((1, 2)), np.ones((1, 1))),
+        (np.ones((1, 2)), np.ones(2)),
+        (np.array([[np.nan]]), np.ones(1)),
+        (np.ones((1, 1)), np.array([np.inf])),
+    ],
+)
+def test_invalid_regression_blocks_fail_before_becoming_training_rows(x, y):
+    with pytest.raises(ValueError):
+        next(module().validated_blocks(lambda: [(x, y)]))
+
+
+def test_regression_stream_rejects_a_change_of_feature_width():
+    batches = module().validated_blocks(
+        lambda: [(np.ones((1, 2)), np.ones(1)), (np.ones((1, 3)), np.ones(1))]
+    )
+    assert next(batches)[0].shape == (1, 2)
+    with pytest.raises(ValueError, match="dimensiones"):
+        next(batches)
+
+
+@pytest.mark.parametrize("values", [np.empty(0), np.full(4097, 1.0), np.array([np.inf])])
+def test_modalities_respect_their_finite_nonempty_size_contract(values):
+    inputs = {name: np.ones(1) for name in module().MODALITIES}
+    inputs["news"] = values
+    with pytest.raises(ValueError):
+        module().feature_vector(inputs)

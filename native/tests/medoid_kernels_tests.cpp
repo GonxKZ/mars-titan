@@ -1,6 +1,7 @@
 #include "mars_titan/medoid_kernels.hpp"
 
 #include <algorithm>
+#include <array>
 #include <bit>
 #include <cmath>
 #include <cstddef>
@@ -62,7 +63,8 @@ std::vector<double> brute_force(const std::vector<double>& clients,
 // Órdenes de suma del producto escalar. La cota admite cualquiera, también con FMA.
 enum class Order : std::uint8_t { forward, backward, pairs, fused };
 
-double dot(const double* left, const double* right, std::size_t size, Order order) {
+double dot(std::span<const double> left, std::span<const double> right, Order order) {
+    const std::size_t size = left.size();
     double total = 0.0;
     double odd = 0.0;
     for (std::size_t step = 0; step < size; ++step) {
@@ -101,16 +103,16 @@ Prepared prepare(const std::vector<double>& clients, const std::vector<double>& 
     Prepared prepared{std::vector<double>(count * centers), std::vector<double>(count),
                       std::vector<double>(centers)};
     for (std::size_t row = 0; row < count; ++row) {
-        const double* own = left.data() + row * dimensions;
-        prepared.client_norms.at(row) = dot(own, own, dimensions, order);
+        const auto own = std::span(left).subspan(row * dimensions, dimensions);
+        prepared.client_norms.at(row) = dot(own, own, order);
         for (std::size_t column = 0; column < centers; ++column) {
             prepared.products.at(row * centers + column) =
-                dot(own, right.data() + column * dimensions, dimensions, order);
+                dot(own, std::span(right).subspan(column * dimensions, dimensions), order);
         }
     }
     for (std::size_t column = 0; column < centers; ++column) {
-        const double* own = right.data() + column * dimensions;
-        prepared.center_norms.at(column) = dot(own, own, dimensions, order);
+        const auto own = std::span(right).subspan(column * dimensions, dimensions);
+        prepared.center_norms.at(column) = dot(own, own, order);
     }
     return prepared;
 }
@@ -152,7 +154,7 @@ void same_bits(const std::vector<double>& clients, const std::vector<double>& fi
 }
 
 // Coordenadas FP32 convertidas a double, como las claves del banco.
-template <class Draw> std::vector<double> points(std::size_t size, Draw&& draw) {
+template <class Draw> std::vector<double> points(std::size_t size, Draw draw) {
     std::vector<double> result(size);
     for (double& value : result) {
         value = static_cast<double>(static_cast<float>(draw()));
@@ -162,6 +164,7 @@ template <class Draw> std::vector<double> points(std::size_t size, Draw&& draw) 
 
 // Nubes gaussianas y clientes alrededor de los centros.
 void random_clouds_match_the_brute_force() {
+    constexpr double nearby_scale = 1e-3;
     std::mt19937_64 generator(seed);
     std::normal_distribution<double> normal;
     for (const std::size_t dimensions : {1U, 3U, 64U, 65U}) {
@@ -178,7 +181,7 @@ void random_clouds_match_the_brute_force() {
                     for (std::size_t dimension = 0; dimension < dimensions; ++dimension) {
                         near.at(row * dimensions + dimension) = static_cast<double>(
                             static_cast<float>(fixed.at(column * dimensions + dimension) +
-                                               1e-3 * normal(generator)));
+                                               nearby_scale * normal(generator)));
                     }
                 }
                 same_bits(near, fixed, dimensions, "clientes junto a los centros");
@@ -190,27 +193,45 @@ void random_clouds_match_the_brute_force() {
 // Clientes repetidos en los centros, empates exactos y coordenadas lejos del origen con
 // diferencias de pocas ulp de FP32, donde q + p - 2 x'·y' cancela casi todo.
 void ties_duplicates_and_cancellation_match_the_brute_force() {
+    constexpr double tie_coordinate = 2.0;
+    constexpr int ulp_steps = 8;
+    constexpr std::size_t cancellation_clients = 40;
+    constexpr std::size_t cancellation_centers = 25;
+    constexpr std::size_t cancellation_dimensions = 16;
+    constexpr std::size_t subnormal_clients = 30;
+    constexpr std::size_t subnormal_centers = 9;
+    constexpr std::size_t subnormal_dimensions = 8;
+    constexpr std::size_t mixed_clients = 50;
+    constexpr std::size_t mixed_centers = 20;
+    constexpr std::size_t mixed_dimensions = 12;
+    constexpr int minimum_exponent = -140;
+    constexpr int maximum_exponent = 120;
     same_bits({0.0, 0.0, 1.0, 1.0, -1.0, 1.0}, {1.0, 1.0, -1.0, 1.0}, 2, "clientes repetidos");
-    same_bits({0.0, 0.0, 0.0, 2.0}, {1.0, 0.0, -1.0, 0.0, 0.0, 1.0}, 2, "empates exactos");
+    same_bits({0.0, 0.0, 0.0, tie_coordinate}, {1.0, 0.0, -1.0, 0.0, 0.0, 1.0}, 2,
+              "empates exactos");
     std::mt19937_64 generator(seed + 1);
-    std::uniform_int_distribution<int> step(-8, 8);
+    std::uniform_int_distribution<int> step(-ulp_steps, ulp_steps);
     for (const float base : {1.0e6F, 1.0e30F, -3.0e38F}) {
         const auto wide = static_cast<double>(base);
         const double ulp = static_cast<double>(std::nextafter(base, 0.0F)) - wide;
         const auto draw = [&] { return wide + ulp * step(generator); };
-        same_bits(points(40 * 16, draw), points(25 * 16, draw), 16,
+        same_bits(points(cancellation_clients * cancellation_dimensions, draw),
+                  points(cancellation_centers * cancellation_dimensions, draw), cancellation_dimensions,
                   "cancelación lejos del origen");
     }
     // Subnormales de FP32: siguen siendo normales en double.
     const auto tiny = static_cast<double>(std::numeric_limits<float>::denorm_min());
     const auto small = [&] { return tiny * step(generator); };
-    same_bits(points(30 * 8, small), points(9 * 8, small), 8, "subnormales de FP32");
+    same_bits(points(subnormal_clients * subnormal_dimensions, small),
+              points(subnormal_centers * subnormal_dimensions, small), subnormal_dimensions,
+              "subnormales de FP32");
     // Escalas mezcladas en las mismas filas.
-    std::uniform_int_distribution<int> exponent(-140, 120);
+    std::uniform_int_distribution<int> exponent(minimum_exponent, maximum_exponent);
     const auto mixed = [&] {
         return std::ldexp(static_cast<double>(step(generator)), exponent(generator));
     };
-    same_bits(points(50 * 12, mixed), points(20 * 12, mixed), 12, "escalas mezcladas");
+    same_bits(points(mixed_clients * mixed_dimensions, mixed),
+              points(mixed_centers * mixed_dimensions, mixed), mixed_dimensions, "escalas mezcladas");
 }
 
 // Argumentos válidos de nearest_reference_block, que cada caso de rechazo modifica.
@@ -280,16 +301,18 @@ void invalid_inputs_are_rejected_before_writing() {
 // `_bounded_minimum` en el mismo orden. Quitar un margen apenas cambia qué pares se descartan
 // en las nubes de prueba, pero rompe la demostración.
 void bound_follows_the_proven_formula() {
+    constexpr int exponent_range = 60;
+    constexpr int repetitions = 2000;
     std::mt19937_64 generator(seed + 3);
     std::uniform_real_distribution<double> unit_interval(0.0, 1.0);
-    std::uniform_int_distribution<int> exponent(-60, 60);
+    std::uniform_int_distribution<int> exponent(-exponent_range, exponent_range);
     const double unit = std::ldexp(1.0, -53);
     for (const std::size_t dimensions : {1UL, 64UL, 300UL, 4096UL}) {
         const double count = static_cast<double>(dimensions);
         const double relative = 4 * (count + 4) * unit;
         const double absolute = 4 * unit;
         const double shrink = 1 - (8 * count + 2048) * unit;
-        for (int draw = 0; draw < 2000; ++draw) {
+        for (int draw = 0; draw < repetitions; ++draw) {
             const double left = std::ldexp(unit_interval(generator), exponent(generator));
             const double right = std::ldexp(unit_interval(generator), exponent(generator));
             const double limit = left + right;
@@ -340,10 +363,13 @@ void column_sums_take_the_minimum_and_round_once() {
                 "Una suma exacta no coincide con math.fsum");
     }
     // Un infinito por debajo de una base finita no llega a la suma, como en numpy.minimum.
-    std::vector<double> clipped{infinity, 2.0};
+    constexpr std::array<double, 2> finite_limits{3.0, 4.0};
+    constexpr double finite_distance = 2.0;
+    constexpr double clipped_total = finite_limits[0] + finite_distance;
+    std::vector<double> clipped{infinity, finite_distance};
     std::vector<double> one(1, -1.0);
-    require(min_column_sums({clipped.data(), 2, 1, 1, 1}, std::vector<double>{3.0, 4.0}, one) &&
-                one.at(0) == 5.0,
+    require(min_column_sums({clipped.data(), 2, 1, 1, 1}, finite_limits, one) &&
+                one.at(0) == clipped_total,
             "El mínimo con la base no recortó el infinito");
     // NaN en las distancias o en la base, infinitos sin recortar y desbordamientos: false sin
     // escribir.

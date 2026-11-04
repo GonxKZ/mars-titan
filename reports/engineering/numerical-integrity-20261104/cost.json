@@ -1,0 +1,185 @@
+{
+  "query": "NVIDIA GeForce RTX 4070 Laptop GPU, 1002, 595.91.07",
+  "torch": "2.14.0+cu130",
+  "tf32": false,
+  "optimizer_steps": 0,
+  "seconds": 5.88506491901353,
+  "results": [
+    {
+      "device": "cpu",
+      "batch": 4,
+      "dim": 16,
+      "tokens": 4,
+      "dtype": "float32",
+      "inputs_resident": true,
+      "reference": {
+        "p50_ms": 1.6346881166100502,
+        "p95_ms": 1.6719292616471648,
+        "p99_ms": 1.6783083556219935,
+        "repetitions": 15,
+        "warmup": 3,
+        "peak_allocated_bytes": null,
+        "peak_reserved_bytes": null
+      },
+      "corrected": {
+        "p50_ms": 1.7592220101505518,
+        "p95_ms": 1.8883156822994351,
+        "p99_ms": 1.9445895263925195,
+        "repetitions": 15,
+        "warmup": 3,
+        "peak_allocated_bytes": null,
+        "peak_reserved_bytes": null
+      },
+      "max_abs_difference": 3.725290298461914e-09,
+      "p50_ratio": 1.0761820510439355
+    },
+    {
+      "device": "cpu",
+      "batch": 16,
+      "dim": 64,
+      "tokens": 8,
+      "dtype": "float32",
+      "inputs_resident": true,
+      "reference": {
+        "p50_ms": 9.070559870451689,
+        "p95_ms": 9.78965274989605,
+        "p99_ms": 10.062568187713623,
+        "repetitions": 15,
+        "warmup": 3,
+        "peak_allocated_bytes": null,
+        "peak_reserved_bytes": null
+      },
+      "corrected": {
+        "p50_ms": 10.109665803611279,
+        "p95_ms": 10.62663602642715,
+        "p99_ms": 10.737456111237407,
+        "repetitions": 15,
+        "warmup": 3,
+        "peak_allocated_bytes": null,
+        "peak_reserved_bytes": null
+      },
+      "max_abs_difference": 2.7939677238464355e-09,
+      "p50_ratio": 1.1145580810887525
+    },
+    {
+      "device": "cpu",
+      "batch": 32,
+      "dim": 128,
+      "tokens": 8,
+      "dtype": "float32",
+      "inputs_resident": true,
+      "reference": {
+        "p50_ms": 59.97658404521644,
+        "p95_ms": 78.04071900900453,
+        "p99_ms": 81.4171565650031,
+        "repetitions": 15,
+        "warmup": 3,
+        "peak_allocated_bytes": null,
+        "peak_reserved_bytes": null
+      },
+      "corrected": {
+        "p50_ms": 73.16267304122448,
+        "p95_ms": 81.3055926701054,
+        "p99_ms": 82.36076652538031,
+        "repetitions": 15,
+        "warmup": 3,
+        "peak_allocated_bytes": null,
+        "peak_reserved_bytes": null
+      },
+      "max_abs_difference": 1.862645149230957e-09,
+      "p50_ratio": 1.2198539514365645
+    },
+    {
+      "device": "cuda:0",
+      "batch": 4,
+      "dim": 16,
+      "tokens": 4,
+      "dtype": "float32",
+      "inputs_resident": true,
+      "reference": {
+        "p50_ms": 5.110172089189291,
+        "p95_ms": 6.064561824314296,
+        "p99_ms": 6.075845225714147,
+        "repetitions": 15,
+        "warmup": 3,
+        "peak_allocated_bytes": 8587264,
+        "peak_reserved_bytes": 23068672
+      },
+      "corrected": {
+        "p50_ms": 5.236931145191193,
+        "p95_ms": 6.074834708124398,
+        "p99_ms": 6.626701373606919,
+        "repetitions": 15,
+        "warmup": 3,
+        "peak_allocated_bytes": 8589824,
+        "peak_reserved_bytes": 23068672
+      },
+      "max_abs_difference": 4.6566128730773926e-09,
+      "p50_ratio": 1.0248052421307032
+    },
+    {
+      "device": "cuda:0",
+      "batch": 16,
+      "dim": 64,
+      "tokens": 8,
+      "dtype": "float32",
+      "inputs_resident": true,
+      "reference": {
+        "p50_ms": 9.862702107056975,
+        "p95_ms": 12.39270200021565,
+        "p99_ms": 12.609769301488996,
+        "repetitions": 15,
+        "warmup": 3,
+        "peak_allocated_bytes": 11863552,
+        "peak_reserved_bytes": 25165824
+      },
+      "corrected": {
+        "p50_ms": 10.401385137811303,
+        "p95_ms": 12.040976458229125,
+        "p99_ms": 12.403183435089886,
+        "repetitions": 15,
+        "warmup": 3,
+        "peak_allocated_bytes": 11880960,
+        "peak_reserved_bytes": 25165824
+      },
+      "max_abs_difference": 2.7939677238464355e-09,
+      "p50_ratio": 1.054618199445453
+    },
+    {
+      "device": "cuda:0",
+      "batch": 32,
+      "dim": 128,
+      "tokens": 8,
+      "dtype": "float32",
+      "inputs_resident": true,
+      "reference": {
+        "p50_ms": 10.24492084980011,
+        "p95_ms": 11.960811563767493,
+        "p99_ms": 11.999973398633301,
+        "repetitions": 15,
+        "warmup": 3,
+        "peak_allocated_bytes": 34461184,
+        "peak_reserved_bytes": 44040192
+      },
+      "corrected": {
+        "p50_ms": 10.394431883469224,
+        "p95_ms": 11.957649420946835,
+        "p99_ms": 12.63449626043439,
+        "repetitions": 15,
+        "warmup": 3,
+        "peak_allocated_bytes": 34530816,
+        "peak_reserved_bytes": 44040192
+      },
+      "max_abs_difference": 2.3283064365386963e-09,
+      "p50_ratio": 1.0145936738664048
+    }
+  ],
+  "process_peak_rss_bytes": 1213952000,
+  "memory_comparison": "Los resultados de referencia se copian a CPU y se liberan de GPU antes de medir el otro cálculo.",
+  "limitations": [
+    "Entradas residentes. No mide el predictor completo ni las transferencias.",
+    "El equipo conserva cargas ajenas y una regresión de CPU. No es una medida aislada.",
+    "Los p95 y p99 se estiman con solo quince repeticiones. No se midió energía.",
+    "El RSS es el pico de todo el proceso, no una diferencia de RAM aislada por implementación."
+  ]
+}

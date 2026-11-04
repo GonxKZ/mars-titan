@@ -106,15 +106,49 @@ def _intact(directory, record):
     )
 
 
-def _tensor_bytes(value):
+def _tensor_storage_bytes(value, storages):
+    """Contar los almacenamientos serializados, conservando vistas y alias.
+
+    COO guarda índices y valores por separado. Los formatos comprimidos guardan también
+    sus dos índices. Los tensores meta no escriben datos y los cuantizados por canal
+    incluyen los tensores de escala y de punto cero.
+    """
+    if value.device.type == "meta":
+        return 0
+    if value.layout == torch.sparse_coo:
+        return _tensor_bytes((value._indices(), value._values()), storages)
+    if value.layout in (torch.sparse_csr, torch.sparse_bsr):
+        return _tensor_bytes((value.crow_indices(), value.col_indices(), value.values()), storages)
+    if value.layout in (torch.sparse_csc, torch.sparse_bsc):
+        return _tensor_bytes((value.ccol_indices(), value.row_indices(), value.values()), storages)
+    if value.layout != torch.strided:
+        raise ValueError("El formato del tensor no admite un presupuesto de almacenamiento")
+    storage = value.untyped_storage()
+    size = 0 if storage in storages else storage.nbytes()
+    storages.add(storage)
+    if value.is_quantized and value.qscheme() in (
+        torch.per_channel_affine,
+        torch.per_channel_affine_float_qparams,
+    ):
+        size += _tensor_bytes(
+            (value.q_per_channel_scales(), value.q_per_channel_zero_points()), storages
+        )
+    return size
+
+
+def _tensor_bytes(value, storages=None):
+    if storages is None:
+        storages = set()
     if isinstance(value, torch.Tensor):
         if value.is_cuda:
             torch.cuda.synchronize(value.device)
-        return value.numel() * value.element_size()
+        return _tensor_storage_bytes(value, storages)
     if isinstance(value, dict):
-        return sum(_tensor_bytes(k) + _tensor_bytes(v) for k, v in value.items())
+        return sum(
+            _tensor_bytes(k, storages) + _tensor_bytes(v, storages) for k, v in value.items()
+        )
     if isinstance(value, (list, tuple)):
-        return sum(_tensor_bytes(v) for v in value)
+        return sum(_tensor_bytes(v, storages) for v in value)
     if value is None or type(value) in (bool, int, float, str):
         return len(value.encode()) if isinstance(value, str) else 16
     raise ValueError("El estado solo admite tensores y tipos simples compatibles con weights_only")
@@ -140,6 +174,33 @@ def _read_payload(path, identity, step):
     return payload["state"]
 
 
+class _CheckpointWriter:
+    """Limitar el archivo antes de escribir, aunque los metadatos excedan la estimación."""
+
+    def __init__(self, stream, available):
+        self.stream = stream
+        self.maximum = min(available, MAX_STATE_BYTES)
+        self.disk_limited = available < MAX_STATE_BYTES
+        self.exceeded = False
+        self.written = 0
+
+    def limit_error(self):
+        if self.disk_limited:
+            return OSError(28, "No hay espacio para conservar la reserva del punto de control")
+        return ValueError("El archivo serializado excede el presupuesto")
+
+    def write(self, data):
+        if self.exceeded or self.written + memoryview(data).nbytes > self.maximum:
+            self.exceeded = True
+            raise self.limit_error()
+        written = self.stream.write(data)
+        self.written += written
+        return written
+
+    def flush(self):
+        self.stream.flush()
+
+
 def save_training_state(
     directory: Path, state: dict, *, identity: dict, best: bool = False, pin: bool = False
 ) -> Path:
@@ -158,13 +219,22 @@ def save_training_state(
         previous = [r for r in index["latest"] if _intact(directory, r)]
         if previous and state["global_step"] < previous[0]["global_step"]:
             raise ValueError("El estado retrocede respecto al último paso confirmado")
-        if shutil.disk_usage(directory).free < estimated + 16 * 1024**2:
+        available = shutil.disk_usage(directory).free - 16 * 1024**2
+        if available < estimated:
             raise OSError(28, "No hay espacio para confirmar el siguiente punto de control")
         pending = directory / ".pending.pt"
         descriptor = os.open(pending, os.O_WRONLY | os.O_CREAT | os.O_TRUNC | os.O_NOFOLLOW, 0o600)
         try:
             with os.fdopen(descriptor, "wb") as stream:
-                torch.save({"schema_version": 1, "identity": canonical, "state": state}, stream)
+                writer = _CheckpointWriter(stream, available)
+                try:
+                    torch.save({"schema_version": 1, "identity": canonical, "state": state}, writer)
+                except Exception as error:
+                    # El cierre ZIP puede reemplazar el error original del búfer por un
+                    # RuntimeError. Conservar el motivo del límite, sin ocultar otros fallos.
+                    if writer.exceeded:
+                        raise writer.limit_error() from error
+                    raise
                 stream.flush()
                 os.fsync(stream.fileno())
             size, digest = pending.stat().st_size, sha256(pending)
