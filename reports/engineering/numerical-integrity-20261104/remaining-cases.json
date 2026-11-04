@@ -1,0 +1,1754 @@
+[
+  {
+    "test": "tests.posttraining.test_adapter_campaign_stage::test_the_hold_is_read_again_before_each_pending_job",
+    "reason": "Bloqueo de aprendizaje vigente: comprueba que la etapa de adaptadores vuelve a leer la protección entre trabajos (inventario de #546)"
+  },
+  {
+    "test": "tests.simulation.test_campaign_stage::test_the_learning_hold_is_read_again_between_jobs",
+    "reason": "Bloqueo de aprendizaje vigente: comprueba que la etapa de políticas vuelve a leer la protección entre trabajos, lo que exige empezar con ella abierta (inventario de #546)"
+  },
+  {
+    "test": "tests.data.test_budget_training::test_budget_run_rejects_invalid_workload_before_touching_data[options0]",
+    "reason": "Bloqueo de aprendizaje vigente: la medición supervisada con AdamW no se ejecuta mientras la protección local de aprendizaje no declare training_allowed verdadero"
+  },
+  {
+    "test": "tests.data.test_budget_training::test_budget_run_rejects_invalid_workload_before_touching_data[options1]",
+    "reason": "Bloqueo de aprendizaje vigente: la medición supervisada con AdamW no se ejecuta mientras la protección local de aprendizaje no declare training_allowed verdadero"
+  },
+  {
+    "test": "tests.data.test_budget_training::test_budget_run_rejects_invalid_workload_before_touching_data[options2]",
+    "reason": "Bloqueo de aprendizaje vigente: la medición supervisada con AdamW no se ejecuta mientras la protección local de aprendizaje no declare training_allowed verdadero"
+  },
+  {
+    "test": "tests.data.test_output_protection::test_training_rejects_writes_inside_originals[report]",
+    "reason": "Bloqueo de aprendizaje vigente: la medición supervisada con AdamW no se ejecuta mientras la protección local de aprendizaje no declare training_allowed verdadero"
+  },
+  {
+    "test": "tests.data.test_output_protection::test_training_rejects_writes_inside_originals[run]",
+    "reason": "Bloqueo de aprendizaje vigente: la medición supervisada con AdamW no se ejecuta mientras la protección local de aprendizaje no declare training_allowed verdadero"
+  },
+  {
+    "test": "tests.data.test_output_protection::test_training_rejects_writes_inside_prepared_inputs[report]",
+    "reason": "Bloqueo de aprendizaje vigente: la medición supervisada con AdamW no se ejecuta mientras la protección local de aprendizaje no declare training_allowed verdadero"
+  },
+  {
+    "test": "tests.data.test_output_protection::test_training_rejects_writes_inside_prepared_inputs[run]",
+    "reason": "Bloqueo de aprendizaje vigente: la medición supervisada con AdamW no se ejecuta mientras la protección local de aprendizaje no declare training_allowed verdadero"
+  },
+  {
+    "test": "tests.integrity.test_fit_budget::test_a_chronological_fit_with_unchanged_weights_keeps_its_initial_state",
+    "reason": "Bloqueo de aprendizaje vigente: lee los informes reales de las cuatro variantes de Titans-MAC del fixture `base`, que las ejecuta con la protección rebajada y un optimizador que no cambia pesos (inventario de #546)"
+  },
+  {
+    "test": "tests.integrity.test_fit_budget::test_a_neural_reference_from_scratch_counts_as_fitted",
+    "reason": "Bloqueo de aprendizaje vigente: ejecuta la referencia neuronal enmascarada en CPU con la protección rebajada por `cpu_runner` para leer su informe real (inventario de #546)"
+  },
+  {
+    "test": "tests.models.test_boosting::test_boosting_uses_every_training_row_without_internal_random_validation",
+    "reason": "Bloqueo de aprendizaje vigente: el ajuste HistGradientBoosting no se ejecuta mientras la protección local de aprendizaje no declare training_allowed verdadero"
+  },
+  {
+    "test": "tests.models.test_boosting::test_boosting_rejects_a_matrix_larger_than_its_explicit_budget",
+    "reason": "Bloqueo de aprendizaje vigente: el ajuste HistGradientBoosting no se ejecuta mientras la protección local de aprendizaje no declare training_allowed verdadero"
+  },
+  {
+    "test": "tests.models.test_boosting::test_boosting_does_not_overwrite_an_existing_model",
+    "reason": "Bloqueo de aprendizaje vigente: el ajuste HistGradientBoosting no se ejecuta mientras la protección local de aprendizaje no declare training_allowed verdadero"
+  },
+  {
+    "test": "tests.models.test_boosting::test_boosting_owns_batches_when_the_reader_reuses_its_buffer",
+    "reason": "Bloqueo de aprendizaje vigente: el ajuste HistGradientBoosting no se ejecuta mientras la protección local de aprendizaje no declare training_allowed verdadero"
+  },
+  {
+    "test": "tests.models.test_boosting::test_boosting_rejects_nonfinite_model_predictions",
+    "reason": "Bloqueo de aprendizaje vigente: el ajuste HistGradientBoosting no se ejecuta mientras la protección local de aprendizaje no declare training_allowed verdadero"
+  },
+  {
+    "test": "tests.models.test_external_cache_plan::test_fit_rejects_a_disk_budget_for_the_host_cache_before_loading_cuda",
+    "reason": "Bloqueo de aprendizaje vigente: el ajuste XGBoost con páginas externas no se ejecuta mientras la protección local de aprendizaje no declare training_allowed verdadero"
+  },
+  {
+    "test": "tests.models.test_gru_probe::test_missing_deterministic_configuration_fails_before_training",
+    "reason": "Bloqueo de aprendizaje vigente: la comprobación temporal supervisada no se ejecuta mientras la protección local de aprendizaje no declare training_allowed verdadero"
+  },
+  {
+    "test": "tests.models.test_gru_probe::test_temporal_options_are_validated_before_data_or_output[kwargs0]",
+    "reason": "Bloqueo de aprendizaje vigente: la comprobación temporal supervisada no se ejecuta mientras la protección local de aprendizaje no declare training_allowed verdadero"
+  },
+  {
+    "test": "tests.models.test_gru_probe::test_temporal_options_are_validated_before_data_or_output[kwargs1]",
+    "reason": "Bloqueo de aprendizaje vigente: la comprobación temporal supervisada no se ejecuta mientras la protección local de aprendizaje no declare training_allowed verdadero"
+  },
+  {
+    "test": "tests.models.test_gru_probe::test_temporal_options_are_validated_before_data_or_output[kwargs2]",
+    "reason": "Bloqueo de aprendizaje vigente: la comprobación temporal supervisada no se ejecuta mientras la protección local de aprendizaje no declare training_allowed verdadero"
+  },
+  {
+    "test": "tests.models.test_gru_probe::test_temporal_options_are_validated_before_data_or_output[kwargs3]",
+    "reason": "Bloqueo de aprendizaje vigente: la comprobación temporal supervisada no se ejecuta mientras la protección local de aprendizaje no declare training_allowed verdadero"
+  },
+  {
+    "test": "tests.models.test_gru_probe::test_temporal_options_are_validated_before_data_or_output[kwargs4]",
+    "reason": "Bloqueo de aprendizaje vigente: la comprobación temporal supervisada no se ejecuta mientras la protección local de aprendizaje no declare training_allowed verdadero"
+  },
+  {
+    "test": "tests.models.test_gru_probe::test_temporal_options_are_validated_before_data_or_output[kwargs5]",
+    "reason": "Bloqueo de aprendizaje vigente: la comprobación temporal supervisada no se ejecuta mientras la protección local de aprendizaje no declare training_allowed verdadero"
+  },
+  {
+    "test": "tests.models.test_gru_probe::test_temporal_options_are_validated_before_data_or_output[kwargs6]",
+    "reason": "Bloqueo de aprendizaje vigente: la comprobación temporal supervisada no se ejecuta mientras la protección local de aprendizaje no declare training_allowed verdadero"
+  },
+  {
+    "test": "tests.models.test_gru_probe::test_temporal_options_are_validated_before_data_or_output[kwargs7]",
+    "reason": "Bloqueo de aprendizaje vigente: la comprobación temporal supervisada no se ejecuta mientras la protección local de aprendizaje no declare training_allowed verdadero"
+  },
+  {
+    "test": "tests.models.test_klpo::test_exact_objective_learns_synthetic_linear_signal_without_financial_data",
+    "reason": "Bloqueo de aprendizaje vigente: paso de SGD omitido antes de modificar pesos"
+  },
+  {
+    "test": "tests.models.test_reference_campaign::test_campaign_runs_cartesian_grid_and_both_controls_from_same_final_parent",
+    "reason": "Bloqueo de aprendizaje vigente: la rejilla de referencias y controles no se ejecuta mientras la protección local de aprendizaje no declare training_allowed verdadero"
+  },
+  {
+    "test": "tests.models.test_reference_campaign::test_campaign_pins_data_and_labels_independently_of_architecture_and_run_paths",
+    "reason": "Bloqueo de aprendizaje vigente: la rejilla de referencias y controles no se ejecuta mientras la protección local de aprendizaje no declare training_allowed verdadero"
+  },
+  {
+    "test": "tests.models.test_reference_campaign::test_different_cohort_stops_base_or_posttraining_without_replacing_provenance[rebuilt_samples-2]",
+    "reason": "Bloqueo de aprendizaje vigente: la rejilla de referencias y controles no se ejecuta mientras la protección local de aprendizaje no declare training_allowed verdadero"
+  },
+  {
+    "test": "tests.models.test_reference_campaign::test_different_cohort_stops_base_or_posttraining_without_replacing_provenance[rebuilt_samples-17]",
+    "reason": "Bloqueo de aprendizaje vigente: la rejilla de referencias y controles no se ejecuta mientras la protección local de aprendizaje no declare training_allowed verdadero"
+  },
+  {
+    "test": "tests.models.test_reference_campaign::test_different_cohort_stops_base_or_posttraining_without_replacing_provenance[targets-2]",
+    "reason": "Bloqueo de aprendizaje vigente: la rejilla de referencias y controles no se ejecuta mientras la protección local de aprendizaje no declare training_allowed verdadero"
+  },
+  {
+    "test": "tests.models.test_reference_campaign::test_different_cohort_stops_base_or_posttraining_without_replacing_provenance[targets-17]",
+    "reason": "Bloqueo de aprendizaje vigente: la rejilla de referencias y controles no se ejecuta mientras la protección local de aprendizaje no declare training_allowed verdadero"
+  },
+  {
+    "test": "tests.models.test_reference_campaign::test_different_cohort_stops_base_or_posttraining_without_replacing_provenance[counts-2]",
+    "reason": "Bloqueo de aprendizaje vigente: la rejilla de referencias y controles no se ejecuta mientras la protección local de aprendizaje no declare training_allowed verdadero"
+  },
+  {
+    "test": "tests.models.test_reference_campaign::test_different_cohort_stops_base_or_posttraining_without_replacing_provenance[counts-17]",
+    "reason": "Bloqueo de aprendizaje vigente: la rejilla de referencias y controles no se ejecuta mientras la protección local de aprendizaje no declare training_allowed verdadero"
+  },
+  {
+    "test": "tests.models.test_reference_campaign::test_different_cohort_stops_base_or_posttraining_without_replacing_provenance[added_source-2]",
+    "reason": "Bloqueo de aprendizaje vigente: la rejilla de referencias y controles no se ejecuta mientras la protección local de aprendizaje no declare training_allowed verdadero"
+  },
+  {
+    "test": "tests.models.test_reference_campaign::test_different_cohort_stops_base_or_posttraining_without_replacing_provenance[added_source-17]",
+    "reason": "Bloqueo de aprendizaje vigente: la rejilla de referencias y controles no se ejecuta mientras la protección local de aprendizaje no declare training_allowed verdadero"
+  },
+  {
+    "test": "tests.models.test_reference_campaign::test_invalid_provenance_never_completes_a_case[missing_hashes]",
+    "reason": "Bloqueo de aprendizaje vigente: la rejilla de referencias y controles no se ejecuta mientras la protección local de aprendizaje no declare training_allowed verdadero"
+  },
+  {
+    "test": "tests.models.test_reference_campaign::test_invalid_provenance_never_completes_a_case[hash_list]",
+    "reason": "Bloqueo de aprendizaje vigente: la rejilla de referencias y controles no se ejecuta mientras la protección local de aprendizaje no declare training_allowed verdadero"
+  },
+  {
+    "test": "tests.models.test_reference_campaign::test_invalid_provenance_never_completes_a_case[empty_hashes]",
+    "reason": "Bloqueo de aprendizaje vigente: la rejilla de referencias y controles no se ejecuta mientras la protección local de aprendizaje no declare training_allowed verdadero"
+  },
+  {
+    "test": "tests.models.test_reference_campaign::test_invalid_provenance_never_completes_a_case[only_code]",
+    "reason": "Bloqueo de aprendizaje vigente: la rejilla de referencias y controles no se ejecuta mientras la protección local de aprendizaje no declare training_allowed verdadero"
+  },
+  {
+    "test": "tests.models.test_reference_campaign::test_invalid_provenance_never_completes_a_case[only_data]",
+    "reason": "Bloqueo de aprendizaje vigente: la rejilla de referencias y controles no se ejecuta mientras la protección local de aprendizaje no declare training_allowed verdadero"
+  },
+  {
+    "test": "tests.models.test_reference_campaign::test_invalid_provenance_never_completes_a_case[only_targets]",
+    "reason": "Bloqueo de aprendizaje vigente: la rejilla de referencias y controles no se ejecuta mientras la protección local de aprendizaje no declare training_allowed verdadero"
+  },
+  {
+    "test": "tests.models.test_reference_campaign::test_invalid_provenance_never_completes_a_case[empty_name]",
+    "reason": "Bloqueo de aprendizaje vigente: la rejilla de referencias y controles no se ejecuta mientras la protección local de aprendizaje no declare training_allowed verdadero"
+  },
+  {
+    "test": "tests.models.test_reference_campaign::test_invalid_provenance_never_completes_a_case[empty_digest]",
+    "reason": "Bloqueo de aprendizaje vigente: la rejilla de referencias y controles no se ejecuta mientras la protección local de aprendizaje no declare training_allowed verdadero"
+  },
+  {
+    "test": "tests.models.test_reference_campaign::test_invalid_provenance_never_completes_a_case[invalid_digest]",
+    "reason": "Bloqueo de aprendizaje vigente: la rejilla de referencias y controles no se ejecuta mientras la protección local de aprendizaje no declare training_allowed verdadero"
+  },
+  {
+    "test": "tests.models.test_reference_campaign::test_invalid_provenance_never_completes_a_case[non_string_digest]",
+    "reason": "Bloqueo de aprendizaje vigente: la rejilla de referencias y controles no se ejecuta mientras la protección local de aprendizaje no declare training_allowed verdadero"
+  },
+  {
+    "test": "tests.models.test_reference_campaign::test_invalid_provenance_never_completes_a_case[invalid_target]",
+    "reason": "Bloqueo de aprendizaje vigente: la rejilla de referencias y controles no se ejecuta mientras la protección local de aprendizaje no declare training_allowed verdadero"
+  },
+  {
+    "test": "tests.models.test_reference_campaign::test_invalid_provenance_never_completes_a_case[duplicate_target]",
+    "reason": "Bloqueo de aprendizaje vigente: la rejilla de referencias y controles no se ejecuta mientras la protección local de aprendizaje no declare training_allowed verdadero"
+  },
+  {
+    "test": "tests.models.test_reference_campaign::test_invalid_provenance_never_completes_a_case[missing_counts]",
+    "reason": "Bloqueo de aprendizaje vigente: la rejilla de referencias y controles no se ejecuta mientras la protección local de aprendizaje no declare training_allowed verdadero"
+  },
+  {
+    "test": "tests.models.test_reference_campaign::test_invalid_provenance_never_completes_a_case[counts_list]",
+    "reason": "Bloqueo de aprendizaje vigente: la rejilla de referencias y controles no se ejecuta mientras la protección local de aprendizaje no declare training_allowed verdadero"
+  },
+  {
+    "test": "tests.models.test_reference_campaign::test_invalid_provenance_never_completes_a_case[missing_partition]",
+    "reason": "Bloqueo de aprendizaje vigente: la rejilla de referencias y controles no se ejecuta mientras la protección local de aprendizaje no declare training_allowed verdadero"
+  },
+  {
+    "test": "tests.models.test_reference_campaign::test_invalid_provenance_never_completes_a_case[extra_partition]",
+    "reason": "Bloqueo de aprendizaje vigente: la rejilla de referencias y controles no se ejecuta mientras la protección local de aprendizaje no declare training_allowed verdadero"
+  },
+  {
+    "test": "tests.models.test_reference_campaign::test_invalid_provenance_never_completes_a_case[boolean_count]",
+    "reason": "Bloqueo de aprendizaje vigente: la rejilla de referencias y controles no se ejecuta mientras la protección local de aprendizaje no declare training_allowed verdadero"
+  },
+  {
+    "test": "tests.models.test_reference_campaign::test_invalid_provenance_never_completes_a_case[float_count]",
+    "reason": "Bloqueo de aprendizaje vigente: la rejilla de referencias y controles no se ejecuta mientras la protección local de aprendizaje no declare training_allowed verdadero"
+  },
+  {
+    "test": "tests.models.test_reference_campaign::test_invalid_provenance_never_completes_a_case[zero_count]",
+    "reason": "Bloqueo de aprendizaje vigente: la rejilla de referencias y controles no se ejecuta mientras la protección local de aprendizaje no declare training_allowed verdadero"
+  },
+  {
+    "test": "tests.models.test_reference_campaign::test_case_completion_requires_explicit_exact_recovery_and_restoration[missing_recovery]",
+    "reason": "Bloqueo de aprendizaje vigente: la rejilla de referencias y controles no se ejecuta mientras la protección local de aprendizaje no declare training_allowed verdadero"
+  },
+  {
+    "test": "tests.models.test_reference_campaign::test_case_completion_requires_explicit_exact_recovery_and_restoration[missing_exact]",
+    "reason": "Bloqueo de aprendizaje vigente: la rejilla de referencias y controles no se ejecuta mientras la protección local de aprendizaje no declare training_allowed verdadero"
+  },
+  {
+    "test": "tests.models.test_reference_campaign::test_case_completion_requires_explicit_exact_recovery_and_restoration[false_exact]",
+    "reason": "Bloqueo de aprendizaje vigente: la rejilla de referencias y controles no se ejecuta mientras la protección local de aprendizaje no declare training_allowed verdadero"
+  },
+  {
+    "test": "tests.models.test_reference_campaign::test_case_completion_requires_explicit_exact_recovery_and_restoration[truthy_exact]",
+    "reason": "Bloqueo de aprendizaje vigente: la rejilla de referencias y controles no se ejecuta mientras la protección local de aprendizaje no declare training_allowed verdadero"
+  },
+  {
+    "test": "tests.models.test_reference_campaign::test_case_completion_requires_explicit_exact_recovery_and_restoration[invalid_recovery]",
+    "reason": "Bloqueo de aprendizaje vigente: la rejilla de referencias y controles no se ejecuta mientras la protección local de aprendizaje no declare training_allowed verdadero"
+  },
+  {
+    "test": "tests.models.test_reference_campaign::test_case_completion_requires_explicit_exact_recovery_and_restoration[missing_restore]",
+    "reason": "Bloqueo de aprendizaje vigente: la rejilla de referencias y controles no se ejecuta mientras la protección local de aprendizaje no declare training_allowed verdadero"
+  },
+  {
+    "test": "tests.models.test_reference_campaign::test_case_completion_requires_explicit_exact_recovery_and_restoration[false_restore]",
+    "reason": "Bloqueo de aprendizaje vigente: la rejilla de referencias y controles no se ejecuta mientras la protección local de aprendizaje no declare training_allowed verdadero"
+  },
+  {
+    "test": "tests.models.test_reference_campaign::test_case_completion_requires_explicit_exact_recovery_and_restoration[truthy_restore]",
+    "reason": "Bloqueo de aprendizaje vigente: la rejilla de referencias y controles no se ejecuta mientras la protección local de aprendizaje no declare training_allowed verdadero"
+  },
+  {
+    "test": "tests.models.test_reference_campaign::test_invalid_configuration_is_rejected_without_outputs_or_runner[schema_version-True]",
+    "reason": "Bloqueo de aprendizaje vigente: la rejilla de referencias y controles no se ejecuta mientras la protección local de aprendizaje no declare training_allowed verdadero"
+  },
+  {
+    "test": "tests.models.test_reference_campaign::test_invalid_configuration_is_rejected_without_outputs_or_runner[schema_version-2]",
+    "reason": "Bloqueo de aprendizaje vigente: la rejilla de referencias y controles no se ejecuta mientras la protección local de aprendizaje no declare training_allowed verdadero"
+  },
+  {
+    "test": "tests.models.test_reference_campaign::test_invalid_configuration_is_rejected_without_outputs_or_runner[purpose- ]",
+    "reason": "Bloqueo de aprendizaje vigente: la rejilla de referencias y controles no se ejecuta mientras la protección local de aprendizaje no declare training_allowed verdadero"
+  },
+  {
+    "test": "tests.models.test_reference_campaign::test_invalid_configuration_is_rejected_without_outputs_or_runner[purpose-value3]",
+    "reason": "Bloqueo de aprendizaje vigente: la rejilla de referencias y controles no se ejecuta mientras la protección local de aprendizaje no declare training_allowed verdadero"
+  },
+  {
+    "test": "tests.models.test_reference_campaign::test_invalid_configuration_is_rejected_without_outputs_or_runner[models-value4]",
+    "reason": "Bloqueo de aprendizaje vigente: la rejilla de referencias y controles no se ejecuta mientras la protección local de aprendizaje no declare training_allowed verdadero"
+  },
+  {
+    "test": "tests.models.test_reference_campaign::test_invalid_configuration_is_rejected_without_outputs_or_runner[models-value5]",
+    "reason": "Bloqueo de aprendizaje vigente: la rejilla de referencias y controles no se ejecuta mientras la protección local de aprendizaje no declare training_allowed verdadero"
+  },
+  {
+    "test": "tests.models.test_reference_campaign::test_invalid_configuration_is_rejected_without_outputs_or_runner[models-value6]",
+    "reason": "Bloqueo de aprendizaje vigente: la rejilla de referencias y controles no se ejecuta mientras la protección local de aprendizaje no declare training_allowed verdadero"
+  },
+  {
+    "test": "tests.models.test_reference_campaign::test_invalid_configuration_is_rejected_without_outputs_or_runner[models-rnn]",
+    "reason": "Bloqueo de aprendizaje vigente: la rejilla de referencias y controles no se ejecuta mientras la protección local de aprendizaje no declare training_allowed verdadero"
+  },
+  {
+    "test": "tests.models.test_reference_campaign::test_invalid_configuration_is_rejected_without_outputs_or_runner[models-value8]",
+    "reason": "Bloqueo de aprendizaje vigente: la rejilla de referencias y controles no se ejecuta mientras la protección local de aprendizaje no declare training_allowed verdadero"
+  },
+  {
+    "test": "tests.models.test_reference_campaign::test_invalid_configuration_is_rejected_without_outputs_or_runner[seeds-value9]",
+    "reason": "Bloqueo de aprendizaje vigente: la rejilla de referencias y controles no se ejecuta mientras la protección local de aprendizaje no declare training_allowed verdadero"
+  },
+  {
+    "test": "tests.models.test_reference_campaign::test_invalid_configuration_is_rejected_without_outputs_or_runner[seeds-value10]",
+    "reason": "Bloqueo de aprendizaje vigente: la rejilla de referencias y controles no se ejecuta mientras la protección local de aprendizaje no declare training_allowed verdadero"
+  },
+  {
+    "test": "tests.models.test_reference_campaign::test_invalid_configuration_is_rejected_without_outputs_or_runner[seeds-value11]",
+    "reason": "Bloqueo de aprendizaje vigente: la rejilla de referencias y controles no se ejecuta mientras la protección local de aprendizaje no declare training_allowed verdadero"
+  },
+  {
+    "test": "tests.models.test_reference_campaign::test_invalid_configuration_is_rejected_without_outputs_or_runner[seeds-value12]",
+    "reason": "Bloqueo de aprendizaje vigente: la rejilla de referencias y controles no se ejecuta mientras la protección local de aprendizaje no declare training_allowed verdadero"
+  },
+  {
+    "test": "tests.models.test_reference_campaign::test_invalid_configuration_is_rejected_without_outputs_or_runner[seeds-value13]",
+    "reason": "Bloqueo de aprendizaje vigente: la rejilla de referencias y controles no se ejecuta mientras la protección local de aprendizaje no declare training_allowed verdadero"
+  },
+  {
+    "test": "tests.models.test_reference_campaign::test_invalid_configuration_is_rejected_without_outputs_or_runner[losses-value14]",
+    "reason": "Bloqueo de aprendizaje vigente: la rejilla de referencias y controles no se ejecuta mientras la protección local de aprendizaje no declare training_allowed verdadero"
+  },
+  {
+    "test": "tests.models.test_reference_campaign::test_invalid_configuration_is_rejected_without_outputs_or_runner[losses-value15]",
+    "reason": "Bloqueo de aprendizaje vigente: la rejilla de referencias y controles no se ejecuta mientras la protección local de aprendizaje no declare training_allowed verdadero"
+  },
+  {
+    "test": "tests.models.test_reference_campaign::test_invalid_configuration_is_rejected_without_outputs_or_runner[losses-value16]",
+    "reason": "Bloqueo de aprendizaje vigente: la rejilla de referencias y controles no se ejecuta mientras la protección local de aprendizaje no declare training_allowed verdadero"
+  },
+  {
+    "test": "tests.models.test_reference_campaign::test_invalid_configuration_is_rejected_without_outputs_or_runner[learning_rates-value17]",
+    "reason": "Bloqueo de aprendizaje vigente: la rejilla de referencias y controles no se ejecuta mientras la protección local de aprendizaje no declare training_allowed verdadero"
+  },
+  {
+    "test": "tests.models.test_reference_campaign::test_invalid_configuration_is_rejected_without_outputs_or_runner[learning_rates-value18]",
+    "reason": "Bloqueo de aprendizaje vigente: la rejilla de referencias y controles no se ejecuta mientras la protección local de aprendizaje no declare training_allowed verdadero"
+  },
+  {
+    "test": "tests.models.test_reference_campaign::test_invalid_configuration_is_rejected_without_outputs_or_runner[learning_rates-value19]",
+    "reason": "Bloqueo de aprendizaje vigente: la rejilla de referencias y controles no se ejecuta mientras la protección local de aprendizaje no declare training_allowed verdadero"
+  },
+  {
+    "test": "tests.models.test_reference_campaign::test_invalid_configuration_is_rejected_without_outputs_or_runner[learning_rates-value20]",
+    "reason": "Bloqueo de aprendizaje vigente: la rejilla de referencias y controles no se ejecuta mientras la protección local de aprendizaje no declare training_allowed verdadero"
+  },
+  {
+    "test": "tests.models.test_reference_campaign::test_invalid_configuration_is_rejected_without_outputs_or_runner[learning_rates-value21]",
+    "reason": "Bloqueo de aprendizaje vigente: la rejilla de referencias y controles no se ejecuta mientras la protección local de aprendizaje no declare training_allowed verdadero"
+  },
+  {
+    "test": "tests.models.test_reference_campaign::test_invalid_configuration_is_rejected_without_outputs_or_runner[epochs-1]",
+    "reason": "Bloqueo de aprendizaje vigente: la rejilla de referencias y controles no se ejecuta mientras la protección local de aprendizaje no declare training_allowed verdadero"
+  },
+  {
+    "test": "tests.models.test_reference_campaign::test_invalid_configuration_is_rejected_without_outputs_or_runner[epochs-31]",
+    "reason": "Bloqueo de aprendizaje vigente: la rejilla de referencias y controles no se ejecuta mientras la protección local de aprendizaje no declare training_allowed verdadero"
+  },
+  {
+    "test": "tests.models.test_reference_campaign::test_invalid_configuration_is_rejected_without_outputs_or_runner[epochs-2.0]",
+    "reason": "Bloqueo de aprendizaje vigente: la rejilla de referencias y controles no se ejecuta mientras la protección local de aprendizaje no declare training_allowed verdadero"
+  },
+  {
+    "test": "tests.models.test_reference_campaign::test_invalid_configuration_is_rejected_without_outputs_or_runner[huber_delta-0]",
+    "reason": "Bloqueo de aprendizaje vigente: la rejilla de referencias y controles no se ejecuta mientras la protección local de aprendizaje no declare training_allowed verdadero"
+  },
+  {
+    "test": "tests.models.test_reference_campaign::test_invalid_configuration_is_rejected_without_outputs_or_runner[huber_delta-False]",
+    "reason": "Bloqueo de aprendizaje vigente: la rejilla de referencias y controles no se ejecuta mientras la protección local de aprendizaje no declare training_allowed verdadero"
+  },
+  {
+    "test": "tests.models.test_reference_campaign::test_invalid_configuration_is_rejected_without_outputs_or_runner[batch_size-32]",
+    "reason": "Bloqueo de aprendizaje vigente: la rejilla de referencias y controles no se ejecuta mientras la protección local de aprendizaje no declare training_allowed verdadero"
+  },
+  {
+    "test": "tests.models.test_reference_campaign::test_invalid_configuration_is_rejected_without_outputs_or_runner[workers-1]",
+    "reason": "Bloqueo de aprendizaje vigente: la rejilla de referencias y controles no se ejecuta mientras la protección local de aprendizaje no declare training_allowed verdadero"
+  },
+  {
+    "test": "tests.models.test_reference_campaign::test_invalid_configuration_is_rejected_without_outputs_or_runner[workers-False]",
+    "reason": "Bloqueo de aprendizaje vigente: la rejilla de referencias y controles no se ejecuta mientras la protección local de aprendizaje no declare training_allowed verdadero"
+  },
+  {
+    "test": "tests.models.test_reference_campaign::test_invalid_configuration_is_rejected_without_outputs_or_runner[device-cpu]",
+    "reason": "Bloqueo de aprendizaje vigente: la rejilla de referencias y controles no se ejecuta mientras la protección local de aprendizaje no declare training_allowed verdadero"
+  },
+  {
+    "test": "tests.models.test_reference_campaign::test_invalid_configuration_is_rejected_without_outputs_or_runner[training_through-2023-12-31]",
+    "reason": "Bloqueo de aprendizaje vigente: la rejilla de referencias y controles no se ejecuta mientras la protección local de aprendizaje no declare training_allowed verdadero"
+  },
+  {
+    "test": "tests.models.test_reference_campaign::test_invalid_configuration_is_rejected_without_outputs_or_runner[validation_year-2024]",
+    "reason": "Bloqueo de aprendizaje vigente: la rejilla de referencias y controles no se ejecuta mientras la protección local de aprendizaje no declare training_allowed verdadero"
+  },
+  {
+    "test": "tests.models.test_reference_campaign::test_invalid_configuration_is_rejected_without_outputs_or_runner[validation_year-2023.0]",
+    "reason": "Bloqueo de aprendizaje vigente: la rejilla de referencias y controles no se ejecuta mientras la protección local de aprendizaje no declare training_allowed verdadero"
+  },
+  {
+    "test": "tests.models.test_reference_campaign::test_invalid_configuration_is_rejected_without_outputs_or_runner[final_test_opened-True]",
+    "reason": "Bloqueo de aprendizaje vigente: la rejilla de referencias y controles no se ejecuta mientras la protección local de aprendizaje no declare training_allowed verdadero"
+  },
+  {
+    "test": "tests.models.test_reference_campaign::test_invalid_configuration_is_rejected_without_outputs_or_runner[final_test_opened-0]",
+    "reason": "Bloqueo de aprendizaje vigente: la rejilla de referencias y controles no se ejecuta mientras la protección local de aprendizaje no declare training_allowed verdadero"
+  },
+  {
+    "test": "tests.models.test_reference_campaign::test_invalid_configuration_is_rejected_without_outputs_or_runner[unexpected-value]",
+    "reason": "Bloqueo de aprendizaje vigente: la rejilla de referencias y controles no se ejecuta mientras la protección local de aprendizaje no declare training_allowed verdadero"
+  },
+  {
+    "test": "tests.models.test_reference_campaign::test_changed_posttraining_control_is_rejected_before_outputs[base_loss-mae]",
+    "reason": "Bloqueo de aprendizaje vigente: la rejilla de referencias y controles no se ejecuta mientras la protección local de aprendizaje no declare training_allowed verdadero"
+  },
+  {
+    "test": "tests.models.test_reference_campaign::test_changed_posttraining_control_is_rejected_before_outputs[base_learning_rate-0.0001]",
+    "reason": "Bloqueo de aprendizaje vigente: la rejilla de referencias y controles no se ejecuta mientras la protección local de aprendizaje no declare training_allowed verdadero"
+  },
+  {
+    "test": "tests.models.test_reference_campaign::test_changed_posttraining_control_is_rejected_before_outputs[losses-value2]",
+    "reason": "Bloqueo de aprendizaje vigente: la rejilla de referencias y controles no se ejecuta mientras la protección local de aprendizaje no declare training_allowed verdadero"
+  },
+  {
+    "test": "tests.models.test_reference_campaign::test_changed_posttraining_control_is_rejected_before_outputs[losses-value3]",
+    "reason": "Bloqueo de aprendizaje vigente: la rejilla de referencias y controles no se ejecuta mientras la protección local de aprendizaje no declare training_allowed verdadero"
+  },
+  {
+    "test": "tests.models.test_reference_campaign::test_changed_posttraining_control_is_rejected_before_outputs[losses-value4]",
+    "reason": "Bloqueo de aprendizaje vigente: la rejilla de referencias y controles no se ejecuta mientras la protección local de aprendizaje no declare training_allowed verdadero"
+  },
+  {
+    "test": "tests.models.test_reference_campaign::test_changed_posttraining_control_is_rejected_before_outputs[learning_rate-0.001]",
+    "reason": "Bloqueo de aprendizaje vigente: la rejilla de referencias y controles no se ejecuta mientras la protección local de aprendizaje no declare training_allowed verdadero"
+  },
+  {
+    "test": "tests.models.test_reference_campaign::test_changed_posttraining_control_is_rejected_before_outputs[epochs-4]",
+    "reason": "Bloqueo de aprendizaje vigente: la rejilla de referencias y controles no se ejecuta mientras la protección local de aprendizaje no declare training_allowed verdadero"
+  },
+  {
+    "test": "tests.models.test_reference_campaign::test_changed_posttraining_control_is_rejected_before_outputs[epochs-5.0]",
+    "reason": "Bloqueo de aprendizaje vigente: la rejilla de referencias y controles no se ejecuta mientras la protección local de aprendizaje no declare training_allowed verdadero"
+  },
+  {
+    "test": "tests.models.test_reference_campaign::test_changed_posttraining_control_is_rejected_before_outputs[selection-validation_winner]",
+    "reason": "Bloqueo de aprendizaje vigente: la rejilla de referencias y controles no se ejecuta mientras la protección local de aprendizaje no declare training_allowed verdadero"
+  },
+  {
+    "test": "tests.models.test_reference_campaign::test_changed_posttraining_control_is_rejected_before_outputs[optimizer_policy-resume_adamw]",
+    "reason": "Bloqueo de aprendizaje vigente: la rejilla de referencias y controles no se ejecuta mientras la protección local de aprendizaje no declare training_allowed verdadero"
+  },
+  {
+    "test": "tests.models.test_reference_campaign::test_changed_posttraining_control_is_rejected_before_outputs[loss-mae]",
+    "reason": "Bloqueo de aprendizaje vigente: la rejilla de referencias y controles no se ejecuta mientras la protección local de aprendizaje no declare training_allowed verdadero"
+  },
+  {
+    "test": "tests.models.test_reference_campaign::test_campaign_budget_includes_both_posttraining_controls",
+    "reason": "Bloqueo de aprendizaje vigente: la rejilla de referencias y controles no se ejecuta mientras la protección local de aprendizaje no declare training_allowed verdadero"
+  },
+  {
+    "test": "tests.models.test_reference_campaign::test_exact_case_budget_and_maximum_epochs_are_accepted",
+    "reason": "Bloqueo de aprendizaje vigente: la rejilla de referencias y controles no se ejecuta mientras la protección local de aprendizaje no declare training_allowed verdadero"
+  },
+  {
+    "test": "tests.models.test_reference_campaign::test_nonfinite_numbers_are_rejected_before_outputs[learning_rates-nan]",
+    "reason": "Bloqueo de aprendizaje vigente: la rejilla de referencias y controles no se ejecuta mientras la protección local de aprendizaje no declare training_allowed verdadero"
+  },
+  {
+    "test": "tests.models.test_reference_campaign::test_nonfinite_numbers_are_rejected_before_outputs[learning_rates-inf]",
+    "reason": "Bloqueo de aprendizaje vigente: la rejilla de referencias y controles no se ejecuta mientras la protección local de aprendizaje no declare training_allowed verdadero"
+  },
+  {
+    "test": "tests.models.test_reference_campaign::test_nonfinite_numbers_are_rejected_before_outputs[learning_rates--inf]",
+    "reason": "Bloqueo de aprendizaje vigente: la rejilla de referencias y controles no se ejecuta mientras la protección local de aprendizaje no declare training_allowed verdadero"
+  },
+  {
+    "test": "tests.models.test_reference_campaign::test_nonfinite_numbers_are_rejected_before_outputs[huber_delta-nan]",
+    "reason": "Bloqueo de aprendizaje vigente: la rejilla de referencias y controles no se ejecuta mientras la protección local de aprendizaje no declare training_allowed verdadero"
+  },
+  {
+    "test": "tests.models.test_reference_campaign::test_nonfinite_numbers_are_rejected_before_outputs[huber_delta-inf]",
+    "reason": "Bloqueo de aprendizaje vigente: la rejilla de referencias y controles no se ejecuta mientras la protección local de aprendizaje no declare training_allowed verdadero"
+  },
+  {
+    "test": "tests.models.test_reference_campaign::test_nonfinite_numbers_are_rejected_before_outputs[huber_delta--inf]",
+    "reason": "Bloqueo de aprendizaje vigente: la rejilla de referencias y controles no se ejecuta mientras la protección local de aprendizaje no declare training_allowed verdadero"
+  },
+  {
+    "test": "tests.models.test_reference_campaign::test_config_read_is_bounded_before_json_parsing",
+    "reason": "Bloqueo de aprendizaje vigente: la rejilla de referencias y controles no se ejecuta mientras la protección local de aprendizaje no declare training_allowed verdadero"
+  },
+  {
+    "test": "tests.models.test_reference_campaign::test_missing_input_directory_is_rejected_before_outputs[prepared]",
+    "reason": "Bloqueo de aprendizaje vigente: la rejilla de referencias y controles no se ejecuta mientras la protección local de aprendizaje no declare training_allowed verdadero"
+  },
+  {
+    "test": "tests.models.test_reference_campaign::test_missing_input_directory_is_rejected_before_outputs[samples]",
+    "reason": "Bloqueo de aprendizaje vigente: la rejilla de referencias y controles no se ejecuta mientras la protección local de aprendizaje no declare training_allowed verdadero"
+  },
+  {
+    "test": "tests.models.test_reference_campaign::test_malformed_or_duplicate_json_is_rejected_before_outputs[{\"schema_version\":1,\"schema_version\":1}]",
+    "reason": "Bloqueo de aprendizaje vigente: la rejilla de referencias y controles no se ejecuta mientras la protección local de aprendizaje no declare training_allowed verdadero"
+  },
+  {
+    "test": "tests.models.test_reference_campaign::test_malformed_or_duplicate_json_is_rejected_before_outputs[[]]",
+    "reason": "Bloqueo de aprendizaje vigente: la rejilla de referencias y controles no se ejecuta mientras la protección local de aprendizaje no declare training_allowed verdadero"
+  },
+  {
+    "test": "tests.models.test_reference_campaign::test_malformed_or_duplicate_json_is_rejected_before_outputs[{]",
+    "reason": "Bloqueo de aprendizaje vigente: la rejilla de referencias y controles no se ejecuta mientras la protección local de aprendizaje no declare training_allowed verdadero"
+  },
+  {
+    "test": "tests.models.test_reference_campaign::test_output_cannot_modify_sources_even_through_symlinks[False-prepared]",
+    "reason": "Bloqueo de aprendizaje vigente: la rejilla de referencias y controles no se ejecuta mientras la protección local de aprendizaje no declare training_allowed verdadero"
+  },
+  {
+    "test": "tests.models.test_reference_campaign::test_output_cannot_modify_sources_even_through_symlinks[False-samples]",
+    "reason": "Bloqueo de aprendizaje vigente: la rejilla de referencias y controles no se ejecuta mientras la protección local de aprendizaje no declare training_allowed verdadero"
+  },
+  {
+    "test": "tests.models.test_reference_campaign::test_output_cannot_modify_sources_even_through_symlinks[False-dataset]",
+    "reason": "Bloqueo de aprendizaje vigente: la rejilla de referencias y controles no se ejecuta mientras la protección local de aprendizaje no declare training_allowed verdadero"
+  },
+  {
+    "test": "tests.models.test_reference_campaign::test_output_cannot_modify_sources_even_through_symlinks[True-prepared]",
+    "reason": "Bloqueo de aprendizaje vigente: la rejilla de referencias y controles no se ejecuta mientras la protección local de aprendizaje no declare training_allowed verdadero"
+  },
+  {
+    "test": "tests.models.test_reference_campaign::test_output_cannot_modify_sources_even_through_symlinks[True-samples]",
+    "reason": "Bloqueo de aprendizaje vigente: la rejilla de referencias y controles no se ejecuta mientras la protección local de aprendizaje no declare training_allowed verdadero"
+  },
+  {
+    "test": "tests.models.test_reference_campaign::test_output_cannot_modify_sources_even_through_symlinks[True-dataset]",
+    "reason": "Bloqueo de aprendizaje vigente: la rejilla de referencias y controles no se ejecuta mientras la protección local de aprendizaje no declare training_allowed verdadero"
+  },
+  {
+    "test": "tests.models.test_reference_campaign::test_existing_destination_is_never_reused_or_replaced[directory]",
+    "reason": "Bloqueo de aprendizaje vigente: la rejilla de referencias y controles no se ejecuta mientras la protección local de aprendizaje no declare training_allowed verdadero"
+  },
+  {
+    "test": "tests.models.test_reference_campaign::test_existing_destination_is_never_reused_or_replaced[file]",
+    "reason": "Bloqueo de aprendizaje vigente: la rejilla de referencias y controles no se ejecuta mientras la protección local de aprendizaje no declare training_allowed verdadero"
+  },
+  {
+    "test": "tests.models.test_reference_campaign::test_existing_destination_is_never_reused_or_replaced[dangling_symlink]",
+    "reason": "Bloqueo de aprendizaje vigente: la rejilla de referencias y controles no se ejecuta mientras la protección local de aprendizaje no declare training_allowed verdadero"
+  },
+  {
+    "test": "tests.models.test_reference_campaign::test_failure_is_recorded_and_propagated_without_starting_later_cases",
+    "reason": "Bloqueo de aprendizaje vigente: la rejilla de referencias y controles no se ejecuta mientras la protección local de aprendizaje no declare training_allowed verdadero"
+  },
+  {
+    "test": "tests.models.test_reference_campaign::test_unverified_artifact_or_parent_is_not_marked_completed[test]",
+    "reason": "Bloqueo de aprendizaje vigente: la rejilla de referencias y controles no se ejecuta mientras la protección local de aprendizaje no declare training_allowed verdadero"
+  },
+  {
+    "test": "tests.models.test_reference_campaign::test_unverified_artifact_or_parent_is_not_marked_completed[parent_hash]",
+    "reason": "Bloqueo de aprendizaje vigente: la rejilla de referencias y controles no se ejecuta mientras la protección local de aprendizaje no declare training_allowed verdadero"
+  },
+  {
+    "test": "tests.models.test_reference_campaign::test_unverified_artifact_or_parent_is_not_marked_completed[prediction_hash]",
+    "reason": "Bloqueo de aprendizaje vigente: la rejilla de referencias y controles no se ejecuta mientras la protección local de aprendizaje no declare training_allowed verdadero"
+  },
+  {
+    "test": "tests.models.test_reference_campaign::test_unverified_artifact_or_parent_is_not_marked_completed[training_hash]",
+    "reason": "Bloqueo de aprendizaje vigente: la rejilla de referencias y controles no se ejecuta mientras la protección local de aprendizaje no declare training_allowed verdadero"
+  },
+  {
+    "test": "tests.models.test_reference_campaign::test_unverified_artifact_or_parent_is_not_marked_completed[checkpoint_hash]",
+    "reason": "Bloqueo de aprendizaje vigente: la rejilla de referencias y controles no se ejecuta mientras la protección local de aprendizaje no declare training_allowed verdadero"
+  },
+  {
+    "test": "tests.models.test_reference_campaign::test_main_exposes_the_same_campaign_paths",
+    "reason": "Bloqueo de aprendizaje vigente: la rejilla de referencias y controles no se ejecuta mientras la protección local de aprendizaje no declare training_allowed verdadero"
+  },
+  {
+    "test": "tests.models.test_reference_probe::test_reference_probe_refuses_outputs_inside_prepared_inputs",
+    "reason": "Bloqueo de aprendizaje vigente: el ajuste de la referencia ridge o boosting no se ejecuta mientras la protección local de aprendizaje no declare training_allowed verdadero"
+  },
+  {
+    "test": "tests.models.test_reference_probe::test_reference_probe_does_not_replace_an_existing_run",
+    "reason": "Bloqueo de aprendizaje vigente: el ajuste de la referencia ridge o boosting no se ejecuta mientras la protección local de aprendizaje no declare training_allowed verdadero"
+  },
+  {
+    "test": "tests.models.test_reference_probe::test_reference_report_cannot_overwrite_run_artifacts[ridge.npz]",
+    "reason": "Bloqueo de aprendizaje vigente: el ajuste de la referencia ridge o boosting no se ejecuta mientras la protección local de aprendizaje no declare training_allowed verdadero"
+  },
+  {
+    "test": "tests.models.test_reference_probe::test_reference_report_cannot_overwrite_run_artifacts[predictions.parquet]",
+    "reason": "Bloqueo de aprendizaje vigente: el ajuste de la referencia ridge o boosting no se ejecuta mientras la protección local de aprendizaje no declare training_allowed verdadero"
+  },
+  {
+    "test": "tests.models.test_reference_probe::test_reference_report_cannot_overwrite_run_artifacts[targets/A-targets.parquet]",
+    "reason": "Bloqueo de aprendizaje vigente: el ajuste de la referencia ridge o boosting no se ejecuta mientras la protección local de aprendizaje no declare training_allowed verdadero"
+  },
+  {
+    "test": "tests.models.test_reference_probe::test_boosting_probe_is_explicitly_cpu_and_never_calls_cuda",
+    "reason": "Bloqueo de aprendizaje vigente: el ajuste de la referencia ridge o boosting no se ejecuta mientras la protección local de aprendizaje no declare training_allowed verdadero"
+  },
+  {
+    "test": "tests.posttraining.test_continuation_selection::test_initial_policy_wins_when_epochs_worsen_or_tie[scores0]",
+    "reason": "Bloqueo de aprendizaje vigente: paso de AdamW omitido antes de modificar pesos"
+  },
+  {
+    "test": "tests.posttraining.test_continuation_selection::test_initial_policy_wins_when_epochs_worsen_or_tie[scores1]",
+    "reason": "Bloqueo de aprendizaje vigente: paso de AdamW omitido antes de modificar pesos"
+  },
+  {
+    "test": "tests.posttraining.test_continuation_selection::test_early_stop_preserves_selection_and_rng_across_resume",
+    "reason": "Bloqueo de aprendizaje vigente: paso de AdamW omitido antes de modificar pesos"
+  },
+  {
+    "test": "tests.posttraining.test_continuation_selection::test_neural_early_stop_keeps_parent_and_resumes_dropout_exactly[neural_mae]",
+    "reason": "Bloqueo de aprendizaje vigente: paso de AdamW omitido antes de modificar pesos"
+  },
+  {
+    "test": "tests.posttraining.test_continuation_selection::test_neural_early_stop_keeps_parent_and_resumes_dropout_exactly[neural_mse]",
+    "reason": "Bloqueo de aprendizaje vigente: paso de AdamW omitido antes de modificar pesos"
+  },
+  {
+    "test": "tests.posttraining.test_continuation_selection::test_initial_validation_interruption_does_not_consume_patience",
+    "reason": "Bloqueo de aprendizaje vigente: paso de AdamW omitido antes de modificar pesos"
+  },
+  {
+    "test": "tests.posttraining.test_continuation_selection::test_final_validation_interruption_keeps_latest_weights_with_their_optimizer",
+    "reason": "Bloqueo de aprendizaje vigente: paso de AdamW omitido antes de modificar pesos"
+  },
+  {
+    "test": "tests.posttraining.test_continuation_selection::test_minimum_improvement_is_relative_to_the_last_accepted_best",
+    "reason": "Bloqueo de aprendizaje vigente: paso de AdamW omitido antes de modificar pesos"
+  },
+  {
+    "test": "tests.posttraining.test_continuation_selection::test_fixed_augmentation_budgets_survive_selection_of_epoch_zero",
+    "reason": "Bloqueo de aprendizaje vigente: paso de AdamW omitido antes de modificar pesos"
+  },
+  {
+    "test": "tests.posttraining.test_continuation_selection::test_many_saves_and_resumes_keep_only_two_recent_states_and_one_best",
+    "reason": "Bloqueo de aprendizaje vigente: paso de AdamW omitido antes de modificar pesos"
+  },
+  {
+    "test": "tests.posttraining.test_continuation_selection::test_interrupted_epoch_validation_does_not_advance_selection",
+    "reason": "Bloqueo de aprendizaje vigente: paso de AdamW omitido antes de modificar pesos"
+  },
+  {
+    "test": "tests.posttraining.test_continuation_selection::test_redirected_best_checkpoint_is_rejected_before_rotating_recovery",
+    "reason": "Bloqueo de aprendizaje vigente: paso de AdamW omitido antes de modificar pesos"
+  },
+  {
+    "test": "tests.posttraining.test_convergence_selection::test_new_policy_waits_past_minimum_and_recovers_exactly[reinforce]",
+    "reason": "Bloqueo de aprendizaje vigente: paso de AdamW omitido antes de modificar pesos"
+  },
+  {
+    "test": "tests.posttraining.test_convergence_selection::test_new_policy_waits_past_minimum_and_recovers_exactly[expected]",
+    "reason": "Bloqueo de aprendizaje vigente: paso de AdamW omitido antes de modificar pesos"
+  },
+  {
+    "test": "tests.posttraining.test_convergence_selection::test_new_policy_waits_past_minimum_and_recovers_exactly[mae]",
+    "reason": "Bloqueo de aprendizaje vigente: paso de AdamW omitido antes de modificar pesos"
+  },
+  {
+    "test": "tests.posttraining.test_convergence_selection::test_new_policy_waits_past_minimum_and_recovers_exactly[klpo_full]",
+    "reason": "Bloqueo de aprendizaje vigente: paso de AdamW omitido antes de modificar pesos"
+  },
+  {
+    "test": "tests.posttraining.test_convergence_selection::test_new_policy_waits_past_minimum_and_recovers_exactly[klpo_mc]",
+    "reason": "Bloqueo de aprendizaje vigente: paso de AdamW omitido antes de modificar pesos"
+  },
+  {
+    "test": "tests.posttraining.test_convergence_selection::test_new_policy_waits_past_minimum_and_recovers_exactly[klpo_exact]",
+    "reason": "Bloqueo de aprendizaje vigente: paso de AdamW omitido antes de modificar pesos"
+  },
+  {
+    "test": "tests.posttraining.test_convergence_selection::test_new_policy_waits_past_minimum_and_recovers_exactly[neural_mae]",
+    "reason": "Bloqueo de aprendizaje vigente: paso de AdamW omitido antes de modificar pesos"
+  },
+  {
+    "test": "tests.posttraining.test_convergence_selection::test_new_policy_waits_past_minimum_and_recovers_exactly[neural_mse]",
+    "reason": "Bloqueo de aprendizaje vigente: paso de AdamW omitido antes de modificar pesos"
+  },
+  {
+    "test": "tests.posttraining.test_convergence_selection::test_budget_exhaustion_does_not_claim_plateau_while_improving",
+    "reason": "Bloqueo de aprendizaje vigente: paso de AdamW omitido antes de modificar pesos"
+  },
+  {
+    "test": "tests.posttraining.test_heldout::test_reconstructs_the_selected_checkpoint_and_rejects_a_changed_parent[expected]",
+    "reason": "Bloqueo de aprendizaje vigente: paso de AdamW omitido antes de modificar pesos"
+  },
+  {
+    "test": "tests.posttraining.test_heldout::test_reconstructs_the_selected_checkpoint_and_rejects_a_changed_parent[klpo_mc]",
+    "reason": "Bloqueo de aprendizaje vigente: paso de AdamW omitido antes de modificar pesos"
+  },
+  {
+    "test": "tests.posttraining.test_heldout::test_reconstructs_the_selected_checkpoint_and_rejects_a_changed_parent[neural_mse]",
+    "reason": "Bloqueo de aprendizaje vigente: paso de AdamW omitido antes de modificar pesos"
+  },
+  {
+    "test": "tests.posttraining.test_masked_run::test_parent_and_adapter_run_with_the_strict_precision_of_the_parent_case[gru-head+fusion]",
+    "reason": "Bloqueo de aprendizaje vigente: `run_case` exige la protección antes de leer el caso, y el optimizador sustituido de `recorder` registra los gradientes sin cambiar pesos (inventario de #546)"
+  },
+  {
+    "test": "tests.posttraining.test_masked_run::test_parent_and_adapter_run_with_the_strict_precision_of_the_parent_case[transformer-readout]",
+    "reason": "Bloqueo de aprendizaje vigente: `run_case` exige la protección antes de leer el caso, y el optimizador sustituido de `recorder` registra los gradientes sin cambiar pesos (inventario de #546)"
+  },
+  {
+    "test": "tests.posttraining.test_masked_run::test_an_adapter_whose_process_allows_tf32_mid_run_fails_at_the_next_save",
+    "reason": "Bloqueo de aprendizaje vigente: `run_case` exige la protección antes de leer el caso, y el optimizador sustituido de `recorder` registra los gradientes sin cambiar pesos (inventario de #546)"
+  },
+  {
+    "test": "tests.posttraining.test_masked_run::test_a_final_evaluation_under_tf32_is_not_confirmed",
+    "reason": "Bloqueo de aprendizaje vigente: `run_case` exige la protección antes de leer el caso, y el optimizador sustituido de `recorder` registra los gradientes sin cambiar pesos (inventario de #546)"
+  },
+  {
+    "test": "tests.posttraining.test_publication_from_aggregates::test_the_publication_from_aggregates_equals_the_reports_that_read_the_rows",
+    "reason": "Bloqueo de aprendizaje vigente: completa la etapa de adaptadores con el optimizador que solo registra gradientes y recorre la retención v2, cuya regeneración de predicciones se detiene con la protección (inventario de #546)"
+  },
+  {
+    "test": "tests.posttraining.test_publication_from_aggregates::test_the_walk_saves_the_stage_aggregates_before_releasing_the_rows",
+    "reason": "Bloqueo de aprendizaje vigente: completa la etapa de adaptadores con el optimizador que solo registra gradientes y recorre la retención v2, cuya regeneración de predicciones se detiene con la protección (inventario de #546)"
+  },
+  {
+    "test": "tests.posttraining.test_publication_from_aggregates::test_a_cut_between_the_aggregates_and_the_release_loses_and_repeats_nothing",
+    "reason": "Bloqueo de aprendizaje vigente: completa la etapa de adaptadores con el optimizador que solo registra gradientes y recorre la retención v2, cuya regeneración de predicciones se detiene con la protección (inventario de #546)"
+  },
+  {
+    "test": "tests.posttraining.test_publication_from_aggregates::test_a_failed_publication_leaves_no_destination_and_is_repeated",
+    "reason": "Bloqueo de aprendizaje vigente: completa la etapa de adaptadores con el optimizador que solo registra gradientes y recorre la retención v2, cuya regeneración de predicciones se detiene con la protección (inventario de #546)"
+  },
+  {
+    "test": "tests.posttraining.test_publication_from_aggregates::test_the_walk_with_the_adapter_stage_needs_the_publication_of_that_stage",
+    "reason": "Bloqueo de aprendizaje vigente: completa la etapa de adaptadores con el optimizador que solo registra gradientes y recorre la retención v2, cuya regeneración de predicciones se detiene con la protección (inventario de #546)"
+  },
+  {
+    "test": "tests.posttraining.test_publication_from_aggregates::test_the_publication_carries_a_passed_integrity_report",
+    "reason": "Bloqueo de aprendizaje vigente: completa la etapa de adaptadores con el optimizador que solo registra gradientes y recorre la retención v2, cuya regeneración de predicciones se detiene con la protección (inventario de #546)"
+  },
+  {
+    "test": "tests.posttraining.test_publication_from_aggregates::test_a_publication_whose_sessions_differ_from_the_aggregates_is_stopped",
+    "reason": "Bloqueo de aprendizaje vigente: completa la etapa de adaptadores con el optimizador que solo registra gradientes y recorre la retención v2, cuya regeneración de predicciones se detiene con la protección (inventario de #546)"
+  },
+  {
+    "test": "tests.posttraining.test_publication_from_aggregates::test_a_window_that_fails_its_recalculation_is_not_released",
+    "reason": "Bloqueo de aprendizaje vigente: completa la etapa de adaptadores con el optimizador que solo registra gradientes y recorre la retención v2, cuya regeneración de predicciones se detiene con la protección (inventario de #546)"
+  },
+  {
+    "test": "tests.posttraining.test_publication_from_aggregates::test_the_chain_disjunction_blocks_the_publication",
+    "reason": "Bloqueo de aprendizaje vigente: completa la etapa de adaptadores con el optimizador que solo registra gradientes y recorre la retención v2, cuya regeneración de predicciones se detiene con la protección (inventario de #546)"
+  },
+  {
+    "test": "tests.posttraining.test_publication_from_aggregates::test_runs_report_every_declared_job_with_its_attempts",
+    "reason": "Bloqueo de aprendizaje vigente: completa la etapa de adaptadores con el optimizador que solo registra gradientes y recorre la retención v2, cuya regeneración de predicciones se detiene con la protección (inventario de #546)"
+  },
+  {
+    "test": "tests.posttraining.test_publication_from_aggregates::test_runs_reject_an_undeclared_or_a_missing_job[undeclared]",
+    "reason": "Bloqueo de aprendizaje vigente: completa la etapa de adaptadores con el optimizador que solo registra gradientes y recorre la retención v2, cuya regeneración de predicciones se detiene con la protección (inventario de #546)"
+  },
+  {
+    "test": "tests.posttraining.test_publication_from_aggregates::test_runs_reject_an_undeclared_or_a_missing_job[missing]",
+    "reason": "Bloqueo de aprendizaje vigente: completa la etapa de adaptadores con el optimizador que solo registra gradientes y recorre la retención v2, cuya regeneración de predicciones se detiene con la protección (inventario de #546)"
+  },
+  {
+    "test": "tests.posttraining.test_publication_from_aggregates::test_runs_count_the_chain_selection_of_each_window",
+    "reason": "Bloqueo de aprendizaje vigente: completa la etapa de adaptadores con el optimizador que solo registra gradientes y recorre la retención v2, cuya regeneración de predicciones se detiene con la protección (inventario de #546)"
+  },
+  {
+    "test": "tests.posttraining.test_publication_from_aggregates::test_a_published_comparison_must_keep_every_declared_seed_and_window[seed]",
+    "reason": "Bloqueo de aprendizaje vigente: completa la etapa de adaptadores con el optimizador que solo registra gradientes y recorre la retención v2, cuya regeneración de predicciones se detiene con la protección (inventario de #546)"
+  },
+  {
+    "test": "tests.posttraining.test_publication_from_aggregates::test_a_published_comparison_must_keep_every_declared_seed_and_window[window]",
+    "reason": "Bloqueo de aprendizaje vigente: completa la etapa de adaptadores con el optimizador que solo registra gradientes y recorre la retención v2, cuya regeneración de predicciones se detiene con la protección (inventario de #546)"
+  },
+  {
+    "test": "tests.posttraining.test_publication_from_aggregates::test_a_published_comparison_must_keep_every_declared_seed_and_window[model]",
+    "reason": "Bloqueo de aprendizaje vigente: completa la etapa de adaptadores con el optimizador que solo registra gradientes y recorre la retención v2, cuya regeneración de predicciones se detiene con la protección (inventario de #546)"
+  },
+  {
+    "test": "tests.posttraining.test_publication_from_aggregates::test_selection_follows_the_validation_before_each_window",
+    "reason": "Bloqueo de aprendizaje vigente: completa la etapa de adaptadores con el optimizador que solo registra gradientes y recorre la retención v2, cuya regeneración de predicciones se detiene con la protección (inventario de #546)"
+  },
+  {
+    "test": "tests.posttraining.test_publication_from_aggregates::test_selection_rejects_a_state_chosen_or_declared_against_the_rule[score-la puntuaci\\xf3n del recibo no es la de su validaci\\xf3n]",
+    "reason": "Bloqueo de aprendizaje vigente: completa la etapa de adaptadores con el optimizador que solo registra gradientes y recorre la retención v2, cuya regeneración de predicciones se detiene con la protección (inventario de #546)"
+  },
+  {
+    "test": "tests.posttraining.test_publication_from_aggregates::test_selection_rejects_a_state_chosen_or_declared_against_the_rule[labels-La \\xfaltima etiqueta usada debe madurar antes de la evaluaci\\xf3n]",
+    "reason": "Bloqueo de aprendizaje vigente: completa la etapa de adaptadores con el optimizador que solo registra gradientes y recorre la retención v2, cuya regeneración de predicciones se detiene con la protección (inventario de #546)"
+  },
+  {
+    "test": "tests.posttraining.test_publication_from_aggregates::test_selection_rejects_a_state_chosen_or_declared_against_the_rule[parent-el recibo no nombra el estado elegido]",
+    "reason": "Bloqueo de aprendizaje vigente: completa la etapa de adaptadores con el optimizador que solo registra gradientes y recorre la retención v2, cuya regeneración de predicciones se detiene con la protección (inventario de #546)"
+  },
+  {
+    "test": "tests.posttraining.test_publication_from_aggregates::test_partitions_out_of_order_or_another_evaluated_partition_fail",
+    "reason": "Bloqueo de aprendizaje vigente: completa la etapa de adaptadores con el optimizador que solo registra gradientes y recorre la retención v2, cuya regeneración de predicciones se detiene con la protección (inventario de #546)"
+  },
+  {
+    "test": "tests.posttraining.test_publication_from_aggregates::test_a_fit_that_does_not_spend_its_declared_budget_blocks_the_report[truncated]",
+    "reason": "Bloqueo de aprendizaje vigente: completa la etapa de adaptadores con el optimizador que solo registra gradientes y recorre la retención v2, cuya regeneración de predicciones se detiene con la protección (inventario de #546)"
+  },
+  {
+    "test": "tests.posttraining.test_publication_from_aggregates::test_a_fit_that_does_not_spend_its_declared_budget_blocks_the_report[other-epoch]",
+    "reason": "Bloqueo de aprendizaje vigente: completa la etapa de adaptadores con el optimizador que solo registra gradientes y recorre la retención v2, cuya regeneración de predicciones se detiene con la protección (inventario de #546)"
+  },
+  {
+    "test": "tests.posttraining.test_publication_from_aggregates::test_a_fit_that_does_not_spend_its_declared_budget_blocks_the_report[steps]",
+    "reason": "Bloqueo de aprendizaje vigente: completa la etapa de adaptadores con el optimizador que solo registra gradientes y recorre la retención v2, cuya regeneración de predicciones se detiene con la protección (inventario de #546)"
+  },
+  {
+    "test": "tests.posttraining.test_publication_from_aggregates::test_fits_of_the_same_trainer_with_unequal_updates_block_the_report",
+    "reason": "Bloqueo de aprendizaje vigente: completa la etapa de adaptadores con el optimizador que solo registra gradientes y recorre la retención v2, cuya regeneración de predicciones se detiene con la protección (inventario de #546)"
+  },
+  {
+    "test": "tests.posttraining.test_queue::test_queue_recovers_all_objectives_and_does_not_rewrite_completed_run[legacy]",
+    "reason": "Bloqueo de aprendizaje vigente: paso de AdamW omitido antes de modificar pesos"
+  },
+  {
+    "test": "tests.posttraining.test_queue::test_queue_recovers_all_objectives_and_does_not_rewrite_completed_run[paired_v2]",
+    "reason": "Bloqueo de aprendizaje vigente: paso de AdamW omitido antes de modificar pesos"
+  },
+  {
+    "test": "tests.posttraining.test_queue::test_queue_recovers_all_objectives_and_does_not_rewrite_completed_run[real_v2]",
+    "reason": "Bloqueo de aprendizaje vigente: paso de AdamW omitido antes de modificar pesos"
+  },
+  {
+    "test": "tests.posttraining.test_queue::test_queue_recovers_all_objectives_and_does_not_rewrite_completed_run[matching]",
+    "reason": "Bloqueo de aprendizaje vigente: paso de AdamW omitido antes de modificar pesos"
+  },
+  {
+    "test": "tests.posttraining.test_run::test_resume_recovers_exact_weights_optimizer_rng_and_budget[reinforce]",
+    "reason": "Bloqueo de aprendizaje vigente: paso de AdamW omitido antes de modificar pesos"
+  },
+  {
+    "test": "tests.posttraining.test_run::test_resume_recovers_exact_weights_optimizer_rng_and_budget[expected]",
+    "reason": "Bloqueo de aprendizaje vigente: paso de AdamW omitido antes de modificar pesos"
+  },
+  {
+    "test": "tests.posttraining.test_run::test_resume_recovers_exact_weights_optimizer_rng_and_budget[mae]",
+    "reason": "Bloqueo de aprendizaje vigente: paso de AdamW omitido antes de modificar pesos"
+  },
+  {
+    "test": "tests.posttraining.test_run::test_resume_recovers_exact_weights_optimizer_rng_and_budget[klpo_full]",
+    "reason": "Bloqueo de aprendizaje vigente: paso de AdamW omitido antes de modificar pesos"
+  },
+  {
+    "test": "tests.posttraining.test_run::test_resume_recovers_exact_weights_optimizer_rng_and_budget[klpo_mc]",
+    "reason": "Bloqueo de aprendizaje vigente: paso de AdamW omitido antes de modificar pesos"
+  },
+  {
+    "test": "tests.posttraining.test_run::test_resume_recovers_exact_weights_optimizer_rng_and_budget[klpo_exact]",
+    "reason": "Bloqueo de aprendizaje vigente: paso de AdamW omitido antes de modificar pesos"
+  },
+  {
+    "test": "tests.posttraining.test_run::test_neural_continuation_keeps_parent_frozen_and_resumes_dropout[neural_mae]",
+    "reason": "Bloqueo de aprendizaje vigente: paso de AdamW omitido antes de modificar pesos"
+  },
+  {
+    "test": "tests.posttraining.test_run::test_neural_continuation_keeps_parent_frozen_and_resumes_dropout[neural_mse]",
+    "reason": "Bloqueo de aprendizaje vigente: paso de AdamW omitido antes de modificar pesos"
+  },
+  {
+    "test": "tests.posttraining.test_run::test_missing_confirmed_checkpoint_cannot_restart_a_run",
+    "reason": "Bloqueo de aprendizaje vigente: paso de AdamW omitido antes de modificar pesos"
+  },
+  {
+    "test": "tests.simulation.test_adaptation_scenarios::test_hmm_rejects_reserved_sources_before_importing_optional_dependency[validation]",
+    "reason": "Bloqueo de aprendizaje vigente: el ajuste HMM de escenarios no se ejecuta mientras la protección local de aprendizaje no declare training_allowed verdadero"
+  },
+  {
+    "test": "tests.simulation.test_adaptation_scenarios::test_hmm_rejects_reserved_sources_before_importing_optional_dependency[audit]",
+    "reason": "Bloqueo de aprendizaje vigente: el ajuste HMM de escenarios no se ejecuta mientras la protección local de aprendizaje no declare training_allowed verdadero"
+  },
+  {
+    "test": "tests.simulation.test_adaptation_scenarios::test_hmm_exports_finite_native_parameters_with_training_provenance",
+    "reason": "Bloqueo de aprendizaje vigente: el ajuste HMM de escenarios no se ejecuta mientras la protección local de aprendizaje no declare training_allowed verdadero"
+  },
+  {
+    "test": "tests.simulation.test_adaptation_scenarios::test_hmm_rejects_degenerate_emissions",
+    "reason": "Bloqueo de aprendizaje vigente: el ajuste HMM de escenarios no se ejecuta mientras la protección local de aprendizaje no declare training_allowed verdadero"
+  },
+  {
+    "test": "tests.simulation.test_campaign::test_small_campaign_and_resume_are_technical",
+    "reason": "Bloqueo de aprendizaje vigente: la campaña de comparadores financieros no se ejecuta mientras la protección local de aprendizaje no declare training_allowed verdadero"
+  },
+  {
+    "test": "tests.simulation.test_campaign::test_validation_must_not_reuse_training",
+    "reason": "Bloqueo de aprendizaje vigente: la campaña de comparadores financieros no se ejecuta mientras la protección local de aprendizaje no declare training_allowed verdadero"
+  },
+  {
+    "test": "tests.simulation.test_campaign::test_validation_rejects_repeated_generator_seed",
+    "reason": "Bloqueo de aprendizaje vigente: la campaña de comparadores financieros no se ejecuta mientras la protección local de aprendizaje no declare training_allowed verdadero"
+  },
+  {
+    "test": "tests.simulation.test_recovery_atomicity::test_rejected_checkpoint_preserves_complete_trainer_state[ppo-network]",
+    "reason": "Bloqueo de aprendizaje vigente: paso de Adam omitido antes de modificar pesos"
+  },
+  {
+    "test": "tests.simulation.test_recovery_atomicity::test_rejected_checkpoint_preserves_complete_trainer_state[ppo-optimizer]",
+    "reason": "Bloqueo de aprendizaje vigente: paso de Adam omitido antes de modificar pesos"
+  },
+  {
+    "test": "tests.simulation.test_recovery_atomicity::test_rejected_checkpoint_preserves_complete_trainer_state[ppo-numpy_rng]",
+    "reason": "Bloqueo de aprendizaje vigente: paso de Adam omitido antes de modificar pesos"
+  },
+  {
+    "test": "tests.simulation.test_recovery_atomicity::test_rejected_checkpoint_preserves_complete_trainer_state[ppo-sampling_rng]",
+    "reason": "Bloqueo de aprendizaje vigente: paso de Adam omitido antes de modificar pesos"
+  },
+  {
+    "test": "tests.simulation.test_recovery_atomicity::test_rejected_checkpoint_preserves_complete_trainer_state[ppo-rng]",
+    "reason": "Bloqueo de aprendizaje vigente: paso de Adam omitido antes de modificar pesos"
+  },
+  {
+    "test": "tests.simulation.test_recovery_atomicity::test_rejected_checkpoint_preserves_complete_trainer_state[ppo-episodes]",
+    "reason": "Bloqueo de aprendizaje vigente: paso de Adam omitido antes de modificar pesos"
+  },
+  {
+    "test": "tests.simulation.test_recovery_atomicity::test_rejected_checkpoint_preserves_complete_trainer_state[ppo-environment]",
+    "reason": "Bloqueo de aprendizaje vigente: paso de Adam omitido antes de modificar pesos"
+  },
+  {
+    "test": "tests.simulation.test_recovery_atomicity::test_rejected_checkpoint_preserves_complete_trainer_state[double_dqn-target]",
+    "reason": "Bloqueo de aprendizaje vigente: paso de Adam omitido antes de modificar pesos"
+  },
+  {
+    "test": "tests.simulation.test_recovery_atomicity::test_rejected_checkpoint_preserves_complete_trainer_state[double_dqn-replay]",
+    "reason": "Bloqueo de aprendizaje vigente: paso de Adam omitido antes de modificar pesos"
+  },
+  {
+    "test": "tests.simulation.test_recovery_atomicity::test_rejected_checkpoint_preserves_complete_trainer_state[double_dqn-rng]",
+    "reason": "Bloqueo de aprendizaje vigente: paso de Adam omitido antes de modificar pesos"
+  },
+  {
+    "test": "tests.simulation.test_stage_report::test_component_contrasts_pair_each_variant_with_its_control_on_the_same_sessions",
+    "reason": "Bloqueo de aprendizaje vigente: recorre la etapa de políticas reducida con GRPO, Dr. GRPO y GSPO y un aprendiz sustituido que no ajusta, porque el informe solo lee salidas confirmadas de la etapa y su ejecución se detiene con la protección (inventario de #546)"
+  },
+  {
+    "test": "tests.simulation.test_stage_report::test_the_report_records_the_platform_that_each_receipt_keeps",
+    "reason": "Bloqueo de aprendizaje vigente: lee la salida de la etapa de políticas que el fixture stage_output ejecuta con learning_doubles y políticas de reglas fijas, para comprobar la plataforma de sus recibos y del informe (#543) (inventario de #546)"
+  },
+  {
+    "test": "tests.simulation.test_training::test_resume_preserves_next_update_and_final_parameters[ppo]",
+    "reason": "Bloqueo de aprendizaje vigente: el ajuste de la política financiera no se ejecuta mientras la protección local de aprendizaje no declare training_allowed verdadero"
+  },
+  {
+    "test": "tests.simulation.test_training::test_resume_preserves_next_update_and_final_parameters[double_dqn]",
+    "reason": "Bloqueo de aprendizaje vigente: el ajuste de la política financiera no se ejecuta mientras la protección local de aprendizaje no declare training_allowed verdadero"
+  },
+  {
+    "test": "tests.simulation.test_training::test_failure_before_first_step_can_resume",
+    "reason": "Bloqueo de aprendizaje vigente: el ajuste de la política financiera no se ejecuta mientras la protección local de aprendizaje no declare training_allowed verdadero"
+  },
+  {
+    "test": "tests.test_suite_support::test_unguarded_fits_run_when_the_hold_allows_learning",
+    "reason": "Bloqueo de aprendizaje vigente: la sesión de pytest hija lee una protección temporal que permite aprender para comprobar que la marca unguarded_fit deja de omitir, aunque la prueba sondeada no ajusta (inventario de #546)"
+  },
+  {
+    "test": "tests.tooling.test_combined_memory_numerics::test_replay_rejects_learning_or_changed_rows[optimizer]",
+    "reason": "Bloqueo de aprendizaje vigente: paso de SGD omitido antes de modificar pesos"
+  },
+  {
+    "test": "tests.tooling.test_refinement_study::test_ridge_fit_keeps_signed_losses_and_persists_the_actual_policy",
+    "reason": "Bloqueo de aprendizaje vigente: ajuste de la política de refinamientos no se ejecuta mientras la protección local de aprendizaje no declare training_allowed verdadero"
+  },
+  {
+    "test": "tests.training.test_anchored_decay::test_full_steps_with_lambda_zero_equal_adamw_without_decay[False]",
+    "reason": "Da pasos de optimizador: se omite mientras rija el bloqueo"
+  },
+  {
+    "test": "tests.training.test_anchored_decay::test_full_steps_with_lambda_zero_equal_adamw_without_decay[True]",
+    "reason": "Da pasos de optimizador: se omite mientras rija el bloqueo"
+  },
+  {
+    "test": "tests.training.test_anchored_decay::test_full_steps_with_zero_anchors_equal_adamw[False]",
+    "reason": "Da pasos de optimizador: se omite mientras rija el bloqueo"
+  },
+  {
+    "test": "tests.training.test_anchored_decay::test_full_steps_with_zero_anchors_equal_adamw[True]",
+    "reason": "Da pasos de optimizador: se omite mientras rija el bloqueo"
+  },
+  {
+    "test": "tests.training.test_anchored_decay::test_resumed_steps_equal_the_uninterrupted_run",
+    "reason": "Da pasos de optimizador: se omite mientras rija el bloqueo"
+  },
+  {
+    "test": "tests.training.test_anchored_decay_steps::test_step_accepts_the_three_forms_without_a_closure[absent-cpu]",
+    "reason": "Da pasos de optimizador: se omite mientras rija el bloqueo"
+  },
+  {
+    "test": "tests.training.test_anchored_decay_steps::test_step_accepts_the_three_forms_without_a_closure[positional_none-cpu]",
+    "reason": "Da pasos de optimizador: se omite mientras rija el bloqueo"
+  },
+  {
+    "test": "tests.training.test_anchored_decay_steps::test_step_accepts_the_three_forms_without_a_closure[keyword_none-cpu]",
+    "reason": "Da pasos de optimizador: se omite mientras rija el bloqueo"
+  },
+  {
+    "test": "tests.training.test_anchored_decay_steps::test_closure_is_rejected_before_decay_or_moment_updates[False-cpu]",
+    "reason": "Da pasos de optimizador: se omite mientras rija el bloqueo"
+  },
+  {
+    "test": "tests.training.test_anchored_decay_steps::test_closure_is_rejected_before_decay_or_moment_updates[True-cpu]",
+    "reason": "Da pasos de optimizador: se omite mientras rija el bloqueo"
+  },
+  {
+    "test": "tests.training.test_anchored_decay_steps::test_invalid_step_arguments_do_not_partially_decay_parameters[duplicate_closure-cpu]",
+    "reason": "Da pasos de optimizador: se omite mientras rija el bloqueo"
+  },
+  {
+    "test": "tests.training.test_anchored_decay_steps::test_invalid_step_arguments_do_not_partially_decay_parameters[extra_positional-cpu]",
+    "reason": "Da pasos de optimizador: se omite mientras rija el bloqueo"
+  },
+  {
+    "test": "tests.training.test_anchored_decay_steps::test_invalid_step_arguments_do_not_partially_decay_parameters[unknown_keyword-cpu]",
+    "reason": "Da pasos de optimizador: se omite mientras rija el bloqueo"
+  },
+  {
+    "test": "tests.training.test_anchored_decay_steps::test_learning_hold_stops_the_step_before_anchored_decay[cpu]",
+    "reason": "Da pasos de optimizador: se omite mientras rija el bloqueo"
+  },
+  {
+    "test": "tests.training.test_campaign_a_joint::test_v2_joint_stop_pairs_each_case_and_the_selected_case_of_every_scope",
+    "reason": "Bloqueo de aprendizaje vigente: ejecuta con run_campaign la ventana fold-006 de la v2 reducida con parada conjunta, que pasa la protección de la campaña y de cada trabajo con la protección rebajada de joint_campaign, aunque los ejecutores sustituidos no ajustan (inventario de #546)"
+  },
+  {
+    "test": "tests.training.test_campaign_a_joint::test_a_plateau_that_reports_another_precision_is_not_confirmed",
+    "reason": "Bloqueo de aprendizaje vigente: ejecuta con run_campaign una meseta que informa de TF32 para comprobar que no se confirma, y pasa la protección con la rebajada de joint_campaign, aunque los ejecutores sustituidos no ajustan (inventario de #546)"
+  },
+  {
+    "test": "tests.training.test_campaign_a_joint::test_neural_receipts_record_the_declared_kernels_in_their_identity",
+    "reason": "Bloqueo de aprendizaje vigente: los recibos salen de la campaña reducida que el motor ejecuta con ejecutores sustituidos que no ajustan (inventario de #546)"
+  },
+  {
+    "test": "tests.training.test_campaign_a_joint::test_integrity_recounts_the_rows_the_joint_design_drops",
+    "reason": "Bloqueo de aprendizaje vigente: publica la comparación conjunta desde la campaña A v2 reducida del fixture `joint_campaign`, que ejecuta los dobles de ajuste con la protección rebajada (inventario de #546)"
+  },
+  {
+    "test": "tests.training.test_campaign_a_joint::test_integrity_catches_a_comparison_that_drops_other_rows[miscounted]",
+    "reason": "Bloqueo de aprendizaje vigente: publica la comparación conjunta desde la campaña A v2 reducida del fixture `joint_campaign`, que ejecuta los dobles de ajuste con la protección rebajada (inventario de #546)"
+  },
+  {
+    "test": "tests.training.test_campaign_a_joint::test_integrity_catches_a_comparison_that_drops_other_rows[eligible_dropped]",
+    "reason": "Bloqueo de aprendizaje vigente: publica la comparación conjunta desde la campaña A v2 reducida del fixture `joint_campaign`, que ejecuta los dobles de ajuste con la protección rebajada (inventario de #546)"
+  },
+  {
+    "test": "tests.training.test_campaign_launch_options::test_every_trainer_of_the_window_receives_the_declared_options_in_its_slot",
+    "reason": "Bloqueo de aprendizaje vigente: la ventana reducida se lanza con el motor y los ejecutores reales hasta la entrada de cada entrenador, donde los dobles la detienen sin ajustar, y el motor exige la protección antes de leer la campaña (inventario de #546)"
+  },
+  {
+    "test": "tests.training.test_campaign_launch_options::test_an_undeclared_value_is_rejected_before_opening_views_or_output[tf32]",
+    "reason": "Bloqueo de aprendizaje vigente: comprueba que el motor rechaza el valor antes de abrir vistas o crear la salida, y el motor exige la protección antes de leer la campaña. Los mismos rechazos se comprueban sin la guarda con `check_campaign` (inventario de #546)"
+  },
+  {
+    "test": "tests.training.test_campaign_launch_options::test_an_undeclared_value_is_rejected_before_opening_views_or_output[graphs_text]",
+    "reason": "Bloqueo de aprendizaje vigente: comprueba que el motor rechaza el valor antes de abrir vistas o crear la salida, y el motor exige la protección antes de leer la campaña. Los mismos rechazos se comprueban sin la guarda con `check_campaign` (inventario de #546)"
+  },
+  {
+    "test": "tests.training.test_campaign_launch_options::test_an_undeclared_value_is_rejected_before_opening_views_or_output[batch_over_limit]",
+    "reason": "Bloqueo de aprendizaje vigente: comprueba que el motor rechaza el valor antes de abrir vistas o crear la salida, y el motor exige la protección antes de leer la campaña. Los mismos rechazos se comprueban sin la guarda con `check_campaign` (inventario de #546)"
+  },
+  {
+    "test": "tests.training.test_campaign_launch_options::test_an_undeclared_value_is_rejected_before_opening_views_or_output[undeclared_option]",
+    "reason": "Bloqueo de aprendizaje vigente: comprueba que el motor rechaza el valor antes de abrir vistas o crear la salida, y el motor exige la protección antes de leer la campaña. Los mismos rechazos se comprueban sin la guarda con `check_campaign` (inventario de #546)"
+  },
+  {
+    "test": "tests.training.test_campaign_launch_options::test_an_undeclared_value_is_rejected_before_opening_views_or_output[rows_other_than_recipe]",
+    "reason": "Bloqueo de aprendizaje vigente: comprueba que el motor rechaza el valor antes de abrir vistas o crear la salida, y el motor exige la protección antes de leer la campaña. Los mismos rechazos se comprueban sin la guarda con `check_campaign` (inventario de #546)"
+  },
+  {
+    "test": "tests.training.test_campaign_launch_options::test_an_undeclared_value_is_rejected_before_opening_views_or_output[rows_as_float]",
+    "reason": "Bloqueo de aprendizaje vigente: comprueba que el motor rechaza el valor antes de abrir vistas o crear la salida, y el motor exige la protección antes de leer la campaña. Los mismos rechazos se comprueban sin la guarda con `check_campaign` (inventario de #546)"
+  },
+  {
+    "test": "tests.training.test_campaign_launch_options::test_an_undeclared_value_is_rejected_before_opening_views_or_output[recompute_as_integer]",
+    "reason": "Bloqueo de aprendizaje vigente: comprueba que el motor rechaza el valor antes de abrir vistas o crear la salida, y el motor exige la protección antes de leer la campaña. Los mismos rechazos se comprueban sin la guarda con `check_campaign` (inventario de #546)"
+  },
+  {
+    "test": "tests.training.test_campaign_launch_options::test_an_undeclared_value_is_rejected_before_opening_views_or_output[without_receipt]",
+    "reason": "Bloqueo de aprendizaje vigente: comprueba que el motor rechaza el valor antes de abrir vistas o crear la salida, y el motor exige la protección antes de leer la campaña. Los mismos rechazos se comprueban sin la guarda con `check_campaign` (inventario de #546)"
+  },
+  {
+    "test": "tests.training.test_campaign_launch_options::test_an_undeclared_value_is_rejected_before_opening_views_or_output[pending_rows]",
+    "reason": "Bloqueo de aprendizaje vigente: comprueba que el motor rechaza el valor antes de abrir vistas o crear la salida, y el motor exige la protección antes de leer la campaña. Los mismos rechazos se comprueban sin la guarda con `check_campaign` (inventario de #546)"
+  },
+  {
+    "test": "tests.training.test_campaign_launch_options::test_a_cut_campaign_resumes_every_job_with_the_same_options",
+    "reason": "Bloqueo de aprendizaje vigente: la ventana reducida se lanza con el motor y los ejecutores reales hasta la entrada de cada entrenador, donde los dobles la detienen sin ajustar, y el motor exige la protección antes de leer la campaña (inventario de #546)"
+  },
+  {
+    "test": "tests.training.test_campaign_launch_options::test_changed_options_reach_the_trainers_that_use_them",
+    "reason": "Bloqueo de aprendizaje vigente: la ventana reducida se lanza con el motor y los ejecutores reales hasta la entrada de cada entrenador, donde los dobles la detienen sin ajustar, y el motor exige la protección antes de leer la campaña (inventario de #546)"
+  },
+  {
+    "test": "tests.training.test_checkpoint_recovery::test_resume_reproduces_optimizer_rng_and_next_update_exactly[cpu]",
+    "reason": "Bloqueo de aprendizaje vigente: paso de AdamW omitido antes de modificar pesos"
+  },
+  {
+    "test": "tests.training.test_cn_temporal_search::test_cn_controller_recovers_a_pause_and_rejects_changed_campaign_identity",
+    "reason": "Bloqueo de aprendizaje vigente: la búsqueda temporal de referencias no se ejecuta mientras la protección local de aprendizaje no declare training_allowed verdadero"
+  },
+  {
+    "test": "tests.training.test_corpus_reference_campaign::test_partial_corpus_cannot_be_declared_full_campaign",
+    "reason": "Bloqueo de aprendizaje vigente: la campaña de referencias neuronales no se ejecuta mientras la protección local de aprendizaje no declare training_allowed verdadero"
+  },
+  {
+    "test": "tests.training.test_corpus_reference_campaign::test_missing_market_is_not_replaced_with_another_arm",
+    "reason": "Bloqueo de aprendizaje vigente: la campaña de referencias neuronales no se ejecuta mientras la protección local de aprendizaje no declare training_allowed verdadero"
+  },
+  {
+    "test": "tests.training.test_corpus_tabular::test_tabular_fit_and_predictions_use_the_whole_neural_population[boosting-cpu]",
+    "reason": "Bloqueo de aprendizaje vigente: el ajuste de la referencia tabular no se ejecuta mientras la protección local de aprendizaje no declare training_allowed verdadero"
+  },
+  {
+    "test": "tests.training.test_corpus_tabular::test_boosting_budget_does_not_turn_into_row_sampling",
+    "reason": "Bloqueo de aprendizaje vigente: el ajuste de la referencia tabular no se ejecuta mientras la protección local de aprendizaje no declare training_allowed verdadero"
+  },
+  {
+    "test": "tests.training.test_corpus_tabular::test_ridge_without_cuda_fails_without_cpu_substitution",
+    "reason": "Bloqueo de aprendizaje vigente: el ajuste de la referencia tabular no se ejecuta mientras la protección local de aprendizaje no declare training_allowed verdadero"
+  },
+  {
+    "test": "tests.training.test_masked_campaign::test_hold_reinstated_during_the_campaign_stops_before_the_next_job",
+    "reason": "Bloqueo de aprendizaje vigente: comprueba que la campaña con máscaras vuelve a leer la protección entre trabajos (inventario de #546)"
+  },
+  {
+    "test": "tests.training.test_masked_tabular::test_masked_blocks_follow_the_neural_reader_and_append_five_bits",
+    "reason": "Bloqueo de aprendizaje vigente: el ajuste de la referencia tabular no se ejecuta mientras la protección local de aprendizaje no declare training_allowed verdadero"
+  },
+  {
+    "test": "tests.training.test_masked_tabular::test_masked_temporal_view_admits_its_four_partitions_without_reading_holdouts",
+    "reason": "Bloqueo de aprendizaje vigente: el ajuste de la referencia tabular no se ejecuta mientras la protección local de aprendizaje no declare training_allowed verdadero"
+  },
+  {
+    "test": "tests.training.test_masked_tabular::test_strict_reader_rejects_the_masked_edition_before_creating_output",
+    "reason": "Bloqueo de aprendizaje vigente: el ajuste de la referencia tabular no se ejecuta mientras la protección local de aprendizaje no declare training_allowed verdadero"
+  },
+  {
+    "test": "tests.training.test_masked_tabular::test_strict_matrix_and_receipt_keep_the_previous_layout",
+    "reason": "Bloqueo de aprendizaje vigente: el ajuste de la referencia tabular no se ejecuta mientras la protección local de aprendizaje no declare training_allowed verdadero"
+  },
+  {
+    "test": "tests.training.test_masked_tabular::test_targets_do_not_enter_the_masked_feature_matrix",
+    "reason": "Bloqueo de aprendizaje vigente: el ajuste de la referencia tabular no se ejecuta mientras la protección local de aprendizaje no declare training_allowed verdadero"
+  },
+  {
+    "test": "tests.training.test_masked_tabular::test_external_masked_run_needs_an_explicit_disk_budget_before_reading",
+    "reason": "Bloqueo de aprendizaje vigente: el ajuste XGBoost del corpus no se ejecuta mientras la protección local de aprendizaje no declare training_allowed verdadero"
+  },
+  {
+    "test": "tests.training.test_masked_tabular::test_masked_search_admits_only_the_masked_edition_and_forwards_the_policy",
+    "reason": "Bloqueo de aprendizaje vigente: la búsqueda tabular no se ejecuta mientras la protección local de aprendizaje no declare training_allowed verdadero"
+  },
+  {
+    "test": "tests.training.test_modality_ablation_carry::test_b6_ablation_equals_the_correction_with_a_real_absence",
+    "reason": "Bloqueo de aprendizaje vigente: prepara dos ventanas B6 con run_correction_window y traslada una con carry_correction sobre ventanas técnicas de Titans-MAC. B6 no ajusta parámetros, pero las dos entradas comprueban la protección porque eligen η con la validación y predicen ventanas de la campaña (inventario de #546)"
+  },
+  {
+    "test": "tests.training.test_modality_ablation_stage::test_masked_sources_keep_the_platform_of_the_base_they_compare_with",
+    "reason": "Bloqueo de aprendizaje vigente: publica las fuentes de la ablación desde la salida que el fixture staged ejecuta con la protección rebajada y ejecutores que no ajustan, para comprobar la plataforma que guarda cada recibo y su coincidencia con la base (#543) (inventario de #546)"
+  },
+  {
+    "test": "tests.training.test_modality_ablation_stage::test_the_hold_is_checked_again_before_each_pending_job",
+    "reason": "Bloqueo de aprendizaje vigente: comprueba que la etapa de ablación vuelve a leer la protección entre trabajos (inventario de #546)"
+  },
+  {
+    "test": "tests.training.test_quantile_head_control::test_hold_reinstated_after_a_job_stops_before_the_next_one",
+    "reason": "Bloqueo de aprendizaje vigente: el primer trabajo del control de la cabeza tiene que pasar la protección para comprobar que vuelve a leerse antes del segundo, aunque el ejecutor sustituido no ajusta (inventario de #546)"
+  },
+  {
+    "test": "tests.training.test_quantile_reference_run::test_invalid_quantile_cases_fail_before_reading_or_creating_a_run[change0-pinball]",
+    "reason": "Bloqueo de aprendizaje vigente: el ajuste de la referencia neuronal no se ejecuta mientras la protección local de aprendizaje no declare training_allowed verdadero"
+  },
+  {
+    "test": "tests.training.test_quantile_reference_run::test_invalid_quantile_cases_fail_before_reading_or_creating_a_run[change1-pinball]",
+    "reason": "Bloqueo de aprendizaje vigente: el ajuste de la referencia neuronal no se ejecuta mientras la protección local de aprendizaje no declare training_allowed verdadero"
+  },
+  {
+    "test": "tests.training.test_quantile_reference_run::test_invalid_quantile_cases_fail_before_reading_or_creating_a_run[change2-cuantiles]",
+    "reason": "Bloqueo de aprendizaje vigente: el ajuste de la referencia neuronal no se ejecuta mientras la protección local de aprendizaje no declare training_allowed verdadero"
+  },
+  {
+    "test": "tests.training.test_quantile_reference_run::test_invalid_quantile_cases_fail_before_reading_or_creating_a_run[change3-cuantiles]",
+    "reason": "Bloqueo de aprendizaje vigente: el ajuste de la referencia neuronal no se ejecuta mientras la protección local de aprendizaje no declare training_allowed verdadero"
+  },
+  {
+    "test": "tests.training.test_quantile_reference_run::test_invalid_quantile_cases_fail_before_reading_or_creating_a_run[change4-cuantiles]",
+    "reason": "Bloqueo de aprendizaje vigente: el ajuste de la referencia neuronal no se ejecuta mientras la protección local de aprendizaje no declare training_allowed verdadero"
+  },
+  {
+    "test": "tests.training.test_quantile_reference_run::test_invalid_quantile_cases_fail_before_reading_or_creating_a_run[change5-Huber]",
+    "reason": "Bloqueo de aprendizaje vigente: el ajuste de la referencia neuronal no se ejecuta mientras la protección local de aprendizaje no declare training_allowed verdadero"
+  },
+  {
+    "test": "tests.training.test_quantile_reference_run::test_quantile_head_requires_a_scientific_architecture",
+    "reason": "Bloqueo de aprendizaje vigente: el ajuste de la referencia neuronal no se ejecuta mientras la protección local de aprendizaje no declare training_allowed verdadero"
+  },
+  {
+    "test": "tests.training.test_quantile_reference_run::test_scalar_case_cannot_declare_pinball",
+    "reason": "Bloqueo de aprendizaje vigente: el ajuste de la referencia neuronal no se ejecuta mientras la protección local de aprendizaje no declare training_allowed verdadero"
+  },
+  {
+    "test": "tests.training.test_real_campaign::test_chain_resumes_pauses_and_never_rewrites_confirmed_children[True]",
+    "reason": "Bloqueo de aprendizaje vigente: la campaña real encadenada no se ejecuta mientras la protección local de aprendizaje no declare training_allowed verdadero"
+  },
+  {
+    "test": "tests.training.test_real_campaign::test_chain_resumes_pauses_and_never_rewrites_confirmed_children[False]",
+    "reason": "Bloqueo de aprendizaje vigente: la campaña real encadenada no se ejecuta mientras la protección local de aprendizaje no declare training_allowed verdadero"
+  },
+  {
+    "test": "tests.training.test_real_campaign::test_failures_stop_the_chain_and_preserve_pending_stages[failure]",
+    "reason": "Bloqueo de aprendizaje vigente: la campaña real encadenada no se ejecuta mientras la protección local de aprendizaje no declare training_allowed verdadero"
+  },
+  {
+    "test": "tests.training.test_real_campaign::test_failures_stop_the_chain_and_preserve_pending_stages[wrong_identity]",
+    "reason": "Bloqueo de aprendizaje vigente: la campaña real encadenada no se ejecuta mientras la protección local de aprendizaje no declare training_allowed verdadero"
+  },
+  {
+    "test": "tests.training.test_real_campaign::test_failures_stop_the_chain_and_preserve_pending_stages[source_change]",
+    "reason": "Bloqueo de aprendizaje vigente: la campaña real encadenada no se ejecuta mientras la protección local de aprendizaje no declare training_allowed verdadero"
+  },
+  {
+    "test": "tests.training.test_real_campaign::test_initial_stop_and_changed_design_do_not_start_a_process",
+    "reason": "Bloqueo de aprendizaje vigente: la campaña real encadenada no se ejecuta mientras la protección local de aprendizaje no declare training_allowed verdadero"
+  },
+  {
+    "test": "tests.training.test_real_campaign::test_exclusive_state_lock_and_overlapping_paths_are_rejected",
+    "reason": "Bloqueo de aprendizaje vigente: la campaña real encadenada no se ejecuta mientras la protección local de aprendizaje no declare training_allowed verdadero"
+  },
+  {
+    "test": "tests.training.test_real_campaign::test_resource_cache_configuration_is_frozen_on_resume",
+    "reason": "Bloqueo de aprendizaje vigente: la campaña real encadenada no se ejecuta mientras la protección local de aprendizaje no declare training_allowed verdadero"
+  },
+  {
+    "test": "tests.training.test_real_campaign::test_changed_code_is_rejected_on_resume",
+    "reason": "Bloqueo de aprendizaje vigente: la campaña real encadenada no se ejecuta mientras la protección local de aprendizaje no declare training_allowed verdadero"
+  },
+  {
+    "test": "tests.training.test_real_campaign::test_pause_in_completion_keeps_the_neural_stage_confirmed",
+    "reason": "Bloqueo de aprendizaje vigente: la campaña real encadenada no se ejecuta mientras la protección local de aprendizaje no declare training_allowed verdadero"
+  },
+  {
+    "test": "tests.training.test_real_campaign::test_representation_and_indicator_admission_fail_before_any_child[encoding]",
+    "reason": "Bloqueo de aprendizaje vigente: la campaña real encadenada no se ejecuta mientras la protección local de aprendizaje no declare training_allowed verdadero"
+  },
+  {
+    "test": "tests.training.test_real_campaign::test_representation_and_indicator_admission_fail_before_any_child[context]",
+    "reason": "Bloqueo de aprendizaje vigente: la campaña real encadenada no se ejecuta mientras la protección local de aprendizaje no declare training_allowed verdadero"
+  },
+  {
+    "test": "tests.training.test_real_campaign::test_representation_and_indicator_admission_fail_before_any_child[indicator_count]",
+    "reason": "Bloqueo de aprendizaje vigente: la campaña real encadenada no se ejecuta mientras la protección local de aprendizaje no declare training_allowed verdadero"
+  },
+  {
+    "test": "tests.training.test_real_campaign::test_representation_and_indicator_admission_fail_before_any_child[admission_hash]",
+    "reason": "Bloqueo de aprendizaje vigente: la campaña real encadenada no se ejecuta mientras la protección local de aprendizaje no declare training_allowed verdadero"
+  },
+  {
+    "test": "tests.training.test_reference_run::test_missing_cuda_fails_before_creating_run",
+    "reason": "Bloqueo de aprendizaje vigente: el ajuste de la referencia neuronal no se ejecuta mientras la protección local de aprendizaje no declare training_allowed verdadero"
+  },
+  {
+    "test": "tests.training.test_reference_run_precision::test_resume_keeps_the_batch_precision_and_graph_step_it_started_with[other_batch]",
+    "reason": "Bloqueo de aprendizaje vigente: la reanudación compara la identidad dentro de `run_reference_case`, después de su guarda, y el recorrido se detiene antes de leer lotes de ajuste (inventario de #546)"
+  },
+  {
+    "test": "tests.training.test_reference_run_precision::test_resume_keeps_the_batch_precision_and_graph_step_it_started_with[without_precision]",
+    "reason": "Bloqueo de aprendizaje vigente: la reanudación compara la identidad dentro de `run_reference_case`, después de su guarda, y el recorrido se detiene antes de leer lotes de ajuste (inventario de #546)"
+  },
+  {
+    "test": "tests.training.test_reference_run_precision::test_resume_keeps_the_batch_precision_and_graph_step_it_started_with[with_graphs]",
+    "reason": "Bloqueo de aprendizaje vigente: la reanudación compara la identidad dentro de `run_reference_case`, después de su guarda, y el recorrido se detiene antes de leer lotes de ajuste (inventario de #546)"
+  },
+  {
+    "test": "tests.training.test_reference_search::test_strict_search_cannot_accept_the_legacy_macro_population",
+    "reason": "Bloqueo de aprendizaje vigente: la búsqueda de referencias neuronales no se ejecuta mientras la protección local de aprendizaje no declare training_allowed verdadero"
+  },
+  {
+    "test": "tests.training.test_reference_search::test_full_scope_does_not_accept_a_development_snapshot",
+    "reason": "Bloqueo de aprendizaje vigente: la búsqueda de referencias neuronales no se ejecuta mientras la protección local de aprendizaje no declare training_allowed verdadero"
+  },
+  {
+    "test": "tests.training.test_reference_search::test_search_seed_must_have_a_declared_finalist",
+    "reason": "Bloqueo de aprendizaje vigente: la búsqueda de referencias neuronales no se ejecuta mientras la protección local de aprendizaje no declare training_allowed verdadero"
+  },
+  {
+    "test": "tests.training.test_reference_search::test_declared_context_must_match_the_frozen_population",
+    "reason": "Bloqueo de aprendizaje vigente: la búsqueda de referencias neuronales no se ejecuta mientras la protección local de aprendizaje no declare training_allowed verdadero"
+  },
+  {
+    "test": "tests.training.test_reference_search::test_changed_source_between_view_read_and_hash_is_not_adopted",
+    "reason": "Bloqueo de aprendizaje vigente: la búsqueda de referencias neuronales no se ejecuta mientras la protección local de aprendizaje no declare training_allowed verdadero"
+  },
+  {
+    "test": "tests.training.test_refinement_policy_fit::test_weighted_ridge_selects_useful_actions_outside_the_parent_fit",
+    "reason": "Bloqueo de aprendizaje vigente: ajuste de la política de refinamientos no se ejecuta mientras la protección local de aprendizaje no declare training_allowed verdadero"
+  },
+  {
+    "test": "tests.training.test_refinement_policy_fit::test_ineligible_fit_inputs_are_rejected[changes0-padre]",
+    "reason": "Bloqueo de aprendizaje vigente: ajuste de la política de refinamientos no se ejecuta mientras la protección local de aprendizaje no declare training_allowed verdadero"
+  },
+  {
+    "test": "tests.training.test_refinement_policy_fit::test_ineligible_fit_inputs_are_rejected[changes1-madur]",
+    "reason": "Bloqueo de aprendizaje vigente: ajuste de la política de refinamientos no se ejecuta mientras la protección local de aprendizaje no declare training_allowed verdadero"
+  },
+  {
+    "test": "tests.training.test_refinement_policy_fit::test_ineligible_fit_inputs_are_rejected[changes2-ajuste]",
+    "reason": "Bloqueo de aprendizaje vigente: ajuste de la política de refinamientos no se ejecuta mientras la protección local de aprendizaje no declare training_allowed verdadero"
+  },
+  {
+    "test": "tests.training.test_refinement_policy_fit::test_ineligible_fit_inputs_are_rejected[changes3-madur]",
+    "reason": "Bloqueo de aprendizaje vigente: ajuste de la política de refinamientos no se ejecuta mientras la protección local de aprendizaje no declare training_allowed verdadero"
+  },
+  {
+    "test": "tests.training.test_refinement_policy_fit::test_ineligible_fit_inputs_are_rejected[changes4-peso]",
+    "reason": "Bloqueo de aprendizaje vigente: ajuste de la política de refinamientos no se ejecuta mientras la protección local de aprendizaje no declare training_allowed verdadero"
+  },
+  {
+    "test": "tests.training.test_refinement_policy_fit::test_ineligible_fit_inputs_are_rejected[changes5-regularizaci\\xf3n]",
+    "reason": "Bloqueo de aprendizaje vigente: ajuste de la política de refinamientos no se ejecuta mientras la protección local de aprendizaje no declare training_allowed verdadero"
+  },
+  {
+    "test": "tests.training.test_refinement_policy_fit::test_duplication_with_compensated_session_weights_does_not_change_the_policy",
+    "reason": "Bloqueo de aprendizaje vigente: ajuste de la política de refinamientos no se ejecuta mientras la protección local de aprendizaje no declare training_allowed verdadero"
+  },
+  {
+    "test": "tests.training.test_refinement_policy_fit::test_large_finite_weights_are_normalized_without_sum_overflow",
+    "reason": "Bloqueo de aprendizaje vigente: ajuste de la política de refinamientos no se ejecuta mientras la protección local de aprendizaje no declare training_allowed verdadero"
+  },
+  {
+    "test": "tests.training.test_rolling_retention::test_aggregates_of_receipts_without_platform_need_the_declared_profile",
+    "reason": "Bloqueo de aprendizaje vigente: recorre la campaña del fixture base, confirmada con la protección rebajada y pesos iniciales, con sus recibos sin plataforma para comprobar que los agregados solo se publican con el perfil declarado (#543) (inventario de #546)"
+  },
+  {
+    "test": "tests.training.test_rolling_retention::test_a_plateau_of_a_joint_fit_has_no_tables_to_release",
+    "reason": "Bloqueo de aprendizaje vigente: recorre la retención v2 sobre la campaña reducida del fixture `base` para comprobar que la meseta no se regenera y su continuación sí, y la regeneración de predicciones se detiene con la protección (inventario de #546)"
+  },
+  {
+    "test": "tests.training.test_tabular_search::test_search_selects_seeds_after_all_cases_and_does_not_repeat_completed",
+    "reason": "Bloqueo de aprendizaje vigente: la búsqueda tabular no se ejecuta mientras la protección local de aprendizaje no declare training_allowed verdadero"
+  },
+  {
+    "test": "tests.training.test_tabular_search::test_tabular_search_admits_verified_temporal_counts_without_reading_holdouts",
+    "reason": "Bloqueo de aprendizaje vigente: la búsqueda tabular no se ejecuta mientras la protección local de aprendizaje no declare training_allowed verdadero"
+  },
+  {
+    "test": "tests.training.test_tabular_search::test_four_partitions_without_verified_temporal_origin_are_rejected",
+    "reason": "Bloqueo de aprendizaje vigente: la búsqueda tabular no se ejecuta mientras la protección local de aprendizaje no declare training_allowed verdadero"
+  },
+  {
+    "test": "tests.training.test_tabular_search::test_pause_between_cases_resumes_without_losing_completed_work",
+    "reason": "Bloqueo de aprendizaje vigente: la búsqueda tabular no se ejecuta mientras la protección local de aprendizaje no declare training_allowed verdadero"
+  },
+  {
+    "test": "tests.training.test_tabular_search::test_failed_ridge_keeps_attempt_and_restarts_in_a_new_directory",
+    "reason": "Bloqueo de aprendizaje vigente: la búsqueda tabular no se ejecuta mientras la protección local de aprendizaje no declare training_allowed verdadero"
+  },
+  {
+    "test": "tests.training.test_tabular_search::test_resume_rejects_changed_confirmed_artifacts[prediction]",
+    "reason": "Bloqueo de aprendizaje vigente: la búsqueda tabular no se ejecuta mientras la protección local de aprendizaje no declare training_allowed verdadero"
+  },
+  {
+    "test": "tests.training.test_tabular_search::test_resume_rejects_changed_confirmed_artifacts[report]",
+    "reason": "Bloqueo de aprendizaje vigente: la búsqueda tabular no se ejecuta mientras la protección local de aprendizaje no declare training_allowed verdadero"
+  },
+  {
+    "test": "tests.training.test_tabular_search::test_resume_rejects_changed_confirmed_artifacts[config]",
+    "reason": "Bloqueo de aprendizaje vigente: la búsqueda tabular no se ejecuta mientras la protección local de aprendizaje no declare training_allowed verdadero"
+  },
+  {
+    "test": "tests.training.test_tabular_search::test_resume_rejects_changed_confirmed_artifacts[manifest]",
+    "reason": "Bloqueo de aprendizaje vigente: la búsqueda tabular no se ejecuta mientras la protección local de aprendizaje no declare training_allowed verdadero"
+  },
+  {
+    "test": "tests.training.test_tabular_search::test_resume_rejects_inconsistent_summary[counts]",
+    "reason": "Bloqueo de aprendizaje vigente: la búsqueda tabular no se ejecuta mientras la protección local de aprendizaje no declare training_allowed verdadero"
+  },
+  {
+    "test": "tests.training.test_tabular_search::test_resume_rejects_inconsistent_summary[scope]",
+    "reason": "Bloqueo de aprendizaje vigente: la búsqueda tabular no se ejecuta mientras la protección local de aprendizaje no declare training_allowed verdadero"
+  },
+  {
+    "test": "tests.training.test_tabular_search::test_resume_rejects_inconsistent_summary[cohort_complete]",
+    "reason": "Bloqueo de aprendizaje vigente: la búsqueda tabular no se ejecuta mientras la protección local de aprendizaje no declare training_allowed verdadero"
+  },
+  {
+    "test": "tests.training.test_tabular_search::test_resume_rejects_inconsistent_summary[final_test_opened]",
+    "reason": "Bloqueo de aprendizaje vigente: la búsqueda tabular no se ejecuta mientras la protección local de aprendizaje no declare training_allowed verdadero"
+  },
+  {
+    "test": "tests.training.test_tabular_search::test_resume_rejects_inconsistent_summary[completed_runs]",
+    "reason": "Bloqueo de aprendizaje vigente: la búsqueda tabular no se ejecuta mientras la protección local de aprendizaje no declare training_allowed verdadero"
+  },
+  {
+    "test": "tests.training.test_tabular_search::test_resume_rejects_inconsistent_summary[score]",
+    "reason": "Bloqueo de aprendizaje vigente: la búsqueda tabular no se ejecuta mientras la protección local de aprendizaje no declare training_allowed verdadero"
+  },
+  {
+    "test": "tests.training.test_tabular_search::test_last_case_cannot_confirm_after_orchestration_code_changes",
+    "reason": "Bloqueo de aprendizaje vigente: la búsqueda tabular no se ejecuta mientras la protección local de aprendizaje no declare training_allowed verdadero"
+  },
+  {
+    "test": "tests.training.test_tabular_search::test_boosting_recovers_paused_rounds_in_the_same_attempt",
+    "reason": "Bloqueo de aprendizaje vigente: la búsqueda tabular no se ejecuta mientras la protección local de aprendizaje no declare training_allowed verdadero"
+  },
+  {
+    "test": "tests.training.test_tabular_search::test_completed_backend_is_recovered_after_missing_campaign_confirmation",
+    "reason": "Bloqueo de aprendizaje vigente: la búsqueda tabular no se ejecuta mientras la protección local de aprendizaje no declare training_allowed verdadero"
+  },
+  {
+    "test": "tests.training.test_tabular_search::test_two_campaign_writers_cannot_share_the_same_output",
+    "reason": "Bloqueo de aprendizaje vigente: la búsqueda tabular no se ejecuta mientras la protección local de aprendizaje no declare training_allowed verdadero"
+  },
+  {
+    "test": "tests.training.test_tabular_search::test_unsupported_backend_limits_fail_before_fitting_any_model[change0]",
+    "reason": "Bloqueo de aprendizaje vigente: la búsqueda tabular no se ejecuta mientras la protección local de aprendizaje no declare training_allowed verdadero"
+  },
+  {
+    "test": "tests.training.test_tabular_search::test_unsupported_backend_limits_fail_before_fitting_any_model[change1]",
+    "reason": "Bloqueo de aprendizaje vigente: la búsqueda tabular no se ejecuta mientras la protección local de aprendizaje no declare training_allowed verdadero"
+  },
+  {
+    "test": "tests.training.test_tabular_search::test_unsupported_backend_limits_fail_before_fitting_any_model[change2]",
+    "reason": "Bloqueo de aprendizaje vigente: la búsqueda tabular no se ejecuta mientras la protección local de aprendizaje no declare training_allowed verdadero"
+  },
+  {
+    "test": "tests.training.test_tabular_search::test_failed_first_summary_can_resume_an_identified_empty_preparation",
+    "reason": "Bloqueo de aprendizaje vigente: la búsqueda tabular no se ejecuta mientras la protección local de aprendizaje no declare training_allowed verdadero"
+  },
+  {
+    "test": "tests.training.test_tabular_search::test_missing_summary_cannot_adopt_foreign_or_previous_model_files",
+    "reason": "Bloqueo de aprendizaje vigente: la búsqueda tabular no se ejecuta mientras la protección local de aprendizaje no declare training_allowed verdadero"
+  },
+  {
+    "test": "tests.training.test_temporal_search::test_controller_updates_progress_and_resumes_each_fold",
+    "reason": "Bloqueo de aprendizaje vigente: la búsqueda temporal de referencias no se ejecuta mientras la protección local de aprendizaje no declare training_allowed verdadero"
+  },
+  {
+    "test": "tests.training.test_temporal_search::test_controller_rejects_changed_identity_without_overwriting_completed_evidence",
+    "reason": "Bloqueo de aprendizaje vigente: la búsqueda temporal de referencias no se ejecuta mientras la protección local de aprendizaje no declare training_allowed verdadero"
+  },
+  {
+    "test": "tests.training.test_temporal_search::test_controller_rejects_inconsistent_fold_progress[planned_runs-999]",
+    "reason": "Bloqueo de aprendizaje vigente: la búsqueda temporal de referencias no se ejecuta mientras la protección local de aprendizaje no declare training_allowed verdadero"
+  },
+  {
+    "test": "tests.training.test_temporal_search::test_controller_rejects_inconsistent_fold_progress[completed_runs--1]",
+    "reason": "Bloqueo de aprendizaje vigente: la búsqueda temporal de referencias no se ejecuta mientras la protección local de aprendizaje no declare training_allowed verdadero"
+  },
+  {
+    "test": "tests.training.test_temporal_search::test_controller_rejects_inconsistent_fold_progress[status-unknown]",
+    "reason": "Bloqueo de aprendizaje vigente: la búsqueda temporal de referencias no se ejecuta mientras la protección local de aprendizaje no declare training_allowed verdadero"
+  },
+  {
+    "test": "tests.training.test_temporal_search::test_controller_recovers_a_cut_before_first_summary",
+    "reason": "Bloqueo de aprendizaje vigente: la búsqueda temporal de referencias no se ejecuta mientras la protección local de aprendizaje no declare training_allowed verdadero"
+  },
+  {
+    "test": "tests.training.test_temporal_search::test_controller_does_not_adopt_unknown_files_without_a_summary",
+    "reason": "Bloqueo de aprendizaje vigente: la búsqueda temporal de referencias no se ejecuta mientras la protección local de aprendizaje no declare training_allowed verdadero"
+  },
+  {
+    "test": "tests.training.test_titans_campaign::test_an_extension_fit_builds_its_changes_and_its_carry_rebuilds_them",
+    "reason": "Bloqueo de aprendizaje vigente: ejecuta el ajuste y el traslado de la campaña reducida con PT1 sobre la protección rebajada de su fixture, porque los dos ejecutores se detienen con ella (inventario de #546)"
+  },
+  {
+    "test": "tests.training.test_titans_walk_forward::test_window_builds_the_declared_predictor_changes_and_its_regeneration_repeats_them",
+    "reason": "Bloqueo de aprendizaje vigente: ajusta una ventana Titans-MAC con PT1 y el optimizador que no modifica pesos para comprobar que los cambios del predictor entran en su identidad y que la regeneración los repite, y el ajuste se detiene con la protección (inventario de #546)"
+  },
+  {
+    "test": "tests.training.test_walk_forward_v2_views::test_masked_campaign_runs_each_window_with_the_plan_that_declares_the_policy",
+    "reason": "Bloqueo de aprendizaje vigente: la búsqueda temporal de referencias no se ejecuta mientras la protección local de aprendizaje no declare training_allowed verdadero"
+  },
+  {
+    "test": "tests.learning_traces.test_native_policy_traces::test_double_dqn_traces_keep_the_run_and_record_each_validation",
+    "reason": "Bloqueo de aprendizaje vigente: ajusta Double DQN con 32 transiciones, por debajo de su calentamiento, con y sin trazas para comprobar que las trazas no cambian la ejecución (inventario de #546)"
+  },
+  {
+    "test": "tests.learning_traces.test_native_policy_traces::test_ppo_traces_are_not_duplicated_by_a_pause_and_resume",
+    "reason": "Bloqueo de aprendizaje vigente: lanza el ajuste PPO nativo, que crea el entrenador y su Adam, y lo pausa y reanuda antes del primer recorrido para comprobar que las trazas no se duplican (inventario de #546)"
+  },
+  {
+    "test": "tests.learning_traces.test_native_policy_traces::test_klpo_traces_record_the_initial_validation_once",
+    "reason": "Bloqueo de aprendizaje vigente: lanza el ajuste KLPO nativo con el controlador y su Adam terminal y lo pausa antes de update_ready para comprobar que la validación inicial se traza una vez (inventario de #546)"
+  },
+  {
+    "test": "tests.simulation.test_native_learning_hold::test_training_passes_an_allowed_hold_and_fails_on_missing_sources",
+    "reason": "Bloqueo de aprendizaje vigente: lanza el entrenamiento PPO nativo con la protección permitida para comprobar que pasa la puerta y se detiene al no encontrar las cintas, sin construir el entorno (inventario de #546)"
+  },
+  {
+    "test": "tests.simulation.test_native_policy_tapes::test_ppo_pauses_on_real_tapes_before_its_first_update[US]",
+    "reason": "Bloqueo de aprendizaje vigente: lanza el ajuste PPO nativo, que crea el entrenador y su Adam, y lo pausa antes del primer recorrido para comprobar la pausa, la reanudación y que una selección abierta no se evalúa (inventario de #546)"
+  },
+  {
+    "test": "tests.simulation.test_native_policy_tapes::test_ppo_pauses_on_real_tapes_before_its_first_update[CN]",
+    "reason": "Bloqueo de aprendizaje vigente: lanza el ajuste PPO nativo, que crea el entrenador y su Adam, y lo pausa antes del primer recorrido para comprobar la pausa, la reanudación y que una selección abierta no se evalúa (inventario de #546)"
+  },
+  {
+    "test": "tests.simulation.test_native_policy_tapes::test_double_dqn_selects_and_evaluates_the_chosen_state_without_updates[US]",
+    "reason": "Bloqueo de aprendizaje vigente: ajusta Double DQN con 32 transiciones, por debajo de su calentamiento, para recorrer la selección cerrada y su evaluación con --audit-run (inventario de #546)"
+  },
+  {
+    "test": "tests.simulation.test_native_policy_tapes::test_double_dqn_selects_and_evaluates_the_chosen_state_without_updates[CN]",
+    "reason": "Bloqueo de aprendizaje vigente: ajusta Double DQN con 32 transiciones, por debajo de su calentamiento, para recorrer la selección cerrada y su evaluación con --audit-run (inventario de #546)"
+  },
+  {
+    "test": "tests.simulation.test_native_policy_tapes::test_klpo_collects_a_full_wave_and_pauses_before_update_ready",
+    "reason": "Bloqueo de aprendizaje vigente: recoge una oleada KLPO con el controlador y su Adam terminal y fabrica una selección cerrada para recorrer --audit-run (inventario de #546)"
+  },
+  {
+    "test": "tests.simulation.test_native_policy_tapes::test_double_dqn_fits_over_masked_columns_without_updates",
+    "reason": "Lanza un ajuste nativo y espera a que se levante el bloqueo"
+  },
+  {
+    "test": "tests.simulation.test_native_policy_tapes::test_stage_executors_fit_carry_and_pause_through_the_launcher",
+    "reason": "Bloqueo de aprendizaje vigente: los ejecutores de la etapa lanzan ajustes nativos de Double DQN y KLPO (inventario de #546)"
+  },
+  {
+    "test": "tests.simulation.test_native_policy_tapes::test_the_stage_confirms_the_declared_costs_of_a_fit",
+    "reason": "Bloqueo de aprendizaje vigente: la etapa confirma los costes de un ajuste nativo de Double DQN lanzado por su ejecutor (inventario de #546)"
+  },
+  {
+    "test": "tests.simulation.test_native_ppo_runner::test_pause_resume_preserves_partial_rollout_and_final_parameters",
+    "reason": "Bloqueo de aprendizaje vigente (MARS_TITAN_TRAINING_HOLD): estas pruebas entrenan con mars-titan-ppo y esperan a que la protección lo permita"
+  },
+  {
+    "test": "tests.simulation.test_native_ppo_runner::test_initial_policy_is_evaluated_and_selectable_before_training",
+    "reason": "Bloqueo de aprendizaje vigente (MARS_TITAN_TRAINING_HOLD): estas pruebas entrenan con mars-titan-ppo y esperan a que la protección lo permita"
+  },
+  {
+    "test": "tests.simulation.test_native_ppo_runner::test_resume_rejects_changed_identity[seed]",
+    "reason": "Bloqueo de aprendizaje vigente (MARS_TITAN_TRAINING_HOLD): estas pruebas entrenan con mars-titan-ppo y esperan a que la protección lo permita"
+  },
+  {
+    "test": "tests.simulation.test_native_ppo_runner::test_resume_rejects_changed_identity[configuration]",
+    "reason": "Bloqueo de aprendizaje vigente (MARS_TITAN_TRAINING_HOLD): estas pruebas entrenan con mars-titan-ppo y esperan a que la protección lo permita"
+  },
+  {
+    "test": "tests.simulation.test_native_ppo_runner::test_resume_rejects_changed_identity[source]",
+    "reason": "Bloqueo de aprendizaje vigente (MARS_TITAN_TRAINING_HOLD): estas pruebas entrenan con mars-titan-ppo y esperan a que la protección lo permita"
+  },
+  {
+    "test": "tests.simulation.test_native_ppo_runner::test_invalid_experiments_fail_before_creating_output[partition]",
+    "reason": "Bloqueo de aprendizaje vigente (MARS_TITAN_TRAINING_HOLD): estas pruebas entrenan con mars-titan-ppo y esperan a que la protección lo permita"
+  },
+  {
+    "test": "tests.simulation.test_native_ppo_runner::test_invalid_experiments_fail_before_creating_output[parent]",
+    "reason": "Bloqueo de aprendizaje vigente (MARS_TITAN_TRAINING_HOLD): estas pruebas entrenan con mars-titan-ppo y esperan a que la protección lo permita"
+  },
+  {
+    "test": "tests.simulation.test_native_ppo_runner::test_invalid_experiments_fail_before_creating_output[generator_seed]",
+    "reason": "Bloqueo de aprendizaje vigente (MARS_TITAN_TRAINING_HOLD): estas pruebas entrenan con mars-titan-ppo y esperan a que la protección lo permita"
+  },
+  {
+    "test": "tests.simulation.test_native_ppo_runner::test_invalid_experiments_fail_before_creating_output[seed]",
+    "reason": "Bloqueo de aprendizaje vigente (MARS_TITAN_TRAINING_HOLD): estas pruebas entrenan con mars-titan-ppo y esperan a que la protección lo permita"
+  },
+  {
+    "test": "tests.simulation.test_native_ppo_runner::test_invalid_experiments_fail_before_creating_output[budget]",
+    "reason": "Bloqueo de aprendizaje vigente (MARS_TITAN_TRAINING_HOLD): estas pruebas entrenan con mars-titan-ppo y esperan a que la protección lo permita"
+  },
+  {
+    "test": "tests.simulation.test_native_ppo_runner::test_invalid_experiments_fail_before_creating_output[environments]",
+    "reason": "Bloqueo de aprendizaje vigente (MARS_TITAN_TRAINING_HOLD): estas pruebas entrenan con mars-titan-ppo y esperan a que la protección lo permita"
+  },
+  {
+    "test": "tests.simulation.test_native_ppo_runner::test_cuda_requires_the_actual_inherited_lock_before_allocation",
+    "reason": "Bloqueo de aprendizaje vigente (MARS_TITAN_TRAINING_HOLD): estas pruebas entrenan con mars-titan-ppo y esperan a que la protección lo permita"
+  },
+  {
+    "test": "tests.simulation.test_native_ppo_runner::test_early_stopping_is_explicit_and_keeps_the_initial_candidate",
+    "reason": "Bloqueo de aprendizaje vigente (MARS_TITAN_TRAINING_HOLD): estas pruebas entrenan con mars-titan-ppo y esperan a que la protección lo permita"
+  },
+  {
+    "test": "tests.simulation.test_native_ppo_runner::test_context_columns_must_match_even_when_width_is_identical",
+    "reason": "Bloqueo de aprendizaje vigente (MARS_TITAN_TRAINING_HOLD): estas pruebas entrenan con mars-titan-ppo y esperan a que la protección lo permita"
+  },
+  {
+    "test": "tests.simulation.test_native_ppo_runner::test_context_must_be_present_in_both_partitions",
+    "reason": "Bloqueo de aprendizaje vigente (MARS_TITAN_TRAINING_HOLD): estas pruebas entrenan con mars-titan-ppo y esperan a que la protección lo permita"
+  },
+  {
+    "test": "tests.simulation.test_native_ppo_runner::test_replica_memory_is_rejected_from_metadata_before_loading_payloads",
+    "reason": "Bloqueo de aprendizaje vigente (MARS_TITAN_TRAINING_HOLD): estas pruebas entrenan con mars-titan-ppo y esperan a que la protección lo permita"
+  },
+  {
+    "test": "tests.simulation.test_native_ppo_runner::test_sealed_test_is_rejected_before_reading_context",
+    "reason": "Bloqueo de aprendizaje vigente (MARS_TITAN_TRAINING_HOLD): estas pruebas entrenan con mars-titan-ppo y esperan a que la protección lo permita"
+  },
+  {
+    "test": "tests.simulation.test_native_ppo_runner::test_completed_resume_verifies_the_selected_checkpoint",
+    "reason": "Bloqueo de aprendizaje vigente (MARS_TITAN_TRAINING_HOLD): estas pruebas entrenan con mars-titan-ppo y esperan a que la protección lo permita"
+  },
+  {
+    "test": "tests.simulation.test_native_ppo_runner::test_pending_validation_can_stop_before_any_additional_transition",
+    "reason": "Bloqueo de aprendizaje vigente (MARS_TITAN_TRAINING_HOLD): estas pruebas entrenan con mars-titan-ppo y esperan a que la protección lo permita"
+  },
+  {
+    "test": "tests.simulation.test_native_ppo_runner::test_resume_recovers_a_cut_before_the_initial_checkpoint",
+    "reason": "Bloqueo de aprendizaje vigente (MARS_TITAN_TRAINING_HOLD): estas pruebas entrenan con mars-titan-ppo y esperan a que la protección lo permita"
+  },
+  {
+    "test": "tests.simulation.test_native_ppo_runner::test_adaptive_catalog_warmup_and_recovery_preserve_actual_source_indices",
+    "reason": "Bloqueo de aprendizaje vigente (MARS_TITAN_TRAINING_HOLD): estas pruebas entrenan con mars-titan-ppo y esperan a que la protección lo permita"
+  },
+  {
+    "test": "tests.simulation.test_native_ppo_runner::test_adaptive_initial_policies_share_explicit_selection_contract[ppo_window]",
+    "reason": "Bloqueo de aprendizaje vigente (MARS_TITAN_TRAINING_HOLD): estas pruebas entrenan con mars-titan-ppo y esperan a que la protección lo permita"
+  },
+  {
+    "test": "tests.simulation.test_native_ppo_runner::test_adaptive_initial_policies_share_explicit_selection_contract[ppo_gru]",
+    "reason": "Bloqueo de aprendizaje vigente (MARS_TITAN_TRAINING_HOLD): estas pruebas entrenan con mars-titan-ppo y esperan a que la protección lo permita"
+  },
+  {
+    "test": "tests.simulation.test_native_ppo_runner::test_adaptive_initial_policies_share_explicit_selection_contract[ppo_episodic]",
+    "reason": "Bloqueo de aprendizaje vigente (MARS_TITAN_TRAINING_HOLD): estas pruebas entrenan con mars-titan-ppo y esperan a que la protección lo permita"
+  },
+  {
+    "test": "tests.simulation.test_native_ppo_runner::test_adaptive_audit_sources_are_rejected_before_context_loading",
+    "reason": "Bloqueo de aprendizaje vigente (MARS_TITAN_TRAINING_HOLD): estas pruebas entrenan con mars-titan-ppo y esperan a que la protección lo permita"
+  },
+  {
+    "test": "tests.simulation.test_native_ppo_runner::test_adaptive_receipt_requires_the_declared_macro_contract",
+    "reason": "Bloqueo de aprendizaje vigente (MARS_TITAN_TRAINING_HOLD): estas pruebas entrenan con mars-titan-ppo y esperan a que la protección lo permita"
+  },
+  {
+    "test": "tests.simulation.test_native_ppo_runner::test_adaptive_invalid_contract_fails_before_creating_output[variant]",
+    "reason": "Bloqueo de aprendizaje vigente (MARS_TITAN_TRAINING_HOLD): estas pruebas entrenan con mars-titan-ppo y esperan a que la protección lo permita"
+  },
+  {
+    "test": "tests.simulation.test_native_ppo_runner::test_adaptive_invalid_contract_fails_before_creating_output[environments]",
+    "reason": "Bloqueo de aprendizaje vigente (MARS_TITAN_TRAINING_HOLD): estas pruebas entrenan con mars-titan-ppo y esperan a que la protección lo permita"
+  },
+  {
+    "test": "tests.simulation.test_native_ppo_runner::test_adaptive_invalid_contract_fails_before_creating_output[trading_field]",
+    "reason": "Bloqueo de aprendizaje vigente (MARS_TITAN_TRAINING_HOLD): estas pruebas entrenan con mars-titan-ppo y esperan a que la protección lo permita"
+  },
+  {
+    "test": "tests.simulation.test_native_ppo_runner::test_adaptive_invalid_contract_fails_before_creating_output[unexpected]",
+    "reason": "Bloqueo de aprendizaje vigente (MARS_TITAN_TRAINING_HOLD): estas pruebas entrenan con mars-titan-ppo y esperan a que la protección lo permita"
+  },
+  {
+    "test": "tests.simulation.test_native_ppo_runner::test_adaptive_validation_interval_does_not_evaluate_every_update",
+    "reason": "Bloqueo de aprendizaje vigente (MARS_TITAN_TRAINING_HOLD): estas pruebas entrenan con mars-titan-ppo y esperan a que la protección lo permita"
+  },
+  {
+    "test": "tests.simulation.test_native_ppo_runner::test_adaptive_hmm_variants_use_verified_training_fit[ppo_hmm]",
+    "reason": "Bloqueo de aprendizaje vigente: el ajuste HMM de escenarios no se ejecuta mientras la protección local de aprendizaje no declare training_allowed verdadero"
+  },
+  {
+    "test": "tests.simulation.test_native_ppo_runner::test_adaptive_hmm_variants_use_verified_training_fit[ppo_episodic_hmm]",
+    "reason": "Bloqueo de aprendizaje vigente: el ajuste HMM de escenarios no se ejecuta mientras la protección local de aprendizaje no declare training_allowed verdadero"
+  },
+  {
+    "test": "tests.simulation.test_native_ppo_runner::test_adaptive_hmm_variants_use_verified_training_fit[ppo_recent_aux]",
+    "reason": "Bloqueo de aprendizaje vigente: el ajuste HMM de escenarios no se ejecuta mientras la protección local de aprendizaje no declare training_allowed verdadero"
+  },
+  {
+    "test": "tests.simulation.test_native_ppo_runner::test_adaptive_hmm_variants_use_verified_training_fit[ppo_replay_aux]",
+    "reason": "Bloqueo de aprendizaje vigente: el ajuste HMM de escenarios no se ejecuta mientras la protección local de aprendizaje no declare training_allowed verdadero"
+  },
+  {
+    "test": "tests.simulation.test_native_ppo_runner::test_adaptive_hmm_rejects_changed_or_reserved_evidence[hash]",
+    "reason": "Bloqueo de aprendizaje vigente: el ajuste HMM de escenarios no se ejecuta mientras la protección local de aprendizaje no declare training_allowed verdadero"
+  },
+  {
+    "test": "tests.simulation.test_native_ppo_runner::test_adaptive_hmm_rejects_changed_or_reserved_evidence[fitted_sources]",
+    "reason": "Bloqueo de aprendizaje vigente: el ajuste HMM de escenarios no se ejecuta mientras la protección local de aprendizaje no declare training_allowed verdadero"
+  },
+  {
+    "test": "tests.simulation.test_native_ppo_runner::test_adaptive_hmm_rejects_changed_or_reserved_evidence[future_fields]",
+    "reason": "Bloqueo de aprendizaje vigente: el ajuste HMM de escenarios no se ejecuta mientras la protección local de aprendizaje no declare training_allowed verdadero"
+  },
+  {
+    "test": "tests.simulation.test_native_ppo_runner::test_frozen_audit_compares_costs_without_changing_selection",
+    "reason": "Bloqueo de aprendizaje vigente (MARS_TITAN_TRAINING_HOLD): estas pruebas entrenan con mars-titan-ppo y esperan a que la protección lo permita"
+  },
+  {
+    "test": "tests.simulation.test_native_ppo_runner::test_audit_rejects_unfinished_selection_before_reading_reserved_sources",
+    "reason": "Bloqueo de aprendizaje vigente (MARS_TITAN_TRAINING_HOLD): estas pruebas entrenan con mars-titan-ppo y esperan a que la protección lo permita"
+  },
+  {
+    "test": "tests.simulation.test_native_ppo_runner::test_parent_guard_accepts_the_actual_supervisor_and_rejects_another_pid",
+    "reason": "Bloqueo de aprendizaje vigente (MARS_TITAN_TRAINING_HOLD): estas pruebas entrenan con mars-titan-ppo y esperan a que la protección lo permita"
+  },
+  {
+    "test": "tests.simulation.test_native_ppo_runner::test_nine_complete_drawdowns_keep_the_selected_checkpoint_recoverable[9]",
+    "reason": "Bloqueo de aprendizaje vigente (MARS_TITAN_TRAINING_HOLD): estas pruebas entrenan con mars-titan-ppo y esperan a que la protección lo permita"
+  },
+  {
+    "test": "tests.simulation.test_native_ppo_runner::test_convergence_minimum_inclusive_and_budget_preserve_initial_candidate[ppo]",
+    "reason": "Bloqueo de aprendizaje vigente (MARS_TITAN_TRAINING_HOLD): estas pruebas entrenan con mars-titan-ppo y esperan a que la protección lo permita"
+  },
+  {
+    "test": "tests.simulation.test_native_ppo_runner::test_convergence_plateau_before_budget_recovers_without_extra_updates[ppo]",
+    "reason": "Bloqueo de aprendizaje vigente (MARS_TITAN_TRAINING_HOLD): estas pruebas entrenan con mars-titan-ppo y esperan a que la protección lo permita"
+  },
+  {
+    "test": "tests.simulation.test_native_ppo_runner::test_convergence_rejects_invalid_minimum[-1]",
+    "reason": "Bloqueo de aprendizaje vigente (MARS_TITAN_TRAINING_HOLD): estas pruebas entrenan con mars-titan-ppo y esperan a que la protección lo permita"
+  },
+  {
+    "test": "tests.simulation.test_native_ppo_runner::test_convergence_rejects_invalid_minimum[1]",
+    "reason": "Bloqueo de aprendizaje vigente (MARS_TITAN_TRAINING_HOLD): estas pruebas entrenan con mars-titan-ppo y esperan a que la protección lo permita"
+  },
+  {
+    "test": "tests.simulation.test_native_ppo_runner::test_convergence_rejects_invalid_minimum[48]",
+    "reason": "Bloqueo de aprendizaje vigente (MARS_TITAN_TRAINING_HOLD): estas pruebas entrenan con mars-titan-ppo y esperan a que la protección lo permita"
+  },
+  {
+    "test": "tests.simulation.test_native_ppo_runner::test_convergence_rejects_invalid_minimum[True]",
+    "reason": "Bloqueo de aprendizaje vigente (MARS_TITAN_TRAINING_HOLD): estas pruebas entrenan con mars-titan-ppo y esperan a que la protección lo permita"
+  },
+  {
+    "test": "tests.simulation.test_native_ppo_runner::test_convergence_dqn_rejects_minimum_before_learning_warmup",
+    "reason": "Bloqueo de aprendizaje vigente (MARS_TITAN_TRAINING_HOLD): estas pruebas entrenan con mars-titan-ppo y esperan a que la protección lo permita"
+  },
+  {
+    "test": "tests.simulation.test_native_ppo_runner::test_convergence_rejects_patience_counted_at_minimum[False]",
+    "reason": "Bloqueo de aprendizaje vigente (MARS_TITAN_TRAINING_HOLD): estas pruebas entrenan con mars-titan-ppo y esperan a que la protección lo permita"
+  },
+  {
+    "test": "tests.simulation.test_native_ppo_runner::test_convergence_rejects_patience_counted_at_minimum[True]",
+    "reason": "Bloqueo de aprendizaje vigente (MARS_TITAN_TRAINING_HOLD): estas pruebas entrenan con mars-titan-ppo y esperan a que la protección lo permita"
+  },
+  {
+    "test": "tests.simulation.test_native_ppo_runner::test_convergence_audit_accepts_confirmed_plateau",
+    "reason": "Bloqueo de aprendizaje vigente (MARS_TITAN_TRAINING_HOLD): estas pruebas entrenan con mars-titan-ppo y esperan a que la protección lo permita"
+  },
+  {
+    "test": "tests.simulation.test_native_ppo_runner::test_convergence_resume_preserves_consumed_patience",
+    "reason": "Bloqueo de aprendizaje vigente (MARS_TITAN_TRAINING_HOLD): estas pruebas entrenan con mars-titan-ppo y esperan a que la protección lo permita"
+  },
+  {
+    "test": "tests.simulation.test_native_ppo_runner::test_convergence_recovers_heterogeneous_warmup_cursor[False]",
+    "reason": "Bloqueo de aprendizaje vigente (MARS_TITAN_TRAINING_HOLD): estas pruebas entrenan con mars-titan-ppo y esperan a que la protección lo permita"
+  },
+  {
+    "test": "tests.simulation.test_native_ppo_runner::test_convergence_recovers_heterogeneous_warmup_cursor[True]",
+    "reason": "Bloqueo de aprendizaje vigente (MARS_TITAN_TRAINING_HOLD): estas pruebas entrenan con mars-titan-ppo y esperan a que la protección lo permita"
+  },
+  {
+    "test": "tests.simulation.test_native_ppo_runner::test_convergence_admits_heterogeneous_plateau_and_audit",
+    "reason": "Bloqueo de aprendizaje vigente (MARS_TITAN_TRAINING_HOLD): estas pruebas entrenan con mars-titan-ppo y esperan a que la protección lo permita"
+  },
+  {
+    "test": "tests.simulation.test_native_ppo_runner::test_convergence_rejects_unbounded_history_before_runtime",
+    "reason": "Bloqueo de aprendizaje vigente (MARS_TITAN_TRAINING_HOLD): estas pruebas entrenan con mars-titan-ppo y esperan a que la protección lo permita"
+  },
+  {
+    "test": "tests.training.test_mars_titan_campaign::test_correction_frozen_parent_reproduces_the_carry_and_predicts_the_next_validation",
+    "reason": "Bloqueo de aprendizaje vigente: traslada como padre congelado una ventana B6 de la campaña B reducida, que el fixture campaign_run ejecuta con la protección rebajada de permitted. carry_correction no ajusta, pero comprueba la protección porque predice ventanas de la campaña (inventario de #546)"
+  },
+  {
+    "test": "tests.simulation.test_native_environment::test_native_training_recovers_exactly[ppo]",
+    "reason": "Bloqueo de aprendizaje vigente: el ajuste de la política financiera no se ejecuta mientras la protección local de aprendizaje no declare training_allowed verdadero"
+  },
+  {
+    "test": "tests.simulation.test_native_environment::test_native_training_recovers_exactly[double_dqn]",
+    "reason": "Bloqueo de aprendizaje vigente: el ajuste de la política financiera no se ejecuta mientras la protección local de aprendizaje no declare training_allowed verdadero"
+  }
+]

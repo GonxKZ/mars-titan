@@ -1,0 +1,103 @@
+{
+  "tools": {
+    "complexity": "lizard 1.17.31",
+    "coverage": "LLVM 21.1.8 LCOV"
+  },
+  "convention": "Líneas ejecutables LLVM dentro de la función de lizard. CRAP = C²·(1-cobertura)³+C.",
+  "limitations": [
+    "Incluye las funciones de prueba cambiadas, no todo el código nativo.",
+    "Cobertura y CRAP no demuestran ausencia de defectos.",
+    "LLVM informa dos mapeos hash 0 de CashMovements sin correspondencia. Véase native-cov-debug.log."
+  ],
+  "lcov_sha256": "36d26c77e45a93cba3f2bd7d5b621a459cf16b0a5faed086c8cb2577635216d8",
+  "functions": [
+    {
+      "path": "native/tests/episodic_projection_tests.cpp",
+      "function": "concurrent_groups_match_the_whole_block( ProjectionIsa isa)",
+      "start_line": 268,
+      "end_line": 298,
+      "complexity": 5,
+      "executable_lines": 31,
+      "covered_lines": 31,
+      "coverage_fraction": 1.0,
+      "crap": 5.0
+    },
+    {
+      "path": "native/tests/medoid_kernels_tests.cpp",
+      "function": "dot( std :: span<const double> left , std :: span<const double> right , Order order)",
+      "start_line": 66,
+      "end_line": 81,
+      "complexity": 6,
+      "executable_lines": 16,
+      "covered_lines": 16,
+      "coverage_fraction": 1.0,
+      "crap": 6.0
+    },
+    {
+      "path": "native/tests/medoid_kernels_tests.cpp",
+      "function": "prepare( const std :: vector<double> & clients , const std :: vector<double> & fixed , std :: size_t dimensions , const std :: vector<double> & center , Order order)",
+      "start_line": 90,
+      "end_line": 118,
+      "complexity": 5,
+      "executable_lines": 28,
+      "covered_lines": 28,
+      "coverage_fraction": 1.0,
+      "crap": 5.0
+    },
+    {
+      "path": "native/tests/medoid_kernels_tests.cpp",
+      "function": "points( std :: size_t size , Draw draw)",
+      "start_line": 157,
+      "end_line": 163,
+      "complexity": 2,
+      "executable_lines": 7,
+      "covered_lines": 7,
+      "coverage_fraction": 1.0,
+      "crap": 2.0
+    },
+    {
+      "path": "native/tests/medoid_kernels_tests.cpp",
+      "function": "random_clouds_match_the_brute_force()",
+      "start_line": 166,
+      "end_line": 191,
+      "complexity": 6,
+      "executable_lines": 25,
+      "covered_lines": 25,
+      "coverage_fraction": 1.0,
+      "crap": 6.0
+    },
+    {
+      "path": "native/tests/medoid_kernels_tests.cpp",
+      "function": "ties_duplicates_and_cancellation_match_the_brute_force()",
+      "start_line": 195,
+      "end_line": 235,
+      "complexity": 2,
+      "executable_lines": 39,
+      "covered_lines": 39,
+      "coverage_fraction": 1.0,
+      "crap": 2.0
+    },
+    {
+      "path": "native/tests/medoid_kernels_tests.cpp",
+      "function": "bound_follows_the_proven_formula()",
+      "start_line": 303,
+      "end_line": 334,
+      "complexity": 4,
+      "executable_lines": 31,
+      "covered_lines": 31,
+      "coverage_fraction": 1.0,
+      "crap": 4.0
+    },
+    {
+      "path": "native/tests/medoid_kernels_tests.cpp",
+      "function": "column_sums_take_the_minimum_and_round_once()",
+      "start_line": 338,
+      "end_line": 395,
+      "complexity": 7,
+      "executable_lines": 53,
+      "covered_lines": 53,
+      "coverage_fraction": 1.0,
+      "crap": 7.0
+    }
+  ]
+}
