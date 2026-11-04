@@ -1,0 +1,1050 @@
+[
+  {
+    "package": "certifi",
+    "version": "2026.7.22",
+    "id": "GHSA-6q48-6c7w-9gw2",
+    "aliases": [
+      "PYSEC-2026-4320"
+    ],
+    "fixed_versions": [
+      "2026.10.18"
+    ],
+    "url": "https://github.com/certifi/python-certifi/security/advisories/GHSA-6q48-6c7w-9gw2"
+  },
+  {
+    "package": "certifi",
+    "version": "2026.7.22",
+    "id": "PYSEC-2026-4320",
+    "aliases": [
+      "GHSA-6q48-6c7w-9gw2"
+    ],
+    "fixed_versions": [
+      "2026.10.18"
+    ],
+    "url": "https://github.com/advisories/GHSA-6q48-6c7w-9gw2"
+  },
+  {
+    "package": "filelock",
+    "version": "4.0.0",
+    "id": "GHSA-567q-5qvw-pf92",
+    "aliases": [
+      "CVE-2026-112907"
+    ],
+    "fixed_versions": [
+      "4.2.1"
+    ],
+    "url": "https://github.com/tox-dev/filelock/security/advisories/GHSA-567q-5qvw-pf92"
+  },
+  {
+    "package": "filelock",
+    "version": "4.0.0",
+    "id": "GHSA-6627-m3xw-93mp",
+    "aliases": [
+      "CVE-2026-112908"
+    ],
+    "fixed_versions": [
+      "4.2.1"
+    ],
+    "url": "https://github.com/tox-dev/filelock/security/advisories/GHSA-6627-m3xw-93mp"
+  },
+  {
+    "package": "filelock",
+    "version": "4.0.0",
+    "id": "GHSA-69hj-f68j-2879",
+    "aliases": [
+      "CVE-2026-112909"
+    ],
+    "fixed_versions": [
+      "4.2.1"
+    ],
+    "url": "https://nvd.nist.gov/vuln/detail/CVE-2026-112909"
+  },
+  {
+    "package": "filelock",
+    "version": "4.0.0",
+    "id": "GHSA-8mx5-7m5m-r77g",
+    "aliases": [
+      "CVE-2026-112910"
+    ],
+    "fixed_versions": [
+      "4.2.1"
+    ],
+    "url": "https://github.com/tox-dev/filelock/security/advisories/GHSA-8mx5-7m5m-r77g"
+  },
+  {
+    "package": "filelock",
+    "version": "4.0.0",
+    "id": "GHSA-9c4x-gm8v-wgc4",
+    "aliases": [
+      "CVE-2026-112911"
+    ],
+    "fixed_versions": [
+      "4.2.1"
+    ],
+    "url": "https://nvd.nist.gov/vuln/detail/CVE-2026-112911"
+  },
+  {
+    "package": "filelock",
+    "version": "4.0.0",
+    "id": "GHSA-9j6q-wvj5-jgjg",
+    "aliases": [
+      "CVE-2026-112912"
+    ],
+    "fixed_versions": [
+      "4.2.1"
+    ],
+    "url": "https://nvd.nist.gov/vuln/detail/CVE-2026-112912"
+  },
+  {
+    "package": "filelock",
+    "version": "4.0.0",
+    "id": "GHSA-9vhv-jxww-xfm5",
+    "aliases": [
+      "CVE-2026-112913"
+    ],
+    "fixed_versions": [
+      "4.2.1"
+    ],
+    "url": "https://github.com/tox-dev/filelock/security/advisories/GHSA-9vhv-jxww-xfm5"
+  },
+  {
+    "package": "filelock",
+    "version": "4.0.0",
+    "id": "GHSA-cwqr-hh33-gh44",
+    "aliases": [
+      "CVE-2026-112915"
+    ],
+    "fixed_versions": [
+      "4.2.1"
+    ],
+    "url": "https://nvd.nist.gov/vuln/detail/CVE-2026-112915"
+  },
+  {
+    "package": "filelock",
+    "version": "4.0.0",
+    "id": "GHSA-fj95-fr6c-h845",
+    "aliases": [
+      "CVE-2026-112934"
+    ],
+    "fixed_versions": [
+      "4.2.1"
+    ],
+    "url": "https://nvd.nist.gov/vuln/detail/CVE-2026-112934"
+  },
+  {
+    "package": "filelock",
+    "version": "4.0.0",
+    "id": "GHSA-fq56-3cx3-fjxp",
+    "aliases": [
+      "CVE-2026-112935"
+    ],
+    "fixed_versions": [
+      "4.2.1"
+    ],
+    "url": "https://nvd.nist.gov/vuln/detail/CVE-2026-112935"
+  },
+  {
+    "package": "filelock",
+    "version": "4.0.0",
+    "id": "GHSA-j8f7-rjxc-mr56",
+    "aliases": [
+      "CVE-2026-112936"
+    ],
+    "fixed_versions": [
+      "4.0.9"
+    ],
+    "url": "https://nvd.nist.gov/vuln/detail/CVE-2026-112936"
+  },
+  {
+    "package": "filelock",
+    "version": "4.0.0",
+    "id": "GHSA-m462-7rxw-wvpg",
+    "aliases": [
+      "CVE-2026-112938"
+    ],
+    "fixed_versions": [
+      "4.2.1"
+    ],
+    "url": "https://github.com/tox-dev/filelock/security/advisories/GHSA-m462-7rxw-wvpg"
+  },
+  {
+    "package": "filelock",
+    "version": "4.0.0",
+    "id": "GHSA-rfpc-qcw5-3pc4",
+    "aliases": [
+      "CVE-2026-112939"
+    ],
+    "fixed_versions": [
+      "4.2.1"
+    ],
+    "url": "https://nvd.nist.gov/vuln/detail/CVE-2026-112939"
+  },
+  {
+    "package": "filelock",
+    "version": "4.0.0",
+    "id": "GHSA-v4x8-3wr5-3wq8",
+    "aliases": [
+      "CVE-2026-112940"
+    ],
+    "fixed_versions": [
+      "4.2.1"
+    ],
+    "url": "https://nvd.nist.gov/vuln/detail/CVE-2026-112940"
+  },
+  {
+    "package": "nbconvert",
+    "version": "7.17.1",
+    "id": "GHSA-pjvx-prjx-h659",
+    "aliases": [
+      "CVE-2026-114140"
+    ],
+    "fixed_versions": [
+      "7.17.2"
+    ],
+    "url": "https://nvd.nist.gov/vuln/detail/CVE-2026-114140"
+  },
+  {
+    "package": "pillow",
+    "version": "12.3.0",
+    "id": "GHSA-22hg-r758-rrw9",
+    "aliases": [
+      "BIT-pillow-2026-112390",
+      "CVE-2026-112390"
+    ],
+    "fixed_versions": [
+      "13.0.0"
+    ],
+    "url": "https://nvd.nist.gov/vuln/detail/CVE-2026-112390"
+  },
+  {
+    "package": "pillow",
+    "version": "12.3.0",
+    "id": "GHSA-24rc-8hj2-v98c",
+    "aliases": [
+      "BIT-pillow-2026-96638",
+      "CVE-2026-96638"
+    ],
+    "fixed_versions": [
+      "13.0.0"
+    ],
+    "url": "https://nvd.nist.gov/vuln/detail/CVE-2026-96638"
+  },
+  {
+    "package": "pillow",
+    "version": "12.3.0",
+    "id": "GHSA-254f-3936-288h",
+    "aliases": [
+      "BIT-pillow-2026-112391",
+      "CVE-2026-112391"
+    ],
+    "fixed_versions": [
+      "13.0.0"
+    ],
+    "url": "https://nvd.nist.gov/vuln/detail/CVE-2026-112391"
+  },
+  {
+    "package": "pillow",
+    "version": "12.3.0",
+    "id": "GHSA-27h8-gf7j-v5hc",
+    "aliases": [
+      "BIT-pillow-2026-112392",
+      "CVE-2026-112392",
+      "PYSEC-2026-4326"
+    ],
+    "fixed_versions": [
+      "13.0.0"
+    ],
+    "url": "https://nvd.nist.gov/vuln/detail/CVE-2026-112392"
+  },
+  {
+    "package": "pillow",
+    "version": "12.3.0",
+    "id": "GHSA-332p-7hrc-92wf",
+    "aliases": [
+      "BIT-pillow-2026-112393",
+      "CVE-2026-112393"
+    ],
+    "fixed_versions": [
+      "13.0.0"
+    ],
+    "url": "https://nvd.nist.gov/vuln/detail/CVE-2026-112393"
+  },
+  {
+    "package": "pillow",
+    "version": "12.3.0",
+    "id": "GHSA-3j72-p6qg-6xp7",
+    "aliases": [
+      "BIT-pillow-2026-96642",
+      "CVE-2026-96642",
+      "PYSEC-2026-4341"
+    ],
+    "fixed_versions": [
+      "13.0.0"
+    ],
+    "url": "https://nvd.nist.gov/vuln/detail/CVE-2026-96642"
+  },
+  {
+    "package": "pillow",
+    "version": "12.3.0",
+    "id": "GHSA-4558-3h8r-v8xp",
+    "aliases": [
+      "BIT-pillow-2026-112394",
+      "CVE-2026-112394",
+      "PYSEC-2026-4327"
+    ],
+    "fixed_versions": [
+      "13.0.0"
+    ],
+    "url": "https://nvd.nist.gov/vuln/detail/CVE-2026-112394"
+  },
+  {
+    "package": "pillow",
+    "version": "12.3.0",
+    "id": "GHSA-462x-pgg6-55fp",
+    "aliases": [
+      "BIT-pillow-2026-112395",
+      "CVE-2026-112395"
+    ],
+    "fixed_versions": [
+      "13.0.0"
+    ],
+    "url": "https://nvd.nist.gov/vuln/detail/CVE-2026-112395"
+  },
+  {
+    "package": "pillow",
+    "version": "12.3.0",
+    "id": "GHSA-4rm8-3hmm-39fg",
+    "aliases": [
+      "BIT-pillow-2026-96641",
+      "CVE-2026-96641",
+      "PYSEC-2026-4340"
+    ],
+    "fixed_versions": [
+      "13.0.0"
+    ],
+    "url": "https://nvd.nist.gov/vuln/detail/CVE-2026-96641"
+  },
+  {
+    "package": "pillow",
+    "version": "12.3.0",
+    "id": "GHSA-4rr5-89j8-mwwm",
+    "aliases": [
+      "BIT-pillow-2026-112396",
+      "CVE-2026-112396",
+      "PYSEC-2026-4328"
+    ],
+    "fixed_versions": [
+      "13.0.0"
+    ],
+    "url": "https://nvd.nist.gov/vuln/detail/CVE-2026-112396"
+  },
+  {
+    "package": "pillow",
+    "version": "12.3.0",
+    "id": "GHSA-58r4-6rv3-gfh8",
+    "aliases": [
+      "BIT-pillow-2026-112397",
+      "CVE-2026-112397",
+      "PYSEC-2026-4329"
+    ],
+    "fixed_versions": [
+      "13.0.0"
+    ],
+    "url": "https://nvd.nist.gov/vuln/detail/CVE-2026-112397"
+  },
+  {
+    "package": "pillow",
+    "version": "12.3.0",
+    "id": "GHSA-5x8w-8jj5-q52h",
+    "aliases": [
+      "BIT-pillow-2026-112398",
+      "CVE-2026-112398",
+      "PYSEC-2026-4330"
+    ],
+    "fixed_versions": [
+      "13.0.0"
+    ],
+    "url": "https://nvd.nist.gov/vuln/detail/CVE-2026-112398"
+  },
+  {
+    "package": "pillow",
+    "version": "12.3.0",
+    "id": "GHSA-5xm2-6676-qcp9",
+    "aliases": [
+      "BIT-pillow-2026-112399",
+      "CVE-2026-112399"
+    ],
+    "fixed_versions": [
+      "13.0.0"
+    ],
+    "url": "https://nvd.nist.gov/vuln/detail/CVE-2026-112399"
+  },
+  {
+    "package": "pillow",
+    "version": "12.3.0",
+    "id": "GHSA-654x-cwwv-5j9c",
+    "aliases": [
+      "BIT-pillow-2026-114501",
+      "CVE-2026-114501",
+      "PYSEC-2026-4336"
+    ],
+    "fixed_versions": [
+      "13.0.0"
+    ],
+    "url": "https://nvd.nist.gov/vuln/detail/CVE-2026-114501"
+  },
+  {
+    "package": "pillow",
+    "version": "12.3.0",
+    "id": "GHSA-65qm-jvmh-6pqg",
+    "aliases": [
+      "BIT-pillow-2026-112400",
+      "CVE-2026-112400"
+    ],
+    "fixed_versions": [
+      "13.0.0"
+    ],
+    "url": "https://nvd.nist.gov/vuln/detail/CVE-2026-112400"
+  },
+  {
+    "package": "pillow",
+    "version": "12.3.0",
+    "id": "GHSA-74r2-7ff9-mjj2",
+    "aliases": [
+      "BIT-pillow-2026-112401",
+      "CVE-2026-112401"
+    ],
+    "fixed_versions": [
+      "13.0.0"
+    ],
+    "url": "https://nvd.nist.gov/vuln/detail/CVE-2026-112401"
+  },
+  {
+    "package": "pillow",
+    "version": "12.3.0",
+    "id": "GHSA-78g4-xqwv-q3g8",
+    "aliases": [],
+    "fixed_versions": [
+      "13.0.0"
+    ],
+    "url": "https://github.com/python-pillow/Pillow/security/advisories/GHSA-78g4-xqwv-q3g8"
+  },
+  {
+    "package": "pillow",
+    "version": "12.3.0",
+    "id": "GHSA-7mwm-ghpf-9vrm",
+    "aliases": [
+      "BIT-pillow-2026-112402",
+      "CVE-2026-112402",
+      "PYSEC-2026-4331"
+    ],
+    "fixed_versions": [
+      "13.0.0"
+    ],
+    "url": "https://nvd.nist.gov/vuln/detail/CVE-2026-112402"
+  },
+  {
+    "package": "pillow",
+    "version": "12.3.0",
+    "id": "GHSA-8g5g-8vmr-9782",
+    "aliases": [
+      "BIT-pillow-2026-112403",
+      "CVE-2026-112403",
+      "PYSEC-2026-4332"
+    ],
+    "fixed_versions": [
+      "13.0.0"
+    ],
+    "url": "https://nvd.nist.gov/vuln/detail/CVE-2026-112403"
+  },
+  {
+    "package": "pillow",
+    "version": "12.3.0",
+    "id": "GHSA-9v9v-9qvf-h2hj",
+    "aliases": [
+      "BIT-pillow-2026-96644",
+      "CVE-2026-96644",
+      "PYSEC-2026-4343"
+    ],
+    "fixed_versions": [
+      "13.0.0"
+    ],
+    "url": "https://nvd.nist.gov/vuln/detail/CVE-2026-96644"
+  },
+  {
+    "package": "pillow",
+    "version": "12.3.0",
+    "id": "GHSA-c6hw-5grf-ff96",
+    "aliases": [
+      "BIT-pillow-2026-112404",
+      "CVE-2026-112404"
+    ],
+    "fixed_versions": [
+      "13.0.0"
+    ],
+    "url": "https://nvd.nist.gov/vuln/detail/CVE-2026-112404"
+  },
+  {
+    "package": "pillow",
+    "version": "12.3.0",
+    "id": "GHSA-cp9v-662q-vvx9",
+    "aliases": [
+      "BIT-pillow-2026-112405",
+      "CVE-2026-112405",
+      "PYSEC-2026-4333"
+    ],
+    "fixed_versions": [
+      "13.0.0"
+    ],
+    "url": "https://nvd.nist.gov/vuln/detail/CVE-2026-112405"
+  },
+  {
+    "package": "pillow",
+    "version": "12.3.0",
+    "id": "GHSA-f2g6-542v-9j58",
+    "aliases": [
+      "BIT-pillow-2026-112406",
+      "CVE-2026-112406"
+    ],
+    "fixed_versions": [
+      "13.0.0"
+    ],
+    "url": "https://nvd.nist.gov/vuln/detail/CVE-2026-112406"
+  },
+  {
+    "package": "pillow",
+    "version": "12.3.0",
+    "id": "GHSA-fc9g-5qg7-mf45",
+    "aliases": [
+      "BIT-pillow-2026-112891",
+      "CVE-2026-112891"
+    ],
+    "fixed_versions": [
+      "13.0.0"
+    ],
+    "url": "https://nvd.nist.gov/vuln/detail/CVE-2026-112891"
+  },
+  {
+    "package": "pillow",
+    "version": "12.3.0",
+    "id": "GHSA-g4qv-2jxx-769h",
+    "aliases": [
+      "BIT-pillow-2026-96643",
+      "CVE-2026-96643",
+      "PYSEC-2026-4342"
+    ],
+    "fixed_versions": [
+      "13.0.0"
+    ],
+    "url": "https://nvd.nist.gov/vuln/detail/CVE-2026-96643"
+  },
+  {
+    "package": "pillow",
+    "version": "12.3.0",
+    "id": "GHSA-g7cr-3p24-7wf7",
+    "aliases": [
+      "BIT-pillow-2026-96778",
+      "CVE-2026-96778"
+    ],
+    "fixed_versions": [
+      "13.0.0"
+    ],
+    "url": "https://nvd.nist.gov/vuln/detail/CVE-2026-96778"
+  },
+  {
+    "package": "pillow",
+    "version": "12.3.0",
+    "id": "GHSA-g842-9rc4-69pw",
+    "aliases": [
+      "BIT-pillow-2026-96637",
+      "CVE-2026-96637",
+      "PYSEC-2026-4338"
+    ],
+    "fixed_versions": [
+      "13.0.0"
+    ],
+    "url": "https://nvd.nist.gov/vuln/detail/CVE-2026-96637"
+  },
+  {
+    "package": "pillow",
+    "version": "12.3.0",
+    "id": "GHSA-gg2r-wvfm-q9rx",
+    "aliases": [
+      "BIT-pillow-2026-112892",
+      "CVE-2026-112892"
+    ],
+    "fixed_versions": [
+      "13.0.0"
+    ],
+    "url": "https://nvd.nist.gov/vuln/detail/CVE-2026-112892"
+  },
+  {
+    "package": "pillow",
+    "version": "12.3.0",
+    "id": "GHSA-j4m9-6w36-pw47",
+    "aliases": [
+      "BIT-pillow-2026-112893",
+      "CVE-2026-112893"
+    ],
+    "fixed_versions": [
+      "13.0.0"
+    ],
+    "url": "https://nvd.nist.gov/vuln/detail/CVE-2026-112893"
+  },
+  {
+    "package": "pillow",
+    "version": "12.3.0",
+    "id": "GHSA-jg86-v3jv-hrpm",
+    "aliases": [
+      "BIT-pillow-2026-112894",
+      "CVE-2026-112894"
+    ],
+    "fixed_versions": [
+      "13.0.0"
+    ],
+    "url": "https://nvd.nist.gov/vuln/detail/CVE-2026-112894"
+  },
+  {
+    "package": "pillow",
+    "version": "12.3.0",
+    "id": "GHSA-mrfp-p49p-3hf2",
+    "aliases": [
+      "BIT-pillow-2026-96640",
+      "CVE-2026-96640"
+    ],
+    "fixed_versions": [
+      "13.0.0"
+    ],
+    "url": "https://nvd.nist.gov/vuln/detail/CVE-2026-96640"
+  },
+  {
+    "package": "pillow",
+    "version": "12.3.0",
+    "id": "GHSA-p4wg-p73j-c528",
+    "aliases": [
+      "BIT-pillow-2026-112895",
+      "CVE-2026-112895"
+    ],
+    "fixed_versions": [
+      "13.0.0"
+    ],
+    "url": "https://nvd.nist.gov/vuln/detail/CVE-2026-112895"
+  },
+  {
+    "package": "pillow",
+    "version": "12.3.0",
+    "id": "GHSA-p8hx-v2p6-rp84",
+    "aliases": [
+      "BIT-pillow-2026-96636",
+      "CVE-2026-96636",
+      "PYSEC-2026-4337"
+    ],
+    "fixed_versions": [
+      "13.0.0"
+    ],
+    "url": "https://nvd.nist.gov/vuln/detail/CVE-2026-96636"
+  },
+  {
+    "package": "pillow",
+    "version": "12.3.0",
+    "id": "GHSA-pchr-8j38-3x4p",
+    "aliases": [
+      "BIT-pillow-2026-112896",
+      "CVE-2026-112896",
+      "PYSEC-2026-4334"
+    ],
+    "fixed_versions": [
+      "13.0.0"
+    ],
+    "url": "https://nvd.nist.gov/vuln/detail/CVE-2026-112896"
+  },
+  {
+    "package": "pillow",
+    "version": "12.3.0",
+    "id": "GHSA-q45j-58j2-45rg",
+    "aliases": [
+      "BIT-pillow-2026-112897",
+      "CVE-2026-112897"
+    ],
+    "fixed_versions": [
+      "13.0.0"
+    ],
+    "url": "https://nvd.nist.gov/vuln/detail/CVE-2026-112897"
+  },
+  {
+    "package": "pillow",
+    "version": "12.3.0",
+    "id": "GHSA-rfgq-q3w2-pmv2",
+    "aliases": [
+      "BIT-pillow-2026-112898",
+      "CVE-2026-112898"
+    ],
+    "fixed_versions": [
+      "13.0.0"
+    ],
+    "url": "https://nvd.nist.gov/vuln/detail/CVE-2026-112898"
+  },
+  {
+    "package": "pillow",
+    "version": "12.3.0",
+    "id": "GHSA-v9pv-5gc8-w2m6",
+    "aliases": [
+      "BIT-pillow-2026-96639",
+      "CVE-2026-96639",
+      "PYSEC-2026-4339"
+    ],
+    "fixed_versions": [
+      "13.0.0"
+    ],
+    "url": "https://nvd.nist.gov/vuln/detail/CVE-2026-96639"
+  },
+  {
+    "package": "pillow",
+    "version": "12.3.0",
+    "id": "GHSA-vx6w-vv9f-6gvg",
+    "aliases": [
+      "CVE-2026-112899"
+    ],
+    "fixed_versions": [
+      "13.0.0"
+    ],
+    "url": "https://github.com/python-pillow/Pillow/security/advisories/GHSA-vx6w-vv9f-6gvg"
+  },
+  {
+    "package": "pillow",
+    "version": "12.3.0",
+    "id": "GHSA-w889-685w-c8fh",
+    "aliases": [
+      "BIT-pillow-2026-112900",
+      "CVE-2026-112900"
+    ],
+    "fixed_versions": [
+      "13.0.0"
+    ],
+    "url": "https://nvd.nist.gov/vuln/detail/CVE-2026-112900"
+  },
+  {
+    "package": "pillow",
+    "version": "12.3.0",
+    "id": "GHSA-xgh8-jp6q-p5x8",
+    "aliases": [
+      "BIT-pillow-2026-112901",
+      "CVE-2026-112901",
+      "PYSEC-2026-4335"
+    ],
+    "fixed_versions": [
+      "13.0.0"
+    ],
+    "url": "https://nvd.nist.gov/vuln/detail/CVE-2026-112901"
+  },
+  {
+    "package": "pillow",
+    "version": "12.3.0",
+    "id": "GHSA-xvh5-g6gv-559v",
+    "aliases": [
+      "CVE-2026-112902"
+    ],
+    "fixed_versions": [
+      "13.0.0"
+    ],
+    "url": "https://github.com/python-pillow/Pillow/security/advisories/GHSA-xvh5-g6gv-559v"
+  },
+  {
+    "package": "pillow",
+    "version": "12.3.0",
+    "id": "PYSEC-2026-4326",
+    "aliases": [
+      "BIT-pillow-2026-112392",
+      "CVE-2026-112392",
+      "GHSA-27h8-gf7j-v5hc"
+    ],
+    "fixed_versions": [
+      "13.0.0"
+    ],
+    "url": "https://github.com/python-pillow/Pillow/releases/tag/13.0.0"
+  },
+  {
+    "package": "pillow",
+    "version": "12.3.0",
+    "id": "PYSEC-2026-4327",
+    "aliases": [
+      "BIT-pillow-2026-112394",
+      "CVE-2026-112394",
+      "GHSA-4558-3h8r-v8xp"
+    ],
+    "fixed_versions": [
+      "13.0.0"
+    ],
+    "url": "https://github.com/python-pillow/Pillow/releases/tag/13.0.0"
+  },
+  {
+    "package": "pillow",
+    "version": "12.3.0",
+    "id": "PYSEC-2026-4328",
+    "aliases": [
+      "BIT-pillow-2026-112396",
+      "CVE-2026-112396",
+      "GHSA-4rr5-89j8-mwwm"
+    ],
+    "fixed_versions": [
+      "13.0.0"
+    ],
+    "url": "https://github.com/python-pillow/Pillow/releases/tag/13.0.0"
+  },
+  {
+    "package": "pillow",
+    "version": "12.3.0",
+    "id": "PYSEC-2026-4329",
+    "aliases": [
+      "BIT-pillow-2026-112397",
+      "CVE-2026-112397",
+      "GHSA-58r4-6rv3-gfh8"
+    ],
+    "fixed_versions": [
+      "13.0.0"
+    ],
+    "url": "https://github.com/python-pillow/Pillow/releases/tag/13.0.0"
+  },
+  {
+    "package": "pillow",
+    "version": "12.3.0",
+    "id": "PYSEC-2026-4330",
+    "aliases": [
+      "BIT-pillow-2026-112398",
+      "CVE-2026-112398",
+      "GHSA-5x8w-8jj5-q52h"
+    ],
+    "fixed_versions": [
+      "13.0.0"
+    ],
+    "url": "https://github.com/python-pillow/Pillow/releases/tag/13.0.0"
+  },
+  {
+    "package": "pillow",
+    "version": "12.3.0",
+    "id": "PYSEC-2026-4331",
+    "aliases": [
+      "BIT-pillow-2026-112402",
+      "CVE-2026-112402",
+      "GHSA-7mwm-ghpf-9vrm"
+    ],
+    "fixed_versions": [
+      "13.0.0"
+    ],
+    "url": "https://github.com/python-pillow/Pillow/releases/tag/13.0.0"
+  },
+  {
+    "package": "pillow",
+    "version": "12.3.0",
+    "id": "PYSEC-2026-4332",
+    "aliases": [
+      "BIT-pillow-2026-112403",
+      "CVE-2026-112403",
+      "GHSA-8g5g-8vmr-9782"
+    ],
+    "fixed_versions": [
+      "13.0.0"
+    ],
+    "url": "https://github.com/python-pillow/Pillow/releases/tag/13.0.0"
+  },
+  {
+    "package": "pillow",
+    "version": "12.3.0",
+    "id": "PYSEC-2026-4333",
+    "aliases": [
+      "BIT-pillow-2026-112405",
+      "CVE-2026-112405",
+      "GHSA-cp9v-662q-vvx9"
+    ],
+    "fixed_versions": [
+      "13.0.0"
+    ],
+    "url": "https://github.com/python-pillow/Pillow/releases/tag/13.0.0"
+  },
+  {
+    "package": "pillow",
+    "version": "12.3.0",
+    "id": "PYSEC-2026-4334",
+    "aliases": [
+      "BIT-pillow-2026-112896",
+      "CVE-2026-112896",
+      "GHSA-pchr-8j38-3x4p"
+    ],
+    "fixed_versions": [
+      "13.0.0"
+    ],
+    "url": "https://github.com/python-pillow/Pillow/releases/tag/13.0.0"
+  },
+  {
+    "package": "pillow",
+    "version": "12.3.0",
+    "id": "PYSEC-2026-4335",
+    "aliases": [
+      "BIT-pillow-2026-112901",
+      "CVE-2026-112901",
+      "GHSA-xgh8-jp6q-p5x8"
+    ],
+    "fixed_versions": [
+      "13.0.0"
+    ],
+    "url": "https://github.com/python-pillow/Pillow/releases/tag/13.0.0"
+  },
+  {
+    "package": "pillow",
+    "version": "12.3.0",
+    "id": "PYSEC-2026-4336",
+    "aliases": [
+      "BIT-pillow-2026-114501",
+      "CVE-2026-114501",
+      "GHSA-654x-cwwv-5j9c"
+    ],
+    "fixed_versions": [
+      "13.0.0"
+    ],
+    "url": "https://github.com/python-pillow/Pillow/releases/tag/13.0.0"
+  },
+  {
+    "package": "pillow",
+    "version": "12.3.0",
+    "id": "PYSEC-2026-4337",
+    "aliases": [
+      "BIT-pillow-2026-96636",
+      "CVE-2026-96636",
+      "GHSA-p8hx-v2p6-rp84"
+    ],
+    "fixed_versions": [
+      "13.0.0"
+    ],
+    "url": "https://github.com/python-pillow/Pillow/releases/tag/13.0.0"
+  },
+  {
+    "package": "pillow",
+    "version": "12.3.0",
+    "id": "PYSEC-2026-4338",
+    "aliases": [
+      "BIT-pillow-2026-96637",
+      "CVE-2026-96637",
+      "GHSA-g842-9rc4-69pw"
+    ],
+    "fixed_versions": [
+      "13.0.0"
+    ],
+    "url": "https://github.com/python-pillow/Pillow/releases/tag/13.0.0"
+  },
+  {
+    "package": "pillow",
+    "version": "12.3.0",
+    "id": "PYSEC-2026-4339",
+    "aliases": [
+      "BIT-pillow-2026-96639",
+      "CVE-2026-96639",
+      "GHSA-v9pv-5gc8-w2m6"
+    ],
+    "fixed_versions": [
+      "13.0.0"
+    ],
+    "url": "https://github.com/python-pillow/Pillow/releases/tag/13.0.0"
+  },
+  {
+    "package": "pillow",
+    "version": "12.3.0",
+    "id": "PYSEC-2026-4340",
+    "aliases": [
+      "BIT-pillow-2026-96641",
+      "CVE-2026-96641",
+      "GHSA-4rm8-3hmm-39fg"
+    ],
+    "fixed_versions": [
+      "13.0.0"
+    ],
+    "url": "https://github.com/python-pillow/Pillow/releases/tag/13.0.0"
+  },
+  {
+    "package": "pillow",
+    "version": "12.3.0",
+    "id": "PYSEC-2026-4341",
+    "aliases": [
+      "BIT-pillow-2026-96642",
+      "CVE-2026-96642",
+      "GHSA-3j72-p6qg-6xp7"
+    ],
+    "fixed_versions": [
+      "13.0.0"
+    ],
+    "url": "https://github.com/python-pillow/Pillow/releases/tag/13.0.0"
+  },
+  {
+    "package": "pillow",
+    "version": "12.3.0",
+    "id": "PYSEC-2026-4342",
+    "aliases": [
+      "BIT-pillow-2026-96643",
+      "CVE-2026-96643",
+      "GHSA-g4qv-2jxx-769h"
+    ],
+    "fixed_versions": [
+      "13.0.0"
+    ],
+    "url": "https://github.com/python-pillow/Pillow/releases/tag/13.0.0"
+  },
+  {
+    "package": "pillow",
+    "version": "12.3.0",
+    "id": "PYSEC-2026-4343",
+    "aliases": [
+      "BIT-pillow-2026-96644",
+      "CVE-2026-96644",
+      "GHSA-9v9v-9qvf-h2hj"
+    ],
+    "fixed_versions": [
+      "13.0.0"
+    ],
+    "url": "https://github.com/python-pillow/Pillow/releases/tag/13.0.0"
+  },
+  {
+    "package": "setuptools",
+    "version": "84.0.0",
+    "id": "GHSA-xmj3-9gf7-h52w",
+    "aliases": [],
+    "fixed_versions": [
+      "84.1.0"
+    ],
+    "url": "https://github.com/pypa/setuptools/security/advisories/GHSA-xmj3-9gf7-h52w"
+  },
+  {
+    "package": "tornado",
+    "version": "6.5.10",
+    "id": "GHSA-pcg2-g6cj-q92c",
+    "aliases": [
+      "CVE-2026-116577"
+    ],
+    "fixed_versions": [
+      "6.6"
+    ],
+    "url": "https://nvd.nist.gov/vuln/detail/CVE-2026-116577"
+  },
+  {
+    "package": "tornado",
+    "version": "6.5.10",
+    "id": "GHSA-pw9p-v7r6-gx4p",
+    "aliases": [
+      "CVE-2026-116578"
+    ],
+    "fixed_versions": [
+      "6.6"
+    ],
+    "url": "https://nvd.nist.gov/vuln/detail/CVE-2026-116578"
+  },
+  {
+    "package": "tornado",
+    "version": "6.5.10",
+    "id": "GHSA-r4j5-9xpp-3985",
+    "aliases": [
+      "CVE-2026-115927"
+    ],
+    "fixed_versions": [
+      "6.6"
+    ],
+    "url": "https://nvd.nist.gov/vuln/detail/CVE-2026-115927"
+  }
+]
