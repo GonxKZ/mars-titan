@@ -21,6 +21,8 @@ def validated_blocks(factory, *, keep_float32=False):
             or y.shape != (len(x),)
         ):
             raise ValueError("El bloque de regresión no es válido o supera sus límites")
+        if np.iscomplexobj(x) or np.iscomplexobj(y):
+            raise ValueError("Las características y los objetivos deben ser números reales")
         if not (keep_float32 and x.dtype == np.float32):
             x = x.astype(np.float64, copy=False)
         y = y.astype(np.float64, copy=False)
@@ -35,7 +37,10 @@ def validated_blocks(factory, *, keep_float32=False):
 def feature_vector(inputs: dict) -> np.ndarray:
     if set(inputs) != set(MODALITIES):
         raise ValueError("Se requieren las cuatro modalidades y el contexto macro")
-    parts = [np.asarray(inputs[name], dtype=np.float64).reshape(-1) for name in MODALITIES]
+    parts = [np.asarray(inputs[name]).reshape(-1) for name in MODALITIES]
+    if any(np.iscomplexobj(part) for part in parts):
+        raise ValueError("Las modalidades deben contener números reales")
+    parts = [part.astype(np.float64, copy=False) for part in parts]
     if any(not len(part) or not np.isfinite(part).all() for part in parts):
         raise ValueError("Las modalidades deben contener valores finitos")
     if sum(len(part) for part in parts) > 4096:
