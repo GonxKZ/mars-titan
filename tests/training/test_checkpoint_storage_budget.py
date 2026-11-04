@@ -19,6 +19,13 @@ def constrained_disk(monkeypatch, free):
     )
 
 
+def forbid_serialization(monkeypatch):
+    def unexpected_save(*args, **kwargs):
+        raise AssertionError("El almacenamiento que no cabe debe rechazarse antes de serializar")
+
+    monkeypatch.setattr(checkpoints.torch, "save", unexpected_save)
+
+
 @pytest.mark.parametrize("view", ["offset", "empty", "strided"])
 def test_large_backing_storage_is_rejected_before_writing_a_small_view(tmp_path, monkeypatch, view):
     previous = checkpoints.save_training_state(tmp_path, {"global_step": 1}, identity=IDENTITY)
@@ -64,6 +71,7 @@ def test_shared_storage_is_reserved_once_and_aliases_survive_recovery(tmp_path, 
 def test_distinct_storages_are_not_deduplicated_by_shape_or_content(tmp_path, monkeypatch):
     backing = torch.zeros(2 * MIB, dtype=torch.float32)
     constrained_disk(monkeypatch, 28 * MIB)
+    forbid_serialization(monkeypatch)
     with pytest.raises(OSError) as error:
         checkpoints.save_training_state(
             tmp_path,
@@ -79,6 +87,7 @@ def test_sparse_storage_views_cannot_escape_the_reservation(tmp_path, monkeypatc
     indices = backing[:2].reshape(2, 1)
     value = torch.sparse_coo_tensor(indices, torch.ones(1), (2, 2))
     constrained_disk(monkeypatch, 20 * MIB)
+    forbid_serialization(monkeypatch)
     with pytest.raises(OSError) as error:
         checkpoints.save_training_state(
             tmp_path, {"global_step": 1, "sparse": value}, identity=IDENTITY
@@ -106,6 +115,7 @@ def test_compressed_indices_include_their_entire_storage(tmp_path, monkeypatch, 
     constructor = getattr(torch, f"sparse_{layout}_tensor")
     value = constructor(backing[:3], torch.tensor([0]), values, size=(2, 2))
     constrained_disk(monkeypatch, 20 * MIB)
+    forbid_serialization(monkeypatch)
     with pytest.raises(OSError) as error:
         checkpoints.save_training_state(
             tmp_path, {"global_step": 1, "value": value}, identity=IDENTITY

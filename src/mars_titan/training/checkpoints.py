@@ -174,6 +174,33 @@ def _read_payload(path, identity, step):
     return payload["state"]
 
 
+class _CheckpointWriter:
+    """Limitar el archivo antes de escribir, aunque los metadatos excedan la estimación."""
+
+    def __init__(self, stream, available):
+        self.stream = stream
+        self.maximum = min(available, MAX_STATE_BYTES)
+        self.disk_limited = available < MAX_STATE_BYTES
+        self.exceeded = False
+        self.written = 0
+
+    def limit_error(self):
+        if self.disk_limited:
+            return OSError(28, "No hay espacio para conservar la reserva del punto de control")
+        return ValueError("El archivo serializado excede el presupuesto")
+
+    def write(self, data):
+        if self.exceeded or self.written + memoryview(data).nbytes > self.maximum:
+            self.exceeded = True
+            raise self.limit_error()
+        written = self.stream.write(data)
+        self.written += written
+        return written
+
+    def flush(self):
+        self.stream.flush()
+
+
 def save_training_state(
     directory: Path, state: dict, *, identity: dict, best: bool = False, pin: bool = False
 ) -> Path:
@@ -192,13 +219,22 @@ def save_training_state(
         previous = [r for r in index["latest"] if _intact(directory, r)]
         if previous and state["global_step"] < previous[0]["global_step"]:
             raise ValueError("El estado retrocede respecto al último paso confirmado")
-        if shutil.disk_usage(directory).free < estimated + 16 * 1024**2:
+        available = shutil.disk_usage(directory).free - 16 * 1024**2
+        if available < estimated:
             raise OSError(28, "No hay espacio para confirmar el siguiente punto de control")
         pending = directory / ".pending.pt"
         descriptor = os.open(pending, os.O_WRONLY | os.O_CREAT | os.O_TRUNC | os.O_NOFOLLOW, 0o600)
         try:
             with os.fdopen(descriptor, "wb") as stream:
-                torch.save({"schema_version": 1, "identity": canonical, "state": state}, stream)
+                writer = _CheckpointWriter(stream, available)
+                try:
+                    torch.save({"schema_version": 1, "identity": canonical, "state": state}, writer)
+                except Exception as error:
+                    # El cierre ZIP puede reemplazar el error original del búfer por un
+                    # RuntimeError. Conservar el motivo del límite, sin ocultar otros fallos.
+                    if writer.exceeded:
+                        raise writer.limit_error() from error
+                    raise
                 stream.flush()
                 os.fsync(stream.fileno())
             size, digest = pending.stat().st_size, sha256(pending)

@@ -76,6 +76,10 @@ se cuentan una vez y conservan sus alias al cargar. Los formatos dispersos cuent
 y valores, los cuantizados por canal incluyen sus parámetros y los tensores meta no
 reservan datos inexistentes. A esa estimación se añaden 1 MiB para metadatos y 16 MiB de
 reserva de disco. El límite real del archivo se vuelve a comprobar antes de publicarlo.
+La escritura del temporal también se limita a esos 512 MiB y al espacio libre inicial
+menos la reserva de 16 MiB. Así, unos metadatos mayores que el margen estimado detienen la
+escritura antes de consumir esa reserva. El temporal se elimina y el estado confirmado
+anterior sigue disponible. Esto no reserva espacio frente a escrituras de otros procesos.
 
 El guardado comprueba también una carga restringida antes de publicar el
 manifiesto. Un objeto serializable que el cargador no admita no reemplaza un
