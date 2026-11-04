@@ -8,7 +8,7 @@ license = "MIT"
 authors = [{name = "Gonzalo García Lama"}]
 dependencies = [
     "numpy>=2,<3", "pandas>=2.2,<4", "pyarrow>=18,<30",
-    "exchange-calendars>=4.8,<5", "ijson>=3.3,<4", "pillow>=11,<13",
+    "exchange-calendars>=4.8,<5", "ijson>=3.3,<4", "pillow>=13,<14",
 ]
 
 [build-system]
@@ -76,6 +76,20 @@ package = true
 exclude-newer = "2026-09-26T23:59:59Z"
 environments = ["sys_platform == 'linux' and platform_machine == 'x86_64'"]
 required-environments = ["sys_platform == 'linux' and platform_machine == 'x86_64'"]
+# Versiones mínimas corregidas según la revisión de seguridad de #832.
+constraint-dependencies = [
+    "certifi>=2026.10.18", "filelock>=4.2.1", "nbconvert>=7.17.2",
+    "setuptools>=84.1.0", "tornado>=6.6",
+]
+
+# Solo estos paquetes admiten las correcciones posteriores al corte general.
+[tool.uv.exclude-newer-package]
+certifi = "2026-11-04T00:00:00Z"
+filelock = "2026-11-04T00:00:00Z"
+nbconvert = "2026-11-04T00:00:00Z"
+pillow = "2026-11-04T00:00:00Z"
+setuptools = "2026-11-04T00:00:00Z"
+tornado = "2026-11-04T00:00:00Z"
 
 [[tool.uv.index]]
 name = "pytorch-cu130"
