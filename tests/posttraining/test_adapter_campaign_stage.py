@@ -293,6 +293,7 @@ def base_b(tmp_path_factory):
 
 
 def run(base, output, stop=None, stage=None, **options):
+    options.setdefault("platform", laptop())
     # Sin cola, preparación, aumento ni mundos del postentrenamiento emparejado anterior.
     with real_data_only():
         return campaign_stage.run_stage(
@@ -305,6 +306,19 @@ def run(base, output, stop=None, stage=None, **options):
             device="cpu",
             **options,
         )
+
+
+def test_cpu_campaign_and_stage_do_not_query_the_real_gpu(tmp_path, monkeypatch, recorder):
+    from mars_titan.training import masked_campaign
+
+    def unexpected_query():
+        raise AssertionError("Un fixture de CPU no debe consultar la GPU real")
+
+    monkeypatch.setattr(masked_campaign, "platform_identity", unexpected_query)
+    monkeypatch.setattr(campaign_stage, "platform_identity", unexpected_query)
+    base = base_campaign(tmp_path / "base", "A")
+    summary = run(base, tmp_path / "stage")
+    assert summary["status"] == "completed"
 
 
 def receipts(output):

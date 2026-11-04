@@ -46,6 +46,19 @@ def base_b(tmp_path_factory):
     return fixture.base_campaign(tmp_path_factory.mktemp("rl-b"), "B")
 
 
+def test_cpu_policy_fixture_does_not_query_the_real_gpu(tmp_path, monkeypatch, learning_doubles):
+    from mars_titan.training import masked_campaign
+
+    def unexpected_query():
+        raise AssertionError("Un fixture de políticas en CPU no debe consultar la GPU real")
+
+    monkeypatch.setattr(masked_campaign, "platform_identity", unexpected_query)
+    monkeypatch.setattr(campaign_stage, "platform_identity", unexpected_query)
+    base = fixture.base_campaign(tmp_path / "base", "A")
+    summary = fixture.run(base, tmp_path / "stage", fixture.ScriptedLearner())
+    assert summary["status"] == "completed"
+
+
 def receipts(output):
     return {
         str(path.parent.relative_to(output / "jobs")): json.loads(path.read_text())
@@ -628,6 +641,7 @@ def test_a_reference_that_learns_is_rejected(base_a, tmp_path, learning_doubles)
             tmp_path / "stage",
             listing_status=base_a.listing_status,
             executors=executors,
+            platform=laptop(),
             # Las cotas de los trabajos confirmados antes se calculan con la contabilidad de
             # Python, como en el resto de la etapa reducida. La paridad nativa tiene su prueba.
             bound_backend="python",

@@ -19,6 +19,7 @@ from mars_titan.data.storage import atomic_json
 from mars_titan.models.quantile_head import QUANTILE_COLUMNS
 from mars_titan.posttraining import campaign_stage
 from mars_titan.training import campaign_chain, carried_predictions
+from tests.hardware.platform_doubles import laptop
 from tests.posttraining.campaign_fixture import CpuLease, base_campaign
 from tests.posttraining.real_only import real_data_only
 from tests.training.test_carried_predictions import PresenceCount
@@ -101,6 +102,7 @@ def test_the_tabular_chain_is_the_frozen_parent_carried_from_the_previous_window
             lease=CpuLease,
             stop=SimpleNamespace(requested=False),
             device="cpu",
+            platform=laptop(),
         )
     assert summary["status"] == "completed"
     # La GRU ajusta sus cinco casos de la v2 y la continuación anclada, y Ridge solo predice

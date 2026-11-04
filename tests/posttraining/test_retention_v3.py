@@ -28,6 +28,7 @@ from mars_titan.posttraining import stage_comparison as compare
 from mars_titan.training import masked_campaign as engine
 from mars_titan.training import rolling_retention as rolling
 from mars_titan.training import window_indices
+from tests.hardware.platform_doubles import laptop
 from tests.posttraining.campaign_fixture import CpuLease, base_campaign
 from tests.posttraining.real_only import real_data_only
 from tests.posttraining.test_publication_from_aggregates import (
@@ -86,6 +87,7 @@ def reading(regenerators, folder, windows):
 
 
 def stage(base, campaign, adapters, **options):
+    options.setdefault("platform", laptop())
     with real_data_only():
         return campaign_stage.run_stage(
             base.stage,

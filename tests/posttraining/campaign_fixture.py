@@ -32,6 +32,7 @@ from mars_titan.training.corpus_inputs import CorpusDataset
 from mars_titan.training.learning_hold import HOLD_ENV
 from mars_titan.training.reference_run import HELDOUT_FULL_TRAIN_SESSIONS
 from mars_titan.training.selection import FINISH, advance_selection, epoch_decision
+from tests.hardware.platform_doubles import laptop
 from tests.learning_hold_lowering import allowed_hold
 from tests.training.test_carried_predictions import PresenceCount
 from tests.training.test_masked_campaign import Recorder
@@ -321,6 +322,7 @@ def base_campaign(root, variant, *, tabular=False, comparison=None):
             executors=executors(),
             lease=CpuLease,
             stop=SimpleNamespace(requested=False),
+            platform=laptop(),
         )
     assert summary["status"] == "completed"
     return SimpleNamespace(
