@@ -1,0 +1,82 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "A1 · Contracción de escala por mercado (scale_shrink_v1)",
+    "quality_profile": "showcase",
+    "viewBox": [1240, 592],
+    "legend": {
+      "entries": {
+        "external": {"label": "Entradas"},
+        "backend": {"label": "Cálculo"},
+        "database": {"label": "Memoria y estado"},
+        "security": {"label": "Control o protección"},
+        "cloud": {"label": "Evaluación"}
+      }
+    }
+  },
+  "components": [
+    {
+      "id": "stored",
+      "type": "database",
+      "label": "Predicciones guardadas",
+      "sublabel": "validación, calibración, evaluación",
+      "pos": [40, 230],
+      "size": [180, 72]
+    },
+    {
+      "id": "fit",
+      "type": "backend",
+      "label": "λ en calibración",
+      "sublabel": "mediana ponderada de y/x",
+      "tag": "λ en [0, 1]",
+      "pos": [300, 40],
+      "size": [180, 72]
+    },
+    {"id": "apply", "type": "backend", "label": "ŷ = λ·x por mercado", "sublabel": "λ congelado", "pos": [560, 230], "size": [180, 72]},
+    {"id": "evaluation", "type": "cloud", "label": "Evaluación posterior", "sublabel": "MAE e IC por sesión", "pos": [820, 230], "size": [180, 72]},
+    {"id": "controls", "type": "external", "label": "Controles", "sublabel": "λ = 1 y predecir cero", "pos": [560, 420], "size": [180, 72]},
+    {
+      "id": "bound",
+      "type": "security",
+      "label": "Cota con información futura",
+      "sublabel": "λ elegido en evaluación",
+      "tag": "no decide",
+      "pos": [820, 40],
+      "size": [180, 72]
+    }
+  ],
+  "connections": [
+    {"id": "stored-fit", "from": "stored", "to": "fit", "label": "calibración"},
+    {"id": "fit-apply", "from": "fit", "to": "apply", "label": "λ"},
+    {"id": "stored-apply", "from": "stored", "to": "apply", "label": "x de evaluación", "variant": "emphasis"},
+    {"id": "apply-evaluation", "from": "apply", "to": "evaluation", "label": "ŷ", "variant": "emphasis"},
+    {"id": "controls-evaluation", "from": "controls", "to": "evaluation", "label": "mismas filas", "variant": "dashed"},
+    {"id": "bound-evaluation", "from": "bound", "to": "evaluation", "label": "referencia", "variant": "dashed", "labelDy": 24}
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "Mecanismo",
+      "items": [
+        "λ* = argmin Σ w·|y − λx| con pesos 1/n por sesión",
+        "Es la mediana de y/x ponderada con w·|x|, recortada a [0, 1]",
+        "Fuente: Campbell y Thompson (2008), Gu, Kelly y Xiu (2020)"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "Control que la descarta",
+      "items": ["λ = 1, predecir cero y la mediana pasada del residuo", "La cota con λ elegido en la evaluación solo se informa aparte"]
+    },
+    {
+      "dot": "amber",
+      "title": "Estado",
+      "items": [
+        "Implementada como diagnóstico de la fase 0 (#744)",
+        "2023 con 64 activos: λ = 0 en el 43 % de los predictores",
+        "La mejor ganancia frente a cero queda por debajo del efecto detectable"
+      ]
+    }
+  ]
+}

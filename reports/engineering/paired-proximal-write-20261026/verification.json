@@ -1,0 +1,121 @@
+{
+  "schema_version": 1,
+  "kind": "paired_proximal_technical_verification",
+  "recorded_at": "2026-10-26T19:23:54+00:00",
+  "base_commit": "3e89cc5dff0a22303ea5d213e40fe1df179142cd",
+  "issue": 750,
+  "sources_sha256": {
+    "src/mars_titan/memory/paired_proximal.py": "b752d38c6dd28de5497380cb195d158fcea114bcd4ff89df24e8f164e863dcf4",
+    "src/mars_titan/memory/area_memory.py": "1858461dbe879449a24bf7ffdbe1e1e9781b071f451097cf28167550460b37af",
+    "src/mars_titan/memory/area_query_bridge.py": "2733cc1996839233eea8d8343c658e805ae89ecdf787fd86ca408c299145d23a",
+    "src/mars_titan/memory/financial_session.py": "7705a15d8b12822ac624f95724cc6a790acdfa4b3d11af9bb07e3dbdb7c91b85",
+    "src/mars_titan/training/mars_titan_correction.py": "f8eca30f48d1feedcadf941d786e8bfa98b5a635cc6737aeff08aeb0955eb46e",
+    "tests/memory/test_paired_proximal.py": "c33a46bc7049ce0c8403dbcdb716abc6b7d7eae7e8cd97d7affd5507425930d8",
+    "tests/memory/test_area_query_bridge.py": "ab470359d9d65d8f26d2aef413bcefde815370dc13eb8dfb71dd4d59e5046178",
+    "tests/memory/test_area_session_recovery.py": "a518aff40cb1cef450117e50129a61eee9435e1d7dedfeeaa116e40247ff3054",
+    "benchmarks/paired_area_write.py": "b497c214fc69e43da7cc6131cf9b36876be49843d053ac969952751008254d64",
+    "pyproject.toml": "00847fec9265422ad2e024ec0d2cd7a9766edddcf1ca913c5c5c7d47ddb1c2a7",
+    "uv.lock": "c0796a17611a8c6e8376da4367206dc0e2cc3e4f5573f8d568b4811e2bb396be"
+  },
+  "test_runs": [
+    {
+      "kind": "integration",
+      "passed": 296,
+      "failed": 0,
+      "errors": 0,
+      "skipped": 0,
+      "junit_sha256": "ea092fca90d8c766d9b91cb9dc9b83ce09d98891a4689c3b26c1eb954227d1f1",
+      "duration_s": 497.182,
+      "note": "La revisión del helper repite cincuenta casos de la batería anterior y añade dos. El código de producto no cambió."
+    },
+    {
+      "kind": "helper_safety",
+      "passed": 52,
+      "failed": 0,
+      "errors": 0,
+      "skipped": 0,
+      "junit_sha256": "ae4106be96e27ba6ad6c03f6d676e97f7d1885aebdfe43a94b3ad887f8ac1344",
+      "duration_s": 0.32,
+      "note": "La revisión del helper repite cincuenta casos de la batería anterior y añade dos. El código de producto no cambió."
+    }
+  ],
+  "cuda_deselected": 3,
+  "mutations": {
+    "planned": 11,
+    "killed": 11,
+    "artifact": "mutations.json"
+  },
+  "quality": {
+    "artifact": "quality.json",
+    "integration_artifact": "quality-integration.json",
+    "helper": {
+      "path": "src/mars_titan/memory/paired_proximal.py",
+      "source_sha256": "b752d38c6dd28de5497380cb195d158fcea114bcd4ff89df24e8f164e863dcf4",
+      "statements": 31,
+      "covered_statements": 31,
+      "branches": 10,
+      "covered_branches": 10
+    },
+    "helper_crap": 10.0,
+    "tools": {
+      "coverage": "7.16.1",
+      "radon": "6.0.1",
+      "branch_coverage": true,
+      "python": "3.12.14",
+      "summarizer_sha256": "75cc60c88037e0bb17aff6e8ab666ce78b35d600d6c7ad217bf68b1afb4c4ec6"
+    },
+    "convention": "C² × (1 − cobertura de sentencias)³ + C."
+  },
+  "regression": {
+    "reference_commit": "3e89cc5dff0a22303ea5d213e40fe1df179142cd",
+    "cases": 15,
+    "bitwise_equal": true,
+    "artifacts": [
+      "reference-parity.json",
+      "current-parity.json"
+    ],
+    "scope": "Estados, lecturas y recuperación. Incluye ambos barajados, delta, tasa cero, olvido cero, dos/cuatro pasos y 512 rasgos. No es una evaluación predictiva."
+  },
+  "buffers": {
+    "shuffled_destination_peak_live": 1,
+    "persistent_numeric_bytes": 530432,
+    "scope": "Fixture de cuatro áreas, 128 rasgos y ganancia de consulta declarada."
+  },
+  "hold": {
+    "sha256": "8a658080c1ac4e63847eba58b177020339da6ec47021cf26d2701830073c87fd",
+    "unchanged": true,
+    "training_allowed": false,
+    "automatic_resume_allowed": false,
+    "final_test_access": false
+  },
+  "scientific_experiments_executed": false,
+  "predictive_change_expected": "Ninguno por diseño, la regla matemática es la misma.",
+  "predictive_improvement_measured": false,
+  "limits": [
+    "La mejora de coste debe evaluarse aparte de la utilidad predictiva de B2.",
+    "El predictor CUDA completo sigue sin medir por ocupación de la GPU.",
+    "No se ha ejecutado Lean ni se afirma una garantía formal del cálculo FP64."
+  ],
+  "benchmark": {
+    "runs": [
+      "benchmark-v1.json",
+      "benchmark-v2.json"
+    ],
+    "process_runs": [
+      "benchmark-process-v1.json",
+      "benchmark-process-v2.json"
+    ],
+    "comparison": "comparison.json",
+    "all_cases_bitwise": true,
+    "all_median_cycles_lower": true,
+    "scope": "Solo ciclo de lectura y escritura de memoria CPU FP64. No incluye predictor, codificación ni checkpoint de sesión."
+  },
+  "checks": {
+    "ruff_check_returncode": 0,
+    "ruff_format_returncode": 0,
+    "formatted_files": 2011,
+    "repository_check_returncode": 0,
+    "repository_files_checked": 3978,
+    "git_diff_check_returncode": 0
+  }
+}

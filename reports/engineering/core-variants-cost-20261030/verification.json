@@ -1,0 +1,92 @@
+{
+ "schema_version": 1,
+ "date": "2026-10-30",
+ "issue": 813,
+ "scope": "core_variants_cost_measure_coverage",
+ "implementation_commit": "39b69a8a2b4329df649f8bdbb121151c0fb6ad82",
+ "base_commit": "4713ace4a883b8dd78417a1146a2c2ecb8ad36c6",
+ "scientific_experiments": 0,
+ "training_runs": 0,
+ "real_optimizer_steps": 0,
+ "final_test_opened": false,
+ "hold_sha256": "8a658080c1ac4e63847eba58b177020339da6ec47021cf26d2701830073c87fd",
+ "test_optimizers": "Las pruebas solo calculan gradientes con autograd y la medida no crea optimizador. Las mutaciones instalan un gancho de torch.optim que rechaza cualquier paso y cuentan cero intentos.",
+ "suites": [
+  {
+   "name": "targeted_with_coverage",
+   "tests": 244,
+   "failures": 0,
+   "errors": 0,
+   "skipped": 1,
+   "xml_sha256": "fdfd0d1c898611126f0d166380bee31780bbb739a4001b0c9d205dc51c44fb22",
+   "note": "Las pruebas de la medida y las que llaman a update_shared, con cobertura de ramas de la medida y de neural_memory.py. La omisión es la protección del aprendizaje."
+  }
+ ],
+ "quality": {
+  "tools": {
+   "coverage": "7.16.1",
+   "radon": "6.0.1",
+   "branch_coverage": true,
+   "python": "3.12.14",
+   "summarizer_sha256": "75cc60c88037e0bb17aff6e8ab666ce78b35d600d6c7ad217bf68b1afb4c4ec6"
+  },
+  "totals": {
+   "statements": 547,
+   "covered_statements": 517,
+   "branches": 214,
+   "covered_branches": 189
+  },
+  "files": [
+   {
+    "path": "benchmarks/core_variants_cost.py",
+    "source_sha256": "1f7e3b56f283a189c3431333b8179c8b578bdc6aebc0539ffa95c4458fa89c77",
+    "statements": 128,
+    "covered_statements": 127,
+    "branches": 36,
+    "covered_branches": 35
+   },
+   {
+    "path": "src/mars_titan/models/titans/neural_memory.py",
+    "source_sha256": "7708f0150b87206c31470fea18f643124ab35f4207c09a269bc65fe2441521f7",
+    "statements": 419,
+    "covered_statements": 390,
+    "branches": 178,
+    "covered_branches": 154
+   }
+  ],
+  "max_crap": 32.11057121261203,
+  "quality_sha256": "6ae278c93d8a4a4724ad613660c45b2b66d915737d75e46b8f4b7c44db16c13a",
+  "limits": "CRAP y cobertura localizan complejidad poco comprobada. No demuestran ausencia de errores."
+ },
+ "mutations": {
+  "tree_commit": "39b69a8a2b4329df649f8bdbb121151c0fb6ad82",
+  "planned": 9,
+  "killed": 9,
+  "optimizer_attempts": 0,
+  "hold_sha256_unchanged": true,
+  "recipes_sha256": "b74693746b12f7e4dac2fc81ba00dde1b53dbfbf91872f7cd6798187368cd842",
+  "executor_sha256": "5945411f42d66c88d4c203f3e3d38c0270be6b1fa0fd666078d13c46bf5336f5",
+  "source_sha256": {
+   "benchmarks/core_variants_cost.py": "1f7e3b56f283a189c3431333b8179c8b578bdc6aebc0539ffa95c4458fa89c77"
+  },
+  "cases": [
+   "core_variants_cost__warmup_skipped",
+   "core_variants_cost__warmup_without_inference",
+   "core_variants_cost__rotation_removed",
+   "core_variants_cost__gradient_check_removed",
+   "core_variants_cost__gradient_check_any",
+   "core_variants_cost__cli_rows_default",
+   "core_variants_cost__cli_instants_as_rows",
+   "core_variants_cost__cli_huber_not_printed",
+   "core_variants_cost__cli_output_optional"
+  ],
+  "summary_sha256": "c8b53b982c71155ec55a45c1716580d8661ee835080b45f276301c0f5e5d723a",
+  "scope": "Nueve defectos dirigidos de la medida: sin calentamiento, calentamiento sin la pasada sin grafo, sin rotación del orden, sin el rechazo del gradiente no finito, all cambiado por any en ese rechazo, otro valor por defecto de las filas, las filas tomadas de los instantes, sin imprimir la fracción de Huber y --output opcional. Cada uno tiene una fase en verde antes, la mutación y otra fase en verde después, en una copia aislada del árbol con el directorio de Git declarado, porque la medida registra el commit con git rev-parse."
+ },
+ "native_link": {
+  "source_commit": "39abf2c99",
+  "preset": "native-candidate-cuda",
+  "used_by": "targeted_with_coverage",
+  "sha256": "9fda744aa9c6672f9fb47c0896a5e9b19fc8795cdbfff42b944ed751953b1046"
+ }
+}

@@ -1,0 +1,72 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "G1 · Autoedición acotada sobre el ledger (posthoc_self_edit_v1)",
+    "quality_profile": "showcase",
+    "viewBox": [1300, 592],
+    "legend": {
+      "entries": {
+        "backend": {"label": "Cálculo"},
+        "database": {"label": "Memoria y estado"},
+        "frontend": {"label": "Salida"},
+        "security": {"label": "Control o protección"},
+        "cloud": {"label": "Evaluación"}
+      }
+    }
+  },
+  "components": [
+    {"id": "ledger", "type": "database", "label": "Ledger de propuestas", "sublabel": "N fijado antes de S", "pos": [40, 230], "size": [180, 72]},
+    {"id": "generator", "type": "backend", "label": "Generador", "sublabel": "sin conocimiento del mundo", "pos": [300, 230], "size": [180, 72]},
+    {"id": "output", "type": "backend", "label": "Ediciones de salida", "sublabel": "λ, cobertura, umbrales", "pos": [560, 40], "size": [180, 72]},
+    {
+      "id": "architecture",
+      "type": "backend",
+      "label": "Ciclo de arquitectura",
+      "sublabel": "8 recetas registradas",
+      "pos": [560, 420],
+      "size": [180, 72]
+    },
+    {"id": "placebo", "type": "security", "label": "Placebo aleatorio", "sublabel": "misma gramática y N", "pos": [560, 230], "size": [180, 72]},
+    {"id": "evaluate", "type": "cloud", "label": "Evaluación", "sublabel": "solo resultados maduros", "pos": [820, 230], "size": [180, 72]},
+    {
+      "id": "second",
+      "type": "frontend",
+      "label": "Segundo ciclo",
+      "sublabel": "si supera al placebo",
+      "tag": "con aprobación",
+      "pos": [1080, 230],
+      "size": [180, 72]
+    }
+  ],
+  "connections": [
+    {"id": "ledger-generator", "from": "ledger", "to": "generator"},
+    {"id": "generator-output", "from": "generator", "to": "output", "label": "cada ciclo"},
+    {"id": "generator-architecture", "from": "generator", "to": "architecture", "label": "un ciclo"},
+    {"id": "output-evaluate", "from": "output", "to": "evaluate", "variant": "emphasis"},
+    {"id": "architecture-evaluate", "from": "architecture", "to": "evaluate", "label": "recetas"},
+    {"id": "placebo-evaluate", "from": "placebo", "to": "evaluate", "label": "control", "variant": "dashed", "labelDx": -30, "labelDy": 60},
+    {"id": "evaluate-second", "from": "evaluate", "to": "second"}
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "Mecanismo",
+      "items": [
+        "Gramática cerrada que solo edita λ, cobertura, umbrales y pesos de combinación",
+        "Un ciclo de arquitectura propone recetas sobre componentes registrados",
+        "Fuente: SEAL de Zweiger et al. (2025), Dwork et al. (2015)"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "Control que la descarta",
+      "items": ["Generador aleatorio con la misma gramática, N y presupuesto", "No editar"]
+    },
+    {
+      "dot": "amber",
+      "title": "Estado",
+      "items": ["Registrada en #748 y en implementación, sin entrenar ni evaluar", "Reutiliza src/mars_titan/proposals (#711)"]
+    }
+  ]
+}

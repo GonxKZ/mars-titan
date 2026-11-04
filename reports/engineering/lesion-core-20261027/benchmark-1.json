@@ -1,0 +1,3000 @@
+{
+  "schema_version": 1,
+  "kind": "lesion_read_technical_cost",
+  "measured_at": "2026-10-26T23:04:37.586978+00:00",
+  "hardware": {
+    "cpu": "AMD Ryzen 9 8945HS w/ Radeon 780M Graphics",
+    "device": "cpu",
+    "cpu_threads": 2,
+    "interop_threads": 1
+  },
+  "versions": {
+    "python": "3.12.14",
+    "torch": "2.14.0+cu130",
+    "numpy": "2.5.3"
+  },
+  "sources_sha256": {
+    "mars_titan.memory.area_memory": "4a2013705a289a32d4c290b48897cca67af3e04c0c8a12b7e56a155444ee19d5",
+    "mars_titan.memory.area_query_bridge": "d29e43eb6aec0f067a3560893cb16ba1447b87a4dc35bf922b3a5e741bc6fb2a",
+    "mars_titan.memory.associative_memory": "100f880063579e3f72b483bce159b53a856968a46274a3a48994c598625dce91",
+    "mars_titan.memory.role_binding": "fe949e4b0ad499da9d1e011cd82f8343d43317486348bf491967ee92454851fe",
+    "mars_titan.memory.multiscale_mixture": "fb06a9607f44513c5c2961cffd9d9af0f6d12df1d58ad9e7fb258503389a3df2",
+    "mars_titan.memory.lesion_protocol": "4fe7f3a82db4c41b8f108a16e2fec6e2f1f759c990e75d156e21e00a74ebdc3d"
+  },
+  "benchmark_sha256": "b39813ae01e30755a23934b075d7b457d5cdc585cae5f51c8c668a2b8c303011",
+  "timing_helper_sha256": "36fbd8314e25175ba79a2a0539c612d69498e26a7e8afa081bed5889c97ea905",
+  "plans": {
+    "areas": {
+      "protocol": {
+        "kind": "lesion_protocol_v1",
+        "seeds": [
+          0,
+          1
+        ],
+        "fractions": [
+          [
+            1,
+            4
+          ],
+          [
+            1,
+            2
+          ],
+          [
+            3,
+            4
+          ]
+        ],
+        "generator": "numpy_pcg64_180_axis_seed_area_fixed_four_words",
+        "selection": "nested_prefix_of_fixed_permutation_floor_fraction_times_dimension",
+        "scope": "read_queries_and_bridge_endpoints_without_writes_or_model_adaptation"
+      },
+      "correction": {
+        "schema_version": 1,
+        "kind": "mature_scalar_correction",
+        "memory": {
+          "rule": "proximal",
+          "key_size": 64,
+          "value_size": 1,
+          "rate": 0.25,
+          "forgetting": 0.0,
+          "schema_version": 1,
+          "kind": "mature_associative_memory",
+          "dtype": "float64",
+          "device": "cpu",
+          "key_constraint": "l2_norm_at_most_1",
+          "key_norm_tolerance": 1e-06,
+          "order": "label_available_at_then_decision_at_then_id",
+          "write_cursor": "strictly_increasing_canonical_key",
+          "empty_cohort": "unchanged_without_forgetting",
+          "update": "cohort_cholesky_lapack_without_inverse",
+          "weights": "declared_nonnegative_sum_one"
+        },
+        "key": "codec",
+        "key_normalization": "l2_fp64_of_codec_key_inputs",
+        "value": "mature_label_minus_core_prediction",
+        "read": "matrix_of_previous_generation_for_the_whole_event",
+        "ids": "write_count_plus_offset_in_native_canonical_outcome_order",
+        "proximal_weights": "uniform_over_event_cohort",
+        "areas": {
+          "areas": 4,
+          "shifts": 1,
+          "permutation": "seeded_random",
+          "seed": 0,
+          "labels": "mature",
+          "kind": "redundant_area_memory_v1",
+          "feature_map": "dpfp_of_permuted_key_then_l2_or_zero",
+          "permutation_generator": "numpy_pcg64_seed_permutation_per_area_in_order",
+          "read": "mean_over_active_areas",
+          "label_shuffle": null
+        }
+      },
+      "area_count": 4,
+      "coordinate_width": 128,
+      "cases": [
+        {
+          "name": "intact",
+          "reduction": "active_mean",
+          "active_areas": 4,
+          "active_coordinates": [
+            128,
+            128,
+            128,
+            128
+          ],
+          "mask_sha256": "5f241d8cb796e2f279b63380aa6b6804c54f8da70ef6c630ea2c9374ce7f4eed"
+        },
+        {
+          "name": "zero",
+          "reduction": "fixed_mean",
+          "active_areas": 0,
+          "active_coordinates": [
+            128,
+            128,
+            128,
+            128
+          ],
+          "mask_sha256": "72e5bb8ba95b0feb64763ec0f6035ead435bc2c5026b580e0fbcb2595379aebf"
+        },
+        {
+          "name": "area_s0_1of4_active_mean",
+          "reduction": "active_mean",
+          "active_areas": 3,
+          "active_coordinates": [
+            128,
+            128,
+            128,
+            128
+          ],
+          "mask_sha256": "bc32dd18f243f05ffe771981d65fcaa20dcaa9c9996bdc8d0222685327e1b8c0"
+        },
+        {
+          "name": "area_s0_1of4_fixed_mean",
+          "reduction": "fixed_mean",
+          "active_areas": 3,
+          "active_coordinates": [
+            128,
+            128,
+            128,
+            128
+          ],
+          "mask_sha256": "bc32dd18f243f05ffe771981d65fcaa20dcaa9c9996bdc8d0222685327e1b8c0"
+        },
+        {
+          "name": "coordinate_s0_1of4",
+          "reduction": "active_mean",
+          "active_areas": 4,
+          "active_coordinates": [
+            96,
+            96,
+            96,
+            96
+          ],
+          "mask_sha256": "f4873331fe56a246555a6768f39166809df79331a85a872b0bbbcfe84c3d7a0e"
+        },
+        {
+          "name": "area_s0_1of2_active_mean",
+          "reduction": "active_mean",
+          "active_areas": 2,
+          "active_coordinates": [
+            128,
+            128,
+            128,
+            128
+          ],
+          "mask_sha256": "642e5f7c9185c65d67bd5964232698ff8ad3dbb34bace196ab9500391901d394"
+        },
+        {
+          "name": "area_s0_1of2_fixed_mean",
+          "reduction": "fixed_mean",
+          "active_areas": 2,
+          "active_coordinates": [
+            128,
+            128,
+            128,
+            128
+          ],
+          "mask_sha256": "642e5f7c9185c65d67bd5964232698ff8ad3dbb34bace196ab9500391901d394"
+        },
+        {
+          "name": "coordinate_s0_1of2",
+          "reduction": "active_mean",
+          "active_areas": 4,
+          "active_coordinates": [
+            64,
+            64,
+            64,
+            64
+          ],
+          "mask_sha256": "c22bea0bc3898dcbda6346656ac99b617c80f10b389e99f58ba9f1f67ab4a97d"
+        },
+        {
+          "name": "area_s0_3of4_active_mean",
+          "reduction": "active_mean",
+          "active_areas": 1,
+          "active_coordinates": [
+            128,
+            128,
+            128,
+            128
+          ],
+          "mask_sha256": "ed8390de178dfbc6d0719bd707a654fcf9ae01b4b72406316152302a86e98580"
+        },
+        {
+          "name": "area_s0_3of4_fixed_mean",
+          "reduction": "fixed_mean",
+          "active_areas": 1,
+          "active_coordinates": [
+            128,
+            128,
+            128,
+            128
+          ],
+          "mask_sha256": "ed8390de178dfbc6d0719bd707a654fcf9ae01b4b72406316152302a86e98580"
+        },
+        {
+          "name": "coordinate_s0_3of4",
+          "reduction": "active_mean",
+          "active_areas": 4,
+          "active_coordinates": [
+            32,
+            32,
+            32,
+            32
+          ],
+          "mask_sha256": "7336a539dc63308b8cbc3d5f2976ea12dc1f49d31be05120fa26c811b64b6d92"
+        },
+        {
+          "name": "area_s1_1of4_active_mean",
+          "reduction": "active_mean",
+          "active_areas": 3,
+          "active_coordinates": [
+            128,
+            128,
+            128,
+            128
+          ],
+          "mask_sha256": "e84aa38b95abc4c1ef35c638d9619c16f1d2f9e7afe442a0dbff76aa959439c4"
+        },
+        {
+          "name": "area_s1_1of4_fixed_mean",
+          "reduction": "fixed_mean",
+          "active_areas": 3,
+          "active_coordinates": [
+            128,
+            128,
+            128,
+            128
+          ],
+          "mask_sha256": "e84aa38b95abc4c1ef35c638d9619c16f1d2f9e7afe442a0dbff76aa959439c4"
+        },
+        {
+          "name": "coordinate_s1_1of4",
+          "reduction": "active_mean",
+          "active_areas": 4,
+          "active_coordinates": [
+            96,
+            96,
+            96,
+            96
+          ],
+          "mask_sha256": "0ebfd5f2a96ed974d306fdef9bf9321759ec676bf8f51c7c22caaa071ccccce4"
+        },
+        {
+          "name": "area_s1_1of2_active_mean",
+          "reduction": "active_mean",
+          "active_areas": 2,
+          "active_coordinates": [
+            128,
+            128,
+            128,
+            128
+          ],
+          "mask_sha256": "fb2fb0db1364a3dff5159053d71a3a2b1db86a1af1a80545c02ecaa3c6a6baa0"
+        },
+        {
+          "name": "area_s1_1of2_fixed_mean",
+          "reduction": "fixed_mean",
+          "active_areas": 2,
+          "active_coordinates": [
+            128,
+            128,
+            128,
+            128
+          ],
+          "mask_sha256": "fb2fb0db1364a3dff5159053d71a3a2b1db86a1af1a80545c02ecaa3c6a6baa0"
+        },
+        {
+          "name": "coordinate_s1_1of2",
+          "reduction": "active_mean",
+          "active_areas": 4,
+          "active_coordinates": [
+            64,
+            64,
+            64,
+            64
+          ],
+          "mask_sha256": "4e7989d4dedcd060278d5162cbe4835605a27dd747862faa041859b169501d66"
+        },
+        {
+          "name": "area_s1_3of4_active_mean",
+          "reduction": "active_mean",
+          "active_areas": 1,
+          "active_coordinates": [
+            128,
+            128,
+            128,
+            128
+          ],
+          "mask_sha256": "49244a2bf2a889a60133efe348793856bb125e72293ee4a5e4c83d0d02d6f21f"
+        },
+        {
+          "name": "area_s1_3of4_fixed_mean",
+          "reduction": "fixed_mean",
+          "active_areas": 1,
+          "active_coordinates": [
+            128,
+            128,
+            128,
+            128
+          ],
+          "mask_sha256": "49244a2bf2a889a60133efe348793856bb125e72293ee4a5e4c83d0d02d6f21f"
+        },
+        {
+          "name": "coordinate_s1_3of4",
+          "reduction": "active_mean",
+          "active_areas": 4,
+          "active_coordinates": [
+            32,
+            32,
+            32,
+            32
+          ],
+          "mask_sha256": "d9e463bb63dfa8dd19ece9f3872ad2daa6faee3a1281045c5e71cac4b7c61cc5"
+        }
+      ]
+    },
+    "monolithic": {
+      "protocol": {
+        "kind": "lesion_protocol_v1",
+        "seeds": [
+          0,
+          1
+        ],
+        "fractions": [
+          [
+            1,
+            4
+          ],
+          [
+            1,
+            2
+          ],
+          [
+            3,
+            4
+          ]
+        ],
+        "generator": "numpy_pcg64_180_axis_seed_area_fixed_four_words",
+        "selection": "nested_prefix_of_fixed_permutation_floor_fraction_times_dimension",
+        "scope": "read_queries_and_bridge_endpoints_without_writes_or_model_adaptation"
+      },
+      "correction": {
+        "schema_version": 1,
+        "kind": "mature_scalar_correction",
+        "memory": {
+          "rule": "proximal",
+          "key_size": 64,
+          "value_size": 1,
+          "rate": 0.25,
+          "forgetting": 0.0,
+          "schema_version": 1,
+          "kind": "mature_associative_memory",
+          "dtype": "float64",
+          "device": "cpu",
+          "key_constraint": "l2_norm_at_most_1",
+          "key_norm_tolerance": 1e-06,
+          "order": "label_available_at_then_decision_at_then_id",
+          "write_cursor": "strictly_increasing_canonical_key",
+          "empty_cohort": "unchanged_without_forgetting",
+          "update": "cohort_cholesky_lapack_without_inverse",
+          "weights": "declared_nonnegative_sum_one"
+        },
+        "key": "codec",
+        "key_normalization": "l2_fp64_of_codec_key_inputs",
+        "value": "mature_label_minus_core_prediction",
+        "read": "matrix_of_previous_generation_for_the_whole_event",
+        "ids": "write_count_plus_offset_in_native_canonical_outcome_order",
+        "proximal_weights": "uniform_over_event_cohort",
+        "areas": {
+          "areas": 1,
+          "shifts": 4,
+          "permutation": "seeded_random",
+          "seed": 0,
+          "labels": "mature",
+          "kind": "redundant_area_memory_v1",
+          "feature_map": "dpfp_of_permuted_key_then_l2_or_zero",
+          "permutation_generator": "numpy_pcg64_seed_permutation_per_area_in_order",
+          "read": "mean_over_active_areas",
+          "label_shuffle": null
+        }
+      },
+      "area_count": 1,
+      "coordinate_width": 512,
+      "cases": [
+        {
+          "name": "intact",
+          "reduction": "active_mean",
+          "active_areas": 1,
+          "active_coordinates": [
+            512
+          ],
+          "mask_sha256": "d76036ad13c8a84b7614234d455f5f66b29cd8d8780c75256f2e8a50799838e8"
+        },
+        {
+          "name": "zero",
+          "reduction": "fixed_mean",
+          "active_areas": 0,
+          "active_coordinates": [
+            512
+          ],
+          "mask_sha256": "62b6509129a7e2200682c4b2c75453f8d373653cfa495f73c93da1b91b9d1706"
+        },
+        {
+          "name": "area_s0_1of4_active_mean",
+          "reduction": "active_mean",
+          "active_areas": 1,
+          "active_coordinates": [
+            512
+          ],
+          "mask_sha256": "d76036ad13c8a84b7614234d455f5f66b29cd8d8780c75256f2e8a50799838e8"
+        },
+        {
+          "name": "area_s0_1of4_fixed_mean",
+          "reduction": "fixed_mean",
+          "active_areas": 1,
+          "active_coordinates": [
+            512
+          ],
+          "mask_sha256": "d76036ad13c8a84b7614234d455f5f66b29cd8d8780c75256f2e8a50799838e8"
+        },
+        {
+          "name": "coordinate_s0_1of4",
+          "reduction": "active_mean",
+          "active_areas": 1,
+          "active_coordinates": [
+            384
+          ],
+          "mask_sha256": "c41f83c922f7f6f309535058fc422e788e5b6d7e9647dadedd86568354b6e2af"
+        },
+        {
+          "name": "area_s0_1of2_active_mean",
+          "reduction": "active_mean",
+          "active_areas": 1,
+          "active_coordinates": [
+            512
+          ],
+          "mask_sha256": "d76036ad13c8a84b7614234d455f5f66b29cd8d8780c75256f2e8a50799838e8"
+        },
+        {
+          "name": "area_s0_1of2_fixed_mean",
+          "reduction": "fixed_mean",
+          "active_areas": 1,
+          "active_coordinates": [
+            512
+          ],
+          "mask_sha256": "d76036ad13c8a84b7614234d455f5f66b29cd8d8780c75256f2e8a50799838e8"
+        },
+        {
+          "name": "coordinate_s0_1of2",
+          "reduction": "active_mean",
+          "active_areas": 1,
+          "active_coordinates": [
+            256
+          ],
+          "mask_sha256": "8cfd6e73499871c15259124bf9f9e64d3b1ac666dfc9b1f1e2e053f21955684b"
+        },
+        {
+          "name": "area_s0_3of4_active_mean",
+          "reduction": "active_mean",
+          "active_areas": 1,
+          "active_coordinates": [
+            512
+          ],
+          "mask_sha256": "d76036ad13c8a84b7614234d455f5f66b29cd8d8780c75256f2e8a50799838e8"
+        },
+        {
+          "name": "area_s0_3of4_fixed_mean",
+          "reduction": "fixed_mean",
+          "active_areas": 1,
+          "active_coordinates": [
+            512
+          ],
+          "mask_sha256": "d76036ad13c8a84b7614234d455f5f66b29cd8d8780c75256f2e8a50799838e8"
+        },
+        {
+          "name": "coordinate_s0_3of4",
+          "reduction": "active_mean",
+          "active_areas": 1,
+          "active_coordinates": [
+            128
+          ],
+          "mask_sha256": "e8f305699bb2c8c483e60e3b0ffece2ce9a5c345d74dbe59046e8e16aca31840"
+        },
+        {
+          "name": "area_s1_1of4_active_mean",
+          "reduction": "active_mean",
+          "active_areas": 1,
+          "active_coordinates": [
+            512
+          ],
+          "mask_sha256": "d76036ad13c8a84b7614234d455f5f66b29cd8d8780c75256f2e8a50799838e8"
+        },
+        {
+          "name": "area_s1_1of4_fixed_mean",
+          "reduction": "fixed_mean",
+          "active_areas": 1,
+          "active_coordinates": [
+            512
+          ],
+          "mask_sha256": "d76036ad13c8a84b7614234d455f5f66b29cd8d8780c75256f2e8a50799838e8"
+        },
+        {
+          "name": "coordinate_s1_1of4",
+          "reduction": "active_mean",
+          "active_areas": 1,
+          "active_coordinates": [
+            384
+          ],
+          "mask_sha256": "e99b1a18ff890e6fcbadfd186c920d93481f01a7e93467e546c72aa3234ed74c"
+        },
+        {
+          "name": "area_s1_1of2_active_mean",
+          "reduction": "active_mean",
+          "active_areas": 1,
+          "active_coordinates": [
+            512
+          ],
+          "mask_sha256": "d76036ad13c8a84b7614234d455f5f66b29cd8d8780c75256f2e8a50799838e8"
+        },
+        {
+          "name": "area_s1_1of2_fixed_mean",
+          "reduction": "fixed_mean",
+          "active_areas": 1,
+          "active_coordinates": [
+            512
+          ],
+          "mask_sha256": "d76036ad13c8a84b7614234d455f5f66b29cd8d8780c75256f2e8a50799838e8"
+        },
+        {
+          "name": "coordinate_s1_1of2",
+          "reduction": "active_mean",
+          "active_areas": 1,
+          "active_coordinates": [
+            256
+          ],
+          "mask_sha256": "931ccd56752a900895b3b87dd3d5334083acf47fc08a0f2af7a9b3fab58a9364"
+        },
+        {
+          "name": "area_s1_3of4_active_mean",
+          "reduction": "active_mean",
+          "active_areas": 1,
+          "active_coordinates": [
+            512
+          ],
+          "mask_sha256": "d76036ad13c8a84b7614234d455f5f66b29cd8d8780c75256f2e8a50799838e8"
+        },
+        {
+          "name": "area_s1_3of4_fixed_mean",
+          "reduction": "fixed_mean",
+          "active_areas": 1,
+          "active_coordinates": [
+            512
+          ],
+          "mask_sha256": "d76036ad13c8a84b7614234d455f5f66b29cd8d8780c75256f2e8a50799838e8"
+        },
+        {
+          "name": "coordinate_s1_3of4",
+          "reduction": "active_mean",
+          "active_areas": 1,
+          "active_coordinates": [
+            128
+          ],
+          "mask_sha256": "7edde8b02399ae8e965e17190b99091bc50ea2010024d2d41ff3845da3e56249"
+        }
+      ]
+    },
+    "bridge": {
+      "protocol": {
+        "kind": "lesion_protocol_v1",
+        "seeds": [
+          0,
+          1
+        ],
+        "fractions": [
+          [
+            1,
+            4
+          ],
+          [
+            1,
+            2
+          ],
+          [
+            3,
+            4
+          ]
+        ],
+        "generator": "numpy_pcg64_180_axis_seed_area_fixed_four_words",
+        "selection": "nested_prefix_of_fixed_permutation_floor_fraction_times_dimension",
+        "scope": "read_queries_and_bridge_endpoints_without_writes_or_model_adaptation"
+      },
+      "correction": {
+        "schema_version": 1,
+        "kind": "mature_scalar_correction",
+        "memory": {
+          "rule": "proximal",
+          "key_size": 64,
+          "value_size": 1,
+          "rate": 0.25,
+          "forgetting": 0.0,
+          "schema_version": 1,
+          "kind": "mature_associative_memory",
+          "dtype": "float64",
+          "device": "cpu",
+          "key_constraint": "l2_norm_at_most_1",
+          "key_norm_tolerance": 1e-06,
+          "order": "label_available_at_then_decision_at_then_id",
+          "write_cursor": "strictly_increasing_canonical_key",
+          "empty_cohort": "unchanged_without_forgetting",
+          "update": "cohort_cholesky_lapack_without_inverse",
+          "weights": "declared_nonnegative_sum_one"
+        },
+        "key": "codec",
+        "key_normalization": "l2_fp64_of_codec_key_inputs",
+        "value": "mature_label_minus_core_prediction",
+        "read": "matrix_of_previous_generation_for_the_whole_event",
+        "ids": "write_count_plus_offset_in_native_canonical_outcome_order",
+        "proximal_weights": "uniform_over_event_cohort",
+        "areas": {
+          "areas": 4,
+          "shifts": 1,
+          "permutation": "seeded_random",
+          "seed": 0,
+          "labels": "mature",
+          "kind": "redundant_area_memory_v1",
+          "feature_map": "dpfp_of_permuted_key_then_l2_or_zero",
+          "permutation_generator": "numpy_pcg64_seed_permutation_per_area_in_order",
+          "read": "mean_over_active_areas",
+          "label_shuffle": null
+        },
+        "query_bridge": {
+          "gain": 0.25,
+          "steps": 1,
+          "targets": "aligned",
+          "seed": 0,
+          "kind": "area_query_bridge_v1",
+          "topology": "source_a_to_target_a_plus_one_modulo_areas",
+          "update": "synchronous_unit_convex_mix_of_current_query_and_translated_source",
+          "target": "same_mature_observation_feature_in_the_next_area",
+          "label_values": "not_used_by_the_query_map",
+          "shuffle": "numpy_pcg64_domain_178_seed_first_canonical_id_and_source_area"
+        }
+      },
+      "area_count": 4,
+      "coordinate_width": 128,
+      "cases": [
+        {
+          "name": "intact",
+          "reduction": "active_mean",
+          "active_areas": 4,
+          "active_coordinates": [
+            128,
+            128,
+            128,
+            128
+          ],
+          "mask_sha256": "5f241d8cb796e2f279b63380aa6b6804c54f8da70ef6c630ea2c9374ce7f4eed"
+        },
+        {
+          "name": "zero",
+          "reduction": "fixed_mean",
+          "active_areas": 0,
+          "active_coordinates": [
+            128,
+            128,
+            128,
+            128
+          ],
+          "mask_sha256": "72e5bb8ba95b0feb64763ec0f6035ead435bc2c5026b580e0fbcb2595379aebf"
+        },
+        {
+          "name": "area_s0_1of4_active_mean",
+          "reduction": "active_mean",
+          "active_areas": 3,
+          "active_coordinates": [
+            128,
+            128,
+            128,
+            128
+          ],
+          "mask_sha256": "bc32dd18f243f05ffe771981d65fcaa20dcaa9c9996bdc8d0222685327e1b8c0"
+        },
+        {
+          "name": "area_s0_1of4_fixed_mean",
+          "reduction": "fixed_mean",
+          "active_areas": 3,
+          "active_coordinates": [
+            128,
+            128,
+            128,
+            128
+          ],
+          "mask_sha256": "bc32dd18f243f05ffe771981d65fcaa20dcaa9c9996bdc8d0222685327e1b8c0"
+        },
+        {
+          "name": "coordinate_s0_1of4",
+          "reduction": "active_mean",
+          "active_areas": 4,
+          "active_coordinates": [
+            96,
+            96,
+            96,
+            96
+          ],
+          "mask_sha256": "f4873331fe56a246555a6768f39166809df79331a85a872b0bbbcfe84c3d7a0e"
+        },
+        {
+          "name": "area_s0_1of2_active_mean",
+          "reduction": "active_mean",
+          "active_areas": 2,
+          "active_coordinates": [
+            128,
+            128,
+            128,
+            128
+          ],
+          "mask_sha256": "642e5f7c9185c65d67bd5964232698ff8ad3dbb34bace196ab9500391901d394"
+        },
+        {
+          "name": "area_s0_1of2_fixed_mean",
+          "reduction": "fixed_mean",
+          "active_areas": 2,
+          "active_coordinates": [
+            128,
+            128,
+            128,
+            128
+          ],
+          "mask_sha256": "642e5f7c9185c65d67bd5964232698ff8ad3dbb34bace196ab9500391901d394"
+        },
+        {
+          "name": "coordinate_s0_1of2",
+          "reduction": "active_mean",
+          "active_areas": 4,
+          "active_coordinates": [
+            64,
+            64,
+            64,
+            64
+          ],
+          "mask_sha256": "c22bea0bc3898dcbda6346656ac99b617c80f10b389e99f58ba9f1f67ab4a97d"
+        },
+        {
+          "name": "area_s0_3of4_active_mean",
+          "reduction": "active_mean",
+          "active_areas": 1,
+          "active_coordinates": [
+            128,
+            128,
+            128,
+            128
+          ],
+          "mask_sha256": "ed8390de178dfbc6d0719bd707a654fcf9ae01b4b72406316152302a86e98580"
+        },
+        {
+          "name": "area_s0_3of4_fixed_mean",
+          "reduction": "fixed_mean",
+          "active_areas": 1,
+          "active_coordinates": [
+            128,
+            128,
+            128,
+            128
+          ],
+          "mask_sha256": "ed8390de178dfbc6d0719bd707a654fcf9ae01b4b72406316152302a86e98580"
+        },
+        {
+          "name": "coordinate_s0_3of4",
+          "reduction": "active_mean",
+          "active_areas": 4,
+          "active_coordinates": [
+            32,
+            32,
+            32,
+            32
+          ],
+          "mask_sha256": "7336a539dc63308b8cbc3d5f2976ea12dc1f49d31be05120fa26c811b64b6d92"
+        },
+        {
+          "name": "area_s1_1of4_active_mean",
+          "reduction": "active_mean",
+          "active_areas": 3,
+          "active_coordinates": [
+            128,
+            128,
+            128,
+            128
+          ],
+          "mask_sha256": "e84aa38b95abc4c1ef35c638d9619c16f1d2f9e7afe442a0dbff76aa959439c4"
+        },
+        {
+          "name": "area_s1_1of4_fixed_mean",
+          "reduction": "fixed_mean",
+          "active_areas": 3,
+          "active_coordinates": [
+            128,
+            128,
+            128,
+            128
+          ],
+          "mask_sha256": "e84aa38b95abc4c1ef35c638d9619c16f1d2f9e7afe442a0dbff76aa959439c4"
+        },
+        {
+          "name": "coordinate_s1_1of4",
+          "reduction": "active_mean",
+          "active_areas": 4,
+          "active_coordinates": [
+            96,
+            96,
+            96,
+            96
+          ],
+          "mask_sha256": "0ebfd5f2a96ed974d306fdef9bf9321759ec676bf8f51c7c22caaa071ccccce4"
+        },
+        {
+          "name": "area_s1_1of2_active_mean",
+          "reduction": "active_mean",
+          "active_areas": 2,
+          "active_coordinates": [
+            128,
+            128,
+            128,
+            128
+          ],
+          "mask_sha256": "fb2fb0db1364a3dff5159053d71a3a2b1db86a1af1a80545c02ecaa3c6a6baa0"
+        },
+        {
+          "name": "area_s1_1of2_fixed_mean",
+          "reduction": "fixed_mean",
+          "active_areas": 2,
+          "active_coordinates": [
+            128,
+            128,
+            128,
+            128
+          ],
+          "mask_sha256": "fb2fb0db1364a3dff5159053d71a3a2b1db86a1af1a80545c02ecaa3c6a6baa0"
+        },
+        {
+          "name": "coordinate_s1_1of2",
+          "reduction": "active_mean",
+          "active_areas": 4,
+          "active_coordinates": [
+            64,
+            64,
+            64,
+            64
+          ],
+          "mask_sha256": "4e7989d4dedcd060278d5162cbe4835605a27dd747862faa041859b169501d66"
+        },
+        {
+          "name": "area_s1_3of4_active_mean",
+          "reduction": "active_mean",
+          "active_areas": 1,
+          "active_coordinates": [
+            128,
+            128,
+            128,
+            128
+          ],
+          "mask_sha256": "49244a2bf2a889a60133efe348793856bb125e72293ee4a5e4c83d0d02d6f21f"
+        },
+        {
+          "name": "area_s1_3of4_fixed_mean",
+          "reduction": "fixed_mean",
+          "active_areas": 1,
+          "active_coordinates": [
+            128,
+            128,
+            128,
+            128
+          ],
+          "mask_sha256": "49244a2bf2a889a60133efe348793856bb125e72293ee4a5e4c83d0d02d6f21f"
+        },
+        {
+          "name": "coordinate_s1_3of4",
+          "reduction": "active_mean",
+          "active_areas": 4,
+          "active_coordinates": [
+            32,
+            32,
+            32,
+            32
+          ],
+          "mask_sha256": "d9e463bb63dfa8dd19ece9f3872ad2daa6faee3a1281045c5e71cac4b7c61cc5"
+        }
+      ]
+    },
+    "bridge_four_steps": {
+      "protocol": {
+        "kind": "lesion_protocol_v1",
+        "seeds": [
+          0,
+          1
+        ],
+        "fractions": [
+          [
+            1,
+            4
+          ],
+          [
+            1,
+            2
+          ],
+          [
+            3,
+            4
+          ]
+        ],
+        "generator": "numpy_pcg64_180_axis_seed_area_fixed_four_words",
+        "selection": "nested_prefix_of_fixed_permutation_floor_fraction_times_dimension",
+        "scope": "read_queries_and_bridge_endpoints_without_writes_or_model_adaptation"
+      },
+      "correction": {
+        "schema_version": 1,
+        "kind": "mature_scalar_correction",
+        "memory": {
+          "rule": "proximal",
+          "key_size": 64,
+          "value_size": 1,
+          "rate": 0.25,
+          "forgetting": 0.0,
+          "schema_version": 1,
+          "kind": "mature_associative_memory",
+          "dtype": "float64",
+          "device": "cpu",
+          "key_constraint": "l2_norm_at_most_1",
+          "key_norm_tolerance": 1e-06,
+          "order": "label_available_at_then_decision_at_then_id",
+          "write_cursor": "strictly_increasing_canonical_key",
+          "empty_cohort": "unchanged_without_forgetting",
+          "update": "cohort_cholesky_lapack_without_inverse",
+          "weights": "declared_nonnegative_sum_one"
+        },
+        "key": "codec",
+        "key_normalization": "l2_fp64_of_codec_key_inputs",
+        "value": "mature_label_minus_core_prediction",
+        "read": "matrix_of_previous_generation_for_the_whole_event",
+        "ids": "write_count_plus_offset_in_native_canonical_outcome_order",
+        "proximal_weights": "uniform_over_event_cohort",
+        "areas": {
+          "areas": 4,
+          "shifts": 1,
+          "permutation": "seeded_random",
+          "seed": 0,
+          "labels": "mature",
+          "kind": "redundant_area_memory_v1",
+          "feature_map": "dpfp_of_permuted_key_then_l2_or_zero",
+          "permutation_generator": "numpy_pcg64_seed_permutation_per_area_in_order",
+          "read": "mean_over_active_areas",
+          "label_shuffle": null
+        },
+        "query_bridge": {
+          "gain": 0.25,
+          "steps": 4,
+          "targets": "aligned",
+          "seed": 0,
+          "kind": "area_query_bridge_v1",
+          "topology": "source_a_to_target_a_plus_one_modulo_areas",
+          "update": "synchronous_unit_convex_mix_of_current_query_and_translated_source",
+          "target": "same_mature_observation_feature_in_the_next_area",
+          "label_values": "not_used_by_the_query_map",
+          "shuffle": "numpy_pcg64_domain_178_seed_first_canonical_id_and_source_area"
+        }
+      },
+      "area_count": 4,
+      "coordinate_width": 128,
+      "cases": [
+        {
+          "name": "intact",
+          "reduction": "active_mean",
+          "active_areas": 4,
+          "active_coordinates": [
+            128,
+            128,
+            128,
+            128
+          ],
+          "mask_sha256": "5f241d8cb796e2f279b63380aa6b6804c54f8da70ef6c630ea2c9374ce7f4eed"
+        },
+        {
+          "name": "zero",
+          "reduction": "fixed_mean",
+          "active_areas": 0,
+          "active_coordinates": [
+            128,
+            128,
+            128,
+            128
+          ],
+          "mask_sha256": "72e5bb8ba95b0feb64763ec0f6035ead435bc2c5026b580e0fbcb2595379aebf"
+        },
+        {
+          "name": "area_s0_1of4_active_mean",
+          "reduction": "active_mean",
+          "active_areas": 3,
+          "active_coordinates": [
+            128,
+            128,
+            128,
+            128
+          ],
+          "mask_sha256": "bc32dd18f243f05ffe771981d65fcaa20dcaa9c9996bdc8d0222685327e1b8c0"
+        },
+        {
+          "name": "area_s0_1of4_fixed_mean",
+          "reduction": "fixed_mean",
+          "active_areas": 3,
+          "active_coordinates": [
+            128,
+            128,
+            128,
+            128
+          ],
+          "mask_sha256": "bc32dd18f243f05ffe771981d65fcaa20dcaa9c9996bdc8d0222685327e1b8c0"
+        },
+        {
+          "name": "coordinate_s0_1of4",
+          "reduction": "active_mean",
+          "active_areas": 4,
+          "active_coordinates": [
+            96,
+            96,
+            96,
+            96
+          ],
+          "mask_sha256": "f4873331fe56a246555a6768f39166809df79331a85a872b0bbbcfe84c3d7a0e"
+        },
+        {
+          "name": "area_s0_1of2_active_mean",
+          "reduction": "active_mean",
+          "active_areas": 2,
+          "active_coordinates": [
+            128,
+            128,
+            128,
+            128
+          ],
+          "mask_sha256": "642e5f7c9185c65d67bd5964232698ff8ad3dbb34bace196ab9500391901d394"
+        },
+        {
+          "name": "area_s0_1of2_fixed_mean",
+          "reduction": "fixed_mean",
+          "active_areas": 2,
+          "active_coordinates": [
+            128,
+            128,
+            128,
+            128
+          ],
+          "mask_sha256": "642e5f7c9185c65d67bd5964232698ff8ad3dbb34bace196ab9500391901d394"
+        },
+        {
+          "name": "coordinate_s0_1of2",
+          "reduction": "active_mean",
+          "active_areas": 4,
+          "active_coordinates": [
+            64,
+            64,
+            64,
+            64
+          ],
+          "mask_sha256": "c22bea0bc3898dcbda6346656ac99b617c80f10b389e99f58ba9f1f67ab4a97d"
+        },
+        {
+          "name": "area_s0_3of4_active_mean",
+          "reduction": "active_mean",
+          "active_areas": 1,
+          "active_coordinates": [
+            128,
+            128,
+            128,
+            128
+          ],
+          "mask_sha256": "ed8390de178dfbc6d0719bd707a654fcf9ae01b4b72406316152302a86e98580"
+        },
+        {
+          "name": "area_s0_3of4_fixed_mean",
+          "reduction": "fixed_mean",
+          "active_areas": 1,
+          "active_coordinates": [
+            128,
+            128,
+            128,
+            128
+          ],
+          "mask_sha256": "ed8390de178dfbc6d0719bd707a654fcf9ae01b4b72406316152302a86e98580"
+        },
+        {
+          "name": "coordinate_s0_3of4",
+          "reduction": "active_mean",
+          "active_areas": 4,
+          "active_coordinates": [
+            32,
+            32,
+            32,
+            32
+          ],
+          "mask_sha256": "7336a539dc63308b8cbc3d5f2976ea12dc1f49d31be05120fa26c811b64b6d92"
+        },
+        {
+          "name": "area_s1_1of4_active_mean",
+          "reduction": "active_mean",
+          "active_areas": 3,
+          "active_coordinates": [
+            128,
+            128,
+            128,
+            128
+          ],
+          "mask_sha256": "e84aa38b95abc4c1ef35c638d9619c16f1d2f9e7afe442a0dbff76aa959439c4"
+        },
+        {
+          "name": "area_s1_1of4_fixed_mean",
+          "reduction": "fixed_mean",
+          "active_areas": 3,
+          "active_coordinates": [
+            128,
+            128,
+            128,
+            128
+          ],
+          "mask_sha256": "e84aa38b95abc4c1ef35c638d9619c16f1d2f9e7afe442a0dbff76aa959439c4"
+        },
+        {
+          "name": "coordinate_s1_1of4",
+          "reduction": "active_mean",
+          "active_areas": 4,
+          "active_coordinates": [
+            96,
+            96,
+            96,
+            96
+          ],
+          "mask_sha256": "0ebfd5f2a96ed974d306fdef9bf9321759ec676bf8f51c7c22caaa071ccccce4"
+        },
+        {
+          "name": "area_s1_1of2_active_mean",
+          "reduction": "active_mean",
+          "active_areas": 2,
+          "active_coordinates": [
+            128,
+            128,
+            128,
+            128
+          ],
+          "mask_sha256": "fb2fb0db1364a3dff5159053d71a3a2b1db86a1af1a80545c02ecaa3c6a6baa0"
+        },
+        {
+          "name": "area_s1_1of2_fixed_mean",
+          "reduction": "fixed_mean",
+          "active_areas": 2,
+          "active_coordinates": [
+            128,
+            128,
+            128,
+            128
+          ],
+          "mask_sha256": "fb2fb0db1364a3dff5159053d71a3a2b1db86a1af1a80545c02ecaa3c6a6baa0"
+        },
+        {
+          "name": "coordinate_s1_1of2",
+          "reduction": "active_mean",
+          "active_areas": 4,
+          "active_coordinates": [
+            64,
+            64,
+            64,
+            64
+          ],
+          "mask_sha256": "4e7989d4dedcd060278d5162cbe4835605a27dd747862faa041859b169501d66"
+        },
+        {
+          "name": "area_s1_3of4_active_mean",
+          "reduction": "active_mean",
+          "active_areas": 1,
+          "active_coordinates": [
+            128,
+            128,
+            128,
+            128
+          ],
+          "mask_sha256": "49244a2bf2a889a60133efe348793856bb125e72293ee4a5e4c83d0d02d6f21f"
+        },
+        {
+          "name": "area_s1_3of4_fixed_mean",
+          "reduction": "fixed_mean",
+          "active_areas": 1,
+          "active_coordinates": [
+            128,
+            128,
+            128,
+            128
+          ],
+          "mask_sha256": "49244a2bf2a889a60133efe348793856bb125e72293ee4a5e4c83d0d02d6f21f"
+        },
+        {
+          "name": "coordinate_s1_3of4",
+          "reduction": "active_mean",
+          "active_areas": 4,
+          "active_coordinates": [
+            32,
+            32,
+            32,
+            32
+          ],
+          "mask_sha256": "d9e463bb63dfa8dd19ece9f3872ad2daa6faee3a1281045c5e71cac4b7c61cc5"
+        }
+      ]
+    },
+    "roles": {
+      "protocol": {
+        "kind": "lesion_protocol_v1",
+        "seeds": [
+          0,
+          1
+        ],
+        "fractions": [
+          [
+            1,
+            4
+          ],
+          [
+            1,
+            2
+          ],
+          [
+            3,
+            4
+          ]
+        ],
+        "generator": "numpy_pcg64_180_axis_seed_area_fixed_four_words",
+        "selection": "nested_prefix_of_fixed_permutation_floor_fraction_times_dimension",
+        "scope": "read_queries_and_bridge_endpoints_without_writes_or_model_adaptation"
+      },
+      "correction": {
+        "schema_version": 1,
+        "kind": "mature_scalar_correction",
+        "memory": {
+          "rule": "proximal",
+          "key_size": 64,
+          "value_size": 1,
+          "rate": 0.25,
+          "forgetting": 0.0,
+          "schema_version": 1,
+          "kind": "mature_associative_memory",
+          "dtype": "float64",
+          "device": "cpu",
+          "key_constraint": "l2_norm_at_most_1",
+          "key_norm_tolerance": 1e-06,
+          "order": "label_available_at_then_decision_at_then_id",
+          "write_cursor": "strictly_increasing_canonical_key",
+          "empty_cohort": "unchanged_without_forgetting",
+          "update": "cohort_cholesky_lapack_without_inverse",
+          "weights": "declared_nonnegative_sum_one"
+        },
+        "key": "codec",
+        "key_normalization": "role_operator_of_l2_fp64_of_codec_key_inputs",
+        "value": "mature_label_minus_core_prediction",
+        "read": "matrix_of_previous_generation_for_the_whole_event",
+        "ids": "write_count_plus_offset_in_native_canonical_outcome_order",
+        "proximal_weights": "uniform_over_event_cohort",
+        "routing": {
+          "schema_version": 1,
+          "kind": "observable_market_regime",
+          "rule": "observable_volatility_trend_v1",
+          "slots": 5,
+          "labels": [
+            "unclassified",
+            "calm_up",
+            "calm_down",
+            "turbulent_up",
+            "turbulent_down"
+          ],
+          "grouping": "market_of_each_flow_once_per_event",
+          "window": "calendar_price_window_v1_of_64_sessions_ending_at_the_decision",
+          "min_assets": 20,
+          "min_returns": 42,
+          "unclassified": "route_0_when_fewer_assets_or_returns_than_declared",
+          "fit": "none_declared_before_execution",
+          "market_proxy": "cross_sectional_median_of_log_close_returns_between_present_sessions",
+          "volatility": "rms_of_last_recent_returns_strictly_above_rms_of_earlier_returns",
+          "recent_returns": 21,
+          "trend": "median_over_assets_of_the_window_log_close_return_strictly_positive",
+          "routes": "1_calm_up_2_calm_down_3_turbulent_up_4_turbulent_down"
+        },
+        "route_time": "decision_event_stored_until_the_label_matures",
+        "areas": {
+          "areas": 4,
+          "shifts": 1,
+          "permutation": "seeded_random",
+          "seed": 0,
+          "labels": "mature",
+          "kind": "redundant_area_memory_v1",
+          "feature_map": "dpfp_of_permuted_key_then_l2_or_zero",
+          "permutation_generator": "numpy_pcg64_seed_permutation_per_area_in_order",
+          "read": "mean_over_active_areas",
+          "label_shuffle": null
+        },
+        "query_bridge": {
+          "gain": 0.25,
+          "steps": 1,
+          "targets": "aligned",
+          "seed": 0,
+          "kind": "area_query_bridge_v1",
+          "topology": "source_a_to_target_a_plus_one_modulo_areas",
+          "update": "synchronous_unit_convex_mix_of_current_query_and_translated_source",
+          "target": "same_mature_observation_feature_in_the_next_area",
+          "label_values": "not_used_by_the_query_map",
+          "shuffle": "numpy_pcg64_domain_178_seed_first_canonical_id_and_source_area"
+        },
+        "role_binding": {
+          "kind": "role_bound_keys_v1",
+          "source": "regime",
+          "mode": "bipolar",
+          "seed": 0,
+          "width": 64,
+          "slots": 5,
+          "generator": "numpy_pcg64_b3_0_seed_for_codes_b3_1_seed_for_projection",
+          "codes_sha256": "fd26b2d2df3fd46004ddc0651038e9f9a42f7d61316f08c46214b626870db689",
+          "projection_sha256": null,
+          "insertion": "normalized_codec_before_optional_area_dpfp",
+          "inverse": "same_sign_product"
+        }
+      },
+      "area_count": 4,
+      "coordinate_width": 128,
+      "cases": [
+        {
+          "name": "intact",
+          "reduction": "active_mean",
+          "active_areas": 4,
+          "active_coordinates": [
+            128,
+            128,
+            128,
+            128
+          ],
+          "mask_sha256": "5f241d8cb796e2f279b63380aa6b6804c54f8da70ef6c630ea2c9374ce7f4eed"
+        },
+        {
+          "name": "zero",
+          "reduction": "fixed_mean",
+          "active_areas": 0,
+          "active_coordinates": [
+            128,
+            128,
+            128,
+            128
+          ],
+          "mask_sha256": "72e5bb8ba95b0feb64763ec0f6035ead435bc2c5026b580e0fbcb2595379aebf"
+        },
+        {
+          "name": "area_s0_1of4_active_mean",
+          "reduction": "active_mean",
+          "active_areas": 3,
+          "active_coordinates": [
+            128,
+            128,
+            128,
+            128
+          ],
+          "mask_sha256": "bc32dd18f243f05ffe771981d65fcaa20dcaa9c9996bdc8d0222685327e1b8c0"
+        },
+        {
+          "name": "area_s0_1of4_fixed_mean",
+          "reduction": "fixed_mean",
+          "active_areas": 3,
+          "active_coordinates": [
+            128,
+            128,
+            128,
+            128
+          ],
+          "mask_sha256": "bc32dd18f243f05ffe771981d65fcaa20dcaa9c9996bdc8d0222685327e1b8c0"
+        },
+        {
+          "name": "coordinate_s0_1of4",
+          "reduction": "active_mean",
+          "active_areas": 4,
+          "active_coordinates": [
+            96,
+            96,
+            96,
+            96
+          ],
+          "mask_sha256": "f4873331fe56a246555a6768f39166809df79331a85a872b0bbbcfe84c3d7a0e"
+        },
+        {
+          "name": "area_s0_1of2_active_mean",
+          "reduction": "active_mean",
+          "active_areas": 2,
+          "active_coordinates": [
+            128,
+            128,
+            128,
+            128
+          ],
+          "mask_sha256": "642e5f7c9185c65d67bd5964232698ff8ad3dbb34bace196ab9500391901d394"
+        },
+        {
+          "name": "area_s0_1of2_fixed_mean",
+          "reduction": "fixed_mean",
+          "active_areas": 2,
+          "active_coordinates": [
+            128,
+            128,
+            128,
+            128
+          ],
+          "mask_sha256": "642e5f7c9185c65d67bd5964232698ff8ad3dbb34bace196ab9500391901d394"
+        },
+        {
+          "name": "coordinate_s0_1of2",
+          "reduction": "active_mean",
+          "active_areas": 4,
+          "active_coordinates": [
+            64,
+            64,
+            64,
+            64
+          ],
+          "mask_sha256": "c22bea0bc3898dcbda6346656ac99b617c80f10b389e99f58ba9f1f67ab4a97d"
+        },
+        {
+          "name": "area_s0_3of4_active_mean",
+          "reduction": "active_mean",
+          "active_areas": 1,
+          "active_coordinates": [
+            128,
+            128,
+            128,
+            128
+          ],
+          "mask_sha256": "ed8390de178dfbc6d0719bd707a654fcf9ae01b4b72406316152302a86e98580"
+        },
+        {
+          "name": "area_s0_3of4_fixed_mean",
+          "reduction": "fixed_mean",
+          "active_areas": 1,
+          "active_coordinates": [
+            128,
+            128,
+            128,
+            128
+          ],
+          "mask_sha256": "ed8390de178dfbc6d0719bd707a654fcf9ae01b4b72406316152302a86e98580"
+        },
+        {
+          "name": "coordinate_s0_3of4",
+          "reduction": "active_mean",
+          "active_areas": 4,
+          "active_coordinates": [
+            32,
+            32,
+            32,
+            32
+          ],
+          "mask_sha256": "7336a539dc63308b8cbc3d5f2976ea12dc1f49d31be05120fa26c811b64b6d92"
+        },
+        {
+          "name": "area_s1_1of4_active_mean",
+          "reduction": "active_mean",
+          "active_areas": 3,
+          "active_coordinates": [
+            128,
+            128,
+            128,
+            128
+          ],
+          "mask_sha256": "e84aa38b95abc4c1ef35c638d9619c16f1d2f9e7afe442a0dbff76aa959439c4"
+        },
+        {
+          "name": "area_s1_1of4_fixed_mean",
+          "reduction": "fixed_mean",
+          "active_areas": 3,
+          "active_coordinates": [
+            128,
+            128,
+            128,
+            128
+          ],
+          "mask_sha256": "e84aa38b95abc4c1ef35c638d9619c16f1d2f9e7afe442a0dbff76aa959439c4"
+        },
+        {
+          "name": "coordinate_s1_1of4",
+          "reduction": "active_mean",
+          "active_areas": 4,
+          "active_coordinates": [
+            96,
+            96,
+            96,
+            96
+          ],
+          "mask_sha256": "0ebfd5f2a96ed974d306fdef9bf9321759ec676bf8f51c7c22caaa071ccccce4"
+        },
+        {
+          "name": "area_s1_1of2_active_mean",
+          "reduction": "active_mean",
+          "active_areas": 2,
+          "active_coordinates": [
+            128,
+            128,
+            128,
+            128
+          ],
+          "mask_sha256": "fb2fb0db1364a3dff5159053d71a3a2b1db86a1af1a80545c02ecaa3c6a6baa0"
+        },
+        {
+          "name": "area_s1_1of2_fixed_mean",
+          "reduction": "fixed_mean",
+          "active_areas": 2,
+          "active_coordinates": [
+            128,
+            128,
+            128,
+            128
+          ],
+          "mask_sha256": "fb2fb0db1364a3dff5159053d71a3a2b1db86a1af1a80545c02ecaa3c6a6baa0"
+        },
+        {
+          "name": "coordinate_s1_1of2",
+          "reduction": "active_mean",
+          "active_areas": 4,
+          "active_coordinates": [
+            64,
+            64,
+            64,
+            64
+          ],
+          "mask_sha256": "4e7989d4dedcd060278d5162cbe4835605a27dd747862faa041859b169501d66"
+        },
+        {
+          "name": "area_s1_3of4_active_mean",
+          "reduction": "active_mean",
+          "active_areas": 1,
+          "active_coordinates": [
+            128,
+            128,
+            128,
+            128
+          ],
+          "mask_sha256": "49244a2bf2a889a60133efe348793856bb125e72293ee4a5e4c83d0d02d6f21f"
+        },
+        {
+          "name": "area_s1_3of4_fixed_mean",
+          "reduction": "fixed_mean",
+          "active_areas": 1,
+          "active_coordinates": [
+            128,
+            128,
+            128,
+            128
+          ],
+          "mask_sha256": "49244a2bf2a889a60133efe348793856bb125e72293ee4a5e4c83d0d02d6f21f"
+        },
+        {
+          "name": "coordinate_s1_3of4",
+          "reduction": "active_mean",
+          "active_areas": 4,
+          "active_coordinates": [
+            32,
+            32,
+            32,
+            32
+          ],
+          "mask_sha256": "d9e463bb63dfa8dd19ece9f3872ad2daa6faee3a1281045c5e71cac4b7c61cc5"
+        }
+      ]
+    },
+    "multiscale": {
+      "protocol": {
+        "kind": "lesion_protocol_v1",
+        "seeds": [
+          0,
+          1
+        ],
+        "fractions": [
+          [
+            1,
+            4
+          ],
+          [
+            1,
+            2
+          ],
+          [
+            3,
+            4
+          ]
+        ],
+        "generator": "numpy_pcg64_180_axis_seed_area_fixed_four_words",
+        "selection": "nested_prefix_of_fixed_permutation_floor_fraction_times_dimension",
+        "scope": "read_queries_and_bridge_endpoints_without_writes_or_model_adaptation"
+      },
+      "correction": {
+        "schema_version": 1,
+        "kind": "mature_scalar_correction",
+        "memory": {
+          "rule": "proximal",
+          "key_size": 64,
+          "value_size": 1,
+          "rate": 0.25,
+          "forgetting": 0.0,
+          "schema_version": 1,
+          "kind": "mature_associative_memory",
+          "dtype": "float64",
+          "device": "cpu",
+          "key_constraint": "l2_norm_at_most_1",
+          "key_norm_tolerance": 1e-06,
+          "order": "label_available_at_then_decision_at_then_id",
+          "write_cursor": "strictly_increasing_canonical_key",
+          "empty_cohort": "unchanged_without_forgetting",
+          "update": "cohort_cholesky_lapack_without_inverse",
+          "weights": "declared_nonnegative_sum_one"
+        },
+        "key": "codec",
+        "key_normalization": "role_operator_of_l2_fp64_of_codec_key_inputs",
+        "value": "mature_label_minus_core_prediction",
+        "read": "matrix_of_previous_generation_for_the_whole_event",
+        "ids": "write_count_plus_offset_in_native_canonical_outcome_order",
+        "proximal_weights": "uniform_over_event_cohort",
+        "routing": {
+          "schema_version": 1,
+          "kind": "observable_market_regime",
+          "rule": "observable_volatility_trend_v1",
+          "slots": 5,
+          "labels": [
+            "unclassified",
+            "calm_up",
+            "calm_down",
+            "turbulent_up",
+            "turbulent_down"
+          ],
+          "grouping": "market_of_each_flow_once_per_event",
+          "window": "calendar_price_window_v1_of_64_sessions_ending_at_the_decision",
+          "min_assets": 20,
+          "min_returns": 42,
+          "unclassified": "route_0_when_fewer_assets_or_returns_than_declared",
+          "fit": "none_declared_before_execution",
+          "market_proxy": "cross_sectional_median_of_log_close_returns_between_present_sessions",
+          "volatility": "rms_of_last_recent_returns_strictly_above_rms_of_earlier_returns",
+          "recent_returns": 21,
+          "trend": "median_over_assets_of_the_window_log_close_return_strictly_positive",
+          "routes": "1_calm_up_2_calm_down_3_turbulent_up_4_turbulent_down"
+        },
+        "route_time": "decision_event_stored_until_the_label_matures",
+        "areas": {
+          "areas": 4,
+          "shifts": 1,
+          "permutation": "seeded_random",
+          "seed": 0,
+          "labels": "mature",
+          "kind": "redundant_area_memory_v1",
+          "feature_map": "dpfp_of_permuted_key_then_l2_or_zero",
+          "permutation_generator": "numpy_pcg64_seed_permutation_per_area_in_order",
+          "read": "mean_over_active_areas",
+          "label_shuffle": null
+        },
+        "query_bridge": {
+          "gain": 0.25,
+          "steps": 1,
+          "targets": "aligned",
+          "seed": 0,
+          "kind": "area_query_bridge_v1",
+          "topology": "source_a_to_target_a_plus_one_modulo_areas",
+          "update": "synchronous_unit_convex_mix_of_current_query_and_translated_source",
+          "target": "same_mature_observation_feature_in_the_next_area",
+          "label_values": "not_used_by_the_query_map",
+          "shuffle": "numpy_pcg64_domain_178_seed_first_canonical_id_and_source_area"
+        },
+        "role_binding": {
+          "kind": "role_bound_keys_v1",
+          "source": "regime",
+          "mode": "bipolar",
+          "seed": 0,
+          "width": 64,
+          "slots": 5,
+          "generator": "numpy_pcg64_b3_0_seed_for_codes_b3_1_seed_for_projection",
+          "codes_sha256": "fd26b2d2df3fd46004ddc0651038e9f9a42f7d61316f08c46214b626870db689",
+          "projection_sha256": null,
+          "insertion": "normalized_codec_before_optional_area_dpfp",
+          "inverse": "same_sign_product"
+        },
+        "multiscale": {
+          "half_lives_days": [
+            7.0,
+            91.0,
+            365.0
+          ],
+          "weighting": "hedge",
+          "weight_rate": 1.0,
+          "loss_scale": 0.02,
+          "kind": "multiscale_mature_mixture_v1",
+          "clock": "utc_microseconds_at_mature_publication",
+          "decay": "all_backend_coefficients_times_exp2_minus_elapsed_over_half_life",
+          "loss": "canonical_cohort_mean_of_min_abs_issued_expert_minus_mature_core_residual_over_scale_1",
+          "read": "immutable_calendar_decay_then_convex_mixture",
+          "initial_weights": "uniform",
+          "bound": "no_regret_guarantee_claimed_for_delayed_financial_predictions"
+        }
+      },
+      "area_count": 4,
+      "coordinate_width": 128,
+      "cases": [
+        {
+          "name": "intact",
+          "reduction": "active_mean",
+          "active_areas": 4,
+          "active_coordinates": [
+            128,
+            128,
+            128,
+            128
+          ],
+          "mask_sha256": "5f241d8cb796e2f279b63380aa6b6804c54f8da70ef6c630ea2c9374ce7f4eed"
+        },
+        {
+          "name": "zero",
+          "reduction": "fixed_mean",
+          "active_areas": 0,
+          "active_coordinates": [
+            128,
+            128,
+            128,
+            128
+          ],
+          "mask_sha256": "72e5bb8ba95b0feb64763ec0f6035ead435bc2c5026b580e0fbcb2595379aebf"
+        },
+        {
+          "name": "area_s0_1of4_active_mean",
+          "reduction": "active_mean",
+          "active_areas": 3,
+          "active_coordinates": [
+            128,
+            128,
+            128,
+            128
+          ],
+          "mask_sha256": "bc32dd18f243f05ffe771981d65fcaa20dcaa9c9996bdc8d0222685327e1b8c0"
+        },
+        {
+          "name": "area_s0_1of4_fixed_mean",
+          "reduction": "fixed_mean",
+          "active_areas": 3,
+          "active_coordinates": [
+            128,
+            128,
+            128,
+            128
+          ],
+          "mask_sha256": "bc32dd18f243f05ffe771981d65fcaa20dcaa9c9996bdc8d0222685327e1b8c0"
+        },
+        {
+          "name": "coordinate_s0_1of4",
+          "reduction": "active_mean",
+          "active_areas": 4,
+          "active_coordinates": [
+            96,
+            96,
+            96,
+            96
+          ],
+          "mask_sha256": "f4873331fe56a246555a6768f39166809df79331a85a872b0bbbcfe84c3d7a0e"
+        },
+        {
+          "name": "area_s0_1of2_active_mean",
+          "reduction": "active_mean",
+          "active_areas": 2,
+          "active_coordinates": [
+            128,
+            128,
+            128,
+            128
+          ],
+          "mask_sha256": "642e5f7c9185c65d67bd5964232698ff8ad3dbb34bace196ab9500391901d394"
+        },
+        {
+          "name": "area_s0_1of2_fixed_mean",
+          "reduction": "fixed_mean",
+          "active_areas": 2,
+          "active_coordinates": [
+            128,
+            128,
+            128,
+            128
+          ],
+          "mask_sha256": "642e5f7c9185c65d67bd5964232698ff8ad3dbb34bace196ab9500391901d394"
+        },
+        {
+          "name": "coordinate_s0_1of2",
+          "reduction": "active_mean",
+          "active_areas": 4,
+          "active_coordinates": [
+            64,
+            64,
+            64,
+            64
+          ],
+          "mask_sha256": "c22bea0bc3898dcbda6346656ac99b617c80f10b389e99f58ba9f1f67ab4a97d"
+        },
+        {
+          "name": "area_s0_3of4_active_mean",
+          "reduction": "active_mean",
+          "active_areas": 1,
+          "active_coordinates": [
+            128,
+            128,
+            128,
+            128
+          ],
+          "mask_sha256": "ed8390de178dfbc6d0719bd707a654fcf9ae01b4b72406316152302a86e98580"
+        },
+        {
+          "name": "area_s0_3of4_fixed_mean",
+          "reduction": "fixed_mean",
+          "active_areas": 1,
+          "active_coordinates": [
+            128,
+            128,
+            128,
+            128
+          ],
+          "mask_sha256": "ed8390de178dfbc6d0719bd707a654fcf9ae01b4b72406316152302a86e98580"
+        },
+        {
+          "name": "coordinate_s0_3of4",
+          "reduction": "active_mean",
+          "active_areas": 4,
+          "active_coordinates": [
+            32,
+            32,
+            32,
+            32
+          ],
+          "mask_sha256": "7336a539dc63308b8cbc3d5f2976ea12dc1f49d31be05120fa26c811b64b6d92"
+        },
+        {
+          "name": "area_s1_1of4_active_mean",
+          "reduction": "active_mean",
+          "active_areas": 3,
+          "active_coordinates": [
+            128,
+            128,
+            128,
+            128
+          ],
+          "mask_sha256": "e84aa38b95abc4c1ef35c638d9619c16f1d2f9e7afe442a0dbff76aa959439c4"
+        },
+        {
+          "name": "area_s1_1of4_fixed_mean",
+          "reduction": "fixed_mean",
+          "active_areas": 3,
+          "active_coordinates": [
+            128,
+            128,
+            128,
+            128
+          ],
+          "mask_sha256": "e84aa38b95abc4c1ef35c638d9619c16f1d2f9e7afe442a0dbff76aa959439c4"
+        },
+        {
+          "name": "coordinate_s1_1of4",
+          "reduction": "active_mean",
+          "active_areas": 4,
+          "active_coordinates": [
+            96,
+            96,
+            96,
+            96
+          ],
+          "mask_sha256": "0ebfd5f2a96ed974d306fdef9bf9321759ec676bf8f51c7c22caaa071ccccce4"
+        },
+        {
+          "name": "area_s1_1of2_active_mean",
+          "reduction": "active_mean",
+          "active_areas": 2,
+          "active_coordinates": [
+            128,
+            128,
+            128,
+            128
+          ],
+          "mask_sha256": "fb2fb0db1364a3dff5159053d71a3a2b1db86a1af1a80545c02ecaa3c6a6baa0"
+        },
+        {
+          "name": "area_s1_1of2_fixed_mean",
+          "reduction": "fixed_mean",
+          "active_areas": 2,
+          "active_coordinates": [
+            128,
+            128,
+            128,
+            128
+          ],
+          "mask_sha256": "fb2fb0db1364a3dff5159053d71a3a2b1db86a1af1a80545c02ecaa3c6a6baa0"
+        },
+        {
+          "name": "coordinate_s1_1of2",
+          "reduction": "active_mean",
+          "active_areas": 4,
+          "active_coordinates": [
+            64,
+            64,
+            64,
+            64
+          ],
+          "mask_sha256": "4e7989d4dedcd060278d5162cbe4835605a27dd747862faa041859b169501d66"
+        },
+        {
+          "name": "area_s1_3of4_active_mean",
+          "reduction": "active_mean",
+          "active_areas": 1,
+          "active_coordinates": [
+            128,
+            128,
+            128,
+            128
+          ],
+          "mask_sha256": "49244a2bf2a889a60133efe348793856bb125e72293ee4a5e4c83d0d02d6f21f"
+        },
+        {
+          "name": "area_s1_3of4_fixed_mean",
+          "reduction": "fixed_mean",
+          "active_areas": 1,
+          "active_coordinates": [
+            128,
+            128,
+            128,
+            128
+          ],
+          "mask_sha256": "49244a2bf2a889a60133efe348793856bb125e72293ee4a5e4c83d0d02d6f21f"
+        },
+        {
+          "name": "coordinate_s1_3of4",
+          "reduction": "active_mean",
+          "active_areas": 4,
+          "active_coordinates": [
+            32,
+            32,
+            32,
+            32
+          ],
+          "mask_sha256": "d9e463bb63dfa8dd19ece9f3872ad2daa6faee3a1281045c5e71cac4b7c61cc5"
+        }
+      ]
+    }
+  },
+  "cases": {
+    "areas/64": {
+      "original": {
+        "p50_ms": 1.254448899999261,
+        "p95_ms": 1.4110219199210405,
+        "p99_ms": 1.7228228971362114,
+        "min_ms": 1.2088750954717398,
+        "repeats": 15,
+        "samples_ms": [
+          1.2683060485869646,
+          1.2177610769867897,
+          1.2470060028135777,
+          1.2384189758449793,
+          1.254448899999261,
+          1.2342720292508602,
+          1.2920801527798176,
+          1.386556075885892,
+          1.3151532039046288,
+          1.248799031600356,
+          1.2088750954717398,
+          1.4110219199210405,
+          1.7228228971362114,
+          1.3370239175856113,
+          1.2311560567468405
+        ],
+        "rows_per_second_at_median": 51018.4193234477
+      },
+      "diagnostic": {
+        "p50_ms": 33.254802925512195,
+        "p95_ms": 39.882173063233495,
+        "p99_ms": 39.928490994498134,
+        "min_ms": 22.541571874171495,
+        "repeats": 15,
+        "samples_ms": [
+          24.790325900539756,
+          28.062338940799236,
+          22.541571874171495,
+          25.473420042544603,
+          33.254802925512195,
+          36.73772816546261,
+          37.59142104536295,
+          39.882173063233495,
+          33.884105971083045,
+          35.95819603651762,
+          39.928490994498134,
+          31.96373605169356,
+          34.260379150509834,
+          29.020497109740973,
+          25.814185850322247
+        ],
+        "rows_per_second_at_median": 1924.5340332749622
+      },
+      "conditions": 20,
+      "output_bytes": 10240,
+      "raw_query_bytes": 16384,
+      "numeric_state_bytes": 6144
+    },
+    "areas/256": {
+      "original": {
+        "p50_ms": 13.346302090212703,
+        "p95_ms": 14.322312083095312,
+        "p99_ms": 14.587336918339133,
+        "min_ms": 11.830565053969622,
+        "repeats": 15,
+        "samples_ms": [
+          14.587336918339133,
+          14.322312083095312,
+          13.43792281113565,
+          13.346302090212703,
+          13.26612220145762,
+          13.31465388648212,
+          13.481193920597434,
+          12.891152873635292,
+          13.414690038189292,
+          12.841991847380996,
+          13.775092083960772,
+          13.74984486028552,
+          13.153011910617352,
+          12.76851398870349,
+          11.830565053969622
+        ],
+        "rows_per_second_at_median": 19181.343136817915
+      },
+      "diagnostic": {
+        "p50_ms": 195.43036282993853,
+        "p95_ms": 210.28817119076848,
+        "p99_ms": 230.0518190022558,
+        "min_ms": 169.2984038963914,
+        "repeats": 15,
+        "samples_ms": [
+          170.49158015288413,
+          169.2984038963914,
+          195.43036282993853,
+          177.740260027349,
+          172.89395281113684,
+          203.86609295383096,
+          210.28817119076848,
+          197.3459820728749,
+          194.08168317750096,
+          197.06225511617959,
+          186.66439387015998,
+          193.4077818877995,
+          199.33742098510265,
+          230.0518190022558,
+          209.60214990191162
+        ],
+        "rows_per_second_at_median": 1309.9295129629809
+      },
+      "conditions": 20,
+      "output_bytes": 40960,
+      "raw_query_bytes": 65536,
+      "numeric_state_bytes": 6144
+    },
+    "areas/1024": {
+      "original": {
+        "p50_ms": 35.40805401280522,
+        "p95_ms": 36.66064981371164,
+        "p99_ms": 37.70404704846442,
+        "min_ms": 31.74818796105683,
+        "repeats": 15,
+        "samples_ms": [
+          34.12137390114367,
+          37.70404704846442,
+          36.66064981371164,
+          33.99778390303254,
+          35.60265805572271,
+          35.80637718550861,
+          36.36807599104941,
+          35.40805401280522,
+          31.74818796105683,
+          31.89691505394876,
+          34.235297003760934,
+          34.64375878684223,
+          36.44035989418626,
+          35.63390485942364,
+          33.98717404343188
+        ],
+        "rows_per_second_at_median": 28919.973959305225
+      },
+      "diagnostic": {
+        "p50_ms": 654.8608120065182,
+        "p95_ms": 713.9892978593707,
+        "p99_ms": 788.4122380055487,
+        "min_ms": 527.6731080375612,
+        "repeats": 15,
+        "samples_ms": [
+          566.5858169086277,
+          569.5564008783549,
+          527.6731080375612,
+          620.8906241226941,
+          712.2872399631888,
+          630.660624941811,
+          551.5165759716183,
+          570.1879379339516,
+          654.8608120065182,
+          685.4022650513798,
+          667.2513650264591,
+          713.9892978593707,
+          788.4122380055487,
+          706.9050299469382,
+          670.9994960110635
+        ],
+        "rows_per_second_at_median": 1563.6910641551833
+      },
+      "conditions": 20,
+      "output_bytes": 163840,
+      "raw_query_bytes": 262144,
+      "numeric_state_bytes": 6144
+    },
+    "monolithic/64": {
+      "original": {
+        "p50_ms": 2.1348418667912483,
+        "p95_ms": 2.770337974652648,
+        "p99_ms": 2.9254381079226732,
+        "min_ms": 2.0344650838524103,
+        "repeats": 15,
+        "samples_ms": [
+          2.0529699977487326,
+          2.0769149996340275,
+          2.9254381079226732,
+          2.770337974652648,
+          2.1733040921390057,
+          2.128340071067214,
+          2.0812831353396177,
+          2.1348418667912483,
+          2.0344650838524103,
+          2.72109592333436,
+          2.4855169467628,
+          2.333052922040224,
+          2.187111182138324,
+          2.1313559263944626,
+          2.0986248273402452
+        ],
+        "rows_per_second_at_median": 29978.801238423588
+      },
+      "diagnostic": {
+        "p50_ms": 44.1962699405849,
+        "p95_ms": 56.61633121781051,
+        "p99_ms": 66.52992498129606,
+        "min_ms": 30.173831153661013,
+        "repeats": 15,
+        "samples_ms": [
+          38.397392025217414,
+          30.173831153661013,
+          45.4436969012022,
+          38.094556890428066,
+          35.53779795765877,
+          43.33909088745713,
+          45.68873508833349,
+          44.1962699405849,
+          42.85927605815232,
+          40.87364207953215,
+          56.61633121781051,
+          48.53937216103077,
+          45.3097578138113,
+          53.158910013735294,
+          66.52992498129606
+        ],
+        "rows_per_second_at_median": 1448.0860055845928
+      },
+      "conditions": 20,
+      "output_bytes": 10240,
+      "raw_query_bytes": 16384,
+      "numeric_state_bytes": 4608
+    },
+    "monolithic/256": {
+      "original": {
+        "p50_ms": 6.100130965933204,
+        "p95_ms": 6.727380910888314,
+        "p99_ms": 6.877470063045621,
+        "min_ms": 5.123218055814505,
+        "repeats": 15,
+        "samples_ms": [
+          6.067048059776425,
+          6.118715042248368,
+          5.497555946931243,
+          6.727380910888314,
+          6.713935174047947,
+          6.3891790341585875,
+          6.877470063045621,
+          6.100130965933204,
+          6.077538011595607,
+          6.276519037783146,
+          5.91502501629293,
+          5.8614041190594435,
+          5.619392963126302,
+          6.215085042640567,
+          5.123218055814505
+        ],
+        "rows_per_second_at_median": 41966.31210537246
+      },
+      "diagnostic": {
+        "p50_ms": 88.74063496477902,
+        "p95_ms": 99.24832498654723,
+        "p99_ms": 99.73150701262057,
+        "min_ms": 82.02762086875737,
+        "repeats": 15,
+        "samples_ms": [
+          99.73150701262057,
+          89.26283614709973,
+          99.24832498654723,
+          95.454036956653,
+          95.30685213394463,
+          92.13418397121131,
+          87.40317891351879,
+          86.79860085248947,
+          87.48801797628403,
+          87.27886783890426,
+          86.8550268933177,
+          82.02762086875737,
+          90.47908685170114,
+          86.88535401597619,
+          88.74063496477902
+        ],
+        "rows_per_second_at_median": 2884.8114519532783
+      },
+      "conditions": 20,
+      "output_bytes": 40960,
+      "raw_query_bytes": 65536,
+      "numeric_state_bytes": 4608
+    },
+    "monolithic/1024": {
+      "original": {
+        "p50_ms": 40.98445107229054,
+        "p95_ms": 45.49100995063782,
+        "p99_ms": 45.64799182116985,
+        "min_ms": 33.42616092413664,
+        "repeats": 15,
+        "samples_ms": [
+          44.62121590040624,
+          45.64799182116985,
+          45.49100995063782,
+          40.017428109422326,
+          43.77178195863962,
+          41.05727793648839,
+          41.38849605806172,
+          40.98445107229054,
+          40.24206707254052,
+          34.63445603847504,
+          33.633628161624074,
+          35.43431800790131,
+          33.42616092413664,
+          41.46265494637191,
+          34.762274008244276
+        ],
+        "rows_per_second_at_median": 24985.085153240547
+      },
+      "diagnostic": {
+        "p50_ms": 741.6009979788214,
+        "p95_ms": 770.2474929392338,
+        "p99_ms": 771.5431260876358,
+        "min_ms": 662.112191086635,
+        "repeats": 15,
+        "samples_ms": [
+          741.6009979788214,
+          662.112191086635,
+          662.3318288475275,
+          675.6826878990978,
+          762.5651969574392,
+          698.476382996887,
+          701.2008570600301,
+          682.7510281000286,
+          746.8107349704951,
+          754.5758560299873,
+          748.1102149467915,
+          769.1067708656192,
+          770.2474929392338,
+          693.0868988856673,
+          771.5431260876358
+        ],
+        "rows_per_second_at_median": 1380.7964158500813
+      },
+      "conditions": 20,
+      "output_bytes": 163840,
+      "raw_query_bytes": 262144,
+      "numeric_state_bytes": 4608
+    },
+    "bridge/64": {
+      "original": {
+        "p50_ms": 6.5752791706472635,
+        "p95_ms": 7.041479926556349,
+        "p99_ms": 7.180277956649661,
+        "min_ms": 5.0530689768493176,
+        "repeats": 15,
+        "samples_ms": [
+          6.235194858163595,
+          6.267494987696409,
+          6.9592660292983055,
+          6.66496716439724,
+          7.041479926556349,
+          6.769360974431038,
+          6.5752791706472635,
+          6.775121903046966,
+          6.7279639188200235,
+          7.180277956649661,
+          5.51637401804328,
+          5.0530689768493176,
+          5.097952904179692,
+          5.289599997922778,
+          5.928372032940388
+        ],
+        "rows_per_second_at_median": 9733.427028574348
+      },
+      "diagnostic": {
+        "p50_ms": 89.51448206789792,
+        "p95_ms": 101.95159306749701,
+        "p99_ms": 102.0752729382366,
+        "min_ms": 77.61063193902373,
+        "repeats": 15,
+        "samples_ms": [
+          92.59514114819467,
+          95.25272995233536,
+          95.40235879831016,
+          90.57379886507988,
+          89.51448206789792,
+          91.56470000743866,
+          85.9911588486284,
+          101.95159306749701,
+          102.0752729382366,
+          77.61063193902373,
+          81.82223001495004,
+          82.3134679812938,
+          83.55227904394269,
+          82.83522096462548,
+          79.6404299326241
+        ],
+        "rows_per_second_at_median": 714.9681093105712
+      },
+      "conditions": 20,
+      "output_bytes": 10240,
+      "raw_query_bytes": 16384,
+      "numeric_state_bytes": 530432
+    },
+    "bridge/256": {
+      "original": {
+        "p50_ms": 10.542351985350251,
+        "p95_ms": 12.439843034371734,
+        "p99_ms": 13.098081108182669,
+        "min_ms": 10.068498086184263,
+        "repeats": 15,
+        "samples_ms": [
+          10.068498086184263,
+          10.774155147373676,
+          10.306581854820251,
+          10.179365053772926,
+          10.714804055169225,
+          10.502788936719298,
+          10.108924005180597,
+          10.165518848225474,
+          10.47779293730855,
+          10.542351985350251,
+          11.022438993677497,
+          12.439843034371734,
+          11.67861302383244,
+          11.530827032402158,
+          13.098081108182669
+        ],
+        "rows_per_second_at_median": 24283.006330630957
+      },
+      "diagnostic": {
+        "p50_ms": 191.28903606906533,
+        "p95_ms": 222.84942213445902,
+        "p99_ms": 225.0114290509373,
+        "min_ms": 117.43966490030289,
+        "repeats": 15,
+        "samples_ms": [
+          195.1210219413042,
+          189.84886910766363,
+          174.1466880775988,
+          131.7101491149515,
+          191.28903606906533,
+          196.01594610139728,
+          222.84942213445902,
+          184.06818597577512,
+          225.0114290509373,
+          207.05229695886374,
+          208.22507492266595,
+          192.29041296057403,
+          184.41182211972773,
+          131.81835715658963,
+          117.43966490030289
+        ],
+        "rows_per_second_at_median": 1338.2889331282458
+      },
+      "conditions": 20,
+      "output_bytes": 40960,
+      "raw_query_bytes": 65536,
+      "numeric_state_bytes": 530432
+    },
+    "bridge/1024": {
+      "original": {
+        "p50_ms": 64.41723206080496,
+        "p95_ms": 67.18885409645736,
+        "p99_ms": 69.11618215963244,
+        "min_ms": 59.816058026626706,
+        "repeats": 15,
+        "samples_ms": [
+          64.41723206080496,
+          64.65818197466433,
+          69.11618215963244,
+          62.106029130518436,
+          67.15864804573357,
+          62.42836103774607,
+          63.03700618445873,
+          67.18885409645736,
+          66.33798708207905,
+          64.85948688350618,
+          60.25411398150027,
+          65.11305994354188,
+          60.450027929618955,
+          62.74843798018992,
+          59.816058026626706
+        ],
+        "rows_per_second_at_median": 15896.367590482962
+      },
+      "diagnostic": {
+        "p50_ms": 1232.6579201035202,
+        "p95_ms": 1267.1686869580299,
+        "p99_ms": 1300.2765281125903,
+        "min_ms": 1050.9109378326684,
+        "repeats": 15,
+        "samples_ms": [
+          1265.213759848848,
+          1253.112938022241,
+          1232.6579201035202,
+          1217.0846501830965,
+          1050.9109378326684,
+          1088.745720218867,
+          1159.6040918957442,
+          1213.3937331382185,
+          1236.5081228781492,
+          1267.1686869580299,
+          1263.7324989773333,
+          1076.8248171079904,
+          1300.2765281125903,
+          1246.3746599387378,
+          1147.4762740544975
+        ],
+        "rows_per_second_at_median": 830.7252022637417
+      },
+      "conditions": 20,
+      "output_bytes": 163840,
+      "raw_query_bytes": 262144,
+      "numeric_state_bytes": 530432
+    },
+    "bridge_four_steps/64": {
+      "original": {
+        "p50_ms": 5.962740862742066,
+        "p95_ms": 6.618334213271737,
+        "p99_ms": 6.906582973897457,
+        "min_ms": 4.927418893203139,
+        "repeats": 15,
+        "samples_ms": [
+          6.021409993991256,
+          5.605513928458095,
+          5.6957220658659935,
+          5.968160927295685,
+          5.8817388489842415,
+          6.1900438740849495,
+          6.28201593644917,
+          6.618334213271737,
+          6.906582973897457,
+          5.962740862742066,
+          5.377898924052715,
+          5.127923097461462,
+          4.927418893203139,
+          5.502320826053619,
+          6.456562085077167
+        ],
+        "rows_per_second_at_median": 10733.319034523416
+      },
+      "diagnostic": {
+        "p50_ms": 105.23271886631846,
+        "p95_ms": 148.30420399084687,
+        "p99_ms": 152.19171112403274,
+        "min_ms": 83.41367915272713,
+        "repeats": 15,
+        "samples_ms": [
+          95.74792301282287,
+          85.88037313893437,
+          97.02615905553102,
+          105.23271886631846,
+          83.67646904662251,
+          83.41367915272713,
+          98.09373295865953,
+          118.17024904303253,
+          137.98449910245836,
+          103.9670689497143,
+          132.47604691423476,
+          152.19171112403274,
+          148.30420399084687,
+          140.19949501380324,
+          134.353572037071
+        ],
+        "rows_per_second_at_median": 608.1758666836489
+      },
+      "conditions": 20,
+      "output_bytes": 10240,
+      "raw_query_bytes": 16384,
+      "numeric_state_bytes": 530432
+    },
+    "bridge_four_steps/256": {
+      "original": {
+        "p50_ms": 23.430127883329988,
+        "p95_ms": 24.49808199889958,
+        "p99_ms": 24.62334604933858,
+        "min_ms": 22.568059153854847,
+        "repeats": 15,
+        "samples_ms": [
+          23.7771759275347,
+          24.49808199889958,
+          23.430127883329988,
+          24.62334604933858,
+          24.357459042221308,
+          23.18025194108486,
+          23.300675908103585,
+          22.949902107939124,
+          23.241315968334675,
+          23.795600049197674,
+          24.481431115418673,
+          22.688965080305934,
+          24.173435987904668,
+          22.568059153854847,
+          22.83599996007979
+        ],
+        "rows_per_second_at_median": 10926.103403052199
+      },
+      "diagnostic": {
+        "p50_ms": 337.61636610142887,
+        "p95_ms": 363.86497085914016,
+        "p99_ms": 369.9279248248786,
+        "min_ms": 201.5268278773874,
+        "repeats": 15,
+        "samples_ms": [
+          248.3379109762609,
+          201.5268278773874,
+          293.8964560162276,
+          323.0947630945593,
+          283.27342588454485,
+          316.9039939530194,
+          320.778968045488,
+          341.18301910348237,
+          343.6617630068213,
+          363.86497085914016,
+          349.54278403893113,
+          346.44902497529984,
+          337.61636610142887,
+          359.4286779407412,
+          369.9279248248786
+        ],
+        "rows_per_second_at_median": 758.2570802361247
+      },
+      "conditions": 20,
+      "output_bytes": 40960,
+      "raw_query_bytes": 65536,
+      "numeric_state_bytes": 530432
+    },
+    "bridge_four_steps/1024": {
+      "original": {
+        "p50_ms": 117.0744530390948,
+        "p95_ms": 123.10075596906245,
+        "p99_ms": 123.92688705585897,
+        "min_ms": 76.29862800240517,
+        "repeats": 15,
+        "samples_ms": [
+          118.74329904094338,
+          115.24043884128332,
+          120.80508819781244,
+          120.7533918786794,
+          122.61030892841518,
+          117.0744530390948,
+          123.92688705585897,
+          121.45928991958499,
+          123.10075596906245,
+          116.527363890782,
+          110.14533904381096,
+          90.68569913506508,
+          89.48258287273347,
+          76.92016893997788,
+          76.29862800240517
+        ],
+        "rows_per_second_at_median": 8746.57086510628
+      },
+      "diagnostic": {
+        "p50_ms": 1926.620451034978,
+        "p95_ms": 2096.2771070189774,
+        "p99_ms": 2105.929547920823,
+        "min_ms": 1544.7460219729692,
+        "repeats": 15,
+        "samples_ms": [
+          2086.459130048752,
+          2073.3721230644733,
+          1703.7848038598895,
+          2012.8225178923458,
+          2008.7315540295094,
+          2096.2771070189774,
+          1926.620451034978,
+          2105.929547920823,
+          1895.9898489993066,
+          2066.451085032895,
+          1717.553404159844,
+          1544.7460219729692,
+          1917.5403171684593,
+          1765.4398460872471,
+          1558.3571360912174
+        ],
+        "rows_per_second_at_median": 531.5006385663085
+      },
+      "conditions": 20,
+      "output_bytes": 163840,
+      "raw_query_bytes": 262144,
+      "numeric_state_bytes": 530432
+    },
+    "roles/64": {
+      "original": {
+        "p50_ms": 3.289224114269018,
+        "p95_ms": 3.616986097767949,
+        "p99_ms": 3.7003911565989256,
+        "min_ms": 2.649127971380949,
+        "repeats": 15,
+        "samples_ms": [
+          3.267431864514947,
+          3.320481861010194,
+          3.5313451662659645,
+          3.5513630136847496,
+          3.7003911565989256,
+          3.616986097767949,
+          3.2196729443967342,
+          3.2630341593176126,
+          3.289224114269018,
+          3.3607769291847944,
+          3.4922119230031967,
+          3.1111110001802444,
+          2.7878470718860626,
+          2.649127971380949,
+          2.6494988705962896
+        ],
+        "rows_per_second_at_median": 19457.476224365775
+      },
+      "diagnostic": {
+        "p50_ms": 51.32711585611105,
+        "p95_ms": 64.70520398579538,
+        "p99_ms": 68.10925202444196,
+        "min_ms": 38.74638886190951,
+        "repeats": 15,
+        "samples_ms": [
+          64.70520398579538,
+          44.80012599378824,
+          55.8269820176065,
+          42.601689929142594,
+          53.04634803906083,
+          38.74638886190951,
+          58.272378984838724,
+          39.62948895059526,
+          68.10925202444196,
+          51.32711585611105,
+          56.94611184298992,
+          50.44157290831208,
+          49.79098797775805,
+          47.543729888275266,
+          51.846125861629844
+        ],
+        "rows_per_second_at_median": 1246.9042714072566
+      },
+      "conditions": 20,
+      "output_bytes": 10240,
+      "raw_query_bytes": 16384,
+      "numeric_state_bytes": 532992
+    },
+    "roles/256": {
+      "original": {
+        "p50_ms": 7.404370000585914,
+        "p95_ms": 9.729142067953944,
+        "p99_ms": 9.843414882197976,
+        "min_ms": 5.034161964431405,
+        "repeats": 15,
+        "samples_ms": [
+          9.442425798624754,
+          8.293289924040437,
+          8.6541841737926,
+          7.404370000585914,
+          6.149505963549018,
+          5.534818163141608,
+          5.034161964431405,
+          5.1647271029651165,
+          5.211303010582924,
+          5.22232404910028,
+          5.865985993295908,
+          7.493486162275076,
+          9.729142067953944,
+          9.843414882197976,
+          9.064639918506145
+        ],
+        "rows_per_second_at_median": 34574.17713860092
+      },
+      "diagnostic": {
+        "p50_ms": 141.86516287736595,
+        "p95_ms": 171.71900696121156,
+        "p99_ms": 172.19119891524315,
+        "min_ms": 117.86198103800416,
+        "repeats": 15,
+        "samples_ms": [
+          118.33158717490733,
+          141.5851500350982,
+          130.4759099148214,
+          117.86198103800416,
+          141.86516287736595,
+          162.75462391786277,
+          171.71900696121156,
+          164.04113708995283,
+          172.19119891524315,
+          166.59318399615586,
+          126.06574594974518,
+          123.81389178335667,
+          136.8055990897119,
+          147.95060502365232,
+          144.15253209881485
+        ],
+        "rows_per_second_at_median": 1804.5304062512998
+      },
+      "conditions": 20,
+      "output_bytes": 40960,
+      "raw_query_bytes": 65536,
+      "numeric_state_bytes": 532992
+    },
+    "roles/1024": {
+      "original": {
+        "p50_ms": 54.39063301309943,
+        "p95_ms": 62.921788077801466,
+        "p99_ms": 63.657935010269284,
+        "min_ms": 32.41295204497874,
+        "repeats": 15,
+        "samples_ms": [
+          33.62529701553285,
+          44.540865113958716,
+          43.67924598045647,
+          32.41295204497874,
+          54.48405793868005,
+          34.898786107078195,
+          54.39063301309943,
+          50.62192399054766,
+          62.921788077801466,
+          45.10841495357454,
+          63.657935010269284,
+          61.74540193751454,
+          57.70071712322533,
+          60.19414495676756,
+          56.071053026244044
+        ],
+        "rows_per_second_at_median": 18826.771141887242
+      },
+      "diagnostic": {
+        "p50_ms": 988.7392609380186,
+        "p95_ms": 1123.2810919173062,
+        "p99_ms": 1225.0337691511959,
+        "min_ms": 708.7117740884423,
+        "repeats": 15,
+        "samples_ms": [
+          953.6894250195473,
+          778.4571659285575,
+          708.7117740884423,
+          744.1498159896582,
+          980.7626521214843,
+          937.3876270838082,
+          941.7536600958556,
+          1028.652672888711,
+          992.3823289573193,
+          1225.0337691511959,
+          992.3138960730284,
+          1078.5813780967146,
+          988.7392609380186,
+          1123.2810919173062,
+          1120.0479299295694
+        ],
+        "rows_per_second_at_median": 1035.6623231776289
+      },
+      "conditions": 20,
+      "output_bytes": 163840,
+      "raw_query_bytes": 262144,
+      "numeric_state_bytes": 532992
+    },
+    "multiscale/64": {
+      "original": {
+        "p50_ms": 9.784599067643285,
+        "p95_ms": 12.829407816752791,
+        "p99_ms": 13.08870199136436,
+        "min_ms": 7.44209298864007,
+        "repeats": 15,
+        "samples_ms": [
+          9.784599067643285,
+          10.685222921893,
+          12.589480029419065,
+          12.821222888305783,
+          10.336019797250628,
+          7.908595027402043,
+          7.684897864237428,
+          8.560864022001624,
+          8.043756941333413,
+          7.44209298864007,
+          8.193938061594963,
+          9.36836190521717,
+          13.08870199136436,
+          12.829407816752791,
+          11.607756139710546
+        ],
+        "rows_per_second_at_median": 6540.891410833762
+      },
+      "diagnostic": {
+        "p50_ms": 153.38828298263252,
+        "p95_ms": 202.79580587521195,
+        "p99_ms": 222.90062718093395,
+        "min_ms": 137.89840298704803,
+        "repeats": 15,
+        "samples_ms": [
+          188.52158798836172,
+          175.19360803999007,
+          202.79580587521195,
+          222.90062718093395,
+          156.6503280773759,
+          138.3772271219641,
+          149.10502987913787,
+          153.38828298263252,
+          149.76103603839874,
+          137.89840298704803,
+          166.38862201943994,
+          144.1317219287157,
+          149.4691539555788,
+          141.45084307529032,
+          195.16243203543127
+        ],
+        "rows_per_second_at_median": 417.2417785473643
+      },
+      "conditions": 20,
+      "output_bytes": 10240,
+      "raw_query_bytes": 16384,
+      "numeric_state_bytes": 1593880
+    },
+    "multiscale/256": {
+      "original": {
+        "p50_ms": 32.20707317814231,
+        "p95_ms": 43.7826500274241,
+        "p99_ms": 47.99575195647776,
+        "min_ms": 17.057688906788826,
+        "repeats": 15,
+        "samples_ms": [
+          43.7826500274241,
+          43.34726696833968,
+          35.62174318358302,
+          43.49358007311821,
+          47.99575195647776,
+          33.936394145712256,
+          29.9548648763448,
+          18.16625101491809,
+          17.215893836691976,
+          38.13478793017566,
+          24.501917185261846,
+          18.16528895869851,
+          17.057688906788826,
+          23.922956082969904,
+          32.20707317814231
+        ],
+        "rows_per_second_at_median": 7948.564546179789
+      },
+      "diagnostic": {
+        "p50_ms": 485.1005089003593,
+        "p95_ms": 617.2711420804262,
+        "p99_ms": 704.9938340205699,
+        "min_ms": 400.105849141255,
+        "repeats": 15,
+        "samples_ms": [
+          423.2519690413028,
+          433.2826950121671,
+          449.3103940039873,
+          485.1005089003593,
+          704.9938340205699,
+          419.6928730234504,
+          543.978633126244,
+          486.9374029804021,
+          423.0845698621124,
+          400.105849141255,
+          591.485729906708,
+          584.7905480768532,
+          617.2711420804262,
+          469.0877920947969,
+          487.5556700862944
+        ],
+        "rows_per_second_at_median": 527.7256883945735
+      },
+      "conditions": 20,
+      "output_bytes": 40960,
+      "raw_query_bytes": 65536,
+      "numeric_state_bytes": 1593880
+    },
+    "multiscale/1024": {
+      "original": {
+        "p50_ms": 126.37498416006565,
+        "p95_ms": 153.2875238917768,
+        "p99_ms": 171.8548748176545,
+        "min_ms": 99.46383791975677,
+        "repeats": 15,
+        "samples_ms": [
+          103.13561698421836,
+          101.54687915928662,
+          104.0482830721885,
+          102.60843206197023,
+          126.81936286389828,
+          171.8548748176545,
+          135.59343898668885,
+          145.45929594896734,
+          138.90237384475768,
+          151.1250629555434,
+          153.2875238917768,
+          126.37498416006565,
+          99.46383791975677,
+          99.56449689343572,
+          107.95954498462379
+        ],
+        "rows_per_second_at_median": 8102.869462701645
+      },
+      "diagnostic": {
+        "p50_ms": 3109.692997066304,
+        "p95_ms": 3604.3399509508163,
+        "p99_ms": 3742.281852988526,
+        "min_ms": 2461.359530920163,
+        "repeats": 15,
+        "samples_ms": [
+          3109.692997066304,
+          3018.5226460453123,
+          3319.019198184833,
+          3002.907605841756,
+          2630.546717904508,
+          3353.8676761090755,
+          3604.3399509508163,
+          3742.281852988526,
+          2745.879834983498,
+          3185.810581082478,
+          3253.489867085591,
+          2963.62841501832,
+          3404.9749919213355,
+          2461.359530920163,
+          3054.233855800703
+        ],
+        "rows_per_second_at_median": 329.29295623910315
+      },
+      "conditions": 20,
+      "output_bytes": 163840,
+      "raw_query_bytes": 262144,
+      "numeric_state_bytes": 1593880
+    }
+  },
+  "warmup": 3,
+  "elapsed_s": 209.048502583988,
+  "load_start": [
+    5.419921875,
+    3.52783203125,
+    2.6435546875
+  ],
+  "load_end": [
+    5.9208984375,
+    4.9716796875,
+    3.43408203125
+  ],
+  "peak_process_rss_kib": 578684,
+  "limits": [
+    "Fixture de un estado maduro, sin entrenamiento ni m\u00e9tricas predictivas reales.",
+    "Incluye codec, lectura original, m\u00e1scaras y lecturas diagn\u00f3sticas secuenciales.",
+    "Excluye predictor, r\u00e9gimen, registro durable, colas y transferencias GPU.",
+    "Los picos RSS son del proceso entero y los bytes de estado excluyen temporales.",
+    "Quince muestras no permiten fijar un objetivo de latencia de cola.",
+    "No se mide energ\u00eda ni VRAM."
+  ]
+}

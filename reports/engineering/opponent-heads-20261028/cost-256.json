@@ -1,0 +1,559 @@
+{
+  "schema_version": 1,
+  "kind": "objective_variants_cost",
+  "issue": 749,
+  "recorded_at_utc": "2026-10-28T03:54:17.342925+00:00",
+  "commit": "b8a37c65ff75b25af1e3b7c38ad5849dabcc8422",
+  "scope": "Forward con grafo de T instantes, p\u00e9rdida de cada objetivo frente a etiquetas sint\u00e9ticas y backward, m\u00e1s inferencia sin grafo. Entradas sint\u00e9ticas con las formas de la edici\u00f3n v3.1. Sin optimizador ni pasos.",
+  "device": "cpu",
+  "cpu": "AMD Ryzen 9 8945HS w/ Radeon 780M Graphics",
+  "versions": {
+    "python": "3.12.14",
+    "torch": "2.14.0+cu130"
+  },
+  "precision": "float32",
+  "kernel_policy": {
+    "schema_version": 1,
+    "precision": "fp32_strict",
+    "matmul_allow_tf32": false,
+    "cudnn_allow_tf32": false,
+    "float32_matmul_precision": "highest",
+    "retired_native_overrides": [
+      "bmm"
+    ],
+    "native_overrides": [
+      "_foreach_mm/CUDA/native",
+      "linalg_polar.out/CUDA/native",
+      "linalg_polar/CUDA/native"
+    ]
+  },
+  "sdpa_backend": "MATH",
+  "source_sha256": {
+    "benchmarks/objective_variants_cost.py": "01993a8850285e573bc472e61c8c8b7fdb3b8beb6cbb23c8690ee9b9bb00cf0b",
+    "src/mars_titan/models/titans/session_ranks.py": "14a0fc9a3abbfffa745d81c66332e160aebca80294e106a2062a8409732f5a5e",
+    "src/mars_titan/models/titans/session_ic_objective.py": "72b74555a37e20a72eeefe379a661884d525bdb212bd2f7fd22a2058584e292a",
+    "src/mars_titan/models/titans/opponent_heads.py": "ca501a8b0dc943bf038fc985ca1529a71ef8385ec6b1b1e98f6e2a16d2f11b44",
+    "src/mars_titan/models/titans/output_objectives.py": "a1ae688222f655bae24b1b41bd0b37f682b5d9c6e8456bc56331becf6843407e",
+    "src/mars_titan/models/titans/financial.py": "c252886be064668231a076ef1b0e937da216f121633d2f0c63595f253e5b2f5c"
+  },
+  "threads": 4,
+  "shapes": {
+    "rows": 256,
+    "instants": 8,
+    "hidden_size": 64,
+    "news": 384,
+    "charts": 512,
+    "concepts": 26,
+    "indicators": 140
+  },
+  "base_predictor": {
+    "hidden_size": 64,
+    "layers": 1,
+    "persistent_tokens": 4,
+    "max_batch": 1024,
+    "max_state_bytes": 134217728,
+    "gate_bias": {
+      "alpha_half_life": 256.0,
+      "eta": 0.5,
+      "theta": 0.05
+    },
+    "memory_residual_layer_norm": true,
+    "attention_layout": "sequence_contiguous_v1"
+  },
+  "repetitions": 7,
+  "warmup": 1,
+  "order": "repeticiones alternadas entre modelos con orden rotatorio",
+  "memory": "pico neto del asignador de ATen en CPU con el perfilador, una pasada con grafo",
+  "models": {
+    "reference_mae": {
+      "predictor_changes": {},
+      "total_parameters": 185859,
+      "forward_with_graph_seconds": {
+        "median": 0.5704891209024936,
+        "minimum": 0.5338352350518107,
+        "maximum": 0.685393274994567,
+        "samples": [
+          0.685393274994567,
+          0.6529554498847574,
+          0.5607189300935715,
+          0.5413120030425489,
+          0.5717941408511251,
+          0.5704891209024936,
+          0.5338352350518107
+        ]
+      },
+      "backward_seconds": {
+        "median": 0.36409039003774524,
+        "minimum": 0.31722690002061427,
+        "maximum": 0.4367241649888456,
+        "samples": [
+          0.3995672140736133,
+          0.39777379599399865,
+          0.35977832111530006,
+          0.31722690002061427,
+          0.4367241649888456,
+          0.33881205483339727,
+          0.36409039003774524
+        ]
+      },
+      "inference_seconds": {
+        "median": 0.5678979610092938,
+        "minimum": 0.40993623388931155,
+        "maximum": 0.7172241709195077,
+        "samples": [
+          0.6520216879434884,
+          0.5678979610092938,
+          0.547731737839058,
+          0.5739332907833159,
+          0.7172241709195077,
+          0.40993623388931155,
+          0.5501827129628509
+        ]
+      },
+      "allocated_peak_bytes": 504923500,
+      "parameters_unchanged": true,
+      "added_parameters": 0,
+      "relative_to_control": {
+        "forward_with_graph_seconds": 1.0,
+        "backward_seconds": 1.0,
+        "inference_seconds": 1.0,
+        "allocated_peak_bytes": 1.0
+      }
+    },
+    "session_rank_inputs_v1": {
+      "predictor_changes": {
+        "session_rank_inputs": "session_rank_inputs_v1"
+      },
+      "total_parameters": 185859,
+      "forward_with_graph_seconds": {
+        "median": 0.6782430959865451,
+        "minimum": 0.5364654881414026,
+        "maximum": 0.7929546718951315,
+        "samples": [
+          0.7929546718951315,
+          0.7741141018923372,
+          0.6782430959865451,
+          0.6812180890701711,
+          0.6500202710740268,
+          0.5364654881414026,
+          0.6700051908846945
+        ]
+      },
+      "backward_seconds": {
+        "median": 0.38063387596048415,
+        "minimum": 0.3443376999348402,
+        "maximum": 0.3984338450245559,
+        "samples": [
+          0.38063387596048415,
+          0.3952040649019182,
+          0.39098965702578425,
+          0.3622448181267828,
+          0.3443376999348402,
+          0.36786675802432,
+          0.3984338450245559
+        ]
+      },
+      "inference_seconds": {
+        "median": 0.6817530230619013,
+        "minimum": 0.6044172500260174,
+        "maximum": 0.7588509300258011,
+        "samples": [
+          0.7588509300258011,
+          0.7354986390564591,
+          0.6817530230619013,
+          0.6044172500260174,
+          0.678862625034526,
+          0.7417910119984299,
+          0.6476008470635861
+        ]
+      },
+      "allocated_peak_bytes": 505562476,
+      "parameters_unchanged": true,
+      "added_parameters": 0,
+      "relative_to_control": {
+        "forward_with_graph_seconds": 1.1888799823449543,
+        "backward_seconds": 1.0454378538280669,
+        "inference_seconds": 1.200485069272408,
+        "allocated_peak_bytes": 1.0012654907129497
+      }
+    },
+    "session_ic_objective_v1": {
+      "predictor_changes": {
+        "session_ic_objective": {
+          "minimum_rows": 8,
+          "scale_weight": 1.0,
+          "initial_scale": 0.001
+        }
+      },
+      "total_parameters": 185860,
+      "forward_with_graph_seconds": {
+        "median": 0.6134097131434828,
+        "minimum": 0.5723974260035902,
+        "maximum": 0.7120585080701858,
+        "samples": [
+          0.7100139940157533,
+          0.5990837181452662,
+          0.699207338038832,
+          0.6134097131434828,
+          0.5723974260035902,
+          0.601394081953913,
+          0.7120585080701858
+        ]
+      },
+      "backward_seconds": {
+        "median": 0.39281712588854134,
+        "minimum": 0.33547447877936065,
+        "maximum": 0.45892618014477193,
+        "samples": [
+          0.39281712588854134,
+          0.34333737404085696,
+          0.41825802996754646,
+          0.33547447877936065,
+          0.3364558950997889,
+          0.45892618014477193,
+          0.4373569479212165
+        ]
+      },
+      "inference_seconds": {
+        "median": 0.6178422840312123,
+        "minimum": 0.4873682239558548,
+        "maximum": 0.7108149970881641,
+        "samples": [
+          0.6178422840312123,
+          0.6184320149477571,
+          0.6174479390028864,
+          0.6272306521423161,
+          0.4910188210196793,
+          0.7108149970881641,
+          0.4873682239558548
+        ]
+      },
+      "allocated_peak_bytes": 504955248,
+      "parameters_unchanged": true,
+      "added_parameters": 1,
+      "relative_to_control": {
+        "forward_with_graph_seconds": 1.0752347252005268,
+        "backward_seconds": 1.0789000111972689,
+        "inference_seconds": 1.0879459453123501,
+        "allocated_peak_bytes": 1.000062876851642
+      }
+    },
+    "session_rank_inputs_and_ic_objective": {
+      "predictor_changes": {
+        "session_rank_inputs": "session_rank_inputs_v1",
+        "session_ic_objective": {
+          "minimum_rows": 8,
+          "scale_weight": 1.0,
+          "initial_scale": 0.001
+        }
+      },
+      "total_parameters": 185860,
+      "forward_with_graph_seconds": {
+        "median": 0.7731447180267423,
+        "minimum": 0.6711973219644278,
+        "maximum": 0.9178661548066884,
+        "samples": [
+          0.7731447180267423,
+          0.7647787369787693,
+          0.8153987179975957,
+          0.6711973219644278,
+          0.8335255701094866,
+          0.9178661548066884,
+          0.7459925229195505
+        ]
+      },
+      "backward_seconds": {
+        "median": 0.4108512469101697,
+        "minimum": 0.3648301721550524,
+        "maximum": 0.4213064559735358,
+        "samples": [
+          0.4121374120004475,
+          0.4108512469101697,
+          0.4019348989240825,
+          0.38224076200276613,
+          0.4213064559735358,
+          0.41854554787278175,
+          0.3648301721550524
+        ]
+      },
+      "inference_seconds": {
+        "median": 0.7464587439317256,
+        "minimum": 0.5572955040261149,
+        "maximum": 0.7877043120097369,
+        "samples": [
+          0.7668828081805259,
+          0.6370957070030272,
+          0.7877043120097369,
+          0.7858836238738149,
+          0.7464587439317256,
+          0.6478813060093671,
+          0.5572955040261149
+        ]
+      },
+      "allocated_peak_bytes": 505594224,
+      "parameters_unchanged": true,
+      "added_parameters": 1,
+      "relative_to_control": {
+        "forward_with_graph_seconds": 1.3552313088874592,
+        "backward_seconds": 1.1284319997228622,
+        "inference_seconds": 1.3144240606271689,
+        "allocated_peak_bytes": 1.0013283675645914
+      }
+    },
+    "opponent_heads_expectile": {
+      "predictor_changes": {
+        "opponent_heads": {
+          "family": "expectile",
+          "level": 0.25
+        }
+      },
+      "total_parameters": 185924,
+      "forward_with_graph_seconds": {
+        "median": 0.6212702058255672,
+        "minimum": 0.48359656310640275,
+        "maximum": 0.7692498641554266,
+        "samples": [
+          0.6246492299251258,
+          0.48359656310640275,
+          0.7692498641554266,
+          0.6212702058255672,
+          0.6565217389725149,
+          0.5699231980834156,
+          0.5610946349333972
+        ]
+      },
+      "backward_seconds": {
+        "median": 0.3522588221821934,
+        "minimum": 0.32006248203106225,
+        "maximum": 0.4296362679451704,
+        "samples": [
+          0.4046957050450146,
+          0.39720631879754364,
+          0.4296362679451704,
+          0.3398958290927112,
+          0.34367517405189574,
+          0.32006248203106225,
+          0.3522588221821934
+        ]
+      },
+      "inference_seconds": {
+        "median": 0.5463365770410746,
+        "minimum": 0.47849908703938127,
+        "maximum": 0.769832446007058,
+        "samples": [
+          0.6392411580309272,
+          0.769832446007058,
+          0.6235968968831003,
+          0.5463365770410746,
+          0.47849908703938127,
+          0.5389571818523109,
+          0.5339032139163464
+        ]
+      },
+      "allocated_peak_bytes": 504948336,
+      "parameters_unchanged": true,
+      "added_parameters": 65,
+      "relative_to_control": {
+        "forward_with_graph_seconds": 1.089013239801558,
+        "backward_seconds": 0.9675037623093395,
+        "inference_seconds": 0.9620329963328283,
+        "allocated_peak_bytes": 1.0000491876492181
+      }
+    },
+    "opponent_heads_expectile_control": {
+      "predictor_changes": {
+        "opponent_heads": {
+          "family": "expectile",
+          "level": 0.5
+        }
+      },
+      "total_parameters": 185924,
+      "forward_with_graph_seconds": {
+        "median": 0.6393051808699965,
+        "minimum": 0.5013526899274439,
+        "maximum": 0.7681065090000629,
+        "samples": [
+          0.7681065090000629,
+          0.7378379278816283,
+          0.5013526899274439,
+          0.6602803219575435,
+          0.633436266798526,
+          0.6393051808699965,
+          0.5394611509982497
+        ]
+      },
+      "backward_seconds": {
+        "median": 0.3845077420119196,
+        "minimum": 0.3165632819291204,
+        "maximum": 0.43016665102913976,
+        "samples": [
+          0.43016665102913976,
+          0.39363922411575913,
+          0.3845077420119196,
+          0.40323420288041234,
+          0.3165632819291204,
+          0.35245440690778196,
+          0.38136533298529685
+        ]
+      },
+      "inference_seconds": {
+        "median": 0.6062075190711766,
+        "minimum": 0.5156074778642505,
+        "maximum": 0.6647548130713403,
+        "samples": [
+          0.6439330570865422,
+          0.6062075190711766,
+          0.6365199389401823,
+          0.5299371820874512,
+          0.5156074778642505,
+          0.541113733779639,
+          0.6647548130713403
+        ]
+      },
+      "allocated_peak_bytes": 504948336,
+      "parameters_unchanged": true,
+      "added_parameters": 65,
+      "relative_to_control": {
+        "forward_with_graph_seconds": 1.120626419411186,
+        "backward_seconds": 1.0560777008480167,
+        "inference_seconds": 1.0674585236999221,
+        "allocated_peak_bytes": 1.0000491876492181
+      }
+    },
+    "opponent_heads_quantile": {
+      "predictor_changes": {
+        "opponent_heads": {
+          "family": "quantile",
+          "level": 0.25
+        }
+      },
+      "total_parameters": 185924,
+      "forward_with_graph_seconds": {
+        "median": 0.590314359869808,
+        "minimum": 0.45823955605737865,
+        "maximum": 0.7302727461792529,
+        "samples": [
+          0.7302727461792529,
+          0.7031255210749805,
+          0.6983439468313009,
+          0.590314359869808,
+          0.45823955605737865,
+          0.5107973900157958,
+          0.538345362059772
+        ]
+      },
+      "backward_seconds": {
+        "median": 0.3670567721128464,
+        "minimum": 0.2947915089316666,
+        "maximum": 0.41726689599454403,
+        "samples": [
+          0.3750084638595581,
+          0.41726689599454403,
+          0.40961027704179287,
+          0.3670567721128464,
+          0.2947915089316666,
+          0.366825029021129,
+          0.33682960900478065
+        ]
+      },
+      "inference_seconds": {
+        "median": 0.5479110970627517,
+        "minimum": 0.46337048104032874,
+        "maximum": 0.7132033768575639,
+        "samples": [
+          0.6260119720827788,
+          0.6206569990608841,
+          0.7132033768575639,
+          0.5479110970627517,
+          0.46337048104032874,
+          0.5187471921090037,
+          0.5268298168666661
+        ]
+      },
+      "allocated_peak_bytes": 504948336,
+      "parameters_unchanged": true,
+      "added_parameters": 65,
+      "relative_to_control": {
+        "forward_with_graph_seconds": 1.0347513006662625,
+        "backward_seconds": 1.008147378113423,
+        "inference_seconds": 0.9648055367006062,
+        "allocated_peak_bytes": 1.0000491876492181
+      }
+    },
+    "opponent_heads_quantile_control": {
+      "predictor_changes": {
+        "opponent_heads": {
+          "family": "quantile",
+          "level": 0.5
+        }
+      },
+      "total_parameters": 185924,
+      "forward_with_graph_seconds": {
+        "median": 0.5984459521714598,
+        "minimum": 0.5032668630592525,
+        "maximum": 0.7242933330126107,
+        "samples": [
+          0.6964634959585965,
+          0.6696846839040518,
+          0.7242933330126107,
+          0.5414011210668832,
+          0.5032668630592525,
+          0.5741388101596385,
+          0.5984459521714598
+        ]
+      },
+      "backward_seconds": {
+        "median": 0.3570386429782957,
+        "minimum": 0.3257113879080862,
+        "maximum": 0.42830844898708165,
+        "samples": [
+          0.42830844898708165,
+          0.37685085902921855,
+          0.37072030710987747,
+          0.3257113879080862,
+          0.3570386429782957,
+          0.34568584500811994,
+          0.34191122092306614
+        ]
+      },
+      "inference_seconds": {
+        "median": 0.5511794649064541,
+        "minimum": 0.471574290888384,
+        "maximum": 0.6311950569506735,
+        "samples": [
+          0.6283985378686339,
+          0.6311950569506735,
+          0.5963191248010844,
+          0.5360174109227955,
+          0.471574290888384,
+          0.5511794649064541,
+          0.5444446869660169
+        ]
+      },
+      "allocated_peak_bytes": 504948336,
+      "parameters_unchanged": true,
+      "added_parameters": 65,
+      "relative_to_control": {
+        "forward_with_graph_seconds": 1.049005020857785,
+        "backward_seconds": 0.980631878092914,
+        "inference_seconds": 0.9705607393392875,
+        "allocated_peak_bytes": 1.0000491876492181
+      }
+    }
+  },
+  "optimizer_steps": 0,
+  "training_runs": 0,
+  "evaluation": false,
+  "total_wall_seconds": 117.8527888469398,
+  "process_peak_ram_bytes": 2458714112,
+  "load_average_start": [
+    7.66943359375,
+    16.29443359375,
+    16.8701171875
+  ],
+  "load_average_end": [
+    6.5498046875,
+    13.208984375,
+    15.68115234375
+  ]
+}

@@ -1,0 +1,112 @@
+{
+  "schema_version": 1,
+  "measured_at": "2026-10-27T11:35:56.269962",
+  "tools": {
+    "coverage": "7.16.1",
+    "radon": "6.0.1",
+    "branch_coverage": true,
+    "python": "3.12.14",
+    "summarizer_sha256": "75cc60c88037e0bb17aff6e8ab666ce78b35d600d6c7ad217bf68b1afb4c4ec6"
+  },
+  "complexity_convention": "ComplexityVisitor de Radon sobre la región de coverage.py: if, elif, expresión condicional, for y while con su else, except, else de try, assert, cada operando booleano después del primero y cada cláusula de comprensión suman uno. Las funciones anidadas son regiones propias.",
+  "coverage_convention": "Sentencias ejecutadas entre sentencias de la región según coverage.py.",
+  "crap_convention": "C² × (1 − cobertura de sentencias)³ + C.",
+  "limits": [
+    "CRAP combina complejidad y recorridos observados. No demuestra ausencia de errores.",
+    "La cobertura de sentencias no distingue qué operandos de una condición se evaluaron, aunque la complejidad sí los cuenta.",
+    "Como en Radon 6.0.1, los manejadores de except* y la condición de un assert no suman, y el cuerpo de una clase definida dentro de una función no suma en ella aunque coverage.py cuente allí sus sentencias.",
+    "Una función sin sentencias medibles (solo documentación o puntos suspensivos) conserva C.",
+    "Si dos funciones comparten nombre cualificado en un archivo, coverage.py solo mide la última. Las anteriores aparecen en shadowed_regions sin CRAP.",
+    "La fuente se contrasta con la medida por sus regiones y sus líneas de sentencia. Un cambio que las conserva, como otra condición en la misma línea, no se detecta, así que el resumen se ejecuta sobre el mismo árbol que se midió."
+  ],
+  "include": [
+    "src/mars_titan/training/spaced_selected.py"
+  ],
+  "totals": {
+    "statements": 97,
+    "covered_statements": 97,
+    "branches": 0,
+    "covered_branches": 0
+  },
+  "files": [
+    {
+      "path": "src/mars_titan/training/spaced_selected.py",
+      "source_sha256": "0f81b24e1642a57ecb9ff166618c2416fc81f80306b182e0bb2e133bfd03cc1d",
+      "statements": 97,
+      "covered_statements": 97,
+      "branches": 0,
+      "covered_branches": 0
+    }
+  ],
+  "functions": [
+    {
+      "path": "src/mars_titan/training/spaced_selected.py",
+      "function": "load_selected_reader",
+      "start_line": 107,
+      "end_line": 251,
+      "cyclomatic_complexity": 30,
+      "statements": 50,
+      "covered_statements": 50,
+      "coverage_fraction": 1.0,
+      "branches": 0,
+      "covered_branches": 0,
+      "crap": 30.0
+    },
+    {
+      "path": "src/mars_titan/training/spaced_selected.py",
+      "function": "_fit",
+      "start_line": 58,
+      "end_line": 91,
+      "cyclomatic_complexity": 14,
+      "statements": 13,
+      "covered_statements": 13,
+      "coverage_fraction": 1.0,
+      "branches": 0,
+      "covered_branches": 0,
+      "crap": 14.0
+    },
+    {
+      "path": "src/mars_titan/training/spaced_selected.py",
+      "function": "_report",
+      "start_line": 37,
+      "end_line": 55,
+      "cyclomatic_complexity": 12,
+      "statements": 4,
+      "covered_statements": 4,
+      "coverage_fraction": 1.0,
+      "branches": 0,
+      "covered_branches": 0,
+      "crap": 12.0
+    },
+    {
+      "path": "src/mars_titan/training/spaced_selected.py",
+      "function": "_digest",
+      "start_line": 33,
+      "end_line": 34,
+      "cyclomatic_complexity": 1,
+      "statements": 1,
+      "covered_statements": 1,
+      "coverage_fraction": 1.0,
+      "branches": 0,
+      "covered_branches": 0,
+      "crap": 1.0
+    },
+    {
+      "path": "src/mars_titan/training/spaced_selected.py",
+      "function": "SelectedSpacedReader.identity",
+      "start_line": 103,
+      "end_line": 104,
+      "cyclomatic_complexity": 1,
+      "statements": 1,
+      "covered_statements": 1,
+      "coverage_fraction": 1.0,
+      "branches": 0,
+      "covered_branches": 0,
+      "crap": 1.0
+    }
+  ],
+  "shadowed_regions": [],
+  "coverage_sha256": "a1ec523742299048651d909344d3edf43a5f409be0eeceb62c2c66a48b4f24a1",
+  "functions_measured": 5,
+  "scope": "Código nuevo de carga. Coverage.py no instrumenta ramas en estos predicados booleanos encadenados. La cobertura de sentencias no equivale a cubrir cada condición."
+}

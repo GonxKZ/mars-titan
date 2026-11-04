@@ -1,0 +1,44 @@
+{
+  "schema_version": 1,
+  "kind": "schedule_free_shrink_perturb_variants",
+  "issue": 749,
+  "variant": "mac_online",
+  "base_recipe": "configs/titans/chronological-training-historical-sequence-v1.json",
+  "default_enabled": false,
+  "final_test_access": false,
+  "status": "declared_not_trained",
+  "arms": {
+    "adamw_reference": {
+      "role": "control",
+      "recipe_changes": {}
+    },
+    "schedule_free": {
+      "role": "variant",
+      "control": "adamw_reference",
+      "recipe_changes": {"schedule_free": {"warmup_steps": 0, "beta1": 0.9}}
+    },
+    "continuation_control": {
+      "role": "control",
+      "applies_to": "walk_forward_stage_started_from_its_parent",
+      "recipe_changes": {}
+    },
+    "shrink_perturb": {
+      "role": "variant",
+      "control": "continuation_control",
+      "applies_to": "walk_forward_stage_started_from_its_parent",
+      "recipe_changes": {"shrink_perturb": {"shrink": 0.6, "noise": 0.01, "seed": 1}}
+    },
+    "shrink_only": {
+      "role": "variant",
+      "control": "continuation_control",
+      "applies_to": "walk_forward_stage_started_from_its_parent",
+      "recipe_changes": {"shrink_perturb": {"shrink": 0.6, "noise": 0.0, "seed": 1}}
+    },
+    "perturb_only": {
+      "role": "variant",
+      "control": "continuation_control",
+      "applies_to": "walk_forward_stage_started_from_its_parent",
+      "recipe_changes": {"shrink_perturb": {"shrink": 1.0, "noise": 0.01, "seed": 1}}
+    }
+  }
+}

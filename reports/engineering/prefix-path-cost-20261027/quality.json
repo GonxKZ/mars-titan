@@ -1,0 +1,228 @@
+{
+  "schema_version": 1,
+  "measured_at": "2026-10-27T04:39:43.485691",
+  "tools": {
+    "coverage": "7.16.1",
+    "radon": "6.0.1",
+    "branch_coverage": true,
+    "python": "3.12.14",
+    "summarizer_sha256": "75cc60c88037e0bb17aff6e8ab666ce78b35d600d6c7ad217bf68b1afb4c4ec6"
+  },
+  "complexity_convention": "ComplexityVisitor de Radon sobre la región de coverage.py: if, elif, expresión condicional, for y while con su else, except, else de try, assert, cada operando booleano después del primero y cada cláusula de comprensión suman uno. Las funciones anidadas son regiones propias.",
+  "coverage_convention": "Sentencias ejecutadas entre sentencias de la región según coverage.py.",
+  "crap_convention": "C² × (1 − cobertura de sentencias)³ + C.",
+  "limits": [
+    "CRAP combina complejidad y recorridos observados. No demuestra ausencia de errores.",
+    "La cobertura de sentencias no distingue qué operandos de una condición se evaluaron, aunque la complejidad sí los cuenta.",
+    "Como en Radon 6.0.1, los manejadores de except* y la condición de un assert no suman, y el cuerpo de una clase definida dentro de una función no suma en ella aunque coverage.py cuente allí sus sentencias.",
+    "Una función sin sentencias medibles (solo documentación o puntos suspensivos) conserva C.",
+    "Si dos funciones comparten nombre cualificado en un archivo, coverage.py solo mide la última. Las anteriores aparecen en shadowed_regions sin CRAP.",
+    "La fuente se contrasta con la medida por sus regiones y sus líneas de sentencia. Un cambio que las conserva, como otra condición en la misma línea, no se detecta, así que el resumen se ejecuta sobre el mismo árbol que se midió."
+  ],
+  "include": [
+    "src/mars_titan/training/prefix_eligibility.py"
+  ],
+  "totals": {
+    "statements": 184,
+    "covered_statements": 162,
+    "branches": 64,
+    "covered_branches": 46
+  },
+  "files": [
+    {
+      "path": "src/mars_titan/training/prefix_eligibility.py",
+      "source_sha256": "ec8b3566b2176830f213a2d45e7e313ab9e0a411c2d8be12b89263c989b5ae3c",
+      "statements": 184,
+      "covered_statements": 162,
+      "branches": 64,
+      "covered_branches": 46
+    }
+  ],
+  "functions": [
+    {
+      "path": "src/mars_titan/training/prefix_eligibility.py",
+      "function": "PrefixEvidence.__post_init__",
+      "start_line": 66,
+      "end_line": 87,
+      "cyclomatic_complexity": 14,
+      "statements": 2,
+      "covered_statements": 1,
+      "coverage_fraction": 0.5,
+      "branches": 2,
+      "covered_branches": 1,
+      "crap": 38.5
+    },
+    {
+      "path": "src/mars_titan/training/prefix_eligibility.py",
+      "function": "PrefixTargetVerifier.__init__",
+      "start_line": 108,
+      "end_line": 183,
+      "cyclomatic_complexity": 20,
+      "statements": 43,
+      "covered_statements": 36,
+      "coverage_fraction": 0.8372093023255814,
+      "branches": 20,
+      "covered_branches": 13,
+      "crap": 21.72563422088621
+    },
+    {
+      "path": "src/mars_titan/training/prefix_eligibility.py",
+      "function": "PrefixTargetVerifier._register",
+      "start_line": 185,
+      "end_line": 194,
+      "cyclomatic_complexity": 8,
+      "statements": 9,
+      "covered_statements": 6,
+      "coverage_fraction": 0.6666666666666666,
+      "branches": 6,
+      "covered_branches": 3,
+      "crap": 10.37037037037037
+    },
+    {
+      "path": "src/mars_titan/training/prefix_eligibility.py",
+      "function": "PrefixTargetVerifier._returns",
+      "start_line": 207,
+      "end_line": 240,
+      "cyclomatic_complexity": 10,
+      "statements": 23,
+      "covered_statements": 20,
+      "coverage_fraction": 0.8695652173913043,
+      "branches": 8,
+      "covered_branches": 5,
+      "crap": 10.221911728445797
+    },
+    {
+      "path": "src/mars_titan/training/prefix_eligibility.py",
+      "function": "PrefixTargetVerifier._position",
+      "start_line": 242,
+      "end_line": 256,
+      "cyclomatic_complexity": 7,
+      "statements": 9,
+      "covered_statements": 9,
+      "coverage_fraction": 1.0,
+      "branches": 6,
+      "covered_branches": 6,
+      "crap": 7.0
+    },
+    {
+      "path": "src/mars_titan/training/prefix_eligibility.py",
+      "function": "PrefixTargetVerifier.evidence",
+      "start_line": 271,
+      "end_line": 288,
+      "cyclomatic_complexity": 6,
+      "statements": 15,
+      "covered_statements": 14,
+      "coverage_fraction": 0.9333333333333333,
+      "branches": 4,
+      "covered_branches": 3,
+      "crap": 6.010666666666666
+    },
+    {
+      "path": "src/mars_titan/training/prefix_eligibility.py",
+      "function": "_signature",
+      "start_line": 38,
+      "end_line": 54,
+      "cyclomatic_complexity": 6,
+      "statements": 14,
+      "covered_statements": 14,
+      "coverage_fraction": 1.0,
+      "branches": 6,
+      "covered_branches": 6,
+      "crap": 6.0
+    },
+    {
+      "path": "src/mars_titan/training/prefix_eligibility.py",
+      "function": "PrefixTargetVerifier.expected_maturity",
+      "start_line": 258,
+      "end_line": 269,
+      "cyclomatic_complexity": 2,
+      "statements": 5,
+      "covered_statements": 0,
+      "coverage_fraction": 0.0,
+      "branches": 2,
+      "covered_branches": 0,
+      "crap": 6.0
+    },
+    {
+      "path": "src/mars_titan/training/prefix_eligibility.py",
+      "function": "PrefixTargetVerifier._confirm",
+      "start_line": 196,
+      "end_line": 202,
+      "cyclomatic_complexity": 5,
+      "statements": 6,
+      "covered_statements": 5,
+      "coverage_fraction": 0.8333333333333334,
+      "branches": 4,
+      "covered_branches": 3,
+      "crap": 5.1157407407407405
+    },
+    {
+      "path": "src/mars_titan/training/prefix_eligibility.py",
+      "function": "PrefixEvidence.reason",
+      "start_line": 90,
+      "end_line": 95,
+      "cyclomatic_complexity": 3,
+      "statements": 5,
+      "covered_statements": 5,
+      "coverage_fraction": 1.0,
+      "branches": 4,
+      "covered_branches": 4,
+      "crap": 3.0
+    },
+    {
+      "path": "src/mars_titan/training/prefix_eligibility.py",
+      "function": "PrefixTargetVerifier.verify",
+      "start_line": 290,
+      "end_line": 293,
+      "cyclomatic_complexity": 3,
+      "statements": 3,
+      "covered_statements": 3,
+      "coverage_fraction": 1.0,
+      "branches": 2,
+      "covered_branches": 2,
+      "crap": 3.0
+    },
+    {
+      "path": "src/mars_titan/training/prefix_eligibility.py",
+      "function": "PrefixEvidence.fingerprint",
+      "start_line": 97,
+      "end_line": 98,
+      "cyclomatic_complexity": 1,
+      "statements": 1,
+      "covered_statements": 0,
+      "coverage_fraction": 0.0,
+      "branches": 0,
+      "covered_branches": 0,
+      "crap": 2.0
+    },
+    {
+      "path": "src/mars_titan/training/prefix_eligibility.py",
+      "function": "_digest",
+      "start_line": 32,
+      "end_line": 35,
+      "cyclomatic_complexity": 1,
+      "statements": 1,
+      "covered_statements": 1,
+      "coverage_fraction": 1.0,
+      "branches": 0,
+      "covered_branches": 0,
+      "crap": 1.0
+    },
+    {
+      "path": "src/mars_titan/training/prefix_eligibility.py",
+      "function": "PrefixTargetVerifier.identity",
+      "start_line": 204,
+      "end_line": 205,
+      "cyclomatic_complexity": 1,
+      "statements": 1,
+      "covered_statements": 1,
+      "coverage_fraction": 1.0,
+      "branches": 0,
+      "covered_branches": 0,
+      "crap": 1.0
+    }
+  ],
+  "shadowed_regions": [],
+  "coverage_sha256": "98338d10d5e109561d53101e277fc1a2de1a1c9aefae2ca80698f15f93e9f1c8",
+  "functions_measured": 14
+}

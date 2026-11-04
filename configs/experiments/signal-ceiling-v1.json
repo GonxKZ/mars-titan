@@ -1,0 +1,157 @@
+{
+  "schema_version": 1,
+  "kind": "signal_ceiling_protocol_v1",
+  "issue": 747,
+  "phase": "0b",
+  "status": "registered_before_running",
+  "date": "2026-10-28",
+  "final_test_access": false,
+  "learning_hold": "the_command_checks_the_global_hold_before_reading_any_source",
+  "question": "Cuánta señal diaria extraen Ridge y LightGBM con anomalías publicadas en las mismas filas, ventanas, cohortes y semillas que la criba, con el residuo y con el retorno bruto",
+  "screening": {
+    "declaration": "configs/experiments/variant-screening-v1.json",
+    "origins": [
+      {
+        "year": 2019,
+        "fold": "fold-014"
+      },
+      {
+        "year": 2020,
+        "fold": "fold-015"
+      },
+      {
+        "year": 2021,
+        "fold": "fold-016"
+      },
+      {
+        "year": 2022,
+        "fold": "fold-017"
+      }
+    ],
+    "seeds": [
+      42,
+      43,
+      44,
+      45,
+      46
+    ],
+    "fit_months": 12,
+    "smoothing_radius": 1,
+    "minimum_assets": 3,
+    "inference": {
+      "resampling": "circular_block_bootstrap_of_utc_days",
+      "block_days": 16,
+      "sensitivity_block_days": [
+        8,
+        32
+      ],
+      "replicates": 2000,
+      "seed": 20261023,
+      "confidence": 0.95,
+      "family_correction": "romano_wolf_stepdown_max_t",
+      "robustness": "holm_on_the_bootstrap_p_values"
+    },
+    "cohorts": "screening_origin_cohorts_v1 verificadas con screening_cohorts.verify"
+  },
+  "features": {
+    "identity": "known_anomalies_v1",
+    "families": {
+      "reversal": [
+        "reversal_1",
+        "reversal_5"
+      ],
+      "momentum": [
+        "momentum_12_1"
+      ],
+      "idiosyncratic_volatility": [
+        "idiosyncratic_volatility_20",
+        "idiosyncratic_volatility_60"
+      ],
+      "volume": [
+        "volume_shock_20",
+        "relative_turnover_20_252"
+      ],
+      "year_high": [
+        "distance_to_52_week_high"
+      ],
+      "filings": [
+        "sessions_since_filing",
+        "recent_filing_5"
+      ]
+    },
+    "sources": "precios verificados de la vista, factor de mercado que declara la vista y presentaciones de los fundamentales preparados de cada activo",
+    "sessions": "calendario declarado del mercado sin las sesiones ausentes en todo el mercado",
+    "minimum_share": 0.75,
+    "normalization": "session_ranks_in_minus_one_one_among_cohort_assets_with_a_price",
+    "missing": "zero_rank_with_one_indicator_per_feature"
+  },
+  "targets": {
+    "residual": "Residuo de la criba: retorno apertura-cierre de la sesión siguiente menos alfa y beta por el del factor de mercado",
+    "raw_open_close": "Retorno apertura-cierre de la sesión siguiente sin residualizar, en las mismas filas"
+  },
+  "rows": {
+    "fit": "filas de entrenamiento de la vista decididas en los meses de ajuste de la criba",
+    "validation": "elige el alpha de Ridge y las rondas de LightGBM con el IC por sesión",
+    "calibration": "elige el lambda por mercado del MAE calibrado",
+    "evaluation": "bloque de la criba de cada origen, solo se mide"
+  },
+  "models": {
+    "ridge": {
+      "identity": "session_ridge_v1",
+      "alphas": [
+        1.0,
+        10.0,
+        100.0,
+        1000.0,
+        10000.0,
+        100000.0
+      ],
+      "solver": "cholesky",
+      "features": "known_anomalies_v1",
+      "label": "session_zscore_of_each_target"
+    },
+    "lightgbm": {
+      "identity": "known_anomalies_lightgbm_v1",
+      "source": {
+        "repository": "microsoft/qlib",
+        "commit": "54355232463878d2eebb91fe0ee5fa7fa1f5976c",
+        "workflow": "examples/benchmarks/LightGBM/workflow_config_lightgbm_Alpha158.yaml",
+        "workflow_sha256": "0cbe1f729f43a2b8cd735759e6244c2e9f8db967555bfe24a7143fce4605d680",
+        "model": "qlib/contrib/model/gbdt.py",
+        "model_sha256": "a1afddb3bb965d108a916565b57e474cfddc55ce029f781765876e825623ad39",
+        "handler": "qlib/contrib/data/handler.py",
+        "handler_sha256": "b621481c6009c39066c67c71390fd2bea635f56daf9f2c4e38817eff268e3232"
+      },
+      "parameters": {
+        "objective": "mse",
+        "verbosity": -1,
+        "colsample_bytree": 0.8879,
+        "learning_rate": 0.2,
+        "subsample": 0.8789,
+        "lambda_l1": 205.6999,
+        "lambda_l2": 580.9768,
+        "max_depth": 8,
+        "num_leaves": 210,
+        "num_threads": 8,
+        "deterministic": true,
+        "force_col_wise": true
+      },
+      "max_rounds": 1000,
+      "checkpoint_rounds": 10,
+      "features": "known_anomalies_v1",
+      "label": "session_zscore_of_each_target"
+    }
+  },
+  "ordering": "Una predicción constante en una sesión con activos suficientes y objetivo variable no ordena y su IC vale cero. La criba deja esa sesión sin definir, lo que solo cambia el resultado de un modelo degenerado",
+  "importance": {
+    "method": "within_session_permutation_of_the_ranks_and_indicators_of_each_family_in_the_evaluation",
+    "metric": "session_ic",
+    "seed": 20261028,
+    "pairing": "la misma permutación para los dos modelos, sus semillas y los dos objetivos"
+  },
+  "ceiling": {
+    "choice": "model_with_the_highest_mean_validation_session_ic_of_the_four_origins_for_each_target",
+    "ties": "ridge",
+    "reading": "El techo es el de estos dos modelos con estas características y filas, no el de los datos. Un techo bajo no prueba que no exista señal y uno alto no confirma ninguna variante neuronal"
+  }
+}

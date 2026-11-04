@@ -1,0 +1,227 @@
+{
+ "schema_version": 1,
+ "date": "2026-10-28",
+ "issue": 789,
+ "scope": "arbiter_analysis_stage_and_engine_command",
+ "implementation_commit": "6ec9a22bb13556944bf3aac85c7ff50f691e9c3b",
+ "base_commit": "07a40bb83",
+ "scientific_experiments": 0,
+ "training_runs": 0,
+ "real_optimizer_steps": 0,
+ "final_test_opened": false,
+ "screening_predictions_read": false,
+ "hold_sha256": "8a658080c1ac4e63847eba58b177020339da6ec47021cf26d2701830073c87fd",
+ "test_optimizers": "La etapa y la orden del motor no ajustan ningún parámetro. Las pruebas leen paneles sintéticos y las mutaciones registran un gancho de torch.optim que rechaza cualquier paso. La protección global del aprendizaje sigue activa.",
+ "suites": [
+  {
+   "name": "arbiters_stage_and_cost_with_coverage",
+   "tests": 144,
+   "failures": 0,
+   "errors": 0,
+   "skipped": 0,
+   "xml_sha256": "7f41244854b67e34b7d2d4667fd733e25ff7c70c225f72aa44ff5c27b1d38724",
+   "note": "Núcleo, etapa del análisis, análisis de la criba, orden arbiters del motor y medida de coste con cobertura de ramas sobre el árbol de implementation_commit."
+  },
+  {
+   "name": "regression_of_the_changed_paths",
+   "tests": 2001,
+   "failures": 0,
+   "errors": 0,
+   "skipped": 7,
+   "xml_sha256": "f453b1f6805ae33e46c949530ec7281c33062f40f1edd6efb91c0eaba7be1ce5",
+   "note": "Pruebas de evaluación, medidas de coste, motor y protocolo de la criba, comprobación del repositorio y protecciones del bloqueo, con tres procesos sobre el árbol de implementation_commit. Las siete omisiones son de scoringrules, del grupo opcional reference, que no está instalado."
+  }
+ ],
+ "quality": {
+  "tools": {
+   "coverage": "7.16.1",
+   "radon": "6.0.1",
+   "branch_coverage": true,
+   "python": "3.12.14",
+   "summarizer_sha256": "75cc60c88037e0bb17aff6e8ab666ce78b35d600d6c7ad217bf68b1afb4c4ec6"
+  },
+  "totals": {
+   "statements": 1384,
+   "covered_statements": 1359,
+   "branches": 294,
+   "covered_branches": 282
+  },
+  "files": [
+   {
+    "path": "benchmarks/online_arbiters_cost.py",
+    "source_sha256": "d9ff0c4e9ca1f4af3fcf669c3ece4f2bc5e48cc1d964c33eb91ce64e05ad1e58",
+    "statements": 89,
+    "covered_statements": 72,
+    "branches": 28,
+    "covered_branches": 22
+   },
+   {
+    "path": "benchmarks/variant_screening_study.py",
+    "source_sha256": "53288268790fbac51f57bb86d83b1b53f92f044740df2c3e5f366dfe35f01035",
+    "statements": 560,
+    "covered_statements": 552,
+    "branches": 118,
+    "covered_branches": 112
+   },
+   {
+    "path": "src/mars_titan/evaluation/arbiter_analysis.py",
+    "source_sha256": "a3a6298316a2d12546249bee78e5dd0c87ddd1012fde527c1d0eca8545c732a2",
+    "statements": 160,
+    "covered_statements": 160,
+    "branches": 30,
+    "covered_branches": 30
+   },
+   {
+    "path": "src/mars_titan/evaluation/online_arbiters.py",
+    "source_sha256": "e4c44c0fe0f8b4ee0560feecf8fda769693c4227063d129733ec44e38713db27",
+    "statements": 251,
+    "covered_statements": 251,
+    "branches": 42,
+    "covered_branches": 42
+   },
+   {
+    "path": "src/mars_titan/evaluation/variant_screening_analysis.py",
+    "source_sha256": "88af5f3c09febddb588d2c068e1e8c393e3cf78d1614bc8ce58e7a084cef51a8",
+    "statements": 324,
+    "covered_statements": 324,
+    "branches": 76,
+    "covered_branches": 76
+   }
+  ],
+  "max_crap": 22.0,
+  "quality_sha256": "57f50eac8cf50c45a6399905829ac5d8698a03879b2d077c91028bed2b035aa8",
+  "limits": "CRAP y cobertura localizan complejidad poco comprobada. No demuestran ausencia de errores."
+ },
+ "changed": {
+  "base": "07a40bb83881a1201f21e681d1c722835d4ca10e",
+  "head": "6ec9a22bb13556944bf3aac85c7ff50f691e9c3b",
+  "functions": 35,
+  "max_crap": 16.0,
+  "changed_executable_lines": 216,
+  "changed_covered_lines": 216,
+  "highest": [
+   {
+    "path": "src/mars_titan/evaluation/arbiter_analysis.py",
+    "function": "families",
+    "cyclomatic_complexity": 16,
+    "crap": 16.0,
+    "changed_executable_lines": 14,
+    "changed_covered_lines": 14,
+    "changed_missing_lines": [],
+    "changed_missing_branches": []
+   },
+   {
+    "path": "src/mars_titan/evaluation/online_arbiters.py",
+    "function": "_version_controls",
+    "cyclomatic_complexity": 14,
+    "crap": 14.0,
+    "changed_executable_lines": 10,
+    "changed_covered_lines": 10,
+    "changed_missing_lines": [],
+    "changed_missing_branches": []
+   },
+   {
+    "path": "src/mars_titan/evaluation/variant_screening_analysis.py",
+    "function": "analyze",
+    "cyclomatic_complexity": 14,
+    "crap": 14.0,
+    "changed_executable_lines": 1,
+    "changed_covered_lines": 1,
+    "changed_missing_lines": [],
+    "changed_missing_branches": []
+   },
+   {
+    "path": "src/mars_titan/evaluation/arbiter_analysis.py",
+    "function": "_series",
+    "cyclomatic_complexity": 12,
+    "crap": 12.0,
+    "changed_executable_lines": 24,
+    "changed_covered_lines": 24,
+    "changed_missing_lines": [],
+    "changed_missing_branches": []
+   },
+   {
+    "path": "src/mars_titan/evaluation/arbiter_analysis.py",
+    "function": "mixed",
+    "cyclomatic_complexity": 9,
+    "crap": 9.0,
+    "changed_executable_lines": 18,
+    "changed_covered_lines": 18,
+    "changed_missing_lines": [],
+    "changed_missing_branches": []
+   }
+  ],
+  "uncovered": [],
+  "unmeasured": [
+   {
+    "path": "benchmarks/variant_screening_study.py",
+    "function": "version_panels.<locals>.versions"
+   }
+  ],
+  "note": "Funciones con líneas cambiadas frente a la cabeza de la rama de integración de la criba (base_commit), con su CRAP y la cobertura de esas líneas. La función anidada version_panels.<locals>.versions no tiene CRAP propio en el informe.",
+  "changed_sha256": "b81e01ac1f814c07250fd1b1b5af7d03e151b51bb90b229dd93ddcf48577728e"
+ },
+ "mutations": {
+  "tree_commit": "6ec9a22bb13556944bf3aac85c7ff50f691e9c3b",
+  "planned": 34,
+  "killed": 34,
+  "optimizer_attempts": 0,
+  "hold_sha256_unchanged": true,
+  "recipes_sha256": "d8bc455cfe4fe05994943599c20a94003980f73bdc11c5073e9729ad13797a72",
+  "executor_sha256": "8374eb7b4a3be7fce07d428b060da10eac454a640cd0130128ac6f509e6b3f3e",
+  "source_sha256": {
+   "src/mars_titan/evaluation/online_arbiters.py": "e4c44c0fe0f8b4ee0560feecf8fda769693c4227063d129733ec44e38713db27",
+   "src/mars_titan/evaluation/arbiter_analysis.py": "a3a6298316a2d12546249bee78e5dd0c87ddd1012fde527c1d0eca8545c732a2",
+   "benchmarks/variant_screening_study.py": "53288268790fbac51f57bb86d83b1b53f92f044740df2c3e5f366dfe35f01035",
+   "src/mars_titan/evaluation/variant_screening_analysis.py": "88af5f3c09febddb588d2c068e1e8c393e3cf78d1614bc8ce58e7a084cef51a8"
+  },
+  "cases": [
+   "joint_without_order_check",
+   "joint_without_market_check",
+   "options_in_concatenation_order",
+   "output_not_returned_to_its_rows",
+   "abstention_of_the_first_sessions",
+   "lambda_from_the_option_calibration",
+   "shuffled_mode_without_its_seed",
+   "mixture_with_foreign_rows",
+   "abstention_not_scored",
+   "abstention_scored_without_a_scorable_session",
+   "scorable_ignores_a_constant_target",
+   "shared_jobs_counted_twice",
+   "combination_with_output_stages",
+   "versions_missing_accepted",
+   "foreign_versions_accepted",
+   "declared_family_with_the_required_contrasts",
+   "required_contrasts_ignored",
+   "min_assets_not_checked",
+   "metric_not_checked",
+   "averaging_model_not_checked",
+   "seeds_not_averaged",
+   "means_over_every_session",
+   "report_without_the_means",
+   "averaging_against_the_common_epoch",
+   "analysis_metric_not_checked",
+   "required_controls_not_checked",
+   "repeated_time_averaging_models_accepted",
+   "time_averaging_inside_a_decision",
+   "origin_without_versions_accepted",
+   "versions_not_checked",
+   "common_epoch_read_as_a_version",
+   "arbiters_without_the_hold",
+   "report_without_the_declaration",
+   "origins_without_versions"
+  ],
+  "summary_sha256": "3162cde1604bbe777b72be0ebe26ec57cada5bca984b4886dffe5dec9e75d3b1",
+  "scope": "Treinta y cuatro defectos dirigidos de la etapa del análisis, de la declaración, del análisis de la criba y de la orden del motor, cada uno con una fase en verde antes, la mutación y otra fase en verde después, en una copia aislada del árbol. No es una puntuación global."
+ },
+ "native_link": {
+  "source_commit": "39abf2c99",
+  "preset": "native-candidate-cuda",
+  "used_by": "regression_of_the_changed_paths",
+  "sha256": "9fda744aa9c6672f9fb47c0896a5e9b19fc8795cdbfff42b944ed751953b1046"
+ },
+ "cost": {
+  "receipt": "cost-cpu-screening.json",
+  "sha256": "85a82cf66e7b43f294cfec456c3cbb22e41ced452a50c3ea22191929e6711382"
+ }
+}

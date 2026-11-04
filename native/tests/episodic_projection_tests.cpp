@@ -281,6 +281,7 @@ void concurrent_groups_match_the_whole_block(ProjectionIsa isa) {
                                         std::numeric_limits<double>::quiet_NaN());
                 {
                     std::vector<std::jthread> threads;
+                    threads.reserve(parts);
                     for (std::size_t part = 0; part < parts; ++part) {
                         threads.emplace_back([&, part] {
                             project_block_groups(block, shape.rows, shape.width, transposed,

@@ -1,0 +1,62 @@
+{
+  "schema_version": 1,
+  "kind": "axial_time_region_variants",
+  "issue": 751,
+  "variant": "mac_online",
+  "base_recipe": "configs/titans/chronological-training-historical-sequence-v1.json",
+  "base_head": "scalar",
+  "base_loss": "mae",
+  "default_enabled": false,
+  "final_test_access": false,
+  "status": "declared_not_trained",
+  "requirements": {
+    "history": "window_minus_one_previous_emissions_of_each_flow_in_its_state",
+    "row_wise_tokens": "not_available_so_no_auxiliary_horizons"
+  },
+  "arms": {
+    "reference": {
+      "role": "reference",
+      "predictor_changes": {}
+    },
+    "time_only_control": {
+      "role": "control",
+      "predictor_changes": {
+        "axial_time_region": {
+          "kind": "time_only_attention_v1",
+          "window": 8,
+          "heads": 4
+        }
+      }
+    },
+    "axial_time_region": {
+      "role": "variant",
+      "control": "time_only_control",
+      "predictor_changes": {
+        "axial_time_region": {
+          "kind": "axial_time_region_v1",
+          "window": 8,
+          "heads": 4
+        }
+      }
+    }
+  },
+  "contrasts": [
+    {
+      "name": "region_axis_after_the_time_axis",
+      "variant": "axial_time_region",
+      "control": "time_only_control"
+    },
+    {
+      "name": "two_time_reads_of_the_flow_history",
+      "variant": "time_only_control",
+      "control": "reference"
+    }
+  ],
+  "screening_controls": {
+    "C1.talking_heads": "Mezcla entre regiones sin eje temporal, con el mismo presupuesto de ajuste de la criba"
+  },
+  "reasons": {
+    "window": "Ocho emisiones con la actual, como la ventana τ = 8 de MASTER (Li et al., 2024, página 166). Fijada antes de abrir datos y sin ajustar",
+    "heads": "Las cuatro cabezas de C5 y de la atención de MAC"
+  }
+}

@@ -1,0 +1,89 @@
+{
+  "repositories": {
+    "Objective": {
+      "root": ".",
+      "test_path": "tests/memory/test_multiscale_mixture.py",
+      "test_sha256": "e67aff62c767f7b7cc9d724b3f001fe222cec42e4fe8dae93a0dedb019901fed"
+    }
+  },
+  "sources": {
+    "mixture": {
+      "path": "src/mars_titan/memory/multiscale_mixture.py",
+      "sha256": "b0d9e06dc12bff72547a36e3dd6072104c0ac0b59079c090750a2b0ee28cb282"
+    },
+    "window": {
+      "path": "src/mars_titan/training/mars_titan_correction.py",
+      "sha256": "98e410a0a0e6715afecfb3ff90720467cfd258d4478188f1a49ba5a753d6557e"
+    },
+    "session": {
+      "path": "src/mars_titan/memory/financial_session.py",
+      "sha256": "eed3908005359ea76dd5bbbfb1316659c82b2640ca71934ec2de64056fd3566f"
+    },
+    "area": {
+      "path": "src/mars_titan/memory/area_memory.py",
+      "sha256": "7c7ed879884bafc5a7aa12f4ec8f22aad1a883862cb8fe9871b24411586acc4d"
+    }
+  },
+  "recipes": [
+    {
+      "id": "ignore_calendar_decay",
+      "family": "Objective",
+      "source_key": "mixture",
+      "nodeid": "tests/memory/test_multiscale_mixture.py::test_calendar_decay_uses_elapsed_time_without_rebasing_on_read",
+      "anchor": "elapsed = 0 if self.clock is None else at - self.clock",
+      "replacement": "elapsed = 0",
+      "expected_failure": {
+        "exception_type": "AssertionError",
+        "longrepr_contains": "not close"
+      }
+    },
+    {
+      "id": "recompute_experts_at_maturity",
+      "family": "Objective",
+      "source_key": "mixture",
+      "nodeid": "tests/memory/test_multiscale_mixture.py::test_hedge_uses_the_issued_experts_not_current_memories",
+      "anchor": "error = issued_predictions[selection] - feedback.values[selection]",
+      "replacement": "error = self.predict(feedback.keys, at=cutoff)[1][selection] - feedback.values[selection]",
+      "expected_failure": {
+        "exception_type": "AssertionError",
+        "longrepr_contains": "not close"
+      }
+    },
+    {
+      "id": "rebase_clock_on_read",
+      "family": "Objective",
+      "source_key": "mixture",
+      "nodeid": "tests/memory/test_multiscale_mixture.py::test_calendar_decay_uses_elapsed_time_without_rebasing_on_read",
+      "anchor": "return result, parts",
+      "replacement": "self.clock = at\n        return result, parts",
+      "expected_failure": {
+        "exception_type": "ValueError",
+        "longrepr_contains": "antes de su estado confirmado"
+      }
+    },
+    {
+      "id": "ignore_issued_row_alignment",
+      "family": "Objective",
+      "source_key": "mixture",
+      "nodeid": "tests/memory/test_multiscale_mixture.py::test_order_of_assets_does_not_change_the_published_state",
+      "anchor": "error = issued_predictions[selection] - feedback.values[selection]",
+      "replacement": "error = issued_predictions - feedback.values[selection]",
+      "expected_failure": {
+        "exception_type": "AssertionError",
+        "longrepr_contains": "state_sha256"
+      }
+    },
+    {
+      "id": "hide_nonfinite_errors",
+      "family": "Objective",
+      "source_key": "mixture",
+      "nodeid": "tests/memory/test_multiscale_mixture.py::test_bad_mature_results_or_issued_parts_are_rejected[overflow]",
+      "anchor": "if not torch.isfinite(error).all():",
+      "replacement": "if False:",
+      "expected_failure": {
+        "exception_type": "Failed",
+        "longrepr_contains": "DID NOT RAISE"
+      }
+    }
+  ]
+}

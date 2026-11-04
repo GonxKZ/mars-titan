@@ -1,0 +1,864 @@
+{
+  "schema_version": 1,
+  "date": "2026-10-26",
+  "issue": 749,
+  "scope": "session_rank_inputs_and_regularized_session_correlation",
+  "implementation_commit": "00b4e0cc275c4f63a51385ead250c77acf2d3a76",
+  "scientific_experiments": 0,
+  "final_test_opened": false,
+  "final_test_suites": [
+    {
+      "name": "f4-final",
+      "tests": 195,
+      "failed": 0,
+      "errors": 0,
+      "skipped": 0,
+      "xml_sha256": "b8434ef22d9e2999bcadd61f5e3e7ef35ce5b7c8de9d0e42fedef1acc6753a09"
+    },
+    {
+      "name": "contracts-final",
+      "tests": 14,
+      "failed": 0,
+      "errors": 0,
+      "skipped": 0,
+      "xml_sha256": "e532088c7045a34f9ce8a296e39c6a45858f71444b3738d4175466b6c75616b8"
+    }
+  ],
+  "distinct_final_cases": 209,
+  "additional_learning_hold_guard_cases": 17,
+  "core_quality": {
+    "schema_version": 1,
+    "measured_at": "2026-10-26T14:32:00.410021",
+    "tools": {
+      "coverage": "7.16.1",
+      "radon": "6.0.1",
+      "branch_coverage": true,
+      "python": "3.12.14",
+      "summarizer_sha256": "75cc60c88037e0bb17aff6e8ab666ce78b35d600d6c7ad217bf68b1afb4c4ec6"
+    },
+    "complexity_convention": "ComplexityVisitor de Radon sobre la región de coverage.py: if, elif, expresión condicional, for y while con su else, except, else de try, assert, cada operando booleano después del primero y cada cláusula de comprensión suman uno. Las funciones anidadas son regiones propias.",
+    "coverage_convention": "Sentencias ejecutadas entre sentencias de la región según coverage.py.",
+    "crap_convention": "C² × (1 − cobertura de sentencias)³ + C.",
+    "limits": [
+      "CRAP combina complejidad y recorridos observados. No demuestra ausencia de errores.",
+      "La cobertura de sentencias no distingue qué operandos de una condición se evaluaron, aunque la complejidad sí los cuenta.",
+      "Como en Radon 6.0.1, los manejadores de except* y la condición de un assert no suman, y el cuerpo de una clase definida dentro de una función no suma en ella aunque coverage.py cuente allí sus sentencias.",
+      "Una función sin sentencias medibles (solo documentación o puntos suspensivos) conserva C.",
+      "Si dos funciones comparten nombre cualificado en un archivo, coverage.py solo mide la última. Las anteriores aparecen en shadowed_regions sin CRAP.",
+      "La fuente se contrasta con la medida por sus regiones y sus líneas de sentencia. Un cambio que las conserva, como otra condición en la misma línea, no se detecta, así que el resumen se ejecuta sobre el mismo árbol que se midió."
+    ],
+    "include": [
+      "src/mars_titan/models/titans/session_ranks.py",
+      "src/mars_titan/models/titans/session_ic_objective.py",
+      "src/mars_titan/models/titans/output_objectives.py"
+    ],
+    "totals": {
+      "statements": 188,
+      "covered_statements": 187,
+      "branches": 68,
+      "covered_branches": 67
+    },
+    "files": [
+      {
+        "path": "src/mars_titan/models/titans/output_objectives.py",
+        "source_sha256": "d60f47e52486b26d5a20e177b77eaeccb1e1a43604d8871e1708ce9860df3488",
+        "statements": 34,
+        "covered_statements": 33,
+        "branches": 20,
+        "covered_branches": 19
+      },
+      {
+        "path": "src/mars_titan/models/titans/session_ic_objective.py",
+        "source_sha256": "b3586923bd8b4b623124988030f5c7373c41964bb8fdf728f742ac203fa03ba7",
+        "statements": 102,
+        "covered_statements": 102,
+        "branches": 34,
+        "covered_branches": 34
+      },
+      {
+        "path": "src/mars_titan/models/titans/session_ranks.py",
+        "source_sha256": "14a0fc9a3abbfffa745d81c66332e160aebca80294e106a2062a8409732f5a5e",
+        "statements": 52,
+        "covered_statements": 52,
+        "branches": 14,
+        "covered_branches": 14
+      }
+    ],
+    "functions": [
+      {
+        "path": "src/mars_titan/models/titans/output_objectives.py",
+        "function": "check_objectives",
+        "start_line": 27,
+        "end_line": 41,
+        "cyclomatic_complexity": 12,
+        "statements": 13,
+        "covered_statements": 12,
+        "coverage_fraction": 0.9230769230769231,
+        "branches": 12,
+        "covered_branches": 11,
+        "crap": 12.06554392353209
+      },
+      {
+        "path": "src/mars_titan/models/titans/session_ranks.py",
+        "function": "gaussian_ranks",
+        "start_line": 58,
+        "end_line": 92,
+        "cyclomatic_complexity": 10,
+        "statements": 19,
+        "covered_statements": 19,
+        "coverage_fraction": 1.0,
+        "branches": 8,
+        "covered_branches": 8,
+        "crap": 10.0
+      },
+      {
+        "path": "src/mars_titan/models/titans/session_ic_objective.py",
+        "function": "session_correlations",
+        "start_line": 114,
+        "end_line": 141,
+        "cyclomatic_complexity": 9,
+        "statements": 17,
+        "covered_statements": 17,
+        "coverage_fraction": 1.0,
+        "branches": 10,
+        "covered_branches": 10,
+        "crap": 9.0
+      },
+      {
+        "path": "src/mars_titan/models/titans/session_ranks.py",
+        "function": "rank_session_inputs",
+        "start_line": 116,
+        "end_line": 135,
+        "cyclomatic_complexity": 8,
+        "statements": 14,
+        "covered_statements": 14,
+        "coverage_fraction": 1.0,
+        "branches": 6,
+        "covered_branches": 6,
+        "crap": 8.0
+      },
+      {
+        "path": "src/mars_titan/models/titans/session_ic_objective.py",
+        "function": "standardized_scores",
+        "start_line": 99,
+        "end_line": 111,
+        "cyclomatic_complexity": 6,
+        "statements": 7,
+        "covered_statements": 7,
+        "coverage_fraction": 1.0,
+        "branches": 4,
+        "covered_branches": 4,
+        "crap": 6.0
+      },
+      {
+        "path": "src/mars_titan/models/titans/session_ic_objective.py",
+        "function": "_number",
+        "start_line": 49,
+        "end_line": 58,
+        "cyclomatic_complexity": 5,
+        "statements": 9,
+        "covered_statements": 9,
+        "coverage_fraction": 1.0,
+        "branches": 4,
+        "covered_branches": 4,
+        "crap": 5.0
+      },
+      {
+        "path": "src/mars_titan/models/titans/session_ic_objective.py",
+        "function": "SessionICObjective.__post_init__",
+        "start_line": 67,
+        "end_line": 74,
+        "cyclomatic_complexity": 5,
+        "statements": 7,
+        "covered_statements": 7,
+        "coverage_fraction": 1.0,
+        "branches": 6,
+        "covered_branches": 6,
+        "crap": 5.0
+      },
+      {
+        "path": "src/mars_titan/models/titans/session_ic_objective.py",
+        "function": "standardized",
+        "start_line": 144,
+        "end_line": 166,
+        "cyclomatic_complexity": 5,
+        "statements": 11,
+        "covered_statements": 11,
+        "coverage_fraction": 1.0,
+        "branches": 2,
+        "covered_branches": 2,
+        "crap": 5.0
+      },
+      {
+        "path": "src/mars_titan/models/titans/session_ic_objective.py",
+        "function": "session_ic_loss",
+        "start_line": 169,
+        "end_line": 176,
+        "cyclomatic_complexity": 5,
+        "statements": 5,
+        "covered_statements": 5,
+        "coverage_fraction": 1.0,
+        "branches": 2,
+        "covered_branches": 2,
+        "crap": 5.0
+      },
+      {
+        "path": "src/mars_titan/models/titans/session_ic_objective.py",
+        "function": "SessionScale.__init__",
+        "start_line": 186,
+        "end_line": 197,
+        "cyclomatic_complexity": 4,
+        "statements": 10,
+        "covered_statements": 10,
+        "coverage_fraction": 1.0,
+        "branches": 6,
+        "covered_branches": 6,
+        "crap": 4.0
+      },
+      {
+        "path": "src/mars_titan/models/titans/output_objectives.py",
+        "function": "declared_objective",
+        "start_line": 44,
+        "end_line": 50,
+        "cyclomatic_complexity": 3,
+        "statements": 5,
+        "covered_statements": 5,
+        "coverage_fraction": 1.0,
+        "branches": 4,
+        "covered_branches": 4,
+        "crap": 3.0
+      },
+      {
+        "path": "src/mars_titan/models/titans/output_objectives.py",
+        "function": "objective_identity",
+        "start_line": 53,
+        "end_line": 58,
+        "cyclomatic_complexity": 2,
+        "statements": 4,
+        "covered_statements": 4,
+        "coverage_fraction": 1.0,
+        "branches": 2,
+        "covered_branches": 2,
+        "crap": 2.0
+      },
+      {
+        "path": "src/mars_titan/models/titans/output_objectives.py",
+        "function": "build_objective",
+        "start_line": 61,
+        "end_line": 65,
+        "cyclomatic_complexity": 2,
+        "statements": 4,
+        "covered_statements": 4,
+        "coverage_fraction": 1.0,
+        "branches": 2,
+        "covered_branches": 2,
+        "crap": 2.0
+      },
+      {
+        "path": "src/mars_titan/models/titans/session_ranks.py",
+        "function": "_ranked_inputs",
+        "start_line": 95,
+        "end_line": 113,
+        "cyclomatic_complexity": 2,
+        "statements": 10,
+        "covered_statements": 10,
+        "coverage_fraction": 1.0,
+        "branches": 0,
+        "covered_branches": 0,
+        "crap": 2.0
+      },
+      {
+        "path": "src/mars_titan/models/titans/session_ic_objective.py",
+        "function": "SessionICObjective.name",
+        "start_line": 77,
+        "end_line": 78,
+        "cyclomatic_complexity": 1,
+        "statements": 1,
+        "covered_statements": 1,
+        "coverage_fraction": 1.0,
+        "branches": 0,
+        "covered_branches": 0,
+        "crap": 1.0
+      },
+      {
+        "path": "src/mars_titan/models/titans/session_ic_objective.py",
+        "function": "SessionICObjective.identity",
+        "start_line": 80,
+        "end_line": 93,
+        "cyclomatic_complexity": 1,
+        "statements": 1,
+        "covered_statements": 1,
+        "coverage_fraction": 1.0,
+        "branches": 0,
+        "covered_branches": 0,
+        "crap": 1.0
+      },
+      {
+        "path": "src/mars_titan/models/titans/session_ic_objective.py",
+        "function": "SessionICObjective.build",
+        "start_line": 95,
+        "end_line": 96,
+        "cyclomatic_complexity": 1,
+        "statements": 1,
+        "covered_statements": 1,
+        "coverage_fraction": 1.0,
+        "branches": 0,
+        "covered_branches": 0,
+        "crap": 1.0
+      },
+      {
+        "path": "src/mars_titan/models/titans/session_ic_objective.py",
+        "function": "SessionScale.forward",
+        "start_line": 199,
+        "end_line": 201,
+        "cyclomatic_complexity": 1,
+        "statements": 2,
+        "covered_statements": 2,
+        "coverage_fraction": 1.0,
+        "branches": 0,
+        "covered_branches": 0,
+        "crap": 1.0
+      },
+      {
+        "path": "src/mars_titan/models/titans/session_ic_objective.py",
+        "function": "SessionScale.loss",
+        "start_line": 203,
+        "end_line": 204,
+        "cyclomatic_complexity": 1,
+        "statements": 1,
+        "covered_statements": 1,
+        "coverage_fraction": 1.0,
+        "branches": 0,
+        "covered_branches": 0,
+        "crap": 1.0
+      },
+      {
+        "path": "src/mars_titan/models/titans/session_ranks.py",
+        "function": "identity",
+        "start_line": 33,
+        "end_line": 55,
+        "cyclomatic_complexity": 1,
+        "statements": 1,
+        "covered_statements": 1,
+        "coverage_fraction": 1.0,
+        "branches": 0,
+        "covered_branches": 0,
+        "crap": 1.0
+      }
+    ],
+    "shadowed_regions": [],
+    "coverage_sha256": "c8e12382a99da220d7ab0351715dc087e087add58aaf8ca19fe848a9593ccb1a",
+    "functions_measured": 20
+  },
+  "integration_quality": {
+    "totals": {
+      "statements": 2798,
+      "covered_statements": 2300,
+      "branches": 1182,
+      "covered_branches": 770
+    },
+    "files": [
+      {
+        "path": "src/mars_titan/models/titans/financial.py",
+        "source_sha256": "8a2501c36cabc8957c13a979818b43eda8e85045e57a713c8d16222b20050887",
+        "statements": 703,
+        "covered_statements": 477,
+        "branches": 340,
+        "covered_branches": 174
+      },
+      {
+        "path": "src/mars_titan/models/titans/financial_inputs.py",
+        "source_sha256": "16deed627ac3eb091f59b2b7cfd59278ff480ec8a35f695a4ee6e7f1928b7fd7",
+        "statements": 227,
+        "covered_statements": 196,
+        "branches": 84,
+        "covered_branches": 55
+      },
+      {
+        "path": "src/mars_titan/models/titans/frozen_financial.py",
+        "source_sha256": "4b753351a49b1ff7a7e48902c42301feb8683ad582e3d1d30ba222a22c9dedc4",
+        "statements": 206,
+        "covered_statements": 169,
+        "branches": 110,
+        "covered_branches": 79
+      },
+      {
+        "path": "src/mars_titan/posttraining/readout_adapters.py",
+        "source_sha256": "5e7a721a29aefef22a0ca7fe0759f2b8a075413ecfd3c363a43cfa5e36b6f83c",
+        "statements": 239,
+        "covered_statements": 193,
+        "branches": 104,
+        "covered_branches": 62
+      },
+      {
+        "path": "src/mars_titan/training/financial_run.py",
+        "source_sha256": "bfe1bc22c7faaf914be1e591a469ea1228c26230cd46a6f6e239e535ef729d0f",
+        "statements": 731,
+        "covered_statements": 669,
+        "branches": 290,
+        "covered_branches": 233
+      },
+      {
+        "path": "src/mars_titan/training/mars_titan_run.py",
+        "source_sha256": "af12fdcffb3a20ed1c164bbe25d92fb21754d0e5aa7f4f39fd017cf109613d77",
+        "statements": 692,
+        "covered_statements": 596,
+        "branches": 254,
+        "covered_branches": 167
+      }
+    ],
+    "maximum_crap": 2068.1331883795656,
+    "highest_crap_functions": [
+      {
+        "path": "src/mars_titan/models/titans/financial.py",
+        "function": "FinancialConfig.__post_init__",
+        "start_line": 159,
+        "end_line": 346,
+        "cyclomatic_complexity": 91,
+        "statements": 108,
+        "covered_statements": 41,
+        "coverage_fraction": 0.37962962962962965,
+        "branches": 102,
+        "covered_branches": 35,
+        "crap": 2068.1331883795656
+      },
+      {
+        "path": "src/mars_titan/training/mars_titan_run.py",
+        "function": "load_recipe",
+        "start_line": 211,
+        "end_line": 235,
+        "cyclomatic_complexity": 11,
+        "statements": 9,
+        "covered_statements": 0,
+        "coverage_fraction": 0.0,
+        "branches": 4,
+        "covered_branches": 0,
+        "crap": 132.0
+      },
+      {
+        "path": "src/mars_titan/models/titans/financial.py",
+        "function": "FinancialPredictor._prepare",
+        "start_line": 1186,
+        "end_line": 1357,
+        "cyclomatic_complexity": 50,
+        "statements": 79,
+        "covered_statements": 56,
+        "coverage_fraction": 0.7088607594936709,
+        "branches": 52,
+        "covered_branches": 33,
+        "crap": 111.69390251075473
+      },
+      {
+        "path": "src/mars_titan/models/titans/financial.py",
+        "function": "FinancialPredictor._program_fusion",
+        "start_line": 1104,
+        "end_line": 1153,
+        "cyclomatic_complexity": 9,
+        "statements": 9,
+        "covered_statements": 0,
+        "coverage_fraction": 0.0,
+        "branches": 2,
+        "covered_branches": 0,
+        "crap": 90.0
+      },
+      {
+        "path": "src/mars_titan/models/titans/financial.py",
+        "function": "FinancialPredictor._regional_execution_component",
+        "start_line": 702,
+        "end_line": 730,
+        "cyclomatic_complexity": 12,
+        "statements": 15,
+        "covered_statements": 3,
+        "coverage_fraction": 0.2,
+        "branches": 8,
+        "covered_branches": 1,
+        "crap": 85.72800000000002
+      }
+    ],
+    "scope": "Seis archivos de integración completos. Incluyen caminos anteriores ajenos a esta batería."
+  },
+  "mutations": [
+    {
+      "id": "overflow_inverse_softplus",
+      "status": "killed_with_green_controls",
+      "phases": [
+        {
+          "phase": "G1",
+          "returncode": 0,
+          "optimizer_attempts": 0,
+          "xml_sha256": "28563eeb3ee101f10195867041faca4cf021c6f3ed0e0968f94ac9c4c9787f8c"
+        },
+        {
+          "phase": "M1",
+          "returncode": 1,
+          "optimizer_attempts": 0,
+          "xml_sha256": "9239e93adb5bfc8ae134c5e4ec19f1a6889f17aacba99301283a2b7ee9c427d2"
+        },
+        {
+          "phase": "G2",
+          "returncode": 0,
+          "optimizer_attempts": 0,
+          "xml_sha256": "7cd32681d386f1eb389f695f7e875bfc37c2ce10e455ec14f1de296b25a9a3b1"
+        }
+      ]
+    },
+    {
+      "id": "tiny_absolute_floor",
+      "status": "killed_with_green_controls",
+      "phases": [
+        {
+          "phase": "G1",
+          "returncode": 0,
+          "optimizer_attempts": 0,
+          "xml_sha256": "24f51d52bd18eab495db6d10a2377b97ac3b8418945c0b9a5b50fa3ff45e19b2"
+        },
+        {
+          "phase": "M1",
+          "returncode": 1,
+          "optimizer_attempts": 0,
+          "xml_sha256": "46de56859e53dba9e7f534afbbd58fdf5c3f62c277d20bd8c59107e1ece2f3ca"
+        },
+        {
+          "phase": "G2",
+          "returncode": 0,
+          "optimizer_attempts": 0,
+          "xml_sha256": "94e8b612c7d6bf05486d987fe14f657cfe9abe72d0195928d69dfa8bc9993abe"
+        }
+      ]
+    },
+    {
+      "id": "unscaled_squares",
+      "status": "killed_with_green_controls",
+      "phases": [
+        {
+          "phase": "G1",
+          "returncode": 0,
+          "optimizer_attempts": 0,
+          "xml_sha256": "f32325ec238eeac22fdad573e1c937ac25e9df1db0b31a23ddd907de5dad1e40"
+        },
+        {
+          "phase": "M1",
+          "returncode": 1,
+          "optimizer_attempts": 0,
+          "xml_sha256": "bc5667443f3bc21d86691572732f5e7035d47fca9652d62bc9ffae86977f2b23"
+        },
+        {
+          "phase": "G2",
+          "returncode": 0,
+          "optimizer_attempts": 0,
+          "xml_sha256": "e7d732e17d26eb33406a9c9b6173041ba2cb4c48c3c3f58c80721e4b8686a98d"
+        }
+      ]
+    },
+    {
+      "id": "accept_nonfinite_observed_ranks",
+      "status": "killed_with_green_controls",
+      "phases": [
+        {
+          "phase": "G1",
+          "returncode": 0,
+          "optimizer_attempts": 0,
+          "xml_sha256": "139dda3ec4802bc0f1881fb18e9ee7b9f3e926b88ecc59d278450e60186b8258"
+        },
+        {
+          "phase": "M1",
+          "returncode": 1,
+          "optimizer_attempts": 0,
+          "xml_sha256": "8b412b38baaa69773f80c6e6d26804ff460b6ebcb5881019980421de3e2d506f"
+        },
+        {
+          "phase": "G2",
+          "returncode": 0,
+          "optimizer_attempts": 0,
+          "xml_sha256": "991ec7b4a9c273f0c3abd68eb1927328d3d0b56ae241ec83050ea1fe3301bf60"
+        }
+      ]
+    },
+    {
+      "id": "ignore_mask_device",
+      "status": "killed_with_green_controls",
+      "phases": [
+        {
+          "phase": "G1",
+          "returncode": 0,
+          "optimizer_attempts": 0,
+          "xml_sha256": "4738f455526641364617f73f82e5111e024c90cf08e11af072970437be453bc2"
+        },
+        {
+          "phase": "M1",
+          "returncode": 1,
+          "optimizer_attempts": 0,
+          "xml_sha256": "9a4de05cf7f550bbc65f2baecdcb10018a24cb401df4d5918938c51f73389507"
+        },
+        {
+          "phase": "G2",
+          "returncode": 0,
+          "optimizer_attempts": 0,
+          "xml_sha256": "195195f38227ad8aa79cfe89039ef16554f36a762d7a7384f9ecfffb46e77192"
+        }
+      ]
+    },
+    {
+      "id": "accept_fragmented_session",
+      "status": "killed_with_green_controls",
+      "phases": [
+        {
+          "phase": "G1",
+          "returncode": 0,
+          "optimizer_attempts": 0,
+          "xml_sha256": "a55bd6ad7beab05f0d101f1a2563828fc06a21cfd536fd93ded66a8a107cd697"
+        },
+        {
+          "phase": "M1",
+          "returncode": 1,
+          "optimizer_attempts": 0,
+          "xml_sha256": "3192e8208636ee36036a9d7c6f12b17c97cb1ad8a5f6bfcbe3cee7989be1c6f7"
+        },
+        {
+          "phase": "G2",
+          "returncode": 0,
+          "optimizer_attempts": 0,
+          "xml_sha256": "ce4ad30ec5d911f0a57fedd1dbe6f3ab586b5bcb53075d1e5ee1b18f45bc2b5b"
+        }
+      ]
+    },
+    {
+      "id": "drop_unlabelled_flows",
+      "status": "killed_with_green_controls",
+      "phases": [
+        {
+          "phase": "G1",
+          "returncode": 0,
+          "optimizer_attempts": 0,
+          "xml_sha256": "2f183458943ddbf0186d9068c185fe7323727f8a9cc00f6bab9497b4341b9a28"
+        },
+        {
+          "phase": "M1",
+          "returncode": 1,
+          "optimizer_attempts": 0,
+          "xml_sha256": "e283ed98efafb64d13a41abc728a8793492bd82bf12c0267e49b37402ba972a6"
+        },
+        {
+          "phase": "G2",
+          "returncode": 0,
+          "optimizer_attempts": 0,
+          "xml_sha256": "1f25d18bad4c29f670e558ea27bdce9512caed8a74ac4566badcfaeec10b6747"
+        }
+      ]
+    },
+    {
+      "id": "mix_decision_instants",
+      "status": "killed_with_green_controls",
+      "phases": [
+        {
+          "phase": "G1",
+          "returncode": 0,
+          "optimizer_attempts": 0,
+          "xml_sha256": "18a89e1cc7ddb3d98106308135dac3f14bdaaed0b25d78248099c759789951b1"
+        },
+        {
+          "phase": "M1",
+          "returncode": 1,
+          "optimizer_attempts": 0,
+          "xml_sha256": "7f9851bf01b958d1e28899f1802d7abe326492fa62a109f14ec8cfaca5891a52"
+        },
+        {
+          "phase": "G2",
+          "returncode": 0,
+          "optimizer_attempts": 0,
+          "xml_sha256": "4f0c603ed5cfe13a10f02020799d03294197211654dda8471544b625fabbb52e"
+        }
+      ]
+    },
+    {
+      "id": "leak_mae_into_score",
+      "status": "killed_with_green_controls",
+      "phases": [
+        {
+          "phase": "G1",
+          "returncode": 0,
+          "optimizer_attempts": 0,
+          "xml_sha256": "9f06b4dc44026f4bda34580ae15f6db10e7a76c90d5d8ef75957cb3c08e93c33"
+        },
+        {
+          "phase": "M1",
+          "returncode": 1,
+          "optimizer_attempts": 0,
+          "xml_sha256": "87718cf4cd41bb6e5541a734f042030e071dcd933cb8f4e6a03a0925db248863"
+        },
+        {
+          "phase": "G2",
+          "returncode": 0,
+          "optimizer_attempts": 0,
+          "xml_sha256": "2ff2fdc0cdd1869a8fc224b6fa5b545d97d522627869fc30b4d496a08bad2188"
+        }
+      ]
+    }
+  ],
+  "mutation_scope": "Nueve defectos dirigidos. No es una puntuación global del repositorio.",
+  "cuda_pending": [
+    "tests/training/test_financial_run.py::test_cuda_pass_matches_cpu_without_optimizer_steps",
+    "tests/training/test_financial_run_quantiles.py::test_cuda_quantile_pass_matches_cpu_without_optimizer_steps",
+    "tests/models/titans/test_session_objective_cuda.py::test_complete_session_predictions_and_gradients_match_cpu[reference_mae]",
+    "tests/models/titans/test_session_objective_cuda.py::test_complete_session_predictions_and_gradients_match_cpu[session_rank_inputs_v1]",
+    "tests/models/titans/test_session_objective_cuda.py::test_complete_session_predictions_and_gradients_match_cpu[session_ic_objective_v1]",
+    "tests/models/titans/test_session_objective_cuda.py::test_complete_session_predictions_and_gradients_match_cpu[session_rank_inputs_and_ic_objective]"
+  ],
+  "cuda_status": "not_executed_gpu_occupied",
+  "native_binding": {
+    "name": "_episodic_native.cpython-312-x86_64-linux-gnu.so",
+    "sha256": "22fdb1fdbaa7faee9f2c3de7240608ea60bfa271151430771591906f90d709d1"
+  },
+  "benchmark": {
+    "path": "reports/engineering/session-objectives-20261026/cost-256.json",
+    "sha256": "af93a77c07106a8a8cfa5623a45dcde966acc258721702957e78295bf2c616f9",
+    "scientific_data": false,
+    "shared_parameters_unchanged": true,
+    "inference_context": "no_grad_with_training_flag_true_and_zero_dropout_math_backend",
+    "mode_parity": {
+      "reference_mae": {
+        "exact": true,
+        "dropout": [
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ]
+      },
+      "session_rank_inputs_v1": {
+        "exact": true,
+        "dropout": [
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ]
+      },
+      "session_ic_objective_v1": {
+        "exact": true,
+        "dropout": [
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ]
+      },
+      "session_rank_inputs_and_ic_objective": {
+        "exact": true,
+        "dropout": [
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ]
+      }
+    },
+    "interpretation": "Medida técnica CPU. La paridad entre modos se comprobó en dos instantes de ocho filas. No acredita latencia CUDA ni mejora predictiva."
+  },
+  "instrumentation_incident": {
+    "exit_codes": [
+      139,
+      139
+    ],
+    "location": "Importación de torch._C desde el descubrimiento de módulos de coverage durante la carga de complementos de pytest.",
+    "trace_sha256": "1aaec3c4e7890dc17db90b02cb8211901cae51145bd65eaef2b5e506a32c9419",
+    "resolution": "Usar rutas de archivos en --source. La batería final conserva sus pruebas y las verificaciones."
+  },
+  "source_audit": [
+    {
+      "title": "Rank-Based Inverse Normal Transformations are Increasingly Used, But are They Merited?",
+      "authors": [
+        "T Mark Beasley",
+        "Stephen Erickson",
+        "David B Allison"
+      ],
+      "year": 2009,
+      "doi": "10.1007/s10519-009-9281-0",
+      "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC2921808/",
+      "inspected": "Ficha bibliográfica, resumen y pasaje sobre el cuantil (r - 0.5)/N y sus límites, recuperado por búsqueda en la fuente primaria.",
+      "accessed": "2026-10-26",
+      "scope": "Referencia metodológica. No demuestra mejora financiera."
+    },
+    {
+      "title": "Empirical Asset Pricing via Machine Learning",
+      "authors": [
+        "Shihao Gu",
+        "Bryan Kelly",
+        "Dacheng Xiu"
+      ],
+      "year": 2020,
+      "doi": "10.1093/rfs/hhaa009",
+      "url": "https://academic.oup.com/rfs/article/33/5/2223/5758276",
+      "inspected": "Ficha bibliográfica y notas 29 y 30 sobre rangos transversales y retrasos de publicación.",
+      "accessed": "2026-10-26",
+      "scope": "Rangos lineales mensuales en el artículo. La puntuación normal diaria con máscaras de esta variante es una adaptación."
+    }
+  ],
+  "limits": [
+    "Queda sin recorrer una rama de exclusión de varios objetivos. Actualmente solo hay un objetivo registrado.",
+    "La calidad de integración incluye funciones anteriores complejas y parcialmente cubiertas. No se declara cobertura completa del repositorio.",
+    "La normalización de la pérdida es regularizada y no es la correlación exacta usada en evaluación.",
+    "La combinación del objetivo IC y el lector episódico necesita su propia pérdida y normalización. Se rechaza en esta versión.",
+    "Los valores del benchmark son sintéticos y las comprobaciones CUDA siguen pendientes. No se ejecutó Lean."
+  ],
+  "real_optimizer_steps": 0,
+  "test_optimizers": "Los registradores guardan gradientes y llamadas sin ejecutar actualizaciones de PyTorch. La protección global sigue activa.",
+  "initial_attempts": [
+    {
+      "name": "numerics-before",
+      "tests": 18,
+      "failed": 11,
+      "errors": 0,
+      "skipped": 0,
+      "xml_sha256": "ba52a680b32316d30d41250359c94ef3af639af8523bb798290eca3a5aa1917a"
+    },
+    {
+      "name": "f4-first-corrections",
+      "tests": 47,
+      "failed": 1,
+      "errors": 0,
+      "skipped": 0,
+      "xml_sha256": "29da0f12b18559991fdf1daca231b55188b86e641ca6dc3ecb2b0a81bd008cf4"
+    },
+    {
+      "name": "f4-regressions-v3",
+      "tests": 184,
+      "failed": 1,
+      "errors": 0,
+      "skipped": 0,
+      "xml_sha256": "c1b3302829387d0540096302d7db9ca29c73b71eb07b0fae8d241c92cbd53528"
+    },
+    {
+      "name": "frozen-incoming",
+      "tests": 4,
+      "failed": 4,
+      "errors": 0,
+      "skipped": 0,
+      "xml_sha256": "c2a88ca5dd6c4b5e228da5c44938cd7c7c7bc42fd42ec7fb4c4ec92c3add631c"
+    },
+    {
+      "name": "session-readers-v1",
+      "tests": 9,
+      "failed": 3,
+      "errors": 0,
+      "skipped": 0,
+      "xml_sha256": "bc240e10d1a42fd05be8add3b9aedd2aebf827824d071908c27998f644d77ea3"
+    },
+    {
+      "name": "mars-readers-v2",
+      "tests": 4,
+      "failed": 0,
+      "errors": 0,
+      "skipped": 3,
+      "xml_sha256": "2ab9662fe6637dae5c0c3f0fe38a015073433db0b26e090bf9ffd811fcea15c9"
+    },
+    {
+      "name": "session-readers-v3",
+      "tests": 27,
+      "failed": 0,
+      "errors": 5,
+      "skipped": 0,
+      "xml_sha256": "cf1bcb515e9e827b6aa85c669ce3a7919a3a4cd3e6a2ca9641dd8bddd286f9e6"
+    }
+  ]
+}

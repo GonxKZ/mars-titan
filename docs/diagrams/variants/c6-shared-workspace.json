@@ -1,0 +1,75 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "C6 · Espacio de trabajo compartido (shared_workspace_v1)",
+    "quality_profile": "showcase",
+    "viewBox": [1300, 402],
+    "legend": {
+      "entries": {
+        "backend": {"label": "Cálculo"},
+        "database": {"label": "Memoria y estado"},
+        "security": {"label": "Control o protección"},
+        "cloud": {"label": "Evaluación"}
+      }
+    }
+  },
+  "components": [
+    {"id": "regions", "type": "backend", "label": "Regiones", "sublabel": "cinco fuentes de la fila", "pos": [40, 40], "size": [180, 72]},
+    {"id": "compete", "type": "backend", "label": "Escritura por competición", "sublabel": "top-k por ranura", "pos": [300, 40], "size": [180, 72]},
+    {
+      "id": "slots",
+      "type": "database",
+      "label": "Ranuras compartidas",
+      "sublabel": "dos, reiniciadas por predicción",
+      "pos": [560, 40],
+      "size": [180, 72]
+    },
+    {
+      "id": "broadcast",
+      "type": "backend",
+      "label": "Lectura por región",
+      "sublabel": "contexto propio de cada nodo",
+      "pos": [820, 40],
+      "size": [180, 72]
+    },
+    {"id": "screen", "type": "cloud", "label": "Criba", "sublabel": "IC por sesión frente al control", "pos": [1080, 40], "size": [180, 72]},
+    {
+      "id": "controls",
+      "type": "security",
+      "label": "Controles",
+      "sublabel": "escritura densa y fusión regional",
+      "tag": "densa con iguales pesos",
+      "pos": [560, 230],
+      "size": [180, 72]
+    }
+  ],
+  "connections": [
+    {"id": "regions-compete", "from": "regions", "to": "compete"},
+    {"id": "compete-slots", "from": "compete", "to": "slots", "label": "escritura", "variant": "emphasis"},
+    {"id": "slots-broadcast", "from": "slots", "to": "broadcast", "label": "lectura", "variant": "emphasis"},
+    {"id": "broadcast-screen", "from": "broadcast", "to": "screen", "label": "predicción"},
+    {"id": "controls-screen", "from": "controls", "to": "screen", "label": "control", "variant": "dashed"}
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "Mecanismo",
+      "items": [
+        "Las regiones compiten por escribir en pocas ranuras comunes",
+        "Cada región lee las ranuras y recibe su propio contexto",
+        "Fuente: Goyal et al. (2022), Shared Global Workspace"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "Control que la descarta",
+      "items": ["Escritura densa con los mismos parámetros", "Fusión regional y memoria persistente de MAC"]
+    },
+    {
+      "dot": "amber",
+      "title": "Estado",
+      "items": ["Implementada en #751 con pruebas técnicas", "Sin entrenar ni evaluar, se espera redundancia"]
+    }
+  ]
+}

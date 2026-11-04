@@ -53,6 +53,10 @@ ALLOWED = {
     "matmul_precision": {"highest"},
 }
 FORBIDDEN_KEYS = {"autocast", "amp", "mixed_precision", "allow_tf32", "tf32", "loss_scale"}
+# Claves que se llaman como una opción de precisión y no lo son. El `loss_scale` de E1 es el
+# intervalo de la escala que acota el error en la pérdida del Hedge de la mezcla de escalas
+# (#750), no el escalado de pérdidas de la precisión mixta.
+NOT_PRECISION = {("components", "associative_memory", "multiscale_value", "loss_scale")}
 REDUCED = re.compile(
     r"torch\.autocast|torch\.(cuda|cpu)\.amp|torch\.amp\b|GradScaler|\.half\(\)|\.bfloat16\(\)"
     r"|torch\.(float16|bfloat16|half)\b|\"(float16|bfloat16)\""
@@ -104,7 +108,10 @@ def _violations(document):
     """Devuelve las claves de precisión de una receta con un valor distinto de FP32."""
     found = []
     for path, value in _declared(document):
-        key = path[-1] if isinstance(path[-1], str) else path[-2]
+        named = path if isinstance(path[-1], str) else path[:-1]
+        key = named[-1]
+        if named in NOT_PRECISION:
+            continue
         if (key in FORBIDDEN_KEYS and value not in (False, None)) or (
             key in ALLOWED and value not in ALLOWED[key]
         ):
@@ -125,11 +132,20 @@ def test_recipes_only_declare_fp32(recipe):
         {"training": {"autocast": True}},
         {"cases": [{"float32_matmul_precision": "high"}]},
         {"selection": {"allow_tf32": True}},
+        {"training": {"loss_scale": 65536.0}},
+        {"components": {"multiscale_value": {"loss_scale": 2.0}}},
     ],
     ids=str,
 )
 def test_reduced_precision_in_a_recipe_is_reported(document):
     assert len(_violations(document)) == 1
+
+
+def test_only_the_hedge_scale_of_e1_is_not_a_precision_option():
+    hedge = {"components": {"associative_memory": {"multiscale_value": {"loss_scale": [1e-6, 10]}}}}
+    assert _violations(hedge) == []
+    hedge["components"]["associative_memory"]["loss_scale"] = 1024.0
+    assert _violations(hedge) == [("components", "associative_memory", "loss_scale")]
 
 
 def test_no_module_enables_autocast_loss_scaling_or_16_bit_types():

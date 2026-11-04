@@ -1,0 +1,574 @@
+{
+  "schema_version": 1,
+  "planned": 11,
+  "killed": 11,
+  "optimizer_attempts": 0,
+  "source_sha256": {
+    "src/mars_titan/training/regime_gate_inference.py": "5369e5597fca7cf860dbb571efbe167c26266bd8822bf1861a8b67b7e4086cfa",
+    "src/mars_titan/memory/regime_evidence_gate.py": "177c71a184b3445133d9d728f098ded2e01d70176dd6c846c943c835c8beb1ed",
+    "src/mars_titan/training/mars_titan_correction.py": "0a4bde87e4e3735810c08df6b191a01535fbb2398b6494b885fd6dd803e4091d"
+  },
+  "convention": "G1 y G2 ejecutan la prueba sobre la copia intacta antes y después. M1 sobre la copia con un único fragmento cambiado. Las fases usan CPU y el enlace nativo compilado existente.",
+  "earlier_run": {
+    "planned": 11,
+    "killed": 11,
+    "source_sha256": {
+      "src/mars_titan/memory/regime_evidence_gate.py": "99e3fad1732ed5817ebead1ca10c4ce6aaddcd1f8dd41e8b88cd4b73e11f6063",
+      "src/mars_titan/training/regime_gate_inference.py": "5369e5597fca7cf860dbb571efbe167c26266bd8822bf1861a8b67b7e4086cfa",
+      "src/mars_titan/training/mars_titan_correction.py": "0a4bde87e4e3735810c08df6b191a01535fbb2398b6494b885fd6dd803e4091d"
+    },
+    "note": "Primera ejecución completa antes de corregir el desbordamiento de z ** 2. La corrección cambia solo regime_evidence_gate.py y todas las recetas se repitieron después."
+  },
+  "cases": [
+    {
+      "id": "score_the_label_without_the_emitted_point",
+      "path": "src/mars_titan/training/regime_gate_inference.py",
+      "purpose": "La puerta debe usar etiqueta menos emisión final, no la etiqueta sola.",
+      "status": "killed_with_green_controls",
+      "phases": [
+        {
+          "phase": "G1",
+          "nodeid": "tests/memory/test_regime_gate_correction.py::test_the_gate_scores_the_final_emission_with_the_prior_scale",
+          "exit_code": 0,
+          "elapsed_s": 7.88,
+          "xml_counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0,
+          "expected_text_found": false
+        },
+        {
+          "phase": "M1",
+          "nodeid": "tests/memory/test_regime_gate_correction.py::test_the_gate_scores_the_final_emission_with_the_prior_scale",
+          "exit_code": 1,
+          "elapsed_s": 9.37,
+          "xml_counts": {
+            "total": 1,
+            "failure": 1,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0,
+          "expected_text_found": true
+        },
+        {
+          "phase": "G2",
+          "nodeid": "tests/memory/test_regime_gate_correction.py::test_the_gate_scores_the_final_emission_with_the_prior_scale",
+          "exit_code": 0,
+          "elapsed_s": 8.43,
+          "xml_counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0,
+          "expected_text_found": false
+        }
+      ]
+    },
+    {
+      "id": "write_without_the_gate",
+      "path": "src/mars_titan/training/regime_gate_inference.py",
+      "purpose": "Cada escritura proximal usa η·g del mercado.",
+      "status": "killed_with_green_controls",
+      "phases": [
+        {
+          "phase": "G1",
+          "nodeid": "tests/memory/test_regime_gate_correction.py::test_each_write_uses_the_rate_times_the_gate_of_its_market",
+          "exit_code": 0,
+          "elapsed_s": 8.4,
+          "xml_counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0,
+          "expected_text_found": false
+        },
+        {
+          "phase": "M1",
+          "nodeid": "tests/memory/test_regime_gate_correction.py::test_each_write_uses_the_rate_times_the_gate_of_its_market",
+          "exit_code": 1,
+          "elapsed_s": 9.46,
+          "xml_counts": {
+            "total": 1,
+            "failure": 1,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0,
+          "expected_text_found": true
+        },
+        {
+          "phase": "G2",
+          "nodeid": "tests/memory/test_regime_gate_correction.py::test_each_write_uses_the_rate_times_the_gate_of_its_market",
+          "exit_code": 0,
+          "elapsed_s": 7.52,
+          "xml_counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0,
+          "expected_text_found": false
+        }
+      ]
+    },
+    {
+      "id": "mixed_markets_share_the_mean_gate",
+      "path": "src/mars_titan/training/regime_gate_inference.py",
+      "purpose": "Con varios mercados cada fila escribe con su propia puerta, η·w·g.",
+      "status": "killed_with_green_controls",
+      "phases": [
+        {
+          "phase": "G1",
+          "nodeid": "tests/memory/test_regime_gate_correction.py::test_mixed_markets_weight_rows_by_their_gate",
+          "exit_code": 0,
+          "elapsed_s": 9.68,
+          "xml_counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0,
+          "expected_text_found": false
+        },
+        {
+          "phase": "M1",
+          "nodeid": "tests/memory/test_regime_gate_correction.py::test_mixed_markets_weight_rows_by_their_gate",
+          "exit_code": 1,
+          "elapsed_s": 8.58,
+          "xml_counts": {
+            "total": 1,
+            "failure": 1,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0,
+          "expected_text_found": true
+        },
+        {
+          "phase": "G2",
+          "nodeid": "tests/memory/test_regime_gate_correction.py::test_mixed_markets_weight_rows_by_their_gate",
+          "exit_code": 0,
+          "elapsed_s": 10.15,
+          "xml_counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0,
+          "expected_text_found": false
+        }
+      ]
+    },
+    {
+      "id": "keep_the_gate_across_phases",
+      "path": "src/mars_titan/training/regime_gate_inference.py",
+      "purpose": "Cada fase completa reinicia escala y CUSUM, como B6 reinicia A.",
+      "status": "killed_with_green_controls",
+      "phases": [
+        {
+          "phase": "G1",
+          "nodeid": "tests/memory/test_regime_gate_correction.py::test_repeating_a_phase_resets_the_gate",
+          "exit_code": 0,
+          "elapsed_s": 10.08,
+          "xml_counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0,
+          "expected_text_found": false
+        },
+        {
+          "phase": "M1",
+          "nodeid": "tests/memory/test_regime_gate_correction.py::test_repeating_a_phase_resets_the_gate",
+          "exit_code": 1,
+          "elapsed_s": 9.74,
+          "xml_counts": {
+            "total": 1,
+            "failure": 1,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0,
+          "expected_text_found": true
+        },
+        {
+          "phase": "G2",
+          "nodeid": "tests/memory/test_regime_gate_correction.py::test_repeating_a_phase_resets_the_gate",
+          "exit_code": 0,
+          "elapsed_s": 10.01,
+          "xml_counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0,
+          "expected_text_found": false
+        }
+      ]
+    },
+    {
+      "id": "ignore_the_source_hashes_on_restore",
+      "path": "src/mars_titan/training/regime_gate_inference.py",
+      "purpose": "Un ancla con otras fuentes E4 no se puede regenerar.",
+      "status": "killed_with_green_controls",
+      "phases": [
+        {
+          "phase": "G1",
+          "nodeid": "tests/memory/test_regime_gate_correction.py::test_configuration_restoration_requires_the_same_identity_and_sources",
+          "exit_code": 0,
+          "elapsed_s": 9.99,
+          "xml_counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0,
+          "expected_text_found": false
+        },
+        {
+          "phase": "M1",
+          "nodeid": "tests/memory/test_regime_gate_correction.py::test_configuration_restoration_requires_the_same_identity_and_sources",
+          "exit_code": 1,
+          "elapsed_s": 8.61,
+          "xml_counts": {
+            "total": 1,
+            "failure": 1,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0,
+          "expected_text_found": true
+        },
+        {
+          "phase": "G2",
+          "nodeid": "tests/memory/test_regime_gate_correction.py::test_configuration_restoration_requires_the_same_identity_and_sources",
+          "exit_code": 0,
+          "elapsed_s": 8.21,
+          "xml_counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0,
+          "expected_text_found": false
+        }
+      ]
+    },
+    {
+      "id": "matched_control_from_the_evaluation_phase",
+      "path": "src/mars_titan/training/regime_gate_inference.py",
+      "purpose": "El control constante no puede usar la puerta media del tramo evaluado.",
+      "status": "killed_with_green_controls",
+      "phases": [
+        {
+          "phase": "G1",
+          "nodeid": "tests/training/test_regime_gate_correction_window.py::test_the_matched_control_uses_the_validation_mean_of_the_variant",
+          "exit_code": 0,
+          "elapsed_s": 14.48,
+          "xml_counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0,
+          "expected_text_found": false
+        },
+        {
+          "phase": "M1",
+          "nodeid": "tests/training/test_regime_gate_correction_window.py::test_the_matched_control_uses_the_validation_mean_of_the_variant",
+          "exit_code": 1,
+          "elapsed_s": 11.76,
+          "xml_counts": {
+            "total": 1,
+            "failure": 1,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0,
+          "expected_text_found": true
+        },
+        {
+          "phase": "G2",
+          "nodeid": "tests/training/test_regime_gate_correction_window.py::test_the_matched_control_uses_the_validation_mean_of_the_variant",
+          "exit_code": 0,
+          "elapsed_s": 12.81,
+          "xml_counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0,
+          "expected_text_found": false
+        }
+      ]
+    },
+    {
+      "id": "uncapped_cusum",
+      "path": "src/mars_titan/memory/regime_evidence_gate.py",
+      "purpose": "El CUSUM se acota en h para que la puerta se cierre al volver la calma.",
+      "status": "killed_with_green_controls",
+      "phases": [
+        {
+          "phase": "G1",
+          "nodeid": "tests/memory/test_regime_evidence_gate.py::test_stable_errors_keep_the_floor_and_a_shift_opens_then_closes_the_gate",
+          "exit_code": 0,
+          "elapsed_s": 3.08,
+          "xml_counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0,
+          "expected_text_found": false
+        },
+        {
+          "phase": "M1",
+          "nodeid": "tests/memory/test_regime_evidence_gate.py::test_stable_errors_keep_the_floor_and_a_shift_opens_then_closes_the_gate",
+          "exit_code": 1,
+          "elapsed_s": 2.89,
+          "xml_counts": {
+            "total": 1,
+            "failure": 1,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0,
+          "expected_text_found": true
+        },
+        {
+          "phase": "G2",
+          "nodeid": "tests/memory/test_regime_evidence_gate.py::test_stable_errors_keep_the_floor_and_a_shift_opens_then_closes_the_gate",
+          "exit_code": 0,
+          "elapsed_s": 2.8,
+          "xml_counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0,
+          "expected_text_found": false
+        }
+      ]
+    },
+    {
+      "id": "score_with_the_cohort_in_its_own_scale",
+      "path": "src/mars_titan/memory/regime_evidence_gate.py",
+      "purpose": "La cohorte se estandariza con la escala anterior, sin sus propios errores.",
+      "status": "killed_with_green_controls",
+      "phases": [
+        {
+          "phase": "G1",
+          "nodeid": "tests/memory/test_regime_evidence_gate.py::test_two_publications_follow_the_declared_equations",
+          "exit_code": 0,
+          "elapsed_s": 2.95,
+          "xml_counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0,
+          "expected_text_found": false
+        },
+        {
+          "phase": "M1",
+          "nodeid": "tests/memory/test_regime_evidence_gate.py::test_two_publications_follow_the_declared_equations",
+          "exit_code": 1,
+          "elapsed_s": 3.12,
+          "xml_counts": {
+            "total": 1,
+            "failure": 1,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0,
+          "expected_text_found": true
+        },
+        {
+          "phase": "G2",
+          "nodeid": "tests/memory/test_regime_evidence_gate.py::test_two_publications_follow_the_declared_equations",
+          "exit_code": 0,
+          "elapsed_s": 2.93,
+          "xml_counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0,
+          "expected_text_found": false
+        }
+      ]
+    },
+    {
+      "id": "constant_control_follows_the_detector",
+      "path": "src/mars_titan/memory/regime_evidence_gate.py",
+      "purpose": "El control escribe siempre con su puerta fija.",
+      "status": "killed_with_green_controls",
+      "phases": [
+        {
+          "phase": "G1",
+          "nodeid": "tests/memory/test_regime_evidence_gate.py::test_the_constant_control_keeps_its_gate_and_tracks_the_same_statistic",
+          "exit_code": 0,
+          "elapsed_s": 3.18,
+          "xml_counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0,
+          "expected_text_found": false
+        },
+        {
+          "phase": "M1",
+          "nodeid": "tests/memory/test_regime_evidence_gate.py::test_the_constant_control_keeps_its_gate_and_tracks_the_same_statistic",
+          "exit_code": 1,
+          "elapsed_s": 2.68,
+          "xml_counts": {
+            "total": 1,
+            "failure": 1,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0,
+          "expected_text_found": true
+        },
+        {
+          "phase": "G2",
+          "nodeid": "tests/memory/test_regime_evidence_gate.py::test_the_constant_control_keeps_its_gate_and_tracks_the_same_statistic",
+          "exit_code": 0,
+          "elapsed_s": 3.13,
+          "xml_counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0,
+          "expected_text_found": false
+        }
+      ]
+    },
+    {
+      "id": "carry_drops_the_anchor_gate",
+      "path": "src/mars_titan/training/mars_titan_correction.py",
+      "purpose": "La regeneración restaura la puerta elegida en el ancla.",
+      "status": "killed_with_green_controls",
+      "phases": [
+        {
+          "phase": "G1",
+          "nodeid": "tests/training/test_regime_gate_correction_window.py::test_regeneration_keeps_the_chosen_gate_and_exact_predictions",
+          "exit_code": 0,
+          "elapsed_s": 13.24,
+          "xml_counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0,
+          "expected_text_found": false
+        },
+        {
+          "phase": "M1",
+          "nodeid": "tests/training/test_regime_gate_correction_window.py::test_regeneration_keeps_the_chosen_gate_and_exact_predictions",
+          "exit_code": 1,
+          "elapsed_s": 13.41,
+          "xml_counts": {
+            "total": 1,
+            "failure": 1,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0,
+          "expected_text_found": true
+        },
+        {
+          "phase": "G2",
+          "nodeid": "tests/training/test_regime_gate_correction_window.py::test_regeneration_keeps_the_chosen_gate_and_exact_predictions",
+          "exit_code": 0,
+          "elapsed_s": 14.11,
+          "xml_counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0,
+          "expected_text_found": false
+        }
+      ]
+    },
+    {
+      "id": "combine_e3_and_e4",
+      "path": "src/mars_titan/training/mars_titan_correction.py",
+      "purpose": "E3 y E4 no tienen una identidad conjunta y se rechazan antes de abrir el padre.",
+      "status": "killed_with_green_controls",
+      "phases": [
+        {
+          "phase": "G1",
+          "nodeid": "tests/training/test_regime_gate_correction_window.py::test_invalid_or_combined_factors_fail_before_the_parent",
+          "exit_code": 0,
+          "elapsed_s": 9.91,
+          "xml_counts": {
+            "total": 2,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0,
+          "expected_text_found": false
+        },
+        {
+          "phase": "M1",
+          "nodeid": "tests/training/test_regime_gate_correction_window.py::test_invalid_or_combined_factors_fail_before_the_parent",
+          "exit_code": 1,
+          "elapsed_s": 9.82,
+          "xml_counts": {
+            "total": 2,
+            "failure": 1,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0,
+          "expected_text_found": true
+        },
+        {
+          "phase": "G2",
+          "nodeid": "tests/training/test_regime_gate_correction_window.py::test_invalid_or_combined_factors_fail_before_the_parent",
+          "exit_code": 0,
+          "elapsed_s": 10.53,
+          "xml_counts": {
+            "total": 2,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0,
+          "expected_text_found": false
+        }
+      ]
+    }
+  ]
+}

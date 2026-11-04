@@ -1,0 +1,32 @@
+{
+  "recorded_at": "2026-10-26T23:19:37.102118+00:00",
+  "sources": [
+    {
+      "title": "Are Sixteen Heads Really Better than One?",
+      "authors": [
+        "Paul Michel",
+        "Omer Levy",
+        "Graham Neubig"
+      ],
+      "url": "https://arxiv.org/abs/1905.10650v3",
+      "revision_date": "2019-11-04",
+      "inspection": "Metadatos y resumen, sin lectura completa del PDF."
+    },
+    {
+      "title": "Associative Long Short-Term Memory",
+      "authors": [
+        "Ivo Danihelka",
+        "Greg Wayne",
+        "Benigno Uria",
+        "Nal Kalchbrenner",
+        "Alex Graves"
+      ],
+      "url": "https://arxiv.org/abs/1602.03032v2",
+      "revision_date": "2016-05-19",
+      "inspection": "Metadatos y resumen, sin lectura completa del PDF."
+    }
+  ],
+  "lean_executed": false,
+  "financial_guarantee_claimed": false,
+  "biological_replication_claimed": false
+}

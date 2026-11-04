@@ -1,0 +1,23 @@
+{
+  "kind": "technical_legacy_non_e2_session_parity",
+  "base_commit": "babe9f780fcf73ed4e54ba92bddb0d2194fefff0",
+  "legacy_source_sha256": "4360b1d1c2e632de4480735e63edd1f44c58abfa296e48ab31ca2f73fb4c5be0",
+  "current_source_sha256": "682dd7a69346fc60ea856e5f73114b1c393f46009671776ba0e3dab511868d8a",
+  "probe_sha256": "3b8de64a430a24edd5138a63567016abbfc822278030b628ee49d57bbb49fb5a",
+  "native_sha256": "22fdb1fdbaa7faee9f2c3de7240608ea60bfa271151430771591906f90d709d1",
+  "torch": "2.14.0+cu130",
+  "device": "cpu",
+  "cpu_threads": 2,
+  "contract_id_equal": true,
+  "complete_snapshot_equal": true,
+  "retained_episodes_equal": true,
+  "emitted_points": 16,
+  "emitted_sha256": "7ce2765262f663a9cc8fe2be87b4bd88bad2959c5dd7cff48f929c85bd0ac2be",
+  "optimizer_attempts": 0,
+  "cuda_initialized": false,
+  "scope": "Enlace del coordinador sin E2 sobre las mismas fuentes y parámetros.",
+  "limits": [
+    "No compara contratos E2 antiguos. Estos conservan su runtime fijado.",
+    "Solo fixtures CPU y etiquetas manuales. No es una evaluación predictiva."
+  ]
+}

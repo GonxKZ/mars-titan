@@ -1,0 +1,171 @@
+{
+  "schema_version": 1,
+  "kind": "nested_equal_depth_variants",
+  "variant": "mars_titan_extensions_v1",
+  "issues": [
+    751,
+    709
+  ],
+  "default_enabled": false,
+  "final_test_access": false,
+  "status": "declared_not_executed",
+  "depth": {
+    "bridge_steps_per_prediction": 4,
+    "rule": "refinements_times_recurrence_steps",
+    "parameters": "equal_in_every_arm"
+  },
+  "arms": {
+    "nested_k2_j2_final": {
+      "role": "Dos lecturas con dos pasos del puente, pérdida final",
+      "components": {
+        "episodic_bank": "m1",
+        "evidence_bridge": {
+          "regions": [
+            "view_1",
+            "view_2",
+            "view_3"
+          ],
+          "topology": "ring",
+          "cycles": 0,
+          "bridge_gain": 0.25,
+          "seed": 42,
+          "recurrence": {
+            "steps": 2,
+            "max_node_updates_per_row": 1216
+          }
+        },
+        "refinements": 2
+      },
+      "recipe_changes": {}
+    },
+    "nested_k2_j2_per_step": {
+      "role": "Dos lecturas con dos pasos, pérdida en las profundidades 2 y 4",
+      "components": {
+        "episodic_bank": "m1",
+        "evidence_bridge": {
+          "regions": [
+            "view_1",
+            "view_2",
+            "view_3"
+          ],
+          "topology": "ring",
+          "cycles": 0,
+          "bridge_gain": 0.25,
+          "seed": 42,
+          "recurrence": {
+            "steps": 2,
+            "max_node_updates_per_row": 1216
+          }
+        },
+        "refinements": 2
+      },
+      "recipe_changes": {
+        "supervised_refinements": [
+          1,
+          2
+        ]
+      }
+    },
+    "flat_k4_j1_final": {
+      "role": "Bucle plano de cuatro lecturas con un paso, pérdida final",
+      "components": {
+        "episodic_bank": "m1",
+        "evidence_bridge": {
+          "regions": [
+            "view_1",
+            "view_2",
+            "view_3"
+          ],
+          "topology": "ring",
+          "cycles": 0,
+          "bridge_gain": 0.25,
+          "seed": 42,
+          "recurrence": {
+            "steps": 1,
+            "max_node_updates_per_row": 1216
+          }
+        },
+        "refinements": 4
+      },
+      "recipe_changes": {}
+    },
+    "flat_k4_j1_per_step": {
+      "role": "Bucle plano de cuatro lecturas, pérdida en las profundidades 2 y 4",
+      "components": {
+        "episodic_bank": "m1",
+        "evidence_bridge": {
+          "regions": [
+            "view_1",
+            "view_2",
+            "view_3"
+          ],
+          "topology": "ring",
+          "cycles": 0,
+          "bridge_gain": 0.25,
+          "seed": 42,
+          "recurrence": {
+            "steps": 1,
+            "max_node_updates_per_row": 1216
+          }
+        },
+        "refinements": 4
+      },
+      "recipe_changes": {
+        "supervised_refinements": [
+          2,
+          4
+        ]
+      }
+    },
+    "flat_k1_j4_final": {
+      "role": "Una lectura con cuatro pasos del puente, pérdida final",
+      "components": {
+        "episodic_bank": "m1",
+        "evidence_bridge": {
+          "regions": [
+            "view_1",
+            "view_2",
+            "view_3"
+          ],
+          "topology": "ring",
+          "cycles": 0,
+          "bridge_gain": 0.25,
+          "seed": 42,
+          "recurrence": {
+            "steps": 4,
+            "max_node_updates_per_row": 1216
+          }
+        }
+      },
+      "recipe_changes": {}
+    }
+  },
+  "contrasts": [
+    {
+      "variant": "nested_k2_j2_final",
+      "control": "flat_k4_j1_final",
+      "factor": "nesting"
+    },
+    {
+      "variant": "nested_k2_j2_per_step",
+      "control": "flat_k4_j1_per_step",
+      "factor": "nesting"
+    },
+    {
+      "variant": "nested_k2_j2_per_step",
+      "control": "nested_k2_j2_final",
+      "factor": "supervision"
+    },
+    {
+      "variant": "flat_k4_j1_per_step",
+      "control": "flat_k4_j1_final",
+      "factor": "supervision"
+    },
+    {
+      "variant": "nested_k2_j2_final",
+      "control": "flat_k1_j4_final",
+      "factor": "repeated_reads"
+    }
+  ],
+  "pending": "La criba de #746 fija la métrica, la corrección y el presupuesto. No hay ajuste ni evaluación ejecutados"
+}

@@ -1,0 +1,144 @@
+{
+  "schema_version": 1,
+  "kind": "mature_reliability_signal_variants",
+  "issue": 791,
+  "epic": 782,
+  "variant": "mac_online",
+  "base_recipe": "configs/titans/chronological-training-historical-sequence-v1.json",
+  "base_head": "scalar",
+  "base_loss": "mae",
+  "default_enabled": false,
+  "final_test_access": false,
+  "status": "declared_not_trained",
+  "estimated_gpu_hours_per_arm_with_five_seeds": 4.4,
+  "arms": {
+    "reference": {
+      "role": "reference",
+      "predictor_changes": {}
+    },
+    "shared_signal": {
+      "role": "variant",
+      "predictor_changes": {
+        "mature_reliability": {
+          "source": "mature_directional_hit",
+          "time_constants": [
+            1,
+            5,
+            21
+          ],
+          "margin": 0.05,
+          "bound": 1.0,
+          "consumers": [
+            "write",
+            "forget"
+          ],
+          "independent": false,
+          "seed": 0
+        }
+      }
+    },
+    "shuffled_in_time": {
+      "role": "control",
+      "predictor_changes": {
+        "mature_reliability": {
+          "source": "shuffled_in_time",
+          "time_constants": [
+            1,
+            5,
+            21
+          ],
+          "margin": 0.05,
+          "bound": 1.0,
+          "consumers": [
+            "write",
+            "forget"
+          ],
+          "independent": false,
+          "seed": 0
+        }
+      }
+    },
+    "titans_surprise": {
+      "role": "control",
+      "predictor_changes": {
+        "mature_reliability": {
+          "source": "titans_surprise",
+          "time_constants": [
+            1,
+            5,
+            21
+          ],
+          "margin": 0.05,
+          "bound": 1.0,
+          "consumers": [
+            "write",
+            "forget"
+          ],
+          "independent": false,
+          "seed": 0
+        }
+      }
+    },
+    "independent_signals": {
+      "role": "control",
+      "predictor_changes": {
+        "mature_reliability": {
+          "source": "mature_directional_hit",
+          "time_constants": [
+            1,
+            5,
+            21
+          ],
+          "margin": 0.05,
+          "bound": 1.0,
+          "consumers": [
+            "write",
+            "forget"
+          ],
+          "independent": true,
+          "seed": 0
+        }
+      }
+    }
+  },
+  "contrasts": [
+    {
+      "name": "mature_reliability",
+      "variant": "shared_signal",
+      "control": "reference"
+    },
+    {
+      "name": "temporal_order",
+      "variant": "shared_signal",
+      "control": "shuffled_in_time"
+    },
+    {
+      "name": "mature_outcome_against_surprise",
+      "variant": "shared_signal",
+      "control": "titans_surprise"
+    },
+    {
+      "name": "shared_against_independent",
+      "variant": "shared_signal",
+      "control": "independent_signals"
+    }
+  ],
+  "consumers": {
+    "connected": [
+      "titans_write_gate",
+      "titans_forget_gate"
+    ],
+    "pending": {
+      "p1_third_factor": 784,
+      "area_confidence": 783,
+      "online_arbiters": 789,
+      "abstention": 787
+    }
+  },
+  "reasons": {
+    "margin": "about_2_6_standard_deviations_of_the_monthly_speed_and_0_6_of_the_session_speed_with_64_assets_without_skill",
+    "bound": "one_logit_so_the_odds_of_each_gate_change_at_most_by_a_factor_e",
+    "independent": "two_disjoint_halves_of_the_flows_with_independent_noise_and_the_same_expectation",
+    "shuffled": "causal_draw_from_the_scores_seen_so_far_without_future_information"
+  }
+}

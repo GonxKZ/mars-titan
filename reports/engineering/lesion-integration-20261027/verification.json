@@ -1,0 +1,93 @@
+{
+  "schema_version": 1,
+  "verified_at": "2026-10-27T00:14:06.198132+00:00",
+  "source_base_commit": "b275878817373e0e0b94949aaee50a9493ad9f92",
+  "kind": "lesion_protocol_cpu_integration",
+  "sources_sha256": {
+    "src/mars_titan/memory/financial_session.py": "3170fbbb5312ed263edf27d9ce5ad553f48c78651c1f2b8cb5e70577a3ce9f04",
+    "src/mars_titan/memory/lesion_session.py": "ac5d2579a6639f8f2874541b4fcc08e33c25f45b166c9a3ea89f52655e390a46",
+    "src/mars_titan/memory/lesion_ledger.py": "c36ecb07de966b11ded9b3f860a740f8db6dcc43ec6ed62cb68dcc283213c378",
+    "src/mars_titan/memory/lesion_protocol.py": "490683f101d112ebb9702741bdd1343cff8406336cd578537a9c864268775f6b",
+    "src/mars_titan/training/mars_titan_correction.py": "3efc11e98dce247ec9ab1186c0815d223ce9666ddabedcd07887ca0b738eb7b4",
+    "tests/memory/test_lesion_session.py": "9965bc8604c77c296b7ed4742a434e391cb91267552505108f8fa81060f65d40",
+    "tests/memory/test_lesion_inference.py": "2ef379b67abcbac24226a3ad2e9364de81184383f41b8b68eb7c896cb140b1ff",
+    "tests/memory/test_lesion_ledger.py": "d2e9d7c43d83719d8e3b18de0c8a6205104b48d8cb71e84d1692e987c5c6dc32",
+    "tests/memory/test_area_cuda_interop.py": "f300723f88fff6926fc52625eb45d17bac935c0ff36e83b5a31ba33c1eccca22",
+    "tests/training/test_mars_titan_correction.py": "3bf38335736bba2e217b64927c95ec72520661c57bb59de851487d837cff7df5"
+  },
+  "tests": {
+    "broad": {
+      "total": 405,
+      "passed": 405,
+      "failure": 0,
+      "error": 0,
+      "skipped": 0,
+      "xml_sha256": "47dbcaeb3a2e2dae3ab47ce103d1007b25667b8717d7a1205f83962b97627fae"
+    },
+    "final_focused": {
+      "total": 66,
+      "passed": 66,
+      "failure": 0,
+      "error": 0,
+      "skipped": 0,
+      "xml_sha256": "b0c3bc0f87797306413be7ba22e1adccfd6d5a83efd0ce24a8ba8cc4ed11cfe1"
+    },
+    "source_order_red": {
+      "total": 1,
+      "passed": 0,
+      "failure": 1,
+      "error": 0,
+      "skipped": 0,
+      "xml_sha256": "84be82ba01852b9c19dcd35d8eac4837bfe9e0f1cd6a9e74441669f7aa1b54b3"
+    },
+    "source_order_green": {
+      "total": 1,
+      "passed": 1,
+      "failure": 0,
+      "error": 0,
+      "skipped": 0,
+      "xml_sha256": "19c11c12cc5e68cfc763d1aebbc0a7e3c69b2a3c4acfbefc62dabea1cc9b8e73"
+    },
+    "cuda_deselected": 6
+  },
+  "mutants": {
+    "planned": 5,
+    "killed": 5,
+    "optimizer_attempts": 0
+  },
+  "quality": {
+    "totals": {
+      "statements": 336,
+      "covered_statements": 322,
+      "branches": 138,
+      "covered_branches": 124
+    },
+    "max_function_crap": 28.114302376439714,
+    "tools": {
+      "coverage": "7.16.1",
+      "radon": "6.0.1",
+      "branch_coverage": true,
+      "python": "3.12.14",
+      "summarizer_sha256": "75cc60c88037e0bb17aff6e8ab666ce78b35d600d6c7ad217bf68b1afb4c4ec6"
+    }
+  },
+  "parity": {
+    "original_emissions": true,
+    "e1_weights_clock_and_states": true,
+    "cpu_session_window_recovery": true,
+    "unchanged_quantiles": true,
+    "fixture_job_regeneration": true
+  },
+  "scientific_training_executed": false,
+  "scientific_results": null,
+  "final_test_access": false,
+  "hold_unchanged": true,
+  "hold_sha256": "8a658080c1ac4e63847eba58b177020339da6ec47021cf26d2701830073c87fd",
+  "limits": [
+    "Comprobaciones con fixtures y dobles que no cambian parámetros, sin evaluación científica real.",
+    "Seis casos CUDA pendientes, incluido B4, porque la GPU está ocupada.",
+    "No se ha medido el coste completo de la integración durable.",
+    "Las órdenes y el análisis de curvas de B4 siguen pendientes.",
+    "No se ha ejecutado la suite completa del repositorio ni medido mejora de generalización."
+  ]
+}

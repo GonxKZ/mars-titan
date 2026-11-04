@@ -1,0 +1,45 @@
+{
+ "schema_version": 1,
+ "kind": "shrink_perturb_seed_derivation_cost",
+ "issue": 749,
+ "recorded_at_utc": "2026-10-28T22:30:23.722312+00:00",
+ "commit": "d85d266010ed405a8af339ea0dd28d5d0de4e2f7",
+ "scope": "ShrinkPerturb.fresh_seed con la semilla declarada 1 y la del ajuste 42, sin optimizador.",
+ "cpu": "AMD Ryzen 9 8945HS w/ Radeon 780M Graphics",
+ "versions": {
+  "python": "3.12.14",
+  "numpy": "2.5.3",
+  "torch": "2.14.0+cu130"
+ },
+ "threads": 1,
+ "warmup_calls": 1000,
+ "calls_per_repeat": 10000,
+ "repeats": 7,
+ "seconds_per_call": {
+  "samples": [
+   2.385892211459577e-05,
+   2.3783486010506748e-05,
+   1.446759239770472e-05,
+   1.4841961790807545e-05,
+   1.4350572507828474e-05,
+   1.512540909461677e-05,
+   1.7023084196262063e-05
+  ],
+  "median": 1.512540909461677e-05,
+  "minimum": 1.4350572507828474e-05,
+  "maximum": 2.385892211459577e-05
+ },
+ "load_average": {
+  "start": [
+   11.42822265625,
+   16.05419921875,
+   21.349609375
+  ],
+  "end": [
+   11.42822265625,
+   16.05419921875,
+   21.349609375
+  ]
+ },
+ "source_sha256": "7dafdbee68d1da64195040b79aad26a7cbab4f0fef32e1657cd060ea5234b4b3"
+}

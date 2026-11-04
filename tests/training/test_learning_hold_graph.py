@@ -176,6 +176,7 @@ def test_estimators_xgboost_and_closed_form_solutions_are_fitting_sites(tmp_path
         {
             **HOLD,
             "src/mars_titan/tabular.py": code("""
+                import lightgbm as lgb
                 import numpy as np
                 import xgboost as xgb
                 from sklearn.linear_model import Ridge
@@ -188,6 +189,9 @@ def test_estimators_xgboost_and_closed_form_solutions_are_fitting_sites(tmp_path
 
                 def boosting(matrix):
                     return xgb.train({}, matrix)
+
+                def trees(dataset):
+                    return lgb.train({}, dataset)
 
                 def normal(gram, rhs):
                     return np.linalg.solve(gram, rhs)
@@ -207,6 +211,7 @@ def test_estimators_xgboost_and_closed_form_solutions_are_fitting_sites(tmp_path
     assert kinds == {
         "sklearn": "fit de un estimador",
         "boosting": "xgboost.train",
+        "trees": "lightgbm.train",
         "normal": "solución cerrada",
     }
 
@@ -220,11 +225,15 @@ def test_fitting_sites_imported_by_name_are_detected(tmp_path):
                 from numpy.linalg import lstsq
                 from scipy.linalg import cho_solve as solve_factor
                 from sklearn.preprocessing import StandardScaler
+                from lightgbm import train as grow
                 from torch.optim import AdamW
                 from xgboost import train
 
                 def closed_form(a, b):
                     return lstsq(a, b)
+
+                def trees(params, dataset):
+                    return grow(params, dataset)
 
                 def factor(c, b):
                     return solve_factor(c, b)
@@ -248,6 +257,7 @@ def test_fitting_sites_imported_by_name_are_detected(tmp_path):
         "closed_form": "solución cerrada",
         "factor": "solución cerrada",
         "boosting": "xgboost.train",
+        "trees": "lightgbm.train",
         "optimizer": "optimizador de torch.optim",
         "scale": "fit de un estimador",
         "cluster": "fit de un estimador",

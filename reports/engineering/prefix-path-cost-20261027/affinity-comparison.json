@@ -1,0 +1,91 @@
+{
+  "kind": "prefix_signature_abba_comparison",
+  "accepted": false,
+  "numeric_criterion_met": false,
+  "reference_drift_percent": {
+    "False": 9.577382598425178,
+    "True": 4.401620055662859
+  },
+  "reference_stable": true,
+  "criterion": "at_least_5_percent_pooled_median_reduction_and_both_candidate_processes_better_than_adjacent_reference_in_both_modes",
+  "results": [
+    {
+      "diagnostics": false,
+      "samples": {
+        "a1": [
+          1.5219394930172712,
+          1.73181998799555,
+          2.3521350249648094,
+          2.235597373917699,
+          1.5709036090411246
+        ],
+        "b1": [
+          1.8203353499993682,
+          1.8221102440729737,
+          1.4304164280183613,
+          1.4046429879963398,
+          1.4358186949975789
+        ],
+        "b2": [
+          1.4404188650660217,
+          1.499581155134365,
+          1.4766365678515285,
+          1.4477258410770446,
+          1.7388861828949302
+        ],
+        "a2": [
+          1.5659569618292153,
+          1.6315250000916421,
+          1.5846574997995049,
+          1.5282509219832718,
+          1.551836438011378
+        ]
+      },
+      "original_median_seconds": 1.5777805544203147,
+      "candidate_median_seconds": 1.4621812044642866,
+      "reduction_percent": 7.326706469550831,
+      "neighbor_processes_better": true
+    },
+    {
+      "diagnostics": true,
+      "samples": {
+        "a1": [
+          1.8804434509947896,
+          1.7665410090703517,
+          1.8976798260118812,
+          2.662080460926518,
+          1.945457027060911
+        ],
+        "b1": [
+          2.118839728878811,
+          1.9124734289944172,
+          1.5872790238354355,
+          1.6591712548397481,
+          1.7253739847801626
+        ],
+        "b2": [
+          1.8862733021378517,
+          1.7509723471011966,
+          1.6528366589918733,
+          1.9691410770174116,
+          1.9760179151780903
+        ],
+        "a2": [
+          2.022909874096513,
+          1.9079583860002458,
+          1.8141511701978743,
+          1.7641877240967005,
+          1.743479253957048
+        ]
+      },
+      "original_median_seconds": 1.8890616385033354,
+      "candidate_median_seconds": 1.8186228246195242,
+      "reduction_percent": 3.728772658769274,
+      "neighbor_processes_better": false
+    }
+  ],
+  "endpoint_sha256": "80865783ba02b4aa28314054033d19927b88feb7260767e970098d65f84d8850",
+  "checkpoint_comparisons": 96,
+  "prediction_comparisons": 24576,
+  "scope": "Paridad de puntos y contadores por activo/fecha en checkpoints4/5, con metadatos propios de cada origen. La paridad completa de memoria y reanudación dentro de cada ejecución se conserva en sus recibos."
+}

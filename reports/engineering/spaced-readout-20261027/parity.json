@@ -1,0 +1,115 @@
+{
+  "reference_commit": "404b916492230c73bf7a4fb976fd4439e6bc87a6",
+  "reference_source_sha256": "440b74e9939dba5bf47db1127b2620815074f9575e72b27fe3f619b863a8351e",
+  "probe_sha256": "65544284bd79498502eadbd182ef1e74dfedbaa71a2f8b407ae0d52dc513eec3",
+  "cases": [
+    {
+      "dtype": "torch.float32",
+      "steps": 1,
+      "episodes": 0,
+      "output_sha256": "d252c79798760ef26e3f29aa50752789e7face18d328df677e6c6bca6806b4b4",
+      "gradient_sha256": "5600ae32b6b6dba63ab1ac1f724b99cb7546f3df225c76fa82954a6d3da7faa6",
+      "bitwise_equal": true
+    },
+    {
+      "dtype": "torch.float32",
+      "steps": 1,
+      "episodes": 3,
+      "output_sha256": "6a070324edcfa56e8c23298ccffff708cb543906213d5afbf62db803bbcf262c",
+      "gradient_sha256": "ab730586ca73dd5bf4f23effa63fd2ce8881c0a80d2772e1a8c97bf99584a048",
+      "bitwise_equal": true
+    },
+    {
+      "dtype": "torch.float32",
+      "steps": 2,
+      "episodes": 0,
+      "output_sha256": "40dca914518e650369756e99650102605b31010564c168a56ff8e14bd3c39e69",
+      "gradient_sha256": "0f519e8fd4eefc80789e03c8c952a5a9581eef49a2cfff51b4a0eab5fe443058",
+      "bitwise_equal": true
+    },
+    {
+      "dtype": "torch.float32",
+      "steps": 2,
+      "episodes": 3,
+      "output_sha256": "90e715728b1e9a177c990ab25c74c3f4737efa9b91f30508305885f73a8a8b03",
+      "gradient_sha256": "391fb80cb78865aa24f6206f825097cf886a0e7de6691b8b58fd19826a54d2b8",
+      "bitwise_equal": true
+    },
+    {
+      "dtype": "torch.float32",
+      "steps": 4,
+      "episodes": 0,
+      "output_sha256": "fc3603920b1bf1c0e3ca3c95712be506b11b4686f60709fd38f493be0f112bc9",
+      "gradient_sha256": "939884e1f54627bfc685ed7266eb50df013c9bb0c3cdf6c093843aa5bb67d36d",
+      "bitwise_equal": true
+    },
+    {
+      "dtype": "torch.float32",
+      "steps": 4,
+      "episodes": 3,
+      "output_sha256": "3f156beca04d771b0ad0a3093e880d08d020e1b89e92c3b9be98a816dc2551fc",
+      "gradient_sha256": "22b743c2c7eaf25a84ad19b8ec40a86b7f581bf93ad7b3b6adcda8278cd3aeab",
+      "bitwise_equal": true
+    },
+    {
+      "dtype": "torch.float32",
+      "extension": null,
+      "same_prediction_object": true
+    },
+    {
+      "dtype": "torch.float64",
+      "steps": 1,
+      "episodes": 0,
+      "output_sha256": "fceb88ee96c47073952713460ae686ad3c9b1d18c0bde978566c725f43316dc5",
+      "gradient_sha256": "3cb314644d178da8c90a631e0f6a3df930952ece0108e43ea611adc854ecaeb2",
+      "bitwise_equal": true
+    },
+    {
+      "dtype": "torch.float64",
+      "steps": 1,
+      "episodes": 3,
+      "output_sha256": "14465874f6999432eef4ae15cf15eebb3e34544719bebc2ae31d5d771ab853c0",
+      "gradient_sha256": "612af90baff8d24e3cdd0e2fdfe6a34bd8803a330656a3d681739caed05d5408",
+      "bitwise_equal": true
+    },
+    {
+      "dtype": "torch.float64",
+      "steps": 2,
+      "episodes": 0,
+      "output_sha256": "7f93881f761ebd6d1f75318c2becae9ffdb5a8f039d7de259eb86d72964a8768",
+      "gradient_sha256": "160a01bba246292be2c5406996d65f56f26453c54f050ffc22c0bbd04bf8611e",
+      "bitwise_equal": true
+    },
+    {
+      "dtype": "torch.float64",
+      "steps": 2,
+      "episodes": 3,
+      "output_sha256": "09fcbc70192784a19083d69d3b830a561428866062de53a5ce641cc27a02bad7",
+      "gradient_sha256": "5915beb7128526d139e9ecc95ddeceaddbb32af540d92767bef98a74967fd786",
+      "bitwise_equal": true
+    },
+    {
+      "dtype": "torch.float64",
+      "steps": 4,
+      "episodes": 0,
+      "output_sha256": "2340ad2cc777d218ca3fa7ee631c7a8567ef3f3457c3362473008883454a81b6",
+      "gradient_sha256": "03d44406b7bfddd23713619d0d2e5ea7d51180b39b5942d614dbcc981b7a44d4",
+      "bitwise_equal": true
+    },
+    {
+      "dtype": "torch.float64",
+      "steps": 4,
+      "episodes": 3,
+      "output_sha256": "c41666a5be3f442135e03914ed4973999f905386d5f7f203a7809f9834c32c2e",
+      "gradient_sha256": "106ed2e653afbd5d66b17c85340914eb5e8728c693ceda9892534b68e12d2280",
+      "bitwise_equal": true
+    },
+    {
+      "dtype": "torch.float64",
+      "extension": null,
+      "same_prediction_object": true
+    }
+  ],
+  "optimizer_steps": 0,
+  "cuda_initialized": false
+}

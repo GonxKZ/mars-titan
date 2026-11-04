@@ -327,6 +327,9 @@ class NativePolicyExecutor:
         if self.engine in WAVE_ENGINES:
             best = run["best"]
             sha, extra = best["actor_sha256"], dict(waves=run["consumed_waves"])
+            if self.engine == GROUP_KIND:
+                # Grupos de cada oleada, publicados por el binario antes de actualizar.
+                extra["groups"] = run["group_waves"]
         else:
             sha, extra = run["selected_policy_sha256"], {}
         _require(isinstance(sha, str), f"{job['id']}: falta la huella de la política elegida")

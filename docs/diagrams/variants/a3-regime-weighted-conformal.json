@@ -1,0 +1,86 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "A3 · Conformal ponderado por contextos parecidos (regime_weighted_conformal_v1)",
+    "quality_profile": "showcase",
+    "viewBox": [1300, 592],
+    "legend": {
+      "entries": {
+        "external": {"label": "Entradas"},
+        "backend": {"label": "Cálculo"},
+        "database": {"label": "Memoria y estado"},
+        "frontend": {"label": "Salida"},
+        "security": {"label": "Control o protección"},
+        "cloud": {"label": "Evaluación"}
+      }
+    }
+  },
+  "components": [
+    {
+      "id": "context",
+      "type": "external",
+      "label": "Contexto en la emisión",
+      "sublabel": "rasgos disponibles en t",
+      "pos": [40, 40],
+      "size": [180, 72]
+    },
+    {
+      "id": "history",
+      "type": "database",
+      "label": "Errores maduros pasados",
+      "sublabel": "con su contexto de emisión",
+      "pos": [40, 420],
+      "size": [180, 72]
+    },
+    {
+      "id": "similarity",
+      "type": "backend",
+      "label": "Pesos por similitud",
+      "sublabel": "lectura de tipo Hopfield",
+      "pos": [300, 230],
+      "size": [180, 72]
+    },
+    {"id": "quantile", "type": "backend", "label": "Cuantil ponderado", "sublabel": "intervalo para A2", "pos": [560, 230], "size": [180, 72]},
+    {"id": "abstain", "type": "frontend", "label": "Abstención A2", "sublabel": "mediana o cero", "pos": [820, 230], "size": [180, 72]},
+    {"id": "screen", "type": "cloud", "label": "Criba", "sublabel": "IC por sesión frente al control", "pos": [1080, 230], "size": [180, 72]},
+    {
+      "id": "controls",
+      "type": "security",
+      "label": "Controles",
+      "sublabel": "PT2 sin ponderar, pesos barajados",
+      "pos": [820, 420],
+      "size": [180, 72]
+    }
+  ],
+  "connections": [
+    {"id": "context-similarity", "from": "context", "to": "similarity", "label": "consulta"},
+    {"id": "history-similarity", "from": "history", "to": "similarity", "label": "claves"},
+    {"id": "history-quantile", "from": "history", "to": "quantile", "label": "errores"},
+    {"id": "similarity-quantile", "from": "similarity", "to": "quantile", "label": "pesos", "variant": "emphasis"},
+    {"id": "quantile-abstain", "from": "quantile", "to": "abstain", "label": "intervalo", "variant": "emphasis"},
+    {"id": "abstain-screen", "from": "abstain", "to": "screen"},
+    {"id": "controls-screen", "from": "controls", "to": "screen", "label": "control", "variant": "dashed"}
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "Mecanismo",
+      "items": [
+        "Los errores maduros cuentan más si su contexto se parece al actual",
+        "Solo entran errores de predicciones ya resueltas antes de t",
+        "Fuente: HopCPT, Auer et al. (NeurIPS 2023)"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "Control que la descarta",
+      "items": ["Conformal PT2 sin ponderar", "Los mismos pesos barajados entre errores"]
+    },
+    {
+      "dot": "amber",
+      "title": "Estado",
+      "items": ["Registrada en #748 y en implementación, sin entrenar ni evaluar", "Coste estimado inferior a 0,05 ajustes de referencia"]
+    }
+  ]
+}

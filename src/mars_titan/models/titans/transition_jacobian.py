@@ -137,6 +137,10 @@ def refinement_jacobians(readout, z_base, snapshot=None, *, context_id=None, cut
 
     if not isinstance(readout, EpisodicReadout):
         raise ValueError("Se necesita el lector episódico")
+    if readout.config.familiarity_gate is not None:
+        # La familiaridad de R3 (#786) no lleva gradiente, así que el Jacobiano calculado
+        # omitiría su dependencia del estado.
+        raise ValueError("El Jacobiano del refinamiento no admite la puerta de familiaridad")
     hidden = readout.config.hidden_size
     if not isinstance(z_base, torch.Tensor) or z_base.shape != (1, hidden):
         raise ValueError("El Jacobiano del refinamiento se calcula para una fila")

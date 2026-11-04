@@ -1,0 +1,119 @@
+{
+  "schema_version": 1,
+  "kind": "mature_correction_variants",
+  "variant_id": "area_query_bridge_v1",
+  "issue": 750,
+  "status": "declared_not_executed",
+  "default_enabled": false,
+  "final_test_access": false,
+  "parent": "titans_mac_mac_online_of_the_same_window_view_and_seed",
+  "window": "src/mars_titan/training/mars_titan_correction.py:run_correction_window",
+  "arms": {
+    "bridge": {
+      "recipe": "configs/titans/mature-correction-historical-masked.json",
+      "components": {
+        "associative_memory": {
+          "rule": "proximal",
+          "key": "codec",
+          "areas": {
+            "areas": 4,
+            "shifts": 1,
+            "permutation": "seeded_random",
+            "seed": 0,
+            "labels": "mature"
+          },
+          "query_bridge": {
+            "gain": 0.25,
+            "steps": 1,
+            "targets": "aligned",
+            "seed": 0
+          }
+        }
+      }
+    },
+    "no_bridge": {
+      "recipe": "configs/titans/mature-correction-historical-masked.json",
+      "components": {
+        "associative_memory": {
+          "rule": "proximal",
+          "key": "codec",
+          "areas": {
+            "areas": 4,
+            "shifts": 1,
+            "permutation": "seeded_random",
+            "seed": 0,
+            "labels": "mature"
+          }
+        }
+      }
+    },
+    "same_maps_zero_gain": {
+      "recipe": "configs/titans/mature-correction-historical-masked.json",
+      "components": {
+        "associative_memory": {
+          "rule": "proximal",
+          "key": "codec",
+          "areas": {
+            "areas": 4,
+            "shifts": 1,
+            "permutation": "seeded_random",
+            "seed": 0,
+            "labels": "mature"
+          },
+          "query_bridge": {
+            "gain": 0,
+            "steps": 1,
+            "targets": "aligned",
+            "seed": 0
+          }
+        }
+      }
+    },
+    "shuffled_correspondence": {
+      "recipe": "configs/titans/mature-correction-historical-masked.json",
+      "components": {
+        "associative_memory": {
+          "rule": "proximal",
+          "key": "codec",
+          "areas": {
+            "areas": 4,
+            "shifts": 1,
+            "permutation": "seeded_random",
+            "seed": 0,
+            "labels": "mature"
+          },
+          "query_bridge": {
+            "gain": 0.25,
+            "steps": 1,
+            "targets": "shuffled_within_cohort",
+            "seed": 0
+          }
+        }
+      }
+    }
+  },
+  "comparisons": [
+    {
+      "variant": "bridge",
+      "control": "no_bridge",
+      "question": "Traducir consultas frente a B1 sin mapas adicionales"
+    },
+    {
+      "variant": "bridge",
+      "control": "same_maps_zero_gain",
+      "question": "Usar la traducción frente a guardar los mismos mapas con ganancia cero"
+    },
+    {
+      "variant": "bridge",
+      "control": "shuffled_correspondence",
+      "question": "Aprovechar la correspondencia de la misma observación frente a barajar los destinos maduros"
+    }
+  ],
+  "memory_reads": 1,
+  "bridge_steps": 1,
+  "pending": [
+    "No hay evaluación predictiva. La selección de la receta sigue protegida por el bloqueo.",
+    "El anillo y los pasos del puente no son las K lecturas del predictor ni otro avance de la memoria Titans.",
+    "Los pasos 2 y 4 se admiten técnicamente, sin añadirlos a la comparación principal ni seleccionar el mejor retrospectivamente."
+  ]
+}

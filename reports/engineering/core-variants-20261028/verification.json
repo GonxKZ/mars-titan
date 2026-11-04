@@ -1,0 +1,481 @@
+{
+ "schema_version": 1,
+ "date": "2026-10-29",
+ "issue": 786,
+ "scope": "huber_memory_scale_invariant_time_and_differential_attention",
+ "implementation_commit": "912d543f8e0de83f7c46851391091c2e91b33e5f",
+ "base_commit": "22c03bd1bc5a8779573acf79c4ce874e62626fd7",
+ "scientific_experiments": 0,
+ "training_runs": 0,
+ "real_optimizer_steps": 0,
+ "final_test_opened": false,
+ "screening_predictions_read": false,
+ "hold_sha256": "8a658080c1ac4e63847eba58b177020339da6ec47021cf26d2701830073c87fd",
+ "test_optimizers": "Las pruebas del recorrido usan un optimizador registrador que guarda los gradientes y no cambia pesos. La medida de coste comprueba que los parámetros no cambian y las mutaciones registran un gancho de torch.optim que rechaza cualquier paso. La protección global del aprendizaje sigue activa.",
+ "suites": [
+  {
+   "name": "targeted_with_coverage_after_merging_develop",
+   "tests": 883,
+   "failures": 0,
+   "errors": 0,
+   "skipped": 2,
+   "xml_sha256": "a2bd807993537e5914ef2b831789b8d820846c15db5a5ebaa6d68ab80220cb38",
+   "note": "Pruebas dirigidas de R1, U1 y U2 con cobertura de ramas sobre implementation_commit, junto con la medida de lesiones, los cuatro módulos con dobles de la identidad y las pruebas de la señal madura de #791 que llegaron con develop. Las dos omisiones necesitan una protección que permita aprender."
+  },
+  {
+   "name": "targeted_with_coverage_at_60f044142",
+   "tests": 635,
+   "failures": 0,
+   "errors": 0,
+   "skipped": 2,
+   "xml_sha256": "bd99b2cd0ed003478bec839c1ffd3e7ae98bda5dedb570dd8a6ab7ae2e19bcb9",
+   "note": "Primera verificación dirigida, sobre el árbol de las mutaciones y antes de fusionar develop."
+  },
+  {
+   "name": "regression_training_at_60f044142",
+   "tests": 1925,
+   "failures": 7,
+   "errors": 0,
+   "skipped": 41,
+   "xml_sha256": "2dd3ce7579c763309255e051f7da4fdcd367e89d4d2f1bdf7895b47b63160a4b",
+   "note": "Módulos de tests/training que importan el código cambiado, con tres procesos. Los siete fallos son de dobles de configuración sin el campo mature_reliability de #791. Se corrigieron en develop antes de la fusión y pasan en la primera suite. Las 41 omisiones son de la protección del aprendizaje."
+  },
+  {
+   "name": "regression_other_at_60f044142",
+   "tests": 6651,
+   "failures": 3,
+   "errors": 0,
+   "skipped": 124,
+   "xml_sha256": "3743628025adecf72c5b85d1f214dc040e716f63aac05242fe2d388f969f809a",
+   "note": "Resto de módulos que importan el código cambiado, con tres procesos. Dos fallos son de dobles sin mature_reliability y el tercero es el plazo de la medida de lesiones de #803. Los dos arreglos llegaron con develop y esas pruebas pasan en la primera suite. De las omisiones, 84 son de la protección del aprendizaje, una espera a que se levante y 39 necesitan binarios nativos de simulación y de PPO sin compilar."
+  }
+ ],
+ "quality": {
+  "tools": {
+   "coverage": "7.16.1",
+   "radon": "6.0.1",
+   "branch_coverage": true,
+   "python": "3.12.14",
+   "summarizer_sha256": "75cc60c88037e0bb17aff6e8ab666ce78b35d600d6c7ad217bf68b1afb4c4ec6"
+  },
+  "totals": {
+   "statements": 2760,
+   "covered_statements": 2125,
+   "branches": 1118,
+   "covered_branches": 708
+  },
+  "files": [
+   {
+    "path": "benchmarks/core_variants_cost.py",
+    "source_sha256": "1f7e3b56f283a189c3431333b8179c8b578bdc6aebc0539ffa95c4458fa89c77",
+    "statements": 128,
+    "covered_statements": 111,
+    "branches": 36,
+    "covered_branches": 29
+   },
+   {
+    "path": "src/mars_titan/models/titans/config.py",
+    "source_sha256": "8db35e8c6e4aa962d86192dd8b5161c08f2dabb029309ff47ebafe660472894f",
+    "statements": 327,
+    "covered_statements": 242,
+    "branches": 144,
+    "covered_branches": 77
+   },
+   {
+    "path": "src/mars_titan/models/titans/differential_attention.py",
+    "source_sha256": "82484a199c32f576b18b21d9a7659da137f80c838d7ec8f543eafae2112a3ce0",
+    "statements": 33,
+    "covered_statements": 33,
+    "branches": 2,
+    "covered_branches": 2
+   },
+   {
+    "path": "src/mars_titan/models/titans/financial.py",
+    "source_sha256": "a4dfe7e498e5e951e6437823de892f2e48f801774dee31bc14c0ab450bd1f77c",
+    "statements": 838,
+    "covered_statements": 615,
+    "branches": 426,
+    "covered_branches": 251
+   },
+   {
+    "path": "src/mars_titan/models/titans/frozen_financial.py",
+    "source_sha256": "68a169048001158a9728b934a4ea8953abd2d89c709265b4fa3bce327aa29060",
+    "statements": 215,
+    "covered_statements": 177,
+    "branches": 116,
+    "covered_branches": 84
+   },
+   {
+    "path": "src/mars_titan/models/titans/huber_memory.py",
+    "source_sha256": "31cd054312b65a980a37fd4eb659cd5fb6c0ab6110a94e6b77156f91a801a83e",
+    "statements": 24,
+    "covered_statements": 24,
+    "branches": 2,
+    "covered_branches": 2
+   },
+   {
+    "path": "src/mars_titan/models/titans/mac.py",
+    "source_sha256": "ab4113563efcd446ce0b99d68d15c1256baaf5ea20f53ecaeacc33d54c60ad8a",
+    "statements": 113,
+    "covered_statements": 107,
+    "branches": 32,
+    "covered_branches": 26
+   },
+   {
+    "path": "src/mars_titan/models/titans/neural_memory.py",
+    "source_sha256": "7708f0150b87206c31470fea18f643124ab35f4207c09a269bc65fe2441521f7",
+    "statements": 419,
+    "covered_statements": 263,
+    "branches": 178,
+    "covered_branches": 96
+   },
+   {
+    "path": "src/mars_titan/models/titans/scale_invariant_time.py",
+    "source_sha256": "f757b5de02c244fae35e989f35f245be671e07397dd283c2933d12b713df677f",
+    "statements": 19,
+    "covered_statements": 19,
+    "branches": 4,
+    "covered_branches": 4
+   },
+   {
+    "path": "src/mars_titan/training/dust/financial.py",
+    "source_sha256": "751640b7328dd7955371cac127552b97940eb21a890ec86ebbe5051cc1ee832c",
+    "statements": 241,
+    "covered_statements": 223,
+    "branches": 84,
+    "covered_branches": 64
+   },
+   {
+    "path": "src/mars_titan/training/search_cases.py",
+    "source_sha256": "aad30665d0b44f94ff63b70dd9b6c494164379be49bdb22f94a62eb6d27c4c35",
+    "statements": 28,
+    "covered_statements": 25,
+    "branches": 14,
+    "covered_branches": 11
+   },
+   {
+    "path": "src/mars_titan/training/titans_walk_forward.py",
+    "source_sha256": "3254caedd25640afe8d7cf9c4b24d10076eb138ce5ced6885389c8a2f974f76c",
+    "statements": 375,
+    "covered_statements": 286,
+    "branches": 80,
+    "covered_branches": 62
+   }
+  ],
+  "max_crap": 2009.775165980795,
+  "quality_sha256": "acac6237f129438618ba95d23491e4e702919bc16f2b55c6d931d51a3b7eb536",
+  "limits": "CRAP y cobertura localizan complejidad poco comprobada. No demuestran ausencia de errores."
+ },
+ "changed": {
+  "base": "22c03bd1bc5a8779573acf79c4ce874e62626fd7",
+  "head": "912d543f8e0de83f7c46851391091c2e91b33e5f",
+  "functions": 35,
+  "max_crap": 2009.775165980795,
+  "changed_executable_lines": 228,
+  "changed_covered_lines": 212,
+  "highest": [
+   {
+    "path": "src/mars_titan/models/titans/financial.py",
+    "function": "FinancialConfig.__post_init__",
+    "cyclomatic_complexity": 119,
+    "crap": 2009.775165980795,
+    "changed_executable_lines": 1,
+    "changed_covered_lines": 1,
+    "changed_missing_lines": [],
+    "changed_missing_branches": []
+   },
+   {
+    "path": "src/mars_titan/models/titans/config.py",
+    "function": "MemoryConfig.__post_init__",
+    "cyclomatic_complexity": 38,
+    "crap": 117.235168,
+    "changed_executable_lines": 6,
+    "changed_covered_lines": 6,
+    "changed_missing_lines": [],
+    "changed_missing_branches": []
+   },
+   {
+    "path": "src/mars_titan/models/titans/neural_memory.py",
+    "function": "NeuralMemory.update_shared",
+    "cyclomatic_complexity": 10,
+    "crap": 74.06576735413505,
+    "changed_executable_lines": 2,
+    "changed_covered_lines": 2,
+    "changed_missing_lines": [],
+    "changed_missing_branches": [
+     [
+      574,
+      576
+     ]
+    ]
+   },
+   {
+    "path": "src/mars_titan/models/titans/financial.py",
+    "function": "FinancialConfig.identity",
+    "cyclomatic_complexity": 29,
+    "crap": 42.140625,
+    "changed_executable_lines": 6,
+    "changed_covered_lines": 6,
+    "changed_missing_lines": [],
+    "changed_missing_branches": []
+   },
+   {
+    "path": "src/mars_titan/models/titans/financial.py",
+    "function": "FinancialPredictor.__init__",
+    "cyclomatic_complexity": 33,
+    "crap": 33.96811703459262,
+    "changed_executable_lines": 2,
+    "changed_covered_lines": 2,
+    "changed_missing_lines": [],
+    "changed_missing_branches": []
+   }
+  ],
+  "uncovered": [
+   {
+    "path": "src/mars_titan/models/titans/neural_memory.py",
+    "function": "NeuralMemory.update_shared",
+    "cyclomatic_complexity": 10,
+    "crap": 74.06576735413505,
+    "changed_executable_lines": 2,
+    "changed_covered_lines": 2,
+    "changed_missing_lines": [],
+    "changed_missing_branches": [
+     [
+      574,
+      576
+     ]
+    ]
+   },
+   {
+    "path": "benchmarks/core_variants_cost.py",
+    "function": "_measure",
+    "cyclomatic_complexity": 19,
+    "crap": 19.208912037037038,
+    "changed_executable_lines": 37,
+    "changed_covered_lines": 34,
+    "changed_missing_lines": [
+     152,
+     153,
+     154
+    ],
+    "changed_missing_branches": [
+     [
+      151,
+      152
+     ],
+     [
+      152,
+      151
+     ],
+     [
+      152,
+      153
+     ]
+    ]
+   },
+   {
+    "path": "benchmarks/core_variants_cost.py",
+    "function": "graph_pass",
+    "cyclomatic_complexity": 6,
+    "crap": 6.0163859808830225,
+    "changed_executable_lines": 14,
+    "changed_covered_lines": 13,
+    "changed_missing_lines": [
+     75
+    ],
+    "changed_missing_branches": [
+     [
+      74,
+      75
+     ]
+    ]
+   },
+   {
+    "path": "benchmarks/core_variants_cost.py",
+    "function": "main",
+    "cyclomatic_complexity": 2,
+    "crap": 6.0,
+    "changed_executable_lines": 13,
+    "changed_covered_lines": 1,
+    "changed_missing_lines": [
+     215,
+     216,
+     217,
+     218,
+     219,
+     220,
+     221,
+     222,
+     223,
+     231,
+     232,
+     233
+    ],
+    "changed_missing_branches": [
+     [
+      231,
+      232
+     ],
+     [
+      231,
+      233
+     ]
+    ]
+   }
+  ],
+  "unmeasured": [
+   {
+    "path": "benchmarks/core_variants_cost.py",
+    "function": "clipped_fraction.<locals>.counted"
+   },
+   {
+    "path": "src/mars_titan/models/titans/differential_attention.py",
+    "function": "DifferentialMap.forward.<locals>.split"
+   }
+  ],
+  "note": "Funciones con líneas cambiadas frente a develop (base_commit), con su CRAP y la cobertura de esas líneas. Las 16 líneas sin cubrir son de la medida de coste: el calentamiento, la comprobación de un gradiente no finito y la orden de línea de comandos. La rama de NeuralMemory.update_shared sin Huber queda fuera de las pruebas dirigidas, y la recorren las 34 pruebas de test_market_memory de la regresión, en verde. Dos funciones anidadas quedan sin medida de CRAP. El CRAP de FinancialConfig.__post_init__ es una deuda previa recogida en #801.",
+  "changed_sha256": "1f949ec468b34f25541249e27982a4031b5ee7cdc7b230d97802ea0c78514de8"
+ },
+ "mutations": {
+  "tree_commit": "60f044142686a549277a70a270974230205a48fe",
+  "planned": 87,
+  "killed": 87,
+  "optimizer_attempts": 0,
+  "hold_sha256_unchanged": true,
+  "recipes_sha256": "3cf3f990c560b10105c0baac3278958dffb5e0af65f8821a020c50213e288801",
+  "executor_sha256": "e625d3889a9e60e889c9b6529774733ad744394617a26764fe30d821f5d45ad5",
+  "source_sha256": {
+   "src/mars_titan/models/titans/huber_memory.py": "31cd054312b65a980a37fd4eb659cd5fb6c0ab6110a94e6b77156f91a801a83e",
+   "src/mars_titan/models/titans/differential_attention.py": "82484a199c32f576b18b21d9a7659da137f80c838d7ec8f543eafae2112a3ce0",
+   "benchmarks/core_variants_cost.py": "1f7e3b56f283a189c3431333b8179c8b578bdc6aebc0539ffa95c4458fa89c77",
+   "src/mars_titan/models/titans/config.py": "8db35e8c6e4aa962d86192dd8b5161c08f2dabb029309ff47ebafe660472894f",
+   "src/mars_titan/models/titans/frozen_financial.py": "68a169048001158a9728b934a4ea8953abd2d89c709265b4fa3bce327aa29060",
+   "src/mars_titan/training/search_cases.py": "aad30665d0b44f94ff63b70dd9b6c494164379be49bdb22f94a62eb6d27c4c35",
+   "src/mars_titan/models/titans/scale_invariant_time.py": "f757b5de02c244fae35e989f35f245be671e07397dd283c2933d12b713df677f",
+   "src/mars_titan/models/titans/mac.py": "ab4113563efcd446ce0b99d68d15c1256baaf5ea20f53ecaeacc33d54c60ad8a",
+   "src/mars_titan/models/titans/neural_memory.py": "7708f0150b87206c31470fea18f643124ab35f4207c09a269bc65fe2441521f7",
+   "src/mars_titan/models/titans/financial.py": "a4dfe7e498e5e951e6437823de892f2e48f801774dee31bc14c0ab450bd1f77c",
+   "src/mars_titan/training/titans_walk_forward.py": "3254caedd25640afe8d7cf9c4b24d10076eb138ce5ced6885389c8a2f974f76c"
+  },
+  "cases": [
+   "huber_linear_factor",
+   "huber_offset_dropped",
+   "huber_quadratic_halved",
+   "scale_with_gradient",
+   "scale_mean_absolute",
+   "scale_without_dimension",
+   "scale_per_row_lost",
+   "softplus_as_exp",
+   "threshold_ignores_input",
+   "bias_not_inverse",
+   "ratio_upper_bound",
+   "ratio_lower_bound",
+   "ratio_bool_accepted",
+   "ratio_kept_as_given",
+   "huber_ignored",
+   "surprise_stays_l2",
+   "pt4_accepts_huber",
+   "threshold_from_residual",
+   "threshold_from_keys",
+   "huber_weight_drawn",
+   "huber_bias_zero",
+   "alpha_rows_ignored",
+   "alpha_rows_reversed",
+   "rows_on_eta",
+   "half_life_sign",
+   "half_life_one_side",
+   "half_life_natural_base",
+   "one_row_accepted",
+   "octaves_upper_bound",
+   "octaves_negative",
+   "octaves_bool_accepted",
+   "octaves_kept_as_given",
+   "box_ignored",
+   "eta_logit_used",
+   "center_ignored",
+   "lambda_starts_at_one",
+   "lambda_not_applied",
+   "mask_dropped",
+   "mask_not_inverted",
+   "scale_fixed_at_one",
+   "values_not_projected",
+   "queries_from_all_positions",
+   "output_not_projected",
+   "seed_not_derived",
+   "bound_of_two_inputs",
+   "generator_not_forked",
+   "query_key_swapped",
+   "heads_unchecked",
+   "subtraction_as_sum",
+   "values_from_keys",
+   "budget_without_second_map",
+   "budget_square_second_map",
+   "differential_always_built",
+   "huber_type_unchecked",
+   "time_scales_without_gate_bias",
+   "time_scales_unvalidated",
+   "identity_without_loss",
+   "identity_without_time_scales",
+   "identity_keeps_the_huber_field",
+   "mac_identity_name_only",
+   "mac_identity_keeps_none",
+   "mac_name_unchecked",
+   "recipe_dict_not_built",
+   "recipe_fields_unchecked",
+   "variant_type_unchecked",
+   "online_unchecked",
+   "gate_bias_unchecked",
+   "box_not_passed",
+   "transformer_direct_accepted",
+   "local_control_accepted",
+   "huber_not_passed",
+   "time_scales_not_passed",
+   "differential_not_passed",
+   "identity_without_memory_huber",
+   "identity_without_memory_time_scales",
+   "identity_differential_name_only",
+   "frozen_code_without_modules",
+   "run_code_without_modules",
+   "walk_forward_code_without_modules",
+   "screening_without_changes",
+   "named_without_differential",
+   "benchmark_not_restored",
+   "benchmark_counts_every_channel",
+   "benchmark_duplicates_accepted",
+   "benchmark_digest_unchecked",
+   "benchmark_added_parameters",
+   "benchmark_one_instant"
+  ],
+  "summary_sha256": "40d5d96d0df0cb43a7d31f7dc94bb35f5e7308f3d7b0c7d52adca3f56a80a029",
+  "scope": "Ochenta y siete defectos dirigidos de la pérdida de Huber, las escalas de tiempo, la atención diferencial, MAC, la memoria neuronal, el predictor, los consumidores, la criba y la medida de coste, cada uno con una fase en verde antes, la mutación y otra fase en verde después, en una copia aislada del árbol. No es una puntuación global.",
+  "first_pass_killed": 83,
+  "reruns": [
+   {
+    "tree_commit": "60f044142686a549277a70a270974230205a48fe",
+    "cases": [
+     "benchmark_added_parameters",
+     "benchmark_counts_every_channel",
+     "benchmark_not_restored",
+     "benchmark_one_instant"
+    ],
+    "killed": 4,
+    "recipes_sha256": "3cf3f990c560b10105c0baac3278958dffb5e0af65f8821a020c50213e288801",
+    "source_sha256": {
+     "benchmarks/core_variants_cost.py": "1f7e3b56f283a189c3431333b8179c8b578bdc6aebc0539ffa95c4458fa89c77"
+    },
+    "summary_sha256": "5d1947e18731dcdc133b870466ac34d71ba37bc380210a3babe8f567c4786482",
+    "reason": "La medida de coste registra su commit y la copia aislada no es un repositorio, así que sus cuatro mutaciones quedaron sin conclusión en la primera pasada. Se repitieron con GIT_DIR apuntando al árbol de verificación."
+   }
+  ]
+ },
+ "native_link": {
+  "source_commit": "39abf2c99",
+  "preset": "native-candidate-cuda",
+  "used_by": "todas las suites",
+  "sha256": "9fda744aa9c6672f9fb47c0896a5e9b19fc8795cdbfff42b944ed751953b1046"
+ },
+ "cost": {
+  "receipt": "cost-cpu.json",
+  "sha256": "024ddc5da2bfc65defbdc2889d5d3fd7715504b37c1e8070fcbca11ebe7ea308"
+ }
+}

@@ -326,6 +326,17 @@ if(MARS_TITAN_BUILD_SIMULATION)
             mars_titan_sanitizer_test_environment(qr_dqn_policy)
             set_property(TEST qr_dqn_policy APPEND PROPERTY ENVIRONMENT
                 "CUDA_VISIBLE_DEVICES=-1" "OMP_NUM_THREADS=1" "MKL_NUM_THREADS=1")
+            # Recorre PpoTrainer::advance, que puede llegar a un paso, así que pasa por el
+            # lanzador que lee la protección aunque la prueba exija cero pasos de Adam.
+            add_executable(value_replay_tests tests/value_replay_tests.cpp)
+            target_link_libraries(value_replay_tests PRIVATE mars_titan_ppo)
+            mars_titan_configure_target(value_replay_tests)
+            mars_titan_add_optimizer_step_test(value_replay COMMAND value_replay_tests)
+            set_tests_properties(value_replay PROPERTIES TIMEOUT 120)
+            set_property(TEST value_replay APPEND PROPERTY LABELS unit rl-objectives)
+            mars_titan_sanitizer_test_environment(value_replay)
+            set_property(TEST value_replay APPEND PROPERTY ENVIRONMENT
+                "CUDA_VISIBLE_DEVICES=-1" "OMP_NUM_THREADS=1" "MKL_NUM_THREADS=1")
             add_executable(group_waves_tests tests/group_waves_tests.cpp)
             target_link_libraries(group_waves_tests PRIVATE mars_titan_klpo_learning)
             mars_titan_configure_target(group_waves_tests)

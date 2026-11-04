@@ -1,0 +1,43 @@
+{
+  "schema_version": 1,
+  "kind": "seed_ema_ensemble_variants",
+  "issue": 749,
+  "variant": "mac_online",
+  "base_recipe": "configs/titans/chronological-training-historical-sequence-v1.json",
+  "default_enabled": false,
+  "final_test_access": false,
+  "status": "declared_not_trained",
+  "updates_per_epoch_evidence": "685 actualizaciones por época con el tramo de ajuste 2000-2022 del piloto v4 de plasticidad, unas 31 por año de datos",
+  "arms": {
+    "single_seed_reference": {
+      "role": "reference",
+      "seeds": [42],
+      "recipe_changes": {}
+    },
+    "single_seed_matched_updates": {
+      "role": "control",
+      "seeds": [42],
+      "updates_multiplier": 3,
+      "recipe_changes": {}
+    },
+    "weight_ema_fast": {
+      "role": "variant",
+      "control": "single_seed_reference",
+      "seeds": [42],
+      "recipe_changes": {"weight_average": {"decay": 0.99}}
+    },
+    "weight_ema_slow": {
+      "role": "variant",
+      "control": "single_seed_reference",
+      "seeds": [42],
+      "recipe_changes": {"weight_average": {"decay": 0.999}}
+    },
+    "seed_mean": {
+      "role": "variant",
+      "control": "single_seed_matched_updates",
+      "seeds": [42, 43, 44],
+      "combine": "seed_mean_v1",
+      "recipe_changes": {}
+    }
+  }
+}

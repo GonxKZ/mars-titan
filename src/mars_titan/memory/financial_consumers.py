@@ -228,7 +228,8 @@ class TitansBinding:
             unknown = tuple(flow for flow in batch.flow_ids if flow not in fast["references"])
             initial = model.initial_state(unknown) if unknown else None
             previous = session._fast_store.gather(fast, batch.flow_ids, initial_state=initial)
-            result = self.consumer.prepare(
+            result = self.prepare_block(
+                session,
                 batch,
                 previous,
                 context_id=context_id,
@@ -236,6 +237,7 @@ class TitansBinding:
                 warmup=warmup,
                 selection=selection,
             )
+            self.record_block(session, batch, result, warmup=warmup)
             fast = session._fast_store.replace(fast, previous, result.next_state)
             if not warmup:
                 values.extend(result.point_predictions.detach().cpu().tolist())
@@ -298,6 +300,12 @@ class TitansBinding:
                     ),
                 )
         return values, fast, control
+
+    def prepare_block(self, session, batch, previous, **options):
+        return self.consumer.prepare(batch, previous, **options)
+
+    def record_block(self, session, batch, result, *, warmup):
+        """La referencia no publica diagnósticos auxiliares del bloque."""
 
     def verify_regional_control(self, control, flows, cutoff, block_rows, *, event_kind):
         if regional_episode_trace.enabled(self.consumer.readout):
@@ -496,6 +504,12 @@ class CandidateBinding:
 
 def bind_consumer(consumer, codec, retention, admission):
     if type(consumer) is FrozenFinancialConsumer:
+        from .spaced_retention import SpacedRetentionConfig
+
+        if type(retention) is SpacedRetentionConfig:
+            from .spaced_session import SpacedTitansBinding
+
+            return SpacedTitansBinding(consumer, codec, retention, admission)
         return TitansBinding(consumer, codec, retention, admission)
     if type(consumer) is FrozenCandidateConsumer:
         return CandidateBinding(consumer, codec, retention, admission)

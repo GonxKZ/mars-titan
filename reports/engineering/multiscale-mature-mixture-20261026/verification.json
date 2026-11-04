@@ -1,0 +1,70 @@
+{
+  "schema_version": 1,
+  "verified_at": "2026-10-26T21:44:35.442525+00:00",
+  "kind": "multiscale_mature_mixture_technical_fixtures",
+  "source_base_commit": "7b404f1276f13c6a53672477f37d11e375e032c1",
+  "sources_sha256": {
+    "benchmarks/multiscale_mixture_cost.py": "cd50a68bb821105815e17d554ab917fea4e5f06a41feab48eb5832a1d668a0a1",
+    "configs/experiments/multiscale-mature-mixture-v1.json": "b34e3385fa38f5a3517439a40aff01cbdf6b1f3c5dc7e526c15595df3c553f76",
+    "configs/titans/mars-titan-extensions.json": "c7c849cf289591b8deebdcf47370839b45ff7de2cd5d41356e8742c99aec2704",
+    "configs/titans/mature-correction-calendar-scales.json": "005eacd353456a4bbf89a7c41fdf01c2c3cf50b8832385085197f5ada9cf2a52",
+    "src/mars_titan/memory/area_memory.py": "7c7ed879884bafc5a7aa12f4ec8f22aad1a883862cb8fe9871b24411586acc4d",
+    "src/mars_titan/memory/area_query_bridge.py": "96f77a2c58c83a431ec94bcd8f659e7cdf2b725ac20635f7492b4874120bb681",
+    "src/mars_titan/memory/associative_memory.py": "100f880063579e3f72b483bce159b53a856968a46274a3a48994c598625dce91",
+    "src/mars_titan/memory/financial_session.py": "eed3908005359ea76dd5bbbfb1316659c82b2640ca71934ec2de64056fd3566f",
+    "src/mars_titan/memory/mars_titan_variant.py": "d585134fecea22ea4cdbce094c40fd97463ef5a34eb49272bfe1553fcb46dbef",
+    "src/mars_titan/memory/multiscale_mixture.py": "b0d9e06dc12bff72547a36e3dd6072104c0ac0b59079c090750a2b0ee28cb282",
+    "src/mars_titan/memory/role_binding.py": "7deec8041585cd463f06129f24a7ef9bb185f622357e9f8c02f6e3c70a3775c1",
+    "src/mars_titan/training/mars_titan_correction.py": "98e410a0a0e6715afecfb3ff90720467cfd258d4478188f1a49ba5a753d6557e",
+    "tests/memory/test_area_cuda_interop.py": "935ad3039b1582c443b579a17cb2c4728c1e42a977a3028bc946a60ec0962e20",
+    "tests/memory/test_coefficient_decay.py": "bf8d9a5a023f02a7759a9c55b7611e5d0fb7f74bda08b35ddd7ef2a3061f43db",
+    "tests/memory/test_multiscale_mixture.py": "e67aff62c767f7b7cc9d724b3f001fe222cec42e4fe8dae93a0dedb019901fed",
+    "tests/memory/test_multiscale_session.py": "81451f6d23ced00590cadd7e6ee0eeb52bf49e5143d5aed9058640e273515997",
+    "tests/memory/test_multiscale_validation.py": "98ac1579a5920d6f30957979e6d0f548910bc172c20ac688deb73cdd113e7fc7",
+    "tests/training/test_multiscale_correction_arms.py": "e94ba06731134288837b50bb363230c03f8d4e828e356391bdb433b1ffa95ba2"
+  },
+  "tests": {
+    "technical": {
+      "passed": 245,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 155.671,
+      "xml_sha256": "753490a1fe6784c62508246f01e26987db3b386aecb24c403054ffad0860db0a"
+    },
+    "adversarial_validation": {
+      "passed": 19,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 0.176,
+      "xml_sha256": "dd4f8bcc0f776105ef90ebd2d5e6481d1c052858d745f56c14f5d2c2b897c010"
+    },
+    "hold_guards": {
+      "passed": 17,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 183.933,
+      "xml_sha256": "5fce2792d7cb1292a8631059638d3600663684fd621c58cbbfe7ac98ff0c7973"
+    },
+    "cuda_deselected": 5
+  },
+  "disabled_regressions_bitwise": 15,
+  "mutations": {
+    "planned": 10,
+    "killed": 10,
+    "optimizer_attempts": 0
+  },
+  "learning_executed": false,
+  "scientific_results": null,
+  "final_test_access": false,
+  "hold_unchanged": true,
+  "hold_sha256": "8a658080c1ac4e63847eba58b177020339da6ec47021cf26d2701830073c87fd",
+  "limits": [
+    "No se ha ejecutado la suite completa ni los cinco casos CUDA del conjunto.",
+    "Las pruebas y costes usan fixtures técnicos. No se ha medido MAE ni generalización de E1.",
+    "La medida incluye codec y ciclo de corrección, pero excluye padre, productor de régimen, colas y persistencia.",
+    "No hay garantía de regret para esta adaptación con etiquetas retrasadas y pérdida recortada."
+  ]
+}

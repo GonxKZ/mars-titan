@@ -1,0 +1,1008 @@
+{
+  "schema_version": 1,
+  "date": "2026-10-26",
+  "scope": "bounded_chronological_fit",
+  "unique_passed": 118,
+  "suites": [
+    {
+      "name": "bounded-suite-v1",
+      "tests": 118,
+      "failures": 1,
+      "skipped": 1,
+      "xml_sha256": "f32192ef5a8c702381f9eb0151aac9e46658ae498ce260f0b590cc7e82bf004d"
+    },
+    {
+      "name": "bounded-comparison-v2",
+      "tests": 1,
+      "failures": 0,
+      "skipped": 0,
+      "xml_sha256": "3e028a342422cf4d00200ca307a8d82f11b70aea6c77f794dd09c5200494c96f"
+    },
+    {
+      "name": "pt1-fixture",
+      "tests": 1,
+      "failures": 0,
+      "skipped": 0,
+      "xml_sha256": "48447ed42e49255e7ad11db5f3a53bd396470abd2e9c22576146860043a4e706"
+    }
+  ],
+  "mutations": [
+    {
+      "id": "ignore_fit_months",
+      "status": "killed_with_green_controls",
+      "phases": [
+        {
+          "phase": "G1",
+          "returncode": 0,
+          "optimizer_attempts": 0
+        },
+        {
+          "phase": "M1",
+          "returncode": 1,
+          "optimizer_attempts": 0
+        },
+        {
+          "phase": "G2",
+          "returncode": 0,
+          "optimizer_attempts": 0
+        }
+      ]
+    },
+    {
+      "id": "drop_train_warmup",
+      "status": "killed_with_green_controls",
+      "phases": [
+        {
+          "phase": "G1",
+          "returncode": 0,
+          "optimizer_attempts": 0
+        },
+        {
+          "phase": "M1",
+          "returncode": 1,
+          "optimizer_attempts": 0
+        },
+        {
+          "phase": "G2",
+          "returncode": 0,
+          "optimizer_attempts": 0
+        }
+      ]
+    },
+    {
+      "id": "accept_thirteen_months",
+      "status": "killed_with_green_controls",
+      "phases": [
+        {
+          "phase": "G1",
+          "returncode": 0,
+          "optimizer_attempts": 0
+        },
+        {
+          "phase": "M1",
+          "returncode": 1,
+          "optimizer_attempts": 0
+        },
+        {
+          "phase": "G2",
+          "returncode": 0,
+          "optimizer_attempts": 0
+        }
+      ]
+    },
+    {
+      "id": "reader_ignores_parent_fit_months",
+      "status": "killed_with_green_controls",
+      "phases": [
+        {
+          "phase": "G1",
+          "returncode": 0,
+          "optimizer_attempts": 0
+        },
+        {
+          "phase": "M1",
+          "returncode": 1,
+          "optimizer_attempts": 0
+        },
+        {
+          "phase": "G2",
+          "returncode": 0,
+          "optimizer_attempts": 0
+        }
+      ]
+    }
+  ],
+  "quality": {
+    "schema_version": 1,
+    "measured_at": "2026-10-26T08:43:38.972986",
+    "tools": {
+      "coverage": "7.16.1",
+      "radon": "6.0.1",
+      "branch_coverage": true,
+      "python": "3.12.14",
+      "summarizer_sha256": "75cc60c88037e0bb17aff6e8ab666ce78b35d600d6c7ad217bf68b1afb4c4ec6"
+    },
+    "complexity_convention": "ComplexityVisitor de Radon sobre la región de coverage.py: if, elif, expresión condicional, for y while con su else, except, else de try, assert, cada operando booleano después del primero y cada cláusula de comprensión suman uno. Las funciones anidadas son regiones propias.",
+    "coverage_convention": "Sentencias ejecutadas entre sentencias de la región según coverage.py.",
+    "crap_convention": "C² × (1 − cobertura de sentencias)³ + C.",
+    "limits": [
+      "CRAP combina complejidad y recorridos observados. No demuestra ausencia de errores.",
+      "La cobertura de sentencias no distingue qué operandos de una condición se evaluaron, aunque la complejidad sí los cuenta.",
+      "Como en Radon 6.0.1, los manejadores de except* y la condición de un assert no suman, y el cuerpo de una clase definida dentro de una función no suma en ella aunque coverage.py cuente allí sus sentencias.",
+      "Una función sin sentencias medibles (solo documentación o puntos suspensivos) conserva C.",
+      "Si dos funciones comparten nombre cualificado en un archivo, coverage.py solo mide la última. Las anteriores aparecen en shadowed_regions sin CRAP.",
+      "La fuente se contrasta con la medida por sus regiones y sus líneas de sentencia. Un cambio que las conserva, como otra condición en la misma línea, no se detecta, así que el resumen se ejecuta sobre el mismo árbol que se midió."
+    ],
+    "include": [],
+    "totals": {
+      "statements": 712,
+      "covered_statements": 556,
+      "branches": 116,
+      "covered_branches": 89
+    },
+    "files": [
+      {
+        "path": "src/mars_titan/training/mars_titan_walk_forward.py",
+        "source_sha256": "0ba5d91e2a94d2d7bcc2580be7a02d4d6d386d4e863cbdf7724f85e9c2a10f4b",
+        "statements": 340,
+        "covered_statements": 221,
+        "branches": 46,
+        "covered_branches": 29
+      },
+      {
+        "path": "src/mars_titan/training/titans_walk_forward.py",
+        "source_sha256": "21297ba6616c78f0c5104f3bb3c8096dc6ef26658fc77f057a8aa539a20a7d51",
+        "statements": 337,
+        "covered_statements": 300,
+        "branches": 62,
+        "covered_branches": 52
+      },
+      {
+        "path": "src/mars_titan/training/walk_forward_phases.py",
+        "source_sha256": "1fe00dce09bf68bac2feb24732d30c5f246d28461f366f41124990241864af2b",
+        "statements": 35,
+        "covered_statements": 35,
+        "branches": 8,
+        "covered_branches": 8
+      }
+    ],
+    "functions": [
+      {
+        "path": "src/mars_titan/training/mars_titan_walk_forward.py",
+        "function": "carry_readout",
+        "start_line": 704,
+        "end_line": 865,
+        "cyclomatic_complexity": 16,
+        "statements": 51,
+        "covered_statements": 0,
+        "coverage_fraction": 0.0,
+        "branches": 2,
+        "covered_branches": 0,
+        "crap": 272.0
+      },
+      {
+        "path": "src/mars_titan/training/mars_titan_walk_forward.py",
+        "function": "_campaign_case",
+        "start_line": 868,
+        "end_line": 882,
+        "cyclomatic_complexity": 5,
+        "statements": 4,
+        "covered_statements": 0,
+        "coverage_fraction": 0.0,
+        "branches": 0,
+        "covered_branches": 0,
+        "crap": 30.0
+      },
+      {
+        "path": "src/mars_titan/training/mars_titan_walk_forward.py",
+        "function": "mars_titan_fit",
+        "start_line": 885,
+        "end_line": 927,
+        "cyclomatic_complexity": 5,
+        "statements": 13,
+        "covered_statements": 0,
+        "coverage_fraction": 0.0,
+        "branches": 4,
+        "covered_branches": 0,
+        "crap": 30.0
+      },
+      {
+        "path": "src/mars_titan/training/mars_titan_walk_forward.py",
+        "function": "run_readout_window",
+        "start_line": 434,
+        "end_line": 654,
+        "cyclomatic_complexity": 26,
+        "statements": 96,
+        "covered_statements": 85,
+        "coverage_fraction": 0.8854166666666666,
+        "branches": 24,
+        "covered_branches": 20,
+        "crap": 27.01697681568287
+      },
+      {
+        "path": "src/mars_titan/training/titans_walk_forward.py",
+        "function": "run_titans_window",
+        "start_line": 381,
+        "end_line": 590,
+        "cyclomatic_complexity": 22,
+        "statements": 82,
+        "covered_statements": 77,
+        "coverage_fraction": 0.9390243902439024,
+        "branches": 22,
+        "covered_branches": 20,
+        "crap": 22.109727078829383
+      },
+      {
+        "path": "src/mars_titan/training/titans_walk_forward.py",
+        "function": "_campaign_case",
+        "start_line": 806,
+        "end_line": 819,
+        "cyclomatic_complexity": 4,
+        "statements": 4,
+        "covered_statements": 0,
+        "coverage_fraction": 0.0,
+        "branches": 0,
+        "covered_branches": 0,
+        "crap": 20.0
+      },
+      {
+        "path": "src/mars_titan/training/mars_titan_walk_forward.py",
+        "function": "window_scalers",
+        "start_line": 338,
+        "end_line": 361,
+        "cyclomatic_complexity": 5,
+        "statements": 12,
+        "covered_statements": 3,
+        "coverage_fraction": 0.25,
+        "branches": 4,
+        "covered_branches": 1,
+        "crap": 15.546875
+      },
+      {
+        "path": "src/mars_titan/training/titans_walk_forward.py",
+        "function": "_check_view",
+        "start_line": 196,
+        "end_line": 217,
+        "cyclomatic_complexity": 14,
+        "statements": 5,
+        "covered_statements": 5,
+        "coverage_fraction": 1.0,
+        "branches": 0,
+        "covered_branches": 0,
+        "crap": 14.0
+      },
+      {
+        "path": "src/mars_titan/training/titans_walk_forward.py",
+        "function": "carry_titans",
+        "start_line": 644,
+        "end_line": 788,
+        "cyclomatic_complexity": 12,
+        "statements": 46,
+        "covered_statements": 43,
+        "coverage_fraction": 0.9347826086956522,
+        "branches": 4,
+        "covered_branches": 3,
+        "crap": 12.039944111120244
+      },
+      {
+        "path": "src/mars_titan/training/titans_walk_forward.py",
+        "function": "titans_fit",
+        "start_line": 822,
+        "end_line": 856,
+        "cyclomatic_complexity": 3,
+        "statements": 8,
+        "covered_statements": 0,
+        "coverage_fraction": 0.0,
+        "branches": 2,
+        "covered_branches": 0,
+        "crap": 12.0
+      },
+      {
+        "path": "src/mars_titan/training/mars_titan_walk_forward.py",
+        "function": "_parent",
+        "start_line": 171,
+        "end_line": 194,
+        "cyclomatic_complexity": 7,
+        "statements": 7,
+        "covered_statements": 7,
+        "coverage_fraction": 1.0,
+        "branches": 0,
+        "covered_branches": 0,
+        "crap": 7.0
+      },
+      {
+        "path": "src/mars_titan/training/mars_titan_walk_forward.py",
+        "function": "_scaler_code",
+        "start_line": 309,
+        "end_line": 314,
+        "cyclomatic_complexity": 2,
+        "statements": 1,
+        "covered_statements": 0,
+        "coverage_fraction": 0.0,
+        "branches": 0,
+        "covered_branches": 0,
+        "crap": 6.0
+      },
+      {
+        "path": "src/mars_titan/training/mars_titan_walk_forward.py",
+        "function": "carry_mars_titan_arm",
+        "start_line": 930,
+        "end_line": 942,
+        "cyclomatic_complexity": 2,
+        "statements": 5,
+        "covered_statements": 0,
+        "coverage_fraction": 0.0,
+        "branches": 0,
+        "covered_branches": 0,
+        "crap": 6.0
+      },
+      {
+        "path": "src/mars_titan/training/mars_titan_walk_forward.py",
+        "function": "mars_titan_carry",
+        "start_line": 945,
+        "end_line": 964,
+        "cyclomatic_complexity": 2,
+        "statements": 6,
+        "covered_statements": 0,
+        "coverage_fraction": 0.0,
+        "branches": 0,
+        "covered_branches": 0,
+        "crap": 6.0
+      },
+      {
+        "path": "src/mars_titan/training/titans_walk_forward.py",
+        "function": "titans_carry",
+        "start_line": 859,
+        "end_line": 879,
+        "cyclomatic_complexity": 2,
+        "statements": 6,
+        "covered_statements": 0,
+        "coverage_fraction": 0.0,
+        "branches": 0,
+        "covered_branches": 0,
+        "crap": 6.0
+      },
+      {
+        "path": "src/mars_titan/training/mars_titan_walk_forward.py",
+        "function": "_frozen_parent",
+        "start_line": 197,
+        "end_line": 236,
+        "cyclomatic_complexity": 5,
+        "statements": 15,
+        "covered_statements": 11,
+        "coverage_fraction": 0.7333333333333333,
+        "branches": 4,
+        "covered_branches": 2,
+        "crap": 5.474074074074075
+      },
+      {
+        "path": "src/mars_titan/training/titans_walk_forward.py",
+        "function": "_request",
+        "start_line": 276,
+        "end_line": 314,
+        "cyclomatic_complexity": 5,
+        "statements": 10,
+        "covered_statements": 8,
+        "coverage_fraction": 0.8,
+        "branches": 8,
+        "covered_branches": 6,
+        "crap": 5.2
+      },
+      {
+        "path": "src/mars_titan/training/titans_walk_forward.py",
+        "function": "PredictionRows._flush",
+        "start_line": 331,
+        "end_line": 349,
+        "cyclomatic_complexity": 5,
+        "statements": 10,
+        "covered_statements": 9,
+        "coverage_fraction": 0.9,
+        "branches": 4,
+        "covered_branches": 3,
+        "crap": 5.025
+      },
+      {
+        "path": "src/mars_titan/training/walk_forward_phases.py",
+        "function": "window_phases",
+        "start_line": 55,
+        "end_line": 70,
+        "cyclomatic_complexity": 5,
+        "statements": 14,
+        "covered_statements": 14,
+        "coverage_fraction": 1.0,
+        "branches": 4,
+        "covered_branches": 4,
+        "crap": 5.0
+      },
+      {
+        "path": "src/mars_titan/training/titans_walk_forward.py",
+        "function": "PredictionRows.append",
+        "start_line": 323,
+        "end_line": 329,
+        "cyclomatic_complexity": 4,
+        "statements": 6,
+        "covered_statements": 5,
+        "coverage_fraction": 0.8333333333333334,
+        "branches": 4,
+        "covered_branches": 3,
+        "crap": 4.074074074074074
+      },
+      {
+        "path": "src/mars_titan/training/titans_walk_forward.py",
+        "function": "walk_forward_options",
+        "start_line": 123,
+        "end_line": 143,
+        "cyclomatic_complexity": 4,
+        "statements": 9,
+        "covered_statements": 9,
+        "coverage_fraction": 1.0,
+        "branches": 4,
+        "covered_branches": 4,
+        "crap": 4.0
+      },
+      {
+        "path": "src/mars_titan/training/titans_walk_forward.py",
+        "function": "_recipe",
+        "start_line": 180,
+        "end_line": 193,
+        "cyclomatic_complexity": 4,
+        "statements": 5,
+        "covered_statements": 5,
+        "coverage_fraction": 1.0,
+        "branches": 0,
+        "covered_branches": 0,
+        "crap": 4.0
+      },
+      {
+        "path": "src/mars_titan/training/titans_walk_forward.py",
+        "function": "predictor_options",
+        "start_line": 237,
+        "end_line": 244,
+        "cyclomatic_complexity": 4,
+        "statements": 2,
+        "covered_statements": 2,
+        "coverage_fraction": 1.0,
+        "branches": 0,
+        "covered_branches": 0,
+        "crap": 4.0
+      },
+      {
+        "path": "src/mars_titan/training/walk_forward_phases.py",
+        "function": "checked_fit_months",
+        "start_line": 48,
+        "end_line": 52,
+        "cyclomatic_complexity": 4,
+        "statements": 3,
+        "covered_statements": 3,
+        "coverage_fraction": 1.0,
+        "branches": 2,
+        "covered_branches": 2,
+        "crap": 4.0
+      },
+      {
+        "path": "src/mars_titan/training/mars_titan_walk_forward.py",
+        "function": "_code",
+        "start_line": 145,
+        "end_line": 147,
+        "cyclomatic_complexity": 3,
+        "statements": 2,
+        "covered_statements": 2,
+        "coverage_fraction": 1.0,
+        "branches": 0,
+        "covered_branches": 0,
+        "crap": 3.0
+      },
+      {
+        "path": "src/mars_titan/training/mars_titan_walk_forward.py",
+        "function": "_training_scalers",
+        "start_line": 364,
+        "end_line": 380,
+        "cyclomatic_complexity": 3,
+        "statements": 8,
+        "covered_statements": 8,
+        "coverage_fraction": 1.0,
+        "branches": 2,
+        "covered_branches": 2,
+        "crap": 3.0
+      },
+      {
+        "path": "src/mars_titan/training/titans_walk_forward.py",
+        "function": "_protocol",
+        "start_line": 168,
+        "end_line": 177,
+        "cyclomatic_complexity": 3,
+        "statements": 8,
+        "covered_statements": 8,
+        "coverage_fraction": 1.0,
+        "branches": 2,
+        "covered_branches": 2,
+        "crap": 3.0
+      },
+      {
+        "path": "src/mars_titan/training/titans_walk_forward.py",
+        "function": "_predictor",
+        "start_line": 247,
+        "end_line": 269,
+        "cyclomatic_complexity": 3,
+        "statements": 9,
+        "covered_statements": 9,
+        "coverage_fraction": 1.0,
+        "branches": 2,
+        "covered_branches": 2,
+        "crap": 3.0
+      },
+      {
+        "path": "src/mars_titan/training/titans_walk_forward.py",
+        "function": "_new_destination",
+        "start_line": 633,
+        "end_line": 641,
+        "cyclomatic_complexity": 3,
+        "statements": 5,
+        "covered_statements": 5,
+        "coverage_fraction": 1.0,
+        "branches": 2,
+        "covered_branches": 2,
+        "crap": 3.0
+      },
+      {
+        "path": "src/mars_titan/training/walk_forward_phases.py",
+        "function": "checked_warmup",
+        "start_line": 41,
+        "end_line": 45,
+        "cyclomatic_complexity": 3,
+        "statements": 3,
+        "covered_statements": 3,
+        "coverage_fraction": 1.0,
+        "branches": 2,
+        "covered_branches": 2,
+        "crap": 3.0
+      },
+      {
+        "path": "src/mars_titan/training/mars_titan_walk_forward.py",
+        "function": "_cuda",
+        "start_line": 159,
+        "end_line": 168,
+        "cyclomatic_complexity": 2,
+        "statements": 5,
+        "covered_statements": 2,
+        "coverage_fraction": 0.4,
+        "branches": 2,
+        "covered_branches": 1,
+        "crap": 2.864
+      },
+      {
+        "path": "src/mars_titan/training/mars_titan_walk_forward.py",
+        "function": "_scalers_file",
+        "start_line": 317,
+        "end_line": 335,
+        "cyclomatic_complexity": 2,
+        "statements": 5,
+        "covered_statements": 2,
+        "coverage_fraction": 0.4,
+        "branches": 2,
+        "covered_branches": 1,
+        "crap": 2.864
+      },
+      {
+        "path": "src/mars_titan/training/titans_walk_forward.py",
+        "function": "control_config",
+        "start_line": 229,
+        "end_line": 234,
+        "cyclomatic_complexity": 2,
+        "statements": 4,
+        "covered_statements": 2,
+        "coverage_fraction": 0.5,
+        "branches": 2,
+        "covered_branches": 1,
+        "crap": 2.5
+      },
+      {
+        "path": "src/mars_titan/training/mars_titan_walk_forward.py",
+        "function": "_native",
+        "start_line": 283,
+        "end_line": 288,
+        "cyclomatic_complexity": 2,
+        "statements": 4,
+        "covered_statements": 4,
+        "coverage_fraction": 1.0,
+        "branches": 2,
+        "covered_branches": 2,
+        "crap": 2.0
+      },
+      {
+        "path": "src/mars_titan/training/mars_titan_walk_forward.py",
+        "function": "_anchor_scalers",
+        "start_line": 383,
+        "end_line": 386,
+        "cyclomatic_complexity": 2,
+        "statements": 2,
+        "covered_statements": 2,
+        "coverage_fraction": 1.0,
+        "branches": 0,
+        "covered_branches": 0,
+        "crap": 2.0
+      },
+      {
+        "path": "src/mars_titan/training/mars_titan_walk_forward.py",
+        "function": "run_mars_titan_window",
+        "start_line": 389,
+        "end_line": 431,
+        "cyclomatic_complexity": 2,
+        "statements": 3,
+        "covered_statements": 3,
+        "coverage_fraction": 1.0,
+        "branches": 0,
+        "covered_branches": 0,
+        "crap": 2.0
+      },
+      {
+        "path": "src/mars_titan/training/mars_titan_walk_forward.py",
+        "function": "_carried_readout",
+        "start_line": 657,
+        "end_line": 671,
+        "cyclomatic_complexity": 1,
+        "statements": 4,
+        "covered_statements": 0,
+        "coverage_fraction": 0.0,
+        "branches": 0,
+        "covered_branches": 0,
+        "crap": 2.0
+      },
+      {
+        "path": "src/mars_titan/training/mars_titan_walk_forward.py",
+        "function": "_carried_readout.portable",
+        "start_line": 664,
+        "end_line": 667,
+        "cyclomatic_complexity": 1,
+        "statements": 3,
+        "covered_statements": 0,
+        "coverage_fraction": 0.0,
+        "branches": 0,
+        "covered_branches": 0,
+        "crap": 2.0
+      },
+      {
+        "path": "src/mars_titan/training/mars_titan_walk_forward.py",
+        "function": "carry_mars_titan",
+        "start_line": 674,
+        "end_line": 701,
+        "cyclomatic_complexity": 1,
+        "statements": 2,
+        "covered_statements": 0,
+        "coverage_fraction": 0.0,
+        "branches": 0,
+        "covered_branches": 0,
+        "crap": 2.0
+      },
+      {
+        "path": "src/mars_titan/training/titans_walk_forward.py",
+        "function": "_require",
+        "start_line": 95,
+        "end_line": 97,
+        "cyclomatic_complexity": 2,
+        "statements": 2,
+        "covered_statements": 2,
+        "coverage_fraction": 1.0,
+        "branches": 2,
+        "covered_branches": 2,
+        "crap": 2.0
+      },
+      {
+        "path": "src/mars_titan/training/titans_walk_forward.py",
+        "function": "memory_policy",
+        "start_line": 100,
+        "end_line": 120,
+        "cyclomatic_complexity": 2,
+        "statements": 4,
+        "covered_statements": 4,
+        "coverage_fraction": 1.0,
+        "branches": 2,
+        "covered_branches": 2,
+        "crap": 2.0
+      },
+      {
+        "path": "src/mars_titan/training/titans_walk_forward.py",
+        "function": "_code",
+        "start_line": 272,
+        "end_line": 273,
+        "cyclomatic_complexity": 2,
+        "statements": 1,
+        "covered_statements": 1,
+        "coverage_fraction": 1.0,
+        "branches": 0,
+        "covered_branches": 0,
+        "crap": 2.0
+      },
+      {
+        "path": "src/mars_titan/training/titans_walk_forward.py",
+        "function": "checked_tables",
+        "start_line": 356,
+        "end_line": 368,
+        "cyclomatic_complexity": 2,
+        "statements": 4,
+        "covered_statements": 4,
+        "coverage_fraction": 1.0,
+        "branches": 0,
+        "covered_branches": 0,
+        "crap": 2.0
+      },
+      {
+        "path": "src/mars_titan/training/titans_walk_forward.py",
+        "function": "_verify",
+        "start_line": 371,
+        "end_line": 378,
+        "cyclomatic_complexity": 2,
+        "statements": 4,
+        "covered_statements": 4,
+        "coverage_fraction": 1.0,
+        "branches": 2,
+        "covered_branches": 2,
+        "crap": 2.0
+      },
+      {
+        "path": "src/mars_titan/training/titans_walk_forward.py",
+        "function": "unfused_attention",
+        "start_line": 792,
+        "end_line": 803,
+        "cyclomatic_complexity": 1,
+        "statements": 5,
+        "covered_statements": 0,
+        "coverage_fraction": 0.0,
+        "branches": 0,
+        "covered_branches": 0,
+        "crap": 2.0
+      },
+      {
+        "path": "src/mars_titan/training/mars_titan_walk_forward.py",
+        "function": "bank_memory_policy",
+        "start_line": 150,
+        "end_line": 156,
+        "cyclomatic_complexity": 1,
+        "statements": 1,
+        "covered_statements": 1,
+        "coverage_fraction": 1.0,
+        "branches": 0,
+        "covered_branches": 0,
+        "crap": 1.0
+      },
+      {
+        "path": "src/mars_titan/training/mars_titan_walk_forward.py",
+        "function": "_frozen_parent.build",
+        "start_line": 212,
+        "end_line": 218,
+        "cyclomatic_complexity": 1,
+        "statements": 1,
+        "covered_statements": 1,
+        "coverage_fraction": 1.0,
+        "branches": 0,
+        "covered_branches": 0,
+        "crap": 1.0
+      },
+      {
+        "path": "src/mars_titan/training/mars_titan_walk_forward.py",
+        "function": "_components",
+        "start_line": 239,
+        "end_line": 250,
+        "cyclomatic_complexity": 1,
+        "statements": 4,
+        "covered_statements": 4,
+        "coverage_fraction": 1.0,
+        "branches": 0,
+        "covered_branches": 0,
+        "crap": 1.0
+      },
+      {
+        "path": "src/mars_titan/training/mars_titan_walk_forward.py",
+        "function": "_variant",
+        "start_line": 253,
+        "end_line": 264,
+        "cyclomatic_complexity": 1,
+        "statements": 3,
+        "covered_statements": 3,
+        "coverage_fraction": 1.0,
+        "branches": 0,
+        "covered_branches": 0,
+        "crap": 1.0
+      },
+      {
+        "path": "src/mars_titan/training/mars_titan_walk_forward.py",
+        "function": "_readout",
+        "start_line": 267,
+        "end_line": 280,
+        "cyclomatic_complexity": 1,
+        "statements": 3,
+        "covered_statements": 3,
+        "coverage_fraction": 1.0,
+        "branches": 0,
+        "covered_branches": 0,
+        "crap": 1.0
+      },
+      {
+        "path": "src/mars_titan/training/mars_titan_walk_forward.py",
+        "function": "_mars_family",
+        "start_line": 291,
+        "end_line": 306,
+        "cyclomatic_complexity": 1,
+        "statements": 2,
+        "covered_statements": 2,
+        "coverage_fraction": 1.0,
+        "branches": 0,
+        "covered_branches": 0,
+        "crap": 1.0
+      },
+      {
+        "path": "src/mars_titan/training/titans_walk_forward.py",
+        "function": "case_recipe",
+        "start_line": 146,
+        "end_line": 153,
+        "cyclomatic_complexity": 1,
+        "statements": 2,
+        "covered_statements": 2,
+        "coverage_fraction": 1.0,
+        "branches": 0,
+        "covered_branches": 0,
+        "crap": 1.0
+      },
+      {
+        "path": "src/mars_titan/training/titans_walk_forward.py",
+        "function": "view_protocol",
+        "start_line": 156,
+        "end_line": 165,
+        "cyclomatic_complexity": 1,
+        "statements": 4,
+        "covered_statements": 4,
+        "coverage_fraction": 1.0,
+        "branches": 0,
+        "covered_branches": 0,
+        "crap": 1.0
+      },
+      {
+        "path": "src/mars_titan/training/titans_walk_forward.py",
+        "function": "_sources",
+        "start_line": 220,
+        "end_line": 222,
+        "cyclomatic_complexity": 1,
+        "statements": 1,
+        "covered_statements": 1,
+        "coverage_fraction": 1.0,
+        "branches": 0,
+        "covered_branches": 0,
+        "crap": 1.0
+      },
+      {
+        "path": "src/mars_titan/training/titans_walk_forward.py",
+        "function": "_predictor.build",
+        "start_line": 262,
+        "end_line": 264,
+        "cyclomatic_complexity": 1,
+        "statements": 2,
+        "covered_statements": 2,
+        "coverage_fraction": 1.0,
+        "branches": 0,
+        "covered_branches": 0,
+        "crap": 1.0
+      },
+      {
+        "path": "src/mars_titan/training/titans_walk_forward.py",
+        "function": "PredictionRows.__init__",
+        "start_line": 320,
+        "end_line": 321,
+        "cyclomatic_complexity": 1,
+        "statements": 1,
+        "covered_statements": 1,
+        "coverage_fraction": 1.0,
+        "branches": 0,
+        "covered_branches": 0,
+        "crap": 1.0
+      },
+      {
+        "path": "src/mars_titan/training/titans_walk_forward.py",
+        "function": "PredictionRows.finish",
+        "start_line": 351,
+        "end_line": 353,
+        "cyclomatic_complexity": 1,
+        "statements": 2,
+        "covered_statements": 2,
+        "coverage_fraction": 1.0,
+        "branches": 0,
+        "covered_branches": 0,
+        "crap": 1.0
+      },
+      {
+        "path": "src/mars_titan/training/titans_walk_forward.py",
+        "function": "carried_memory_policy",
+        "start_line": 601,
+        "end_line": 607,
+        "cyclomatic_complexity": 1,
+        "statements": 1,
+        "covered_statements": 1,
+        "coverage_fraction": 1.0,
+        "branches": 0,
+        "covered_branches": 0,
+        "crap": 1.0
+      },
+      {
+        "path": "src/mars_titan/training/titans_walk_forward.py",
+        "function": "_carried_parameters",
+        "start_line": 610,
+        "end_line": 630,
+        "cyclomatic_complexity": 1,
+        "statements": 5,
+        "covered_statements": 5,
+        "coverage_fraction": 1.0,
+        "branches": 0,
+        "covered_branches": 0,
+        "crap": 1.0
+      },
+      {
+        "path": "src/mars_titan/training/titans_walk_forward.py",
+        "function": "_carried_parameters.portable",
+        "start_line": 618,
+        "end_line": 623,
+        "cyclomatic_complexity": 1,
+        "statements": 5,
+        "covered_statements": 5,
+        "coverage_fraction": 1.0,
+        "branches": 0,
+        "covered_branches": 0,
+        "crap": 1.0
+      },
+      {
+        "path": "src/mars_titan/training/walk_forward_phases.py",
+        "function": "micros",
+        "start_line": 29,
+        "end_line": 31,
+        "cyclomatic_complexity": 1,
+        "statements": 1,
+        "covered_statements": 1,
+        "coverage_fraction": 1.0,
+        "branches": 0,
+        "covered_branches": 0,
+        "crap": 1.0
+      },
+      {
+        "path": "src/mars_titan/training/walk_forward_phases.py",
+        "function": "months_before",
+        "start_line": 34,
+        "end_line": 38,
+        "cyclomatic_complexity": 1,
+        "statements": 3,
+        "covered_statements": 3,
+        "coverage_fraction": 1.0,
+        "branches": 0,
+        "covered_branches": 0,
+        "crap": 1.0
+      }
+    ],
+    "shadowed_regions": [],
+    "coverage_sha256": "c178ca2dcca0628960c0419a507631008ec3733c15d5e01897afcc0bcebac0cc",
+    "functions_measured": 62
+  },
+  "scope_notes": [
+    "Pruebas CPU sobre corpus técnicos y registradores de gradientes que no modifican pesos.",
+    "El primer fallo era la dependencia arch ausente y se repitió con arch 8.0.0, ya declarada en el proyecto.",
+    "El caso PT1 inicialmente omitido se ejecutó por separado, limitado a su fixture y con un gancho que rechaza pasos de optimizador reales.",
+    "No se ejecutaron entrenamientos, pilotos ni evaluaciones científicas nuevas.",
+    "CUDA estaba disponible pero ocupada por otra aplicación. No se ejecutó una comparación de rendimiento ni una campaña GPU."
+  ],
+  "pt1_optimizer_guard": {
+    "optimizer_attempts": 0,
+    "exitstatus": 0
+  },
+  "global_hold_unchanged": true,
+  "final_test_opened": false,
+  "environment": {
+    "torch": "2.14.0+cu130",
+    "cuda_build": "13.0",
+    "execution_device": "cpu",
+    "cpu_threads_requested": 2,
+    "memory_limit_bytes": 6442450944,
+    "optimizer": "test_gradient_recorder",
+    "native_binary_sha256": "22fdb1fdbaa7faee9f2c3de7240608ea60bfa271151430771591906f90d709d1"
+  },
+  "fixtures": {
+    "tests/training/chronological_fixture.py": "e183f470475525ec8974b5c375b6a8263c29c721e9a36a0fce25395c31dd3446",
+    "tests/training/test_titans_walk_forward.py": "d41e7597c86261f27ee5dd607efeb29746361329aef12a2b3746a25dab4fda56",
+    "tests/training/test_mars_titan_walk_forward.py": "14f5e46cd21d33266069ce96b0cb4635ecaec3caee89a98795dac52c25e3a215"
+  }
+}

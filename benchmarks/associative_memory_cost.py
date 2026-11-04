@@ -8,7 +8,6 @@ repeticiones, y registra percentiles, el tamaño del estado exportado y la carga
 
 import argparse
 import hashlib
-import json
 import os
 import platform
 import statistics
@@ -19,6 +18,7 @@ from pathlib import Path
 
 import torch
 
+from mars_titan.data.storage import atomic_json
 from mars_titan.hardware.platform_identity import cpu_name
 from mars_titan.memory.associative_memory import (
     AssociativeMemory,
@@ -73,12 +73,8 @@ def timed(function, warmup, repeats):
     )
 
 
-def main(argv=None):
-    parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--warmup", type=int, default=3)
-    parser.add_argument("--repeats", type=int, default=20)
-    parser.add_argument("--output", type=Path, required=True)
-    args = parser.parse_args(argv)
+def run(args):
+    """Mide los casos con los argumentos de la orden y devuelve el recibo."""
     torch.set_num_threads(int(os.environ.get("OMP_NUM_THREADS", "2")))
     cases = {}
     for name, options in RULES.items():
@@ -147,8 +143,21 @@ def main(argv=None):
         not_measured=["GPU, porque B6 trabaja en CPU y FP64", "energía, sin instrumento"],
         cases=cases,
     )
-    args.output.write_text(json.dumps(receipt, ensure_ascii=False, indent=1) + "\n")
-    for name, entry in cases.items():
+    return receipt
+
+
+def main(argv=None):
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--warmup", type=int, default=3)
+    parser.add_argument("--repeats", type=int, default=20)
+    parser.add_argument("--output", type=Path, required=True)
+    args = parser.parse_args(argv)
+    if args.output.exists():
+        raise SystemExit("La medida necesita un destino nuevo")
+    receipt = run(args)
+    # atomic_json crea la carpeta, escribe en un temporal y lo confirma con os.replace.
+    atomic_json(args.output, receipt)
+    for name, entry in receipt["cases"].items():
         if isinstance(entry, dict):
             print(name, round(entry["write"]["p50_ms"], 3), round(entry["write"]["p95_ms"], 3))
 

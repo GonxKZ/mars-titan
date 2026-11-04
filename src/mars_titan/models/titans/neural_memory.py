@@ -9,6 +9,7 @@ from torch.nn import functional as F
 from .bank_readout import BankReadout
 from .causal_convolution import CausalDepthwiseConvolution
 from .config import LAYER_NORM_EPS, MemoryConfig, bounded_integer, require_identity
+from .huber_memory import huber_elements, huber_threshold
 from .key_competition import competitive_normalize
 from .plasticity import _advance_validated as advance_plasticity
 from .plasticity import initial_history, validate_history
@@ -26,17 +27,29 @@ from .state import (
 MAX_SHARED_ROWS = 16384
 
 
+def _check_clip_precision(limit: float | None, dtype: torch.dtype) -> None:
+    if limit is not None and limit < torch.finfo(dtype).tiny:
+        raise ValueError("El límite de recorte debe ser normal en la precisión de la memoria")
+
+
 def clip_rows(gradient: Tensor, limit: float) -> Tensor:
     """Reescala cada fila del gradiente para que su norma euclídea no supere `limit` (PT1).
 
-    Las filas que ya cumplen la cota se multiplican exactamente por 1. La rama que `where`
-    descarta usa la norma al cuadrado acotada por debajo, de modo que su derivada es finita
-    también en una fila nula y el grafo de segundo orden no produce NaN.
+    Escalar por el máximo de la fila evita elevar al cuadrado valores extremos. El factor
+    se separa del grafo porque se cancela en la expresión recortada. Las filas descartadas
+    usan una norma auxiliar unitaria para que sus derivadas sean finitas incluso en cero. Las filas
+    que ya cumplen conservan sus bits y sus derivadas, sin reasignar una dirección nula.
     """
-    squared = gradient.square().sum(dim=-1, keepdim=True)
-    bound = limit * limit
-    scale = torch.where(squared > bound, limit * squared.clamp(min=bound).rsqrt(), 1.0)
-    return gradient * scale
+    _check_clip_precision(limit, gradient.dtype)
+    maximum = gradient.detach().abs().amax(dim=-1, keepdim=True)
+    scale = maximum.clamp(min=limit)
+    normalized = gradient / scale
+    squared = normalized.square().sum(dim=-1, keepdim=True)
+    needs_clip = (maximum > limit) | (squared > 1)
+    inverse_norm = torch.where(needs_clip, squared, torch.ones_like(squared)).rsqrt()
+    # El orden también evita perder componentes subnormales que un límite mayor que 1 amplía.
+    clipped = normalized * limit if limit <= 1 else gradient * (limit / scale)
+    return torch.where(needs_clip, clipped * inverse_norm, gradient)
 
 
 class NeuralMemory(nn.Module):
@@ -58,6 +71,8 @@ class NeuralMemory(nn.Module):
             raise ValueError("Se necesita MemoryConfig")
         if dtype not in (torch.float32, torch.float64):
             raise ValueError("La memoria admite float32 y float64")
+        if config.stability is not None:
+            _check_clip_precision(config.stability.gradient_clip, dtype)
         if config.plasticity is not None and not (
             torch.finfo(dtype).tiny <= config.plasticity.epsilon <= torch.finfo(dtype).max
         ):
@@ -83,6 +98,12 @@ class NeuralMemory(nn.Module):
                 logits = config.gate_bias.logits(config.theta_max, config.stability)
                 for gate, value in zip(gates, logits, strict=True):
                     gate.bias = nn.Parameter(torch.full((gate.out_features,), value, dtype=dtype))
+                if config.time_scales is not None:
+                    # U2 da a cada fila de α su propia semivida inicial, también sin RNG.
+                    rows = config.time_scales.alpha_logits(
+                        config.gate_bias, config.dim, config.theta_max, config.stability
+                    )
+                    self.alpha_projection.bias = nn.Parameter(torch.tensor(rows, dtype=dtype))
             if config.qkv_convolution:
                 # Se sortean después de los parámetros anteriores para que estos conserven
                 # sus valores con la misma semilla.
@@ -97,6 +118,12 @@ class NeuralMemory(nn.Module):
             if config.bank_readout is not None
             else None
         )
+        if config.huber is not None:
+            # El umbral de R1 empieza con w = 0 y un bias constante, sin consumir RNG.
+            self.huber_weight = nn.Parameter(torch.zeros(1, config.dim, dtype=dtype))
+            self.huber_bias = nn.Parameter(
+                torch.full((config.dim,), config.huber.bias, dtype=dtype)
+            )
         self.to(device=device)
 
     def _reference(self) -> Tensor:
@@ -105,6 +132,8 @@ class NeuralMemory(nn.Module):
             raise ValueError("La memoria admite float32 y float64")
         if torch.is_autocast_enabled(reference.device.type):
             raise ValueError("El núcleo exige precisión explícita, sin autocast")
+        if self.config.stability is not None:
+            _check_clip_precision(self.config.stability.gradient_clip, reference.dtype)
         return reference
 
     def _check_size(self, batch_size: int) -> None:
@@ -558,6 +587,8 @@ class NeuralMemory(nn.Module):
         check_differentiable(differentiable)
         if torch.is_inference_mode_enabled():
             raise ValueError("inference_mode impide el gradiente interno, utilice no_grad")
+        if self.config.huber is not None:
+            raise ValueError("La memoria compartida de PT4 conserva la pérdida L2")
         self._check_shared(observed, state)
         require_true(
             (state.steps < torch.iinfo(torch.int64).max).all(),
@@ -640,9 +671,21 @@ class NeuralMemory(nn.Module):
         return result
 
     def update(
-        self, observed: Tensor, state: NeuralMemoryState, *, differentiable: bool = False
+        self,
+        observed: Tensor,
+        state: NeuralMemoryState,
+        *,
+        differentiable: bool = False,
+        gate_shift: dict | None = None,
+        surprise: list | None = None,
     ) -> NeuralMemoryState:
-        """Actualiza por token usando la derivada parcial con la observación fija."""
+        """Actualiza por token usando la derivada parcial con la observación fija.
+
+        `gate_shift` suma a los logits de θ y α el desplazamiento por fila de #791, con forma
+        [filas, 1], en las claves `write` y `forget`. Si `surprise` es una lista, recibe por
+        token la pérdida asociativa de cada fila con la memoria anterior, sin grafo. Con R1 de
+        #786 esa pérdida es la de Huber por canal.
+        """
         check_differentiable(differentiable)
         if torch.is_inference_mode_enabled():
             raise ValueError("inference_mode impide el gradiente interno, utilice no_grad")
@@ -679,6 +722,11 @@ class NeuralMemory(nn.Module):
                     keys = competitive_normalize(keys, self.config.key_competition)
                 elif self.config.normalize_qk:
                     keys = F.normalize(keys, dim=-1, eps=1e-12)
+                if gate_shift is not None:
+                    if "write" in gate_shift:
+                        theta_logits = theta_logits + gate_shift["write"]
+                    if "forget" in gate_shift:
+                        alpha_logits = alpha_logits + gate_shift["forget"]
                 alpha, eta, theta = self._gates(alpha_logits, eta_logits, theta_logits)
                 # La copia separa la variable de derivación interna de y(M_prev). Con el banco
                 # de PT5 la memoria lee la media de sus niveles, y el gradiente se toma en ella.
@@ -688,8 +736,16 @@ class NeuralMemory(nn.Module):
                     differentiable,
                 )
                 residual = prediction.squeeze(1) - values
-                loss = residual.square().sum()
+                if self.config.huber is None:
+                    elements = residual.square()
+                else:
+                    # R1 cambia r² por 2·H_δ en cada canal. Dentro del umbral sigue siendo r².
+                    threshold = huber_threshold(self.huber_weight, self.huber_bias, token, values)
+                    elements = huber_elements(residual, threshold)
+                loss = elements.sum()
                 check_finite(loss, "La pérdida asociativa")
+                if surprise is not None:
+                    surprise.append(elements.detach().sum(-1))
                 gradients = torch.autograd.grad(loss, local, create_graph=differentiable)
                 observation = {} if self.observer is not None else None
                 weights, momentum, levels, modulation = self._write(

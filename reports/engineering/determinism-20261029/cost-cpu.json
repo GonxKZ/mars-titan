@@ -1,0 +1,343 @@
+{
+  "schema_version": 1,
+  "kind": "determinism_cost",
+  "issue": 794,
+  "recorded_at_utc": "2026-10-29T00:27:37+00:00",
+  "commit": "e03422ed37bbedc375e59461093851ff68988999",
+  "sources_sha256": {
+    "src/mars_titan/training/determinism.py": "27954761ac8750cb29b6f75a7edefad067633308e1b2eb816c3abea8e1ddcbc3",
+    "src/mars_titan/training/kernel_policy.py": "9f107cf87cc381e5553d273d4e0041824c8b605bff3d9dc0bc88fe7e9ee2df61",
+    "benchmarks/determinism_cost.py": "447c99e692222f7df13eddd829d9581ec5a2c50eace413e02c257bc5a72e7945",
+    "benchmarks/objective_variants_cost.py": "01993a8850285e573bc472e61c8c8b7fdb3b8beb6cbb23c8690ee9b9bb00cf0b"
+  },
+  "scope": "Forward con grafo de T instantes de la referencia MAC en l\u00ednea, error absoluto frente a objetivos sint\u00e9ticos y backward, en dos procesos por modo. Entradas sint\u00e9ticas con las formas de la edici\u00f3n v3.1. Sin optimizador ni pasos.",
+  "device": "cpu",
+  "options": {
+    "rows": 256,
+    "instants": 8,
+    "repetitions": 5,
+    "warmup": 2,
+    "threads": 2
+  },
+  "environment": {
+    "cpu": "AMD Ryzen 9 8945HS w/ Radeon 780M Graphics",
+    "cpu_count": 16,
+    "python": "3.12.14",
+    "load_average_at_start": [
+      11.830078125,
+      12.3408203125,
+      13.89794921875
+    ],
+    "load_average_at_end": [
+      13.35986328125,
+      12.69287109375,
+      13.8779296875
+    ],
+    "concurrent_load": "otras sesiones comparten la m\u00e1quina, ver las cargas medias"
+  },
+  "not_measured": [
+    "el recorrido cronol\u00f3gico completo con lectura de datos, que ejecutar\u00eda la criba",
+    "energ\u00eda, sin instrumento adecuado"
+  ],
+  "comparison": {
+    "modes": {
+      "process_default": {
+        "within_process": true,
+        "across_processes": true
+      },
+      "torch_deterministic_algorithms_v1": {
+        "within_process": true,
+        "across_processes": true
+      }
+    },
+    "same_predictions_across_modes": true,
+    "same_gradients_across_modes": true,
+    "median_graph_seconds": {
+      "process_default": 1.980432429467328,
+      "torch_deterministic_algorithms_v1": 2.106144612422213
+    },
+    "cost_ratio_of_medians": 1.063477138166586
+  },
+  "processes": {
+    "process_default": [
+      {
+        "mode": "process_default",
+        "device": "cpu",
+        "kernel_policy": {
+          "schema_version": 1,
+          "precision": "fp32_strict",
+          "matmul_allow_tf32": false,
+          "cudnn_allow_tf32": false,
+          "float32_matmul_precision": "highest",
+          "retired_native_overrides": [
+            "bmm"
+          ],
+          "native_overrides": [
+            "_foreach_mm/CUDA/native",
+            "linalg_polar.out/CUDA/native",
+            "linalg_polar/CUDA/native"
+          ]
+        },
+        "determinism": null,
+        "numerics": {
+          "deterministic": false,
+          "cudnn_deterministic": false,
+          "cudnn_benchmark": false,
+          "cublas_workspace": null
+        },
+        "graph_seconds": {
+          "median": 2.012828753096983,
+          "minimum": 1.9176689349114895,
+          "maximum": 2.098322988022119,
+          "samples": [
+            2.098322988022119,
+            1.9176689349114895,
+            2.022051622159779,
+            2.012828753096983,
+            1.948036105837673
+          ]
+        },
+        "digests": [
+          {
+            "predictions": "4f1bf6e4a1e9c2fcd08a00ced741730a262462396e7918402cf0fa58f0be68f3",
+            "gradients": "8ac5a76788be97b067e4a4dfe8ec5edb000a5568bc3db83591753c2f69338c49"
+          },
+          {
+            "predictions": "4f1bf6e4a1e9c2fcd08a00ced741730a262462396e7918402cf0fa58f0be68f3",
+            "gradients": "8ac5a76788be97b067e4a4dfe8ec5edb000a5568bc3db83591753c2f69338c49"
+          },
+          {
+            "predictions": "4f1bf6e4a1e9c2fcd08a00ced741730a262462396e7918402cf0fa58f0be68f3",
+            "gradients": "8ac5a76788be97b067e4a4dfe8ec5edb000a5568bc3db83591753c2f69338c49"
+          },
+          {
+            "predictions": "4f1bf6e4a1e9c2fcd08a00ced741730a262462396e7918402cf0fa58f0be68f3",
+            "gradients": "8ac5a76788be97b067e4a4dfe8ec5edb000a5568bc3db83591753c2f69338c49"
+          },
+          {
+            "predictions": "4f1bf6e4a1e9c2fcd08a00ced741730a262462396e7918402cf0fa58f0be68f3",
+            "gradients": "8ac5a76788be97b067e4a4dfe8ec5edb000a5568bc3db83591753c2f69338c49"
+          }
+        ],
+        "parameters_unchanged": true,
+        "versions": {
+          "torch": "2.14.0+cu130",
+          "cuda": "13.0"
+        }
+      },
+      {
+        "mode": "process_default",
+        "device": "cpu",
+        "kernel_policy": {
+          "schema_version": 1,
+          "precision": "fp32_strict",
+          "matmul_allow_tf32": false,
+          "cudnn_allow_tf32": false,
+          "float32_matmul_precision": "highest",
+          "retired_native_overrides": [
+            "bmm"
+          ],
+          "native_overrides": [
+            "_foreach_mm/CUDA/native",
+            "linalg_polar.out/CUDA/native",
+            "linalg_polar/CUDA/native"
+          ]
+        },
+        "determinism": null,
+        "numerics": {
+          "deterministic": false,
+          "cudnn_deterministic": false,
+          "cudnn_benchmark": false,
+          "cublas_workspace": null
+        },
+        "graph_seconds": {
+          "median": 1.9200987629592419,
+          "minimum": 1.7937809710856527,
+          "maximum": 2.0519687510095537,
+          "samples": [
+            1.9200987629592419,
+            2.0519687510095537,
+            1.7937809710856527,
+            2.0266906891483814,
+            1.8736843860242516
+          ]
+        },
+        "digests": [
+          {
+            "predictions": "4f1bf6e4a1e9c2fcd08a00ced741730a262462396e7918402cf0fa58f0be68f3",
+            "gradients": "8ac5a76788be97b067e4a4dfe8ec5edb000a5568bc3db83591753c2f69338c49"
+          },
+          {
+            "predictions": "4f1bf6e4a1e9c2fcd08a00ced741730a262462396e7918402cf0fa58f0be68f3",
+            "gradients": "8ac5a76788be97b067e4a4dfe8ec5edb000a5568bc3db83591753c2f69338c49"
+          },
+          {
+            "predictions": "4f1bf6e4a1e9c2fcd08a00ced741730a262462396e7918402cf0fa58f0be68f3",
+            "gradients": "8ac5a76788be97b067e4a4dfe8ec5edb000a5568bc3db83591753c2f69338c49"
+          },
+          {
+            "predictions": "4f1bf6e4a1e9c2fcd08a00ced741730a262462396e7918402cf0fa58f0be68f3",
+            "gradients": "8ac5a76788be97b067e4a4dfe8ec5edb000a5568bc3db83591753c2f69338c49"
+          },
+          {
+            "predictions": "4f1bf6e4a1e9c2fcd08a00ced741730a262462396e7918402cf0fa58f0be68f3",
+            "gradients": "8ac5a76788be97b067e4a4dfe8ec5edb000a5568bc3db83591753c2f69338c49"
+          }
+        ],
+        "parameters_unchanged": true,
+        "versions": {
+          "torch": "2.14.0+cu130",
+          "cuda": "13.0"
+        }
+      }
+    ],
+    "torch_deterministic_algorithms_v1": [
+      {
+        "mode": "torch_deterministic_algorithms_v1",
+        "device": "cpu",
+        "kernel_policy": {
+          "schema_version": 1,
+          "precision": "fp32_strict",
+          "matmul_allow_tf32": false,
+          "cudnn_allow_tf32": false,
+          "float32_matmul_precision": "highest",
+          "retired_native_overrides": [
+            "bmm"
+          ],
+          "native_overrides": [
+            "_foreach_mm/CUDA/native",
+            "linalg_polar.out/CUDA/native",
+            "linalg_polar/CUDA/native"
+          ]
+        },
+        "determinism": {
+          "schema_version": 1,
+          "policy": "torch_deterministic_algorithms_v1",
+          "deterministic_algorithms": true,
+          "warn_only": false,
+          "cudnn_deterministic": true,
+          "cudnn_benchmark": false,
+          "cublas_workspace": ":4096:8"
+        },
+        "numerics": {
+          "deterministic": true,
+          "cudnn_deterministic": true,
+          "cudnn_benchmark": false,
+          "cublas_workspace": ":4096:8"
+        },
+        "graph_seconds": {
+          "median": 2.047408349113539,
+          "minimum": 1.7709811110980809,
+          "maximum": 2.1655306559987366,
+          "samples": [
+            2.1561190159991384,
+            2.0152791859582067,
+            2.1655306559987366,
+            2.047408349113539,
+            1.7709811110980809
+          ]
+        },
+        "digests": [
+          {
+            "predictions": "4f1bf6e4a1e9c2fcd08a00ced741730a262462396e7918402cf0fa58f0be68f3",
+            "gradients": "8ac5a76788be97b067e4a4dfe8ec5edb000a5568bc3db83591753c2f69338c49"
+          },
+          {
+            "predictions": "4f1bf6e4a1e9c2fcd08a00ced741730a262462396e7918402cf0fa58f0be68f3",
+            "gradients": "8ac5a76788be97b067e4a4dfe8ec5edb000a5568bc3db83591753c2f69338c49"
+          },
+          {
+            "predictions": "4f1bf6e4a1e9c2fcd08a00ced741730a262462396e7918402cf0fa58f0be68f3",
+            "gradients": "8ac5a76788be97b067e4a4dfe8ec5edb000a5568bc3db83591753c2f69338c49"
+          },
+          {
+            "predictions": "4f1bf6e4a1e9c2fcd08a00ced741730a262462396e7918402cf0fa58f0be68f3",
+            "gradients": "8ac5a76788be97b067e4a4dfe8ec5edb000a5568bc3db83591753c2f69338c49"
+          },
+          {
+            "predictions": "4f1bf6e4a1e9c2fcd08a00ced741730a262462396e7918402cf0fa58f0be68f3",
+            "gradients": "8ac5a76788be97b067e4a4dfe8ec5edb000a5568bc3db83591753c2f69338c49"
+          }
+        ],
+        "parameters_unchanged": true,
+        "versions": {
+          "torch": "2.14.0+cu130",
+          "cuda": "13.0"
+        }
+      },
+      {
+        "mode": "torch_deterministic_algorithms_v1",
+        "device": "cpu",
+        "kernel_policy": {
+          "schema_version": 1,
+          "precision": "fp32_strict",
+          "matmul_allow_tf32": false,
+          "cudnn_allow_tf32": false,
+          "float32_matmul_precision": "highest",
+          "retired_native_overrides": [
+            "bmm"
+          ],
+          "native_overrides": [
+            "_foreach_mm/CUDA/native",
+            "linalg_polar.out/CUDA/native",
+            "linalg_polar/CUDA/native"
+          ]
+        },
+        "determinism": {
+          "schema_version": 1,
+          "policy": "torch_deterministic_algorithms_v1",
+          "deterministic_algorithms": true,
+          "warn_only": false,
+          "cudnn_deterministic": true,
+          "cudnn_benchmark": false,
+          "cublas_workspace": ":4096:8"
+        },
+        "numerics": {
+          "deterministic": true,
+          "cudnn_deterministic": true,
+          "cudnn_benchmark": false,
+          "cublas_workspace": ":4096:8"
+        },
+        "graph_seconds": {
+          "median": 2.1459748649504036,
+          "minimum": 1.9171824879013002,
+          "maximum": 2.1633053668774664,
+          "samples": [
+            2.1633053668774664,
+            2.1459748649504036,
+            2.0663143598940223,
+            1.9171824879013002,
+            2.158867711899802
+          ]
+        },
+        "digests": [
+          {
+            "predictions": "4f1bf6e4a1e9c2fcd08a00ced741730a262462396e7918402cf0fa58f0be68f3",
+            "gradients": "8ac5a76788be97b067e4a4dfe8ec5edb000a5568bc3db83591753c2f69338c49"
+          },
+          {
+            "predictions": "4f1bf6e4a1e9c2fcd08a00ced741730a262462396e7918402cf0fa58f0be68f3",
+            "gradients": "8ac5a76788be97b067e4a4dfe8ec5edb000a5568bc3db83591753c2f69338c49"
+          },
+          {
+            "predictions": "4f1bf6e4a1e9c2fcd08a00ced741730a262462396e7918402cf0fa58f0be68f3",
+            "gradients": "8ac5a76788be97b067e4a4dfe8ec5edb000a5568bc3db83591753c2f69338c49"
+          },
+          {
+            "predictions": "4f1bf6e4a1e9c2fcd08a00ced741730a262462396e7918402cf0fa58f0be68f3",
+            "gradients": "8ac5a76788be97b067e4a4dfe8ec5edb000a5568bc3db83591753c2f69338c49"
+          },
+          {
+            "predictions": "4f1bf6e4a1e9c2fcd08a00ced741730a262462396e7918402cf0fa58f0be68f3",
+            "gradients": "8ac5a76788be97b067e4a4dfe8ec5edb000a5568bc3db83591753c2f69338c49"
+          }
+        ],
+        "parameters_unchanged": true,
+        "versions": {
+          "torch": "2.14.0+cu130",
+          "cuda": "13.0"
+        }
+      }
+    ]
+  }
+}

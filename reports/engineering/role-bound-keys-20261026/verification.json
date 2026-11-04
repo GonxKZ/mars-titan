@@ -1,0 +1,56 @@
+{
+  "schema_version": 1,
+  "verified_at": "2026-10-26T20:17:26.911126+00:00",
+  "kind": "role_binding_technical_fixtures",
+  "source_base_commit": "dd58b699d79b6ae3ea0f60238bc7e0dbfc62a242",
+  "sources_sha256": {
+    "src/mars_titan/memory/role_binding.py": "44cdde79ff1b1af6bc0f24570828dd3e0c342ca97b1d4eefd968e00859a97a3e",
+    "src/mars_titan/memory/associative_memory.py": "e05d67605a5035ce02c7f0cbcb51667276e3c8821bc1d0145123784e37384056",
+    "src/mars_titan/memory/mars_titan_variant.py": "020bf8aabc2d6000470c324fccc8aba844e57c486c081cdde6ff2249227544e7",
+    "src/mars_titan/memory/financial_session.py": "fd33cde99726c94f2d18078002130c7b204adb5a377c59818fdce4fae64af41b",
+    "src/mars_titan/training/mars_titan_correction.py": "400f69cbf59877566feb7fcb3ed4232f37620c4e92324620c8af0bdb88925fd5",
+    "tests/memory/test_role_binding.py": "1399bf0380692f2b56d49b9ab1fff8a810858d3272ab361e66e83585f369e42f",
+    "tests/memory/test_role_binding_session.py": "287258679e2fcd89d45f58950b3e6071c6d65464c08880a1f1bf1266e55d873b",
+    "tests/training/test_role_binding_arms.py": "a9bd6d05e464cc551b241973984e4e41f88e46f909bf1c882b3d8c58fa7d7e3c",
+    "tests/memory/test_area_cuda_interop.py": "d73d1e2f091e85ca8b6b33384309302c133a2aba8694fc478d015b2b5776c831",
+    "configs/experiments/role-bound-keys-v1.json": "ce67b39ae53c70eecdbbf76ce1c5d0cb5a56c91d2a49687262b5d39e6c67234a",
+    "configs/titans/mars-titan-extensions.json": "652e9f10832d42cfea5e991a892044d644281929e5f1fa4f222c44174f9cbe26",
+    "benchmarks/role_binding_cost.py": "4d795228e9e1bfeb58ebdc060b497f32076ba4ae96acf311510da49c7124bf4d"
+  },
+  "tests": {
+    "technical": {
+      "passed": 192,
+      "seconds": 114.457,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "xml_sha256": "d8a2844cca8abe67c18d76d804798468013e8f8f75d90ac2716568e48650c233"
+    },
+    "hold_guards": {
+      "passed": 17,
+      "seconds": 169.831,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "xml_sha256": "34db330009078f0a69b853c79357c4d10de5a20396d980a1e236f3439e9300d5"
+    },
+    "cuda_deselected": 4
+  },
+  "disabled_regressions_bitwise": 15,
+  "mutations": {
+    "planned": 7,
+    "killed": 7,
+    "optimizer_attempts": 0
+  },
+  "learning_executed": false,
+  "scientific_results": null,
+  "final_test_access": false,
+  "hold_unchanged": true,
+  "hold_sha256": "8a658080c1ac4e63847eba58b177020339da6ec47021cf26d2701830073c87fd",
+  "limits": [
+    "No se ha ejecutado la suite completa del proyecto ni los cuatro casos CUDA.",
+    "Régimen y calendario integrados. Mercado, modalidad y sector histórico pendientes.",
+    "No hay mejora predictiva medida. La inversa no recupera información perdida en DPFP o en la memoria.",
+    "Los bytes del benchmark excluyen la cola de sesión. Se guarda una ruta int64 de 8 bytes por decisión pendiente frente a B1 sin enrutar."
+  ]
+}

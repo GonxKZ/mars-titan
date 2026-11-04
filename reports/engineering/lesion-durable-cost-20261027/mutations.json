@@ -1,0 +1,65 @@
+{
+  "repositories": {
+    "Objective": {
+      "root": ".",
+      "test_path": "tests/tooling/test_lesion_session_cost.py",
+      "test_sha256": "3555000420aeca7b8eec1c2d7195f710cff44d08ed0fbf0f2a2bb48041638726"
+    }
+  },
+  "sources": {
+    "subject": {
+      "path": "benchmarks/lesion_session_cost.py",
+      "sha256": "acf95c8a9582d2a6f6a0277bd0eebab09246885ace7f68dace31b916bdf43b79"
+    }
+  },
+  "recipes": [
+    {
+      "id": "invert_added_time",
+      "family": "Objective",
+      "source_key": "subject",
+      "nodeid": "tests/tooling/test_lesion_session_cost.py::test_cost_summary_keeps_pairing_and_reports_added_time",
+      "anchor": "delta = stats[\"diagnostic\"][\"median_seconds\"] - stats[\"original\"][\"median_seconds\"]",
+      "replacement": "delta = stats[\"original\"][\"median_seconds\"] - stats[\"diagnostic\"][\"median_seconds\"]",
+      "expected_failure": {
+        "exception_type": "AssertionError",
+        "longrepr_contains": "assert"
+      }
+    },
+    {
+      "id": "include_warmup_samples",
+      "family": "Objective",
+      "source_key": "subject",
+      "nodeid": "tests/tooling/test_lesion_session_cost.py::test_cost_summary_keeps_pairing_and_reports_added_time",
+      "anchor": "measured = [row for row in cases if not row[\"warmup\"]]",
+      "replacement": "measured = list(cases)",
+      "expected_failure": {
+        "exception_type": "AssertionError",
+        "longrepr_contains": "assert"
+      }
+    },
+    {
+      "id": "ignore_unpaired_states",
+      "family": "Objective",
+      "source_key": "subject",
+      "nodeid": "tests/tooling/test_lesion_session_cost.py::test_unpaired_measurements_cannot_be_reported_as_diagnostic_cost[state]",
+      "anchor": "if paired[False] != paired[True]:",
+      "replacement": "if False:",
+      "expected_failure": {
+        "exception_type": "Failed",
+        "longrepr_contains": "DID NOT RAISE"
+      }
+    },
+    {
+      "id": "allow_negative_duration",
+      "family": "Objective",
+      "source_key": "subject",
+      "nodeid": "tests/tooling/test_lesion_session_cost.py::test_invalid_timings_cannot_become_cost_comparisons[-1]",
+      "anchor": "or row[\"step_seconds\"] <= 0",
+      "replacement": "",
+      "expected_failure": {
+        "exception_type": "Failed",
+        "longrepr_contains": "DID NOT RAISE"
+      }
+    }
+  ]
+}

@@ -44,6 +44,7 @@ function(mars_titan_coverage_report)
     set(objects "")
     set(targets "")
     foreach(target mars_titan_simulation simulation_tests threaded_simulation c_abi_test
+                   episodic_projection_tests medoid_kernels_tests
                    financial_session_tests financial_batch_tests markov_filter_tests mars-titan-sim
                    ppo_policy_tests ppo_training_tests ppo_checkpoint_tests ppo_inputs_tests ppo_collection_tests
                    episodic_memory_tests policy_context_tests decision_trace_tests learning_replay_tests mars-titan-ppo mars-titan-klpo

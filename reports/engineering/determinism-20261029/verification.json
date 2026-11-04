@@ -1,0 +1,389 @@
+{
+ "schema_version": 1,
+ "date": "2026-10-30",
+ "issue": 794,
+ "scope": "declared_determinism_v1",
+ "implementation_commit": "7b459a81fb52429f08cf2b946e8e193a26a03189",
+ "base_commit": "d5a0402f4d4fe2e190d365fed5ea1e5703f6bf36",
+ "scientific_experiments": 0,
+ "training_runs": 0,
+ "real_optimizer_steps": 0,
+ "final_test_opened": false,
+ "hold_sha256": "8a658080c1ac4e63847eba58b177020339da6ec47021cf26d2701830073c87fd",
+ "test_optimizers": "Las pruebas y la medida de coste solo calculan gradientes con autograd, con un gancho de torch.optim que rechaza cualquier paso. Las mutaciones instalan el mismo gancho y cuentan cero intentos.",
+ "suites": [
+  {
+   "name": "targeted_with_coverage",
+   "tests": 48,
+   "failures": 0,
+   "errors": 0,
+   "skipped": 0,
+   "xml_sha256": "657c48941cfd918525de05870f9a8882280713b6398533dea62d9a8c4508f8fd",
+   "note": "El modo declarado, la política de kernels, los tres recorridos y la medida de coste, en fbc9b450c."
+  },
+  {
+   "name": "regression_of_the_changed_paths_training",
+   "tests": 1718,
+   "failures": 5,
+   "errors": 2,
+   "skipped": 28,
+   "xml_sha256": "bb9c2e253126b48b9eca9efaf5589b52cdd13f73f6cec82139833ec708742a43",
+   "note": "Los módulos de tests/training que importan los caminos cambiados, en fbc9b450c. Los dos errores y los cinco fallos eran el KeyError de determinism al trasladar una receta anterior que no lo declara (test_candidate_walk_forward, test_prediction_regeneration y test_modality_ablation_native). Se corrigió en 754a52408. Las suites carry_fix y after_merging_develop repiten test_candidate_walk_forward en verde y regression_rerun los otros dos módulos."
+  },
+  {
+   "name": "regression_of_the_changed_paths_other",
+   "tests": 3274,
+   "failures": 3,
+   "errors": 7,
+   "skipped": 83,
+   "xml_sha256": "4c17f3beea76584b9ac5b51d384aeff0894fadecabc5bf8bdad1487fc5f18a44",
+   "note": "Los módulos restantes que importan los caminos cambiados, en fbc9b450c. Los siete errores eran el mismo KeyError en la preparación de test_candidate_adapters, corregido en 754a52408. Los tres fallos de test_readout_adapter_sources venían de un doble del entrenador del lector sin receta, corregido en 3afd8221a. La suite regression_fixes repite los dos módulos en verde."
+  },
+  {
+   "name": "after_merging_c2",
+   "tests": 232,
+   "failures": 0,
+   "errors": 0,
+   "skipped": 0,
+   "xml_sha256": "81cf4e1d79c23a58bbb4d22b34fd4056c5dd02dec1d9a660b54e23e0c2cf94c5",
+   "note": "En aa7a8ba58, tras fusionar develop con C2 y las pruebas de la orden de la medida."
+  },
+  {
+   "name": "after_merging_c3",
+   "tests": 343,
+   "failures": 0,
+   "errors": 0,
+   "skipped": 0,
+   "xml_sha256": "86edb340dfea68544e822d8748de13c71412e4011b91c65a1bd8bd4f8f91744d",
+   "note": "En 873be3ea6, tras fusionar develop con C3."
+  },
+  {
+   "name": "carry_fix",
+   "tests": 36,
+   "failures": 0,
+   "errors": 0,
+   "skipped": 0,
+   "xml_sha256": "064c4cbc42708934880813d0d9b9d415e174198339e22d663279967beaebaa91",
+   "note": "En 754a52408, las pruebas del traslado del candidato con la receta del ancla corregida."
+  },
+  {
+   "name": "final_with_coverage",
+   "tests": 379,
+   "failures": 0,
+   "errors": 0,
+   "skipped": 0,
+   "xml_sha256": "0a927b2c5f4acd3bf0a680c36ad8097efd1270f07d034cddd56f50c7d808d5f2",
+   "note": "En 754a52408, todas las pruebas anteriores con cobertura frente a 2a3eb5deb."
+  },
+  {
+   "name": "after_merging_r2_and_r3",
+   "tests": 478,
+   "failures": 0,
+   "errors": 0,
+   "skipped": 0,
+   "xml_sha256": "4eb5d4254683a907d4eb04af0b89eb0d302f17db9d4fca4741e6ee27a7ab5bcd",
+   "note": "En a9276952b, tras fusionar develop con R2 y R3, con sus pruebas."
+  },
+  {
+   "name": "regression_fixes",
+   "tests": 14,
+   "failures": 0,
+   "errors": 0,
+   "skipped": 0,
+   "xml_sha256": "a2100adaadf66ee232ca653a0fa0ddcd9bd6265fde36e98c8819cb5a80ea334a",
+   "note": "En 3afd8221a, test_candidate_adapters y test_readout_adapter_sources tras las dos correcciones."
+  },
+  {
+   "name": "after_merging_develop",
+   "tests": 549,
+   "failures": 0,
+   "errors": 0,
+   "skipped": 0,
+   "xml_sha256": "ddac759c69ce280487151feb8bd6037402582e88deb05f6a0b9aeb3108e81999",
+   "note": "En 7b459a81f, tras fusionar develop con H4 y la cobertura de #813: todas las pruebas anteriores, las de H4, la medida de coste de #786 y los dos módulos corregidos, con cobertura frente a d5a0402f4."
+  },
+  {
+   "name": "regression_rerun",
+   "tests": 20,
+   "failures": 0,
+   "errors": 0,
+   "skipped": 0,
+   "xml_sha256": "61fc0356ccaad58220d5f21c5b0617a437ff94568d6f1589093139419c3fcf0b",
+   "note": "En 7b459a81f, test_prediction_regeneration y test_modality_ablation_native, que fallaron en fbc9b450c con el KeyError del traslado."
+  }
+ ],
+ "quality": {
+  "tools": {
+   "coverage": "7.16.1",
+   "radon": "6.0.1",
+   "branch_coverage": true,
+   "python": "3.12.14",
+   "summarizer_sha256": "75cc60c88037e0bb17aff6e8ab666ce78b35d600d6c7ad217bf68b1afb4c4ec6"
+  },
+  "totals": {
+   "statements": 2819,
+   "covered_statements": 2043,
+   "branches": 1054,
+   "covered_branches": 602
+  },
+  "files": [
+   {
+    "path": "benchmarks/determinism_cost.py",
+    "source_sha256": "447c99e692222f7df13eddd829d9581ec5a2c50eace413e02c257bc5a72e7945",
+    "statements": 139,
+    "covered_statements": 134,
+    "branches": 30,
+    "covered_branches": 27
+   },
+   {
+    "path": "src/mars_titan/training/candidate_run.py",
+    "source_sha256": "8ccc8741e81e618e30f3e8df69990dd245c220bb897e882f3360ee5e53ed199f",
+    "statements": 677,
+    "covered_statements": 588,
+    "branches": 260,
+    "covered_branches": 179
+   },
+   {
+    "path": "src/mars_titan/training/candidate_walk_forward.py",
+    "source_sha256": "053761e34a2b275b1778bab4bfc0166e8be8fccf659c0abc30f3fff0bbe2b38f",
+    "statements": 257,
+    "covered_statements": 242,
+    "branches": 68,
+    "covered_branches": 53
+   },
+   {
+    "path": "src/mars_titan/training/determinism.py",
+    "source_sha256": "c5d53609d207388a2e463575d229156f270d6b89c25678a71e655b12c105d7cc",
+    "statements": 38,
+    "covered_statements": 38,
+    "branches": 8,
+    "covered_branches": 8
+   },
+   {
+    "path": "src/mars_titan/training/financial_run.py",
+    "source_sha256": "b1b95ffaefe20072a4af84d6c5944e401c91f93498c72c803a5b4224131425e6",
+    "statements": 962,
+    "covered_statements": 774,
+    "branches": 406,
+    "covered_branches": 280
+   },
+   {
+    "path": "src/mars_titan/training/mars_titan_run.py",
+    "source_sha256": "fd4ac414e2798161035e1d6aabf785f436cc7e185895bfd341bad980f1ace218",
+    "statements": 746,
+    "covered_statements": 267,
+    "branches": 282,
+    "covered_branches": 55
+   }
+  ],
+  "max_crap": 1406.0,
+  "quality_sha256": "08b78e2b49dbd409d1f56758ce2c6e3c695b80256d01ade1af7fd92c48e0983b",
+  "limits": "CRAP y cobertura localizan complejidad poco comprobada. No demuestran ausencia de errores."
+ },
+ "changed": {
+  "base": "d5a0402f4d4fe2e190d365fed5ea1e5703f6bf36",
+  "head": "7b459a81fb52429f08cf2b946e8e193a26a03189",
+  "functions": 30,
+  "max_crap": 128.51428571428568,
+  "changed_executable_lines": 175,
+  "changed_covered_lines": 171,
+  "highest": [
+   {
+    "path": "src/mars_titan/training/financial_run.py",
+    "function": "ChronologicalTrainer.__init__",
+    "cyclomatic_complexity": 70,
+    "crap": 128.51428571428568,
+    "changed_executable_lines": 2,
+    "changed_covered_lines": 2,
+    "changed_missing_lines": [],
+    "changed_missing_branches": []
+   },
+   {
+    "path": "src/mars_titan/training/mars_titan_run.py",
+    "function": "MarsTitanInference.__init__",
+    "cyclomatic_complexity": 38,
+    "crap": 80.06463359126082,
+    "changed_executable_lines": 1,
+    "changed_covered_lines": 1,
+    "changed_missing_lines": [],
+    "changed_missing_branches": []
+   },
+   {
+    "path": "src/mars_titan/training/mars_titan_run.py",
+    "function": "ReadoutTrainer.__init__",
+    "cyclomatic_complexity": 29,
+    "crap": 37.026908200461925,
+    "changed_executable_lines": 2,
+    "changed_covered_lines": 2,
+    "changed_missing_lines": [],
+    "changed_missing_branches": []
+   },
+   {
+    "path": "src/mars_titan/training/mars_titan_run.py",
+    "function": "ReadoutRecipe.__post_init__",
+    "cyclomatic_complexity": 32,
+    "crap": 35.72872098315885,
+    "changed_executable_lines": 2,
+    "changed_covered_lines": 2,
+    "changed_missing_lines": [],
+    "changed_missing_branches": []
+   },
+   {
+    "path": "src/mars_titan/training/candidate_run.py",
+    "function": "CandidateChronologicalPredictor.__init__",
+    "cyclomatic_complexity": 25,
+    "crap": 33.141664970486474,
+    "changed_executable_lines": 1,
+    "changed_covered_lines": 1,
+    "changed_missing_lines": [],
+    "changed_missing_branches": []
+   }
+  ],
+  "uncovered": [
+   {
+    "path": "benchmarks/determinism_cost.py",
+    "function": "worker",
+    "cyclomatic_complexity": 13,
+    "crap": 13.443478617409488,
+    "changed_executable_lines": 30,
+    "changed_covered_lines": 26,
+    "changed_missing_lines": [
+     99,
+     134,
+     135,
+     143
+    ],
+    "changed_missing_branches": [
+     [
+      98,
+      99
+     ],
+     [
+      133,
+      134
+     ]
+    ]
+   }
+  ],
+  "unmeasured": [],
+  "note": "Funciones con líneas cambiadas frente a develop (base_commit) en 7b459a81f. Las líneas sin cubrir de worker son las de la reserva CUDA, que no se ejecutan con CUDA_VISIBLE_DEVICES=-1. El CRAP más alto es el del constructor de ChronologicalTrainer, con complejidad 70, al que esta rama solo añade la condición de la identidad.",
+  "changed_sha256": "f7e0f1811d1bf0f66f91f7dba98002bd269443305e4feba7bea852d72c9e1bce"
+ },
+ "mutations": {
+  "tree_commit": "fbc9b450c2f423bfcd42e7bbf86c83e980ba4a21",
+  "planned": 44,
+  "killed": 44,
+  "optimizer_attempts": 0,
+  "hold_sha256_unchanged": true,
+  "recipes_sha256": "33645bfb4ef14d9f9a7eb5d14768f1d27a3af4f43273f8eaa40497388921a3a5",
+  "executor_sha256": "e9cdf6d0b4d8d8984878f3cc2d977b8d4e8f2a1ad731058edd5114e52c7c4f21",
+  "source_sha256": {
+   "benchmarks/determinism_cost.py": "447c99e692222f7df13eddd829d9581ec5a2c50eace413e02c257bc5a72e7945",
+   "src/mars_titan/training/determinism.py": "c5d53609d207388a2e463575d229156f270d6b89c25678a71e655b12c105d7cc",
+   "src/mars_titan/training/financial_run.py": "3a11099305d77ad4dfed8f34921eb453ef4bdf8cdc6987fa40adc94d9ae82953",
+   "src/mars_titan/training/mars_titan_run.py": "d79139e695b1ce5fb6ef74b39a01a69d43124498e3f967add0f14462dfbe74fb",
+   "src/mars_titan/training/candidate_run.py": "8ccc8741e81e618e30f3e8df69990dd245c220bb897e882f3360ee5e53ed199f"
+  },
+  "cases": [
+   "valid_policy_refused",
+   "proc_error_escapes",
+   "initial_value_kept_whole",
+   "initial_missing_as_empty",
+   "workspace_unchecked",
+   "cuda_start_ignored",
+   "any_inherited_workspace",
+   "identity_any_policy",
+   "identity_without_algorithms",
+   "identity_accepts_warn_only",
+   "identity_without_cudnn",
+   "identity_accepts_benchmark",
+   "identity_fixed_workspace",
+   "identity_without_workspace",
+   "apply_any_policy",
+   "apply_before_workspace",
+   "apply_warn_only",
+   "apply_without_cudnn",
+   "apply_keeps_benchmark",
+   "declared_never_applied",
+   "core_recipe_unchecked",
+   "core_identity_keeps_none",
+   "core_not_applied",
+   "core_identity_without_policy",
+   "core_code_without_module",
+   "reader_recipe_unchecked",
+   "reader_identity_keeps_none",
+   "reader_not_applied",
+   "reader_identity_without_policy",
+   "reader_code_without_module",
+   "gru_recipe_unchecked",
+   "gru_identity_keeps_none",
+   "gru_not_applied",
+   "gru_identity_without_policy",
+   "gru_code_without_module",
+   "cost_default_gets_workspace",
+   "cost_worker_never_deterministic",
+   "cost_within_first_only",
+   "cost_across_last",
+   "cost_modes_gradients_only",
+   "cost_ratio_inverted",
+   "cost_limits_unchecked",
+   "cost_result_overwritten",
+   "cost_receipt_overwritten"
+  ],
+  "summary_sha256": "12961302e3d44bdaf66060e6ce7ef78a1bfc4ba52622503176cb229b0e252656",
+  "scope": "Cuarenta y cuatro defectos dirigidos del modo declarado, de la política de kernels, de su paso por los tres recorridos y de la medida de coste, cada uno con una fase en verde antes, la mutación y otra fase en verde después, en una copia aislada del árbol. No es una puntuación global.",
+  "additional": [
+   {
+    "tree_commit": "aa7a8ba589b13b007ac28d6c2640dbbb89c15cd3",
+    "planned": 12,
+    "killed": 12,
+    "recipes_sha256": "285c1e23775dc68ee86d97f2e3b52bfb57387f5bb3cb0ddd9c1172e2d1dcd4df",
+    "executor_sha256": "103ad855408d7519daf5e9f0d1a326627c4edd6bb8b98b86072fc84762678b43",
+    "source_sha256": {
+     "benchmarks/determinism_cost.py": "447c99e692222f7df13eddd829d9581ec5a2c50eace413e02c257bc5a72e7945"
+    },
+    "cases": [
+     "gradient_any_parameter",
+     "gradient_unchecked",
+     "measure_comparison_not_printed",
+     "measure_fewer_sources",
+     "measure_one_process",
+     "measure_scratch_elsewhere",
+     "measure_without_commit",
+     "parameters_unchecked",
+     "receipt_nan_written",
+     "warmup_skipped",
+     "worker_other_device",
+     "worker_result_not_written"
+    ],
+    "summary_sha256": "0db7bd9bb6b8266f6c5e6892709752b56c066ef25f3af7873260d3d4e5ab5391",
+    "scope": "Doce defectos de la orden de la medida: el registro de cada modo, los dos procesos por modo, el recibo con NaN, el calentamiento, los parámetros cambiados y los gradientes no finitos."
+   },
+   {
+    "tree_commit": "754a524089af979a0a9526a19277a854b7a6ff0f",
+    "planned": 1,
+    "killed": 1,
+    "recipes_sha256": "00ebc5a9593fe5e3ffddc6486096688c1d2dbe874d14c79fb1043f81fae41916",
+    "executor_sha256": "103ad855408d7519daf5e9f0d1a326627c4edd6bb8b98b86072fc84762678b43",
+    "source_sha256": {
+     "src/mars_titan/training/candidate_walk_forward.py": "053761e34a2b275b1778bab4bfc0166e8be8fccf659c0abc30f3fff0bbe2b38f"
+    },
+    "cases": [
+     "carried_recipe_requires_determinism"
+    ],
+    "summary_sha256": "86b21f90443196e0860c78dd09753ef0a235d572a08f046bbea83f7565cc438b",
+    "scope": "Exigir determinism en una receta anterior que no lo declara, el defecto que dio los dos errores de la regresión."
+   }
+  ]
+ },
+ "native_link": {
+  "source_commit": "39abf2c99",
+  "preset": "native-candidate-cuda",
+  "used_by": "todas las suites",
+  "sha256": "9fda744aa9c6672f9fb47c0896a5e9b19fc8795cdbfff42b944ed751953b1046"
+ },
+ "cost": {
+  "receipt": "cost-cpu.json",
+  "sha256": "a8b9fa01b4e9fb594a01de5e8b6f7539cfb80a68ba4260d3c9fce8e22d8d9fe5"
+ }
+}

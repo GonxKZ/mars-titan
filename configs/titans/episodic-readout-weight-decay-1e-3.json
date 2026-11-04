@@ -1,0 +1,45 @@
+{
+  "schema_version": 1,
+  "recipe_name": "mars_titan_episodic_readout_chronological_v1",
+  "status": "declared_not_executed",
+  "recipe": {
+    "update_instants": 8,
+    "loss": "pinball",
+    "weight_decay": 0.001,
+    "max_grad_norm": 1.0,
+    "epochs": 30,
+    "selection": {
+      "metric": "session_mae",
+      "patience": 5,
+      "min_delta": 1e-05,
+      "stopping": "fixed_budget"
+    },
+    "block_rows": 512,
+    "neighbors": 8,
+    "temperature": 1.0,
+    "bank_capacity": 1024,
+    "bank_seed": 73,
+    "max_working_bytes": 134217728,
+    "checkpoint_updates": 256,
+    "checkpoint_seconds": 900.0,
+    "precision": "fp32_strict"
+  },
+  "walk_forward": {
+    "search_cases": {
+      "lr1e-4": {
+        "learning_rate": 0.0001
+      },
+      "lr1e-3": {
+        "learning_rate": 0.001
+      }
+    }
+  },
+  "pending": [
+    "Perfil opcional del lector episódico. No ejecutado ni incorporado a la campaña histórica.",
+    "Único cambio numérico frente a episodic-readout-historical-masked.json: weight_decay=0.001 en AdamW sin ancla.",
+    "El padre Titans-MAC sigue congelado. Comparar los perfiles del lector con el mismo checkpoint padre, variante M0–M3, filas, semillas y casos de tasa de aprendizaje.",
+    "Se conservan 30 épocas, selección del mejor checkpoint por session_mae y presupuesto fijo. El banco y sus políticas de escritura no cambian.",
+    "Regularizar el padre, regularizar el lector y combinar ambos son contrastes distintos. Registrar cada comparación antes de abrir los tramos posteriores.",
+    "La ejecución mantiene la protección del aprendizaje y el test final cerrado. No hay mejora predictiva medida."
+  ]
+}

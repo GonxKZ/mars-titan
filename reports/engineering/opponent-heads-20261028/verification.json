@@ -1,0 +1,122 @@
+{
+  "schema_version": 1,
+  "date": "2026-10-28",
+  "issue": 749,
+  "scope": "opponent_heads_v1",
+  "implementation_commit": "b8a37c65ff75b25af1e3b7c38ad5849dabcc8422",
+  "scientific_experiments": 0,
+  "training_runs": 0,
+  "real_optimizer_steps": 0,
+  "final_test_opened": false,
+  "test_optimizers": "Los recorridos usan RecordingOptimizer, que registra gradientes y llamadas sin modificar pesos. La protección global del aprendizaje sigue activa.",
+  "suites": [
+    {
+      "name": "targeted_with_coverage",
+      "tests": 49,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "xml_sha256": "644d0171d852756f3e8855ca00c5672d29ed1bdf7e788dc3ecee5f1d04fa854f"
+    },
+    {
+      "name": "regression_of_changed_paths",
+      "tests": 599,
+      "failures": 4,
+      "errors": 0,
+      "skipped": 29,
+      "xml_sha256": "7c1461dd77b1ff489a6e348e982ea0f415007bacd17a1aba1472007da324a533",
+      "modules": 24,
+      "known_failure": "Las cuatro variantes gru_episodic de tests/training/test_joint_stop_trainers.py fallan porque el enlace episódico compilado no declara candidate_abi_version. Fallan igual en develop (suite develop_joint_stop) y no pasan por A4."
+    },
+    {
+      "name": "develop_joint_stop",
+      "tests": 4,
+      "failures": 4,
+      "errors": 0,
+      "skipped": 0,
+      "xml_sha256": "167b5cc36ed6972cdacb8ed8305249f3c0450d94409da4fff98ad4a915e74fe3",
+      "note": "Las mismas cuatro pruebas sobre develop con el mismo enlace nativo."
+    },
+    {
+      "name": "after_integrating_the_screening_analysis",
+      "tests": 120,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 1,
+      "xml_sha256": "d0040137eb90710e76c469e623c40e7a48dbf20fb2622ba6267fdc8862821e51",
+      "note": "Pruebas de A4, del padre congelado, del protocolo, del motor y del análisis de la criba y la guarda del bloqueo tras integrar #779. La omisión es la prueba CUDA de A4."
+    }
+  ],
+  "quality": {
+    "tools": {
+      "coverage": "7.16.1",
+      "radon": "6.0.1",
+      "branch_coverage": true,
+      "python": "3.12.14",
+      "summarizer_sha256": "75cc60c88037e0bb17aff6e8ab666ce78b35d600d6c7ad217bf68b1afb4c4ec6"
+    },
+    "totals": {
+      "statements": 96,
+      "covered_statements": 96,
+      "branches": 32,
+      "covered_branches": 32
+    },
+    "files": [
+      {
+        "path": "src/mars_titan/models/titans/opponent_heads.py",
+        "source_sha256": "ca501a8b0dc943bf038fc985ca1529a71ef8385ec6b1b1e98f6e2a16d2f11b44",
+        "statements": 58,
+        "covered_statements": 58,
+        "branches": 12,
+        "covered_branches": 12
+      },
+      {
+        "path": "src/mars_titan/models/titans/output_objectives.py",
+        "source_sha256": "a1ae688222f655bae24b1b41bd0b37f682b5d9c6e8456bc56331becf6843407e",
+        "statements": 38,
+        "covered_statements": 38,
+        "branches": 20,
+        "covered_branches": 20
+      }
+    ],
+    "max_crap": 13.0,
+    "quality_sha256": "c7e7f946aabf946fb6e66d30b5e08d398c8d7bdf4af499400ac91ca440c10d00",
+    "limits": "CRAP y cobertura localizan complejidad poco comprobada. No demuestran ausencia de errores."
+  },
+  "mutations": {
+    "planned": 12,
+    "killed": 12,
+    "optimizer_attempts": 0,
+    "hold_sha256_unchanged": true,
+    "recipes_sha256": "491c5766dc7cbdf4fcaab2ff2212582130760dab0a7719c8c8726f8ee0c39e91",
+    "executor_sha256": "f1e38cd418953b04b07778348d0e4ee6429665c35fe90f52a096bef8b038cd31",
+    "source_sha256": {
+      "src/mars_titan/training/financial_run.py": "56f0a05bae2779ea3c412573f8696355e619f48cfa5899f4679141c346c5c79d",
+      "src/mars_titan/models/titans/output_objectives.py": "a1ae688222f655bae24b1b41bd0b37f682b5d9c6e8456bc56331becf6843407e",
+      "src/mars_titan/models/titans/frozen_financial.py": "8dfd93eeb6a0cc117c241e8164f7d0668dd532301f5c1ad60d1d4f045739d5e7",
+      "src/mars_titan/models/titans/opponent_heads.py": "ca501a8b0dc943bf038fc985ca1529a71ef8385ec6b1b1e98f6e2a16d2f11b44"
+    },
+    "cases": [
+      "swap_the_asymmetric_weights",
+      "ignore_the_family",
+      "both_heads_on_the_same_side",
+      "sum_instead_of_mean",
+      "random_initial_spread",
+      "emit_the_optimistic_head",
+      "wrong_control_level",
+      "accept_levels_above_one_half",
+      "unregistered_objective",
+      "accept_posttraining",
+      "unsigned_frozen_levels",
+      "train_with_the_reference_loss"
+    ],
+    "summary_sha256": "8eb39cf0897b8dfd304bed6ef8f962b7b0235e952e9ab1262e427c991b6b8b95",
+    "scope": "Doce defectos dirigidos de A4, cada uno con una fase en verde antes, la mutación y otra fase en verde después. No es una puntuación global."
+  },
+  "cost": {
+    "receipt": "cost-256.json",
+    "sha256": "7f5e89b4cf1cadcd02dab97f084abab5b8a4b2f4ee14b2a0beb291edbb3cb2b9",
+    "load_average_start_1m": 7.67,
+    "load_average_end_1m": 6.55
+  }
+}

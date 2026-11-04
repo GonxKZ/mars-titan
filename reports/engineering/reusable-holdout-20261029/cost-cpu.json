@@ -1,0 +1,88 @@
+{
+  "schema_version": 1,
+  "kind": "reusable_holdout_cost",
+  "issue": 794,
+  "measured_at": "2026-10-29T00:43:54+00:00",
+  "commit": "622ad936eb1b2a0759f086e82fe254dd9ba88cb3",
+  "sources_sha256": {
+    "src/mars_titan/evaluation/reusable_holdout.py": "0fb821c186d485a6e6c2d37473c304fbdcabb48a7836de4a1519e014a1ba7243",
+    "src/mars_titan/evaluation/paired_comparisons.py": "c6604b201275a0cd2ab2330143414efc270009bb3a18b7ea13000e86f83bd11e",
+    "benchmarks/reusable_holdout_cost.py": "2a9c1f21e4bf7660ac4ce1cc4c7afcc5fa9a20b020cb52eba8ca57f734eca553",
+    "configs/experiments/reusable-holdout-v1.json": "86db1293967f7548e5e1a439eed0fa9f375582120decd3488b1b51ea46f86548"
+  },
+  "data": "IC por sesi\u00f3n de ruido con semilla fija, solo para fijar formas. Nada se ajusta",
+  "declaration": {
+    "block_days": 16,
+    "replicates": 2000,
+    "seed": 20261023,
+    "resolution": 0.001
+  },
+  "environment": {
+    "cpu": "AMD Ryzen 9 8945HS w/ Radeon 780M Graphics",
+    "cpu_count": 16,
+    "python": "3.12.14",
+    "numpy": "2.5.3",
+    "threads": {
+      "OMP_NUM_THREADS": "2",
+      "OPENBLAS_NUM_THREADS": "2",
+      "MKL_NUM_THREADS": "2"
+    },
+    "load_average_at_start": [
+      15.05029296875,
+      12.6982421875,
+      12.6044921875
+    ],
+    "load_average_at_end": [
+      15.79248046875,
+      13.15673828125,
+      12.7626953125
+    ],
+    "concurrent_load": "otras sesiones comparten la m\u00e1quina, ver las cargas medias"
+  },
+  "not_measured": [
+    "GPU, porque la escalera es de CPU y no tiene tensores",
+    "series reales de S, cerradas hasta la segunda ola",
+    "energ\u00eda, sin instrumento adecuado"
+  ],
+  "cases": {
+    "submissions_10": {
+      "days": 1008,
+      "decisions_per_day": 1,
+      "submissions": 10,
+      "improvements": 2,
+      "ladder": {
+        "median_s": 0.9793739439919591,
+        "min_s": 0.6973215870093554,
+        "repeats": 5
+      },
+      "per_submission_median_s": 0.09793739439919591,
+      "traced_peak_bytes": 30670152
+    },
+    "submissions_40": {
+      "days": 1008,
+      "decisions_per_day": 1,
+      "submissions": 40,
+      "improvements": 3,
+      "ladder": {
+        "median_s": 1.9431786618661135,
+        "min_s": 1.8699686729814857,
+        "repeats": 3
+      },
+      "per_submission_median_s": 0.048579466546652836,
+      "traced_peak_bytes": 31218997
+    },
+    "submissions_40_two_per_day": {
+      "days": 1008,
+      "decisions_per_day": 2,
+      "submissions": 40,
+      "improvements": 2,
+      "ladder": {
+        "median_s": 3.149159661028534,
+        "min_s": 1.8720014258287847,
+        "repeats": 3
+      },
+      "per_submission_median_s": 0.07872899152571336,
+      "traced_peak_bytes": 33360908
+    }
+  }
+}

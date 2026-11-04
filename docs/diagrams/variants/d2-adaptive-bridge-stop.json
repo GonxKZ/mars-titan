@@ -1,0 +1,71 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "D2 · Parada adaptativa del puente (shared_evidence_bridge_adaptive_v1)",
+    "quality_profile": "showcase",
+    "viewBox": [1300, 592],
+    "legend": {
+      "entries": {
+        "backend": {"label": "Cálculo"},
+        "database": {"label": "Memoria y estado"},
+        "frontend": {"label": "Salida"},
+        "security": {"label": "Control o protección"},
+        "cloud": {"label": "Evaluación"}
+      }
+    }
+  },
+  "components": [
+    {"id": "snapshot", "type": "database", "label": "Instantánea episódica", "sublabel": "una única evidencia", "pos": [40, 230], "size": [180, 72]},
+    {"id": "bridge", "type": "backend", "label": "Puente de evidencia", "sublabel": "ciclos regionales", "pos": [300, 230], "size": [180, 72]},
+    {
+      "id": "residual",
+      "type": "security",
+      "label": "Residual del estado",
+      "sublabel": "regla de parada declarada",
+      "pos": [560, 40],
+      "size": [180, 72]
+    },
+    {"id": "prefix", "type": "backend", "label": "Prefijo J1, J2 o J4", "sublabel": "por predicción", "pos": [560, 230], "size": [180, 72]},
+    {"id": "state", "type": "frontend", "label": "Estado refinado", "sublabel": "para la cabeza", "pos": [820, 230], "size": [180, 72]},
+    {"id": "screen", "type": "cloud", "label": "Criba", "sublabel": "ahorro a igual MAE", "pos": [1080, 230], "size": [180, 72]},
+    {
+      "id": "controls",
+      "type": "security",
+      "label": "Controles",
+      "sublabel": "J fijo con el mismo J medio",
+      "tag": "asignación por hash",
+      "pos": [560, 420],
+      "size": [180, 72]
+    }
+  ],
+  "connections": [
+    {"id": "snapshot-bridge", "from": "snapshot", "to": "bridge"},
+    {"id": "bridge-prefix", "from": "bridge", "to": "prefix", "variant": "emphasis"},
+    {"id": "residual-prefix", "from": "residual", "to": "prefix", "label": "parar", "variant": "security", "labelDy": 24},
+    {"id": "prefix-state", "from": "prefix", "to": "state", "variant": "emphasis"},
+    {"id": "state-screen", "from": "state", "to": "screen"},
+    {"id": "controls-screen", "from": "controls", "to": "screen", "label": "control", "variant": "dashed"}
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "Mecanismo",
+      "items": [
+        "Cada predicción usa el prefijo J1, J2 o J4 según el residual de su estado",
+        "Una sola evidencia episódica para todas las regiones",
+        "Antecedentes: ACT (2016) y PonderNet (2021), regla propia"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "Control que la descarta",
+      "items": ["J fijo con el mismo J medio", "Asignación de J por hash con la misma distribución"]
+    },
+    {
+      "dot": "amber",
+      "title": "Estado",
+      "items": ["Implementada en la PR 735 (#734), sin evaluar", "Se juzga por ahorro de cálculo con igual MAE"]
+    }
+  ]
+}

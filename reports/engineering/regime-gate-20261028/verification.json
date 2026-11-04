@@ -1,0 +1,99 @@
+{
+  "schema_version": 1,
+  "kind": "regime_evidence_gate_fixture_checks",
+  "implementation_commit": "4cce7e64b",
+  "tests": {
+    "passed": 451,
+    "new": 71,
+    "regressions": 381,
+    "skipped": 1,
+    "failures": 0,
+    "skipped_cases": [
+      {
+        "test": "tests.training.test_modality_ablation_carry::test_b6_ablation_equals_the_correction_with_a_real_absence",
+        "reason": "Bloqueo de aprendizaje vigente: prepara dos ventanas B6 con run_correction_window y traslada una con carry_correction sobre ventanas técnicas de Titans-MAC. B6 no ajusta parámetros, pero las dos entradas comprueban la protección porque eligen η con la validación y predicen ventanas de la campaña (inventario de #546)"
+      }
+    ],
+    "full_suite_executed": false,
+    "by_module": {
+      "tests.benchmarks.test_regime_evidence_gate_cost": 9,
+      "tests.memory.test_area_correction_window": 11,
+      "tests.memory.test_lesion_inference": 9,
+      "tests.memory.test_mars_titan_correction_parity": 15,
+      "tests.memory.test_regime_evidence_gate": 40,
+      "tests.memory.test_regime_gate_correction": 14,
+      "tests.memory.test_regime_routing": 12,
+      "tests.memory.test_salience_correction": 42,
+      "tests.training.test_area_correction_arms": 20,
+      "tests.training.test_area_correction_bounded": 3,
+      "tests.training.test_kalman_correction": 29,
+      "tests.training.test_learning_hold": 14,
+      "tests.training.test_learning_hold_graph": 12,
+      "tests.training.test_learning_hold_guards": 155,
+      "tests.training.test_learning_hold_inventory": 5,
+      "tests.training.test_mars_titan_correction": 33,
+      "tests.training.test_modality_ablation_carry": 9,
+      "tests.training.test_regime_gate_correction_window": 7,
+      "tests.training.test_regime_gate_window_profile": 1,
+      "tests.training.test_salience_correction_window": 11,
+      "tests.training.test_salience_window_profile": 1
+    },
+    "xml_sha256": "9f6595fda8d976e3e8b696fa9117090be953b99edda8484a3487914261bea188"
+  },
+  "integration": {
+    "window_api": true,
+    "carry_and_regeneration": true,
+    "matched_constant_control": true,
+    "financial_session": false,
+    "cuda_verified": false
+  },
+  "cuda": {
+    "executed": 0,
+    "reason": "E4 no añade rutas CUDA propias. La memoria A exige CPU y FP64 por contrato, y las comprobaciones CUDA de las ventanas siguen pendientes de admisión GPU."
+  },
+  "compute": {
+    "device": "cpu",
+    "dtype": "float64",
+    "scientific_data": false,
+    "shared_parameter_updates": false,
+    "final_test_access": false
+  },
+  "quality": {
+    "primary": "quality.json",
+    "support": "quality-support.json",
+    "new_modules": {
+      "statements": 238,
+      "covered_statements": 231,
+      "branches": 88,
+      "covered_branches": 83
+    },
+    "convention": "CRAP por cobertura de sentencias. Ramas informadas por separado."
+  },
+  "mutations": {
+    "file": "mutations.json",
+    "planned": 11,
+    "killed": 11
+  },
+  "cost": {
+    "file": "cost.json",
+    "sizes": [
+      64,
+      256,
+      1024,
+      8192
+    ],
+    "modes": [
+      "constant",
+      "cusum",
+      "none"
+    ],
+    "warmup": 2,
+    "repeats": 7
+  },
+  "defect_found": "Una prueba añadida para cubrir validaciones mostró que (e / r) ** 2 lanzaba OverflowError en vez del ValueError declarado. Se sustituyó por z · z, que da infinito y se rechaza con su mensaje. z · z es el cuadrado correctamente redondeado, mientras que pow se desvió 1 ULP en 1.696 de 2.000.000 valores aleatorios comparados con aritmética racional. No había resultados previos de E4.",
+  "notes": [
+    "La batería final, la cobertura y la segunda ejecución de mutaciones usan las mismas fuentes que el commit de implementación.",
+    "La omisión es la guarda del bloqueo de aprendizaje, que impide preparar ventanas B6 de la campaña.",
+    "Después de la batería se quitaron dos entradas repetidas e idénticas del inventario de guardas (a0e6ac71a). Las 160 pruebas del inventario y las guardas se repitieron y pasaron."
+  ]
+}

@@ -1,0 +1,70 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "Fase 0b · Techo de señal con anomalías conocidas (#747)",
+    "quality_profile": "showcase",
+    "viewBox": [1300, 592],
+    "legend": {
+      "entries": {
+        "external": {"label": "Entradas"},
+        "backend": {"label": "Cálculo"},
+        "database": {"label": "Memoria y estado"},
+        "frontend": {"label": "Salida"},
+        "cloud": {"label": "Evaluación"}
+      }
+    }
+  },
+  "components": [
+    {"id": "prices", "type": "external", "label": "Precios y volumen", "sublabel": "hasta la emisión", "pos": [40, 40], "size": [180, 72]},
+    {"id": "earnings", "type": "external", "label": "Fechas de resultados", "sublabel": "disponibilidad real", "pos": [40, 420], "size": [180, 72]},
+    {
+      "id": "features",
+      "type": "backend",
+      "label": "Rasgos por sesión",
+      "sublabel": "momentum y reversión",
+      "tag": "volatilidad, máximo anual, volumen",
+      "pos": [300, 230],
+      "size": [180, 72]
+    },
+    {"id": "ridge", "type": "backend", "label": "Ridge", "sublabel": "CPU", "pos": [560, 40], "size": [180, 72]},
+    {
+      "id": "targets",
+      "type": "database",
+      "label": "Objetivo residual y bruto",
+      "sublabel": "mismas filas que la criba",
+      "pos": [560, 230],
+      "size": [180, 72]
+    },
+    {"id": "lgbm", "type": "backend", "label": "LightGBM", "sublabel": "CPU", "pos": [560, 420], "size": [180, 72]},
+    {"id": "metrics", "type": "cloud", "label": "IC por sesión", "sublabel": "intervalos por bloques", "pos": [820, 230], "size": [180, 72]},
+    {"id": "ceiling", "type": "frontend", "label": "Techo observado", "sublabel": "¿señal extraíble?", "pos": [1080, 230], "size": [180, 72]}
+  ],
+  "connections": [
+    {"id": "prices-features", "from": "prices", "to": "features"},
+    {"id": "earnings-features", "from": "earnings", "to": "features"},
+    {"id": "features-ridge", "from": "features", "to": "ridge"},
+    {"id": "features-lgbm", "from": "features", "to": "lgbm"},
+    {"id": "targets-metrics", "from": "targets", "to": "metrics"},
+    {"id": "ridge-metrics", "from": "ridge", "to": "metrics", "variant": "emphasis"},
+    {"id": "lgbm-metrics", "from": "lgbm", "to": "metrics", "variant": "emphasis"},
+    {"id": "metrics-ceiling", "from": "metrics", "to": "ceiling"}
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "Objetivo",
+      "items": ["Saber si los datos tienen señal diaria con rasgos conocidos", "Separar un problema de aprendizaje de uno de datos o de residualización"]
+    },
+    {
+      "dot": "rose",
+      "title": "Causalidad",
+      "items": ["Ningún rasgo lee datos posteriores a la emisión", "Mismas filas, ventanas y cohorte de 256 activos que la criba"]
+    },
+    {
+      "dot": "amber",
+      "title": "Estado",
+      "items": ["Registrada en #747, pendiente", "CPU, sin redes ni optimizadores de PyTorch"]
+    }
+  ]
+}

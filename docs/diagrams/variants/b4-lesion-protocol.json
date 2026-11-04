@@ -1,0 +1,204 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "B4 · Protocolo de lesiones (lesion_protocol_v1)",
+    "quality_profile": "showcase",
+    "viewBox": [
+      1300,
+      592
+    ],
+    "legend": {
+      "entries": {
+        "external": {
+          "label": "Entradas"
+        },
+        "backend": {
+          "label": "Cálculo"
+        },
+        "database": {
+          "label": "Memoria y estado"
+        },
+        "frontend": {
+          "label": "Salida"
+        },
+        "security": {
+          "label": "Control o protección"
+        },
+        "cloud": {
+          "label": "Evaluación"
+        }
+      }
+    }
+  },
+  "components": [
+    {
+      "id": "model",
+      "type": "database",
+      "label": "Estado original",
+      "sublabel": "B1, B2, B3 o E1",
+      "pos": [
+        40,
+        230
+      ],
+      "size": [
+        180,
+        72
+      ]
+    },
+    {
+      "id": "mask",
+      "type": "security",
+      "label": "Lesiones de lectura",
+      "sublabel": "áreas y coordenadas DPFP",
+      "pos": [
+        300,
+        40
+      ],
+      "size": [
+        180,
+        72
+      ]
+    },
+    {
+      "id": "infer",
+      "type": "backend",
+      "label": "Lecturas diagnósticas",
+      "sublabel": "misma trayectoria original",
+      "pos": [
+        560,
+        230
+      ],
+      "size": [
+        180,
+        72
+      ]
+    },
+    {
+      "id": "zero",
+      "type": "external",
+      "label": "Corrección cero",
+      "sublabel": "padre sin intervenir",
+      "pos": [
+        300,
+        420
+      ],
+      "size": [
+        180,
+        72
+      ]
+    },
+    {
+      "id": "curve",
+      "type": "database",
+      "label": "Registro pendiente",
+      "sublabel": "componentes emitidos",
+      "pos": [
+        820,
+        230
+      ],
+      "size": [
+        180,
+        72
+      ]
+    },
+    {
+      "id": "monolith",
+      "type": "security",
+      "label": "Área única",
+      "sublabel": "iguales coeficientes W",
+      "pos": [
+        820,
+        420
+      ],
+      "size": [
+        180,
+        72
+      ]
+    },
+    {
+      "id": "report",
+      "type": "frontend",
+      "label": "Error por sesión",
+      "sublabel": "solo al madurar",
+      "pos": [
+        1080,
+        230
+      ],
+      "size": [
+        180,
+        72
+      ]
+    }
+  ],
+  "connections": [
+    {
+      "id": "model-infer",
+      "from": "model",
+      "to": "infer"
+    },
+    {
+      "id": "mask-infer",
+      "from": "mask",
+      "to": "infer",
+      "label": "lesión",
+      "variant": "emphasis"
+    },
+    {
+      "id": "zero-infer",
+      "from": "zero",
+      "to": "infer",
+      "label": "referencia",
+      "variant": "dashed"
+    },
+    {
+      "id": "infer-curve",
+      "from": "infer",
+      "to": "curve",
+      "variant": "emphasis"
+    },
+    {
+      "id": "monolith-curve",
+      "from": "monolith",
+      "to": "curve",
+      "label": "control",
+      "variant": "dashed"
+    },
+    {
+      "id": "curve-report",
+      "from": "curve",
+      "to": "report",
+      "label": "resultado maduro",
+      "labelDy": -40
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "Mecanismo comprobado",
+      "items": [
+        "Máscaras anidadas con semillas fijadas antes del tramo",
+        "Corte de las consultas y de los extremos del puente",
+        "Los diagnósticos no actualizan W, T ni los pesos de E1"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "Controles",
+      "items": [
+        "Lectura intacta y corrección cero sobre el mismo estado",
+        "Denominador activo y original para separar el cambio de ganancia",
+        "Área única y misma fracción realizada de coordenadas"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "Estado real",
+      "items": [
+        "Ventana y sesión conectadas en pruebas CPU",
+        "Recuperación por generación y columnas por muestra",
+        "Curvas, coste integral y CUDA aún pendientes"
+      ]
+    }
+  ]
+}

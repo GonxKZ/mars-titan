@@ -1,0 +1,25 @@
+{
+  "schema_version": 1,
+  "kind": "lesion_study_v1",
+  "variant_id": "lesion_protocol_v1",
+  "status": "declared_not_executed",
+  "default_enabled": false,
+  "final_test_access": false,
+  "protocol": {
+    "kind": "lesion_protocol_v1",
+    "seeds": [0, 1],
+    "fractions": [[1, 4], [1, 2], [3, 4]],
+    "generator": "numpy_pcg64_180_axis_seed_area_fixed_four_words",
+    "selection": "nested_prefix_of_fixed_permutation_floor_fraction_times_dimension",
+    "scope": "read_queries_and_bridge_endpoints_without_writes_or_model_adaptation"
+  },
+  "analysis": {
+    "block_length": 16,
+    "sensitivity_block_lengths": [8, 32],
+    "replicates": 2000,
+    "seed": 20261027,
+    "confidence": 0.95,
+    "market_weighting": "session",
+    "rank_ic_min_assets": 3
+  }
+}

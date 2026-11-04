@@ -1,0 +1,66 @@
+{
+  "schema_version": 1,
+  "kind": "technical_shared_prediction_file_scoring_without_learning",
+  "recorded_at_utc": "2026-10-27T16:04:27.550209+00:00",
+  "base_commit": "917c6fdad747d7c788bc11172f612099717309c7",
+  "tests": {
+    "distinct_passed": 97,
+    "new_cases": 20,
+    "regressions": 77,
+    "skipped": 0,
+    "full_suite_executed": false,
+    "xml_sha256": "761e8590ca26deddbdf4d24d2c47626f475c7375d7263b86d585723616e6e7ee"
+  },
+  "quality": {
+    "path": "quality.json",
+    "totals": {
+      "statements": 208,
+      "covered_statements": 206,
+      "branches": 32,
+      "covered_branches": 30
+    },
+    "max_crap": 23.0,
+    "convention": "Coverage 7.16.1 y Radon 6.0.1. CRAP usa cobertura de sentencias y las ramas se informan aparte."
+  },
+  "mutations": {
+    "path": "mutations.json",
+    "planned": 6,
+    "killed": 6,
+    "optimizer_attempts": 0
+  },
+  "cost": {
+    "passes": 2,
+    "paired_checks_per_pass": 12,
+    "conditions_per_pair": 5,
+    "scope": "Lectura B4 y puntuación con fixtures, sin inferencia ni aprendizaje"
+  },
+  "sources": {
+    "src/mars_titan/evaluation/forecast_files.py": "0e5e79cd1b1f4bf17d6d1a0ad45f8db4be55dda199d82e18551d23186fd39f1f",
+    "src/mars_titan/evaluation/lesion_curves.py": "f09fc83287066ee9e677f26b4ffb82a85ae06c05db38fd4063bfe845cc55c84b",
+    "tests/evaluation/test_forecast_files.py": "84fe15a4400a2b43a6681f462da906d16129e11f0009ce8b258991bc90da5ce2",
+    "tests/evaluation/test_lesion_curves.py": "6ecc4f6e193982603e07749d1e5338505ea5ef2eb6eae988f2c16ae375e7544e",
+    "reports/engineering/forecast-files-20261027/cost_probe.py": "e255909f1da26a683ccaf0e9801929a19a97ee26bb4944f3d7eb75fc09cd651a"
+  },
+  "hold_sha256": "8a658080c1ac4e63847eba58b177020339da6ec47021cf26d2701830073c87fd",
+  "scientific_training_executed": false,
+  "final_test_access": false,
+  "predictive_improvement_measured": false,
+  "spaced_comparison_integrated": false,
+  "limits": [
+    "El lector puro no autoriza evaluación científica. B4 conserva su guarda antes de entradas y salidas.",
+    "Las 97 pruebas incluyen 20 nuevas, 24 de B4, 36 de contrastes y 17 guardas. No se suman ejecuciones repetidas.",
+    "Las puntuaciones B4 conservan tablas, huellas de población y resúmenes exactamente en las dos medidas. No se afirma aceleración.",
+    "Se rechazan operaciones estadísticas no finitas. No se corrigen ni recortan los pronósticos.",
+    "La población incluye objetivos e identidades. No demuestra la disponibilidad histórica original de cada entrada.",
+    "El comparador E2 y su declaración estadística previa todavía no están integrados.",
+    "La evidencia es CPU FP64. No comprueba las rutas CUDA pendientes de los modelos."
+  ],
+  "artifacts": {
+    "quality.json": "d1e7a40fd4c7064d19a97b9ca904077e1a80ad1f5b5dcb702ee5b6efd6a01080",
+    "mutations.json": "697770417e7e0d742e4c74c3236bd53ecac020dc9a790ef503656cd38c9d1809",
+    "cost-first.json": "c5c22bab48e81dbbab5396e4eb32ab274bd10a7c38c7ee1fa1f0157e494dd53d",
+    "cost-confirmation.json": "7579c554ae57dde05e087a0b98b6b1b57f2c681b68d1beaf50bddfcbe81024d5",
+    "cost-probe-first.patch": "161368188e9a06c18ff81a19160257b45585721032aefc8ea49a151ad8b607d2",
+    "cost-probe-confirmation.patch": "aabbe048c807a02dcccd461e608874b55119528f3ecb7c16de55e2e4431dd968"
+  }
+}

@@ -449,9 +449,9 @@ def anchor_adapter(anchor, anchor_view, specification, *, device):
     window, window_sha256, report, folder = _anchor(Path(anchor), Path(anchor_view))
     identity = report["identity"]
     declared = identity["recipe"]
-    # La precisión y el ancla del decaimiento solo aparecen en la identidad cuando la receta
-    # los declara.
-    optional = ("precision", "weight_decay_anchor")
+    # La precisión, el ancla del decaimiento y el determinismo solo aparecen en la identidad
+    # cuando la receta los declara.
+    optional = ("precision", "weight_decay_anchor", "determinism")
     recipe = CandidateRecipe(
         **{
             item.name: declared.get(item.name) if item.name in optional else declared[item.name]

@@ -1,0 +1,64 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "G3 · Auditoría as-of del ledger (asof_ledger_audit)",
+    "quality_profile": "showcase",
+    "viewBox": [1300, 402],
+    "legend": {
+      "entries": {
+        "external": {"label": "Entradas"},
+        "backend": {"label": "Cálculo"},
+        "database": {"label": "Memoria y estado"},
+        "frontend": {"label": "Salida"},
+        "security": {"label": "Control o protección"},
+        "cloud": {"label": "Evaluación"}
+      }
+    }
+  },
+  "components": [
+    {"id": "records", "type": "database", "label": "Registros", "sublabel": "con su disponibilidad", "pos": [40, 230], "size": [180, 72]},
+    {
+      "id": "future",
+      "type": "external",
+      "label": "Registro con fecha futura",
+      "sublabel": "inyectado en la prueba",
+      "pos": [300, 40],
+      "size": [180, 72]
+    },
+    {"id": "recover", "type": "backend", "label": "Recuperación as-of", "sublabel": "corte t", "pos": [300, 230], "size": [180, 72]},
+    {"id": "reject", "type": "security", "label": "Rechazo", "sublabel": "disponibilidad futura", "pos": [560, 40], "size": [180, 72]},
+    {"id": "rebuild", "type": "backend", "label": "Reconstrucción", "sublabel": "predicciones pasadas", "pos": [560, 230], "size": [180, 72]},
+    {"id": "compare", "type": "cloud", "label": "Comparación bit a bit", "sublabel": "con lo emitido", "pos": [820, 230], "size": [180, 72]},
+    {"id": "validity", "type": "frontend", "label": "Validez", "sublabel": "no mide rendimiento", "pos": [1080, 230], "size": [180, 72]}
+  ],
+  "connections": [
+    {"id": "records-recover", "from": "records", "to": "recover"},
+    {"id": "future-recover", "from": "future", "to": "recover", "label": "inyección", "variant": "security", "labelDy": 24},
+    {"id": "recover-reject", "from": "recover", "to": "reject", "label": "fecha futura", "variant": "security"},
+    {"id": "recover-rebuild", "from": "recover", "to": "rebuild", "variant": "emphasis"},
+    {"id": "rebuild-compare", "from": "rebuild", "to": "compare", "variant": "emphasis"},
+    {"id": "compare-validity", "from": "compare", "to": "validity"}
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "Mecanismo",
+      "items": [
+        "La recuperación solo devuelve registros disponibles antes del corte",
+        "Las predicciones pasadas se reconstruyen y se comparan con las emitidas",
+        "Fuente: Event Sourcing de Fowler, W3C PROV-DM"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "Alcance",
+      "items": ["Mide la validez del registro, no el rendimiento predictivo", "No tiene control de rendimiento"]
+    },
+    {
+      "dot": "amber",
+      "title": "Estado",
+      "items": ["Gran parte existente (#442), pruebas pendientes en #748", "Minutos de CPU"]
+    }
+  ]
+}

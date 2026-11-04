@@ -48,9 +48,11 @@ from mars_titan.memory.retention_bank import RetentionConfig
 from mars_titan.models.quantile_head import PINBALL, QUANTILE_HEAD, pinball_loss
 from mars_titan.models.titans.config import MAX_BLOCK_ROWS, MAX_STATE_BYTES, canonical
 from mars_titan.models.titans.episodic_readout import (
+    FAMILIARITY_GATES,
     REFINEMENT_INITIALIZATIONS,
     EpisodicReadout,
     apply_episodic_readout,
+    head_predictions,
 )
 from mars_titan.models.titans.financial import FinancialPredictor
 from mars_titan.models.titans.financial_inputs import (
@@ -59,6 +61,7 @@ from mars_titan.models.titans.financial_inputs import (
     validated_cpu_batches,
 )
 from mars_titan.models.titans.frozen_financial import _implementation, _numerics
+from mars_titan.models.titans.output_objectives import reads_scalar_point
 from mars_titan.models.titans.state import deferred_checks
 
 from . import anchored_decay
@@ -70,6 +73,12 @@ from .checkpoints import (
     restore_rng,
     save_training_state,
 )
+from .common_epoch import chosen_state
+from .determinism import (
+    TORCH_DETERMINISTIC,
+    declared_determinism,
+    valid_determinism,
+)
 from .financial_run import FlowStates, Paused, _compatible, _read_report
 from .input_pipeline import prepared
 from .kernel_policy import declared_policy, require_policy, valid_precision
@@ -77,6 +86,8 @@ from .learning_hold import require_learning_allowed
 from .search_cases import case_options, checked_search_cases
 from .selection import (
     AWAIT,
+    CHRONOLOGICAL_MODES,
+    COMMON_EPOCH,
     FINISH,
     FIXED_BUDGET,
     VALIDATION_PLATEAU,
@@ -102,6 +113,7 @@ _OWN_MODULES = (
     "mars_titan.memory.episodic_codec",
     "mars_titan.training.checkpoints",
     "mars_titan.training.selection",
+    "mars_titan.training.common_epoch",
     "mars_titan.evaluation.session_metrics",
 )
 
@@ -139,9 +151,26 @@ class ReadoutRecipe:
     # estado con que empieza el ajuste, que en el postentrenamiento es el padre (#444).
     weight_decay_anchor: str | None = None
     refinement_initialization: str = "pytorch_default"
+    # D1 de #751. None supervisa solo el último refinamiento, como antes. Una lista creciente
+    # que acaba en K promedia la pérdida de la predicción tras cada refinamiento declarado.
+    supervised_refinements: tuple[int, ...] | None = None
+    # None conserva el determinismo del proceso, como en la receta del núcleo (#794).
+    determinism: str | None = None
+    # R3 de #786. None conserva el lector y la identidad anteriores.
+    familiarity_gate: str | None = None
 
     def __post_init__(self):
-        validate_selection(self.selection, epochs=self.epochs)
+        validate_selection(self.selection, epochs=self.epochs, modes=CHRONOLOGICAL_MODES)
+        if type(self.supervised_refinements) is list:
+            object.__setattr__(self, "supervised_refinements", tuple(self.supervised_refinements))
+        declared = self.supervised_refinements
+        if declared is not None and (
+            type(declared) is not tuple
+            or not declared
+            or any(type(k) is not int or k not in (1, 2, 3, 4) for k in declared)
+            or list(declared) != sorted(set(declared))
+        ):
+            raise ValueError("Los refinamientos supervisados deben ser enteros crecientes de 1 a 4")
         integers = (
             (self.update_instants, 1, 256),
             (self.epochs, 1, 1000),
@@ -172,6 +201,13 @@ class ReadoutRecipe:
             or type(self.refinement_initialization) is not str
             or self.refinement_initialization not in REFINEMENT_INITIALIZATIONS
             or (
+                self.familiarity_gate is not None
+                and (
+                    type(self.familiarity_gate) is not str
+                    or self.familiarity_gate not in FAMILIARITY_GATES
+                )
+            )
+            or (
                 clip is not None
                 and (type(clip) not in (int, float) or not math.isfinite(clip) or clip <= 0)
             )
@@ -180,6 +216,8 @@ class ReadoutRecipe:
                 "La receta del lector necesita pérdida, tramo, banco, presupuesto, "
                 "optimizador y checkpoints válidos"
             )
+        if not valid_determinism(self.determinism):
+            raise ValueError(f"El determinismo de la receta es None o {TORCH_DETERMINISTIC}")
 
     def identity(self):
         fields = asdict(self)
@@ -189,6 +227,12 @@ class ReadoutRecipe:
             fields.pop("weight_decay_anchor")
         if fields["refinement_initialization"] == "pytorch_default":
             fields.pop("refinement_initialization")
+        if fields["supervised_refinements"] is None:
+            fields.pop("supervised_refinements")
+        if fields["determinism"] is None:
+            fields.pop("determinism")
+        if fields["familiarity_gate"] is None:
+            fields.pop("familiarity_gate")
         return dict(
             schema_version=1,
             recipe=RECIPE,
@@ -390,6 +434,8 @@ class MarsTitanInference:
         ):
             raise ValueError("El recorrido necesita el padre, el lector y su receta")
         config = predictor.config
+        if not reads_scalar_point(predictor.output_objective):
+            raise ValueError("El lector necesita una integración propia del objetivo de salida")
         self.uses_context = config.session_context is not None
         self._check_parent(predictor)
         if torch.backends.mha.get_fastpath_enabled() or torch.is_inference_mode_enabled():
@@ -397,6 +443,9 @@ class MarsTitanInference:
         self.quantiles = config.head == QUANTILE_HEAD
         if self.quantiles != (recipe.loss == PINBALL):
             raise ValueError("La cabeza de cuantiles se ajusta solo y siempre con pinball")
+        supervised = recipe.supervised_refinements
+        if supervised is not None and supervised[-1] != readout.config.refinements:
+            raise ValueError("La supervisión por refinamientos debe acabar en el K del lector")
         if admission not in ADMISSIONS:
             raise ValueError("La escritura debe ser M0, M1, M2 o M3")
         if (admission == "m0") != (readout.config.mode == "no_bank") or (
@@ -422,6 +471,7 @@ class MarsTitanInference:
             or readout.config.temperature != recipe.temperature
             or readout.config.max_working_bytes != recipe.max_working_bytes
             or readout.config.refinement_initialization != recipe.refinement_initialization
+            or readout.config.familiarity_gate != recipe.familiarity_gate
             or recipe.block_rows > min(config.max_batch, readout.config.max_batch)
         ):
             raise ValueError("El lector no corresponde al padre o a la receta declarada")
@@ -433,8 +483,10 @@ class MarsTitanInference:
         if admission != "m0" and not hasattr(native, "MemoryRecord"):
             raise ValueError("El banco necesita el enlace episódico nativo")
         self.predictor, self.readout, self.recipe = predictor, readout, recipe
-        # La política se aplica antes de calcular nada y antes de registrar `_numerics`.
+        # La política se aplica antes de calcular nada y antes de registrar `_numerics`, que
+        # guarda también las banderas del determinismo.
         self.kernel_policy = declared_policy(recipe.precision)
+        self.determinism = declared_determinism(recipe.determinism)
         self.admission, self.retention, self.native, self.codec = (
             admission,
             retention,
@@ -543,6 +595,8 @@ class MarsTitanInference:
                 validated = blocks.result()
         with nvtx_ranges.phase("readout.event_plan"):
             plan = self._event_plan(run, phase, event, validated, train=train and not warmup)
+        if predictor.session_level:
+            plan = dict(plan, session_complete=len(validated) == 1)
         if self.uses_context and run.parent_context is None:
             run.parent_context = predictor.initial_context()
         # Las comprobaciones de finitud del núcleo y del lector en todos los bloques del
@@ -755,6 +809,29 @@ class MarsTitanInference:
         return self._pass(source.phase, events, stop=stop, rows=rows)
 
 
+def readout_loss(result, head, index, target, *, loss, supervised=None):
+    """Pérdida de las filas `index` con pinball de cinco niveles o L1 de la salida escalar.
+
+    Sin `supervised` se evalúa solo la predicción emitida. Con una lista de refinamientos,
+    se promedia la pérdida de la predicción de la cabeza tras cada uno. El último es K y
+    reutiliza la predicción emitida.
+    """
+
+    def single(point, quantiles):
+        if loss == PINBALL:
+            return pinball_loss(quantiles.index_select(0, index), target)
+        return torch.nn.functional.l1_loss(point.index_select(0, index), target)
+
+    final = single(result.point_predictions, result.quantiles)
+    if supervised is None:
+        return final
+    states = result.readout.states
+    if supervised[-1] != len(states):
+        raise ValueError("La supervisión por refinamientos debe acabar en el K del lector")
+    losses = [single(*head_predictions(head, states[k - 1])) for k in supervised[:-1]]
+    return torch.stack([*losses, final]).mean()
+
+
 class ReadoutTrainer(MarsTitanInference):
     """Ajustar el lector episódico sobre el padre congelado recorriendo instantes en orden."""
 
@@ -765,6 +842,9 @@ class ReadoutTrainer(MarsTitanInference):
     # Trazas por paso con el contrato común (`learning_traces.hooks.TrainingTraces`). Con
     # None, `traced_update` y `observing` son bloques vacíos.
     traces = None
+    # Puntuación de cada validación con la parada `common_epoch` (#746), que la exige. La
+    # asigna la ventana con un `common_epoch.EpochValidation`.
+    epoch_scorer = None
 
     def _trace_modules(self):
         """Módulos del recorrido para las trazas. Solo se agrupan los parámetros ajustables."""
@@ -864,6 +944,8 @@ class ReadoutTrainer(MarsTitanInference):
         if self.kernel_policy is not None:
             # Sin precisión declarada la identidad conserva su forma anterior.
             self.identity["kernel_policy"] = self.kernel_policy
+        if self.determinism is not None:
+            self.identity["determinism"] = self.determinism
         anchored = anchored_decay.describe(self.optimizer, recipe.weight_decay_anchor)
         if anchored is not None:
             # Solo el decaimiento anclado añade su código. Sin él la identidad no cambia.
@@ -891,6 +973,10 @@ class ReadoutTrainer(MarsTitanInference):
 
     def _code(self):
         own = {name: sha256(Path(importlib.import_module(name).__file__)) for name in _OWN_MODULES}
+        # El determinismo de #794 añade su módulo solo si la receta lo declara.
+        if self.recipe.determinism is not None:
+            name = "mars_titan.training.determinism"
+            own[name] = sha256(Path(importlib.import_module(name).__file__))
         return {
             **_implementation(kronlstm=self.predictor.config.temporal_encoder is not None),
             **own,
@@ -907,11 +993,16 @@ class ReadoutTrainer(MarsTitanInference):
         if self.predictor._parameter_id != self.identity["parent"]["parameters_sha256"]:
             raise ValueError("El padre congelado cambió durante el ajuste del lector")
 
-    def _loss(self, result, target):
-        """Pinball de los cinco niveles con `quantile_head_v1` o L1 de la salida escalar."""
-        if self.recipe.loss == PINBALL:
-            return pinball_loss(result.quantiles, target)
-        return torch.nn.functional.l1_loss(result.point_predictions, target)
+    def _loss(self, result, index, target):
+        """Pérdida de las filas `index` según la receta, con `readout_loss`."""
+        return readout_loss(
+            result,
+            self.predictor.head,
+            index,
+            target,
+            loss=self.recipe.loss,
+            supervised=self.recipe.supervised_refinements,
+        )
 
     def _update(self, run, at):
         """Repetir cada bloque del tramo con etiquetas y acumular la pérdida media del tramo."""
@@ -957,14 +1048,7 @@ class ReadoutTrainer(MarsTitanInference):
                         self.device,
                         self.dtype,
                     )
-                    selected = replace(
-                        result,
-                        point_predictions=result.point_predictions.index_select(0, index),
-                        quantiles=None
-                        if result.quantiles is None
-                        else result.quantiles.index_select(0, index),
-                    )
-                    loss = self._loss(selected, target) * (len(positions) / total)
+                    loss = self._loss(result, index, target) * (len(positions) / total)
                     checks.append(torch.isfinite(loss))
                     messages.append("La pérdida del tramo no es finita")
                     self._backward_block(loss, record)
@@ -1210,22 +1294,39 @@ class ReadoutTrainer(MarsTitanInference):
             selection="best",
             expected_sha256=report["best_checkpoint"]["sha256"],
         )
+        return self._load_readout(state)
+
+    def _load_readout(self, state):
         self.readout.load_state_dict(state["model"])
         if _parameters_digest(self.readout) != state["readout_sha256"]:
             raise ValueError("El lector seleccionado no conserva su huella")
         self._restore_extra(state)
         return state
 
+    def load_epoch(self, report, epoch):
+        """Dejar cargado el lector fijado de una época evaluada con la época común."""
+        state = load_training_state(
+            self.output / "checkpoints",
+            expected_identity=self.identity,
+            selection="pinned",
+            expected_sha256=report["epoch_states"][str(epoch)]["sha256"],
+        )
+        return self._load_readout(state)
+
     def run(self, *, resume=False, stop=None, joint_epoch=None):
         """Recorrer épocas con la regla del protocolo y dejar cargado el mejor lector.
 
         Con la meseta conjunta, el ajuste espera en su primera meseta (`AWAIT`) hasta que se
-        reanuda con la época común del grupo (`joint_epoch`).
+        reanuda con la época común del grupo (`joint_epoch`). Con la época común, espera tras
+        la última época y `joint_epoch` elige el lector fijado de una de ellas.
         """
         require_learning_allowed("el ajuste del lector episódico de MARS-TITAN")
         output, checkpoints = self.output, self.output / "checkpoints"
         if type(resume) is not bool or output.is_symlink() or output.exists() != resume:
             raise ValueError("Usa una ejecución nueva o solicita continuar una existente")
+        common = self.recipe.selection.get("stopping") == COMMON_EPOCH
+        if common and self.epoch_scorer is None:
+            raise ValueError("La época común necesita puntuar cada validación con su IC")
         stop = stop or StopRequest()
         report_path = output / "run.json"
         cursor, run = dict(epoch=0, phase="validation"), None
@@ -1268,7 +1369,8 @@ class ReadoutTrainer(MarsTitanInference):
             )
             bind_joint_epoch(report, joint_epoch, self.recipe.selection, self.recipe.epochs)
 
-        def save(position, current=None, *, best=False):
+        def save(position, current=None, *, best=False, pin=None):
+            # `pin` es la época evaluada cuyo estado se conserva hasta fijar la época común.
             self._check_runtime()
             state = dict(
                 global_step=self.global_step,
@@ -1285,11 +1387,17 @@ class ReadoutTrainer(MarsTitanInference):
             )
             if self.traces is not None:
                 state["traces"] = self.traces.checkpoint()
-            path = save_training_state(checkpoints, state, identity=self.identity, best=best)
+            path = save_training_state(
+                checkpoints, state, identity=self.identity, best=best, pin=pin is not None
+            )
             reference = dict(path=str(path.relative_to(output)), sha256=sha256(path))
             report.update(recovery_checkpoint=reference, global_step=self.global_step)
             if best:
                 report["best_checkpoint"] = dict(reference, readout_sha256=state["readout_sha256"])
+            if pin is not None:
+                report.setdefault("epoch_states", {})[str(pin)] = dict(
+                    reference, readout_sha256=state["readout_sha256"]
+                )
             report.update(selection=self.selection, history=self.history, cursor=position)
             atomic_json(report_path, report)
 
@@ -1314,7 +1422,11 @@ class ReadoutTrainer(MarsTitanInference):
                         save(cursor)
                         continue
                 if cursor["phase"] == "validation":
-                    metrics = self.evaluate(self.validation, stop=stop)
+                    # La época común puntúa las filas de esta misma validación desde la época 1.
+                    rows = self.epoch_scorer.rows() if common and epoch >= 1 else None
+                    metrics = self.evaluate(self.validation, stop=stop, rows=rows)
+                    if rows is not None:
+                        metrics.update(self.epoch_scorer.score(epoch, rows, metrics))
                     if self.trace is not None or self.traces is not None:
                         event = dict(
                             kind="validation",
@@ -1354,7 +1466,11 @@ class ReadoutTrainer(MarsTitanInference):
                         else dict(epoch=epoch, phase="train", event=0, stage="start")
                     )
                     # Con AWAIT, el cursor ya confirmado espera al grupo al empezar la época.
-                    save(cursor, best=self.selection["last_improved"])
+                    save(
+                        cursor,
+                        best=self.selection["last_improved"],
+                        pin=epoch if rows is not None else None,
+                    )
                     if stop.requested and not finished:
                         raise Paused
                     continue
@@ -1364,14 +1480,23 @@ class ReadoutTrainer(MarsTitanInference):
                 run = None
                 cursor = dict(epoch=epoch + 1, phase="validation")
                 save(cursor)
+            chosen = (
+                chosen_state(
+                    checkpoints, self.identity, report, self.history, self.selection, joint_epoch
+                )
+                if common
+                else dict(
+                    best_epoch=self.selection["best_epoch"],
+                    best_score=self.selection["best_score"],
+                )
+            )
+            report.update(chosen)
             self._load_best(report)
             report.update(
                 status="completed",
                 stopped_early=cursor["epoch"] < self.recipe.epochs,
                 stopping=self.recipe.selection.get("stopping", VALIDATION_PLATEAU),
                 plateau_epoch=self.selection.get("plateau_epoch"),
-                best_epoch=self.selection["best_epoch"],
-                best_score=self.selection["best_score"],
                 finished_at_utc=datetime.now(UTC).isoformat(),
             )
             return report

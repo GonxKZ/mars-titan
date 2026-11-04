@@ -1,0 +1,90 @@
+{
+  "schema_version": 1,
+  "verified_at": "2026-10-26T22:03:43.387945+00:00",
+  "source_base_commit": "b94a43413e9e61c0dc958754a4a7663e14bd4b22",
+  "sources_sha256": {
+    "configs/titans/chronological-training-historical-masked.json": "4a56ec8d5c42c43885fbf4c4f4270750b2013bc784a4f98bb5664f9a416c76bf",
+    "configs/titans/chronological-training-weight-decay-1e-3.json": "c8b45356592d8ed86ab730c04217078168b1bbd64be82680575947df0f518b58",
+    "configs/titans/chronological-training-weight-decay-1e-2.json": "28398caa8da1b41a8e2d6c3bfce609afe8dd7ad66b6242cad633fc92b8e490b9",
+    "tests/training/test_regularization_profiles.py": "993544ce8d5e4af52ab5baac4aed1422c16440b77a22372019619a25da740676",
+    "src/mars_titan/training/anchored_decay.py": "6eb96360f654021355aa48d8475f8f85f43c9bcec824bce07a3de06e4ea90714",
+    "src/mars_titan/training/selection.py": "3d1fd15d6de2ea5e4a3a3510860cd341de9778b77f639d5b3e234475df99253a",
+    "src/mars_titan/training/financial_run.py": "fb81df7d49ddc78e5638fe88e03d9153d713180ae6719a56d68145b6ec9b8d9f",
+    "src/mars_titan/training/titans_walk_forward.py": "21297ba6616c78f0c5104f3bb3c8096dc6ef26658fc77f057a8aa539a20a7d51",
+    "src/mars_titan/models/baselines/multimodal.py": "bf3f688a7f347b4b00c18fc71d66a601e3057260646a0152995da8593b564dde",
+    "tests/training/test_readout_regularization_profiles.py": "71df70e7de9638c27b015027ac64e72c4ade92ce1ca392d34a77ba487aee0c8d",
+    "src/mars_titan/training/mars_titan_run.py": "6fab0212ad2c31c2d47aec4145478d166480a0ac967ef325a8782649bf1a508f",
+    "configs/titans/episodic-readout-historical-masked.json": "e628ac4a0b1561348cedea80e1f91f35ce6208416995d3fed2edcf468fac9acd",
+    "configs/titans/episodic-readout-weight-decay-1e-3.json": "5bfbe4afaffc0e94d063b00a2a1b1ff2fb1ce3eb8e677c7c7df28740fe14d3e1",
+    "configs/titans/episodic-readout-weight-decay-1e-2.json": "dc209e1136916d2661aa4a273b90a4005ccd3eb727d2de8a75d369f9b8d54430"
+  },
+  "historical_recipe_unchanged": true,
+  "tests": {
+    "technical_and_selection": {
+      "total": 58,
+      "passed": 52,
+      "failure": 0,
+      "error": 0,
+      "skipped": 6,
+      "xml_sha256": "c4d7bf79bcc9c3f10ff9cf1fe5bb81702e678aca76385b6c4d2bb75cbdb1b24d"
+    },
+    "mutation_baseline": {
+      "total": 22,
+      "passed": 22,
+      "failure": 0,
+      "error": 0,
+      "skipped": 0,
+      "xml_sha256": "9ae4b9f8bb92721651526f236b6a7a058c64021cd6c434eae759a0dfaf10583a"
+    },
+    "final_profiles_and_budget_recheck": {
+      "passed": 22,
+      "failure": 0,
+      "error": 0,
+      "skipped": 0,
+      "xml_sha256": "7e77a3e3af99aab3f559b6faa66c2026639a4682049bd272db4410429cd59d8a"
+    },
+    "readout_profiles": {
+      "passed": 9,
+      "failure": 0,
+      "error": 0,
+      "skipped": 0,
+      "xml_sha256": "68a736bd34838b899ee916002190435d5ef37646192100a38975953eea463fb8"
+    }
+  },
+  "new_profile_tests": 21,
+  "mutations": {
+    "planned": 4,
+    "killed": 4,
+    "optimizer_attempts": 0
+  },
+  "quality_scope": [
+    "src/mars_titan/training/anchored_decay.py",
+    "src/mars_titan/training/selection.py"
+  ],
+  "quality_totals": {
+    "statements": 147,
+    "covered_statements": 103,
+    "branches": 56,
+    "covered_branches": 40
+  },
+  "max_function_crap": 90.0,
+  "training_executed": false,
+  "scientific_results": null,
+  "final_test_access": false,
+  "hold_unchanged": true,
+  "hold_sha256": "8a658080c1ac4e63847eba58b177020339da6ec47021cf26d2701830073c87fd",
+  "limits": [
+    "Seis integraciones antiguas de aprendizaje y CUDA de la selección permanecen omitidas por el bloqueo.",
+    "La construcción del optimizador no comprueba un paso completo ni mide generalización.",
+    "Cobertura y CRAP se refieren a dos módulos reutilizados, sin cambios de producción.",
+    "No se ha medido velocidad, memoria ni error predictivo de entrenamientos con estas recetas."
+  ],
+  "runtime": {
+    "python": "3.12.14",
+    "torch": "2.14.0+cu130",
+    "workload": "cpu_contracts_without_optimizer_steps"
+  },
+  "readout_source_base_commit": "2335f4c421ed3c940c71bfd8dde229dcec8eb76d",
+  "historical_readout_recipe_unchanged": true,
+  "unique_passed_tests": 61
+}

@@ -22,10 +22,16 @@ from mars_titan.memory.associative_memory import (
 )
 from mars_titan.memory.mars_titan_variant import check_components, load_declaration
 
-# Capturadas en 42e7dbca con la misma traza, antes de añadir la regla kalman.
+# Capturadas en 42e7dbca con la misma traza, antes de añadir la regla kalman. Las huellas de
+# estado solo leen las matrices y el estado exportado. La de proximal con lecturas se volvió a
+# capturar tras 4d4dd7b11, que guarda la matriz contigua en lugar de por columnas: el estado
+# coincide bit a bit con el código de la captura y la lectura keys @ A cambia por redondeo en
+# 30 de sus 52 valores, como mucho 1,1e-16.
 LEGACY = dict(
     delta="3a8ec2df0d9e5e84463def40a443b34690c1c646e7d03c716530e483dbee1d8c",
-    proximal="e26829200d77cf656ecb342bcec78216442b698dc8b12ba92c51766611580c8d",
+    delta_state="e30d65874d635e3581a515523b3c58bc4f3f0996abe94f42d4d53eb55965c404",
+    proximal="10f652005476a5d4d75acd07035949a5dccc25e17a9eac811214b1e114e25d2c",
+    proximal_state="91005617d353c20dba063293e66ed98e55ba77f9e9f942aa6853a7b6fd60b1a9",
     correction_identity="0759f11b3f245cf276a4c476e6c33538696408c36d4e3da8156308219a8d763f",
     variant_components="14b653b57020e9128c885a9aa16fd8b4a47b17f1516cf18b03b2700929074fe1",
 )
@@ -96,6 +102,7 @@ def legacy_trace():
         )
         memory = AssociativeMemory(config)
         hasher = hashlib.sha256(config.fingerprint().encode())
+        state = hashlib.sha256(config.fingerprint().encode())
         for event in range(4):
             rows = 5 + event
             keys = unit_keys(rows, 8, generator)
@@ -118,10 +125,12 @@ def legacy_trace():
             )
             hasher.update(memory.matrix.numpy().tobytes())
             hasher.update(memory.read(keys).numpy().tobytes())
+            state.update(memory.matrix.numpy().tobytes())
         payload = memory.export()
         scalars = {key: value for key, value in payload.items() if key != "matrix"}
-        hasher.update(json.dumps(scalars, sort_keys=True).encode())
-        digest[rule] = hasher.hexdigest()
+        for item in (hasher, state):
+            item.update(json.dumps(scalars, sort_keys=True).encode())
+        digest[rule], digest[f"{rule}_state"] = hasher.hexdigest(), state.hexdigest()
     correction = MatureCorrection(
         AssociativeMemoryConfig("proximal", key_size=64, value_size=1, rate=1.0)
     )

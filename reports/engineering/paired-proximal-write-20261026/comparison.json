@@ -1,0 +1,208 @@
+{
+  "schema_version": 1,
+  "reference_commit": "3e89cc5dff0a22303ea5d213e40fe1df179142cd",
+  "cases": [
+    {
+      "run": 1,
+      "case": "bridge/64",
+      "reference_read_ms": 3.54141800198704,
+      "current_read_ms": 3.3671094570308924,
+      "reference_write_ms": 11.483706068247557,
+      "current_write_ms": 8.98799707647413,
+      "reference_cycle_ms": 13.46730045042932,
+      "current_cycle_ms": 11.500327615067363,
+      "reduction_pct": 14.60554654291724
+    },
+    {
+      "run": 1,
+      "case": "bridge/256",
+      "reference_read_ms": 18.179737497121096,
+      "current_read_ms": 18.273128080181777,
+      "reference_write_ms": 29.06228753272444,
+      "current_write_ms": 22.717696614563465,
+      "reference_cycle_ms": 46.969015966169536,
+      "current_cycle_ms": 40.860615437850356,
+      "reduction_pct": 13.005170329135465
+    },
+    {
+      "run": 1,
+      "case": "bridge/1024",
+      "reference_read_ms": 62.37792852334678,
+      "current_read_ms": 57.19715193845332,
+      "reference_write_ms": 72.15451041702181,
+      "current_write_ms": 61.0392140224576,
+      "reference_cycle_ms": 130.68538263905793,
+      "current_cycle_ms": 120.77739997766912,
+      "reduction_pct": 7.581553851936013
+    },
+    {
+      "run": 1,
+      "case": "zero_gain/64",
+      "reference_read_ms": 2.131563378497958,
+      "current_read_ms": 1.880685449577868,
+      "reference_write_ms": 11.33081701118499,
+      "current_write_ms": 8.063365472480655,
+      "reference_cycle_ms": 12.366782408207655,
+      "current_cycle_ms": 8.896253420971334,
+      "reduction_pct": 28.063314067311325
+    },
+    {
+      "run": 1,
+      "case": "zero_gain/256",
+      "reference_read_ms": 5.194214056245983,
+      "current_read_ms": 5.828773602843285,
+      "reference_write_ms": 23.653181036934257,
+      "current_write_ms": 18.141303909942508,
+      "reference_cycle_ms": 29.018791974522173,
+      "current_cycle_ms": 24.375675478950143,
+      "reduction_pct": 16.00037830537046
+    },
+    {
+      "run": 1,
+      "case": "zero_gain/1024",
+      "reference_read_ms": 33.348507597111166,
+      "current_read_ms": 32.09260851144791,
+      "reference_write_ms": 66.91739545203745,
+      "current_write_ms": 56.385022471658885,
+      "reference_cycle_ms": 96.07082151342183,
+      "current_cycle_ms": 84.77400348056108,
+      "reduction_pct": 11.758844001643624
+    },
+    {
+      "run": 1,
+      "case": "shuffled/64",
+      "reference_read_ms": 4.061691928654909,
+      "current_read_ms": 4.306913469918072,
+      "reference_write_ms": 15.603375039063394,
+      "current_write_ms": 12.064678478054702,
+      "reference_cycle_ms": 19.71345255151391,
+      "current_cycle_ms": 16.01667294744402,
+      "reduction_pct": 18.75257311934429
+    },
+    {
+      "run": 1,
+      "case": "shuffled/256",
+      "reference_read_ms": 9.83183947391808,
+      "current_read_ms": 9.832004550844431,
+      "reference_write_ms": 26.341520599089563,
+      "current_write_ms": 20.08700103033334,
+      "reference_cycle_ms": 35.923735005781054,
+      "current_cycle_ms": 30.2263485500589,
+      "reduction_pct": 15.859671759646643
+    },
+    {
+      "run": 1,
+      "case": "shuffled/1024",
+      "reference_read_ms": 62.1193484403193,
+      "current_read_ms": 61.62074953317642,
+      "reference_write_ms": 76.77649706602097,
+      "current_write_ms": 64.87306242343038,
+      "reference_cycle_ms": 142.523049027659,
+      "current_cycle_ms": 124.79308596812189,
+      "reduction_pct": 12.440067189480569
+    },
+    {
+      "run": 2,
+      "case": "bridge/64",
+      "reference_read_ms": 4.452105495147407,
+      "current_read_ms": 4.587149596773088,
+      "reference_write_ms": 15.37914399523288,
+      "current_write_ms": 12.037934502586722,
+      "reference_cycle_ms": 19.77570541203022,
+      "current_cycle_ms": 16.655822517350316,
+      "reduction_pct": 15.77634187846455
+    },
+    {
+      "run": 2,
+      "case": "bridge/256",
+      "reference_read_ms": 11.430086102336645,
+      "current_read_ms": 11.82882091961801,
+      "reference_write_ms": 18.778273020870984,
+      "current_write_ms": 14.737635967321694,
+      "reference_cycle_ms": 30.164244817569852,
+      "current_cycle_ms": 25.436234544031322,
+      "reduction_pct": 15.674220595055615
+    },
+    {
+      "run": 2,
+      "case": "bridge/1024",
+      "reference_read_ms": 35.97567300312221,
+      "current_read_ms": 35.4101030388847,
+      "reference_write_ms": 44.831237639300525,
+      "current_write_ms": 37.621886003762484,
+      "reference_cycle_ms": 82.31129206251353,
+      "current_cycle_ms": 77.03783048782498,
+      "reduction_pct": 6.406729189335871
+    },
+    {
+      "run": 2,
+      "case": "zero_gain/64",
+      "reference_read_ms": 1.3191781472414732,
+      "current_read_ms": 1.356052584014833,
+      "reference_write_ms": 7.267926004715264,
+      "current_write_ms": 5.537302931770682,
+      "reference_cycle_ms": 8.465901017189026,
+      "current_cycle_ms": 6.8334119860082865,
+      "reduction_pct": 19.283110301740603
+    },
+    {
+      "run": 2,
+      "case": "zero_gain/256",
+      "reference_read_ms": 2.959956997074187,
+      "current_read_ms": 3.067754441872239,
+      "reference_write_ms": 12.515873415395617,
+      "current_write_ms": 9.62675001937896,
+      "reference_cycle_ms": 15.071574016474187,
+      "current_cycle_ms": 11.987459496594965,
+      "reduction_pct": 20.463121612302
+    },
+    {
+      "run": 2,
+      "case": "zero_gain/1024",
+      "reference_read_ms": 19.613087526522577,
+      "current_read_ms": 21.26594353467226,
+      "reference_write_ms": 46.47942760493606,
+      "current_write_ms": 38.30859297886491,
+      "reference_cycle_ms": 67.79033096972853,
+      "current_cycle_ms": 58.00578941125423,
+      "reduction_pct": 14.433535606786675
+    },
+    {
+      "run": 2,
+      "case": "shuffled/64",
+      "reference_read_ms": 2.0274455891922116,
+      "current_read_ms": 2.151815569959581,
+      "reference_write_ms": 7.687419420108199,
+      "current_write_ms": 5.978974630124867,
+      "reference_cycle_ms": 9.906056453473866,
+      "current_cycle_ms": 7.881725439801812,
+      "reduction_pct": 20.4352864652024
+    },
+    {
+      "run": 2,
+      "case": "shuffled/256",
+      "reference_read_ms": 5.241570994257927,
+      "current_read_ms": 5.380387417972088,
+      "reference_write_ms": 14.453310635872185,
+      "current_write_ms": 10.774635593406856,
+      "reference_cycle_ms": 20.26173798367381,
+      "current_cycle_ms": 16.542697907425463,
+      "reduction_pct": 18.354990471424603
+    },
+    {
+      "run": 2,
+      "case": "shuffled/1024",
+      "reference_read_ms": 36.77386313211173,
+      "current_read_ms": 38.57311955653131,
+      "reference_write_ms": 59.0623210882768,
+      "current_write_ms": 42.841834016144276,
+      "reference_cycle_ms": 90.08305438328534,
+      "current_cycle_ms": 77.94710656162351,
+      "reduction_pct": 13.471954192434245
+    }
+  ],
+  "persistent_numeric_bytes": 530432,
+  "comparison": "Orden alternado dentro de cada caso, 40 repeticiones, 5 calentamientos y dos pasadas. Las cargas ajenas permanecieron activas.",
+  "scope": "Solo ciclo de lectura y escritura de memoria CPU FP64. No incluye predictor, codificación ni checkpoint de sesión.",
+  "all_median_cycles_lower": true
+}

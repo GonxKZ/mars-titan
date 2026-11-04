@@ -1,0 +1,182 @@
+{
+  "kind": "directed_catalogue_verifier_mutations",
+  "planned": 4,
+  "killed": 4,
+  "optimizer_attempts": 0,
+  "recipes_sha256": "05af6fa3dfbd390396a578d1bd3c5d7da8609fb6ad743cae97a5a8846c9e663d",
+  "executor_sha256": "1ca59ad094098e015c9e5ab99947d20d98887c5e99ce3addd602b0b9cb4ac106",
+  "cases": [
+    {
+      "id": "ignore_catalog_file_hash",
+      "status": "killed_with_green_controls",
+      "phases": [
+        {
+          "phase": "G1",
+          "returncode": 0,
+          "counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0,
+          "events_sha256": "e1d19f3138f18960224fcd35c0ed0836ad932d5d4d419d2e7e862c8b216d2849"
+        },
+        {
+          "phase": "M1",
+          "returncode": 1,
+          "counts": {
+            "total": 1,
+            "failure": 1,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0,
+          "events_sha256": "c386fe0d61fc1f3831869bc742db0cca0a39f026dd6be44a4712b6537870f626"
+        },
+        {
+          "phase": "G2",
+          "returncode": 0,
+          "counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0,
+          "events_sha256": "a9cf084f11114224bb8ca207f9ec7b66217e658b3b1eb9760df581d67c9430e8"
+        }
+      ]
+    },
+    {
+      "id": "ignore_presence_alignment",
+      "status": "killed_with_green_controls",
+      "phases": [
+        {
+          "phase": "G1",
+          "returncode": 0,
+          "counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0,
+          "events_sha256": "8a835e40fbe329e3680bd09bf6223fe7baf6c2b7cd33ebb2b1b44bb8ef636ca9"
+        },
+        {
+          "phase": "M1",
+          "returncode": 1,
+          "counts": {
+            "total": 1,
+            "failure": 1,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0,
+          "events_sha256": "f33ed422c6d0a0cb389db89dced8313f4d7ba5bdb1b05be9e5c536466201a0c9"
+        },
+        {
+          "phase": "G2",
+          "returncode": 0,
+          "counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0,
+          "events_sha256": "b3f85c9f535e25319355e1dfa099466c1c8eec70fc44ce621d850a71f4e91d03"
+        }
+      ]
+    },
+    {
+      "id": "ignore_label_row_mapping",
+      "status": "killed_with_green_controls",
+      "phases": [
+        {
+          "phase": "G1",
+          "returncode": 0,
+          "counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0,
+          "events_sha256": "a26542acc6b19ffb99080079629d532b7821efa8c895b988720442e497bc546d"
+        },
+        {
+          "phase": "M1",
+          "returncode": 1,
+          "counts": {
+            "total": 1,
+            "failure": 1,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0,
+          "events_sha256": "886afd3ab7a2299f9a6f2e6043192f820e155ce3d5257db334734b6c34e5ed91"
+        },
+        {
+          "phase": "G2",
+          "returncode": 0,
+          "counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0,
+          "events_sha256": "d24d0a4e9fa0f4e29a347da6af5982218e4164166ba24fe70a16ec33fb80ea9c"
+        }
+      ]
+    },
+    {
+      "id": "ignore_closing_price_availability",
+      "status": "killed_with_green_controls",
+      "phases": [
+        {
+          "phase": "G1",
+          "returncode": 0,
+          "counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0,
+          "events_sha256": "7773573c9d2b5674678ab0fae3c60e6604c2db480506fe760f8f7128c17919db"
+        },
+        {
+          "phase": "M1",
+          "returncode": 1,
+          "counts": {
+            "total": 1,
+            "failure": 1,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0,
+          "events_sha256": "a4c2a28cbf1a2846dda2293db4c00a850851207f4f5ccf723b8770485a526e3b"
+        },
+        {
+          "phase": "G2",
+          "returncode": 0,
+          "counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0,
+          "events_sha256": "ff9e6d3cd1aca07a72fb292c4580cbe11812adffbba11123b1c4a9338615a61e"
+        }
+      ]
+    }
+  ],
+  "limits": [
+    "Se comprueban cuatro fallos dirigidos. No es una cobertura universal de mutantes.",
+    "El verificador reutilizado no se ha modificado."
+  ]
+}

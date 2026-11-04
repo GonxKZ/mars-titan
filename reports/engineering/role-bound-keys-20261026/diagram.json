@@ -1,0 +1,66 @@
+{
+  "specification_sha256": "fdabf83e82d482cd9a4efbee7b2377f5d52422116f96f38f8ffeb47fa8109a35",
+  "png_sha256": "b4e1890bb2bdc8651f318dacbb34234fc6e88e7c12b67b4b4a378de9b53c6756",
+  "checks": 9,
+  "composition": {
+    "errors": 0,
+    "warnings": 0
+  },
+  "html_sha256": "c63bd5e646c0fc416e0a6b03038ad8c4c0fa8e7d42ba739c1a87909836a8a50c",
+  "browser_ok": true,
+  "viewports": [
+    {
+      "width": 1440,
+      "height": 900,
+      "theme": "light",
+      "innerWidth": 1440,
+      "innerHeight": 900,
+      "scrollWidth": 1440,
+      "scrollHeight": 900,
+      "overflowX": false,
+      "overflowY": false,
+      "ok": true
+    },
+    {
+      "width": 1600,
+      "height": 1000,
+      "theme": "light",
+      "innerWidth": 1600,
+      "innerHeight": 1000,
+      "scrollWidth": 1600,
+      "scrollHeight": 1000,
+      "overflowX": false,
+      "overflowY": false,
+      "ok": true
+    },
+    {
+      "width": 1920,
+      "height": 1080,
+      "theme": "light",
+      "innerWidth": 1920,
+      "innerHeight": 1080,
+      "scrollWidth": 1920,
+      "scrollHeight": 1080,
+      "overflowX": false,
+      "overflowY": false,
+      "ok": true
+    },
+    {
+      "width": 2048,
+      "height": 1320,
+      "theme": "light",
+      "innerWidth": 2048,
+      "innerHeight": 1320,
+      "scrollWidth": 2048,
+      "scrollHeight": 1320,
+      "overflowX": false,
+      "overflowY": false,
+      "ok": true
+    }
+  ],
+  "visual_review": {
+    "png": true,
+    "html_capture_2048x1320_dark": true
+  },
+  "viewer_language": "english_fallback_only_in_local_html"
+}

@@ -1,0 +1,272 @@
+{
+  "kind": "durable_lesion_fixture_cost_summary",
+  "cases": [
+    {
+      "assets": 64,
+      "profile": "areas",
+      "original": {
+        "samples": 3,
+        "minimum_seconds": 0.45854623010382056,
+        "median_seconds": 0.46371417795307934,
+        "maximum_seconds": 0.4810912141110748,
+        "rows_per_second_at_median": 138.0160517897208
+      },
+      "diagnostic": {
+        "samples": 3,
+        "minimum_seconds": 0.629152188077569,
+        "median_seconds": 0.6437071210239083,
+        "maximum_seconds": 0.6574244741350412,
+        "rows_per_second_at_median": 99.42409818023893
+      },
+      "delta_median_seconds": 0.17999294307082891,
+      "relative_extra_percent": 38.81549273851217,
+      "persisted_bytes_observed": {
+        "original": [
+          4732271
+        ],
+        "diagnostic": [
+          4824425
+        ]
+      },
+      "persisted_extra_bytes": 92154
+    },
+    {
+      "assets": 64,
+      "profile": "bridge",
+      "original": {
+        "samples": 3,
+        "minimum_seconds": 0.4935201909393072,
+        "median_seconds": 0.6041838428936899,
+        "maximum_seconds": 0.6065404010005295,
+        "rows_per_second_at_median": 105.92802298962043
+      },
+      "diagnostic": {
+        "samples": 3,
+        "minimum_seconds": 0.5717590369749814,
+        "median_seconds": 0.6101793160196394,
+        "maximum_seconds": 0.6763232508674264,
+        "rows_per_second_at_median": 104.88720007339626
+      },
+      "delta_median_seconds": 0.005995473125949502,
+      "relative_extra_percent": 0.9923259611237973,
+      "persisted_bytes_observed": {
+        "original": [
+          5785145
+        ],
+        "diagnostic": [
+          5878323
+        ]
+      },
+      "persisted_extra_bytes": 93178
+    },
+    {
+      "assets": 64,
+      "profile": "multiscale",
+      "original": {
+        "samples": 3,
+        "minimum_seconds": 0.709118246100843,
+        "median_seconds": 0.7224601388443261,
+        "maximum_seconds": 0.7892247659619898,
+        "rows_per_second_at_median": 88.58620228152208
+      },
+      "diagnostic": {
+        "samples": 3,
+        "minimum_seconds": 0.8053930669557303,
+        "median_seconds": 1.0023397440090775,
+        "maximum_seconds": 1.108761342940852,
+        "rows_per_second_at_median": 63.850605927305615
+      },
+      "delta_median_seconds": 0.2798796051647514,
+      "relative_extra_percent": 38.739798933745625,
+      "persisted_bytes_observed": {
+        "original": [
+          7923171
+        ],
+        "diagnostic": [
+          8017693
+        ]
+      },
+      "persisted_extra_bytes": 94522
+    },
+    {
+      "assets": 256,
+      "profile": "areas",
+      "original": {
+        "samples": 3,
+        "minimum_seconds": 1.552918768953532,
+        "median_seconds": 1.6250936451833695,
+        "maximum_seconds": 1.8439403919037431,
+        "rows_per_second_at_median": 157.52938346584568
+      },
+      "diagnostic": {
+        "samples": 3,
+        "minimum_seconds": 1.5718552630860358,
+        "median_seconds": 1.8324979220051318,
+        "maximum_seconds": 2.0416387040168047,
+        "rows_per_second_at_median": 139.70002198959278
+      },
+      "delta_median_seconds": 0.20740427682176232,
+      "relative_extra_percent": 12.76260463121555,
+      "persisted_bytes_observed": {
+        "original": [
+          18746648
+        ],
+        "diagnostic": [
+          19065362
+        ]
+      },
+      "persisted_extra_bytes": 318714
+    },
+    {
+      "assets": 256,
+      "profile": "bridge",
+      "original": {
+        "samples": 3,
+        "minimum_seconds": 1.4567427120637149,
+        "median_seconds": 1.4779809699393809,
+        "maximum_seconds": 1.6080411840230227,
+        "rows_per_second_at_median": 173.20926670016584
+      },
+      "diagnostic": {
+        "samples": 3,
+        "minimum_seconds": 1.6751793350558728,
+        "median_seconds": 1.6886520618572831,
+        "maximum_seconds": 1.733685330953449,
+        "rows_per_second_at_median": 151.60020573950297
+      },
+      "delta_median_seconds": 0.21067109191790223,
+      "relative_extra_percent": 14.253978650790264,
+      "persisted_bytes_observed": {
+        "original": [
+          19799878
+        ],
+        "diagnostic": [
+          20119616
+        ]
+      },
+      "persisted_extra_bytes": 319738
+    },
+    {
+      "assets": 256,
+      "profile": "multiscale",
+      "original": {
+        "samples": 3,
+        "minimum_seconds": 1.6342620570212603,
+        "median_seconds": 1.7245361558161676,
+        "maximum_seconds": 2.0693398581352085,
+        "rows_per_second_at_median": 148.44571343814096
+      },
+      "diagnostic": {
+        "samples": 3,
+        "minimum_seconds": 2.005673506995663,
+        "median_seconds": 2.025895926170051,
+        "maximum_seconds": 2.181166575057432,
+        "rows_per_second_at_median": 126.36384559199301
+      },
+      "delta_median_seconds": 0.3013597703538835,
+      "relative_extra_percent": 17.47483051239709,
+      "persisted_bytes_observed": {
+        "original": [
+          21948120
+        ],
+        "diagnostic": [
+          22269202
+        ]
+      },
+      "persisted_extra_bytes": 321082
+    },
+    {
+      "assets": 1024,
+      "profile": "areas",
+      "original": {
+        "samples": 3,
+        "minimum_seconds": 6.927984016947448,
+        "median_seconds": 7.080445549916476,
+        "maximum_seconds": 7.139012197032571,
+        "rows_per_second_at_median": 144.62366708152703
+      },
+      "diagnostic": {
+        "samples": 3,
+        "minimum_seconds": 7.44728044886142,
+        "median_seconds": 7.643524449085817,
+        "maximum_seconds": 8.061231924919412,
+        "rows_per_second_at_median": 133.96961137770322
+      },
+      "delta_median_seconds": 0.5630788991693407,
+      "relative_extra_percent": 7.952591333408151,
+      "persisted_bytes_observed": {
+        "original": [
+          74829499
+        ],
+        "diagnostic": [
+          76054453
+        ]
+      },
+      "persisted_extra_bytes": 1224954
+    },
+    {
+      "assets": 1024,
+      "profile": "bridge",
+      "original": {
+        "samples": 3,
+        "minimum_seconds": 7.126106311101466,
+        "median_seconds": 7.419070425909013,
+        "maximum_seconds": 7.450286326929927,
+        "rows_per_second_at_median": 138.02268225193936
+      },
+      "diagnostic": {
+        "samples": 3,
+        "minimum_seconds": 8.464580818079412,
+        "median_seconds": 8.655668150866404,
+        "maximum_seconds": 9.2546496540308,
+        "rows_per_second_at_median": 118.30398094657787
+      },
+      "delta_median_seconds": 1.2365977249573916,
+      "relative_extra_percent": 16.667825670436052,
+      "persisted_bytes_observed": {
+        "original": [
+          75885904
+        ],
+        "diagnostic": [
+          77111882
+        ]
+      },
+      "persisted_extra_bytes": 1225978
+    },
+    {
+      "assets": 1024,
+      "profile": "multiscale",
+      "original": {
+        "samples": 3,
+        "minimum_seconds": 7.687534119933844,
+        "median_seconds": 8.106937645934522,
+        "maximum_seconds": 8.253041364019737,
+        "rows_per_second_at_median": 126.31156729243094
+      },
+      "diagnostic": {
+        "samples": 3,
+        "minimum_seconds": 9.359919564099982,
+        "median_seconds": 10.191471135942265,
+        "maximum_seconds": 10.658339283196256,
+        "rows_per_second_at_median": 100.47617133395578
+      },
+      "delta_median_seconds": 2.0845334900077432,
+      "relative_extra_percent": 25.712958222308494,
+      "persisted_bytes_observed": {
+        "original": [
+          78069780
+        ],
+        "diagnostic": [
+          79297166
+        ]
+      },
+      "persisted_extra_bytes": 1227386
+    }
+  ],
+  "limitations": [
+    "Tres muestras medidas por configuración, sin inferencia estadística de colas.",
+    "Anchuras compactas y parámetros sin entrenar. No es coste del corpus real.",
+    "Variación de caché y carga. No se atribuye aceleración a diferencias pequeñas.",
+    "Los bytes son tamaños de archivos retenidos. No son el pico RAM incremental."
+  ]
+}

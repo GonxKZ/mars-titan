@@ -1,0 +1,447 @@
+{
+  "schema_version": 1,
+  "kind": "scale_head_horizons_cost",
+  "issue": 749,
+  "recorded_at_utc": "2026-10-27T23:41:59.522664+00:00",
+  "commit": "78e0cd44793eefa6da7cbc69171f021b459cd105",
+  "scope": "Forward con grafo de T instantes, p\u00e9rdida y backward de cada modelo, m\u00e1s el t\u00e9rmino auxiliar de F5 de una actualizaci\u00f3n estable. Entradas sint\u00e9ticas con las formas de la edici\u00f3n v3.1. Sin optimizador ni pasos.",
+  "device": "cpu",
+  "cpu": "AMD Ryzen 9 8945HS w/ Radeon 780M Graphics",
+  "versions": {
+    "python": "3.12.14",
+    "torch": "2.14.0+cu130"
+  },
+  "precision": "float32",
+  "kernel_policy": {
+    "schema_version": 1,
+    "precision": "fp32_strict",
+    "matmul_allow_tf32": false,
+    "cudnn_allow_tf32": false,
+    "float32_matmul_precision": "highest",
+    "retired_native_overrides": [
+      "bmm"
+    ],
+    "native_overrides": [
+      "_foreach_mm/CUDA/native",
+      "linalg_polar.out/CUDA/native",
+      "linalg_polar/CUDA/native"
+    ]
+  },
+  "sdpa_backend": "MATH",
+  "source_sha256": {
+    "benchmarks/scale_head_horizons_cost.py": "b4a1d6a33ff205cf5b60346b92f7b19254b0e8e5d44a7579d86cb7f5debe1687",
+    "src/mars_titan/models/titans/laplace_scale.py": "02a4fa51c20f557c05c9564c0ba935b90365f2681d7280e5ffcbbd8d497a5e75",
+    "src/mars_titan/models/titans/auxiliary_horizons.py": "57bb162832d2ee4c99830b2cc6a02b9bf9502951928ff887f2d38ef66ea19622",
+    "src/mars_titan/models/titans/financial.py": "570515a11c7b97f3f2a80c67cb19cc4613dac269ce3418e7406f2fbd1e1953be",
+    "src/mars_titan/training/financial_run.py": "21897ec877335c2125f08d8d91593a756db5b8aca63078060c848230c183728a",
+    "src/mars_titan/training/horizon_labels.py": "2d4b86fb877d224ba95cea7b10c6aebdaa72672b6fd46981bc1137126c7223c1"
+  },
+  "threads": 4,
+  "shapes": {
+    "rows": 256,
+    "instants": 8,
+    "hidden_size": 64,
+    "news": 384,
+    "charts": 512,
+    "concepts": 26,
+    "indicators": 140
+  },
+  "base_predictor": {
+    "hidden_size": 64,
+    "layers": 1,
+    "persistent_tokens": 4,
+    "max_batch": 1024,
+    "max_state_bytes": 134217728,
+    "gate_bias": {
+      "alpha_half_life": 256.0,
+      "eta": 0.5,
+      "theta": 0.05
+    },
+    "memory_residual_layer_norm": true,
+    "attention_layout": "sequence_contiguous_v1"
+  },
+  "horizons": {
+    "horizons": [
+      5,
+      20
+    ],
+    "weight": 0.5,
+    "maturity_slack": 2,
+    "schema_version": 1,
+    "name": "auxiliary_horizons_v1",
+    "target": "sum_of_primary_labels_of_consecutive_market_decisions_of_the_flow",
+    "maturity": "last_component_within_maturity_slack_market_decisions",
+    "loss": "weight_times_mean_over_matured_labels_of_absolute_error_over_sqrt_horizon",
+    "head": "linear_on_fused_token_before_mac",
+    "gradient": "token_recomputed_from_stored_inputs_with_current_parameters_at_maturity",
+    "evaluation": "unchanged_primary_prediction",
+    "control": "same_heads_with_weight_zero"
+  },
+  "repetitions": 7,
+  "warmup": 1,
+  "order": "repeticiones alternadas entre modelos con orden rotatorio",
+  "models": {
+    "reference_mae": {
+      "predictor_changes": {},
+      "total_parameters": 185859,
+      "forward_with_graph_seconds": {
+        "median": 0.40354007692076266,
+        "minimum": 0.38067470607347786,
+        "maximum": 0.4309443838428706,
+        "samples": [
+          0.3895742080640048,
+          0.41379295801743865,
+          0.40354007692076266,
+          0.4172085588797927,
+          0.40330007392913103,
+          0.38067470607347786,
+          0.4309443838428706
+        ]
+      },
+      "backward_seconds": {
+        "median": 0.2647321110125631,
+        "minimum": 0.20854298095218837,
+        "maximum": 0.27512162597849965,
+        "samples": [
+          0.20854298095218837,
+          0.26964094396680593,
+          0.2518844618462026,
+          0.2647321110125631,
+          0.2694646099116653,
+          0.2539101489819586,
+          0.27512162597849965
+        ]
+      },
+      "auxiliary_term_seconds": {
+        "median": 4.209578037261963e-07,
+        "minimum": 3.708992153406143e-07,
+        "maximum": 5.199108272790909e-07,
+        "samples": [
+          4.400499165058136e-07,
+          4.807952791452408e-07,
+          3.909226506948471e-07,
+          4.209578037261963e-07,
+          5.199108272790909e-07,
+          3.708992153406143e-07,
+          3.711320459842682e-07
+        ]
+      },
+      "auxiliary_decisions_per_update": 0,
+      "auxiliary_labels_per_update": 0,
+      "update_seconds": {
+        "median": 0.6727652037516236,
+        "minimum": 0.5981176290661097,
+        "maximum": 0.7060663809534162,
+        "samples": [
+          0.5981176290661097,
+          0.6834343827795237,
+          0.655424929689616,
+          0.6819410908501595,
+          0.6727652037516236,
+          0.6345852259546518,
+          0.7060663809534162
+        ]
+      },
+      "parameters_unchanged": true,
+      "added_parameters": 0,
+      "update_relative_to_control": 1.0
+    },
+    "laplace_scale_head_v1": {
+      "predictor_changes": {
+        "laplace_scale_head": {
+          "floor": 1e-06,
+          "initial_scale": 0.01
+        }
+      },
+      "total_parameters": 185924,
+      "forward_with_graph_seconds": {
+        "median": 0.4123404109850526,
+        "minimum": 0.3493316429667175,
+        "maximum": 0.46119654597714543,
+        "samples": [
+          0.3493316429667175,
+          0.37501592095941305,
+          0.4150896458886564,
+          0.41732817399315536,
+          0.46119654597714543,
+          0.3567805141210556,
+          0.4123404109850526
+        ]
+      },
+      "backward_seconds": {
+        "median": 0.25740083400160074,
+        "minimum": 0.2199925419408828,
+        "maximum": 0.2732703678775579,
+        "samples": [
+          0.2199925419408828,
+          0.2578721239697188,
+          0.2732703678775579,
+          0.25406778790056705,
+          0.25740083400160074,
+          0.22708206996321678,
+          0.2585004698485136
+        ]
+      },
+      "auxiliary_term_seconds": {
+        "median": 3.91155481338501e-07,
+        "minimum": 3.711320459842682e-07,
+        "maximum": 5.010515451431274e-07,
+        "samples": [
+          4.409812390804291e-07,
+          3.811437636613846e-07,
+          3.711320459842682e-07,
+          3.909226506948471e-07,
+          3.91155481338501e-07,
+          4.409812390804291e-07,
+          5.010515451431274e-07
+        ]
+      },
+      "auxiliary_decisions_per_update": 0,
+      "auxiliary_labels_per_update": 0,
+      "update_seconds": {
+        "median": 0.6708413818851113,
+        "minimum": 0.5693246258888394,
+        "maximum": 0.7185977711342275,
+        "samples": [
+          0.5693246258888394,
+          0.6328884260728955,
+          0.6883603848982602,
+          0.6713963528163731,
+          0.7185977711342275,
+          0.5838630250655115,
+          0.6708413818851113
+        ]
+      },
+      "parameters_unchanged": true,
+      "added_parameters": 65,
+      "update_relative_to_control": 0.9971404260271128
+    },
+    "auxiliary_horizons_weight_zero": {
+      "predictor_changes": {
+        "auxiliary_horizons": {
+          "horizons": [
+            5,
+            20
+          ],
+          "weight": 0.0,
+          "maturity_slack": 2
+        }
+      },
+      "total_parameters": 185989,
+      "forward_with_graph_seconds": {
+        "median": 0.4160219000186771,
+        "minimum": 0.3421834451146424,
+        "maximum": 0.6057893950492144,
+        "samples": [
+          0.34263998782262206,
+          0.6057893950492144,
+          0.4160219000186771,
+          0.4162352888379246,
+          0.4302878340240568,
+          0.3421834451146424,
+          0.3785396199673414
+        ]
+      },
+      "backward_seconds": {
+        "median": 0.2670973679050803,
+        "minimum": 0.22307192301377654,
+        "maximum": 0.4617331000044942,
+        "samples": [
+          0.22307192301377654,
+          0.4617331000044942,
+          0.25589540507644415,
+          0.2670973679050803,
+          0.35990032088011503,
+          0.22384920087642968,
+          0.29733390593901277
+        ]
+      },
+      "auxiliary_term_seconds": {
+        "median": 0.00038874102756381035,
+        "minimum": 0.00030444306321442127,
+        "maximum": 0.0005408169236034155,
+        "samples": [
+          0.00030444306321442127,
+          0.0005408169236034155,
+          0.00038874102756381035,
+          0.00044553796760737896,
+          0.00038945209234952927,
+          0.00031043379567563534,
+          0.0003557591699063778
+        ]
+      },
+      "auxiliary_decisions_per_update": 2048,
+      "auxiliary_labels_per_update": 4096,
+      "update_seconds": {
+        "median": 0.6762292850762606,
+        "minimum": 0.566016353899613,
+        "maximum": 1.068063311977312,
+        "samples": [
+          0.566016353899613,
+          1.068063311977312,
+          0.6723060461226851,
+          0.6837781947106123,
+          0.7905776069965214,
+          0.5663430797867477,
+          0.6762292850762606
+        ]
+      },
+      "parameters_unchanged": true,
+      "added_parameters": 130,
+      "update_relative_to_control": 1.0051490197550643
+    },
+    "auxiliary_horizons_v1": {
+      "predictor_changes": {
+        "auxiliary_horizons": {
+          "horizons": [
+            5,
+            20
+          ],
+          "weight": 0.5,
+          "maturity_slack": 2
+        }
+      },
+      "total_parameters": 185989,
+      "forward_with_graph_seconds": {
+        "median": 0.41337325796484947,
+        "minimum": 0.3530071640852839,
+        "maximum": 0.6766141389962286,
+        "samples": [
+          0.3530071640852839,
+          0.6766141389962286,
+          0.41337325796484947,
+          0.41883897595107555,
+          0.5181453560944647,
+          0.35590430605225265,
+          0.3741872860118747
+        ]
+      },
+      "backward_seconds": {
+        "median": 0.2597700310871005,
+        "minimum": 0.21691361209377646,
+        "maximum": 0.33219897001981735,
+        "samples": [
+          0.21691361209377646,
+          0.2748916388954967,
+          0.2597700310871005,
+          0.26569885993376374,
+          0.33219897001981735,
+          0.2538078560028225,
+          0.2502705850638449
+        ]
+      },
+      "auxiliary_term_seconds": {
+        "median": 0.34675306105054915,
+        "minimum": 0.2910946379415691,
+        "maximum": 0.4345991099253297,
+        "samples": [
+          0.2910946379415691,
+          0.30955173494294286,
+          0.34675306105054915,
+          0.3979471588972956,
+          0.4345991099253297,
+          0.30442407890222967,
+          0.3901788271032274
+        ]
+      },
+      "auxiliary_decisions_per_update": 2048,
+      "auxiliary_labels_per_update": 4096,
+      "update_seconds": {
+        "median": 1.0198963501024991,
+        "minimum": 0.8610154141206294,
+        "maximum": 1.2849434360396117,
+        "samples": [
+          0.8610154141206294,
+          1.2610575128346682,
+          1.0198963501024991,
+          1.082484994782135,
+          1.2849434360396117,
+          0.9141362409573048,
+          1.014636698178947
+        ]
+      },
+      "parameters_unchanged": true,
+      "added_parameters": 130,
+      "update_relative_to_control": 1.5159766652840028
+    }
+  },
+  "ledger": {
+    "seconds_per_event": {
+      "median": 0.0022978109773248434,
+      "minimum": 0.002206190023571253,
+      "maximum": 0.002814542967826128,
+      "samples": [
+        0.002337837126106024,
+        0.0025169330183416605,
+        0.0023170681670308113,
+        0.0022618230432271957,
+        0.0022551908623427153,
+        0.0022618938237428665,
+        0.002316426020115614,
+        0.0023147030733525753,
+        0.002308401046320796,
+        0.0023080308455973864,
+        0.002296898979693651,
+        0.002285467926412821,
+        0.002310154028236866,
+        0.002241354901343584,
+        0.002236424945294857,
+        0.002232148079201579,
+        0.002206190023571253,
+        0.0022396619897335768,
+        0.0023120681289583445,
+        0.002238078974187374,
+        0.002628142014145851,
+        0.0023456208873540163,
+        0.002287090988829732,
+        0.002247546100988984,
+        0.0022537780459970236,
+        0.0022120699286460876,
+        0.002225355012342334,
+        0.002253076061606407,
+        0.0023314040154218674,
+        0.0022651299368590117,
+        0.0022978109773248434,
+        0.0022332898806780577,
+        0.002221236936748028,
+        0.002307349117472768,
+        0.002318690065294504,
+        0.002459494862705469,
+        0.0025172929745167494,
+        0.002814542967826128,
+        0.002487889025360346,
+        0.0024373929481953382,
+        0.0023802858777344227
+      ]
+    },
+    "retained_decisions": 5632,
+    "stored_decisions": 5120,
+    "stored_input_bytes": 36439040,
+    "export_seconds": {
+      "median": 0.03194191609509289,
+      "minimum": 0.03187546203844249,
+      "maximum": 0.11371481907553971,
+      "samples": [
+        0.11371481907553971,
+        0.03187546203844249,
+        0.03194191609509289
+      ]
+    },
+    "export_tensor_bytes": 36439040
+  },
+  "optimizer_steps": 0,
+  "training_runs": 0,
+  "evaluation": false,
+  "total_wall_seconds": 24.989843179937452,
+  "process_peak_ram_bytes": 1449447424,
+  "load_average_start": [
+    6.45849609375,
+    20.96142578125,
+    29.42529296875
+  ],
+  "load_average_end": [
+    6.107421875,
+    19.71142578125,
+    28.78564453125
+  ]
+}

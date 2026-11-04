@@ -43,6 +43,8 @@ La pérdida principal es el MAE residual. La receta admite también MSE y Huber 
 
 La selección reutiliza `selection.py`. El estado inicial se evalúa antes de ajustar y es elegible como mejor estado. La paciencia cuenta validaciones completas con la mejora mínima declarada. Con `stopping="fixed_budget"`, la regla común de `selection.py` recorre todas las épocas, conserva el mejor estado y registra en `plateau_epoch` dónde habría parado la paciencia, para que los controles emparejados tengan el mismo número de actualizaciones. Con los mismos eventos, los cuatro controles hacen los mismos pasos, cortes y etiquetas en la pérdida.
 
+Con `stopping="common_epoch"`, que solo admiten este entrenador y el lector de MARS-TITAN, el ajuste recorre todo el presupuesto, puntúa cada validación con el IC por sesión de sus propias filas y fija el estado de cada época en los puntos de control. Después espera a que el grupo de semillas elija la época común. Al recibirla, marca como elegido el estado fijado de esa época y conserva el mejor estado por MAE solo como sensibilidad. Lo usa la criba de variantes ([#746](https://github.com/GonxKZ/mars-titan/issues/746)), cuya [regla de selección](../experiments/variant-screening-v1.md#selección-del-estado) describe la ventana, las versiones y la liberación de los estados fijados.
+
 La receta propuesta está en [`configs/titans/chronological-training.json`](../../configs/titans/chronological-training.json), marcada como no ejecutada. Ventanas, calentamiento y épocas dependen del protocolo de #363.
 
 ## Checkpoints y reanudación
@@ -117,6 +119,27 @@ El orden es fijo:
 7. `run.json` guarda la petición, la identidad con la receta completa, el resumen del ajuste, el estado elegido en `checkpoint` y la huella, filas, bytes y métricas de cada tramo. Cada Parquet se escribe solo después de conciliar sus filas, y `run.json` se actualiza tras cada tramo confirmado.
 
 Una pausa durante el ajuste se reanuda desde su último checkpoint coherente. Una pausa entre tramos conserva los ya escritos y continúa con el siguiente.
+
+### Ajuste experimental de uno a doce meses
+
+La sección `walk_forward` de una receta experimental puede declarar `fit_months` para ajustar solo los últimos meses del tramo de entrenamiento. Admite enteros entre 1 y 12. Los límites del protocolo son comienzos de mes, así que el ajuste abarca como máximo 366 días. Si ese comienzo precede al origen de los datos, se recorta al origen.
+
+```json
+"walk_forward": {
+  "warmup_months": 12,
+  "fit_months": 12
+}
+```
+
+El ajuste acotado observa primero las entradas de sus meses de calentamiento, sin etiquetas financieras ni pasos del optimizador. El calentamiento también se recorta al origen de los datos. Puede observar historia anterior al año ajustado y se declara por separado. El contexto de precios de una fila conserva su historial admisible. Acotar el ajuste no significa borrar ese contexto ni inventar modalidades ausentes.
+
+Validación, calibración y evaluación mantienen sus fechas y filas. La selección sigue usando la regla del protocolo. El lector de MARS-TITAN hereda el límite de la receta de su padre, comprueba la igualdad de fases y usa los mismos índices. La receta, los índices y la política de memoria identifican el límite aplicado. Reanudar con otro límite requiere otra ejecución.
+
+Sin `fit_months`, las fases y la política conservan el ajuste desde el origen. Solo aceptan la opción los recorridos que la aplican. Los traslados, la corrección posterior y los medidores que todavía no la incorporan rechazan esa receta. La opción no activa una campaña ni abre el test final.
+
+Las pruebas comprueban los cortes, los valores inválidos, la invariancia ante cambios anteriores al calentamiento y la recuperación del lector con las mismas filas del padre. Los recorridos técnicos registran gradientes con un optimizador sustituto que no modifica pesos.
+
+El [recibo del 26 de octubre](../../reports/engineering/bounded-fit-20261026.json) registra 118 casos distintos comprobados y cuatro mutaciones dirigidas detectadas, con controles verdes antes y después. La cobertura de las tres fuentes es 556/712 sentencias y 89/116 ramas. Las nuevas funciones de límites y opciones recorren todas sus sentencias y ramas en esta selección. El CRAP máximo del archivo completo corresponde a un recorrido de traslado anterior que no se ejecutó en esta batería. El recibo conserva esa limitación y las incidencias iniciales resueltas. No constituye un resultado predictivo ni una medida de rendimiento.
 
 ### Política de memoria en inferencia
 

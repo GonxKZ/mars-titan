@@ -5,7 +5,7 @@ ajustan parámetros:
 
 - `x.step()` sin argumentos (o solo con `closure`), el paso de un optimizador.
 - La construcción de un optimizador de `torch.optim`.
-- `xgboost.train`.
+- `xgboost.train` y `lightgbm.train`.
 - `fit`, `partial_fit`, `fit_transform` o `fit_predict` sobre un objeto que no es una clase
   ni un módulo del proyecto (estimadores de scikit-learn, hmmlearn y similares).
   `ActionGrid.fit` y las demás estadísticas del proyecto son funciones propias y se siguen
@@ -13,7 +13,7 @@ ajustan parámetros:
 - Las soluciones cerradas de `linalg` (`solve`, `lstsq`, `cho_solve` y similares), como la
   ecuación normal de la ridge.
 
-Las tres reglas externas valen igual con el módulo delante (`xgb.train`) que con el nombre
+Las reglas externas valen igual con el módulo delante (`xgb.train`) que con el nombre
 importado (`from xgboost import train`). Un `step(closure)` posicional no se reconoce como
 paso de optimizador: es un límite conocido y no hay ninguno en el proyecto.
 
@@ -398,8 +398,8 @@ class CallGraph:
             leaf = full.rsplit(".", 1)[-1]
             if full.startswith("torch.optim.") and leaf[:1].isupper():
                 return "optimizador de torch.optim"
-            if full == "xgboost.train":
-                return "xgboost.train"
+            if full in ("xgboost.train", "lightgbm.train"):
+                return full
             if leaf in SOLVERS and (".linalg." in full or full.startswith("scipy.")):
                 return "solución cerrada"
         if attribute and func.attr in FITS:

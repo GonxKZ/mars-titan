@@ -1,0 +1,296 @@
+{
+  "kind": "technical_prediction_file_scoring_parity_and_cost",
+  "status": "completed",
+  "base_commit": "917c6fdad747d7c788bc11172f612099717309c7",
+  "previous_source_sha256": "9b3d3037389aade649b0bd5836ed34e5218e6aab94a87ce7578a20cf563eb79a",
+  "sources": {
+    "src/mars_titan/evaluation/lesion_curves.py": "f09fc83287066ee9e677f26b4ffb82a85ae06c05db38fd4063bfe845cc55c84b",
+    "src/mars_titan/evaluation/forecast_files.py": "0e5e79cd1b1f4bf17d6d1a0ad45f8db4be55dda199d82e18551d23186fd39f1f",
+    "src/mars_titan/evaluation/forecast_panel.py": "b60b81ee9737219a23b2cc1a2a99c9bbf199d6027b2027edf541746b36207258",
+    "src/mars_titan/evaluation/forecast_scores.py": "29aa1eb125e94ba17eacd17890a71bbce31d3222cd9c91c3bbefd6cf87ff29e2"
+  },
+  "probe_sha256": "6ca2f99758cb5fe0b6afd9460486bd84b617ae17407b70e426643033deed1c2c",
+  "runtime": {
+    "python": "3.12.14",
+    "numpy": "2.5.3",
+    "pyarrow": "25.0.1",
+    "duckdb": "1.5.5",
+    "torch": "2.14.0+cu130",
+    "device": "cpu",
+    "dtype": "float64",
+    "threads": 2
+  },
+  "hardware": {
+    "cpu": "AMD Ryzen 9 8945HS w/ Radeon 780M Graphics",
+    "platform": "Linux-7.0.0-38-generic-x86_64-with-glibc2.43"
+  },
+  "fixtures": [
+    {
+      "assets": 64,
+      "rows": 2048,
+      "bytes": 215291,
+      "sha256": "927e0f1158bca549482ea8059a1cc106a56fa8a3258a0b1ee43da897a1886f1c"
+    },
+    {
+      "assets": 256,
+      "rows": 8192,
+      "bytes": 914167,
+      "sha256": "76f8b3446c5d3e0d894075f563c61e78257581739b828de0a14ac995199dde19"
+    },
+    {
+      "assets": 1024,
+      "rows": 32768,
+      "bytes": 3731733,
+      "sha256": "9030161ff28e291d60cfe8de25f63689369aa828509622eca45a00afd15e34e5"
+    }
+  ],
+  "samples": [
+    {
+      "assets": 64,
+      "implementation": "previous",
+      "repetition": 0,
+      "warmup": true,
+      "seconds": 0.14832568005658686
+    },
+    {
+      "assets": 64,
+      "implementation": "shared",
+      "repetition": 0,
+      "warmup": true,
+      "seconds": 0.14264333504252136
+    },
+    {
+      "assets": 64,
+      "implementation": "shared",
+      "repetition": 1,
+      "warmup": false,
+      "seconds": 0.1353893200866878
+    },
+    {
+      "assets": 64,
+      "implementation": "previous",
+      "repetition": 1,
+      "warmup": false,
+      "seconds": 0.12938525108620524
+    },
+    {
+      "assets": 64,
+      "implementation": "previous",
+      "repetition": 2,
+      "warmup": false,
+      "seconds": 0.1449846290051937
+    },
+    {
+      "assets": 64,
+      "implementation": "shared",
+      "repetition": 2,
+      "warmup": false,
+      "seconds": 0.130858225049451
+    },
+    {
+      "assets": 64,
+      "implementation": "shared",
+      "repetition": 3,
+      "warmup": false,
+      "seconds": 0.13732882007025182
+    },
+    {
+      "assets": 64,
+      "implementation": "previous",
+      "repetition": 3,
+      "warmup": false,
+      "seconds": 0.14624232007190585
+    },
+    {
+      "assets": 256,
+      "implementation": "previous",
+      "repetition": 0,
+      "warmup": true,
+      "seconds": 0.209433973999694
+    },
+    {
+      "assets": 256,
+      "implementation": "shared",
+      "repetition": 0,
+      "warmup": true,
+      "seconds": 0.20091328117996454
+    },
+    {
+      "assets": 256,
+      "implementation": "shared",
+      "repetition": 1,
+      "warmup": false,
+      "seconds": 0.1861179620027542
+    },
+    {
+      "assets": 256,
+      "implementation": "previous",
+      "repetition": 1,
+      "warmup": false,
+      "seconds": 0.2021637880243361
+    },
+    {
+      "assets": 256,
+      "implementation": "previous",
+      "repetition": 2,
+      "warmup": false,
+      "seconds": 0.19629243900999427
+    },
+    {
+      "assets": 256,
+      "implementation": "shared",
+      "repetition": 2,
+      "warmup": false,
+      "seconds": 0.19686698797158897
+    },
+    {
+      "assets": 256,
+      "implementation": "shared",
+      "repetition": 3,
+      "warmup": false,
+      "seconds": 0.18117992510087788
+    },
+    {
+      "assets": 256,
+      "implementation": "previous",
+      "repetition": 3,
+      "warmup": false,
+      "seconds": 0.19326291303150356
+    },
+    {
+      "assets": 1024,
+      "implementation": "previous",
+      "repetition": 0,
+      "warmup": true,
+      "seconds": 0.4279820551164448
+    },
+    {
+      "assets": 1024,
+      "implementation": "shared",
+      "repetition": 0,
+      "warmup": true,
+      "seconds": 0.37039261613972485
+    },
+    {
+      "assets": 1024,
+      "implementation": "shared",
+      "repetition": 1,
+      "warmup": false,
+      "seconds": 0.3389218901284039
+    },
+    {
+      "assets": 1024,
+      "implementation": "previous",
+      "repetition": 1,
+      "warmup": false,
+      "seconds": 0.3485011390876025
+    },
+    {
+      "assets": 1024,
+      "implementation": "previous",
+      "repetition": 2,
+      "warmup": false,
+      "seconds": 0.3480833440553397
+    },
+    {
+      "assets": 1024,
+      "implementation": "shared",
+      "repetition": 2,
+      "warmup": false,
+      "seconds": 0.367700784932822
+    },
+    {
+      "assets": 1024,
+      "implementation": "shared",
+      "repetition": 3,
+      "warmup": false,
+      "seconds": 0.3733960639219731
+    },
+    {
+      "assets": 1024,
+      "implementation": "previous",
+      "repetition": 3,
+      "warmup": false,
+      "seconds": 0.3573229571338743
+    }
+  ],
+  "summaries": [
+    {
+      "assets": 64,
+      "implementation": "previous",
+      "repetitions": 3,
+      "median_seconds": 0.1449846290051937,
+      "min_seconds": 0.12938525108620524,
+      "max_seconds": 0.14624232007190585
+    },
+    {
+      "assets": 64,
+      "implementation": "shared",
+      "repetitions": 3,
+      "median_seconds": 0.1353893200866878,
+      "min_seconds": 0.130858225049451,
+      "max_seconds": 0.13732882007025182
+    },
+    {
+      "assets": 256,
+      "implementation": "previous",
+      "repetitions": 3,
+      "median_seconds": 0.19629243900999427,
+      "min_seconds": 0.19326291303150356,
+      "max_seconds": 0.2021637880243361
+    },
+    {
+      "assets": 256,
+      "implementation": "shared",
+      "repetitions": 3,
+      "median_seconds": 0.1861179620027542,
+      "min_seconds": 0.18117992510087788,
+      "max_seconds": 0.19686698797158897
+    },
+    {
+      "assets": 1024,
+      "implementation": "previous",
+      "repetitions": 3,
+      "median_seconds": 0.3485011390876025,
+      "min_seconds": 0.3480833440553397,
+      "max_seconds": 0.3573229571338743
+    },
+    {
+      "assets": 1024,
+      "implementation": "shared",
+      "repetitions": 3,
+      "median_seconds": 0.367700784932822,
+      "min_seconds": 0.3389218901284039,
+      "max_seconds": 0.3733960639219731
+    }
+  ],
+  "paired_checks": 12,
+  "conditions_per_pair": 5,
+  "all_session_tables_and_summaries_exact": true,
+  "optimizer_attempts": 0,
+  "cuda_initialized": false,
+  "seconds_without_imports": 6.414857471827418,
+  "peak_rss_kib": 722712,
+  "timing_scope": "Lectura, ordenación y puntuación B4. Excluye crear fixtures, comparación posterior, importaciones y carga de la referencia. El tiempo total incluye fixtures y comparación.",
+  "limits": [
+    "Fixtures de 32 sesiones con 64/256/1024 activos, cinco condiciones y grupos Parquet de 37 filas.",
+    "Una muestra de calentamiento y tres medidas por implementación y tamaño. No caracteriza p95 o p99.",
+    "CPU FP64. Sin GPU, transferencias, energía, padre, inferencia ni evaluación científica.",
+    "El pico RSS corresponde a todo el proceso y no atribuye memoria por implementación.",
+    "El script actual divide literales largos. El parche recupera exactamente los bytes medidos y conserva el mismo AST sin posiciones."
+  ],
+  "external_process": {
+    "user_seconds": 8.23,
+    "system_seconds": 1.72,
+    "wall_clock_hms": "0:08.32",
+    "max_rss_kib": 742792.0,
+    "exit_status": 0.0
+  },
+  "probe_provenance": {
+    "current_path": "cost_probe.py",
+    "current_sha256": "e255909f1da26a683ccaf0e9801929a19a97ee26bb4944f3d7eb75fc09cd651a",
+    "restore_measured_source_patch": "cost-probe-first.patch",
+    "patch_sha256": "161368188e9a06c18ff81a19160257b45585721032aefc8ea49a151ad8b607d2",
+    "same_ast_without_positions": true
+  }
+}

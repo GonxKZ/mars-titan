@@ -1,0 +1,80 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "B1 · Memoria redundante por áreas (redundant_area_memory_v1)",
+    "quality_profile": "showcase",
+    "viewBox": [1300, 402],
+    "legend": {
+      "entries": {
+        "external": {"label": "Entradas"},
+        "backend": {"label": "Cálculo"},
+        "database": {"label": "Memoria y estado"},
+        "frontend": {"label": "Salida"},
+        "security": {"label": "Control o protección"},
+        "cloud": {"label": "Evaluación"}
+      }
+    }
+  },
+  "components": [
+    {"id": "episode", "type": "database", "label": "Episodio maduro", "sublabel": "clave del codec y etiqueta", "pos": [40, 40], "size": [180, 72]},
+    {"id": "permute", "type": "backend", "label": "A permutaciones fijas", "sublabel": "una por área", "pos": [300, 40], "size": [180, 72]},
+    {"id": "areas", "type": "database", "label": "A áreas D × D", "sublabel": "regla delta con retención", "pos": [560, 40], "size": [180, 72]},
+    {
+      "id": "inputs",
+      "type": "external",
+      "label": "Entradas en la emisión",
+      "sublabel": "4 modalidades y macro",
+      "tag": "con máscaras",
+      "pos": [40, 230],
+      "size": [180, 72]
+    },
+    {"id": "base", "type": "backend", "label": "Referencia B", "sublabel": "Titans-MAC mac_online", "pos": [300, 230], "size": [180, 72]},
+    {"id": "read", "type": "backend", "label": "Lectura media", "sublabel": "renormalizada entre áreas", "pos": [560, 230], "size": [180, 72]},
+    {"id": "emit", "type": "frontend", "label": "Predicción emitida", "sublabel": "en paralelo al banco", "pos": [820, 230], "size": [180, 72]},
+    {"id": "screen", "type": "cloud", "label": "Criba", "sublabel": "IC por sesión frente al control", "pos": [1080, 230], "size": [180, 72]},
+    {
+      "id": "controls",
+      "type": "security",
+      "label": "Controles",
+      "sublabel": "área única A·D, áreas idénticas",
+      "tag": "y Nadaraya-Watson",
+      "pos": [1080, 40],
+      "size": [180, 72]
+    }
+  ],
+  "connections": [
+    {"id": "episode-permute", "from": "episode", "to": "permute", "label": "escritura"},
+    {"id": "permute-areas", "from": "permute", "to": "areas", "variant": "emphasis"},
+    {"id": "inputs-base", "from": "inputs", "to": "base"},
+    {"id": "base-read", "from": "base", "to": "read", "label": "consulta"},
+    {"id": "areas-read", "from": "areas", "to": "read", "label": "estados", "variant": "emphasis", "labelDy": 24},
+    {"id": "read-emit", "from": "read", "to": "emit"},
+    {"id": "emit-screen", "from": "emit", "to": "screen"},
+    {"id": "controls-screen", "from": "controls", "to": "screen", "label": "control", "variant": "dashed", "labelDy": 24}
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "Mecanismo",
+      "items": [
+        "El mismo episodio se escribe en A áreas con permutaciones y pesos distintos",
+        "Cada área guarda un estado D × D con regla delta y retención",
+        "Fuente: Danihelka et al. (2016), Schlag et al. (2021), Frady et al. (2018)"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "Control que la descarta",
+      "items": [
+        "Área única de dimensión A·D, áreas idénticas y etiquetas barajadas",
+        "Memoria a cero, Nadaraya-Watson y conjunto de semillas con iguales parámetros"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "Estado",
+      "items": ["Registrada en #750 y en implementación, sin entrenar ni evaluar", "Estado estimado de 67 MB con A = 8, D = 128 y 128 activos"]
+    }
+  ]
+}

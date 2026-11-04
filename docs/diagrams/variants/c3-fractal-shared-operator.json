@@ -1,0 +1,79 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "C3 · Operador compartido entre los niveles de la sesión (fractal_shared_operator_v1)",
+    "quality_profile": "showcase",
+    "viewBox": [1300, 592],
+    "legend": {
+      "entries": {"external": {"label": "Entradas"}, "backend": {"label": "Cálculo"}, "security": {"label": "Control o protección"}, "cloud": {"label": "Evaluación"}}
+    }
+  },
+  "components": [
+    {
+      "id": "operator",
+      "type": "backend",
+      "label": "Operador compartido",
+      "sublabel": "atención con W común",
+      "tag": "LoRA de rango 4 por nivel",
+      "pos": [300, 40],
+      "size": [180, 72]
+    },
+    {"id": "market", "type": "backend", "label": "Nivel mercado", "sublabel": "media de los sectores", "pos": [40, 230], "size": [180, 72]},
+    {"id": "sector", "type": "backend", "label": "Nivel sector", "sublabel": "sectores estadísticos en fecha", "pos": [300, 230], "size": [180, 72]},
+    {"id": "asset", "type": "backend", "label": "Nivel activo", "sublabel": "media de sus fuentes", "pos": [560, 230], "size": [180, 72]},
+    {"id": "modality", "type": "backend", "label": "Nivel fuente", "sublabel": "cinco hojas, ausentes intactas", "pos": [820, 230], "size": [180, 72]},
+    {"id": "screen", "type": "cloud", "label": "Comparación", "sublabel": "MAE por sesión con cada control", "pos": [1080, 230], "size": [180, 72]},
+    {
+      "id": "window",
+      "type": "external",
+      "label": "Ventana de precios",
+      "sublabel": "cierres ajustados en fecha",
+      "tag": "regla de C4",
+      "pos": [300, 420],
+      "size": [180, 72]
+    },
+    {
+      "id": "controls",
+      "type": "security",
+      "label": "Controles",
+      "sublabel": "pesos por nivel, todo compartido",
+      "tag": "al azar y atención plana",
+      "pos": [820, 420],
+      "size": [180, 72]
+    }
+  ],
+  "connections": [
+    {"id": "operator-market", "from": "operator", "to": "market", "fromSide": "left", "toSide": "top"},
+    {"id": "operator-sector", "from": "operator", "to": "sector"},
+    {"id": "operator-asset", "from": "operator", "to": "asset"},
+    {"id": "operator-modality", "from": "operator", "to": "modality"},
+    {"id": "market-sector", "from": "market", "to": "sector", "label": "contexto"},
+    {"id": "sector-asset", "from": "sector", "to": "asset", "variant": "emphasis"},
+    {"id": "asset-modality", "from": "asset", "to": "modality", "variant": "emphasis"},
+    {"id": "window-sector", "from": "window", "to": "sector", "label": "correlaciones"},
+    {"id": "modality-screen", "from": "modality", "to": "screen", "label": "predicción"},
+    {"id": "controls-screen", "from": "controls", "to": "screen", "label": "control", "variant": "dashed"}
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "Mecanismo",
+      "items": [
+        "El mismo operador recorre mercado, sectores, activos y fuentes de cada sesión",
+        "Cada nivel solo añade una LoRA de rango 4 y empieza como la referencia",
+        "Fuentes: ALBERT (Lan et al., 2020), Bae et al. (2025) y Saunshi et al. (2025)"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "Control que la descarta",
+      "items": ["per_level: pesos propios por nivel sin menos parámetros", "Todo compartido, sectores al azar de iguales tamaños y atención plana sobre la sesión"]
+    },
+    {
+      "dot": "amber",
+      "title": "Estado",
+      "items": ["Implementada con pruebas CPU sobre fixtures, sin entrenar", "CUDA, consumidor congelado y criba pendientes"]
+    }
+  ]
+}

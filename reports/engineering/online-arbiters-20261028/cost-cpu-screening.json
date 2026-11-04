@@ -1,0 +1,447 @@
+{
+  "protocol": {
+    "kind": "online_arbiters_cost_v1",
+    "device": "cpu",
+    "dtype": "float64",
+    "markets": [
+      "US",
+      "CN"
+    ],
+    "assets_per_session": 128,
+    "maturity": "each label matures five sessions after its decision",
+    "shapes": [
+      {
+        "sessions_per_market": 64,
+        "options": 5,
+        "modes": [
+          "version_arbiter",
+          "shuffled_control",
+          "uniform_mixture"
+        ]
+      },
+      {
+        "sessions_per_market": 320,
+        "options": 5,
+        "modes": [
+          "version_arbiter",
+          "shuffled_control",
+          "uniform_mixture"
+        ]
+      },
+      {
+        "sessions_per_market": 320,
+        "options": 32,
+        "modes": [
+          "model_combination",
+          "simple_mean"
+        ]
+      },
+      {
+        "sessions_per_market": 320,
+        "options": 80,
+        "modes": [
+          "model_combination",
+          "simple_mean"
+        ]
+      }
+    ],
+    "reliability_window_sessions": 21,
+    "min_assets": 3,
+    "shuffled_seed": 20261028,
+    "warmup": 1,
+    "repetitions": 5,
+    "orders": "each shape runs its modes in the declared order and then reversed",
+    "memory": "tracemalloc peak of one separate call"
+  },
+  "finished_at": "2026-10-28T16:26:16.230879+00:00",
+  "environment": {
+    "python": "3.12.14",
+    "numpy": "2.5.3",
+    "machine": "x86_64",
+    "processor": "desconocido",
+    "threads": {
+      "OMP_NUM_THREADS": "1",
+      "MKL_NUM_THREADS": "1"
+    },
+    "load_average_1min": {
+      "start": 10.74267578125,
+      "end": 10.66796875
+    }
+  },
+  "summary": [
+    {
+      "mode": "version_arbiter",
+      "sessions": 64,
+      "options": 5,
+      "p50_s": 0.189294729,
+      "p95_s": 0.356194475
+    },
+    {
+      "mode": "shuffled_control",
+      "sessions": 64,
+      "options": 5,
+      "p50_s": 1.141243043,
+      "p95_s": 1.621880493
+    },
+    {
+      "mode": "uniform_mixture",
+      "sessions": 64,
+      "options": 5,
+      "p50_s": 0.070497142,
+      "p95_s": 0.076874988
+    },
+    {
+      "mode": "version_arbiter",
+      "sessions": 320,
+      "options": 5,
+      "p50_s": 0.7689513555,
+      "p95_s": 1.266535396
+    },
+    {
+      "mode": "shuffled_control",
+      "sessions": 320,
+      "options": 5,
+      "p50_s": 24.697390048499997,
+      "p95_s": 35.74502911
+    },
+    {
+      "mode": "uniform_mixture",
+      "sessions": 320,
+      "options": 5,
+      "p50_s": 0.14857827299999998,
+      "p95_s": 0.230670466
+    },
+    {
+      "mode": "model_combination",
+      "sessions": 320,
+      "options": 32,
+      "p50_s": 4.535249364,
+      "p95_s": 6.544681999
+    },
+    {
+      "mode": "simple_mean",
+      "sessions": 320,
+      "options": 32,
+      "p50_s": 1.2136566974999998,
+      "p95_s": 2.280600476
+    },
+    {
+      "mode": "model_combination",
+      "sessions": 320,
+      "options": 80,
+      "p50_s": 13.896748995,
+      "p95_s": 17.863354593
+    },
+    {
+      "mode": "simple_mean",
+      "sessions": 320,
+      "options": 80,
+      "p50_s": 2.3077194445,
+      "p95_s": 6.664707125
+    }
+  ],
+  "memory": [
+    {
+      "mode": "version_arbiter",
+      "sessions": 64,
+      "options": 5,
+      "peak_bytes": 1312152
+    },
+    {
+      "mode": "shuffled_control",
+      "sessions": 64,
+      "options": 5,
+      "peak_bytes": 1312152
+    },
+    {
+      "mode": "uniform_mixture",
+      "sessions": 64,
+      "options": 5,
+      "peak_bytes": 1443752
+    },
+    {
+      "mode": "version_arbiter",
+      "sessions": 320,
+      "options": 5,
+      "peak_bytes": 6555032
+    },
+    {
+      "mode": "shuffled_control",
+      "sessions": 320,
+      "options": 5,
+      "peak_bytes": 6555032
+    },
+    {
+      "mode": "uniform_mixture",
+      "sessions": 320,
+      "options": 5,
+      "peak_bytes": 7210920
+    },
+    {
+      "mode": "model_combination",
+      "sessions": 320,
+      "options": 32,
+      "peak_bytes": 41951848
+    },
+    {
+      "mode": "simple_mean",
+      "sessions": 320,
+      "options": 32,
+      "peak_bytes": 42603576
+    },
+    {
+      "mode": "model_combination",
+      "sessions": 320,
+      "options": 80,
+      "peak_bytes": 104879656
+    },
+    {
+      "mode": "simple_mean",
+      "sessions": 320,
+      "options": 80,
+      "peak_bytes": 105523992
+    }
+  ],
+  "records": [
+    {
+      "mode": "version_arbiter",
+      "sessions": 64,
+      "options": 5,
+      "s": [
+        0.209822337,
+        0.356194475,
+        0.294609483,
+        0.310479713,
+        0.290332847
+      ]
+    },
+    {
+      "mode": "shuffled_control",
+      "sessions": 64,
+      "options": 5,
+      "s": [
+        1.471335345,
+        1.585385427,
+        1.569007298,
+        1.621880493,
+        1.347496845
+      ]
+    },
+    {
+      "mode": "uniform_mixture",
+      "sessions": 64,
+      "options": 5,
+      "s": [
+        0.076874988,
+        0.073659169,
+        0.069396709,
+        0.074883905,
+        0.076849871
+      ]
+    },
+    {
+      "mode": "uniform_mixture",
+      "sessions": 64,
+      "options": 5,
+      "s": [
+        0.068462969,
+        0.067083273,
+        0.066509076,
+        0.071597575,
+        0.068222719
+      ]
+    },
+    {
+      "mode": "shuffled_control",
+      "sessions": 64,
+      "options": 5,
+      "s": [
+        0.870615911,
+        0.853030369,
+        0.934989241,
+        0.592762369,
+        0.769337088
+      ]
+    },
+    {
+      "mode": "version_arbiter",
+      "sessions": 64,
+      "options": 5,
+      "s": [
+        0.168767121,
+        0.116646766,
+        0.11372566,
+        0.133694674,
+        0.15802806
+      ]
+    },
+    {
+      "mode": "version_arbiter",
+      "sessions": 320,
+      "options": 5,
+      "s": [
+        0.867750483,
+        0.971498696,
+        1.091643199,
+        1.266535396,
+        1.117448286
+      ]
+    },
+    {
+      "mode": "shuffled_control",
+      "sessions": 320,
+      "options": 5,
+      "s": [
+        33.245723798,
+        25.511638054,
+        35.74502911,
+        19.539032649,
+        23.883142043
+      ]
+    },
+    {
+      "mode": "uniform_mixture",
+      "sessions": 320,
+      "options": 5,
+      "s": [
+        0.174636103,
+        0.13865588,
+        0.128783096,
+        0.153576761,
+        0.163133814
+      ]
+    },
+    {
+      "mode": "uniform_mixture",
+      "sessions": 320,
+      "options": 5,
+      "s": [
+        0.16961586,
+        0.143579785,
+        0.124556,
+        0.138611608,
+        0.230670466
+      ]
+    },
+    {
+      "mode": "shuffled_control",
+      "sessions": 320,
+      "options": 5,
+      "s": [
+        35.287717985,
+        20.331309009,
+        34.198357708,
+        20.87817521,
+        20.871352732
+      ]
+    },
+    {
+      "mode": "version_arbiter",
+      "sessions": 320,
+      "options": 5,
+      "s": [
+        0.481366581,
+        0.549004151,
+        0.586547766,
+        0.612000639,
+        0.670152228
+      ]
+    },
+    {
+      "mode": "model_combination",
+      "sessions": 320,
+      "options": 32,
+      "s": [
+        4.202063219,
+        3.717621956,
+        4.013849859,
+        5.830726683,
+        4.050389143
+      ]
+    },
+    {
+      "mode": "simple_mean",
+      "sessions": 320,
+      "options": 32,
+      "s": [
+        0.809612202,
+        1.205676046,
+        1.208230561,
+        1.19008897,
+        1.219082834
+      ]
+    },
+    {
+      "mode": "simple_mean",
+      "sessions": 320,
+      "options": 32,
+      "s": [
+        1.113222069,
+        1.319501678,
+        2.280600476,
+        1.562354125,
+        2.248445581
+      ]
+    },
+    {
+      "mode": "model_combination",
+      "sessions": 320,
+      "options": 32,
+      "s": [
+        6.544681999,
+        5.577274632,
+        4.868435509,
+        5.625583345,
+        3.555163279
+      ]
+    },
+    {
+      "mode": "model_combination",
+      "sessions": 320,
+      "options": 80,
+      "s": [
+        13.664250315,
+        16.767431626,
+        11.770528671,
+        11.100908952,
+        16.038234376
+      ]
+    },
+    {
+      "mode": "simple_mean",
+      "sessions": 320,
+      "options": 80,
+      "s": [
+        6.664707125,
+        2.997510089,
+        2.043240324,
+        2.323465735,
+        2.291973154
+      ]
+    },
+    {
+      "mode": "simple_mean",
+      "sessions": 320,
+      "options": 80,
+      "s": [
+        2.10924379,
+        3.161436831,
+        2.703623638,
+        2.063256469,
+        2.118351247
+      ]
+    },
+    {
+      "mode": "model_combination",
+      "sessions": 320,
+      "options": 80,
+      "s": [
+        9.564485558,
+        10.591323652,
+        17.863354593,
+        15.348457722,
+        14.129247675
+      ]
+    }
+  ]
+}

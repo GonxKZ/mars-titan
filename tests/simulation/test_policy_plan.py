@@ -16,6 +16,7 @@ import pytest
 
 from mars_titan.data.storage import atomic_json
 from mars_titan.simulation import campaign_stage, native_policy_runs, policy_plan
+from mars_titan.simulation.market import MarketTape
 from mars_titan.training import campaign_plan as plan
 
 CONFIGS = Path("configs/simulation")
@@ -154,7 +155,22 @@ def test_every_first_level_fit_shares_the_budget_and_the_portfolio_criterion():
     jobs = [job for job in policy_plan.plan_stage(stage) if job["kind"] == "fit"]
     # Tres cintas anuales de ajuste: KLPO declara las oleadas completas que caben en el
     # presupuesto común y no puede superarlo.
-    tapes = SimpleNamespace(failure=None, unfit=None, train=(range(253),) * 3)
+    # La cinta de evaluación solo sirve para las cotas del entorno, que un patrimonio plano
+    # sin rotación respeta.
+    prices = np.full((2, 1, 5), 10.0)
+    evaluation = MarketTape(
+        prices,
+        [100, 200],
+        ["A"],
+        np.ones((2, 1)),
+        domain="synthetic",
+        currency="USD",
+        partition="validation",
+        open_times=[50, 150],
+    )
+    tapes = SimpleNamespace(
+        failure=None, unfit=None, train=(range(253),) * 3, evaluation=evaluation
+    )
     budget = stage["policies"]["budget"]["transitions"]
     environments = stage["policies"]["budget"]["environments"]
     waves, wave = native_policy_runs.klpo_waves(tapes.train, environments, budget)
@@ -164,10 +180,10 @@ def test_every_first_level_fit_shares_the_budget_and_the_portfolio_criterion():
         partition="validation",
         best=dict(ruin_count=0, mean_liquidated_log_growth=0.01),
     )
-    equity = dict(basis="close_valuation", close_times=[1, 2], nav=[1.0, 1.0])
+    equity = dict(basis="close_valuation", close_times=[100, 200], nav=[1.0, 1.0])
     records = [
         dict(cost_bps=cost, status="completed", reason=None, steps=1, net_return=0.0)
-        | dict(liquidated_net_return=0.0, max_drawdown=0.0, equity=equity)
+        | dict(liquidated_net_return=0.0, max_drawdown=0.0, turnover=0.0, equity=equity)
         for cost in stage["policies"]["evaluation_costs_bps"]
     ]
     for predictor in PRODUCERS:

@@ -1,0 +1,202 @@
+{
+ "schema_version": 1,
+ "measured_at": "2026-10-28T02:12:30.651665",
+ "tools": {
+  "coverage": "7.16.1",
+  "radon": "6.0.1",
+  "branch_coverage": true,
+  "python": "3.12.14",
+  "summarizer_sha256": "75cc60c88037e0bb17aff6e8ab666ce78b35d600d6c7ad217bf68b1afb4c4ec6"
+ },
+ "complexity_convention": "ComplexityVisitor de Radon sobre la región de coverage.py: if, elif, expresión condicional, for y while con su else, except, else de try, assert, cada operando booleano después del primero y cada cláusula de comprensión suman uno. Las funciones anidadas son regiones propias.",
+ "coverage_convention": "Sentencias ejecutadas entre sentencias de la región según coverage.py.",
+ "crap_convention": "C² × (1 − cobertura de sentencias)³ + C.",
+ "limits": [
+  "CRAP combina complejidad y recorridos observados. No demuestra ausencia de errores.",
+  "La cobertura de sentencias no distingue qué operandos de una condición se evaluaron, aunque la complejidad sí los cuenta.",
+  "Como en Radon 6.0.1, los manejadores de except* y la condición de un assert no suman, y el cuerpo de una clase definida dentro de una función no suma en ella aunque coverage.py cuente allí sus sentencias.",
+  "Una función sin sentencias medibles (solo documentación o puntos suspensivos) conserva C.",
+  "Si dos funciones comparten nombre cualificado en un archivo, coverage.py solo mide la última. Las anteriores aparecen en shadowed_regions sin CRAP.",
+  "La fuente se contrasta con la medida por sus regiones y sus líneas de sentencia. Un cambio que las conserva, como otra condición en la misma línea, no se detecta, así que el resumen se ejecuta sobre el mismo árbol que se midió."
+ ],
+ "include": [
+  "src/mars_titan/training/mars_titan_correction.py"
+ ],
+ "totals": {
+  "statements": 605,
+  "covered_statements": 590,
+  "branches": 184,
+  "covered_branches": 171
+ },
+ "files": [
+  {
+   "path": "src/mars_titan/training/mars_titan_correction.py",
+   "source_sha256": "0a4bde87e4e3735810c08df6b191a01535fbb2398b6494b885fd6dd803e4091d",
+   "statements": 605,
+   "covered_statements": 590,
+   "branches": 184,
+   "covered_branches": 171
+  }
+ ],
+ "functions": [
+  {
+   "path": "src/mars_titan/training/mars_titan_correction.py",
+   "function": "run_correction_window",
+   "start_line": 952,
+   "end_line": 1194,
+   "cyclomatic_complexity": 35,
+   "statements": 112,
+   "covered_statements": 109,
+   "coverage_fraction": 0.9732142857142857,
+   "branches": 36,
+   "covered_branches": 36,
+   "crap": 35.02354213169643
+  },
+  {
+   "path": "src/mars_titan/training/mars_titan_correction.py",
+   "function": "load_correction_recipe",
+   "start_line": 199,
+   "end_line": 243,
+   "cyclomatic_complexity": 30,
+   "statements": 14,
+   "covered_statements": 14,
+   "coverage_fraction": 1.0,
+   "branches": 4,
+   "covered_branches": 4,
+   "crap": 30.0
+  },
+  {
+   "path": "src/mars_titan/training/mars_titan_correction.py",
+   "function": "CorrectionInference._observe",
+   "start_line": 401,
+   "end_line": 473,
+   "cyclomatic_complexity": 19,
+   "statements": 45,
+   "covered_statements": 44,
+   "coverage_fraction": 0.9777777777777777,
+   "branches": 24,
+   "covered_branches": 23,
+   "crap": 19.00396159122085
+  },
+  {
+   "path": "src/mars_titan/training/mars_titan_correction.py",
+   "function": "carry_correction",
+   "start_line": 1197,
+   "end_line": 1387,
+   "cyclomatic_complexity": 18,
+   "statements": 64,
+   "covered_statements": 64,
+   "coverage_fraction": 1.0,
+   "branches": 12,
+   "covered_branches": 12,
+   "crap": 18.0
+  },
+  {
+   "path": "src/mars_titan/training/mars_titan_correction.py",
+   "function": "CorrectionInference._pass",
+   "start_line": 582,
+   "end_line": 637,
+   "cyclomatic_complexity": 16,
+   "statements": 38,
+   "covered_statements": 36,
+   "coverage_fraction": 0.9473684210526315,
+   "branches": 24,
+   "covered_branches": 22,
+   "crap": 16.037323224959906
+  },
+  {
+   "path": "src/mars_titan/training/mars_titan_correction.py",
+   "function": "arm_components",
+   "start_line": 274,
+   "end_line": 336,
+   "cyclomatic_complexity": 16,
+   "statements": 16,
+   "covered_statements": 16,
+   "coverage_fraction": 1.0,
+   "branches": 4,
+   "covered_branches": 4,
+   "crap": 16.0
+  },
+  {
+   "path": "src/mars_titan/training/mars_titan_correction.py",
+   "function": "CorrectionInference.__init__",
+   "start_line": 355,
+   "end_line": 388,
+   "cyclomatic_complexity": 15,
+   "statements": 26,
+   "covered_statements": 22,
+   "coverage_fraction": 0.8461538461538461,
+   "branches": 12,
+   "covered_branches": 8,
+   "crap": 15.819299044151116
+  },
+  {
+   "path": "src/mars_titan/training/mars_titan_correction.py",
+   "function": "CorrectionInference._written",
+   "start_line": 526,
+   "end_line": 550,
+   "cyclomatic_complexity": 11,
+   "statements": 14,
+   "covered_statements": 14,
+   "coverage_fraction": 1.0,
+   "branches": 6,
+   "covered_branches": 6,
+   "crap": 11.0
+  },
+  {
+   "path": "src/mars_titan/training/mars_titan_correction.py",
+   "function": "CorrectionInference._write",
+   "start_line": 492,
+   "end_line": 524,
+   "cyclomatic_complexity": 10,
+   "statements": 23,
+   "covered_statements": 22,
+   "coverage_fraction": 0.9565217391304348,
+   "branches": 16,
+   "covered_branches": 14,
+   "crap": 10.0082189529054
+  },
+  {
+   "path": "src/mars_titan/training/mars_titan_correction.py",
+   "function": "_kalman_values",
+   "start_line": 246,
+   "end_line": 261,
+   "cyclomatic_complexity": 9,
+   "statements": 3,
+   "covered_statements": 3,
+   "coverage_fraction": 1.0,
+   "branches": 0,
+   "covered_branches": 0,
+   "crap": 9.0
+  },
+  {
+   "path": "src/mars_titan/training/mars_titan_correction.py",
+   "function": "CorrectionInference._labels",
+   "start_line": 475,
+   "end_line": 490,
+   "cyclomatic_complexity": 6,
+   "statements": 11,
+   "covered_statements": 11,
+   "coverage_fraction": 1.0,
+   "branches": 8,
+   "covered_branches": 8,
+   "crap": 6.0
+  },
+  {
+   "path": "src/mars_titan/training/mars_titan_correction.py",
+   "function": "_RoutingLog.event",
+   "start_line": 754,
+   "end_line": 764,
+   "cyclomatic_complexity": 6,
+   "statements": 10,
+   "covered_statements": 10,
+   "coverage_fraction": 1.0,
+   "branches": 8,
+   "covered_branches": 8,
+   "crap": 6.0
+  }
+ ],
+ "shadowed_regions": [],
+ "coverage_sha256": "194ce93c259ce54aff9176284eab5ba712637deeab83173ccf2b786152bb477a",
+ "functions_measured": 45
+}

@@ -1,0 +1,67 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "F1 · Cabeza de escala con NLL de Laplace (laplace_scale_head_v1)",
+    "quality_profile": "showcase",
+    "viewBox": [1300, 592],
+    "legend": {
+      "entries": {
+        "external": {"label": "Entradas"},
+        "backend": {"label": "Cálculo"},
+        "frontend": {"label": "Salida"},
+        "security": {"label": "Control o protección"},
+        "cloud": {"label": "Evaluación"}
+      }
+    }
+  },
+  "components": [
+    {
+      "id": "inputs",
+      "type": "external",
+      "label": "Entradas en la emisión",
+      "sublabel": "4 modalidades y macro",
+      "tag": "con máscaras",
+      "pos": [40, 230],
+      "size": [180, 72]
+    },
+    {"id": "trunk", "type": "backend", "label": "Tronco compartido", "sublabel": "estado de B", "pos": [300, 230], "size": [180, 72]},
+    {"id": "median", "type": "backend", "label": "Mediana μ", "sublabel": "predicción puntual", "pos": [560, 40], "size": [180, 72]},
+    {"id": "scale", "type": "backend", "label": "Escala b > 0", "sublabel": "incertidumbre", "pos": [560, 420], "size": [180, 72]},
+    {"id": "loss", "type": "security", "label": "NLL de Laplace", "sublabel": "sg(b) · (|y − μ|/b + log b)", "pos": [820, 230], "size": [180, 72]},
+    {"id": "emit", "type": "frontend", "label": "Predicción emitida", "sublabel": "μ", "pos": [820, 40], "size": [180, 72]},
+    {"id": "users", "type": "frontend", "label": "Usos de la escala", "sublabel": "λ de A1 e intervalo de A2", "pos": [820, 420], "size": [180, 72]},
+    {"id": "screen", "type": "cloud", "label": "Criba", "sublabel": "IC por sesión frente al control", "pos": [1080, 40], "size": [180, 72]}
+  ],
+  "connections": [
+    {"id": "inputs-trunk", "from": "inputs", "to": "trunk"},
+    {"id": "trunk-median", "from": "trunk", "to": "median"},
+    {"id": "trunk-scale", "from": "trunk", "to": "scale"},
+    {"id": "median-loss", "from": "median", "to": "loss"},
+    {"id": "scale-loss", "from": "scale", "to": "loss"},
+    {"id": "median-emit", "from": "median", "to": "emit", "variant": "emphasis"},
+    {"id": "scale-users", "from": "scale", "to": "users"},
+    {"id": "emit-screen", "from": "emit", "to": "screen"}
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "Mecanismo",
+      "items": [
+        "El factor sg(b) de β-NLL con β = 1 deja a la mediana el gradiente del error absoluto",
+        "La escala conserva su óptimo, b igual al error absoluto esperado",
+        "Fuente: Gneiting (2011), Seitzer et al. (2022)"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "Control que la descarta",
+      "items": ["El objetivo L1 actual con los mismos pasos y semillas"]
+    },
+    {
+      "dot": "amber",
+      "title": "Estado",
+      "items": ["Registrada en #749 y en implementación, sin entrenar ni evaluar", "Coste estimado de un ajuste de referencia"]
+    }
+  ]
+}

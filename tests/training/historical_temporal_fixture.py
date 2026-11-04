@@ -42,6 +42,7 @@ def historical_temporal_fixture(
     presence=None,
     market_absent=None,
     price_start=None,
+    price_row_group_size=3,
 ):
     """Crear el corpus técnico. `days` permite fijar las sesiones de cada mercado.
 
@@ -52,6 +53,8 @@ def historical_temporal_fixture(
     precios de cada activo y entran en el contrato de ventanas de la v3.1. `price_start` fija la
     primera sesión con precio de cada activo.
     """
+    if type(price_row_group_size) is not int or not 1 <= price_row_group_size <= 100_000:
+        raise ValueError("El grupo de precios necesita de una a 100.000 filas")
     root = Path(root)
     clocks = {market: MarketClock(market, "1999-01-01", "2024-01-05") for market in markets}
     parent = corpus(root / "parent", assets=assets, rows=1, markets=markets)
@@ -194,7 +197,9 @@ def historical_temporal_fixture(
         ):
             key = "prepared" if kind == "prices" else kind
             path = Path(meta["roots"][key]) / market / symbol / f"{kind}.parquet"
-            pq.write_table(table, path, row_group_size=3)
+            pq.write_table(
+                table, path, row_group_size=price_row_group_size if kind == "prices" else 3
+            )
             asset[kind + "_sha256"] = sha256(path)
         asset.update(
             cohort_id="original_audited",

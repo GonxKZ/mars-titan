@@ -1,0 +1,82 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "A4 · Cabezas oponentes con integrador neutral (opponent_heads_v1)",
+    "quality_profile": "showcase",
+    "viewBox": [1300, 592],
+    "legend": {
+      "entries": {
+        "external": {"label": "Entradas"},
+        "backend": {"label": "Cálculo"},
+        "frontend": {"label": "Salida"},
+        "security": {"label": "Control o protección"},
+        "cloud": {"label": "Evaluación"}
+      }
+    }
+  },
+  "components": [
+    {
+      "id": "inputs",
+      "type": "external",
+      "label": "Entradas en la emisión",
+      "sublabel": "4 modalidades y macro",
+      "pos": [40, 230],
+      "size": [180, 72],
+      "tag": "con máscaras"
+    },
+    {"id": "trunk", "type": "backend", "label": "Tronco compartido", "sublabel": "estado de Titans-MAC", "pos": [300, 230], "size": [180, 72]},
+    {
+      "id": "pair",
+      "type": "backend",
+      "label": "Centro c y semiamplitud d",
+      "sublabel": "cabeza escalar y d nula al empezar",
+      "pos": [560, 230],
+      "size": [180, 72]
+    },
+    {"id": "optimist", "type": "backend", "label": "Optimista c + d", "sublabel": "nivel 1 − τ", "pos": [820, 40], "size": [180, 72]},
+    {"id": "pessimist", "type": "backend", "label": "Pesimista c − d", "sublabel": "nivel τ", "pos": [820, 420], "size": [180, 72]},
+    {"id": "neutral", "type": "frontend", "label": "Integrador neutral", "sublabel": "media fija, emite c", "pos": [820, 230], "size": [180, 72]},
+    {"id": "screen", "type": "cloud", "label": "Comparación", "sublabel": "mismas filas y padre", "pos": [1080, 230], "size": [180, 72]},
+    {
+      "id": "controls",
+      "type": "security",
+      "label": "Control simétrico",
+      "sublabel": "τ = 0,5, mismos parámetros",
+      "pos": [1080, 420],
+      "size": [180, 72],
+      "tag": "misma familia"
+    }
+  ],
+  "connections": [
+    {"id": "inputs-trunk", "from": "inputs", "to": "trunk"},
+    {"id": "trunk-pair", "from": "trunk", "to": "pair"},
+    {"id": "pair-optimist", "from": "pair", "to": "optimist"},
+    {"id": "pair-pessimist", "from": "pair", "to": "pessimist"},
+    {"id": "optimist-neutral", "from": "optimist", "to": "neutral", "label": "lectura alta", "labelAt": [962, 171]},
+    {"id": "pessimist-neutral", "from": "pessimist", "to": "neutral", "label": "lectura baja", "labelAt": [962, 361]},
+    {"id": "neutral-screen", "from": "neutral", "to": "screen", "label": "predicción", "variant": "emphasis"},
+    {"id": "controls-screen", "from": "controls", "to": "screen", "label": "control", "variant": "dashed"}
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "Mecanismo",
+      "items": [
+        "Cada cabeza se ajusta con un expectil o cuantil asimétrico, τ y 1 − τ",
+        "El integrador emite la media de ambas, que es la cabeza escalar c",
+        "Fuentes: Newey y Powell (1987), Collins y Frank (2014), Dabney et al. (2020)"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "Control que la descarta",
+      "items": ["Mismas cabezas con τ = 0,5: d no recibe gradiente y sigue en cero", "Referencia L1 sin objetivo de salida"]
+    },
+    {
+      "dot": "amber",
+      "title": "Estado",
+      "items": ["Objetivo de salida con pruebas CPU, sin entrenar ni evaluar", "CUDA pendiente de admisión GPU"]
+    }
+  ]
+}

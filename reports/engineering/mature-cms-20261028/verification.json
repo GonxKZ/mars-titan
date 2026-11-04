@@ -1,0 +1,457 @@
+{
+ "schema_version": 1,
+ "date": "2026-10-29",
+ "issue": 786,
+ "scope": "mature_cms_v1_and_familiarity_gate_v1_with_their_controls",
+ "implementation_commit": "c729296bbc052ab56fc5f8f93c38f9dd8b1685ca",
+ "base_commit": "2a3eb5debfb581923d06f896db75bd34cbc68ffe",
+ "scientific_experiments": 0,
+ "training_runs": 0,
+ "real_optimizer_steps": 0,
+ "final_test_opened": false,
+ "hold_sha256": "8a658080c1ac4e63847eba58b177020339da6ec47021cf26d2701830073c87fd",
+ "test_optimizers": "Las pruebas de R2 aplican el paso proximal del periodo cerrado sobre los pesos rápidos de la memoria, que es su regla y no un optimizador. Las de R3 solo calculan gradientes con autograd, y las dos medidas de coste propagan sin optimizador y comprueban que ningún parámetro cambia. La protección global del aprendizaje sigue activa y omite la prueba que la necesita abierta.",
+ "final_commit": "84c91c846cfc6ac16cad30f227c1e18bfee52264",
+ "suites": [
+  {
+   "name": "targeted_with_coverage",
+   "tests": 684,
+   "failures": 0,
+   "errors": 0,
+   "skipped": 1,
+   "xml_sha256": "b51b248ec9d6966a074c53c0fb60241c0936393a6db3f5768b097e39c33e2260",
+   "note": "R2, R3, sus medidas de coste y los módulos que comparten el lector episódico, la memoria asociativa, la corrección y los recorridos de MARS-TITAN, con cobertura de ramas sobre implementation_commit. La omisión es la protección del aprendizaje."
+  },
+  {
+   "name": "regression_of_tests_training",
+   "tests": 1855,
+   "failures": 0,
+   "errors": 0,
+   "skipped": 28,
+   "xml_sha256": "bfb7aa92c0e184e6f9fa4be620e5f9f62b98fd4defb4c8bf7e10b825cd292012",
+   "note": "Los módulos de tests/training que importan los caminos cambiados, sobre implementation_commit. Las 28 omisiones son de la protección del aprendizaje."
+  },
+  {
+   "name": "regression_of_the_other_tests",
+   "tests": 5131,
+   "failures": 0,
+   "errors": 0,
+   "skipped": 83,
+   "xml_sha256": "c8fdaef937521e577530fe4378c4fb3cd868cb4be9385305fbfc794d590c1d3b",
+   "note": "El resto de módulos que importan los caminos cambiados, sobre implementation_commit. De las 83 omisiones, 39 necesitan los binarios nativos de PPO y de simulación sin compilar y las demás son de la protección del aprendizaje."
+  },
+  {
+   "name": "after_merging_develop_9227084bc",
+   "tests": 927,
+   "failures": 0,
+   "errors": 0,
+   "skipped": 1,
+   "xml_sha256": "72823d3eb1e00987929b9fba504aa5988f0d45fd3e3bdbaa9504dd3371aff537",
+   "note": "Las pruebas dirigidas y las que cambió la fusión de develop con #805, #806 y #807, en 9227084bc. La omisión es la protección del aprendizaje."
+  },
+  {
+   "name": "after_merging_c2_and_the_atomic_receipts",
+   "tests": 1049,
+   "failures": 0,
+   "errors": 0,
+   "skipped": 1,
+   "xml_sha256": "3730f912cb4deb917adc181c74b0d27605994382bc4eb3dea3490a4abcf4fdda",
+   "note": "Las mismas pruebas y las de C2 y los recibos de coste tras fusionar develop con #808 y #809, en a04805419."
+  },
+  {
+   "name": "final_with_coverage",
+   "tests": 1058,
+   "failures": 0,
+   "errors": 0,
+   "skipped": 1,
+   "xml_sha256": "060feba738b8f6254d641da44c01b46f595d1d3d16982e749f7ca05dc830bfe6",
+   "note": "Las mismas pruebas en tres procesos con cobertura de ramas en final_commit, tras fusionar develop con C3 (#810) y añadir las pruebas del calentamiento, del gradiente no finito, de la sincronización y de la orden de la medida de R3. La omisión es la protección del aprendizaje y las pruebas CUDA quedan deseleccionadas porque la verificación no usa la GPU."
+  }
+ ],
+ "quality": {
+  "tools": {
+   "coverage": "7.16.1",
+   "radon": "6.0.1",
+   "branch_coverage": true,
+   "python": "3.12.14",
+   "summarizer_sha256": "75cc60c88037e0bb17aff6e8ab666ce78b35d600d6c7ad217bf68b1afb4c4ec6"
+  },
+  "totals": {
+   "statements": 3385,
+   "covered_statements": 2991,
+   "branches": 1200,
+   "covered_branches": 953
+  },
+  "files": [
+   {
+    "path": "benchmarks/familiarity_gate_cost.py",
+    "source_sha256": "e1a0d7d11fa6d58c87a6c0faaca35099fdf771a7c73123855034071bebd254c9",
+    "statements": 132,
+    "covered_statements": 131,
+    "branches": 38,
+    "covered_branches": 37
+   },
+   {
+    "path": "benchmarks/multiscale_mixture_cost.py",
+    "source_sha256": "9022e3e079bbb3f774ae448697a0c78597066131d0c04f15788da921ddc10fb9",
+    "statements": 75,
+    "covered_statements": 67,
+    "branches": 18,
+    "covered_branches": 12
+   },
+   {
+    "path": "src/mars_titan/memory/associative_memory.py",
+    "source_sha256": "a835ae5b7801f0a21c22772148a567cb55ea8fe025285beb9311a615ed46618f",
+    "statements": 426,
+    "covered_statements": 373,
+    "branches": 190,
+    "covered_branches": 145
+   },
+   {
+    "path": "src/mars_titan/memory/mars_titan_variant.py",
+    "source_sha256": "9e04cd675c2462c540cc65a106f609d63f6c6d7deadbea7c5aae7c6ae2307e48",
+    "statements": 247,
+    "covered_statements": 191,
+    "branches": 138,
+    "covered_branches": 89
+   },
+   {
+    "path": "src/mars_titan/memory/multiscale_mixture.py",
+    "source_sha256": "8395cb283d1b8211623cc9db6828a91ced69a48cf99669c73452ddf2f3734f09",
+    "statements": 317,
+    "covered_statements": 308,
+    "branches": 124,
+    "covered_branches": 120
+   },
+   {
+    "path": "src/mars_titan/models/titans/episodic_readout.py",
+    "source_sha256": "4323532146e8f2320655f714515f9d0eecfacefe0018a5beb935c7482fc84f59",
+    "statements": 399,
+    "covered_statements": 326,
+    "branches": 160,
+    "covered_branches": 104
+   },
+   {
+    "path": "src/mars_titan/models/titans/transition_jacobian.py",
+    "source_sha256": "3e4021d0ef9e531499b08593bc13761aaaad1fb8a059d950ebcc6f9739611181",
+    "statements": 83,
+    "covered_statements": 82,
+    "branches": 20,
+    "covered_branches": 19
+   },
+   {
+    "path": "src/mars_titan/training/mars_titan_correction.py",
+    "source_sha256": "0bbf205f577adfe36d150ecaf17cae5a282e27c580d1aca81a3bfbe13eec754f",
+    "statements": 607,
+    "covered_statements": 560,
+    "branches": 186,
+    "covered_branches": 157
+   },
+   {
+    "path": "src/mars_titan/training/mars_titan_run.py",
+    "source_sha256": "26dd4b3267e01a5d1140f2e7f666ba7b32ea9be35eb95dee6f44b1519633a71c",
+    "statements": 734,
+    "covered_statements": 695,
+    "branches": 274,
+    "covered_branches": 232
+   },
+   {
+    "path": "src/mars_titan/training/mars_titan_walk_forward.py",
+    "source_sha256": "a0f7375c24f8af7f8fedb14e396cc2569351dd306c890aec19b806d729e76464",
+    "statements": 365,
+    "covered_statements": 258,
+    "branches": 52,
+    "covered_branches": 38
+   }
+  ],
+  "max_crap": 380.0,
+  "quality_sha256": "53bf33f820827a28e315118d5d8948014471b17cd7d1296999e39f4be12f4835",
+  "limits": "CRAP y cobertura localizan complejidad poco comprobada. No demuestran ausencia de errores."
+ },
+ "changed": {
+  "base": "2a3eb5debfb581923d06f896db75bd34cbc68ffe",
+  "head": "84c91c846cfc6ac16cad30f227c1e18bfee52264",
+  "functions": 52,
+  "max_crap": 62.118399999999994,
+  "changed_executable_lines": 309,
+  "changed_covered_lines": 309,
+  "highest": [
+   {
+    "path": "src/mars_titan/memory/associative_memory.py",
+    "function": "MatureCorrection.__post_init__",
+    "cyclomatic_complexity": 40,
+    "crap": 62.118399999999994,
+    "changed_executable_lines": 2,
+    "changed_covered_lines": 2,
+    "changed_missing_lines": [],
+    "changed_missing_branches": []
+   },
+   {
+    "path": "src/mars_titan/training/mars_titan_run.py",
+    "function": "MarsTitanInference.__init__",
+    "cyclomatic_complexity": 38,
+    "crap": 51.473684210526315,
+    "changed_executable_lines": 0,
+    "changed_covered_lines": 0,
+    "changed_missing_lines": [],
+    "changed_missing_branches": []
+   },
+   {
+    "path": "src/mars_titan/memory/mars_titan_variant.py",
+    "function": "_associative",
+    "cyclomatic_complexity": 32,
+    "crap": 40.19199999999999,
+    "changed_executable_lines": 3,
+    "changed_covered_lines": 3,
+    "changed_missing_lines": [],
+    "changed_missing_branches": []
+   },
+   {
+    "path": "src/mars_titan/memory/multiscale_mixture.py",
+    "function": "MultiscaleMemory.__init__",
+    "cyclomatic_complexity": 37,
+    "crap": 37.0,
+    "changed_executable_lines": 9,
+    "changed_covered_lines": 9,
+    "changed_missing_lines": [],
+    "changed_missing_branches": []
+   },
+   {
+    "path": "src/mars_titan/training/mars_titan_run.py",
+    "function": "ReadoutRecipe.__post_init__",
+    "cyclomatic_complexity": 31,
+    "crap": 31.722013523666416,
+    "changed_executable_lines": 0,
+    "changed_covered_lines": 0,
+    "changed_missing_lines": [],
+    "changed_missing_branches": []
+   }
+  ],
+  "uncovered": [],
+  "unmeasured": [],
+  "note": "Funciones con líneas cambiadas frente a develop (base_commit) en final_commit, con su CRAP y la cobertura de esas líneas.",
+  "changed_sha256": "eaaf9b569adeaa7f468883cdea092bd2d50c1890356d4a18d0e982466681588b"
+ },
+ "mutations": {
+  "tree_commit": "19e5065d92aa8bdc7f03c02b8aab164c0cea035b",
+  "planned": 73,
+  "killed": 73,
+  "optimizer_attempts": 0,
+  "hold_sha256_unchanged": true,
+  "recipes_sha256": "687f4e65cd6fec1469dba9434ad9325359c16de16b784527cc7cedea4e744f9e",
+  "executor_sha256": "4611b65fa793d598ca6ed8c5bc1a4e81dfe07da15b8c50f8de7caa397aa3f75e",
+  "source_sha256": {
+   "src/mars_titan/training/mars_titan_correction.py": "0bbf205f577adfe36d150ecaf17cae5a282e27c580d1aca81a3bfbe13eec754f",
+   "src/mars_titan/memory/associative_memory.py": "a835ae5b7801f0a21c22772148a567cb55ea8fe025285beb9311a615ed46618f",
+   "src/mars_titan/memory/mars_titan_variant.py": "9e04cd675c2462c540cc65a106f609d63f6c6d7deadbea7c5aae7c6ae2307e48",
+   "src/mars_titan/memory/multiscale_mixture.py": "8395cb283d1b8211623cc9db6828a91ced69a48cf99669c73452ddf2f3734f09",
+   "benchmarks/multiscale_mixture_cost.py": "9022e3e079bbb3f774ae448697a0c78597066131d0c04f15788da921ddc10fb9"
+  },
+  "cases": [
+   "periods_unordered",
+   "first_not_session",
+   "all_session_accepted",
+   "length_unchecked",
+   "unknown_period_accepted",
+   "period_type_unchecked",
+   "sequence_unchecked",
+   "periods_kept_as_given",
+   "identity_keeps_none",
+   "identity_periods_tuple",
+   "identity_without_continuum",
+   "identity_without_closed_rule",
+   "bound_counts_session",
+   "bound_row_size",
+   "open_rows_not_counted",
+   "numeric_uses_bound",
+   "week_from_tuesday",
+   "week_from_thursday",
+   "month_one_based",
+   "month_without_year",
+   "session_has_calendar",
+   "calendar_clock_unchecked",
+   "overflow_not_wrapped",
+   "closed_not_mean",
+   "events_not_counted",
+   "extend_ignores_order",
+   "cap_off_by_one",
+   "export_shares_tensors",
+   "restore_shares_tensors",
+   "restore_accepts_empty",
+   "restore_float_period",
+   "restore_fields_unchecked",
+   "pending_order_unchecked",
+   "pending_events_unbounded",
+   "pending_period_unchecked",
+   "pending_writes_unchecked",
+   "pending_cursor_unchecked",
+   "unwritten_branch",
+   "unwritten_experts_unchecked",
+   "slow_without_pending",
+   "pending_length_unchecked",
+   "e1_accepts_pending",
+   "continuum_dispatch",
+   "closes_every_write",
+   "closed_not_normalized",
+   "closed_period_kept",
+   "session_never_writes",
+   "undecayed_close",
+   "state_digest_without_pending",
+   "export_without_pending_digest",
+   "restore_without_pending_check",
+   "restore_pending_not_list",
+   "restore_fields_without_pending",
+   "tensor_digest_kind",
+   "tensor_digest_without_shape",
+   "digest_without_events",
+   "e1_pending_rows",
+   "pending_rows_as_events",
+   "applied_writes_of_session",
+   "correction_accepts_delta",
+   "correction_accepts_areas",
+   "correction_accepts_roles",
+   "memory_accepts_areas",
+   "memory_accepts_roles",
+   "parser_requires_periods",
+   "parser_rejects_periods",
+   "normalized_keeps_none",
+   "metrics_always",
+   "metrics_swapped",
+   "benchmark_references_required",
+   "benchmark_open_rows_missing",
+   "benchmark_declaration_ignored",
+   "benchmark_declaration_unrecorded"
+  ],
+  "summary_sha256": "2d8062777ade887473f1ea6b138f830cb11ac37004320f1f898088506822a1d2",
+  "scope": "Setenta y tres defectos dirigidos de R2, de su periodo abierto y cerrado, de su estado, de la corrección madura y de su medida de coste, cada uno con una fase en verde antes, la mutación y otra fase en verde después, en una copia aislada del árbol. No es una puntuación global. Los archivos que mutan no han cambiado desde ese árbol.",
+  "additional": [
+   {
+    "tree_commit": "0c3c8fab5a99e95e9bb791f9f5af5ca475d1aa1f",
+    "planned": 42,
+    "killed": 42,
+    "recipes_sha256": "02b5fef7509142b45be96890fd7fedf76da30b7683d957c91645a599cf869820",
+    "executor_sha256": "256ead3b0319ee7ae703a8e268bae88d7c4cc237dc20432f2dc7eb983a6c772c",
+    "source_sha256": {
+     "src/mars_titan/models/titans/transition_jacobian.py": "3e4021d0ef9e531499b08593bc13761aaaad1fb8a059d950ebcc6f9739611181",
+     "src/mars_titan/training/mars_titan_run.py": "26dd4b3267e01a5d1140f2e7f666ba7b32ea9be35eb95dee6f44b1519633a71c",
+     "benchmarks/familiarity_gate_cost.py": "e1a0d7d11fa6d58c87a6c0faaca35099fdf771a7c73123855034071bebd254c9",
+     "src/mars_titan/models/titans/episodic_readout.py": "4323532146e8f2320655f714515f9d0eecfacefe0018a5beb935c7482fc84f59",
+     "src/mars_titan/training/mars_titan_walk_forward.py": "28b421439b0efa01e69855872d4c13843d671804c216e18e71183fb83109e3fc"
+    },
+    "cases": [
+     "benchmark_added_parameters",
+     "benchmark_any_device",
+     "benchmark_digest_unchecked",
+     "benchmark_fewer_episodes",
+     "benchmark_without_parity",
+     "benchmark_without_reference",
+     "bias_starts_nonzero",
+     "budget_without_change",
+     "budget_without_gate",
+     "cached_read_without_familiarity",
+     "empty_read_without_familiarity",
+     "familiarity_from_logits",
+     "familiarity_unweighted",
+     "familiarity_with_gradient",
+     "gate_ignores_familiarity",
+     "gate_ignores_presence",
+     "gate_name_unchecked",
+     "gate_not_applied",
+     "gate_on_the_step",
+     "gate_type_unchecked",
+     "gate_with_bridge",
+     "gate_without_bank",
+     "gate_without_factor_two",
+     "identity_keeps_gate_none",
+     "identity_same_rule_for_control",
+     "identity_without_empty_rule",
+     "identity_without_gate_name",
+     "jacobian_accepts_gate",
+     "logits_without_temperature",
+     "missing_familiarity_accepted",
+     "normal_read_without_familiarity",
+     "recipe_gate_unchecked",
+     "recipe_identity_keeps_none",
+     "recipe_type_unchecked",
+     "refine_dtype_unchecked",
+     "refine_finite_unchecked",
+     "refine_shape_unchecked",
+     "refine_unchecked",
+     "run_check_missing",
+     "weight_in_the_control",
+     "weight_starts_nonzero",
+     "window_ignores_gate"
+    ],
+    "summary_sha256": "1a9cc3967f52a39b803df6b0740c02954a69b06613c52d0f236740c0a68d01cc",
+    "scope": "Cuarenta y dos defectos dirigidos de R3, de la puerta y su control en el lector episódico, del recorrido y de su medida de coste. Desde ese árbol, la fusión de develop solo añadió a mars_titan_walk_forward.py los rechazos de C2 y C3, fuera de los fragmentos mutados."
+   },
+   {
+    "tree_commit": "d38b5d9a18d34082e9b3e61dbd863e25938467e0",
+    "planned": 13,
+    "killed": 13,
+    "recipes_sha256": "5ffad61175a7620a8858f54f6f40de65a08716e8f194b050caaf770cdaf503ac",
+    "executor_sha256": "256ead3b0319ee7ae703a8e268bae88d7c4cc237dc20432f2dc7eb983a6c772c",
+    "source_sha256": {
+     "benchmarks/familiarity_gate_cost.py": "e1a0d7d11fa6d58c87a6c0faaca35099fdf771a7c73123855034071bebd254c9"
+    },
+    "cases": [
+     "cli_optional_output",
+     "cli_other_rows",
+     "cli_other_warmup",
+     "cli_silent",
+     "cli_threads_from_rows",
+     "cli_without_device",
+     "gradient_any_parameter",
+     "gradient_unchecked",
+     "synchronize_any_device",
+     "synchronize_never",
+     "warmup_one_model",
+     "warmup_skipped",
+     "warmup_without_inference"
+    ],
+    "summary_sha256": "511277be98eec3feb1ea42275cc2e7a9c128d87767c0781da176ef340f8d33c5",
+    "scope": "Trece defectos de la medida de R3 que comprueban las pruebas nuevas: el calentamiento, la comprobación del gradiente no finito, la sincronización de CUDA y la orden de línea de comandos."
+   }
+  ]
+ },
+ "native_link": {
+  "source_commit": "39abf2c99",
+  "preset": "native-candidate-cuda",
+  "used_by": "todas las suites",
+  "sha256": "9fda744aa9c6672f9fb47c0896a5e9b19fc8795cdbfff42b944ed751953b1046"
+ },
+ "cost": [
+  {
+   "receipt": "reports/engineering/mature-cms-20261028/benchmark-1.json",
+   "sha256": "e68ef298b2f54be913246d7f29cb6f7b103b8527eaa1a79a94d2c6b3e99a71a8"
+  },
+  {
+   "receipt": "reports/engineering/mature-cms-20261028/benchmark-2.json",
+   "sha256": "65e7b7ead122fc0eee003201ceb04141cc0279da833328911b8302605835de6f"
+  },
+  {
+   "receipt": "reports/engineering/mature-cms-20261028/benchmark-process-1.json",
+   "sha256": "0265e49ada62d9f56fd6ad02f056c6f6e10530b89a3402d1010f5d0048fe8eb5"
+  },
+  {
+   "receipt": "reports/engineering/mature-cms-20261028/benchmark-process-2.json",
+   "sha256": "45ec679d74d3dbd2103425a336c8fd22f981e0194811bcf9bb4ceba1fa8e4c52"
+  },
+  {
+   "receipt": "reports/engineering/familiarity-gate-20261028/benchmark-1.json",
+   "sha256": "b2393b8ed636ac425b7ccc9546cb293c79fc699f0f5764cd23faf2f82e072af4"
+  },
+  {
+   "receipt": "reports/engineering/familiarity-gate-20261028/benchmark-2.json",
+   "sha256": "f5fb1f30480ee492c000277ae887fe71a874faa03cb5dfef135333a63c668ff9"
+  },
+  {
+   "receipt": "reports/engineering/familiarity-gate-20261028/benchmark-process-1.json",
+   "sha256": "1a891c74ea71d94726a827b887a0a65d756519ee362b3cb0cc2059321354a511"
+  },
+  {
+   "receipt": "reports/engineering/familiarity-gate-20261028/benchmark-process-2.json",
+   "sha256": "beb8aad13770a3e682648a5d48d72f62312d3be6652b63f9cb4e3a8d28749cf2"
+  }
+ ]
+}

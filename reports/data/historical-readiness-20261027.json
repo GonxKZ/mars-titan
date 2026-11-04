@@ -1,0 +1,239 @@
+{
+  "schema_version": 1,
+  "kind": "historical_data_current_readiness_audit",
+  "recorded_at_utc": "2026-10-27T18:12:55.564074+00:00",
+  "runtime_commit": "b94a43413e9e61c0dc958754a4a7663e14bd4b22",
+  "scope": "Comprobación de datos y metadatos actuales, sin ejecutar ni reanudar modelos.",
+  "source_manifests": {
+    "edition_sha256": "a459dbb8a39b9308b4ab20ea5a1e58453455fa3d3db9e93984ca5a3c5ba0bc3d",
+    "targets_sha256": "fe86a923dd49a24247a1925e195b0bfd07cacf02c7bd43f0bcde0d292251893a",
+    "catalog_manifest_sha256": "bcd5f0209be87434b29e8c3a3f438dc5680bd44bba6037d7bdcd02c5edb5ae2c",
+    "catalog_sha256": "6edfddf9841c3754df0936dcda0765cc171f1c234232ab42ba1f44aa715be23b"
+  },
+  "source_contract": {
+    "input_policy": "historical_masked_2000_v1",
+    "cohort_complete": true,
+    "training_ready": false,
+    "candidate_count": 5676,
+    "coverage_records": 5676,
+    "coverage_states": {
+      "encoded": 5023,
+      "missing_required_prices": 653
+    },
+    "nonempty_catalog_assets": 5008,
+    "stored_samples": 18698976,
+    "failed_assets": 0,
+    "presence_from_unchanged_catalog": {
+      "prices": 18698976,
+      "news": 3150978,
+      "charts": 18698976,
+      "fundamentals": 6068473,
+      "macro": 18698976
+    }
+  },
+  "catalog_verification": {
+    "status": "verified",
+    "catalog_manifest_sha256": "bcd5f0209be87434b29e8c3a3f438dc5680bd44bba6037d7bdcd02c5edb5ae2c",
+    "catalog_sha256": "6edfddf9841c3754df0936dcda0765cc171f1c234232ab42ba1f44aa715be23b",
+    "rows": 18698976,
+    "assets": 5008,
+    "target_partitions": {
+      "train": 17142187,
+      "validation": 1235785
+    },
+    "elapsed_seconds": 175.26157643599436,
+    "peak_rss_mib": 637.5625
+  },
+  "catalog_process": {
+    "user_seconds": 92.16,
+    "system_seconds": 35.75,
+    "wall_clock_hms": "2:55.99",
+    "max_rss_kib": 652864.0,
+    "exit_status": 0.0
+  },
+  "view_metadata": {
+    "status": "metadata_checked",
+    "campaign_sha256": "cb8ce969532b46ac9beb0bd466a6283e36b9dadc9199e4cd1de5e2d6da3e0873",
+    "campaign_matches_20261014": true,
+    "scopes": {
+      "US+CN": {
+        "report_sha256": "c0c00a475840e23f8c8138da1844f4076ee9a90834b2a40ceadddb02acfba4fe",
+        "edition": {
+          "US": "900ded8ef8bb4893b94187752a12667dde61f8bc68506d0264b813b52ec3097e",
+          "CN": "7a44d5c2649533f21e1de908e010c2e2ac3dddb7b7449018dfbd0633beb18705"
+        },
+        "windows": 19,
+        "counts_total": {
+          "train": 143200257,
+          "validation": 7985418,
+          "calibration": 4036636,
+          "evaluation": 16705862
+        },
+        "report_matches_published_receipt": true
+      },
+      "US": {
+        "report_sha256": "cbbde2a1ce34c2393257c8ac336f5699b5446c7afe59dfa01a42180c0aa120fb",
+        "edition": {
+          "US": "900ded8ef8bb4893b94187752a12667dde61f8bc68506d0264b813b52ec3097e"
+        },
+        "windows": 19,
+        "counts_total": {
+          "train": 124568975,
+          "validation": 6672861,
+          "calibration": 3378556,
+          "evaluation": 13943952
+        },
+        "report_matches_published_receipt": true
+      },
+      "CN": {
+        "report_sha256": "0a719627ee7da43ba3026acd20071ed2afed5472ef3a41040fd82166efe01fee",
+        "edition": {
+          "CN": "7a44d5c2649533f21e1de908e010c2e2ac3dddb7b7449018dfbd0633beb18705"
+        },
+        "windows": 13,
+        "counts_total": {
+          "train": 18046778,
+          "validation": 1103090,
+          "calibration": 541055,
+          "evaluation": 2218863
+        },
+        "report_matches_published_receipt": true
+      }
+    },
+    "parquet_rows_read": false,
+    "target_values_materialized": false,
+    "seconds": 7.718468320090324
+  },
+  "prices_and_factors": {
+    "kind": "current_price_and_factor_source_hash_audit",
+    "status": "hashes_checked",
+    "assets": 5008,
+    "prices_bytes": 792759377,
+    "factors": {
+      "US": {
+        "prices_sha256": "3540094000b0e478c17bcf6d8133930240c2a6e82cfa067932f540742abc6679",
+        "bytes": 300058,
+        "point_in_time_verified": false
+      },
+      "CN": {
+        "prices_sha256": "b96cd9729f0d3fc9dc0144c9d676d4da6b91898ad8f482b32db3364afe2b3cbc",
+        "bytes": 145688,
+        "point_in_time_verified": false
+      }
+    },
+    "targets_manifest_sha256": "fe86a923dd49a24247a1925e195b0bfd07cacf02c7bd43f0bcde0d292251893a",
+    "seconds": 50.95042257895693,
+    "code": {
+      "src/mars_titan/training/corpus_inputs.py": "c0b7fb1efde23938c60217c81736a9962ce50b00a6734f38342ae9ceb24ec5af",
+      "src/mars_titan/training/target_factors.py": "c96d70495a72a0344271e48a90954151a887cb173e7b9707ed8d6c20c043863f"
+    },
+    "price_rows_materialized": false,
+    "target_values_materialized": false,
+    "training_executed": false,
+    "final_test_opened": false,
+    "limits": [
+      "Las huellas comprueban que siguen presentes los bytes fijados. No autentican publicaciones originales ni reconstruyen versiones contemporáneas.",
+      "Los dos factores mantienen point_in_time_verified=False."
+    ]
+  },
+  "resource_observation": {
+    "observed_at_utc": "2026-10-27T17:56:56.012599+00:00",
+    "cpu": "AMD Ryzen 9 8945HS w/ Radeon 780M Graphics",
+    "gpu": {
+      "total_mib": 8188,
+      "free_mib": 744,
+      "other_compute_processes": 2,
+      "default_reserved_mib": 1024,
+      "minimum_workload_mib": 256,
+      "admission_possible_under_default_memory_margin": false,
+      "admission_possible_without_stopping_another_compute_process": false
+    },
+    "disk": {
+      "total_bytes": 674147721216,
+      "used_bytes": 611342340096,
+      "free_bytes": 28485332992
+    },
+    "rules_sha256": "28e9158e181fd9cf3b38fb22251a21d67c651de84c5bf78590ed2139c0cf6900",
+    "gpu_query_sha256": "6208132b377d661acd9aa216cd1f375ae479e65f8c3aa42703a8c803056a2951",
+    "gpu_lease_attempted": false,
+    "workload_started": false,
+    "applications_stopped": false,
+    "hold_unchanged": true
+  },
+  "planned_jobs": {
+    "training_jobs": 3177,
+    "prediction_jobs": 0,
+    "online_jobs": 133,
+    "plateau_jobs": 2056
+  },
+  "data_subset": null,
+  "configuration_only_launch_blockers": [],
+  "software": {
+    "python": "3.12.14",
+    "numpy": "2.5.3",
+    "pyarrow": "25.0.1"
+  },
+  "code": {
+    "src/mars_titan/training/masked_campaign.py": "e7a907b18d7101f3ef270c5b0f28f6aba308db037f122e4e329b0d6c1171948a",
+    "src/mars_titan/training/campaign_plan.py": "c49579bc4c125bb6fd6dcc753e61ad593a32fc7260b61a1bfe16cf1b1613567b",
+    "src/mars_titan/evaluation/walk_forward_comparison.py": "c04d72808b943c99b443a646d39029900b1708c4400832e579615d000791dba3",
+    "src/mars_titan/training/temporal_contract.py": "050a5f337226bc241f86c181baf14000f95ba5194f33f4f0b762a733aa77fa26",
+    "src/mars_titan/training/edition_catalog.py": "89e31584090ed49fa97d88265a908fd7ecc0e07fd1c6d08f8c8de90957673ed8"
+  },
+  "raw_receipts": {
+    "catalog-verification.json": "c12fb5c11821f77583da5a692a201ae524d6edc20860b423475e3de5acf2e71d",
+    "views-metadata.json": "dde9a272c4ca1c1fa8412e25e81f3f5ec949584099a2476215db7729b3d9e5ca",
+    "prices-and-factors.json": "d17ed95a67d784a722e83c9afbd4339b614d258c1e27cd668fdcefd59a319350",
+    "resource-observation.json": "d44bb0582128d7cdd1329a221928b8c28815301a4f16c0c55bf99fbd88650fd2"
+  },
+  "training_executed": false,
+  "optimizer_steps": 0,
+  "scientific_evaluation_executed": false,
+  "execution_settings_changed": false,
+  "final_test_opened": false,
+  "limits": [
+    "La verificación actual del catálogo compara hashes, claves, máscaras y enlaces. No materializa el valor del objetivo ni recalcula la fórmula residual.",
+    "Los valores del objetivo y los vectores conservan las huellas verificadas antes. Las comprobaciones numéricas y de codificadores anteriores conservan su alcance, sin una reproducción nueva de todas ellas.",
+    "Las vistas se cotejan por sus metadatos, protocolos, huellas y recuentos. No se repite el contraste independiente de todas sus filas realizado en octubre.",
+    "La presencia del bloque macro significa al menos un indicador admitido y no que estén observadas las 140 posiciones.",
+    "Las huellas no autentican la publicación original. Los dos factores mantienen point_in_time_verified=False.",
+    "La ausencia de bloqueos internos de configuración no elimina las condiciones de ejecución, revisión y recursos.",
+    "La proyección de disco del 14 de octubre es condicional y no se presenta como una medida actual ni como un presupuesto aceptado.",
+    "No se ha intentado reservar GPU ni se han detenido otras aplicaciones. La revisión no abre la campaña ni el test reservado."
+  ],
+  "software_verification": {
+    "product_code_changed": false,
+    "tests": {
+      "passed": 14,
+      "failed": 0,
+      "skipped": 0,
+      "xml_sha256": "2f2089b6b987ca31bb027942bf07d6bcc027a84943d6289c085565ce2cdfea03",
+      "scope": "tests/training/test_edition_catalog.py"
+    },
+    "quality": {
+      "path": "reports/data/historical-readiness-20261027/quality.json",
+      "sha256": "34305063d8795f385fd99d935783cbf70655f72df27bea467da84bac1c8e935e",
+      "totals": {
+        "statements": 309,
+        "covered_statements": 284,
+        "branches": 50,
+        "covered_branches": 41
+      },
+      "max_crap": 19.0,
+      "tools": {
+        "coverage": "7.16.1",
+        "radon": "6.0.1",
+        "branch_coverage": true,
+        "python": "3.12.14",
+        "summarizer_sha256": "75cc60c88037e0bb17aff6e8ab666ce78b35d600d6c7ad217bf68b1afb4c4ec6"
+      }
+    },
+    "mutations": {
+      "path": "reports/data/historical-readiness-20261027/mutations.json",
+      "sha256": "e9ffc46f8701c80f979dbf7b646fd997c7af22b1f46340e4c3df0ac22fecd08f",
+      "planned": 4,
+      "killed": 4,
+      "optimizer_attempts": 0
+    }
+  }
+}

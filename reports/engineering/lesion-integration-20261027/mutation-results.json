@@ -1,0 +1,311 @@
+{
+  "planned": 5,
+  "killed": 5,
+  "optimizer_attempts": 0,
+  "groups": [
+    {
+      "group": "window",
+      "planned": 2,
+      "killed": 2,
+      "cases": [
+        {
+          "id": "omit_core_from_diagnostics",
+          "status": "killed_with_green_controls",
+          "phases": [
+            {
+              "phase": "G1",
+              "nodeid": "tests/memory/test_lesion_inference.py::test_window_keeps_emissions_and_memory_and_writes_paired_columns[areas]",
+              "status": "finished",
+              "returncode": 0,
+              "elapsed_s": 4.726365679875016,
+              "log_sha256": "dee7a466b788f8e44f5b65a9d6abe65c53357f71ce411610af3f7b152309f52f",
+              "xml_sha256": "c5f1ee8e96ad2d4591f6736a84436cf7206e1466d844fa7c711ee38cba123b29",
+              "xml_counts": {
+                "total": 1,
+                "failure": 0,
+                "error": 0,
+                "skipped": 0
+              },
+              "optimizer_attempts": 0
+            },
+            {
+              "phase": "M1",
+              "nodeid": "tests/memory/test_lesion_inference.py::test_window_keeps_emissions_and_memory_and_writes_paired_columns[areas]",
+              "status": "finished",
+              "returncode": 1,
+              "elapsed_s": 5.425255635986105,
+              "log_sha256": "0d35a383b6eef9e9c8bbf6be53455da9fd21f5a85bf54bfcf31b188365ad5f96",
+              "xml_sha256": "ddf7b0206e8aff95b6fe36d25e861a4a2071460957da17e2f9ed057ea3556c51",
+              "xml_counts": {
+                "total": 1,
+                "failure": 1,
+                "error": 0,
+                "skipped": 0
+              },
+              "optimizer_attempts": 0
+            },
+            {
+              "phase": "G2",
+              "nodeid": "tests/memory/test_lesion_inference.py::test_window_keeps_emissions_and_memory_and_writes_paired_columns[areas]",
+              "status": "finished",
+              "returncode": 0,
+              "elapsed_s": 4.927691254997626,
+              "log_sha256": "13bca62673148710b531a24ec87c2103ff741d3bd74fed53ae70dac529468609",
+              "xml_sha256": "ded308c8fa37bd1946df6a5cf6107522b1455799a267ad02278c68e269d3e28e",
+              "xml_counts": {
+                "total": 1,
+                "failure": 0,
+                "error": 0,
+                "skipped": 0
+              },
+              "optimizer_attempts": 0
+            }
+          ]
+        },
+        {
+          "id": "replace_the_real_prediction",
+          "status": "killed_with_green_controls",
+          "phases": [
+            {
+              "phase": "G1",
+              "nodeid": "tests/memory/test_lesion_inference.py::test_window_keeps_emissions_and_memory_and_writes_paired_columns[areas]",
+              "status": "finished",
+              "returncode": 0,
+              "elapsed_s": 4.676071258960292,
+              "log_sha256": "45ad9d216a01074084792a93ab133857031a94566ecc81f165dd00186717a65a",
+              "xml_sha256": "2294776c53e5a78d62a8b08a5bc5e88c509844c3af930b56ab16072c5b3bf29b",
+              "xml_counts": {
+                "total": 1,
+                "failure": 0,
+                "error": 0,
+                "skipped": 0
+              },
+              "optimizer_attempts": 0
+            },
+            {
+              "phase": "M1",
+              "nodeid": "tests/memory/test_lesion_inference.py::test_window_keeps_emissions_and_memory_and_writes_paired_columns[areas]",
+              "status": "finished",
+              "returncode": 1,
+              "elapsed_s": 5.578028910094872,
+              "log_sha256": "192b7cde0f7c6b9602f24e9a3741ed906bb5face153dc340e6cc59fd00ca13db",
+              "xml_sha256": "b251772911fd80929d18a3df9266708c5ac685f66089ba79a26413c0516efc0a",
+              "xml_counts": {
+                "total": 1,
+                "failure": 1,
+                "error": 0,
+                "skipped": 0
+              },
+              "optimizer_attempts": 0
+            },
+            {
+              "phase": "G2",
+              "nodeid": "tests/memory/test_lesion_inference.py::test_window_keeps_emissions_and_memory_and_writes_paired_columns[areas]",
+              "status": "finished",
+              "returncode": 0,
+              "elapsed_s": 5.076727731851861,
+              "log_sha256": "bdf13768476c4a88c7556633496f64add4441d13c803693105cab47224aeacc7",
+              "xml_sha256": "e629e4a4e6be12b24edbb00cb6be33a6e89bb572c5139c1923753751877d6d3a",
+              "xml_counts": {
+                "total": 1,
+                "failure": 0,
+                "error": 0,
+                "skipped": 0
+              },
+              "optimizer_attempts": 0
+            }
+          ]
+        }
+      ],
+      "executor_sha256": "7668bb0d7d717c6048fe604e6de992166d8937d838c9a3ac88524c28b60a4cb6",
+      "executed_recipes_sha256": "471cd1ca9ed4157e124f63f80cee1a3376aa8e2e7b6400587cd376914ba843d7",
+      "published_recipes_sha256": "d3388087f1ef0fa71234eb76598d5dcb2fa73b918e59ba5827373ef1693cafb6",
+      "summary_sha256": "088bb64d4ef827196e904b545782fb725fe1a07138d18c23e73c71401459b029"
+    },
+    {
+      "group": "session",
+      "planned": 2,
+      "killed": 2,
+      "cases": [
+        {
+          "id": "ignore_pending_alignment",
+          "status": "killed_with_green_controls",
+          "phases": [
+            {
+              "phase": "G1",
+              "nodeid": "tests/memory/test_lesion_session.py::test_diagnostics_reject_misaligned_pending_and_a_changed_original_forecast",
+              "status": "finished",
+              "returncode": 0,
+              "elapsed_s": 5.02482454595156,
+              "log_sha256": "b6e707f3e23368c94164977409331ba729325920ef6a37d4381a34a5da4d4bca",
+              "xml_sha256": "9bfddf98421d3682c6b96a331fa384ee6ec9747e3c9fcd74400914b2a66c8104",
+              "xml_counts": {
+                "total": 1,
+                "failure": 0,
+                "error": 0,
+                "skipped": 0
+              },
+              "optimizer_attempts": 0
+            },
+            {
+              "phase": "M1",
+              "nodeid": "tests/memory/test_lesion_session.py::test_diagnostics_reject_misaligned_pending_and_a_changed_original_forecast",
+              "status": "finished",
+              "returncode": 1,
+              "elapsed_s": 5.877918793121353,
+              "log_sha256": "27bfb3a945ea1cceb6fdc6af0475fedd1e7aaa1c25fead3a4f38df82341f0e14",
+              "xml_sha256": "ec73d3fb6d8b100359c134f86997206b685fd74c6385d52077944efb42d39b3e",
+              "xml_counts": {
+                "total": 1,
+                "failure": 1,
+                "error": 0,
+                "skipped": 0
+              },
+              "optimizer_attempts": 0
+            },
+            {
+              "phase": "G2",
+              "nodeid": "tests/memory/test_lesion_session.py::test_diagnostics_reject_misaligned_pending_and_a_changed_original_forecast",
+              "status": "finished",
+              "returncode": 0,
+              "elapsed_s": 5.0255994950421154,
+              "log_sha256": "fe1caf523674ae541cce45ddc17074add0de74e98fb24b2dcffb168603012475",
+              "xml_sha256": "d45e96c35b993177d13f23994147860f5613d384b5684258dd9ec94a5dc84e39",
+              "xml_counts": {
+                "total": 1,
+                "failure": 0,
+                "error": 0,
+                "skipped": 0
+              },
+              "optimizer_attempts": 0
+            }
+          ]
+        },
+        {
+          "id": "invert_original_forecast_check",
+          "status": "killed_with_green_controls",
+          "phases": [
+            {
+              "phase": "G1",
+              "nodeid": "tests/memory/test_lesion_session.py::test_diagnostics_reject_misaligned_pending_and_a_changed_original_forecast",
+              "status": "finished",
+              "returncode": 0,
+              "elapsed_s": 5.8787748359609395,
+              "log_sha256": "6fe006d7b5bd47f576d5f062b22ff46c4010890d4c719dc20488da0cc6e378a8",
+              "xml_sha256": "f72f52fc55ea71faf43fc2dd1c4dfda6a062932a71196c8f0f015c10be202b80",
+              "xml_counts": {
+                "total": 1,
+                "failure": 0,
+                "error": 0,
+                "skipped": 0
+              },
+              "optimizer_attempts": 0
+            },
+            {
+              "phase": "M1",
+              "nodeid": "tests/memory/test_lesion_session.py::test_diagnostics_reject_misaligned_pending_and_a_changed_original_forecast",
+              "status": "finished",
+              "returncode": 1,
+              "elapsed_s": 5.72814920800738,
+              "log_sha256": "09ba637957f9eee77a1467d2f829cbb6b5079ad70862d70f63a84b9e18d2dc5e",
+              "xml_sha256": "54faa798910433509a5220605fffe87a05b9352c29dfd08d014134cea9deac88",
+              "xml_counts": {
+                "total": 1,
+                "failure": 1,
+                "error": 0,
+                "skipped": 0
+              },
+              "optimizer_attempts": 0
+            },
+            {
+              "phase": "G2",
+              "nodeid": "tests/memory/test_lesion_session.py::test_diagnostics_reject_misaligned_pending_and_a_changed_original_forecast",
+              "status": "finished",
+              "returncode": 0,
+              "elapsed_s": 5.125468236859888,
+              "log_sha256": "66bba16cb8034f86f397ca937761e58d5bc804f4959e889ca9c27e18e7525571",
+              "xml_sha256": "7a55a4835dbe58fb0bde10be97c38c11c2f1698a527bfde6d51fee4a599ab746",
+              "xml_counts": {
+                "total": 1,
+                "failure": 0,
+                "error": 0,
+                "skipped": 0
+              },
+              "optimizer_attempts": 0
+            }
+          ]
+        }
+      ],
+      "executor_sha256": "7668bb0d7d717c6048fe604e6de992166d8937d838c9a3ac88524c28b60a4cb6",
+      "executed_recipes_sha256": "f0401ee443aaf1b4eef4e7af19e3d06c482ba9562be0c0e1141eba19227ac7dc",
+      "published_recipes_sha256": "4ccd1d476df744010b8e1cf4b9c99b49a4815f9fda467074a3109fca0a89166d",
+      "summary_sha256": "21b654263618643f228c7777d2becc8858a92ab1b47b7b103f0532829c6477bc"
+    },
+    {
+      "group": "carry",
+      "planned": 1,
+      "killed": 1,
+      "cases": [
+        {
+          "id": "discard_diagnostics_on_regeneration",
+          "status": "killed_with_green_controls",
+          "phases": [
+            {
+              "phase": "G1",
+              "nodeid": "tests/training/test_mars_titan_correction.py::test_lesion_window_regenerates_the_same_auxiliary_predictions",
+              "status": "finished",
+              "returncode": 0,
+              "elapsed_s": 33.01973318005912,
+              "log_sha256": "652067c42d06de19fa945de676ca7c785c992d8b3e7df50f7d7e879d9a69cae4",
+              "xml_sha256": "6078d29ac2c0e20b74980f6f6c06d1723b2a5af4bc38ab295bb4ba65b88a33d7",
+              "xml_counts": {
+                "total": 1,
+                "failure": 0,
+                "error": 0,
+                "skipped": 0
+              },
+              "optimizer_attempts": 0
+            },
+            {
+              "phase": "M1",
+              "nodeid": "tests/training/test_mars_titan_correction.py::test_lesion_window_regenerates_the_same_auxiliary_predictions",
+              "status": "finished",
+              "returncode": 1,
+              "elapsed_s": 27.39908602111973,
+              "log_sha256": "71058ddc382cd94ee846bc707493bd3af40d380a95793bf78118dd80f1d461b6",
+              "xml_sha256": "dc047554641621b42d8ba1cb2441f4ee12fb198c462c884ba924dfe48bf16fb0",
+              "xml_counts": {
+                "total": 1,
+                "failure": 1,
+                "error": 0,
+                "skipped": 0
+              },
+              "optimizer_attempts": 0
+            },
+            {
+              "phase": "G2",
+              "nodeid": "tests/training/test_mars_titan_correction.py::test_lesion_window_regenerates_the_same_auxiliary_predictions",
+              "status": "finished",
+              "returncode": 0,
+              "elapsed_s": 21.812126165954396,
+              "log_sha256": "afe31cccd46ccd0e3be7dc030c528adaa2bfdd6213e7bb04468a62b532d7e24d",
+              "xml_sha256": "bde4e0f579fdcc674a11f15365906e168f15176c48167986718cd972ae27309b",
+              "xml_counts": {
+                "total": 1,
+                "failure": 0,
+                "error": 0,
+                "skipped": 0
+              },
+              "optimizer_attempts": 0
+            }
+          ]
+        }
+      ],
+      "executor_sha256": "7668bb0d7d717c6048fe604e6de992166d8937d838c9a3ac88524c28b60a4cb6",
+      "executed_recipes_sha256": "4f75f17325774d0fb80b441d2db2ad3e69b3e2229a6506e861401cb4cceadb45",
+      "published_recipes_sha256": "2f665b27e05163f0693a9fc5f602c466a56bddeaaf2929cba75df35e5e46265b",
+      "summary_sha256": "c24866c163e5b233375adfd37d699728d1a513e3959e0b6c9ee034b850f91107"
+    }
+  ],
+  "scope": "Cinco fallos dirigidos de los enlaces, sin mutación exhaustiva."
+}

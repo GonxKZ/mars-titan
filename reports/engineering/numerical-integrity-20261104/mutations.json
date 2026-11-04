@@ -1,0 +1,470 @@
+[
+  {
+    "group": "complex-structured",
+    "detected": 12,
+    "positive_controls": [
+      0,
+      0
+    ],
+    "mutants": [
+      {
+        "id": "complex-structured-M1-complex_features",
+        "failed_tests": [
+          "test_complex_regression_blocks_fail_before_casting[False-features-0.0-complex64]",
+          "test_complex_regression_blocks_fail_before_casting[False-features-0.0-complex128]",
+          "test_complex_regression_blocks_fail_before_casting[False-features-2.0-complex64]",
+          "test_complex_regression_blocks_fail_before_casting[False-features-2.0-complex128]",
+          "test_complex_regression_blocks_fail_before_casting[True-features-0.0-complex64]",
+          "test_complex_regression_blocks_fail_before_casting[True-features-0.0-complex128]",
+          "test_complex_regression_blocks_fail_before_casting[True-features-2.0-complex64]",
+          "test_complex_regression_blocks_fail_before_casting[True-features-2.0-complex128]",
+          "test_object_arrays_cannot_discard_complex_components[features-0.0-complex]",
+          "test_object_arrays_cannot_discard_complex_components[features-0.0-complex64]",
+          "test_object_arrays_cannot_discard_complex_components[features-0.0-complex128]",
+          "test_object_arrays_cannot_discard_complex_components[features-0.0-clongdouble]",
+          "test_object_arrays_cannot_discard_complex_components[features-2.0-complex]",
+          "test_object_arrays_cannot_discard_complex_components[features-2.0-complex64]",
+          "test_object_arrays_cannot_discard_complex_components[features-2.0-complex128]",
+          "test_object_arrays_cannot_discard_complex_components[features-2.0-clongdouble]",
+          "test_numpy_containers_cannot_hide_complex_values[features-structured]",
+          "test_numpy_containers_cannot_hide_complex_values[features-structured_object]",
+          "test_numpy_containers_cannot_hide_complex_values[features-nested_record]",
+          "test_numpy_containers_cannot_hide_complex_values[features-object_record]",
+          "test_numpy_containers_cannot_hide_complex_values[features-object_array]"
+        ]
+      },
+      {
+        "id": "complex-structured-M1-complex_targets",
+        "failed_tests": [
+          "test_complex_regression_blocks_fail_before_casting[False-target-0.0-complex64]",
+          "test_complex_regression_blocks_fail_before_casting[False-target-0.0-complex128]",
+          "test_complex_regression_blocks_fail_before_casting[False-target-2.0-complex64]",
+          "test_complex_regression_blocks_fail_before_casting[False-target-2.0-complex128]",
+          "test_complex_regression_blocks_fail_before_casting[True-target-0.0-complex64]",
+          "test_complex_regression_blocks_fail_before_casting[True-target-0.0-complex128]",
+          "test_complex_regression_blocks_fail_before_casting[True-target-2.0-complex64]",
+          "test_complex_regression_blocks_fail_before_casting[True-target-2.0-complex128]",
+          "test_object_arrays_cannot_discard_complex_components[target-0.0-complex]",
+          "test_object_arrays_cannot_discard_complex_components[target-0.0-complex64]",
+          "test_object_arrays_cannot_discard_complex_components[target-0.0-complex128]",
+          "test_object_arrays_cannot_discard_complex_components[target-0.0-clongdouble]",
+          "test_object_arrays_cannot_discard_complex_components[target-2.0-complex]",
+          "test_object_arrays_cannot_discard_complex_components[target-2.0-complex64]",
+          "test_object_arrays_cannot_discard_complex_components[target-2.0-complex128]",
+          "test_object_arrays_cannot_discard_complex_components[target-2.0-clongdouble]",
+          "test_numpy_containers_cannot_hide_complex_values[target-structured]",
+          "test_numpy_containers_cannot_hide_complex_values[target-structured_object]",
+          "test_numpy_containers_cannot_hide_complex_values[target-nested_record]",
+          "test_numpy_containers_cannot_hide_complex_values[target-object_record]",
+          "test_numpy_containers_cannot_hide_complex_values[target-object_array]"
+        ]
+      },
+      {
+        "id": "complex-structured-M1-complex_modalities",
+        "failed_tests": [
+          "test_each_complex_modality_is_rejected_without_a_partial_conversion[0.0-prices]",
+          "test_each_complex_modality_is_rejected_without_a_partial_conversion[0.0-news]",
+          "test_each_complex_modality_is_rejected_without_a_partial_conversion[0.0-charts]",
+          "test_each_complex_modality_is_rejected_without_a_partial_conversion[0.0-fundamentals]",
+          "test_each_complex_modality_is_rejected_without_a_partial_conversion[0.0-macro]",
+          "test_each_complex_modality_is_rejected_without_a_partial_conversion[2.0-prices]",
+          "test_each_complex_modality_is_rejected_without_a_partial_conversion[2.0-news]",
+          "test_each_complex_modality_is_rejected_without_a_partial_conversion[2.0-charts]",
+          "test_each_complex_modality_is_rejected_without_a_partial_conversion[2.0-fundamentals]",
+          "test_each_complex_modality_is_rejected_without_a_partial_conversion[2.0-macro]",
+          "test_object_arrays_cannot_discard_complex_components[prices-0.0-complex]",
+          "test_object_arrays_cannot_discard_complex_components[prices-0.0-complex64]",
+          "test_object_arrays_cannot_discard_complex_components[prices-0.0-complex128]",
+          "test_object_arrays_cannot_discard_complex_components[prices-0.0-clongdouble]",
+          "test_object_arrays_cannot_discard_complex_components[prices-2.0-complex]",
+          "test_object_arrays_cannot_discard_complex_components[prices-2.0-complex64]",
+          "test_object_arrays_cannot_discard_complex_components[prices-2.0-complex128]",
+          "test_object_arrays_cannot_discard_complex_components[prices-2.0-clongdouble]",
+          "test_object_arrays_cannot_discard_complex_components[news-0.0-complex]",
+          "test_object_arrays_cannot_discard_complex_components[news-0.0-complex64]",
+          "test_object_arrays_cannot_discard_complex_components[news-0.0-complex128]",
+          "test_object_arrays_cannot_discard_complex_components[news-0.0-clongdouble]",
+          "test_object_arrays_cannot_discard_complex_components[news-2.0-complex]",
+          "test_object_arrays_cannot_discard_complex_components[news-2.0-complex64]",
+          "test_object_arrays_cannot_discard_complex_components[news-2.0-complex128]",
+          "test_object_arrays_cannot_discard_complex_components[news-2.0-clongdouble]",
+          "test_object_arrays_cannot_discard_complex_components[charts-0.0-complex]",
+          "test_object_arrays_cannot_discard_complex_components[charts-0.0-complex64]",
+          "test_object_arrays_cannot_discard_complex_components[charts-0.0-complex128]",
+          "test_object_arrays_cannot_discard_complex_components[charts-0.0-clongdouble]",
+          "test_object_arrays_cannot_discard_complex_components[charts-2.0-complex]",
+          "test_object_arrays_cannot_discard_complex_components[charts-2.0-complex64]",
+          "test_object_arrays_cannot_discard_complex_components[charts-2.0-complex128]",
+          "test_object_arrays_cannot_discard_complex_components[charts-2.0-clongdouble]",
+          "test_object_arrays_cannot_discard_complex_components[fundamentals-0.0-complex]",
+          "test_object_arrays_cannot_discard_complex_components[fundamentals-0.0-complex64]",
+          "test_object_arrays_cannot_discard_complex_components[fundamentals-0.0-complex128]",
+          "test_object_arrays_cannot_discard_complex_components[fundamentals-0.0-clongdouble]",
+          "test_object_arrays_cannot_discard_complex_components[fundamentals-2.0-complex]",
+          "test_object_arrays_cannot_discard_complex_components[fundamentals-2.0-complex64]",
+          "test_object_arrays_cannot_discard_complex_components[fundamentals-2.0-complex128]",
+          "test_object_arrays_cannot_discard_complex_components[fundamentals-2.0-clongdouble]",
+          "test_object_arrays_cannot_discard_complex_components[macro-0.0-complex]",
+          "test_object_arrays_cannot_discard_complex_components[macro-0.0-complex64]",
+          "test_object_arrays_cannot_discard_complex_components[macro-0.0-complex128]",
+          "test_object_arrays_cannot_discard_complex_components[macro-0.0-clongdouble]",
+          "test_object_arrays_cannot_discard_complex_components[macro-2.0-complex]",
+          "test_object_arrays_cannot_discard_complex_components[macro-2.0-complex64]",
+          "test_object_arrays_cannot_discard_complex_components[macro-2.0-complex128]",
+          "test_object_arrays_cannot_discard_complex_components[macro-2.0-clongdouble]",
+          "test_numpy_containers_cannot_hide_complex_values[prices-structured]",
+          "test_numpy_containers_cannot_hide_complex_values[prices-structured_object]",
+          "test_numpy_containers_cannot_hide_complex_values[prices-nested_record]",
+          "test_numpy_containers_cannot_hide_complex_values[prices-object_record]",
+          "test_numpy_containers_cannot_hide_complex_values[prices-object_array]",
+          "test_numpy_containers_cannot_hide_complex_values[news-structured]",
+          "test_numpy_containers_cannot_hide_complex_values[news-structured_object]",
+          "test_numpy_containers_cannot_hide_complex_values[news-nested_record]",
+          "test_numpy_containers_cannot_hide_complex_values[news-object_record]",
+          "test_numpy_containers_cannot_hide_complex_values[news-object_array]",
+          "test_numpy_containers_cannot_hide_complex_values[charts-structured]",
+          "test_numpy_containers_cannot_hide_complex_values[charts-structured_object]",
+          "test_numpy_containers_cannot_hide_complex_values[charts-nested_record]",
+          "test_numpy_containers_cannot_hide_complex_values[charts-object_record]",
+          "test_numpy_containers_cannot_hide_complex_values[charts-object_array]",
+          "test_numpy_containers_cannot_hide_complex_values[fundamentals-structured]",
+          "test_numpy_containers_cannot_hide_complex_values[fundamentals-structured_object]",
+          "test_numpy_containers_cannot_hide_complex_values[fundamentals-nested_record]",
+          "test_numpy_containers_cannot_hide_complex_values[fundamentals-object_record]",
+          "test_numpy_containers_cannot_hide_complex_values[fundamentals-object_array]",
+          "test_numpy_containers_cannot_hide_complex_values[macro-structured]",
+          "test_numpy_containers_cannot_hide_complex_values[macro-structured_object]",
+          "test_numpy_containers_cannot_hide_complex_values[macro-nested_record]",
+          "test_numpy_containers_cannot_hide_complex_values[macro-object_record]",
+          "test_numpy_containers_cannot_hide_complex_values[macro-object_array]"
+        ]
+      },
+      {
+        "id": "complex-structured-M1-named_fields",
+        "failed_tests": [
+          "test_numpy_containers_cannot_hide_complex_values[features-structured]",
+          "test_numpy_containers_cannot_hide_complex_values[features-structured_object]",
+          "test_numpy_containers_cannot_hide_complex_values[features-nested_record]",
+          "test_numpy_containers_cannot_hide_complex_values[features-object_record]",
+          "test_numpy_containers_cannot_hide_complex_values[target-structured]",
+          "test_numpy_containers_cannot_hide_complex_values[target-structured_object]",
+          "test_numpy_containers_cannot_hide_complex_values[target-nested_record]",
+          "test_numpy_containers_cannot_hide_complex_values[target-object_record]",
+          "test_numpy_containers_cannot_hide_complex_values[prices-structured]",
+          "test_numpy_containers_cannot_hide_complex_values[prices-structured_object]",
+          "test_numpy_containers_cannot_hide_complex_values[prices-nested_record]",
+          "test_numpy_containers_cannot_hide_complex_values[prices-object_record]",
+          "test_numpy_containers_cannot_hide_complex_values[news-structured]",
+          "test_numpy_containers_cannot_hide_complex_values[news-structured_object]",
+          "test_numpy_containers_cannot_hide_complex_values[news-nested_record]",
+          "test_numpy_containers_cannot_hide_complex_values[news-object_record]",
+          "test_numpy_containers_cannot_hide_complex_values[charts-structured]",
+          "test_numpy_containers_cannot_hide_complex_values[charts-structured_object]",
+          "test_numpy_containers_cannot_hide_complex_values[charts-nested_record]",
+          "test_numpy_containers_cannot_hide_complex_values[charts-object_record]",
+          "test_numpy_containers_cannot_hide_complex_values[fundamentals-structured]",
+          "test_numpy_containers_cannot_hide_complex_values[fundamentals-structured_object]",
+          "test_numpy_containers_cannot_hide_complex_values[fundamentals-nested_record]",
+          "test_numpy_containers_cannot_hide_complex_values[fundamentals-object_record]",
+          "test_numpy_containers_cannot_hide_complex_values[macro-structured]",
+          "test_numpy_containers_cannot_hide_complex_values[macro-structured_object]",
+          "test_numpy_containers_cannot_hide_complex_values[macro-nested_record]",
+          "test_numpy_containers_cannot_hide_complex_values[macro-object_record]"
+        ]
+      },
+      {
+        "id": "complex-structured-M1-nested_containers",
+        "failed_tests": [
+          "test_numpy_containers_cannot_hide_complex_values[features-object_record]",
+          "test_numpy_containers_cannot_hide_complex_values[features-object_array]",
+          "test_numpy_containers_cannot_hide_complex_values[target-object_record]",
+          "test_numpy_containers_cannot_hide_complex_values[target-object_array]",
+          "test_numpy_containers_cannot_hide_complex_values[prices-object_record]",
+          "test_numpy_containers_cannot_hide_complex_values[prices-object_array]",
+          "test_numpy_containers_cannot_hide_complex_values[news-object_record]",
+          "test_numpy_containers_cannot_hide_complex_values[news-object_array]",
+          "test_numpy_containers_cannot_hide_complex_values[charts-object_record]",
+          "test_numpy_containers_cannot_hide_complex_values[charts-object_array]",
+          "test_numpy_containers_cannot_hide_complex_values[fundamentals-object_record]",
+          "test_numpy_containers_cannot_hide_complex_values[fundamentals-object_array]",
+          "test_numpy_containers_cannot_hide_complex_values[macro-object_record]",
+          "test_numpy_containers_cannot_hide_complex_values[macro-object_array]"
+        ]
+      },
+      {
+        "id": "complex-structured-M1-object_numpy",
+        "failed_tests": [
+          "test_object_arrays_cannot_discard_complex_components[features-0.0-complex64]",
+          "test_object_arrays_cannot_discard_complex_components[features-0.0-clongdouble]",
+          "test_object_arrays_cannot_discard_complex_components[features-2.0-complex64]",
+          "test_object_arrays_cannot_discard_complex_components[features-2.0-clongdouble]",
+          "test_object_arrays_cannot_discard_complex_components[target-0.0-complex64]",
+          "test_object_arrays_cannot_discard_complex_components[target-0.0-clongdouble]",
+          "test_object_arrays_cannot_discard_complex_components[target-2.0-complex64]",
+          "test_object_arrays_cannot_discard_complex_components[target-2.0-clongdouble]",
+          "test_object_arrays_cannot_discard_complex_components[prices-0.0-complex64]",
+          "test_object_arrays_cannot_discard_complex_components[prices-0.0-clongdouble]",
+          "test_object_arrays_cannot_discard_complex_components[prices-2.0-complex64]",
+          "test_object_arrays_cannot_discard_complex_components[prices-2.0-clongdouble]",
+          "test_object_arrays_cannot_discard_complex_components[news-0.0-complex64]",
+          "test_object_arrays_cannot_discard_complex_components[news-0.0-clongdouble]",
+          "test_object_arrays_cannot_discard_complex_components[news-2.0-complex64]",
+          "test_object_arrays_cannot_discard_complex_components[news-2.0-clongdouble]",
+          "test_object_arrays_cannot_discard_complex_components[charts-0.0-complex64]",
+          "test_object_arrays_cannot_discard_complex_components[charts-0.0-clongdouble]",
+          "test_object_arrays_cannot_discard_complex_components[charts-2.0-complex64]",
+          "test_object_arrays_cannot_discard_complex_components[charts-2.0-clongdouble]",
+          "test_object_arrays_cannot_discard_complex_components[fundamentals-0.0-complex64]",
+          "test_object_arrays_cannot_discard_complex_components[fundamentals-0.0-clongdouble]",
+          "test_object_arrays_cannot_discard_complex_components[fundamentals-2.0-complex64]",
+          "test_object_arrays_cannot_discard_complex_components[fundamentals-2.0-clongdouble]",
+          "test_object_arrays_cannot_discard_complex_components[macro-0.0-complex64]",
+          "test_object_arrays_cannot_discard_complex_components[macro-0.0-clongdouble]",
+          "test_object_arrays_cannot_discard_complex_components[macro-2.0-complex64]",
+          "test_object_arrays_cannot_discard_complex_components[macro-2.0-clongdouble]"
+        ]
+      },
+      {
+        "id": "complex-structured-M1-object_python",
+        "failed_tests": [
+          "test_object_arrays_cannot_discard_complex_components[features-0.0-complex]",
+          "test_object_arrays_cannot_discard_complex_components[features-2.0-complex]",
+          "test_object_arrays_cannot_discard_complex_components[target-0.0-complex]",
+          "test_object_arrays_cannot_discard_complex_components[target-2.0-complex]",
+          "test_object_arrays_cannot_discard_complex_components[prices-0.0-complex]",
+          "test_object_arrays_cannot_discard_complex_components[prices-2.0-complex]",
+          "test_object_arrays_cannot_discard_complex_components[news-0.0-complex]",
+          "test_object_arrays_cannot_discard_complex_components[news-2.0-complex]",
+          "test_object_arrays_cannot_discard_complex_components[charts-0.0-complex]",
+          "test_object_arrays_cannot_discard_complex_components[charts-2.0-complex]",
+          "test_object_arrays_cannot_discard_complex_components[fundamentals-0.0-complex]",
+          "test_object_arrays_cannot_discard_complex_components[fundamentals-2.0-complex]",
+          "test_object_arrays_cannot_discard_complex_components[macro-0.0-complex]",
+          "test_object_arrays_cannot_discard_complex_components[macro-2.0-complex]"
+        ]
+      },
+      {
+        "id": "complex-structured-M1-finite_features",
+        "failed_tests": [
+          "test_invalid_regression_blocks_fail_before_becoming_training_rows[x7-y7]"
+        ]
+      },
+      {
+        "id": "complex-structured-M1-finite_targets",
+        "failed_tests": [
+          "test_invalid_regression_blocks_fail_before_becoming_training_rows[x8-y8]"
+        ]
+      },
+      {
+        "id": "complex-structured-M1-stream_width",
+        "failed_tests": [
+          "test_regression_stream_rejects_a_change_of_feature_width"
+        ]
+      },
+      {
+        "id": "complex-structured-M1-feature_budget",
+        "failed_tests": [
+          "test_modalities_respect_their_finite_nonempty_size_contract[values1]"
+        ]
+      },
+      {
+        "id": "complex-structured-M1-finite_modalities",
+        "failed_tests": [
+          "test_nonfinite_values_cannot_be_masked_by_concatenation",
+          "test_modalities_respect_their_finite_nonempty_size_contract[values0]",
+          "test_modalities_respect_their_finite_nonempty_size_contract[values2]"
+        ]
+      }
+    ]
+  },
+  {
+    "group": "clip",
+    "detected": 5,
+    "positive_controls": [
+      0,
+      0
+    ],
+    "mutants": [
+      {
+        "id": "clip-M1-drop_extreme_clip",
+        "failed_tests": [
+          "test_finite_extremes_keep_the_direction_and_requested_norm[dtype0-1e+19-1.0]",
+          "test_finite_extremes_keep_the_direction_and_requested_norm[dtype1-1e+200-1.0]",
+          "test_finite_extremes_keep_the_direction_and_requested_norm[dtype2-1e-20-1e-20]",
+          "test_finite_extremes_keep_the_direction_and_requested_norm[dtype3-1e-200-1e-200]",
+          "test_finite_extremes_keep_the_direction_and_requested_norm[dtype4-1e+200-1e-200]",
+          "test_finite_extremes_keep_the_direction_and_requested_norm[dtype5-1e+19-7.0]",
+          "test_finite_extremes_keep_the_direction_and_requested_norm[dtype6-1e+200-7.0]",
+          "test_large_rows_retain_the_hand_derived_first_derivative[1.0]",
+          "test_large_rows_retain_the_hand_derived_first_derivative[1e+19]",
+          "test_large_rows_retain_the_hand_derived_first_derivative[1e+200]",
+          "test_strided_rows_are_clipped_independently"
+        ]
+      },
+      {
+        "id": "clip-M1-zero_norm_derivatives",
+        "failed_tests": [
+          "test_unclipped_rows_preserve_exact_values_and_signed_zero[dtype0]",
+          "test_unclipped_rows_preserve_exact_values_and_signed_zero[dtype1]",
+          "test_first_and_second_derivatives_match_finite_differences[values0]"
+        ]
+      },
+      {
+        "id": "clip-M1-axis_derivative",
+        "failed_tests": [
+          "test_first_and_second_derivatives_match_finite_differences[values3]"
+        ]
+      },
+      {
+        "id": "clip-M1-clip_precision",
+        "failed_tests": [
+          "test_unrepresentable_clip_is_rejected_before_initializing_memory",
+          "test_precision_conversion_cannot_silently_remove_the_clip",
+          "test_direct_clipping_rejects_an_unrepresentable_limit"
+        ]
+      },
+      {
+        "id": "clip-M1-cast_precision",
+        "failed_tests": [
+          "test_precision_conversion_cannot_silently_remove_the_clip"
+        ]
+      }
+    ]
+  },
+  {
+    "group": "checkpoint",
+    "detected": 4,
+    "positive_controls": [
+      0,
+      0
+    ],
+    "mutants": [
+      {
+        "id": "checkpoint-M1-logical_bytes",
+        "failed_tests": [
+          "test_large_backing_storage_is_rejected_before_writing_a_small_view[offset]",
+          "test_large_backing_storage_is_rejected_before_writing_a_small_view[empty]",
+          "test_large_backing_storage_is_rejected_before_writing_a_small_view[strided]",
+          "test_shared_storage_is_reserved_once_and_aliases_survive_recovery",
+          "test_distinct_storages_are_not_deduplicated_by_shape_or_content",
+          "test_sparse_storage_views_cannot_escape_the_reservation",
+          "test_compressed_indices_include_their_entire_storage[csr]",
+          "test_compressed_indices_include_their_entire_storage[csc]",
+          "test_compressed_indices_include_their_entire_storage[bsr]",
+          "test_compressed_indices_include_their_entire_storage[bsc]",
+          "test_meta_tensor_does_not_reserve_nonexistent_dense_data"
+        ]
+      },
+      {
+        "id": "checkpoint-M1-double_count_aliases",
+        "failed_tests": [
+          "test_shared_storage_is_reserved_once_and_aliases_survive_recovery"
+        ]
+      },
+      {
+        "id": "checkpoint-M1-ignore_sparse_indices",
+        "failed_tests": [
+          "test_sparse_storage_views_cannot_escape_the_reservation"
+        ]
+      },
+      {
+        "id": "checkpoint-M1-all_storages_alias",
+        "failed_tests": [
+          "test_distinct_storages_are_not_deduplicated_by_shape_or_content"
+        ]
+      }
+    ]
+  },
+  {
+    "group": "write-budget",
+    "detected": 4,
+    "positive_controls": [
+      0,
+      0
+    ],
+    "mutants": [
+      {
+        "id": "write-budget-M1-no_write_limit",
+        "failed_tests": [
+          "test_metadata_cannot_consume_the_disk_reserve",
+          "test_serialized_limit_is_enforced_before_the_pending_file_grows_past_it"
+        ]
+      },
+      {
+        "id": "write-budget-M1-no_file_limit",
+        "failed_tests": [
+          "test_serialized_limit_is_enforced_before_the_pending_file_grows_past_it"
+        ]
+      },
+      {
+        "id": "write-budget-M1-no_disk_reserve",
+        "failed_tests": [
+          "test_metadata_cannot_consume_the_disk_reserve",
+          "test_distinct_storages_are_not_deduplicated_by_shape_or_content"
+        ]
+      },
+      {
+        "id": "write-budget-M1-unwired_writer",
+        "failed_tests": [
+          "test_metadata_cannot_consume_the_disk_reserve",
+          "test_serialized_limit_is_enforced_before_the_pending_file_grows_past_it"
+        ]
+      }
+    ]
+  },
+  {
+    "group": "platform",
+    "detected": 4,
+    "positive_controls": [
+      0,
+      0
+    ],
+    "mutants": [
+      {
+        "id": "platform-M1-post_base",
+        "failed_tests": [
+          "test_cpu_campaign_and_stage_do_not_query_the_real_gpu"
+        ]
+      },
+      {
+        "id": "platform-M1-post_stage",
+        "failed_tests": [
+          "test_cpu_campaign_and_stage_do_not_query_the_real_gpu"
+        ]
+      },
+      {
+        "id": "platform-M1-policy_base",
+        "failed_tests": [
+          "test_cpu_policy_fixture_does_not_query_the_real_gpu"
+        ]
+      },
+      {
+        "id": "platform-M1-policy_stage",
+        "failed_tests": [
+          "test_cpu_policy_fixture_does_not_query_the_real_gpu"
+        ]
+      }
+    ]
+  },
+  {
+    "group": "hold_inventory",
+    "detected": 1,
+    "positive_controls": [
+      0,
+      0
+    ],
+    "mutants": [
+      {
+        "id": "hold_inventory-M1-undeclared_double",
+        "failed_tests": [
+          "test_no_test_benchmark_or_script_lowers_the_hold_outside_the_inventory"
+        ]
+      }
+    ]
+  },
+  {
+    "group": "native",
+    "detected": 4,
+    "scope": "Dos fallos de comportamiento, un diagnóstico clang-tidy y un control de presencia en la cobertura."
+  }
+]

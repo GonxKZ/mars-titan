@@ -288,6 +288,20 @@ def test_a_cohort_matures_only_when_all_its_labels_are_available():
     assert updates == [] and calibrator.pending("US") == [(1, 3), (2, 3)]
 
 
+def test_a_row_whose_label_is_available_at_its_own_prediction_is_rejected():
+    # La cohorte maduraría en 3 por su segunda fila, pero la primera dice estar disponible
+    # en el mismo instante de su predicción. Es un registro imposible y no se emite (#748).
+    with pytest.raises(ValueError, match="madurar después"):
+        replay_online_conformal(
+            start(),
+            cohort(2),
+            np.array(["US", "US"]),
+            np.array([1, 1]),
+            np.zeros(2),
+            np.array([1, 3]),
+        )
+
+
 def test_labels_available_at_the_prediction_instant_are_used():
     quantiles, groups, at, target, matures = panel(sessions=3, assets=2, horizon=1)
     calibrator = start()

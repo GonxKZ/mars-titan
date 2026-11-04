@@ -12,6 +12,7 @@ import numpy as np
 import pytest
 import torch
 
+from mars_titan.data.storage import sha256
 from tests.suite_support import requires_cuda
 
 
@@ -213,3 +214,52 @@ def test_corrupt_index_is_rejected_instead_of_scanning_uncommitted_files(tmp_pat
     (tmp_path / "latest.json").write_text(json.dumps({"schema_version": 100}))
     with pytest.raises(ValueError, match="manifiesto|esquema"):
         module().load_training_state(tmp_path, expected_identity=IDENTITY)
+
+
+def test_a_pinned_state_is_loaded_and_chosen_by_its_digest(tmp_path):
+    engine = module()
+    first = save(tmp_path, 1, pin=True)
+    second = save(tmp_path, 2, pin=True, best=True)
+    save(tmp_path, 3)
+    digest = sha256(first)
+    state = engine.load_training_state(
+        tmp_path, expected_identity=IDENTITY, selection="pinned", expected_sha256=digest
+    )
+    assert state["global_step"] == 1 and state["model"]["weight"].item() == 1.0
+    # Elegir el estado fijado de la época común reescribe solo el índice.
+    record = engine.choose_pinned(tmp_path, expected_identity=IDENTITY, expected_sha256=digest)
+    assert record["sha256"] == digest and record["global_step"] == 1
+    index = json.loads((tmp_path / "latest.json").read_text())
+    assert index["best"] == record and len(index["pinned"]) == 2
+    best = engine.load_training_state(
+        tmp_path, expected_identity=IDENTITY, selection="best", expected_sha256=digest
+    )
+    assert best["global_step"] == 1
+    assert engine.choose_pinned(tmp_path, expected_identity=IDENTITY, expected_sha256=digest)
+    # Al liberar queda solo el elegido.
+    assert engine.release_recovery_states(tmp_path) > 0
+    assert not second.exists() and first.exists()
+    index = json.loads((tmp_path / "latest.json").read_text())
+    assert index["latest"] == [record] and index["pinned"] == []
+
+
+def test_a_pinned_state_needs_its_digest_and_an_intact_file(tmp_path):
+    engine = module()
+    pinned = save(tmp_path, 1, pin=True)
+    recent = save(tmp_path, 2)
+    with pytest.raises(ValueError, match="con su huella"):
+        engine.load_training_state(tmp_path, expected_identity=IDENTITY, selection="pinned")
+    for digest in (sha256(recent), "0" * 64):
+        with pytest.raises(ValueError, match="estado fijado íntegro"):
+            engine.load_training_state(
+                tmp_path, expected_identity=IDENTITY, selection="pinned", expected_sha256=digest
+            )
+        with pytest.raises(ValueError, match="estado fijado íntegro"):
+            engine.choose_pinned(tmp_path, expected_identity=IDENTITY, expected_sha256=digest)
+    with pytest.raises(ValueError, match="identidad explícita"):
+        engine.choose_pinned(tmp_path, expected_identity=IDENTITY, expected_sha256="abc")
+    digest = sha256(pinned)
+    pinned.write_bytes(pinned.read_bytes() + b"0")
+    with pytest.raises(ValueError, match="estado fijado íntegro"):
+        engine.choose_pinned(tmp_path, expected_identity=IDENTITY, expected_sha256=digest)
+    assert json.loads((tmp_path / "latest.json").read_text())["best"] is None

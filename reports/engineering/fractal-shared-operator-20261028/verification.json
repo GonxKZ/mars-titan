@@ -1,0 +1,395 @@
+{
+ "schema_version": 1,
+ "date": "2026-10-29",
+ "issue": 751,
+ "scope": "fractal_shared_operator_v1_with_its_four_controls",
+ "implementation_commit": "82ffa84abf449ffb12d183c0fde66c3348b88d35",
+ "base_commit": "e5a58c7d851ef9ee852b94188f21018ce22b91be",
+ "scientific_experiments": 0,
+ "training_runs": 0,
+ "real_optimizer_steps": 0,
+ "final_test_opened": false,
+ "hold_sha256": "8a658080c1ac4e63847eba58b177020339da6ec47021cf26d2701830073c87fd",
+ "test_optimizers": "Las pruebas del módulo solo calculan gradientes con autograd y la medida de coste propaga una suma de cuadrados con un gancho de torch.optim que rechaza cualquier paso. La protección global del aprendizaje sigue activa y omite la prueba que daría un paso de AdamW.",
+ "final_commit": "d408af8d0a53afc259c8a1ba54006b376fe3b310",
+ "suites": [
+  {
+   "name": "targeted_with_coverage",
+   "tests": 569,
+   "failures": 0,
+   "errors": 0,
+   "skipped": 1,
+   "xml_sha256": "f2586f0dcd612c82b5b629b506b266741d4a068e7578465dcc984d6774d26311",
+   "note": "C3, las regiones de correlación, la puerta PIT, la medida de coste y los módulos que comparten su configuración, su estado y la identidad del entrenador (C2, H1, C5, variantes regionales, consumidor congelado, Dust, recorridos y época común), con cobertura de ramas sobre el árbol de implementation_commit, que tenía la rama final de C2 y H1. La omisión es la protección del aprendizaje y las pruebas CUDA quedan deseleccionadas porque la verificación no usa la GPU."
+  },
+  {
+   "name": "regression_of_the_changed_paths",
+   "tests": 7944,
+   "failures": 1,
+   "errors": 0,
+   "skipped": 166,
+   "xml_sha256": "8de3bcf998ab0dc5c9dfcab4297508d5018eca8b17184c74465a4044a9eecc23",
+   "note": "Los 374 módulos que importan los caminos cambiados, con tres procesos sobre el árbol de implementation_commit. El único fallo es test_benchmark_preserves_paired_originals_and_the_next_transition, que agotó su plazo de 100 s con la máquina cargada, el mismo de C2. #804 ajustó después ese presupuesto (suite lesion_timing_after_merging_develop)."
+  },
+  {
+   "name": "after_merging_develop_and_the_atomic_receipt",
+   "tests": 1011,
+   "failures": 0,
+   "errors": 0,
+   "skipped": 1,
+   "xml_sha256": "0a665ca6fd657c1d9e3a9988d00642ff6ae4b90087faf1c9518d345eeed37697",
+   "note": "En 140f2fa60, tras fusionar develop con C2 aplastado, #805 a #808 y los recibos atómicos, añadir mature_reliability al doble del entrenador de C3 y escribir su recibo con atomic_json: las pruebas de C3, de C2, de H1, de las variantes del núcleo, de la fiabilidad madura, de los módulos que cambió la fusión y de los recibos de coste. La omisión es la protección del aprendizaje y las 29 pruebas CUDA quedan deseleccionadas."
+  },
+  {
+   "name": "lesion_timing_after_merging_develop",
+   "tests": 12,
+   "failures": 0,
+   "errors": 0,
+   "skipped": 0,
+   "xml_sha256": "00af3995d08dfb3a4c7f96f4b86826b92cb2d4d7723a44585ebd8867478ce5d0",
+   "note": "Las pruebas de tiempo de las lesiones en 140f2fa60, con el presupuesto de #804."
+  },
+  {
+   "name": "cost_tests_on_the_final_commit",
+   "tests": 67,
+   "failures": 0,
+   "errors": 0,
+   "skipped": 0,
+   "xml_sha256": "acdc66e7aa30d9082e62d4a181606eca912a3375234119770f0c5924a87ec737",
+   "note": "Las pruebas de la medida de C3 y las de los recibos de coste en final_commit, con la prueba nueva del calentamiento, el modo sin gradiente y la sincronización de cada pasada."
+  }
+ ],
+ "quality": {
+  "tools": {
+   "coverage": "7.16.1",
+   "radon": "6.0.1",
+   "branch_coverage": true,
+   "python": "3.12.14",
+   "summarizer_sha256": "75cc60c88037e0bb17aff6e8ab666ce78b35d600d6c7ad217bf68b1afb4c4ec6"
+  },
+  "totals": {
+   "statements": 3269,
+   "covered_statements": 2720,
+   "branches": 1264,
+   "covered_branches": 939
+  },
+  "files": [
+   {
+    "path": "benchmarks/fractal_shared_operator_cost.py",
+    "source_sha256": "0af180968b490590f5d00a35a1ea69902d991c9364a23dcb85c36394041f45f0",
+    "statements": 123,
+    "covered_statements": 119,
+    "branches": 40,
+    "covered_branches": 37
+   },
+   {
+    "path": "benchmarks/pit_region_gate_cost.py",
+    "source_sha256": "243c3d93dea3a049bde82ba63e7b97d3e2e890e853baddcec2efc4333053b9d4",
+    "statements": 60,
+    "covered_statements": 29,
+    "branches": 4,
+    "covered_branches": 3
+   },
+   {
+    "path": "src/mars_titan/data/correlation_regions.py",
+    "source_sha256": "613df05971334cfae90a41413de692d1b4a9f9f6485ecde07883aeca94fb9a0b",
+    "statements": 53,
+    "covered_statements": 53,
+    "branches": 12,
+    "covered_branches": 12
+   },
+   {
+    "path": "src/mars_titan/evaluation/pit_region_gate.py",
+    "source_sha256": "bae40640dc83a21e120fbc74f1b47b5dcb954b449593f1a3821b905ad76e4e80",
+    "statements": 126,
+    "covered_statements": 126,
+    "branches": 22,
+    "covered_branches": 22
+   },
+   {
+    "path": "src/mars_titan/models/titans/financial.py",
+    "source_sha256": "cc57279b35a13b817cecf9038c50b457b43e247805226f72896e19f1d8783a93",
+    "statements": 909,
+    "covered_statements": 742,
+    "branches": 460,
+    "covered_branches": 320
+   },
+   {
+    "path": "src/mars_titan/models/titans/fractal_shared_operator.py",
+    "source_sha256": "0212584a93c6a02901dbf5c092691be3c7518c12d67bcacbe3f00b48165d3262",
+    "statements": 198,
+    "covered_statements": 198,
+    "branches": 60,
+    "covered_branches": 60
+   },
+   {
+    "path": "src/mars_titan/models/titans/frozen_financial.py",
+    "source_sha256": "809099f3b6de769704205f6624c8ab4e7aada076757cff812cf57f78f3f08a07",
+    "statements": 219,
+    "covered_statements": 183,
+    "branches": 120,
+    "covered_branches": 90
+   },
+   {
+    "path": "src/mars_titan/training/dust/financial.py",
+    "source_sha256": "3a5b4a5b00141a9746f582d8e4885b9b802dd4d9faf0515a9b5c4231c008dda1",
+    "statements": 241,
+    "covered_statements": 223,
+    "branches": 84,
+    "covered_branches": 64
+   },
+   {
+    "path": "src/mars_titan/training/financial_run.py",
+    "source_sha256": "cabcaa32a3d3a518179e562a3a91545d9d6058c0b78d4ccccd734dcdf23b31cd",
+    "statements": 947,
+    "covered_statements": 773,
+    "branches": 396,
+    "covered_branches": 283
+   },
+   {
+    "path": "src/mars_titan/training/mars_titan_walk_forward.py",
+    "source_sha256": "5be64e08831da23ca20f9c8798a8d522f13d7ef3bc00ac4366f47736f5a406af",
+    "statements": 365,
+    "covered_statements": 249,
+    "branches": 52,
+    "covered_branches": 37
+   },
+   {
+    "path": "src/mars_titan/training/search_cases.py",
+    "source_sha256": "844c6540692cf9ae972a9cf8270509c551b8465e71aeba742a7778e3c4d1d87c",
+    "statements": 28,
+    "covered_statements": 25,
+    "branches": 14,
+    "covered_branches": 11
+   }
+  ],
+  "max_crap": 1222.1318753702587,
+  "quality_sha256": "b3b8d88170d97004c0654f470b6039ff8586b271fc2e3d7ded9cadf7d351f55d",
+  "limits": "CRAP y cobertura localizan complejidad poco comprobada. No demuestran ausencia de errores."
+ },
+ "changed": {
+  "base": "e5a58c7d851ef9ee852b94188f21018ce22b91be",
+  "head": "140f2fa6060271b17808eb618999b42341a95733",
+  "functions": 43,
+  "max_crap": 1222.1318753702587,
+  "changed_executable_lines": 354,
+  "changed_covered_lines": 351,
+  "highest": [
+   {
+    "path": "src/mars_titan/models/titans/financial.py",
+    "function": "FinancialConfig.__post_init__",
+    "cyclomatic_complexity": 123,
+    "crap": 1222.1318753702587,
+    "changed_executable_lines": 3,
+    "changed_covered_lines": 3,
+    "changed_missing_lines": [],
+    "changed_missing_branches": []
+   },
+   {
+    "path": "src/mars_titan/models/titans/financial.py",
+    "function": "FinancialPredictor._prepare",
+    "cyclomatic_complexity": 57,
+    "crap": 83.78761907412044,
+    "changed_executable_lines": 3,
+    "changed_covered_lines": 3,
+    "changed_missing_lines": [],
+    "changed_missing_branches": []
+   },
+   {
+    "path": "src/mars_titan/models/titans/financial.py",
+    "function": "FinancialPredictor.__init__",
+    "cyclomatic_complexity": 35,
+    "crap": 35.972444495249704,
+    "changed_executable_lines": 1,
+    "changed_covered_lines": 1,
+    "changed_missing_lines": [],
+    "changed_missing_branches": []
+   },
+   {
+    "path": "src/mars_titan/models/titans/financial.py",
+    "function": "FinancialConfig.identity",
+    "cyclomatic_complexity": 31,
+    "crap": 31.961,
+    "changed_executable_lines": 2,
+    "changed_covered_lines": 2,
+    "changed_missing_lines": [],
+    "changed_missing_branches": []
+   },
+   {
+    "path": "src/mars_titan/models/titans/fractal_shared_operator.py",
+    "function": "FractalSharedOperator.forward",
+    "cyclomatic_complexity": 29,
+    "crap": 29.0,
+    "changed_executable_lines": 23,
+    "changed_covered_lines": 23,
+    "changed_missing_lines": [],
+    "changed_missing_branches": []
+   }
+  ],
+  "uncovered": [
+   {
+    "path": "benchmarks/fractal_shared_operator_cost.py",
+    "function": "run",
+    "cyclomatic_complexity": 25,
+    "crap": 25.244845547801106,
+    "changed_executable_lines": 42,
+    "changed_covered_lines": 39,
+    "changed_missing_lines": [
+     181,
+     185,
+     186
+    ],
+    "changed_missing_branches": [
+     [
+      180,
+      181
+     ],
+     [
+      184,
+      185
+     ]
+    ]
+   }
+  ],
+  "unmeasured": [
+   {
+    "path": "benchmarks/fractal_shared_operator_cost.py",
+    "function": "measure.<locals>.call"
+   },
+   {
+    "path": "src/mars_titan/models/titans/financial.py",
+    "function": "FinancialPredictor._fractal_fuse.<locals>.modulation"
+   },
+   {
+    "path": "src/mars_titan/models/titans/fractal_shared_operator.py",
+    "function": "FractalSharedOperator._attend.<locals>.split"
+   }
+  ],
+  "note": "Funciones con líneas cambiadas frente a develop (base_commit) en 140f2fa60, con su CRAP y la cobertura de esas líneas. FinancialConfig.__post_init__ tiene complejidad 123 y su separación está en #801. Las tres líneas sin cubrir son los caminos CUDA de la medida de coste.",
+  "changed_sha256": "c51455be3dc980740c7d2553f032f9c7cc106c822663eb29b78c76b58d5cea2b"
+ },
+ "mutations": {
+  "tree_commit": "82ffa84abf449ffb12d183c0fde66c3348b88d35",
+  "planned": 55,
+  "killed": 55,
+  "optimizer_attempts": 0,
+  "hold_sha256_unchanged": true,
+  "recipes_sha256": "3d7a76755671c03e52410a2d110deb38a42d8ffb4a607a555931ee3a710a71ba",
+  "executor_sha256": "a1aedc1970e90d1bf2806ca5f42ac547be09d83af2d5113e44f132c493d62bc2",
+  "source_sha256": {
+   "src/mars_titan/models/titans/fractal_shared_operator.py": "0212584a93c6a02901dbf5c092691be3c7518c12d67bcacbe3f00b48165d3262",
+   "src/mars_titan/training/mars_titan_walk_forward.py": "5be64e08831da23ca20f9c8798a8d522f13d7ef3bc00ac4366f47736f5a406af",
+   "src/mars_titan/models/titans/frozen_financial.py": "c29c2a048f6a504856ea721a0a80e983529d70ef62f1b5937eaecbbe5ac97e30",
+   "src/mars_titan/models/titans/financial.py": "ca9f8e1a59892fc6a2b916bafdf942ef69137bd760de0b415617ad9e8af745ca",
+   "src/mars_titan/data/correlation_regions.py": "613df05971334cfae90a41413de692d1b4a9f9f6485ecde07883aeca94fb9a0b",
+   "src/mars_titan/training/financial_run.py": "3efc41c9a5baf3bcc52480fb77726b3110808bb0f8ef71a6ad18b218bc7cc2ad"
+  },
+  "cases": [
+   "market_is_the_mean_of_the_assets",
+   "assets_read_the_sectors_before_their_update",
+   "assets_attend_the_assets_of_other_sectors",
+   "assets_do_not_attend_their_sector",
+   "sector_nodes_sum_instead_of_average",
+   "asset_nodes_average_absent_leaves",
+   "absent_leaves_are_keys",
+   "leaves_do_not_attend_their_asset",
+   "absent_leaves_keep_their_output",
+   "attention_without_its_scale",
+   "keys_without_normalization",
+   "dense_block_with_two_rounds",
+   "dense_block_reads_absent_leaves",
+   "one_lora_for_every_level",
+   "per_level_shares_one_norm",
+   "returns_ignore_the_presence",
+   "returns_check_only_their_end",
+   "returns_from_another_channel",
+   "assets_clustered_in_row_order",
+   "sessions_merge_the_markets",
+   "sessions_merge_the_instants",
+   "random_partition_not_applied",
+   "partition_ignores_the_instant",
+   "partition_seed_not_in_the_state",
+   "shared_output_projection_not_zero",
+   "per_level_output_factor_not_zero",
+   "lora_up_factors_not_zero",
+   "seed_depends_on_the_kind",
+   "construction_consumes_the_global_generator",
+   "control_rank_rounds_down",
+   "control_factors_with_a_third_of_the_variance",
+   "short_windows_accepted",
+   "autocast_accepted",
+   "thin_pairs_keep_their_correlation",
+   "unobserved_values_enter_the_mean",
+   "constant_series_are_clustered",
+   "regions_numbered_backwards",
+   "permutation_moves_region_zero",
+   "c3_accepted_on_mac_frozen",
+   "c3_accepted_with_the_regional_operator",
+   "c3_accepted_with_c1",
+   "c3_accepted_with_c2",
+   "c3_accepted_with_pt6",
+   "c3_accepted_with_the_holographic_network",
+   "c3_accepted_with_c5",
+   "c3_accepted_with_auxiliary_horizons",
+   "c3_not_session_level",
+   "sectors_from_the_ranked_window",
+   "row_wise_tokens_accept_c3",
+   "mismatched_module_accepted",
+   "predictor_identity_without_c3",
+   "trainer_identity_without_the_regions",
+   "frozen_consumer_accepts_c3",
+   "frozen_parent_built_with_c3",
+   "parent_declaration_with_c3_verified"
+  ],
+  "summary_sha256": "3413d116af6acbb137b290f57e48705a2fe844d6b42f699118daaefabf974f7a",
+  "scope": "Cincuenta y cinco defectos dirigidos de C3, de las regiones de correlación compartidas, de su integración en el predictor, el recorrido, el entrenador, el consumidor congelado y la medida de coste, cada uno con una fase en verde antes, la mutación y otra fase en verde después, en una copia aislada del árbol. No es una puntuación global.",
+  "additional": [
+   {
+    "tree_commit": "140f2fa6060271b17808eb618999b42341a95733",
+    "planned": 4,
+    "killed": 4,
+    "recipes_sha256": "11ecb5dcf31024b87437b25d85429c42968d929b369eb68bec5f5308270842ab",
+    "executor_sha256": "a1aedc1970e90d1bf2806ca5f42ac547be09d83af2d5113e44f132c493d62bc2",
+    "source_sha256": {
+     "benchmarks/fractal_shared_operator_cost.py": "0af180968b490590f5d00a35a1ea69902d991c9364a23dcb85c36394041f45f0"
+    },
+    "cases": [
+     "fractal_shared_operator_cost__destination_overwritten",
+     "fractal_shared_operator_cost__folder_not_created",
+     "fractal_shared_operator_cost__measured_before_refusal",
+     "fractal_shared_operator_cost__nan_written"
+    ],
+    "summary_sha256": "be7ddd848b009b287e65f462f6a649c3d5fe2716b728005fe3ad642da757ecb6",
+    "scope": "Las cuatro mutaciones de #802 para la medida de C3 tras pasarla a atomic_json: quitar la comprobación del destino, medir antes de rechazarlo, escribir un recibo con NaN y escribir sin crear la carpeta."
+   },
+   {
+    "tree_commit": "d408af8d0a53afc259c8a1ba54006b376fe3b310",
+    "planned": 4,
+    "killed": 4,
+    "recipes_sha256": "faad183fa6d147135cb487cdac55c50640cc267a7ae8a72e1628f5a64ec807d0",
+    "executor_sha256": "a1aedc1970e90d1bf2806ca5f42ac547be09d83af2d5113e44f132c493d62bc2",
+    "source_sha256": {
+     "benchmarks/fractal_shared_operator_cost.py": "0af180968b490590f5d00a35a1ea69902d991c9364a23dcb85c36394041f45f0"
+    },
+    "cases": [
+     "fractal_shared_operator_cost__backward_without_zero_grad",
+     "fractal_shared_operator_cost__call_unsynchronized",
+     "fractal_shared_operator_cost__forward_with_gradient",
+     "fractal_shared_operator_cost__warmup_skipped"
+    ],
+    "summary_sha256": "1c09b083f5fa7b863e2847710e59c7585073cd31cfda3c10e1f7c45b375cd321",
+    "scope": "Las cuatro mutaciones de las pasadas de la medida que comprueba la prueba nueva: saltar el calentamiento, medir forward con gradiente, no limpiar los gradientes antes del backward y no sincronizar cada llamada."
+   }
+  ]
+ },
+ "native_link": {
+  "source_commit": "39abf2c99",
+  "preset": "native-candidate-cuda",
+  "used_by": "targeted_with_coverage, regression_of_the_changed_paths, after_merging_develop_and_the_atomic_receipt",
+  "sha256": "9fda744aa9c6672f9fb47c0896a5e9b19fc8795cdbfff42b944ed751953b1046"
+ },
+ "cost": {
+  "receipt": "cost-cpu.json",
+  "sha256": "7fa213748445467d594938017a0dcefb081edc6e98daa4809cccc9ff73593c3c"
+ }
+}

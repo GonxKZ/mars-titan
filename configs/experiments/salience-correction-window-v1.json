@@ -1,0 +1,41 @@
+{
+  "schema_version": 1,
+  "kind": "salience_correction_window_profiles",
+  "variant_id": "salience_correction_window_v1",
+  "issue": 750,
+  "status": "declared_not_executed",
+  "default_enabled": false,
+  "final_test_access": false,
+  "entrypoint": "mars_titan.training.mars_titan_correction.run_correction_window",
+  "arguments": {
+    "recipe": "configs/titans/mature-correction-historical-masked.json",
+    "components": {
+      "associative_memory": {"rule": "proximal", "key": "codec"}
+    }
+  },
+  "arms": {
+    "baseline": null,
+    "standardized_error": {
+      "rule": "standardized_error", "writes_per_market": 64, "min_history": 4,
+      "initial_scale": 0.01, "scale_floor": 1e-8, "seed": 0
+    },
+    "absolute_error": {
+      "rule": "absolute_error", "writes_per_market": 64, "min_history": 4,
+      "initial_scale": 0.01, "scale_floor": 1e-8, "seed": 0
+    },
+    "uniform": {
+      "rule": "uniform", "writes_per_market": 64, "min_history": 4,
+      "initial_scale": 0.01, "scale_floor": 1e-8, "seed": 0
+    }
+  },
+  "parent": "same_selected_checkpoint_window_and_seed",
+  "search_cases": "all_cases_of_the_same_correction_recipe",
+  "recovery": "verify_completed_phases_and_repeat_an_interrupted_phase_from_its_start",
+  "pending": [
+    "Las ventanas están integradas en CPU con fixtures, sin una comparación científica ejecutada.",
+    "Cada valor no nulo de arms se convierte en SalienceBudgetConfig y se pasa por el argumento salience.",
+    "El cupo sigue siendo por publicación madura completa y mercado. No se equipara sin prueba a una sesión del calendario.",
+    "FinancialSession admite el factor con un cupo por generación nativa confirmada, comprobado con fixtures CPU. Su equivalencia con una sesión del calendario sigue sin demostrar.",
+    "Las rutas CUDA están preparadas para comprobación explícita y siguen pendientes de admisión."
+  ]
+}

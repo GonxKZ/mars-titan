@@ -24,6 +24,7 @@ from pathlib import Path
 
 import numpy as np
 
+from mars_titan.data.storage import atomic_json
 from mars_titan.data.temporal import MarketClock
 from mars_titan.evaluation import predictive_ability as pa
 from mars_titan.evaluation import walk_forward_comparison as walk
@@ -166,11 +167,8 @@ def measure(repeats):
     )
 
 
-def main():
-    parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    parser.add_argument("--output", type=Path, required=True)
-    parser.add_argument("--repeats", type=int, default=2)
-    args = parser.parse_args()
+def run(args):
+    """Mide los casos con los argumentos de la orden y devuelve el recibo."""
     started = datetime.now(UTC).isoformat()
     load = os.getloadavg()
     result = measure(args.repeats)
@@ -210,8 +208,19 @@ def main():
         ],
         **result,
     )
-    args.output.parent.mkdir(parents=True, exist_ok=True)
-    args.output.write_text(json.dumps(record, ensure_ascii=False, indent=1) + "\n")
+    return record
+
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    parser.add_argument("--output", type=Path, required=True)
+    parser.add_argument("--repeats", type=int, default=2)
+    args = parser.parse_args()
+    if args.output.exists():
+        raise SystemExit("La medida necesita un destino nuevo")
+    record = run(args)
+    # atomic_json crea la carpeta, escribe en un temporal y lo confirma con os.replace.
+    atomic_json(args.output, record)
     print(json.dumps(dict(median_elapsed_s=record["median_elapsed_s"], days=record["days"])))
 
 

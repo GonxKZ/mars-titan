@@ -1,0 +1,88 @@
+{
+  "schema_version": 1,
+  "kind": "asset_group_membership_variants",
+  "issue": 783,
+  "variant": "mac_online",
+  "base_recipe": "configs/titans/chronological-training-historical-sequence-v1.json",
+  "base_head": "scalar",
+  "base_loss": "mae",
+  "default_enabled": false,
+  "final_test_access": false,
+  "status": "declared_not_trained",
+  "requirements": {
+    "block_rows": "at_least_the_rows_of_every_decision_instant",
+    "accumulation_rows": "none_or_at_least_all_flows_of_the_segment",
+    "price_window": "v3_1_with_the_presence_bit"
+  },
+  "arms": {
+    "reference": {
+      "role": "reference",
+      "predictor_changes": {}
+    },
+    "shuffled_rows_control": {
+      "role": "control",
+      "predictor_changes": {
+        "asset_groups": {
+          "mode": "shuffled_rows",
+          "buckets": 5,
+          "clusters": 8,
+          "min_observations": 36,
+          "iterations": 32
+        }
+      }
+    },
+    "current_sector_leak_control": {
+      "role": "leak_control",
+      "predictor_changes": {
+        "asset_groups": {
+          "mode": "current_sector",
+          "buckets": null,
+          "clusters": null,
+          "min_observations": null,
+          "iterations": null
+        },
+        "sector_map": {
+          "source": "dataset"
+        }
+      }
+    },
+    "asset_group_membership": {
+      "role": "variant",
+      "control": "shuffled_rows_control",
+      "predictor_changes": {
+        "asset_groups": {
+          "mode": "past_window",
+          "buckets": 5,
+          "clusters": 8,
+          "min_observations": 36,
+          "iterations": 32
+        }
+      }
+    }
+  },
+  "external_controls": [
+    {
+      "name": "cross_asset_attention",
+      "declaration": "configs/experiments/cross-asset-attention-v1.json",
+      "arm": "cross_asset_attention",
+      "reason": "C5 aprende con atención a qué activos de la sesión leer. H4 fija los grupos con la ventana pasada"
+    }
+  ],
+  "contrasts": [
+    {
+      "name": "structure_of_the_past_window",
+      "variant": "asset_group_membership",
+      "control": "shuffled_rows_control"
+    },
+    {
+      "name": "pooling_within_the_session",
+      "variant": "shuffled_rows_control",
+      "control": "reference"
+    },
+    {
+      "name": "current_sector_leak",
+      "variant": "current_sector_leak_control",
+      "control": "asset_group_membership"
+    }
+  ]
+}

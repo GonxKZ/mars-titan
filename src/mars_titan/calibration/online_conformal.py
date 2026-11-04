@@ -513,6 +513,12 @@ def replay_online_conformal(calibrator, quantiles, groups, prediction_at, target
         and matures_at.dtype.kind in "iu",
         "El panel necesita cuantiles, mercados, instantes, objetivos y madurez alineados",
     )
+    # La cohorte solo comprueba su madurez máxima. Una fila con la etiqueta disponible en el
+    # instante de su predicción sería un registro imposible aunque la cohorte esperase.
+    _require(
+        bool(np.all(matures_at > prediction_at)),
+        "Cada etiqueta debe madurar después de su predicción",
+    )
     emitted = np.empty(quantiles.shape, dtype=np.float64)
     keys = sorted(set(zip(prediction_at.tolist(), groups.tolist(), strict=True)))
     members = {}

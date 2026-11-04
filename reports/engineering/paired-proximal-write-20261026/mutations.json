@@ -1,0 +1,662 @@
+{
+  "schema_version": 1,
+  "scope": "Once mutaciones dirigidas de la escritura proximal compartida.",
+  "method": "G1 verde, mutación en copia aislada, fallo CALL esperado por tipo y texto, restauración y G2 verde.",
+  "executor_sha256": "7668bb0d7d717c6048fe604e6de992166d8937d838c9a3ac88524c28b60a4cb6",
+  "cases": [
+    {
+      "id": "ignore_companion_order",
+      "source": {
+        "path": "src/mars_titan/memory/paired_proximal.py",
+        "sha256": "b752d38c6dd28de5497380cb195d158fcea114bcd4ff89df24e8f164e863dcf4"
+      },
+      "nodeid": "tests/memory/test_paired_proximal.py::test_pair_uses_one_factor_and_keeps_canonical_alignment",
+      "anchor": "other_values.index_select(0, index)",
+      "replacement": "other_values",
+      "expected_failure": {
+        "exception_type": "AssertionError",
+        "longrepr_contains": "torch.equal"
+      },
+      "status": "killed_with_green_controls",
+      "phases": [
+        {
+          "phase": "G1",
+          "returncode": 0,
+          "elapsed_s": 2.369642835808918,
+          "xml_sha256": "5c1d939e221b1a8bc48c37d40613c4cd961488449840e04693f1c97c4b9f3eff",
+          "events_sha256": "5564a5b57b7df34976ddc07c413ba73e2836d9cf1a1022f036e228871f23d4f3",
+          "xml_counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0
+        },
+        {
+          "phase": "M1",
+          "returncode": 1,
+          "elapsed_s": 2.2695739821065217,
+          "xml_sha256": "fea932ba6ea6c275fb80dc5a4877b9b707bf604f5d902d1d5c116363eeb6ed3f",
+          "events_sha256": "0d278e4286b764ddc3c29dc95661693452ede27a41354c70ca53b7a36b477cde",
+          "xml_counts": {
+            "total": 1,
+            "failure": 1,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0
+        },
+        {
+          "phase": "G2",
+          "returncode": 0,
+          "elapsed_s": 2.36871569394134,
+          "xml_sha256": "a6cf8724ed9fbeb693bf26bd25ba1c3002f38357ffb0b84ad9328a7f0f74cb77",
+          "events_sha256": "25da61cdb2e89cdd6b4c104d7509fbe23866033c8603c4a90e10603680705068",
+          "xml_counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0
+        }
+      ]
+    },
+    {
+      "id": "replace_declared_weights",
+      "source": {
+        "path": "src/mars_titan/memory/paired_proximal.py",
+        "sha256": "b752d38c6dd28de5497380cb195d158fcea114bcd4ff89df24e8f164e863dcf4"
+      },
+      "nodeid": "tests/memory/test_paired_proximal.py::test_pair_matches_two_independent_writes_bit_for_bit[True-0.25-5-7]",
+      "anchor": "weights = feedback.weights.index_select(0, index)",
+      "replacement": "weights = torch.full_like(feedback.weights, 1.0 / rows)",
+      "expected_failure": {
+        "exception_type": "AssertionError",
+        "longrepr_contains": "torch.equal"
+      },
+      "status": "killed_with_green_controls",
+      "phases": [
+        {
+          "phase": "G1",
+          "returncode": 0,
+          "elapsed_s": 2.1693534709047526,
+          "xml_sha256": "8cd88bddf79ec81c5cd5d0c43962c07c73aa16917d6178aeaecbb4beb35c4da9",
+          "events_sha256": "2917fdfc91d866d18f3f7a99d3e99ea41092814927f7b980a9073bcd3a6090bb",
+          "xml_counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0
+        },
+        {
+          "phase": "M1",
+          "returncode": 1,
+          "elapsed_s": 1.819006497040391,
+          "xml_sha256": "3219b9def9e4f461de2c780066352cf918b0b48e5a438734db1e81cab873208a",
+          "events_sha256": "c8e65266b2e9e13dae16a499a489143746c487fedd85e561354e54e6a64bca36",
+          "xml_counts": {
+            "total": 1,
+            "failure": 1,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0
+        },
+        {
+          "phase": "G2",
+          "returncode": 0,
+          "elapsed_s": 1.7698921079281718,
+          "xml_sha256": "9276e604e76ef81e3ce840c9a7ae8defbede067e514df6a3d934f2b84cb1bce8",
+          "events_sha256": "3b9f65413aab26705db26b6ed9e3aae6953169ad960b6f67a6d48c388a207e3b",
+          "xml_counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0
+        }
+      ]
+    },
+    {
+      "id": "drop_companion_forgetting",
+      "source": {
+        "path": "src/mars_titan/memory/paired_proximal.py",
+        "sha256": "b752d38c6dd28de5497380cb195d158fcea114bcd4ff89df24e8f164e863dcf4"
+      },
+      "nodeid": "tests/memory/test_paired_proximal.py::test_pair_matches_two_independent_writes_bit_for_bit[False-0.25-5-7]",
+      "anchor": "b.retention * right._matrix",
+      "replacement": "right._matrix",
+      "expected_failure": {
+        "exception_type": "AssertionError",
+        "longrepr_contains": "torch.equal"
+      },
+      "status": "killed_with_green_controls",
+      "phases": [
+        {
+          "phase": "G1",
+          "returncode": 0,
+          "elapsed_s": 1.8195182702038437,
+          "xml_sha256": "160ed48f366422aca170943a804100180d086f296a7c82b913d9a8991bbb9d71",
+          "events_sha256": "7903973d0192e2b6b696c7a7a5d4818da8c8a7fbc721869fa5fdf5d20a5eb4d9",
+          "xml_counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0
+        },
+        {
+          "phase": "M1",
+          "returncode": 1,
+          "elapsed_s": 2.169966354034841,
+          "xml_sha256": "1f23f04e699733d90426817c379af6a1d48bf98138a43076d1dd26a27317b7f7",
+          "events_sha256": "aca1ffff91acd1cf69fe135c748e99e64527d76bd654f8228b948ddfa1cd164c",
+          "xml_counts": {
+            "total": 1,
+            "failure": 1,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0
+        },
+        {
+          "phase": "G2",
+          "returncode": 0,
+          "elapsed_s": 2.1203630680684,
+          "xml_sha256": "10b75e350c1700f29b72a459ed804ce3fb8f3b454c4c8c96f67d54f012caf201",
+          "events_sha256": "3b85202e080ce4ccb765474bd08ded3f60135e382411c927a15cc316dc0ef366",
+          "xml_counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0
+        }
+      ]
+    },
+    {
+      "id": "allow_different_rates",
+      "source": {
+        "path": "src/mars_titan/memory/paired_proximal.py",
+        "sha256": "b752d38c6dd28de5497380cb195d158fcea114bcd4ff89df24e8f164e863dcf4"
+      },
+      "nodeid": "tests/memory/test_paired_proximal.py::test_pair_rejects_different_rules_dimensions_or_hyperparameters[change2]",
+      "anchor": "(b.key_size, b.rate, b.forgetting, right.writes, right.cursor)",
+      "replacement": "(b.key_size, a.rate, b.forgetting, right.writes, right.cursor)",
+      "expected_failure": {
+        "exception_type": "Failed",
+        "longrepr_contains": "DID NOT RAISE"
+      },
+      "status": "killed_with_green_controls",
+      "phases": [
+        {
+          "phase": "G1",
+          "returncode": 0,
+          "elapsed_s": 3.7736668060533702,
+          "xml_sha256": "a59e6482ba071d26e26eb43b81b392a5a746851481c4e224c2b26ef18228fc72",
+          "events_sha256": "e9cb375ecccbc1cbba34278ad02363d5190e722187bcea2896e1be2c04c96cc4",
+          "xml_counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0
+        },
+        {
+          "phase": "M1",
+          "returncode": 1,
+          "elapsed_s": 4.880242940038443,
+          "xml_sha256": "7b886657f8ce0dfe761e9c29d08b59182213297a747004b4f2c1ca36f9e81d66",
+          "events_sha256": "50fb969b5c72a272596daf41d446eac389537d1bf77356776e7395b784e10912",
+          "xml_counts": {
+            "total": 1,
+            "failure": 1,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0
+        },
+        {
+          "phase": "G2",
+          "returncode": 0,
+          "elapsed_s": 5.282595655880868,
+          "xml_sha256": "a2b66e812aa1c27c5306e426a0ddcd7fcafa1df7a10cfa6e5388775c33636f42",
+          "events_sha256": "2737a23fad8d95df875cb367bd009d315ce844cc258c8dad8f1672a6b68151bd",
+          "xml_counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0
+        }
+      ]
+    },
+    {
+      "id": "accept_future_feedback",
+      "source": {
+        "path": "src/mars_titan/memory/associative_memory.py",
+        "sha256": "ac60739dece56bd3fe3bba05c2e3cd94d94ea36a5a6e201a66b2452c1195a59a"
+      },
+      "nodeid": "tests/memory/test_paired_proximal.py::test_pair_rejects_future_and_repeated_feedback",
+      "anchor": "not d < a <= cutoff",
+      "replacement": "not d < a",
+      "expected_failure": {
+        "exception_type": "Failed",
+        "longrepr_contains": "DID NOT RAISE"
+      },
+      "status": "killed_with_green_controls",
+      "phases": [
+        {
+          "phase": "G1",
+          "returncode": 0,
+          "elapsed_s": 5.083881631027907,
+          "xml_sha256": "74f691bf9038321c5580b317f5f7855b0646743e71ea78d0bfa67d188e3fdc5d",
+          "events_sha256": "3a5487a5d39e28d403a952d4ae6837d36be0b6c76031b657a412c53114e9f7c9",
+          "xml_counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0
+        },
+        {
+          "phase": "M1",
+          "returncode": 1,
+          "elapsed_s": 3.473926688078791,
+          "xml_sha256": "1edda0a2c3e1e3521c8aa518a0a81a765e255805f520bea581d6cf5249791458",
+          "events_sha256": "c8891f622f9196952dde009ec278d3235cfcdf19847c5807a56d117597af9e3d",
+          "xml_counts": {
+            "total": 1,
+            "failure": 1,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0
+        },
+        {
+          "phase": "G2",
+          "returncode": 0,
+          "elapsed_s": 4.2751340109389275,
+          "xml_sha256": "037f3befb5362fa9ccbbb6f06f27352faed364b42fb8ca5b025acfff2e30fa4f",
+          "events_sha256": "769143a99b4dd8dbe1efc964ab9d7f68e61726f5366f01402037388b3c0de221",
+          "xml_counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0
+        }
+      ]
+    },
+    {
+      "id": "hide_companion_overflow",
+      "source": {
+        "path": "src/mars_titan/memory/paired_proximal.py",
+        "sha256": "b752d38c6dd28de5497380cb195d158fcea114bcd4ff89df24e8f164e863dcf4"
+      },
+      "nodeid": "tests/memory/test_paired_proximal.py::test_pair_reports_overflow_and_does_not_publish_the_other_state",
+      "anchor": "second = torch.cholesky_solve(b.retention * right._matrix + b.rate * cross, factor)",
+      "replacement": "second = torch.nan_to_num(torch.cholesky_solve(b.retention * right._matrix + b.rate * cross, factor), posinf=1.0, neginf=-1.0)",
+      "expected_failure": {
+        "exception_type": "Failed",
+        "longrepr_contains": "DID NOT RAISE"
+      },
+      "status": "killed_with_green_controls",
+      "phases": [
+        {
+          "phase": "G1",
+          "returncode": 0,
+          "elapsed_s": 4.375947313848883,
+          "xml_sha256": "8e22a6b6508aff6e90149100891bc53d264305e1febafd6d9efca8047b773336",
+          "events_sha256": "d383abb9c56c1d564e4846e912d402ef645c689d2e284cea19809f859f305cc4",
+          "xml_counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0
+        },
+        {
+          "phase": "M1",
+          "returncode": 1,
+          "elapsed_s": 3.4732362700160593,
+          "xml_sha256": "dbb11bed184b93db21a3cd6857134faea2e40de70d8118a12a7e87d9b0ffec8b",
+          "events_sha256": "274a21469ed954c307843d0116483ff95eabe696cccf9a8b65984952e587dcc5",
+          "xml_counts": {
+            "total": 1,
+            "failure": 1,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0
+        },
+        {
+          "phase": "G2",
+          "returncode": 0,
+          "elapsed_s": 2.720083400141448,
+          "xml_sha256": "2d31121f600572ff6f8e9c24a9c367e84bc5ac87b0f36688dae082717648f439",
+          "events_sha256": "ae837d115eca818d215d1286915fa7633b383696b7480dc62cff51412a98474c",
+          "xml_counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0
+        }
+      ]
+    },
+    {
+      "id": "ignore_factorization_status",
+      "source": {
+        "path": "src/mars_titan/memory/paired_proximal.py",
+        "sha256": "b752d38c6dd28de5497380cb195d158fcea114bcd4ff89df24e8f164e863dcf4"
+      },
+      "nodeid": "tests/memory/test_paired_proximal.py::test_pair_propagates_a_factorization_failure_reported_by_the_library",
+      "anchor": "if int(info) != 0:",
+      "replacement": "if False:",
+      "expected_failure": {
+        "exception_type": "Failed",
+        "longrepr_contains": "DID NOT RAISE"
+      },
+      "status": "killed_with_green_controls",
+      "phases": [
+        {
+          "phase": "G1",
+          "returncode": 0,
+          "elapsed_s": 2.819991916883737,
+          "xml_sha256": "e1b5be95f65374c7895c1870bdb03c9f349c7203a4a1612c23fab1c0cc4801b5",
+          "events_sha256": "864f046db3078a0fab2868eec321ec033ee82b03c5413a6e7544ad8ca626e4be",
+          "xml_counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0
+        },
+        {
+          "phase": "M1",
+          "returncode": 1,
+          "elapsed_s": 3.8736083838157356,
+          "xml_sha256": "1a92e60263bc005786dfc99ec424dd9a0b8dda8d3483c66f2859b58bcafa1ea2",
+          "events_sha256": "5d5a4596d2d7a688662ef1ecc29addbf9382340ad812aa8e726292825be7a49a",
+          "xml_counts": {
+            "total": 1,
+            "failure": 1,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0
+        },
+        {
+          "phase": "G2",
+          "returncode": 0,
+          "elapsed_s": 4.074911593925208,
+          "xml_sha256": "753fbb46de115cbfe616ea81ece0e714463198dfb7abc1f6b34ebc028971f760",
+          "events_sha256": "3517b64b98ef14a0a33d7760db2203919ec3a2986689fac5dc33ec51127f0c22",
+          "xml_counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0
+        }
+      ]
+    },
+    {
+      "id": "disable_paired_dispatch",
+      "source": {
+        "path": "src/mars_titan/memory/area_memory.py",
+        "sha256": "1858461dbe879449a24bf7ffdbe1e1e9781b071f451097cf28167550460b37af"
+      },
+      "nodeid": "tests/memory/test_area_query_bridge.py::test_area_write_shares_one_factor_between_each_correction_and_query_map",
+      "anchor": "if self._bridge is not None and self.config.rule == \"proximal\":",
+      "replacement": "if False:",
+      "expected_failure": {
+        "exception_type": "AssertionError",
+        "longrepr_contains": "calls"
+      },
+      "status": "killed_with_green_controls",
+      "phases": [
+        {
+          "phase": "G1",
+          "returncode": 0,
+          "elapsed_s": 3.322597486898303,
+          "xml_sha256": "36c7694f0cbfa8bd68779c34c630306cc110054e14e97a52ec373e57bdf009c8",
+          "events_sha256": "5cd4f93348d1b248959637d5ce80c5644ea2331baba6e2747028a102ffafc998",
+          "xml_counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0
+        },
+        {
+          "phase": "M1",
+          "returncode": 1,
+          "elapsed_s": 3.1723333708941936,
+          "xml_sha256": "f139531e5706574ddc4a8ef95133befde88a8602994078b7edb5e5cc158fe630",
+          "events_sha256": "cfde2da9693ba8e66077fe4bfd88f219900042d1226a08b6c8945afadcc5fb35",
+          "xml_counts": {
+            "total": 1,
+            "failure": 1,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0
+        },
+        {
+          "phase": "G2",
+          "returncode": 0,
+          "elapsed_s": 2.5208092050161213,
+          "xml_sha256": "53c6b2718b2d9a892d8e2437e900855a6419a08873950be50b54da9dbc7a0b38",
+          "events_sha256": "b54bcf9729c655ca753ebc4632c81f9ca14fc3bf536923774a6fec6adcb4728a",
+          "xml_counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0
+        }
+      ]
+    },
+    {
+      "id": "reuse_label_random_stream",
+      "source": {
+        "path": "src/mars_titan/memory/area_query_bridge.py",
+        "sha256": "2733cc1996839233eea8d8343c658e805ae89ecdf787fd86ca408c299145d23a"
+      },
+      "nodeid": "tests/memory/test_area_query_bridge.py::test_bridge_shuffle_does_not_reuse_the_area_label_shuffle_stream",
+      "anchor": "[SHUFFLE_DOMAIN, self.config.seed,",
+      "replacement": "[self.config.seed,",
+      "expected_failure": {
+        "exception_type": "AssertionError",
+        "longrepr_contains": "torch.allclose"
+      },
+      "status": "killed_with_green_controls",
+      "phases": [
+        {
+          "phase": "G1",
+          "returncode": 0,
+          "elapsed_s": 3.9737935459706932,
+          "xml_sha256": "ce7b76d5be66ac0077683a8f33210f14d2285372cf709ab82a0627bbf313759e",
+          "events_sha256": "cc1789a9e5b8e400a58fbbf7ef242c994fc7b53e58735dd8681e821c7cc1644e",
+          "xml_counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0
+        },
+        {
+          "phase": "M1",
+          "returncode": 1,
+          "elapsed_s": 3.5724613489583135,
+          "xml_sha256": "9c93a3dafb679e65bde75333c3d75369f0a77df2f3ddc0b7c5c28e99602e1a20",
+          "events_sha256": "aaba78443c9932b43c65a4379c95f279d8291a8b46967cd8b34c18900e4e6f33",
+          "xml_counts": {
+            "total": 1,
+            "failure": 1,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0
+        },
+        {
+          "phase": "G2",
+          "returncode": 0,
+          "elapsed_s": 4.5270676768850535,
+          "xml_sha256": "9bc9cf183faeda0927f2d35632049720b836a3a475c6bcfbc27a41e2950b0cf3",
+          "events_sha256": "ed306570d1cb1c50a0dcaa06be58240b1b4385b3838bb34ce227c4f3381c365c",
+          "xml_counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0
+        }
+      ]
+    },
+    {
+      "id": "retain_all_destination_buffers",
+      "source": {
+        "path": "src/mars_titan/memory/area_query_bridge.py",
+        "sha256": "2733cc1996839233eea8d8343c658e805ae89ecdf787fd86ca408c299145d23a"
+      },
+      "nodeid": "tests/memory/test_area_query_bridge.py::test_shuffled_maps_do_not_keep_one_destination_buffer_per_area",
+      "anchor": "        corrections, maps = [], []\n        for source, area in enumerate(areas):\n            corrected, mapped = write_proximal_pair(\n                area,\n                self._maps[source],\n                replace(feedback, keys=features[source]),\n                self._target_values(features, feedback, canonical, source),\n                cutoff=cutoff,\n            )\n            corrections.append(corrected)\n            maps.append(mapped)\n",
+      "replacement": "        corrections, maps = [], []\n        all_targets = [self._target_values(features, feedback, canonical, i) for i in range(self.areas)]\n        for source, area in enumerate(areas):\n            corrected, mapped = write_proximal_pair(\n                area,\n                self._maps[source],\n                replace(feedback, keys=features[source]),\n                all_targets[source],\n                cutoff=cutoff,\n            )\n            corrections.append(corrected)\n            maps.append(mapped)\n",
+      "expected_failure": {
+        "exception_type": "AssertionError",
+        "longrepr_contains": "peaks"
+      },
+      "status": "killed_with_green_controls",
+      "phases": [
+        {
+          "phase": "G1",
+          "returncode": 0,
+          "elapsed_s": 3.923797697061673,
+          "xml_sha256": "ce8e85041a5a5f98c2dfd03526c6488d058456303a1b3ce046cf311e5cc041b6",
+          "events_sha256": "92756144deb3c7c07f1ba60f4123401dd79da7f629468c5c9179e85da8ed68e6",
+          "xml_counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0
+        },
+        {
+          "phase": "M1",
+          "returncode": 1,
+          "elapsed_s": 4.877355739008635,
+          "xml_sha256": "5df8bb0f04e3a36e49e1d955ac344a9ec9e4e866d7e20fcb862e26dbc7728d5f",
+          "events_sha256": "a0d3106407f78c74bc57351704f2c10192d0741e3ae5e981d9d21ad8bde25189",
+          "xml_counts": {
+            "total": 1,
+            "failure": 1,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0
+        },
+        {
+          "phase": "G2",
+          "returncode": 0,
+          "elapsed_s": 4.929739720886573,
+          "xml_sha256": "ab0b6948cbd695e3fe0a7439cd8745e0fe4731e803e8c96aa33f6002a6cacc6b",
+          "events_sha256": "04e601d63f758bf9f4f18f8e71f977a3ee71ce632713dcbd28df09a88fe35c5d",
+          "xml_counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0
+        }
+      ]
+    },
+    {
+      "id": "forget_backend_source_pin",
+      "source": {
+        "path": "src/mars_titan/memory/financial_session.py",
+        "sha256": "7705a15d8b12822ac624f95724cc6a790acdfa4b3d11af9bb07e3dbdb7c91b85"
+      },
+      "nodeid": "tests/memory/test_area_session_recovery.py::test_session_identity_pins_the_source_of_the_enabled_memory[paired]",
+      "anchor": "associative.query_bridge is not None and associative.memory.rule == \"proximal\"",
+      "replacement": "False",
+      "expected_failure": {
+        "exception_type": "AssertionError",
+        "longrepr_contains": "model_id"
+      },
+      "status": "killed_with_green_controls",
+      "phases": [
+        {
+          "phase": "G1",
+          "returncode": 0,
+          "elapsed_s": 4.473710345104337,
+          "xml_sha256": "bd005ff20200c98efa8ffe04dd91b2ec925df0e10a8069997a9973126002819d",
+          "events_sha256": "3d9d68cde9a57f3b430c5fe4a38ff1637b546edf88f738714069de0750dd968e",
+          "xml_counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0
+        },
+        {
+          "phase": "M1",
+          "returncode": 1,
+          "elapsed_s": 4.925111355027184,
+          "xml_sha256": "32c5bbca38e566ef182be8f4182ae12f6553bcdd22b12846b7f0564392b3a229",
+          "events_sha256": "16a10ed164d59bbc44c603fb1d425df37cdded6332b96352a1eeb59a15314dc6",
+          "xml_counts": {
+            "total": 1,
+            "failure": 1,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0
+        },
+        {
+          "phase": "G2",
+          "returncode": 0,
+          "elapsed_s": 4.924688707804307,
+          "xml_sha256": "ec9e3444bcd4ec06ce736a90c97ec94efad97b4980b4a96c2db324becb8ef69c",
+          "events_sha256": "34adabb7ec881d649f4035b67961a4cd9c63ca265abd2f61bca7e5762172ca2c",
+          "xml_counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0
+        }
+      ]
+    }
+  ],
+  "original_sources_unchanged": true,
+  "limits": [
+    "11/11 solo describe estas sustituciones. No mide todas las mutaciones posibles.",
+    "Los recibos completos se conservan fuera del repositorio."
+  ]
+}

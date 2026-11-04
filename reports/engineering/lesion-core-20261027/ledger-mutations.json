@@ -1,0 +1,77 @@
+{
+  "repositories": {
+    "Objective": {
+      "root": ".",
+      "test_path": "tests/memory/test_lesion_ledger.py",
+      "test_sha256": "d8a1dd303315c34eed8aa1c3c0bbfc086f40b6f48c9312c01c0d223021f6d73c"
+    }
+  },
+  "sources": {
+    "area": {
+      "path": "src/mars_titan/memory/area_memory.py",
+      "sha256": "4a2013705a289a32d4c290b48897cca67af3e04c0c8a12b7e56a155444ee19d5"
+    },
+    "bridge": {
+      "path": "src/mars_titan/memory/area_query_bridge.py",
+      "sha256": "d29e43eb6aec0f067a3560893cb16ba1447b87a4dc35bf922b3a5e741bc6fb2a"
+    },
+    "ledger": {
+      "path": "src/mars_titan/memory/lesion_ledger.py",
+      "sha256": "a71d726af049dec81fee3def79a60be0ba9ebd3ce45aa05733852b4d6a9b5578"
+    },
+    "mixture": {
+      "path": "src/mars_titan/memory/multiscale_mixture.py",
+      "sha256": "fb06a9607f44513c5c2961cffd9d9af0f6d12df1d58ad9e7fb258503389a3df2"
+    }
+  },
+  "recipes": [
+    {
+      "id": "accept_future_feedback",
+      "family": "Objective",
+      "source_key": "ledger",
+      "nodeid": "tests/memory/test_lesion_ledger.py::test_future_feedback_and_bad_values_leave_the_ledger_unchanged",
+      "anchor": "if key not in self.pending or not key[1] < available <= self.clock:",
+      "replacement": "if key not in self.pending or not key[1] < available:",
+      "expected_failure": {
+        "exception_type": "Failed",
+        "longrepr_contains": "DID NOT RAISE"
+      }
+    },
+    {
+      "id": "share_issued_prediction_storage",
+      "family": "Objective",
+      "source_key": "ledger",
+      "nodeid": "tests/memory/test_lesion_ledger.py::test_scoring_uses_emitted_values_and_session_means_before_aggregation",
+      "anchor": "predictions[i].detach().clone()",
+      "replacement": "predictions[i].detach()",
+      "expected_failure": {
+        "exception_type": "AssertionError",
+        "longrepr_contains": "assert"
+      }
+    },
+    {
+      "id": "publish_case_errors_before_all_validate",
+      "family": "Objective",
+      "source_key": "ledger",
+      "nodeid": "tests/memory/test_lesion_ledger.py::test_accumulation_overflow_in_one_case_does_not_commit_the_other_cases",
+      "anchor": "current.sessions = previous.sessions.copy()",
+      "replacement": "current.sessions = previous.sessions",
+      "expected_failure": {
+        "exception_type": "AssertionError",
+        "longrepr_contains": "assert"
+      }
+    },
+    {
+      "id": "ignore_ledger_checksum",
+      "family": "Objective",
+      "source_key": "ledger",
+      "nodeid": "tests/memory/test_lesion_ledger.py::test_restore_rejects_numerically_changed_predictions_with_the_old_hash",
+      "anchor": "if value.export()[\"state_sha256\"] != payload[\"state_sha256\"]:",
+      "replacement": "if False:",
+      "expected_failure": {
+        "exception_type": "Failed",
+        "longrepr_contains": "DID NOT RAISE"
+      }
+    }
+  ]
+}

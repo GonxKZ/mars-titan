@@ -53,6 +53,22 @@ El validador de recibos comprueba tipos, prefijos, backend, esquema y sumas. No 
 
 Al desactivar la opción se conservan la configuración estructural, los parámetros y la lectura de checkpoints del módulo. Los sellos de implementación registran el código nuevo. Una sesión histórica ligada a fuentes concretas requiere esas fuentes y no debe recuperarse falsificando su identidad.
 
+## Declaración en la criba
+
+La [declaración](../../configs/experiments/adaptive-bridge-depth-v1.json) registra D2 en la criba de [#746](https://github.com/GonxKZ/mars-titan/issues/746) con tres lectores sobre el mismo padre, M1, tres vistas en anillo, ganancia 0,25 y la misma semilla. Los tres tienen los mismos parámetros.
+
+| Configuración | Vueltas calculadas | Salida emitida |
+| --- | ---: | --- |
+| `adaptive_j4` | 4 | El primer prefijo J1, J2 o J4 que cumple la parada |
+| `fixed_j4` | 4 | J4 |
+| `fixed_j1` | 1 | J1 |
+
+El contraste principal enfrenta `adaptive_j4` con `fixed_j4`. Con `adaptive_reference_full`, la lectura adaptativa calcula siempre J4, así que los dos lectores reservan y ejecutan el mismo trabajo y solo difieren en el prefijo que emiten y derivan. El segundo contraste, `fixed_j4` frente a `fixed_j1`, mide la profundidad y solo se publica. `fixed_j4` es la misma definición que `flat_k1_j4_final` de D1, así que el motor la ejecuta una vez para las dos entradas.
+
+La tolerancia es relativa, $r = 0{,}05$ con $a = 0$, y quedó fijada al declarar la entrada, antes de abrir ningún dato. Con $a = 0$, el criterio compara el cambio de una vuelta con el tamaño del propio estado y no necesita un umbral en las unidades de la representación. La trayectoria sí depende de esa escala a través de tanh, así que el valor no se traslada a otras representaciones. Con 0,05, la lectura se detiene cuando una vuelta no mueve ninguna coordenada presente más de un 5 % de la mayor de ellas. Es un valor previo, sin ajuste ni justificación empírica. Si el criterio casi nunca se cumple, la variante coincide con `fixed_j4`, y si se cumple siempre en la primera vuelta emite J1 con el cálculo de J4. Los recibos guardan la profundidad elegida en cada lectura, así que el análisis puede publicar su distribución junto al contraste.
+
+D2 se descarta si la parada no mejora el IC por sesión de `fixed_j4` con la regla de decisión de la criba.
+
 ## Comprobaciones y evaluación pendiente
 
 Las pruebas técnicas cubren ecuaciones, gradientes de la rama elegida, máscaras, tolerancias extremas, desbordamientos, RNG, checkpoints, permutación, bloques, conservación de IDs, recuperación y coste de prefijos compartidos. Utilizan fixtures identificados, sin aprendizaje financiero. La mutación dirigida, la cobertura y CRAP son comprobaciones parciales, sin acreditar ausencia de errores.

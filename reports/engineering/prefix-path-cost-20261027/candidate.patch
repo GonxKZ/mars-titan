@@ -1,0 +1,218 @@
+diff --git a/src/mars_titan/training/prefix_eligibility.py b/src/mars_titan/training/prefix_eligibility.py
+index aa12b7874..e4e8accc0 100644
+--- a/src/mars_titan/training/prefix_eligibility.py
++++ b/src/mars_titan/training/prefix_eligibility.py
+@@ -3,7 +3,9 @@
+ import hashlib
+ import json
+ import math
++import os
+ import re
++import stat
+ from collections import OrderedDict
+ from dataclasses import asdict, dataclass
+ from pathlib import Path
+@@ -15,7 +17,7 @@ import pyarrow.parquet as pq
+
+ from mars_titan.data.audited_prices import MAX_PRICE_BYTES, read_audited_factor, read_audited_prices
+ from mars_titan.data.budget_targets import _aligned_returns
+-from mars_titan.data.cohort_files import read_manifest, safe_destination
++from mars_titan.data.cohort_files import read_manifest
+ from mars_titan.data.storage import sha256
+ from mars_titan.data.temporal import MarketClock
+
+@@ -34,11 +36,22 @@ def _digest(value):
+
+
+ def _signature(path):
+-    safe_destination(path)
+-    stat = path.stat()
+-    if not path.is_file():
++    name = os.fspath(path)
++    current = name
++    while True:
++        info = os.lstat(current)
++        if stat.S_ISLNK(info.st_mode):
++            raise ValueError("La fuente del prefijo incluye un enlace")
++        parent = os.path.dirname(current) or os.curdir
++        if parent == current:
++            break
++        current = parent
++    # El objetivo se relee al final para no devolver una firma anterior a la
++    # comprobación de padres. lstat tampoco sigue un enlace insertado entre ambas.
++    info = os.lstat(name)
++    if not stat.S_ISREG(info.st_mode):
+         raise ValueError("La fuente del prefijo no es un archivo regular")
+-    return stat.st_dev, stat.st_ino, stat.st_size, stat.st_mtime_ns, stat.st_ctime_ns
++    return info.st_dev, info.st_ino, info.st_size, info.st_mtime_ns, info.st_ctime_ns
+
+
+ @dataclass(frozen=True)
+diff --git a/tests/training/test_prefix_path_signature.py b/tests/training/test_prefix_path_signature.py
+new file mode 100644
+index 000000000..a27751957
+--- /dev/null
++++ b/tests/training/test_prefix_path_signature.py
+@@ -0,0 +1,126 @@
++"""Firmas de archivo sin caché, con revisión de enlaces y lectura final del objetivo."""
++
++import os
++from pathlib import Path
++
++import pytest
++
++from mars_titan.training import prefix_eligibility as api
++
++
++def attributes(info):
++    return info.st_dev, info.st_ino, info.st_size, info.st_mtime_ns, info.st_ctime_ns
++
++
++@pytest.mark.parametrize("relative", [False, True])
++def test_regular_file_keeps_all_five_attributes(tmp_path, monkeypatch, relative):
++    target = tmp_path / "a/b/target.bin"
++    target.parent.mkdir(parents=True)
++    target.write_bytes(b"fixture")
++    os.utime(target, ns=(11, 13))
++    if relative:
++        monkeypatch.chdir(tmp_path)
++        target = Path("a/b/target.bin")
++    assert api._signature(target) == attributes(target.stat())
++
++
++def test_each_read_uses_at_most_two_target_metadata_calls(tmp_path, monkeypatch):
++    target = tmp_path / "target.bin"
++    target.write_bytes(b"fixture")
++    original_stat, original_lstat = os.stat, os.lstat
++    calls = []
++
++    def observe(function):
++        def wrapped(path, *args, **kwargs):
++            if os.fspath(path) == os.fspath(target):
++                calls.append(path)
++            return function(path, *args, **kwargs)
++
++        return wrapped
++
++    monkeypatch.setattr(os, "stat", observe(original_stat))
++    monkeypatch.setattr(os, "lstat", observe(original_lstat))
++    first = api._signature(target)
++    assert 1 <= len(calls) <= 2
++    calls.clear()
++    assert api._signature(target) == first
++    assert 1 <= len(calls) <= 2
++
++
++@pytest.mark.parametrize("kind", ["directory", "fifo", "link", "dangling"])
++def test_nonregular_sources_are_rejected_without_opening_them(tmp_path, kind):
++    target = tmp_path / "target"
++    if kind == "directory":
++        target.mkdir()
++    elif kind == "fifo":
++        os.mkfifo(target)
++    else:
++        actual = tmp_path / "actual"
++        if kind == "link":
++            actual.write_bytes(b"fixture")
++        target.symlink_to(actual)
++    with pytest.raises(ValueError):
++        api._signature(target)
++
++
++def test_an_ancestor_link_to_the_same_inode_is_not_hidden_by_a_cached_signature(tmp_path):
++    parent = tmp_path / "parent"
++    parent.mkdir()
++    target = parent / "target.bin"
++    target.write_bytes(b"fixture")
++    previous = api._signature(target)
++    actual = tmp_path / "actual"
++    parent.rename(actual)
++    parent.symlink_to(actual, target_is_directory=True)
++    assert attributes(target.stat()) == previous
++    with pytest.raises(ValueError):
++        api._signature(target)
++
++
++def during_parent_check(monkeypatch, target, change):
++    original_stat, original_lstat = os.stat, os.lstat
++    changed = False
++
++    def observe(function):
++        def wrapped(path, *args, **kwargs):
++            nonlocal changed
++            if not changed and os.fspath(path) == os.fspath(target.parent):
++                changed = True
++                change()
++            return function(path, *args, **kwargs)
++
++        return wrapped
++
++    monkeypatch.setattr(os, "stat", observe(original_stat))
++    monkeypatch.setattr(os, "lstat", observe(original_lstat))
++
++
++def test_signature_reads_target_changes_after_checking_ancestors(tmp_path, monkeypatch):
++    target = tmp_path / "parent/target.bin"
++    target.parent.mkdir()
++    target.write_bytes(b"before")
++    before = attributes(target.stat())
++    during_parent_check(monkeypatch, target, lambda: target.write_bytes(b"after with new length"))
++    result = api._signature(target)
++    assert result != before
++    assert result == attributes(target.stat())
++
++
++def test_target_link_inserted_during_ancestor_check_is_rejected(tmp_path, monkeypatch):
++    target = tmp_path / "parent/target.bin"
++    target.parent.mkdir()
++    target.write_bytes(b"fixture")
++    actual = target.with_name("actual.bin")
++
++    def replace_target():
++        target.rename(actual)
++        target.symlink_to(actual)
++
++    during_parent_check(monkeypatch, target, replace_target)
++    with pytest.raises(ValueError):
++        api._signature(target)
++
++
++def test_missing_source_keeps_the_operating_system_failure(tmp_path):
++    with pytest.raises(FileNotFoundError):
++        api._signature(tmp_path / "missing")
+diff --git a/tests/memory/test_prefix_path_parity.py b/tests/memory/test_prefix_path_parity.py
+new file mode 100644
+index 000000000..76225eda6
+--- /dev/null
++++ b/tests/memory/test_prefix_path_parity.py
+@@ -0,0 +1,30 @@
++"""La comprobación de rutas conserva la evidencia de prefijo con supervisión manual."""
++
++from test_financial_session import moment
++from test_financial_session_controls import flow_source
++from test_financial_session_controls import no_target_estimation as no_target_estimation
++
++from mars_titan.data.cohort_files import safe_destination
++from mars_titan.training import prefix_eligibility as api
++
++
++def original_signature(path):
++    safe_destination(path)
++    info = path.stat()
++    if not path.is_file():
++        raise ValueError("La fuente del prefijo no es un archivo regular")
++    return info.st_dev, info.st_ino, info.st_size, info.st_mtime_ns, info.st_ctime_ns
++
++
++def test_prefix_evidence_and_policy_are_identical_to_the_original(tmp_path, monkeypatch):
++    source = flow_source(tmp_path, flows=("US/T0000",))
++    verifier = source["prefixes"]
++    before_policy = verifier.identity()
++    with monkeypatch.context() as guard:
++        guard.setattr(api, "_signature", original_signature)
++        expected = [verifier.evidence("US/T0000", moment(index)) for index in (125, 126, 128, 130)]
++    actual = [verifier.evidence("US/T0000", moment(index)) for index in (125, 126, 128, 130)]
++    assert actual == expected
++    assert verifier.identity() == before_policy
++    for proof in actual:
++        assert verifier.verify(proof, flow_id=proof.flow_id, decision_at=proof.decision_at) is None

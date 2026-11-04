@@ -1,0 +1,781 @@
+{
+  "kind": "technical_regional_spaced_readout_repeated_cost",
+  "passes": [
+    {
+      "kind": "technical_regional_spaced_readout_cost",
+      "hardware": {
+        "cpu": "AMD Ryzen 9 8945HS w/ Radeon 780M Graphics",
+        "platform": "Linux-7.0.0-38-generic-x86_64-with-glibc2.43"
+      },
+      "python": "3.12.14",
+      "torch": "2.14.0+cu130",
+      "device": "cpu",
+      "dtype": "torch.float32",
+      "cpu_threads": 2,
+      "hidden_size": 32,
+      "warmup_per_mode": 2,
+      "repetitions_per_mode": 10,
+      "measurements": [
+        {
+          "rows": 64,
+          "kind": "ring",
+          "regions": 3,
+          "snapshot_episodes": 64,
+          "neighbors": 8,
+          "original_ms": [
+            1.097069,
+            1.184183,
+            1.09777,
+            1.03908,
+            1.12985,
+            1.215592,
+            1.130782,
+            1.458818,
+            1.393795,
+            1.228716
+          ],
+          "diagnostic_ms": [
+            4.030726,
+            3.9959,
+            4.070329,
+            3.937109,
+            4.174284,
+            4.530433,
+            4.485849,
+            4.775082,
+            5.101564,
+            4.510726
+          ],
+          "original_median_ms": 1.1574825,
+          "diagnostic_median_ms": 4.3300665,
+          "diagnostic_json_bytes": 20215,
+          "python_allocation_peak_bytes": 70427,
+          "snapshot_tensor_bytes": 51712,
+          "estimated_working_bytes": 16750848,
+          "working_budget_bytes": 268435456,
+          "emitted_point_parity": true,
+          "memory_steps": [
+            1
+          ]
+        },
+        {
+          "rows": 64,
+          "kind": "j4",
+          "regions": 3,
+          "snapshot_episodes": 64,
+          "neighbors": 8,
+          "original_ms": [
+            1.894465,
+            2.049817,
+            1.868497,
+            1.994232,
+            1.941334,
+            2.037725,
+            1.927177,
+            1.818944,
+            1.85951,
+            2.070957
+          ],
+          "diagnostic_ms": [
+            10.179115,
+            11.26356,
+            10.445654,
+            10.496952,
+            10.493615,
+            10.93354,
+            10.709119,
+            10.250769,
+            10.66182,
+            10.654547
+          ],
+          "original_median_ms": 1.9342555,
+          "diagnostic_median_ms": 10.5757495,
+          "diagnostic_json_bytes": 20151,
+          "python_allocation_peak_bytes": 70152,
+          "snapshot_tensor_bytes": 51712,
+          "estimated_working_bytes": 19183872,
+          "working_budget_bytes": 268435456,
+          "emitted_point_parity": true,
+          "memory_steps": [
+            1
+          ]
+        },
+        {
+          "rows": 64,
+          "kind": "adaptive_compact",
+          "regions": 3,
+          "snapshot_episodes": 64,
+          "neighbors": 8,
+          "original_ms": [
+            4.597689,
+            2.986005,
+            3.088667,
+            2.901536,
+            2.756944,
+            2.998778,
+            2.884043,
+            2.40334,
+            2.282694,
+            2.760491
+          ],
+          "diagnostic_ms": [
+            23.012762,
+            19.382818,
+            19.403879,
+            17.94515,
+            18.615658,
+            20.497972,
+            16.872246,
+            15.444267,
+            16.845897,
+            17.698838
+          ],
+          "original_median_ms": 2.8927895,
+          "diagnostic_median_ms": 18.280404,
+          "diagnostic_json_bytes": 20151,
+          "python_allocation_peak_bytes": 70746,
+          "snapshot_tensor_bytes": 51712,
+          "estimated_working_bytes": 23722176,
+          "working_budget_bytes": 268435456,
+          "emitted_point_parity": true,
+          "memory_steps": [
+            1
+          ]
+        },
+        {
+          "rows": 64,
+          "kind": "tree",
+          "regions": 4,
+          "snapshot_episodes": 64,
+          "neighbors": 8,
+          "original_ms": [
+            2.66415,
+            3.102553,
+            2.995873,
+            2.65866,
+            2.556198,
+            2.616611,
+            2.548333,
+            2.970014,
+            2.832376,
+            2.590903
+          ],
+          "diagnostic_ms": [
+            16.79368,
+            18.139094,
+            17.734435,
+            17.229156,
+            16.826221,
+            16.86315,
+            17.172209,
+            17.423602,
+            16.613902,
+            16.325931
+          ],
+          "original_median_ms": 2.661405,
+          "diagnostic_median_ms": 17.0176795,
+          "diagnostic_json_bytes": 20343,
+          "python_allocation_peak_bytes": 70789,
+          "snapshot_tensor_bytes": 51712,
+          "estimated_working_bytes": 35040000,
+          "working_budget_bytes": 268435456,
+          "emitted_point_parity": true,
+          "memory_steps": [
+            1
+          ]
+        },
+        {
+          "rows": 256,
+          "kind": "ring",
+          "regions": 3,
+          "snapshot_episodes": 256,
+          "neighbors": 8,
+          "original_ms": [
+            2.543955,
+            2.689799,
+            2.657988,
+            2.97867,
+            2.659392,
+            2.778705,
+            2.593307,
+            2.558162,
+            2.524669,
+            2.798793
+          ],
+          "diagnostic_ms": [
+            9.807517,
+            9.916321,
+            9.854225,
+            10.597681,
+            10.737372,
+            10.867036,
+            9.75081,
+            10.105686,
+            10.648695,
+            10.497191
+          ],
+          "original_median_ms": 2.65869,
+          "diagnostic_median_ms": 10.3014385,
+          "diagnostic_json_bytes": 82579,
+          "python_allocation_peak_bytes": 303531,
+          "snapshot_tensor_bytes": 206848,
+          "estimated_working_bytes": 78996480,
+          "working_budget_bytes": 268435456,
+          "emitted_point_parity": true,
+          "memory_steps": [
+            1
+          ]
+        },
+        {
+          "rows": 256,
+          "kind": "j4",
+          "regions": 3,
+          "snapshot_episodes": 256,
+          "neighbors": 8,
+          "original_ms": [
+            4.511998,
+            4.266157,
+            4.027088,
+            4.312994,
+            4.153976,
+            4.165308,
+            4.58206,
+            4.619861,
+            4.487803,
+            5.018339
+          ],
+          "diagnostic_ms": [
+            24.428218,
+            23.265946,
+            24.155326,
+            23.549148,
+            24.234444,
+            23.511658,
+            25.174629,
+            23.119351,
+            23.051714,
+            23.450683
+          ],
+          "original_median_ms": 4.4003985,
+          "diagnostic_median_ms": 23.530403,
+          "diagnostic_json_bytes": 82835,
+          "python_allocation_peak_bytes": 303860,
+          "snapshot_tensor_bytes": 206848,
+          "estimated_working_bytes": 88728576,
+          "working_budget_bytes": 268435456,
+          "emitted_point_parity": true,
+          "memory_steps": [
+            1
+          ]
+        },
+        {
+          "rows": 256,
+          "kind": "adaptive_compact",
+          "regions": 3,
+          "snapshot_episodes": 256,
+          "neighbors": 8,
+          "original_ms": [
+            7.217556,
+            6.081615,
+            5.776772,
+            5.892589,
+            6.226306,
+            6.362431,
+            5.856552,
+            5.724955,
+            5.776581,
+            6.184387
+          ],
+          "diagnostic_ms": [
+            46.934709,
+            37.963481,
+            39.020084,
+            37.970755,
+            39.391622,
+            41.788571,
+            39.158634,
+            39.635852,
+            37.626709,
+            39.686556
+          ],
+          "original_median_ms": 5.987102,
+          "diagnostic_median_ms": 39.275127999999995,
+          "diagnostic_json_bytes": 82835,
+          "python_allocation_peak_bytes": 307115,
+          "snapshot_tensor_bytes": 206848,
+          "estimated_working_bytes": 106881792,
+          "working_budget_bytes": 268435456,
+          "emitted_point_parity": true,
+          "memory_steps": [
+            1
+          ]
+        },
+        {
+          "rows": 256,
+          "kind": "tree",
+          "regions": 4,
+          "snapshot_episodes": 256,
+          "neighbors": 8,
+          "original_ms": [
+            7.097011,
+            6.719522,
+            7.145792,
+            7.047057,
+            7.466083,
+            8.400867,
+            10.007202,
+            7.298949,
+            7.26245,
+            7.237304
+          ],
+          "diagnostic_ms": [
+            45.258505,
+            43.258991,
+            43.359579,
+            46.095334,
+            43.431354,
+            46.601674,
+            48.837961,
+            48.515516,
+            48.404547,
+            46.408582
+          ],
+          "original_median_ms": 7.249877,
+          "diagnostic_median_ms": 46.251958,
+          "diagnostic_json_bytes": 82579,
+          "python_allocation_peak_bytes": 303961,
+          "snapshot_tensor_bytes": 206848,
+          "estimated_working_bytes": 152153088,
+          "working_budget_bytes": 268435456,
+          "emitted_point_parity": true,
+          "memory_steps": [
+            1
+          ]
+        }
+      ],
+      "optimizer_attempts": 0,
+      "cuda_initialized": false,
+      "seconds_without_imports": 2.984540164936334,
+      "process_peak_rss_kib": 640696,
+      "producer_sha256": "e1a8a2b507724cc3014b91589cce450974187b5070cb4bdfcc88987bc2171ab2",
+      "fixture_helper_sha256": "5b614202895dce2da3dbaeb5e9dafaf85680b81d0c2715146924faf9ea039e27",
+      "probe_sha256": "f001fd92fa362f1a397d2bc258d23749c2298bfc30b76e627d382242d8001499",
+      "limits": [
+        "Fixtures compactos de anchuras 5/2/2/3/3, no formas del corpus completo.",
+        "Incluye lector, cabeza, supresiones, filas y JSON. MAC se prepara fuera de cada llamada.",
+        "El productor conserva la lectura original y añade una proyección del pool para los diagnósticos.",
+        "Excluye ledger, consolidación, persistencia durable, disco, CUDA y transferencias GPU.",
+        "Tracemalloc se mide en otra pasada, sin asignaciones nativas. RSS es absoluto.",
+        "No se miden energía, generalización financiera ni p95/p99 fiables."
+      ],
+      "external_process": {
+        "user_seconds": 7.67,
+        "system_seconds": 0.49,
+        "wall_clock_hms": "0:05.27",
+        "max_rss_kib": 754852.0,
+        "exit_status": 0.0
+      }
+    },
+    {
+      "kind": "technical_regional_spaced_readout_cost",
+      "hardware": {
+        "cpu": "AMD Ryzen 9 8945HS w/ Radeon 780M Graphics",
+        "platform": "Linux-7.0.0-38-generic-x86_64-with-glibc2.43"
+      },
+      "python": "3.12.14",
+      "torch": "2.14.0+cu130",
+      "device": "cpu",
+      "dtype": "torch.float32",
+      "cpu_threads": 2,
+      "hidden_size": 32,
+      "warmup_per_mode": 2,
+      "repetitions_per_mode": 10,
+      "measurements": [
+        {
+          "rows": 64,
+          "kind": "ring",
+          "regions": 3,
+          "snapshot_episodes": 64,
+          "neighbors": 8,
+          "original_ms": [
+            6.93744,
+            5.128183,
+            5.484716,
+            4.291494,
+            3.576193,
+            3.409929,
+            3.064687,
+            3.385122,
+            3.238626,
+            3.169004
+          ],
+          "diagnostic_ms": [
+            20.942344,
+            18.849262,
+            15.28352,
+            16.394557,
+            13.395875,
+            13.697094,
+            11.425615,
+            16.103267,
+            11.119055,
+            11.305287
+          ],
+          "original_median_ms": 3.493061,
+          "diagnostic_median_ms": 14.490307,
+          "diagnostic_json_bytes": 20215,
+          "python_allocation_peak_bytes": 70427,
+          "snapshot_tensor_bytes": 51712,
+          "estimated_working_bytes": 16750848,
+          "working_budget_bytes": 268435456,
+          "emitted_point_parity": true,
+          "memory_steps": [
+            1
+          ],
+          "original_rows_per_second": 18322.039036821858,
+          "diagnostic_rows_per_second": 4416.7456217456265
+        },
+        {
+          "rows": 64,
+          "kind": "j4",
+          "regions": 3,
+          "snapshot_episodes": 64,
+          "neighbors": 8,
+          "original_ms": [
+            4.832805,
+            5.147029,
+            4.796086,
+            5.657432,
+            5.171405,
+            5.701826,
+            5.236848,
+            6.019116,
+            5.752662,
+            5.143102
+          ],
+          "diagnostic_ms": [
+            27.595698,
+            25.247073,
+            30.639956,
+            28.371252,
+            27.439644,
+            31.213629,
+            30.568882,
+            28.586258,
+            29.712915,
+            27.353321
+          ],
+          "original_median_ms": 5.2041265,
+          "diagnostic_median_ms": 28.478755,
+          "diagnostic_json_bytes": 20151,
+          "python_allocation_peak_bytes": 70152,
+          "snapshot_tensor_bytes": 51712,
+          "estimated_working_bytes": 19183872,
+          "working_budget_bytes": 268435456,
+          "emitted_point_parity": true,
+          "memory_steps": [
+            1
+          ],
+          "original_rows_per_second": 12297.933188211317,
+          "diagnostic_rows_per_second": 2247.289251233068
+        },
+        {
+          "rows": 64,
+          "kind": "adaptive_compact",
+          "regions": 3,
+          "snapshot_episodes": 64,
+          "neighbors": 8,
+          "original_ms": [
+            6.563063,
+            7.00139,
+            7.025045,
+            7.236724,
+            6.925067,
+            7.662398,
+            7.045423,
+            7.014034,
+            6.832632,
+            7.033481
+          ],
+          "diagnostic_ms": [
+            43.630034,
+            43.454142,
+            44.07799,
+            44.368969,
+            53.802081,
+            57.009938,
+            43.877762,
+            44.446316,
+            43.472527,
+            44.271114
+          ],
+          "original_median_ms": 7.0195395000000005,
+          "diagnostic_median_ms": 44.174552,
+          "diagnostic_json_bytes": 20151,
+          "python_allocation_peak_bytes": 71218,
+          "snapshot_tensor_bytes": 51712,
+          "estimated_working_bytes": 23722176,
+          "working_budget_bytes": 268435456,
+          "emitted_point_parity": true,
+          "memory_steps": [
+            1
+          ],
+          "original_rows_per_second": 9117.40720313633,
+          "diagnostic_rows_per_second": 1448.797941403005
+        },
+        {
+          "rows": 64,
+          "kind": "tree",
+          "regions": 4,
+          "snapshot_episodes": 64,
+          "neighbors": 8,
+          "original_ms": [
+            6.965443,
+            7.676295,
+            7.136415,
+            7.382129,
+            7.375897,
+            7.898224,
+            8.155208,
+            9.793603,
+            7.738923,
+            7.263365
+          ],
+          "diagnostic_ms": [
+            45.652874,
+            46.739174,
+            46.386067,
+            46.650527,
+            43.858214,
+            46.393772,
+            47.130773,
+            45.627425,
+            48.302897,
+            52.502416
+          ],
+          "original_median_ms": 7.529211999999999,
+          "diagnostic_median_ms": 46.5221495,
+          "diagnostic_json_bytes": 20343,
+          "python_allocation_peak_bytes": 71025,
+          "snapshot_tensor_bytes": 51712,
+          "estimated_working_bytes": 35040000,
+          "working_budget_bytes": 268435456,
+          "emitted_point_parity": true,
+          "memory_steps": [
+            1
+          ],
+          "original_rows_per_second": 8500.22552160837,
+          "diagnostic_rows_per_second": 1375.6887995899674
+        },
+        {
+          "rows": 256,
+          "kind": "ring",
+          "regions": 3,
+          "snapshot_episodes": 256,
+          "neighbors": 8,
+          "original_ms": [
+            9.705837,
+            8.620146,
+            9.00865,
+            15.954546,
+            15.440896,
+            15.496671,
+            15.583786,
+            11.642604,
+            12.755686,
+            13.695931
+          ],
+          "diagnostic_ms": [
+            26.435786,
+            28.277995,
+            38.997336,
+            56.49712,
+            58.233758,
+            57.038089,
+            49.529121,
+            42.459502,
+            52.063096,
+            48.55368
+          ],
+          "original_median_ms": 13.2258085,
+          "diagnostic_median_ms": 49.0414005,
+          "diagnostic_json_bytes": 82579,
+          "python_allocation_peak_bytes": 303531,
+          "snapshot_tensor_bytes": 206848,
+          "estimated_working_bytes": 78996480,
+          "working_budget_bytes": 268435456,
+          "emitted_point_parity": true,
+          "memory_steps": [
+            1
+          ],
+          "original_rows_per_second": 19356.094563141454,
+          "diagnostic_rows_per_second": 5220.079308297894
+        },
+        {
+          "rows": 256,
+          "kind": "j4",
+          "regions": 3,
+          "snapshot_episodes": 256,
+          "neighbors": 8,
+          "original_ms": [
+            10.255825,
+            10.301061,
+            12.062857,
+            11.982435,
+            13.080689,
+            12.248337,
+            10.524733,
+            11.93692,
+            11.190931,
+            11.294947
+          ],
+          "diagnostic_ms": [
+            65.870227,
+            61.181273,
+            67.575356,
+            61.094599,
+            67.673039,
+            63.5265,
+            65.280743,
+            60.805121,
+            58.364343,
+            61.443026
+          ],
+          "original_median_ms": 11.6159335,
+          "diagnostic_median_ms": 62.484763,
+          "diagnostic_json_bytes": 82835,
+          "python_allocation_peak_bytes": 303925,
+          "snapshot_tensor_bytes": 206848,
+          "estimated_working_bytes": 88728576,
+          "working_budget_bytes": 268435456,
+          "emitted_point_parity": true,
+          "memory_steps": [
+            1
+          ],
+          "original_rows_per_second": 22038.693661598525,
+          "diagnostic_rows_per_second": 4096.998815535237
+        },
+        {
+          "rows": 256,
+          "kind": "adaptive_compact",
+          "regions": 3,
+          "snapshot_episodes": 256,
+          "neighbors": 8,
+          "original_ms": [
+            15.446496,
+            15.654809,
+            15.607219,
+            16.809941,
+            15.535483,
+            16.920138,
+            16.409133,
+            20.962521,
+            17.656869,
+            18.250209
+          ],
+          "diagnostic_ms": [
+            107.687835,
+            99.27023,
+            105.08547,
+            111.067204,
+            102.274983,
+            105.243659,
+            104.798848,
+            109.679815,
+            116.622163,
+            143.981481
+          ],
+          "original_median_ms": 16.609537,
+          "diagnostic_median_ms": 106.465747,
+          "diagnostic_json_bytes": 82835,
+          "python_allocation_peak_bytes": 305935,
+          "snapshot_tensor_bytes": 206848,
+          "estimated_working_bytes": 106881792,
+          "working_budget_bytes": 268435456,
+          "emitted_point_parity": true,
+          "memory_steps": [
+            1
+          ],
+          "original_rows_per_second": 15412.831796575667,
+          "diagnostic_rows_per_second": 2404.5292238451116
+        },
+        {
+          "rows": 256,
+          "kind": "tree",
+          "regions": 4,
+          "snapshot_episodes": 256,
+          "neighbors": 8,
+          "original_ms": [
+            21.553166,
+            17.742671,
+            18.625207,
+            18.615289,
+            17.780843,
+            18.517574,
+            17.608548,
+            22.518689,
+            19.222074,
+            17.040755
+          ],
+          "diagnostic_ms": [
+            120.954361,
+            116.992789,
+            124.706393,
+            119.005589,
+            119.266532,
+            115.705628,
+            115.301746,
+            118.498451,
+            119.056084,
+            107.733835
+          ],
+          "original_median_ms": 18.5664315,
+          "diagnostic_median_ms": 118.75202,
+          "diagnostic_json_bytes": 82579,
+          "python_allocation_peak_bytes": 303961,
+          "snapshot_tensor_bytes": 206848,
+          "estimated_working_bytes": 152153088,
+          "working_budget_bytes": 268435456,
+          "emitted_point_parity": true,
+          "memory_steps": [
+            1
+          ],
+          "original_rows_per_second": 13788.32545177031,
+          "diagnostic_rows_per_second": 2155.7528031944216
+        }
+      ],
+      "optimizer_attempts": 0,
+      "cuda_initialized": false,
+      "seconds_without_imports": 8.327548020053655,
+      "process_peak_rss_kib": 637228,
+      "producer_sha256": "e1a8a2b507724cc3014b91589cce450974187b5070cb4bdfcc88987bc2171ab2",
+      "fixture_helper_sha256": "5b614202895dce2da3dbaeb5e9dafaf85680b81d0c2715146924faf9ea039e27",
+      "probe_sha256": "cc4fc15b75863c65cee09e3833e02666dc47c4d9a2fde4705251f6c736252ce6",
+      "limits": [
+        "Fixtures compactos de anchuras 5/2/2/3/3, no formas del corpus completo.",
+        "Incluye lector, cabeza, supresiones, filas y JSON. MAC se prepara fuera de cada llamada.",
+        "El productor conserva la lectura original y añade una proyección del pool para los diagnósticos.",
+        "Excluye ledger, consolidación, persistencia durable, disco, CUDA y transferencias GPU.",
+        "Tracemalloc se mide en otra pasada, sin asignaciones nativas. RSS es absoluto.",
+        "No se miden energía, generalización financiera ni p95/p99 fiables."
+      ],
+      "external_process": {
+        "user_seconds": 20.69,
+        "system_seconds": 1.25,
+        "wall_clock_hms": "0:14.24",
+        "max_rss_kib": 736568.0,
+        "exit_status": 0.0
+      }
+    }
+  ],
+  "initial_probe_patch": {
+    "path": "initial-probe.patch",
+    "sha256": "1f35dfdeeae11332216072bb7429f1f75e972ff4388bdf0341cb403838fe7216"
+  },
+  "notes": [
+    "Las pasadas conservan el productor y el helper. El script añade la creación del directorio de salida antes de escribir, fuera del tiempo por llamada.",
+    "Ambas mantienen la misma precisión, configuración, semillas y protocolo. Cada una conserva sus 96 pares y sus muestras.",
+    "Las latencias de ambos modos varían ampliamente entre procesos. No se midió una causa y no se atribuye el cambio al ajuste de escritura ni al modelo.",
+    "No se descarta ninguna pasada. Las cifras no acreditan latencia estable ni una aceleración."
+  ]
+}

@@ -1,0 +1,973 @@
+{
+  "schema_version": 1,
+  "kind": "lesion_durable_session_technical_cost",
+  "status": "completed",
+  "measured_at_utc": "2026-10-27T02:54:12.182202+00:00",
+  "protocol": {
+    "sizes": [
+      256
+    ],
+    "profiles": [
+      "bridge"
+    ],
+    "warmup": 1,
+    "repeats": 3,
+    "device": "cpu",
+    "dtype": "torch.float64",
+    "block_rows": 64,
+    "prefix_events": [
+      125,
+      126,
+      127
+    ],
+    "timed_event": 128,
+    "next_recovery_event": 130,
+    "mask_conditions": 20,
+    "child_budget_seconds": 300
+  },
+  "hold_sha256": "8a658080c1ac4e63847eba58b177020339da6ec47021cf26d2701830073c87fd",
+  "script_sha256": "acf95c8a9582d2a6f6a0277bd0eebab09246885ace7f68dace31b916bdf43b79",
+  "native_sha256": "22fdb1fdbaa7faee9f2c3de7240608ea60bfa271151430771591906f90d709d1",
+  "versions": {
+    "python": "3.12.14",
+    "torch": "2.14.0+cu130",
+    "numpy": "2.5.3",
+    "pyarrow": "25.0.1"
+  },
+  "git_base_commit": "093bb69431077a9d6963ab053eed714110196f3c",
+  "hardware": {
+    "cpu": "AMD Ryzen 9 8945HS w/ Radeon 780M Graphics",
+    "platform": "Linux-7.0.0-38-generic-x86_64-with-glibc2.43",
+    "device": "cpu",
+    "cpu_threads": 2,
+    "interop_threads": 1,
+    "gpu_used": false,
+    "vram_peak_bytes": null
+  },
+  "cases": [
+    {
+      "create_seconds": 0.017512792954221368,
+      "prefix_seconds": 11.491339819971472,
+      "prefix_close_seconds": 7.245596498250961e-05,
+      "reopen_seconds": 0.7828729599714279,
+      "step_seconds": 1.4825497830752283,
+      "proc_self_io_delta": {
+        "rchar": 109370472,
+        "wchar": 10678910,
+        "syscr": 2132,
+        "syscw": 16,
+        "read_bytes": 0,
+        "write_bytes": 10706944,
+        "cancelled_write_bytes": 0
+      },
+      "common_state_sha256": "84e57d28d4c6bbaa0f34217ff34325312b4a652dd441de8491e1e41ea0dad25d",
+      "repeated_state_sha256": "5c0850ef88ca2859ea31644f4ca522ca9134e50bc3e19bd56078a2bb7597e9fc",
+      "applied": 256,
+      "rows": 256,
+      "proof_seconds": 0.24403104814700782,
+      "close_seconds": null,
+      "recovery_seconds": null,
+      "recovery_exact": true,
+      "persisted_bytes": 19799878,
+      "persisted_files": 32,
+      "next_state_sha256": "31234729362f78c8249495d72743cca7918f87f01db7276036ddd7f43a11b895",
+      "assets": 256,
+      "profile": "bridge",
+      "diagnostics": false,
+      "repetition": 0,
+      "warmup": true
+    },
+    {
+      "create_seconds": 0.015242164954543114,
+      "prefix_seconds": 8.15682151215151,
+      "prefix_close_seconds": 9.394693188369274e-05,
+      "reopen_seconds": 0.7507068740669638,
+      "step_seconds": 1.8026910340413451,
+      "proc_self_io_delta": {
+        "rchar": 110804078,
+        "wchar": 10993784,
+        "syscr": 2168,
+        "syscw": 18,
+        "read_bytes": 12288,
+        "write_bytes": 11030528,
+        "cancelled_write_bytes": 0
+      },
+      "common_state_sha256": "84e57d28d4c6bbaa0f34217ff34325312b4a652dd441de8491e1e41ea0dad25d",
+      "repeated_state_sha256": "718e54ac642d7ef0524258c693820ab03af2c96cd0c2d8e320e8a8f9eb0517c1",
+      "applied": 256,
+      "rows": 256,
+      "proof_seconds": 0.24977321201004088,
+      "close_seconds": null,
+      "recovery_seconds": null,
+      "recovery_exact": true,
+      "persisted_bytes": 20119616,
+      "persisted_files": 34,
+      "next_state_sha256": "c00e9765b092acfa87690853b2f3d81384dc9de82192011b12a6175966f196be",
+      "assets": 256,
+      "profile": "bridge",
+      "diagnostics": true,
+      "repetition": 0,
+      "warmup": true
+    },
+    {
+      "create_seconds": 0.012851860839873552,
+      "prefix_seconds": 7.896612158976495,
+      "prefix_close_seconds": 0.00011844304390251637,
+      "reopen_seconds": 0.7835138840600848,
+      "step_seconds": 1.9943083520047367,
+      "proc_self_io_delta": {
+        "rchar": 110804081,
+        "wchar": 10993784,
+        "syscr": 2168,
+        "syscw": 18,
+        "read_bytes": 8192,
+        "write_bytes": 11030528,
+        "cancelled_write_bytes": 0
+      },
+      "common_state_sha256": "84e57d28d4c6bbaa0f34217ff34325312b4a652dd441de8491e1e41ea0dad25d",
+      "repeated_state_sha256": "718e54ac642d7ef0524258c693820ab03af2c96cd0c2d8e320e8a8f9eb0517c1",
+      "applied": 256,
+      "rows": 256,
+      "proof_seconds": 0.2843267689459026,
+      "close_seconds": 8.990895003080368e-05,
+      "recovery_seconds": 0.6372463980223984,
+      "recovery_exact": true,
+      "persisted_bytes": 20119616,
+      "persisted_files": 34,
+      "next_state_sha256": "c00e9765b092acfa87690853b2f3d81384dc9de82192011b12a6175966f196be",
+      "assets": 256,
+      "profile": "bridge",
+      "diagnostics": true,
+      "repetition": 1,
+      "warmup": false
+    },
+    {
+      "create_seconds": 0.012032109079882503,
+      "prefix_seconds": 8.175890635000542,
+      "prefix_close_seconds": 0.0001224800944328308,
+      "reopen_seconds": 0.9810292259790003,
+      "step_seconds": 1.6634633098728955,
+      "proc_self_io_delta": {
+        "rchar": 109370476,
+        "wchar": 10678910,
+        "syscr": 2132,
+        "syscw": 16,
+        "read_bytes": 8192,
+        "write_bytes": 10706944,
+        "cancelled_write_bytes": 0
+      },
+      "common_state_sha256": "84e57d28d4c6bbaa0f34217ff34325312b4a652dd441de8491e1e41ea0dad25d",
+      "repeated_state_sha256": "5c0850ef88ca2859ea31644f4ca522ca9134e50bc3e19bd56078a2bb7597e9fc",
+      "applied": 256,
+      "rows": 256,
+      "proof_seconds": 0.24469571304507554,
+      "close_seconds": 7.76960514485836e-05,
+      "recovery_seconds": 0.6248312450479716,
+      "recovery_exact": true,
+      "persisted_bytes": 19799878,
+      "persisted_files": 32,
+      "next_state_sha256": "31234729362f78c8249495d72743cca7918f87f01db7276036ddd7f43a11b895",
+      "assets": 256,
+      "profile": "bridge",
+      "diagnostics": false,
+      "repetition": 1,
+      "warmup": false
+    },
+    {
+      "create_seconds": 0.012373600853607059,
+      "prefix_seconds": 10.074517264962196,
+      "prefix_close_seconds": 9.046006016433239e-05,
+      "reopen_seconds": 0.7169117471203208,
+      "step_seconds": 1.8928489980753511,
+      "proc_self_io_delta": {
+        "rchar": 109370476,
+        "wchar": 10678910,
+        "syscr": 2132,
+        "syscw": 16,
+        "read_bytes": 4096,
+        "write_bytes": 10706944,
+        "cancelled_write_bytes": 0
+      },
+      "common_state_sha256": "84e57d28d4c6bbaa0f34217ff34325312b4a652dd441de8491e1e41ea0dad25d",
+      "repeated_state_sha256": "5c0850ef88ca2859ea31644f4ca522ca9134e50bc3e19bd56078a2bb7597e9fc",
+      "applied": 256,
+      "rows": 256,
+      "proof_seconds": 0.25087735312990844,
+      "close_seconds": null,
+      "recovery_seconds": null,
+      "recovery_exact": true,
+      "persisted_bytes": 19799878,
+      "persisted_files": 32,
+      "next_state_sha256": "31234729362f78c8249495d72743cca7918f87f01db7276036ddd7f43a11b895",
+      "assets": 256,
+      "profile": "bridge",
+      "diagnostics": false,
+      "repetition": 2,
+      "warmup": false
+    },
+    {
+      "create_seconds": 0.014948883093893528,
+      "prefix_seconds": 8.904244107194245,
+      "prefix_close_seconds": 8.612195961177349e-05,
+      "reopen_seconds": 0.6328821128699929,
+      "step_seconds": 1.8563003479503095,
+      "proc_self_io_delta": {
+        "rchar": 110804081,
+        "wchar": 10993784,
+        "syscr": 2168,
+        "syscw": 18,
+        "read_bytes": 4096,
+        "write_bytes": 11030528,
+        "cancelled_write_bytes": 0
+      },
+      "common_state_sha256": "84e57d28d4c6bbaa0f34217ff34325312b4a652dd441de8491e1e41ea0dad25d",
+      "repeated_state_sha256": "718e54ac642d7ef0524258c693820ab03af2c96cd0c2d8e320e8a8f9eb0517c1",
+      "applied": 256,
+      "rows": 256,
+      "proof_seconds": 0.2815769240260124,
+      "close_seconds": null,
+      "recovery_seconds": null,
+      "recovery_exact": true,
+      "persisted_bytes": 20119616,
+      "persisted_files": 34,
+      "next_state_sha256": "c00e9765b092acfa87690853b2f3d81384dc9de82192011b12a6175966f196be",
+      "assets": 256,
+      "profile": "bridge",
+      "diagnostics": true,
+      "repetition": 2,
+      "warmup": false
+    },
+    {
+      "create_seconds": 0.014243687968701124,
+      "prefix_seconds": 7.84458784176968,
+      "prefix_close_seconds": 8.798600174486637e-05,
+      "reopen_seconds": 0.6374361799098551,
+      "step_seconds": 1.8150460631586611,
+      "proc_self_io_delta": {
+        "rchar": 110804082,
+        "wchar": 10993784,
+        "syscr": 2168,
+        "syscw": 18,
+        "read_bytes": 8192,
+        "write_bytes": 11030528,
+        "cancelled_write_bytes": 0
+      },
+      "common_state_sha256": "84e57d28d4c6bbaa0f34217ff34325312b4a652dd441de8491e1e41ea0dad25d",
+      "repeated_state_sha256": "718e54ac642d7ef0524258c693820ab03af2c96cd0c2d8e320e8a8f9eb0517c1",
+      "applied": 256,
+      "rows": 256,
+      "proof_seconds": 0.2746605100110173,
+      "close_seconds": 8.999020792543888e-05,
+      "recovery_seconds": 0.9741963110864162,
+      "recovery_exact": true,
+      "persisted_bytes": 20119616,
+      "persisted_files": 34,
+      "next_state_sha256": "c00e9765b092acfa87690853b2f3d81384dc9de82192011b12a6175966f196be",
+      "assets": 256,
+      "profile": "bridge",
+      "diagnostics": true,
+      "repetition": 3,
+      "warmup": false
+    },
+    {
+      "create_seconds": 0.012432092102244496,
+      "prefix_seconds": 7.229406606173143,
+      "prefix_close_seconds": 9.333505295217037e-05,
+      "reopen_seconds": 0.8169543559197336,
+      "step_seconds": 1.8392873839475214,
+      "proc_self_io_delta": {
+        "rchar": 109370477,
+        "wchar": 10678910,
+        "syscr": 2132,
+        "syscw": 16,
+        "read_bytes": 4096,
+        "write_bytes": 10706944,
+        "cancelled_write_bytes": 0
+      },
+      "common_state_sha256": "84e57d28d4c6bbaa0f34217ff34325312b4a652dd441de8491e1e41ea0dad25d",
+      "repeated_state_sha256": "5c0850ef88ca2859ea31644f4ca522ca9134e50bc3e19bd56078a2bb7597e9fc",
+      "applied": 256,
+      "rows": 256,
+      "proof_seconds": 0.25050125108100474,
+      "close_seconds": 7.911911234259605e-05,
+      "recovery_seconds": 0.7012776320334524,
+      "recovery_exact": true,
+      "persisted_bytes": 19799878,
+      "persisted_files": 32,
+      "next_state_sha256": "31234729362f78c8249495d72743cca7918f87f01db7276036ddd7f43a11b895",
+      "assets": 256,
+      "profile": "bridge",
+      "diagnostics": false,
+      "repetition": 3,
+      "warmup": false
+    }
+  ],
+  "source_fixtures": [
+    {
+      "rows": 256,
+      "setup_seconds": 2.1555461219977587,
+      "model_seconds": 0.010238328017294407,
+      "model_sha256": "d2162c5c2f26cb59aa5f1d51689b7a60059db159885cf61e7b9a9d4f34d5a293",
+      "input_specification": {
+        "schema_version": 1,
+        "source_sha256": "84be8361b8598f9b7db0f8444032f1c01004550090f58de74bb97149d65923ae",
+        "view_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "input_policy": "historical_masked_2000_v1",
+        "representation": {
+          "context_sessions": 64,
+          "encoders": {
+            "version": 1
+          },
+          "fundamental_concepts": [
+            "Assets"
+          ],
+          "input_policy": "historical_masked_2000_v1",
+          "macro_indicators": [
+            "inflation"
+          ],
+          "mask_contract": {
+            "final_test_start": "2024-01-01",
+            "first_prediction": "2000-01-01",
+            "missing_available_at": null,
+            "missing_fill": 0.0,
+            "numeric_layout": "values_observed_log_age",
+            "order": [
+              "prices",
+              "news",
+              "charts",
+              "fundamentals",
+              "macro"
+            ],
+            "version": 1
+          },
+          "news_lookback_sessions": 5,
+          "representation_code": {
+            "fixture": "0000000000000000000000000000000000000000000000000000000000000000"
+          },
+          "text_aggregation": "test_mean"
+        },
+        "dimensions": {
+          "prices": 5,
+          "news": 2,
+          "charts": 1,
+          "fundamentals": 3,
+          "macro": 3
+        },
+        "context": 64
+      },
+      "input_sha256": "597770f89ffb08902bf50be0af8a64e6794740c1d00c4747ede50f48cceba34b",
+      "input_logical_bytes": 1684480,
+      "consumer_identity": {
+        "device": "cpu",
+        "dtype": "torch.float64",
+        "implementation": {
+          "mars_titan.cm.numerical_radius": "bdacfbbe699b8fa43abd59b6c9d48d25b5324d3d1c5b04ec80b34b254089faea",
+          "mars_titan.data.audited_prices": "ef726471bf0f6ff4ac5b494da3641cbef7d26c9d043d1f10a99bcc35e02dde1b",
+          "mars_titan.data.input_policy": "6dddae3fbc9736216322bfdd3d119d1ac03297549dcc9a08275ab7ed24245381",
+          "mars_titan.data.temporal": "d860c1ac8e3e2e53773a51cc86464b9c9063830278c9ab15a136e3679b722d70",
+          "mars_titan.models.baselines.multimodal": "bf3f688a7f347b4b00c18fc71d66a601e3057260646a0152995da8593b564dde",
+          "mars_titan.models.baselines.transformer": "1363ebe5cde08013e8133ba437a39c8de1cb8c5af5934695963c3c75a51fa58a",
+          "mars_titan.models.quantile_head": "d28e1aae5aa8936ab1e53ec02a31c02b4db1683b391fafdb5be9dfa9aa4c08df",
+          "mars_titan.models.quantile_routing": "0e132182550ddfa044d7e25c9fad41ef50ab53c42c4641963b140d9ed1522aa4",
+          "mars_titan.models.titans.bank_readout": "eb8853e99e7de816197d19dc3a957db8d7ed00d69d638ab29e7aca3bda17e8a3",
+          "mars_titan.models.titans.bridge_hierarchy": "5b6fd9732862b0a6c6c11ea3e052d366bcca14bf7c2d97697ed63d64f41aaf84",
+          "mars_titan.models.titans.bridge_intervention": "aacce65d22466366a5a8e56ffae88cd39c3ea4dc79351401094357a200b67e8e",
+          "mars_titan.models.titans.bridge_recurrence": "eff1e08489860b6b380503602be375b21d948af3b41a802025d2d9942b7d95ab",
+          "mars_titan.models.titans.bridge_stopping_record": "91d2bfa04832915ed7ef9572415ade86029a888aee0a4303f5f76a5222c3bc3c",
+          "mars_titan.models.titans.causal_convolution": "19be8fd9d81abd132aded2e57c91d67501baedbba3deff2042cdfd8eaa779706",
+          "mars_titan.models.titans.config": "119f71fd5dfb4a8e81633bbd1c6ba1e06e04ecdfcbd2c8edd94871bdbd390780",
+          "mars_titan.models.titans.episodic_readout": "440b74e9939dba5bf47db1127b2620815074f9575e72b27fe3f619b863a8351e",
+          "mars_titan.models.titans.episodic_snapshot": "0bc661f801e9e343862280a46e9b4eaf522ff11a39cb91c5d402711cb41a3bda",
+          "mars_titan.models.titans.evidence_bridge": "36e81235b1c2f88000606b4df975698d820ad06497f4ff63e459d482eff471cf",
+          "mars_titan.models.titans.financial": "bd7ac0284ddb9283512d83d42e7d59ee8b4db8500232996678a1713d574c2c4a",
+          "mars_titan.models.titans.financial_blocks": "20debec174fe1196f18bb66566153a3fd780ca189fcbb316d58d5c7665753a15",
+          "mars_titan.models.titans.financial_inputs": "1a0284a6e60c2ef6107d1aa63602b129f0b4f238fe21d4cd2187226c0848923d",
+          "mars_titan.models.titans.frozen_financial": "e9c87101a2a15b18dcfe572515939a58e34ca24d7ad31026f8de2212d7f5a29a",
+          "mars_titan.models.titans.local_control": "f91de24d8686d7157e9fc5be0af2a2991a80e10a1f44586438c0da9c7042a00e",
+          "mars_titan.models.titans.mac": "bcc0a87a045ccb0fbc4a0bb6911c6c6e631e9f6829848520fc7dda22806dc333",
+          "mars_titan.models.titans.neural_memory": "0fce65c8e0de49c3989f82ee982edc3e8a271993869807897aad9b1cc0f525f3",
+          "mars_titan.models.titans.presence_modulation": "fa5b42e32008c743dc573464982010e6399baed23218dd100527c5434a994f1a",
+          "mars_titan.models.titans.regional_episode_readout": "15bcce538b607f65f281df94cadfd64db87d3d55b9f7d5df67542b2e89f60c36",
+          "mars_titan.models.titans.regional_execution": "132c217bb143b7f23e35c14bb523daa861635e8753151bae98beb35377463687",
+          "mars_titan.models.titans.regional_fusion": "3558f5e475fbeb894512228a07ef686f5ffa68643b5900ea5abeee5cc72f34a3",
+          "mars_titan.models.titans.regional_mechanism_trace": "608dd0e1b4a7f49b890d65b934c342d3e799f3ad36b0bf28f00181df24dd6639",
+          "mars_titan.models.titans.session_context": "ae87396b105bfc5d9bfc5e189028f8cb5f8c011517fcef78da0e09f14b41522d",
+          "mars_titan.models.titans.state": "c0b40f3240be3177e9e636e82c4b988ccb4703fcfe5c5a1c3b71e070be68b0b1",
+          "mars_titan.training.cohort_contract": "75d27e6edd09610cd285a56e105a6a6749720f8a8243a714ce1dc3e0754acb6f",
+          "mars_titan.training.corpus_inputs": "c0b7fb1efde23938c60217c81736a9962ce50b00a6734f38342ae9ceb24ec5af"
+        },
+        "local_control_scope": "mac_transition_before_episodic_readout",
+        "memory_updates": "once_per_observation",
+        "modules": {
+          "predictor/": {
+            "settings": {
+              "masked": true
+            },
+            "training": false,
+            "type": "mars_titan.models.titans.financial.FinancialPredictor"
+          },
+          "predictor/encoders": {
+            "settings": {},
+            "training": false,
+            "type": "torch.nn.modules.container.ModuleDict"
+          },
+          "predictor/encoders.charts": {
+            "settings": {},
+            "training": false,
+            "type": "torch.nn.modules.container.Sequential"
+          },
+          "predictor/encoders.charts.0": {
+            "settings": {
+              "bias": true,
+              "in_features": 1,
+              "out_features": 32
+            },
+            "training": false,
+            "type": "torch.nn.modules.linear.Linear"
+          },
+          "predictor/encoders.charts.1": {
+            "settings": {
+              "inplace": false
+            },
+            "training": false,
+            "type": "torch.nn.modules.activation.SiLU"
+          },
+          "predictor/encoders.fundamentals": {
+            "settings": {},
+            "training": false,
+            "type": "torch.nn.modules.container.Sequential"
+          },
+          "predictor/encoders.fundamentals.0": {
+            "settings": {
+              "bias": true,
+              "in_features": 3,
+              "out_features": 32
+            },
+            "training": false,
+            "type": "torch.nn.modules.linear.Linear"
+          },
+          "predictor/encoders.fundamentals.1": {
+            "settings": {
+              "inplace": false
+            },
+            "training": false,
+            "type": "torch.nn.modules.activation.SiLU"
+          },
+          "predictor/encoders.macro": {
+            "settings": {},
+            "training": false,
+            "type": "torch.nn.modules.container.Sequential"
+          },
+          "predictor/encoders.macro.0": {
+            "settings": {
+              "bias": true,
+              "in_features": 3,
+              "out_features": 32
+            },
+            "training": false,
+            "type": "torch.nn.modules.linear.Linear"
+          },
+          "predictor/encoders.macro.1": {
+            "settings": {
+              "inplace": false
+            },
+            "training": false,
+            "type": "torch.nn.modules.activation.SiLU"
+          },
+          "predictor/encoders.news": {
+            "settings": {},
+            "training": false,
+            "type": "torch.nn.modules.container.Sequential"
+          },
+          "predictor/encoders.news.0": {
+            "settings": {
+              "bias": true,
+              "in_features": 2,
+              "out_features": 32
+            },
+            "training": false,
+            "type": "torch.nn.modules.linear.Linear"
+          },
+          "predictor/encoders.news.1": {
+            "settings": {
+              "inplace": false
+            },
+            "training": false,
+            "type": "torch.nn.modules.activation.SiLU"
+          },
+          "predictor/fusion": {
+            "settings": {},
+            "training": false,
+            "type": "torch.nn.modules.container.Sequential"
+          },
+          "predictor/fusion.0": {
+            "settings": {
+              "bias": true,
+              "in_features": 165,
+              "out_features": 32
+            },
+            "training": false,
+            "type": "torch.nn.modules.linear.Linear"
+          },
+          "predictor/fusion.1": {
+            "settings": {
+              "inplace": false
+            },
+            "training": false,
+            "type": "torch.nn.modules.activation.SiLU"
+          },
+          "predictor/fusion.2": {
+            "settings": {
+              "inplace": false,
+              "p": 0.0
+            },
+            "training": false,
+            "type": "torch.nn.modules.dropout.Dropout"
+          },
+          "predictor/head": {
+            "settings": {
+              "bias": true,
+              "in_features": 32,
+              "out_features": 1
+            },
+            "training": false,
+            "type": "torch.nn.modules.linear.Linear"
+          },
+          "predictor/mac": {
+            "settings": {},
+            "training": false,
+            "type": "mars_titan.models.titans.mac.TitansMAC"
+          },
+          "predictor/mac.attention": {
+            "settings": {
+              "add_zero_attn": false,
+              "batch_first": true,
+              "bias_k": false,
+              "bias_v": false,
+              "dropout": 0.0,
+              "embed_dim": 32,
+              "head_dim": 8,
+              "in_proj_bias": false,
+              "kdim": 32,
+              "num_heads": 4,
+              "qkv_same_embed_dim": true,
+              "vdim": 32
+            },
+            "training": false,
+            "type": "torch.nn.modules.activation.MultiheadAttention"
+          },
+          "predictor/mac.attention.out_proj": {
+            "settings": {
+              "bias": false,
+              "in_features": 32,
+              "out_features": 32
+            },
+            "training": false,
+            "type": "torch.nn.modules.linear.NonDynamicallyQuantizableLinear"
+          },
+          "predictor/mac.memory": {
+            "settings": {},
+            "training": false,
+            "type": "mars_titan.models.titans.neural_memory.NeuralMemory"
+          },
+          "predictor/mac.memory.alpha_projection": {
+            "settings": {
+              "bias": false,
+              "in_features": 32,
+              "out_features": 32
+            },
+            "training": false,
+            "type": "torch.nn.modules.linear.Linear"
+          },
+          "predictor/mac.memory.eta_projection": {
+            "settings": {
+              "bias": false,
+              "in_features": 32,
+              "out_features": 1
+            },
+            "training": false,
+            "type": "torch.nn.modules.linear.Linear"
+          },
+          "predictor/mac.memory.initial_weights": {
+            "settings": {},
+            "training": false,
+            "type": "torch.nn.modules.container.ParameterList"
+          },
+          "predictor/mac.memory.key_projection": {
+            "settings": {
+              "bias": false,
+              "in_features": 32,
+              "out_features": 32
+            },
+            "training": false,
+            "type": "torch.nn.modules.linear.Linear"
+          },
+          "predictor/mac.memory.theta_projection": {
+            "settings": {
+              "bias": false,
+              "in_features": 32,
+              "out_features": 1
+            },
+            "training": false,
+            "type": "torch.nn.modules.linear.Linear"
+          },
+          "predictor/mac.memory.value_projection": {
+            "settings": {
+              "bias": false,
+              "in_features": 32,
+              "out_features": 32
+            },
+            "training": false,
+            "type": "torch.nn.modules.linear.Linear"
+          },
+          "predictor/mac.query_projection": {
+            "settings": {
+              "bias": false,
+              "in_features": 32,
+              "out_features": 32
+            },
+            "training": false,
+            "type": "torch.nn.modules.linear.Linear"
+          },
+          "predictor/price_encoder": {
+            "settings": {},
+            "training": false,
+            "type": "mars_titan.models.baselines.transformer.CompactPriceTransformer"
+          },
+          "predictor/price_encoder.blocks": {
+            "settings": {},
+            "training": false,
+            "type": "torch.nn.modules.container.ModuleList"
+          },
+          "predictor/price_encoder.blocks.0": {
+            "settings": {
+              "activation": "torch.nn.functional.gelu",
+              "activation_relu_or_gelu": 2,
+              "norm_first": true
+            },
+            "training": false,
+            "type": "torch.nn.modules.transformer.TransformerEncoderLayer"
+          },
+          "predictor/price_encoder.blocks.0.dropout": {
+            "settings": {
+              "inplace": false,
+              "p": 0.0
+            },
+            "training": false,
+            "type": "torch.nn.modules.dropout.Dropout"
+          },
+          "predictor/price_encoder.blocks.0.dropout1": {
+            "settings": {
+              "inplace": false,
+              "p": 0.0
+            },
+            "training": false,
+            "type": "torch.nn.modules.dropout.Dropout"
+          },
+          "predictor/price_encoder.blocks.0.dropout2": {
+            "settings": {
+              "inplace": false,
+              "p": 0.0
+            },
+            "training": false,
+            "type": "torch.nn.modules.dropout.Dropout"
+          },
+          "predictor/price_encoder.blocks.0.linear1": {
+            "settings": {
+              "bias": true,
+              "in_features": 32,
+              "out_features": 64
+            },
+            "training": false,
+            "type": "torch.nn.modules.linear.Linear"
+          },
+          "predictor/price_encoder.blocks.0.linear2": {
+            "settings": {
+              "bias": true,
+              "in_features": 64,
+              "out_features": 32
+            },
+            "training": false,
+            "type": "torch.nn.modules.linear.Linear"
+          },
+          "predictor/price_encoder.blocks.0.norm1": {
+            "settings": {
+              "bias": true,
+              "elementwise_affine": true,
+              "eps": 1e-05,
+              "normalized_shape": [
+                32
+              ]
+            },
+            "training": false,
+            "type": "torch.nn.modules.normalization.LayerNorm"
+          },
+          "predictor/price_encoder.blocks.0.norm2": {
+            "settings": {
+              "bias": true,
+              "elementwise_affine": true,
+              "eps": 1e-05,
+              "normalized_shape": [
+                32
+              ]
+            },
+            "training": false,
+            "type": "torch.nn.modules.normalization.LayerNorm"
+          },
+          "predictor/price_encoder.blocks.0.self_attn": {
+            "settings": {
+              "add_zero_attn": false,
+              "batch_first": true,
+              "bias_k": false,
+              "bias_v": false,
+              "dropout": 0.0,
+              "embed_dim": 32,
+              "head_dim": 8,
+              "in_proj_bias": true,
+              "kdim": 32,
+              "num_heads": 4,
+              "qkv_same_embed_dim": true,
+              "vdim": 32
+            },
+            "training": false,
+            "type": "torch.nn.modules.activation.MultiheadAttention"
+          },
+          "predictor/price_encoder.blocks.0.self_attn.out_proj": {
+            "settings": {
+              "bias": true,
+              "in_features": 32,
+              "out_features": 32
+            },
+            "training": false,
+            "type": "torch.nn.modules.linear.NonDynamicallyQuantizableLinear"
+          },
+          "predictor/price_encoder.norm": {
+            "settings": {
+              "bias": true,
+              "elementwise_affine": true,
+              "eps": 1e-05,
+              "normalized_shape": [
+                32
+              ]
+            },
+            "training": false,
+            "type": "torch.nn.modules.normalization.LayerNorm"
+          },
+          "predictor/price_encoder.projection": {
+            "settings": {
+              "bias": true,
+              "in_features": 5,
+              "out_features": 32
+            },
+            "training": false,
+            "type": "torch.nn.modules.linear.Linear"
+          }
+        },
+        "numerics": {
+          "cpu_threads": 2,
+          "cublas_workspace": null,
+          "cudnn_allow_tf32": false,
+          "cudnn_benchmark": false,
+          "cudnn_deterministic": false,
+          "default_dtype": "torch.float32",
+          "deterministic": true,
+          "deterministic_warn_only": false,
+          "interop_threads": 1,
+          "matmul_allow_tf32": false,
+          "matmul_precision": "highest",
+          "mha_fastpath": false,
+          "sdpa_cudnn": true,
+          "sdpa_efficient": true,
+          "sdpa_flash": true,
+          "sdpa_math": true,
+          "torch_version": "2.14.0+cu130"
+        },
+        "predictor": {
+          "backbone_contract": {
+            "activation": "gelu",
+            "aggregation": "last_token",
+            "causal": true,
+            "context": 64,
+            "dropout": 0.0,
+            "dtypes": [
+              "float32",
+              "float64"
+            ],
+            "feedforward_multiplier": 2,
+            "final_normalization": "layer_norm",
+            "heads": 4,
+            "hidden_size": 32,
+            "input_size": 5,
+            "kind": "compact_price_transformer",
+            "layer_norm_eps": 1e-05,
+            "layers": 1,
+            "max_attention_elements": 16777216,
+            "max_batch": 256,
+            "normalization": "pre_layer_norm",
+            "position_basis_dtype": "float32",
+            "position_encoding": "sinusoidal_v1",
+            "schema_version": 1,
+            "state_policy": "reset_per_window"
+          },
+          "configuration": {
+            "bank_policy": "disabled",
+            "dropout": 0.0,
+            "feedforward_multiplier": 2,
+            "heads": 4,
+            "hidden_size": 32,
+            "inputs": {
+              "context": 64,
+              "dimensions": {
+                "charts": 1,
+                "fundamentals": 3,
+                "macro": 3,
+                "news": 2,
+                "prices": 5
+              },
+              "input_policy": "historical_masked_2000_v1",
+              "representation": {
+                "context_sessions": 64,
+                "encoders": {
+                  "version": 1
+                },
+                "fundamental_concepts": [
+                  "Assets"
+                ],
+                "input_policy": "historical_masked_2000_v1",
+                "macro_indicators": [
+                  "inflation"
+                ],
+                "mask_contract": {
+                  "final_test_start": "2024-01-01",
+                  "first_prediction": "2000-01-01",
+                  "missing_available_at": null,
+                  "missing_fill": 0.0,
+                  "numeric_layout": "values_observed_log_age",
+                  "order": [
+                    "prices",
+                    "news",
+                    "charts",
+                    "fundamentals",
+                    "macro"
+                  ],
+                  "version": 1
+                },
+                "news_lookback_sessions": 5,
+                "representation_code": {
+                  "fixture": "0000000000000000000000000000000000000000000000000000000000000000"
+                },
+                "text_aggregation": "test_mean"
+              },
+              "schema_version": 1,
+              "source_sha256": "84be8361b8598f9b7db0f8444032f1c01004550090f58de74bb97149d65923ae",
+              "view_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+            },
+            "layers": 1,
+            "mask_fusion": "zero_after_projection_then_concat_presence",
+            "max_batch": 256,
+            "max_state_bytes": 67108864,
+            "output": "scalar_corpus_target",
+            "persistent_tokens": 4,
+            "refinements": 1,
+            "schema_version": 1,
+            "seed": 42,
+            "segment_length": 1,
+            "token_policy": "one_fused_token_per_new_decision",
+            "variant": "mac_online"
+          },
+          "dtype": "torch.float64",
+          "mac_contract": {
+            "attention_bias": false,
+            "attention_mask": "triangular_on_packed_sequence",
+            "disabled_policy": "attention_only_without_prefix_or_gate",
+            "dropout": 0.0,
+            "heads": 4,
+            "layout": "persistent_memory_segment",
+            "max_attention_elements": 8388608,
+            "max_segment": 1,
+            "memory": {
+              "architecture": "square_mlp",
+              "bias": false,
+              "depth": 2,
+              "dim": 32,
+              "forgetting_broadcast": "output_rows_each_matrix",
+              "gradient_policy": "explicit_differentiable_or_detached",
+              "hidden_activation": "gelu_exact",
+              "inner_derivative": "partial_at_fixed_observation",
+              "layer_norm": false,
+              "loss_reduction": "sum_per_token_per_flow",
+              "max_batch": 256,
+              "max_state_bytes": 67108864,
+              "max_tokens": 1,
+              "normalization_eps": 1e-12,
+              "normalize_qk": true,
+              "parameter_seed": 42,
+              "rates": "sigmoid_alpha_vector_eta_scalar_scaled_theta_scalar",
+              "residual": false,
+              "schema_version": 1,
+              "theta_max": 0.1,
+              "update_order": "sequential_current_weights"
+            },
+            "memory_mode": "online",
+            "output_gate": "hadamard",
+            "output_granularity": "segment_close",
+            "parameter_seed": 42,
+            "persistent_tokens": 4,
+            "schema_version": 1,
+            "write_positions": "segment_only"
+          },
+          "training": false
+        },
+        "predictor_parameters_sha256": "03f573d95377d4c0471b255d1ecd196efb8ee62171803987f684fcd585e44082",
+        "readout": null,
+        "readout_parameters_sha256": null,
+        "recipe": "frozen_financial_mac_then_episodic_v1",
+        "schema_version": 1,
+        "shared_parameters": "frozen_no_optimizer"
+      },
+      "label_origin": "manual_fixture_no_estimation"
+    }
+  ],
+  "load_start": [
+    1.59326171875,
+    1.56201171875,
+    1.5517578125
+  ],
+  "limits": [
+    "Solo fixtures manuales con modalidades compactas y presencia de precios y gráficos.",
+    "No es rendimiento sobre el corpus completo ni de un modelo entrenado.",
+    "No usa GPU, no mide energía y no enfría la caché del sistema de archivos.",
+    "No se estiman p95/p99 fiables con tres repeticiones.",
+    "El pico RSS corresponde a todo el proceso, incluida preparación y comprobaciones."
+  ],
+  "summary": [
+    {
+      "assets": 256,
+      "profile": "bridge",
+      "original": {
+        "samples": 3,
+        "minimum_seconds": 1.6634633098728955,
+        "median_seconds": 1.8392873839475214,
+        "maximum_seconds": 1.8928489980753511,
+        "rows_per_second_at_median": 139.18433967103437
+      },
+      "diagnostic": {
+        "samples": 3,
+        "minimum_seconds": 1.8150460631586611,
+        "median_seconds": 1.8563003479503095,
+        "maximum_seconds": 1.9943083520047367,
+        "rows_per_second_at_median": 137.90871734882245
+      },
+      "delta_median_seconds": 0.017012964002788067,
+      "relative_extra_percent": 0.9249758439746619
+    }
+  ],
+  "elapsed_seconds": 129.8003764350433,
+  "optimizer_attempts": [],
+  "load_end": [
+    2.82666015625,
+    2.10400390625,
+    1.76025390625
+  ],
+  "peak_process_rss_kib": 830040
+}

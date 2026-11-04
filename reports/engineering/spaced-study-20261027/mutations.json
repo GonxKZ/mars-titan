@@ -1,0 +1,639 @@
+{
+  "schema_version": 1,
+  "status": "passed",
+  "planned": 10,
+  "killed": 10,
+  "scope": "Diez fallos dirigidos. No es una puntuación universal de mutación.",
+  "optimizer_attempts": 0,
+  "skipped": 0,
+  "groups": [
+    {
+      "family": "objective",
+      "receipt_sha256": "62958bd270e010bff6e124f201e259ebc2c755f0327b51fa0f705152468e08f2",
+      "recipes_sha256": "c2d12a094c0d985fd52c20b4ff27aad3f1b0b749b22a048b95cd2f55aaff0564",
+      "executor_sha256": "a3b73ea88ff5169765fb73fd4e436a214953b87410b07899ef58f1d40b8de22d",
+      "killed": 5,
+      "seconds": 53.98190829902887
+    },
+    {
+      "family": "window",
+      "receipt_sha256": "7497e60518f432683ac36ff2ae8c74312a1fe120eaf95344cc818c6a6f54d3cf",
+      "recipes_sha256": "732293fa6e3076c29760489ba6135b0f708b83a7748fcb9ccbce401f4dd2015c",
+      "executor_sha256": "a3b73ea88ff5169765fb73fd4e436a214953b87410b07899ef58f1d40b8de22d",
+      "killed": 5,
+      "seconds": 141.85182919888757
+    }
+  ],
+  "cases": [
+    {
+      "id": "enable_by_default",
+      "status": "killed_with_green_controls",
+      "source": {
+        "path": "src/mars_titan/memory/spaced_study.py",
+        "sha256": "90f418b3c0433d8f0b48c39a444c2f11cf45ddcfeee5fe038abbb44f4f3ae022"
+      },
+      "recipe": {
+        "nodeid": "tests/memory/test_spaced_study.py::test_invalid_study_is_rejected_without_changing_the_saved_config[<lambda>1]",
+        "anchor": "or document[\"default_enabled\"] is not False",
+        "replacement": "or False",
+        "expected_failure": {
+          "exception_type": "Failed",
+          "longrepr_contains": "DID NOT RAISE"
+        }
+      },
+      "phases": [
+        {
+          "phase": "G1",
+          "returncode": 0,
+          "elapsed_s": 3.372284854995087,
+          "log_sha256": "85a7532b40196fb821e4b3dfb1231181e8e280a2da477abec65674576186c6c1",
+          "xml_sha256": "137e560838c526719c90a5d09e97d05e46e0e87e940159bdc6ac2fd86a66f30e",
+          "events_sha256": "77fca503a57260612a81d5d265c03614afa3ce8d2eaf227605545f5a15f5fa6d",
+          "xml_counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          }
+        },
+        {
+          "phase": "M1",
+          "returncode": 1,
+          "elapsed_s": 3.4719230730552226,
+          "log_sha256": "88681dfbd4dddd3f842133320c8bc660eb861c5c969e9f9ca5af22bce75fc99f",
+          "xml_sha256": "7f88d8e4b188d8007ba4d3479329297cb2af695bd519afba938f69465e760e1f",
+          "events_sha256": "ad6cfef5c28270411d56ce72d5c4ecff0d3339d58d7fd5c24b265378c1d782da",
+          "xml_counts": {
+            "total": 1,
+            "failure": 1,
+            "error": 0,
+            "skipped": 0
+          }
+        },
+        {
+          "phase": "G2",
+          "returncode": 0,
+          "elapsed_s": 2.620313436957076,
+          "log_sha256": "212504876166ec78d6893ba7cb632e14878599d119e4df02390a6a5464c97ea0",
+          "xml_sha256": "f5c405350da7c8df9c84fc99d8a130d22880c62b1dccdde777cf082ce795ebfb",
+          "events_sha256": "b2671f0e10d8cb95155bfe1db91399b63b868618a6ae25963d375cf8a3f9a9d8",
+          "xml_counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          }
+        }
+      ]
+    },
+    {
+      "id": "remove_original_control",
+      "status": "killed_with_green_controls",
+      "source": {
+        "path": "src/mars_titan/memory/spaced_study.py",
+        "sha256": "90f418b3c0433d8f0b48c39a444c2f11cf45ddcfeee5fe038abbb44f4f3ae022"
+      },
+      "recipe": {
+        "nodeid": "tests/memory/test_spaced_study.py::test_invalid_study_is_rejected_without_changing_the_saved_config[<lambda>7]",
+        "anchor": "or \"baseline\" not in arms",
+        "replacement": "or False",
+        "expected_failure": {
+          "exception_type": "Failed",
+          "longrepr_contains": "DID NOT RAISE"
+        }
+      },
+      "phases": [
+        {
+          "phase": "G1",
+          "returncode": 0,
+          "elapsed_s": 2.720865243114531,
+          "log_sha256": "8a5d3f8c1b452931de963c4bdff9775f7404361fdf3f79b4d740fb5a4f7e6e92",
+          "xml_sha256": "85d5db4a58dae67d4ce95dc4df9d6743e76da198eb9ab55872a73d5699ce0d23",
+          "events_sha256": "07802b43e96f01b18cfff2c3b7976c196387fdd3c353db325228417e075e8143",
+          "xml_counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          }
+        },
+        {
+          "phase": "M1",
+          "returncode": 1,
+          "elapsed_s": 3.5225061108358204,
+          "log_sha256": "64071b0232ada47c7c6e3b9a65efa6d62da3e2a20dff5c896282dd6e33d7fa54",
+          "xml_sha256": "ff931d6d94d70b72e0581fe359c876724af8b36622e60542c903a67a535029c9",
+          "events_sha256": "318c808b1930000ccc79c3507ca321630c17608c2b898a3eba11b4f05e5ec47e",
+          "xml_counts": {
+            "total": 1,
+            "failure": 1,
+            "error": 0,
+            "skipped": 0
+          }
+        },
+        {
+          "phase": "G2",
+          "returncode": 0,
+          "elapsed_s": 3.2727354378439486,
+          "log_sha256": "ac0988b070cfb8585ee6cce3a7e8654f43da14bf7e316bc0b9277c6ad43db855",
+          "xml_sha256": "76c10029d82638b540c512c6f5f782e517494028d83e083766df10b3fc6d71ab",
+          "events_sha256": "d82f52edee60a072695ee01b8443fbe24e6874baa6bb40363328655eeb2b84c3",
+          "xml_counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          }
+        }
+      ]
+    },
+    {
+      "id": "omit_window_hold",
+      "status": "killed_with_green_controls",
+      "source": {
+        "path": "src/mars_titan/training/spaced_window.py",
+        "sha256": "817766b9b33756f054c7361b28026c44b9e11dcef068d1b07040be04500e3a75"
+      },
+      "recipe": {
+        "nodeid": "tests/memory/test_spaced_study.py::test_window_guard_precedes_every_input_read_and_output_creation",
+        "anchor": "require_learning_allowed(\"la ventana congelada de retención E2\")",
+        "replacement": "pass",
+        "expected_failure": {
+          "exception_type": "Failed",
+          "longrepr_contains": "Reservó GPU"
+        }
+      },
+      "phases": [
+        {
+          "phase": "G1",
+          "returncode": 0,
+          "elapsed_s": 3.3213346011471003,
+          "log_sha256": "033cfb085ee02f8d8e516c6dddf96f5f3719bd8b0c411f963e67c7de458e5e62",
+          "xml_sha256": "2cb2cb05b46eb2603e651ceff879f3fc8089187c0cdb14ffb7e7ca24f47e5844",
+          "events_sha256": "819bb7bc788e32bc12952c045ba901df014bea78ef06745c22a1b25126262d62",
+          "xml_counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          }
+        },
+        {
+          "phase": "M1",
+          "returncode": 1,
+          "elapsed_s": 3.1718706160318106,
+          "log_sha256": "cbe539c257355c40f2baa310f50b06922dfa6725bf3c554c720d214903a79fbb",
+          "xml_sha256": "975612aeee1d739bd44937601f34f46b2604321a8d347a14f983f35c23058f24",
+          "events_sha256": "ac0f770a45416542d5ce76a15353a57233a356599fb9d109bedbf742975242c3",
+          "xml_counts": {
+            "total": 1,
+            "failure": 1,
+            "error": 0,
+            "skipped": 0
+          }
+        },
+        {
+          "phase": "G2",
+          "returncode": 0,
+          "elapsed_s": 3.5728291319683194,
+          "log_sha256": "715350d922d91d1576f4ff287fdba6b0fe276c6f2c553d54b8408148cde0c83e",
+          "xml_sha256": "a1c347e3a9c9e37368d59feb0759a15dc8d09b49f7c06172cfec4c60394e7ef7",
+          "events_sha256": "95aae225ff2847514d6527fcfb00a35128774ca41c857b8c19b392bf9ad04787",
+          "xml_counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          }
+        }
+      ]
+    },
+    {
+      "id": "omit_cli_hold",
+      "status": "killed_with_green_controls",
+      "source": {
+        "path": "scripts/run_spaced_window.py",
+        "sha256": "eae40129563db1185a3ad563deb5b6733c5590a0c82b464d606f0233ae06dea6"
+      },
+      "recipe": {
+        "nodeid": "tests/memory/test_spaced_study.py::test_cli_guard_precedes_every_input_read_and_gpu_reservation",
+        "anchor": "require_learning_allowed(\"la orden de evaluación congelada E2\")",
+        "replacement": "pass",
+        "expected_failure": {
+          "exception_type": "Failed",
+          "longrepr_contains": "Entró al controlador"
+        }
+      },
+      "phases": [
+        {
+          "phase": "G1",
+          "returncode": 0,
+          "elapsed_s": 4.0236632789019495,
+          "log_sha256": "3275522a65c60210c9aee3615ac7c007be3d0dd63b9902e872ac3dd10094cc3d",
+          "xml_sha256": "9379a4850216b31525086d4dc4013eea02a6fe1caeebe0cfce0a304783177593",
+          "events_sha256": "16f6b4111feb0cc5a018d350bca01c428c38bb4cf1b17af40f5869a4264016ce",
+          "xml_counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          }
+        },
+        {
+          "phase": "M1",
+          "returncode": 1,
+          "elapsed_s": 3.4222365159075707,
+          "log_sha256": "7cfb3e95a7b287b9ba4126ab0af5d858ef220b4c365eaca8252a9bf6ef342013",
+          "xml_sha256": "98ff2123887558b7d4e89869894254a136c8588abd45198c36c48ebca6cebafe",
+          "events_sha256": "80ec5cc5f194f88f227e04026ab2655646648a8bcdada61ffe08e73b9442a3c0",
+          "xml_counts": {
+            "total": 1,
+            "failure": 1,
+            "error": 0,
+            "skipped": 0
+          }
+        },
+        {
+          "phase": "G2",
+          "returncode": 0,
+          "elapsed_s": 3.121670824009925,
+          "log_sha256": "818471def591c9f64bfe0125b52112f949d00ec9633edcbbf0414328a7f152ef",
+          "xml_sha256": "21dac87f454a01edff03fd1b0f2eff8d4d774beaf7d443316ba7b093df903b68",
+          "events_sha256": "21ab0a428d11b58628dc3db680c604404f96bf2f737983b5803a0658b2294f1f",
+          "xml_counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          }
+        }
+      ]
+    },
+    {
+      "id": "accept_zero_time_budget",
+      "status": "killed_with_green_controls",
+      "source": {
+        "path": "src/mars_titan/memory/spaced_study.py",
+        "sha256": "90f418b3c0433d8f0b48c39a444c2f11cf45ddcfeee5fe038abbb44f4f3ae022"
+      },
+      "recipe": {
+        "nodeid": "tests/memory/test_spaced_study.py::test_invalid_study_is_rejected_without_changing_the_saved_config[<lambda>8]",
+        "anchor": "or not 0 < seconds <= 14400",
+        "replacement": "or False",
+        "expected_failure": {
+          "exception_type": "Failed",
+          "longrepr_contains": "DID NOT RAISE"
+        }
+      },
+      "phases": [
+        {
+          "phase": "G1",
+          "returncode": 0,
+          "elapsed_s": 3.3209924378897995,
+          "log_sha256": "941fd927604956af95533710b95a4b5cfe32fe875376a69b8cd3d6db814e3c2b",
+          "xml_sha256": "4e4acdd49a651ed222ea74da46ea4a57475bbcc23d3965d50d41dbe8a5acc516",
+          "events_sha256": "150d0e7654b4cd741f27fb90b443158dbb87415cdd5803bf44fa0fc663cb01e1",
+          "xml_counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          }
+        },
+        {
+          "phase": "M1",
+          "returncode": 1,
+          "elapsed_s": 3.5221167139243335,
+          "log_sha256": "612c45465afec8fb132feddb9ae6ea1b30cd474052455bc3af6a0f4334f63a78",
+          "xml_sha256": "a102775906208aa31f2ffb3a478333dab49fa6dfa8709b7ce5cc81c528f4bbc2",
+          "events_sha256": "4b13f390acc2ee14bcc17ad81df7cfaba25fa1f5aa795af4287bc40098c19754",
+          "xml_counts": {
+            "total": 1,
+            "failure": 1,
+            "error": 0,
+            "skipped": 0
+          }
+        },
+        {
+          "phase": "G2",
+          "returncode": 0,
+          "elapsed_s": 3.4726365031674504,
+          "log_sha256": "7ccf0fd814bf75a35db28acedc1714736804ec6b943ff25b8e07969d5631a02d",
+          "xml_sha256": "bc0c44408e2cdcd75ca85ce489e57e19456cca6c41f6b793a9f9ec50dd030717",
+          "events_sha256": "20d93b96cf818e423c4d296af6b524487ca913537d151479525f1c92133ad4c9",
+          "xml_counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          }
+        }
+      ]
+    },
+    {
+      "id": "repeat_confirmed_phase",
+      "status": "killed_with_green_controls",
+      "source": {
+        "path": "src/mars_titan/training/spaced_window.py",
+        "sha256": "817766b9b33756f054c7361b28026c44b9e11dcef068d1b07040be04500e3a75"
+      },
+      "recipe": {
+        "nodeid": "tests/memory/test_spaced_window.py::test_interruption_keeps_confirmed_phase_and_resumes_the_next_one",
+        "anchor": "if name in report[\"predictions\"]:",
+        "replacement": "if False:",
+        "expected_failure": {
+          "exception_type": "AssertionError",
+          "longrepr_contains": "assert"
+        }
+      },
+      "phases": [
+        {
+          "phase": "G1",
+          "returncode": 0,
+          "elapsed_s": 10.990241160150617,
+          "log_sha256": "1b573a41f1d20b8c6ccecda72d72bb2707f85be4d55713857c70b4c0bb3e31f1",
+          "xml_sha256": "de20077857dd4ce040f9a3f12516938a79d2367c4efc84b7860d3994f512b004",
+          "events_sha256": "7a48ed3d1ecf65a636b0f40a93b83d11889d3ab7ca50b19a5858021de4d592f5",
+          "xml_counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          }
+        },
+        {
+          "phase": "M1",
+          "returncode": 1,
+          "elapsed_s": 11.09062663000077,
+          "log_sha256": "aaf6153db41f06a4748f8d91159678d253dacb663198dddfb511a672fe86db77",
+          "xml_sha256": "e844c448b2aa166526af10cbb755e1b662b1302b0f717374c3d502296d215c4e",
+          "events_sha256": "3b517d0dabe23c1ac4b4b48b9afa281cd01e70b2a4556d94a2cff3be4f4d1772",
+          "xml_counts": {
+            "total": 1,
+            "failure": 1,
+            "error": 0,
+            "skipped": 0
+          }
+        },
+        {
+          "phase": "G2",
+          "returncode": 0,
+          "elapsed_s": 8.33327734703198,
+          "log_sha256": "bb80a7ec276c43aa4a2dcb73146ecb26e6719ea60b2cd73559d8aa72deb94799",
+          "xml_sha256": "c47fb25570857cd7ff6ac0df82b08d238f86ab490c7a70271e628c495b21dee7",
+          "events_sha256": "08e9d7edd5ab7a7068f67cad928df3e07f6f4c36238b0927738d82e7b587e1a8",
+          "xml_counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          }
+        }
+      ]
+    },
+    {
+      "id": "ignore_evidence_checksum",
+      "status": "killed_with_green_controls",
+      "source": {
+        "path": "src/mars_titan/training/spaced_window.py",
+        "sha256": "817766b9b33756f054c7361b28026c44b9e11dcef068d1b07040be04500e3a75"
+      },
+      "recipe": {
+        "nodeid": "tests/memory/test_spaced_window.py::test_modified_outputs_are_rejected_without_rewriting_them[evaluation-evidence.json]",
+        "anchor": "digest == evidence.get(\"sha256\")",
+        "replacement": "True",
+        "expected_failure": {
+          "exception_type": "Failed",
+          "longrepr_contains": "DID NOT RAISE"
+        }
+      },
+      "phases": [
+        {
+          "phase": "G1",
+          "returncode": 0,
+          "elapsed_s": 10.639438358834013,
+          "log_sha256": "b222278dc07605104e20dabfc55cd3a5040df9ff54cd334f60da66842754864d",
+          "xml_sha256": "8129646b0e97aeb9d782e5e1260fd2c4bc51122f648a379b17c46d1393978360",
+          "events_sha256": "52e8499eb62fbdcf22e79eb0f5bddda7e372f43b3d03d7ef9ac17557bcabb53c",
+          "xml_counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          }
+        },
+        {
+          "phase": "M1",
+          "returncode": 1,
+          "elapsed_s": 10.742057691095397,
+          "log_sha256": "50383df293b4f6a599964855e735a5a5983876b213a11a0258c8d1f6bae62430",
+          "xml_sha256": "18e41a76032f8cd2d084723ded5a3af2584963bdc07e1843213c72f800ae6e61",
+          "events_sha256": "5829be995d6861c4b2482310b639ce4d12a225b2cb6845fa2d21ffd704287823",
+          "xml_counts": {
+            "total": 1,
+            "failure": 1,
+            "error": 0,
+            "skipped": 0
+          }
+        },
+        {
+          "phase": "G2",
+          "returncode": 0,
+          "elapsed_s": 7.93322895700112,
+          "log_sha256": "14298dd75edb6582d611f1aad41499b66d94bdaacc0a0de3b59d57b326817ecb",
+          "xml_sha256": "f10464530f46cdcaa312f9749ac366e087e24bd5041c61b04e60c5f40a77e264",
+          "events_sha256": "94646c7968cbbe6cc35276731215c2a46220c009280fb84485e02f1ec74e035f",
+          "xml_counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          }
+        }
+      ]
+    },
+    {
+      "id": "reset_accumulated_time_budget",
+      "status": "killed_with_green_controls",
+      "source": {
+        "path": "src/mars_titan/training/spaced_window.py",
+        "sha256": "817766b9b33756f054c7361b28026c44b9e11dcef068d1b07040be04500e3a75"
+      },
+      "recipe": {
+        "nodeid": "tests/memory/test_spaced_window.py::test_committed_attempt_cost_prevents_new_predictions_after_exhaustion",
+        "anchor": "remaining = config.max_seconds - _spent(report)",
+        "replacement": "remaining = config.max_seconds",
+        "expected_failure": {
+          "exception_type": "Failed",
+          "longrepr_contains": "Predijo con el presupuesto agotado"
+        }
+      },
+      "phases": [
+        {
+          "phase": "G1",
+          "returncode": 0,
+          "elapsed_s": 7.731443870114163,
+          "log_sha256": "e80a690afcbadb18b918c7c4aca602aa230139fb27d8edb33c81d76c30ad437c",
+          "xml_sha256": "4bebffa93f08e9e540756c7d49a71f7899d6d6ec568ea9675ba5e9bb8e1e6983",
+          "events_sha256": "e02067b5746a839f93e0802e4f7e3574463482eefcc29d0222141c7b4ec4ddf8",
+          "xml_counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          }
+        },
+        {
+          "phase": "M1",
+          "returncode": 1,
+          "elapsed_s": 8.283882186980918,
+          "log_sha256": "2c807ee2ecdde4c2d1b639695c1c9bf7f8d3cca62905d4966b8c8c4af18f5e44",
+          "xml_sha256": "f197de654b707c3ea52a19632ccc7bb4dfb17cd525755557e4e16d99db55e5dd",
+          "events_sha256": "404b2bdacfe5e96dc6d4b49511a54dcb986c5c98771568b11a04db38ab34506b",
+          "xml_counts": {
+            "total": 1,
+            "failure": 1,
+            "error": 0,
+            "skipped": 0
+          }
+        },
+        {
+          "phase": "G2",
+          "returncode": 0,
+          "elapsed_s": 7.384569873102009,
+          "log_sha256": "8bd6f8799994b9cc7832b22f0e50c81ed781f078b193b488bc5b084984e767f6",
+          "xml_sha256": "dbab874e858cf04e56b8ebebdae0b73da0dffc2adab132c549e96944b613a8a2",
+          "events_sha256": "9fd985fa53d49e86ff8cfc84d3e38883312929ecbc351165f658fca31fd7aa12",
+          "xml_counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          }
+        }
+      ]
+    },
+    {
+      "id": "drop_row_budget",
+      "status": "killed_with_green_controls",
+      "source": {
+        "path": "src/mars_titan/training/spaced_window.py",
+        "sha256": "817766b9b33756f054c7361b28026c44b9e11dcef068d1b07040be04500e3a75"
+      },
+      "recipe": {
+        "nodeid": "tests/memory/test_spaced_window.py::test_phase_row_budget_rejects_the_whole_window_without_truncating",
+        "anchor": "all(dataset.manifest[\"counts\"][name] <= study.max_phase_rows for name in PREDICTED)",
+        "replacement": "True",
+        "expected_failure": {
+          "exception_type": "Failed",
+          "longrepr_contains": "DID NOT RAISE"
+        }
+      },
+      "phases": [
+        {
+          "phase": "G1",
+          "returncode": 0,
+          "elapsed_s": 6.2284085638821125,
+          "log_sha256": "4c26c72e87dd3191ec40fcfbdba332e794c7ceeb81792cead9a500ec5a38e6e9",
+          "xml_sha256": "e1bf54f671aa78076ae6984af0abfae650e900dacb014c3e226d2511df7dcb68",
+          "events_sha256": "bc37f2c0f16ccf2cf9f5d0f32a0b4b35d607ce6784ee80de80ba89c13a087064",
+          "xml_counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          }
+        },
+        {
+          "phase": "M1",
+          "returncode": 1,
+          "elapsed_s": 8.63617735914886,
+          "log_sha256": "7bc63d1ded865ff89f0d59dd60af7203023318cba6fdf5a75695585190c5150b",
+          "xml_sha256": "f625fb0697a730e8e21ad58d030e8d539c4d486cef1b1bca0f17388c47188a46",
+          "events_sha256": "f685ce00392798bffe01f96a460b0c86f1c1f9fc279323a055a8f4727400790b",
+          "xml_counts": {
+            "total": 1,
+            "failure": 1,
+            "error": 0,
+            "skipped": 0
+          }
+        },
+        {
+          "phase": "G2",
+          "returncode": 0,
+          "elapsed_s": 9.685483970912173,
+          "log_sha256": "21741ffdcb167e98996fd3acfa28a00ea3824a0b5a3b6abf50605e7aadaf4d41",
+          "xml_sha256": "76048295e47df944f8ef8d7ba346cf2ae852d743cb33f041326ec2bd11e7aec5",
+          "events_sha256": "759394ecff3f1613a643a3eea1f0df9cff5a9322c12de2c8eb765a27d835d2e6",
+          "xml_counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          }
+        }
+      ]
+    },
+    {
+      "id": "accept_boolean_run_schema",
+      "status": "killed_with_green_controls",
+      "source": {
+        "path": "src/mars_titan/training/spaced_window.py",
+        "sha256": "817766b9b33756f054c7361b28026c44b9e11dcef068d1b07040be04500e3a75"
+      },
+      "recipe": {
+        "nodeid": "tests/memory/test_spaced_window.py::test_resume_rejects_invalid_report_states[schema_version-True]",
+        "anchor": "type(report.get(\"schema_version\")) is int",
+        "replacement": "True",
+        "expected_failure": {
+          "exception_type": "Failed",
+          "longrepr_contains": "DID NOT RAISE"
+        }
+      },
+      "phases": [
+        {
+          "phase": "G1",
+          "returncode": 0,
+          "elapsed_s": 11.241468857042491,
+          "log_sha256": "85bcaece0f979aeda16bf175f33d832f02a38972a303b85bb947cf8f9d7c0ebc",
+          "xml_sha256": "b5eb16d37e5c2a690f1fd755d3565a0987c6424c289bdea838b1c4c5ccabd092",
+          "events_sha256": "b517cd2963978cd898579c60f92012b35d9392e99bf3ac6351c71a1ee74e9c19",
+          "xml_counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          }
+        },
+        {
+          "phase": "M1",
+          "returncode": 1,
+          "elapsed_s": 7.931524364976212,
+          "log_sha256": "72d1c8a78ef5477f6de6536279ab0b0cc926f0f4046ac489e6e1486c468aedcb",
+          "xml_sha256": "f3d6eb5b111f1d828623a5f96e7615552a4cc2acfbe10465d36ce193eba94eeb",
+          "events_sha256": "b8ebd75327012f734b616eec8c5f1d656c5e2d357acf45abab630bd3ac0b2aa7",
+          "xml_counts": {
+            "total": 1,
+            "failure": 1,
+            "error": 0,
+            "skipped": 0
+          }
+        },
+        {
+          "phase": "G2",
+          "returncode": 0,
+          "elapsed_s": 10.43935787701048,
+          "log_sha256": "ad8e8b202929a0c075d9a7d51c42833ff5cde46d1144a798691b31c26b245e09",
+          "xml_sha256": "72a295f258c0229bd803eaa2e8c14118cab7d01cd12f6ca0d6d6373aa2f63982",
+          "events_sha256": "78172deac9c3819388536f964612bab12742f3e8f3184ad39e5e636c1a143151",
+          "xml_counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          }
+        }
+      ]
+    }
+  ]
+}

@@ -10,6 +10,7 @@ import pyarrow as pa
 import pyarrow.parquet as pq
 
 from mars_titan.data.input_policy import HISTORICAL_MASKED, MODALITIES, policy_identity
+from mars_titan.data.price_windows import calendar_digest, price_window_contract
 from mars_titan.data.storage import sha256
 from mars_titan.data.temporal import MarketClock
 from mars_titan.memory.financial_session import FinancialPhase
@@ -88,6 +89,7 @@ def chronological_corpus(
     perturb_before=None,
     widths=(4, 3, 1, 2),
     absent=(),
+    price_window=False,
 ):
     """Escribir una supervisión histórica con máscaras sin pasar por modelos ni objetivos reales.
 
@@ -95,7 +97,9 @@ def chronological_corpus(
     de ese instante, para comprobar que el pasado del recorrido no cambia. `perturb_before`
     altera solo las modalidades distintas del precio en las decisiones anteriores a ese
     instante, sin tocar precios ni etiquetas. `absent` deja noticias o fundamentales
-    ausentes de verdad en todas las filas, con el resto del corpus igual.
+    ausentes de verdad en todas las filas, con el resto del corpus igual. `price_window`
+    declara el contrato de ventanas por sesión del calendario de la v3.1, con el canal de
+    presencia, sobre el mismo calendario y sin sesiones ausentes.
     """
     root = Path(root)
     news, charts, concepts, indicators = widths
@@ -113,6 +117,18 @@ def chronological_corpus(
         context_sessions=64,
         news_lookback_sessions=5,
     )
+    if price_window:
+        days_of_clock = clock().days
+        representation["price_window"] = price_window_contract(
+            {
+                "US": dict(
+                    start=days_of_clock[0].isoformat(),
+                    end=days_of_clock[-1].isoformat(),
+                    decisions_sha256=calendar_digest(clock()),
+                )
+            },
+            {"US": []},
+        )
     entries, coverage, counts = [], [], dict(train=0, validation=0)
     for asset in range(assets):
         symbol = f"A{asset:04}"

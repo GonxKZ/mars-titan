@@ -687,7 +687,8 @@ def test_constructor_rejects_unsafe_or_mismatched_inputs(shared, tmp_path):
 def scripted(values):
     scores = iter(values)
 
-    def evaluate(source, *, stop=None):
+    # Misma firma que `ChronologicalTrainer.evaluate`, que recibe las filas de la época común.
+    def evaluate(source, *, stop=None, rows=None):
         return dict(session_mae=next(scores), labels=1)
 
     return evaluate

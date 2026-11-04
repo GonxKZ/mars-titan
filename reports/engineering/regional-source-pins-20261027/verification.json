@@ -1,0 +1,151 @@
+{
+  "schema_version": 1,
+  "recorded_at_utc": "2026-10-27T22:27:54.136491+00:00",
+  "base_commit": "2e8a9218b460e61d20a4cbd801a028b90851b7e9",
+  "tests": {
+    "distinct_cpu_passed": 138,
+    "new": 12,
+    "regressions": 126,
+    "omissions_resolved": 4,
+    "cuda_deselected": 4,
+    "full_suite_executed": false,
+    "regression_xml_sha256": "cc106ab65f609d411157a082e47adc06d6f0265db946aa2968b137b4bb968a2f",
+    "baseline_xml_sha256": "2875ee2ec9b19b72b1cac92586b168194cc99f2931bd4ce601bab835c317fe1c",
+    "scope": "134 casos aprobados y cuatro nativos inicialmente omitidos. La repetición aprueba esos cuatro y repite los doce nuevos, sin sumarlos dos veces.",
+    "formatted_test_repeat": {
+      "passed": 12,
+      "xml_sha256": "e89537e7cbe55a55353248d09613557d3ff395c694bfe1563fe6005df1f08800",
+      "scope": "Repetición de los doce casos nuevos después del formato, sin sumarlos al recuento distinto."
+    }
+  },
+  "mutations": {
+    "planned": 5,
+    "killed": 5,
+    "optimizer_attempts": 0
+  },
+  "focused_quality": [
+    {
+      "path": "src/mars_titan/training/mars_titan_walk_forward.py",
+      "function": "_parent",
+      "start_line": 171,
+      "end_line": 200,
+      "cyclomatic_complexity": 11,
+      "statements": 10,
+      "covered_statements": 10,
+      "coverage_fraction": 1.0,
+      "branches": 0,
+      "covered_branches": 0,
+      "crap": 11.0
+    },
+    {
+      "path": "src/mars_titan/training/mars_titan_walk_forward.py",
+      "function": "_frozen_parent",
+      "start_line": 203,
+      "end_line": 246,
+      "cyclomatic_complexity": 5,
+      "statements": 16,
+      "covered_statements": 12,
+      "coverage_fraction": 0.75,
+      "branches": 4,
+      "covered_branches": 2,
+      "crap": 5.390625
+    },
+    {
+      "path": "src/mars_titan/training/financial_run.py",
+      "function": "ChronologicalTrainer._code",
+      "start_line": 860,
+      "end_line": 868,
+      "cyclomatic_complexity": 3,
+      "statements": 5,
+      "covered_statements": 5,
+      "coverage_fraction": 1.0,
+      "branches": 2,
+      "covered_branches": 2,
+      "crap": 3.0
+    },
+    {
+      "path": "src/mars_titan/training/financial_run.py",
+      "function": "ChronologicalTrainer._check_runtime",
+      "start_line": 870,
+      "end_line": 876,
+      "cyclomatic_complexity": 3,
+      "statements": 3,
+      "covered_statements": 3,
+      "coverage_fraction": 1.0,
+      "branches": 2,
+      "covered_branches": 2,
+      "crap": 3.0
+    }
+  ],
+  "reused_modules_quality": {
+    "totals": {
+      "statements": 1056,
+      "covered_statements": 591,
+      "branches": 326,
+      "covered_branches": 145
+    },
+    "convention": "C² × (1 − cobertura de sentencias)³ + C.",
+    "limits": "Los métodos del entrenador no ejecutados no acreditan cobertura de un entrenamiento completo."
+  },
+  "old_checkpoint_fixture": {
+    "status": "passed",
+    "checkpoint_sha256": "14c98239f8d648d4df6677d56fe4a6ef6f725e8b3d5adab3a2a757515423060a",
+    "rows": 64,
+    "exact_predictions_equal": true,
+    "parameters_unchanged": true,
+    "regional_variant_absent_from_identity": true,
+    "cuda_initialized": false,
+    "seconds": 3.9741753269918263
+  },
+  "scientific_training_executed": false,
+  "optimizer_created_in_new_checks": false,
+  "final_test_access": false,
+  "numerical_operator_changed": false,
+  "cuda_operator_verified": false,
+  "prior_sync_audit": {
+    "commit": "52989fff85e359df6862695b0da04295618b7005",
+    "first_selection": {
+      "passed": 176,
+      "failed": 1,
+      "skipped": 1,
+      "cuda_executed_without_admission": 4
+    },
+    "corrected_cpu_selection": {
+      "passed": 174,
+      "cuda_deselected": 4,
+      "skipped": 0
+    },
+    "note": "La primera selección mezcló pruebas marcadas CUDA con las CPU. Su inicialización de contexto hizo fallar una aserción CPU. El proceso terminó. Esa ejecución no se cuenta como validación CUDA admitida. La repetición filtró las cuatro y declaró el enlace nativo."
+  },
+  "sources": {
+    "src/mars_titan/training/financial_run.py": "3ae67146c8a76f06d3bf3e2e16ec03fa65fa303f3e45800edfc28464cc071980",
+    "src/mars_titan/training/mars_titan_walk_forward.py": "54b218c02e827c2e569354bc6b49d20c0e345ab46b253fe47fd3fab53a8f5e99",
+    "tests/training/test_regional_source_pins.py": "364f7716957560c12ef3c9c90f2456d9618c1e351ad50ae7b45a435141681a0e"
+  },
+  "limits": [
+    "La huella detecta cambios de archivo, no autentica resultados ni prueba ecuaciones.",
+    "Los operadores C1/C6 no se añaden al registro congelado. Sus combinaciones con lectores o correctores requieren otra integración con controles.",
+    "Se conserva el programa fijado por cada recibo histórico. No se sustituyen hashes para reanudar con otras fuentes.",
+    "El arreglo no modifica operaciones numéricas de los operadores ni mide una mejora predictiva o una aceleración."
+  ],
+  "artifacts": {
+    "quality.json": "25e43ffc8f7e5b0d5f40661d357d0a079ec711e8fddb8de58a98e94130ea3cb3",
+    "mutations.json": "0c6392685feff8eb49f7be7a83b38a5138c38d65fa69933a7265d33c92ef3a0b"
+  },
+  "final_check_at_utc": "2026-10-27T22:31:08.171065+00:00",
+  "static_checks": {
+    "ruff_check": "passed",
+    "ruff_format_check": {
+      "passed": true,
+      "files": 2008
+    },
+    "repository_check": {
+      "passed": true,
+      "files": 3948,
+      "references": 361,
+      "tasks": 64,
+      "macro_entries": 140
+    },
+    "git_diff_check": "passed"
+  }
+}

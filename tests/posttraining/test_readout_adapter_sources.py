@@ -14,9 +14,11 @@ def test_adapter_code_inherits_real_parent_sources_and_conditional_encoder(tempo
     from mars_titan.posttraining import readout_adapters as adapters
     from mars_titan.training import mars_titan_run as parent
 
-    # _code solo necesita esta configuración. __init__ crearía el optimizador del ajuste.
+    # _code solo necesita esta configuración y la receta, que decide si el determinismo de #794
+    # entra en la huella. __init__ crearía el optimizador del ajuste.
     trainer = object.__new__(adapters.ReadoutAdapterTrainer)
     trainer.predictor = SimpleNamespace(config=SimpleNamespace(temporal_encoder=temporal_encoder))
+    trainer.recipe = parent.ReadoutRecipe()
     actual = trainer._code()
 
     inherited = parent.ReadoutTrainer._code(trainer)

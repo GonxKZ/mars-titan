@@ -1,0 +1,258 @@
+{
+  "schema_version": 1,
+  "status": "passed",
+  "scope": "Cuatro mutaciones dirigidas, sin atribuir mutación exhaustiva.",
+  "sources": {
+    "window": {
+      "path": "src/mars_titan/training/spaced_inference.py",
+      "sha256": "8f89bbbc1506461b8c7dcf6f087ff7682102b4a24508871ae6c4866580c7fe41"
+    }
+  },
+  "test_path": "tests/memory/test_spaced_inference.py",
+  "test_sha256": "a856cc29c4130cd1f6626d6b0291c0b0c9bcb2248e9cc1a5fe256e181a7c8d18",
+  "recipes": [
+    {
+      "id": "ignore_mature_outcomes",
+      "family": "Objective",
+      "source_key": "window",
+      "nodeid": "tests/memory/test_spaced_inference.py::test_frozen_window_reproduces_durable_emissions_and_evidence[4-utility]",
+      "anchor": "self._ledger.receive(targets)",
+      "replacement": "self._ledger.receive([])",
+      "expected_failure": {
+        "exception_type": "AssertionError",
+        "longrepr_contains": "assert"
+      }
+    },
+    {
+      "id": "ignore_finalized_predictions",
+      "family": "Objective",
+      "source_key": "window",
+      "nodeid": "tests/memory/test_spaced_inference.py::test_frozen_window_reproduces_durable_emissions_and_evidence[4-utility]",
+      "anchor": "self._ledger.censor(list(run.pending), reason=\"finalized\")",
+      "replacement": "self._ledger.censor([], reason=\"finalized\")",
+      "expected_failure": {
+        "exception_type": "AssertionError",
+        "longrepr_contains": "assert"
+      }
+    },
+    {
+      "id": "ignore_issued_point_identity",
+      "family": "Objective",
+      "source_key": "window",
+      "nodeid": "tests/memory/test_spaced_inference.py::test_diagnostics_must_match_the_issued_point",
+      "anchor": "entry is not None and entry.issued == row[\"point\"]",
+      "replacement": "entry is not None",
+      "expected_failure": {
+        "exception_type": "AssertionError",
+        "longrepr_contains": "emitid"
+      }
+    },
+    {
+      "id": "omit_scientific_hold",
+      "family": "Objective",
+      "source_key": "window",
+      "nodeid": "tests/memory/test_spaced_inference.py::test_public_evaluation_checks_hold_before_reading_source",
+      "anchor": "require_learning_allowed(\"la evaluación de una ventana congelada E2\")",
+      "replacement": "pass",
+      "expected_failure": {
+        "exception_type": "ValueError",
+        "longrepr_contains": "El tramo no pertenece"
+      }
+    }
+  ],
+  "executor_sha256": "ee0672e10ee30ef8c36169f23f5cf42ecdb251a328423d42743fcf27595789c7",
+  "cases": [
+    {
+      "id": "ignore_mature_outcomes",
+      "status": "killed_with_green_controls",
+      "phases": [
+        {
+          "phase": "G1",
+          "returncode": 0,
+          "seconds": 6.831868266919628,
+          "counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0,
+          "xml_sha256": "4bb9c9885d0ce9b07ee627bbdc0e95213dc9e644a25fa8dbe67ae1a59ca11fa7",
+          "events_sha256": "87cbdb3955b2cf6b85b4fec1e9df7fa7550833ef844804c1f34196eb565fdb62"
+        },
+        {
+          "phase": "M1",
+          "returncode": 1,
+          "seconds": 5.526893636910245,
+          "counts": {
+            "total": 1,
+            "failure": 1,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0,
+          "xml_sha256": "ab43990845442ad6683a2de4472f101419d3712b652fe778c332aa823c56b04b",
+          "events_sha256": "6731e8a15c3d35fc5854efc79aa8cbfd7db813034f93f4fce1f3641ce1f6133c"
+        },
+        {
+          "phase": "G2",
+          "returncode": 0,
+          "seconds": 5.678915906930342,
+          "counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0,
+          "xml_sha256": "649821bddb9336e7b91d0e2dc598626612caf0556a6966b758d1d957fa9302be",
+          "events_sha256": "bb464d4e63754742443f859dc1357b058758f4a7f4aeb7da35f9ffb156768fe3"
+        }
+      ]
+    },
+    {
+      "id": "ignore_finalized_predictions",
+      "status": "killed_with_green_controls",
+      "phases": [
+        {
+          "phase": "G1",
+          "returncode": 0,
+          "seconds": 6.227044258033857,
+          "counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0,
+          "xml_sha256": "942e9d8f04b2370c4feb66929d85667a371fafb8a992c9e4c98f57fa485b3c1c",
+          "events_sha256": "0c4fe4ff20b6b0ccd53f9ed7e194374553b719d44370fc48ec0e7e9bf54beb3b"
+        },
+        {
+          "phase": "M1",
+          "returncode": 1,
+          "seconds": 5.327606762992218,
+          "counts": {
+            "total": 1,
+            "failure": 1,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0,
+          "xml_sha256": "9594ca9db579faf8852189c6ee86e344e550d4d5128dcd6ce41cfb78548bea84",
+          "events_sha256": "135530512bd8a4343505f4e26903b6ec57be7b35cdc0425202ea391872d98d9e"
+        },
+        {
+          "phase": "G2",
+          "returncode": 0,
+          "seconds": 6.180084870895371,
+          "counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0,
+          "xml_sha256": "3f52cd1d08539932c751c809f68875612bf3dcc4f505f01bb9172c048a223aa2",
+          "events_sha256": "4ffd023229e6dc8134c60e36fcd9f1a6c48def988aa5f21c43cedd5331e9c48c"
+        }
+      ]
+    },
+    {
+      "id": "ignore_issued_point_identity",
+      "status": "killed_with_green_controls",
+      "phases": [
+        {
+          "phase": "G1",
+          "returncode": 0,
+          "seconds": 3.5735944900661707,
+          "counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0,
+          "xml_sha256": "09bcf535de57d6a6ac5c4d9588e6756e4c66ca2708e95df66e75169c860e4727",
+          "events_sha256": "86f741e9212c7d8a61213ca8bf467157de671cd0c5638df17120cbfe39e8ef5c"
+        },
+        {
+          "phase": "M1",
+          "returncode": 1,
+          "seconds": 3.522091681137681,
+          "counts": {
+            "total": 1,
+            "failure": 1,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0,
+          "xml_sha256": "7af9bec9b956d53df534af5060556b5aa6b783c6e3f6575778359d173c3dd5c5",
+          "events_sha256": "eb63b0e00039ff16dd54d92c9d1191e97816f41e6cbd99d9e36c26f2a6f58130"
+        },
+        {
+          "phase": "G2",
+          "returncode": 0,
+          "seconds": 4.074264974799007,
+          "counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0,
+          "xml_sha256": "852bc38e4af1dbedf7306a25623ddb1e615a1f5fb643912eca4e63aa110e158b",
+          "events_sha256": "7615c045f03c3ae041e0882651b8ac3b7f5a52e6fb8b366fa44f5db1fae1eb12"
+        }
+      ]
+    },
+    {
+      "id": "omit_scientific_hold",
+      "status": "killed_with_green_controls",
+      "phases": [
+        {
+          "phase": "G1",
+          "returncode": 0,
+          "seconds": 3.9746133680455387,
+          "counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0,
+          "xml_sha256": "90b5afacafae9869ce46a994ce859e12ad8b58166d5a2b95e610cf19bf95624c",
+          "events_sha256": "a0c85cc45da7d168245c6f5956a5f400161aa073b87086d09748e45e08918a18"
+        },
+        {
+          "phase": "M1",
+          "returncode": 1,
+          "seconds": 3.521843414986506,
+          "counts": {
+            "total": 1,
+            "failure": 1,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0,
+          "xml_sha256": "4617a2b34ee0aae96c720db87a22c0d25b0854e758be97ab674bf85df70294c3",
+          "events_sha256": "32f5ef291f63788c06e6e1f83ec0977919a5ffde6f6ca235ca5e860a954a9e53"
+        },
+        {
+          "phase": "G2",
+          "returncode": 0,
+          "seconds": 3.3220320369582623,
+          "counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0,
+          "xml_sha256": "6d7af64bcef96c619a622f12c7f11b33e04e26cf42d47d39696382d7a98c65c5",
+          "events_sha256": "0a07447b1266db3c611e8d7a77e99eca6909285beed8760d43c5a917ede85098"
+        }
+      ]
+    }
+  ]
+}

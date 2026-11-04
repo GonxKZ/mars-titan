@@ -1,0 +1,251 @@
+{
+  "kind": "paired_fixture_rows_comparison",
+  "warmup_per_mode": 2,
+  "repetitions_per_mode": 10,
+  "device": "cpu",
+  "cpu_threads": 2,
+  "reference_source_sha256": "9548c2fc6fa29cb2e3c2047a88dba4dd97e42a8d7a2477848c2bf40910fd012b",
+  "current_source_sha256": "353d5ddd12d8f8d0487f811386587f1ebc8737c31045f302e0f4a121e0eec848",
+  "patch_sha256": "afba09aa1818bab2cbca71842e305d520cfd98ae13e4f43625b254820f280b40",
+  "probe_sha256": "2565b61d04471df30423bcc9196d26a9d9392b575aad2e81dcfe4222c8dc914c",
+  "driver_sha256": "5b614202895dce2da3dbaeb5e9dafaf85680b81d0c2715146924faf9ea039e27",
+  "accepted": true,
+  "criterion": "Al menos 5% de reducción mediana con 1024 filas en ambas pasadas y ninguna regresión mediana mayor de 5% con 64 o 256 filas.",
+  "results": [
+    {
+      "pass_id": 1,
+      "rows": 64,
+      "samples_ms": {
+        "reference": [
+          2.235392,
+          2.283323,
+          2.219773,
+          2.180499,
+          2.195097,
+          2.237516,
+          2.188575,
+          2.158087,
+          2.200899,
+          2.173146
+        ],
+        "bounded": [
+          1.967208,
+          2.164981,
+          2.019147,
+          2.031519,
+          1.9732,
+          1.947321,
+          1.949004,
+          1.912696,
+          1.959884,
+          1.993267
+        ]
+      },
+      "reference_median_ms": 2.197998,
+      "bounded_median_ms": 1.970204,
+      "reduction_pct": 10.363703697637579,
+      "python_allocation_peak_bytes": {
+        "reference": 109248,
+        "bounded": 68328
+      },
+      "exact_rows_and_json_bytes": true
+    },
+    {
+      "pass_id": 1,
+      "rows": 256,
+      "samples_ms": {
+        "reference": [
+          7.461418,
+          6.612,
+          6.507214,
+          6.464092,
+          7.32449,
+          6.42003,
+          6.251082,
+          6.257324,
+          8.03198,
+          10.022683
+        ],
+        "bounded": [
+          5.921823,
+          5.54244,
+          6.485824,
+          5.900453,
+          6.251343,
+          5.758766,
+          5.415291,
+          5.405633,
+          7.152958,
+          7.444917
+        ]
+      },
+      "reference_median_ms": 6.559607,
+      "bounded_median_ms": 5.911137999999999,
+      "reduction_pct": 9.885790413968403,
+      "python_allocation_peak_bytes": {
+        "reference": 452317,
+        "bounded": 304056
+      },
+      "exact_rows_and_json_bytes": true
+    },
+    {
+      "pass_id": 1,
+      "rows": 1024,
+      "samples_ms": {
+        "reference": [
+          35.654172,
+          36.29169,
+          37.958714,
+          36.319122,
+          35.465316,
+          37.304093,
+          108.268118,
+          35.944266,
+          37.215056,
+          36.467991
+        ],
+        "bounded": [
+          31.763557,
+          29.639023,
+          33.179539,
+          31.945259,
+          33.463483,
+          33.061917,
+          32.516342,
+          31.612172,
+          31.617552,
+          31.846032
+        ]
+      },
+      "reference_median_ms": 36.3935565,
+      "bounded_median_ms": 31.8956455,
+      "reduction_pct": 12.35908614757121,
+      "python_allocation_peak_bytes": {
+        "reference": 2085085,
+        "bounded": 1807336
+      },
+      "exact_rows_and_json_bytes": true
+    },
+    {
+      "pass_id": 2,
+      "rows": 64,
+      "samples_ms": {
+        "reference": [
+          2.263545,
+          2.258947,
+          2.146435,
+          2.171393,
+          2.247155,
+          2.216597,
+          2.38325,
+          2.380546,
+          2.328979,
+          2.353093
+        ],
+        "bounded": [
+          2.152337,
+          2.002725,
+          1.970384,
+          1.994449,
+          2.03167,
+          2.093907,
+          2.143159,
+          2.262374,
+          2.147948,
+          2.112181
+        ]
+      },
+      "reference_median_ms": 2.261246,
+      "bounded_median_ms": 2.103044,
+      "reduction_pct": 6.9962312813378,
+      "python_allocation_peak_bytes": {
+        "reference": 86176,
+        "bounded": 68224
+      },
+      "exact_rows_and_json_bytes": true
+    },
+    {
+      "pass_id": 2,
+      "rows": 256,
+      "samples_ms": {
+        "reference": [
+          7.632609,
+          7.548301,
+          6.277992,
+          6.313379,
+          7.515198,
+          6.514487,
+          7.351952,
+          6.913828,
+          6.469152,
+          6.63819
+        ],
+        "bounded": [
+          6.049223,
+          5.613885,
+          5.41447,
+          5.82471,
+          6.42528,
+          5.462971,
+          6.151174,
+          5.681422,
+          5.490272,
+          5.536529
+        ]
+      },
+      "reference_median_ms": 6.776009,
+      "bounded_median_ms": 5.6476535000000005,
+      "reduction_pct": 16.65221371459217,
+      "python_allocation_peak_bytes": {
+        "reference": 461917,
+        "bounded": 304056
+      },
+      "exact_rows_and_json_bytes": true
+    },
+    {
+      "pass_id": 2,
+      "rows": 1024,
+      "samples_ms": {
+        "reference": [
+          33.751715,
+          35.507435,
+          35.739532,
+          34.944137,
+          33.912728,
+          44.741716,
+          36.077568,
+          36.045487,
+          36.216278,
+          34.713933
+        ],
+        "bounded": [
+          104.552924,
+          31.864977,
+          32.352143,
+          31.598066,
+          32.024437,
+          33.384524,
+          30.47264,
+          109.667279,
+          30.245593,
+          31.60082
+        ]
+      },
+      "reference_median_ms": 35.6234835,
+      "bounded_median_ms": 31.944707,
+      "reduction_pct": 10.326829772276476,
+      "python_allocation_peak_bytes": {
+        "reference": 2094685,
+        "bounded": 1807336
+      },
+      "exact_rows_and_json_bytes": true
+    }
+  ],
+  "limits": [
+    "Mismo proceso, referencias intercaladas y mismas filas completas.",
+    "La referencia reconstruye solo la conversión anterior. El resto del productor coincide.",
+    "Tracemalloc se mide aparte y excluye las asignaciones nativas.",
+    "Otras aplicaciones y perfil de energía existentes, sin modificaciones.",
+    "El criterio es de coste técnico, no de precisión financiera."
+  ]
+}

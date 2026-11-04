@@ -1,0 +1,29 @@
+{
+  "schema_version": 1,
+  "checked_at": "2026-10-26",
+  "sources": [
+    {
+      "title": "Engrams and circuits crucial for systems consolidation of a memory",
+      "authors": "Kitamura et al.",
+      "year": 2017,
+      "doi": "10.1126/science.aam6808",
+      "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC5493329/",
+      "version": "Manuscrito de autor disponible en PMC desde el 7 de octubre de 2017. Artículo publicado el 7 de abril de 2017.",
+      "inspected": "Texto y figuras 2 a 4 sobre interacción entre circuitos hipocampales y prefrontales.",
+      "scope": "Motivación de interacción entre memorias. No proporciona el operador B2 ni evidencia financiera."
+    },
+    {
+      "title": "Brain-wide mapping reveals that engrams for a single memory are distributed across multiple brain regions",
+      "authors": "Roy et al.",
+      "year": 2022,
+      "doi": "10.1038/s41467-022-29384-4",
+      "url": "https://www.nature.com/articles/s41467-022-29384-4",
+      "version": "Versión de registro publicada el 4 de abril de 2022.",
+      "inspected": "Resultados de conexión funcional y reactivación conjunta de conjuntos neuronales en ratones.",
+      "scope": "Motivación de memoria distribuida. No acredita traducciones de consultas financieras."
+    }
+  ],
+  "algorithmic_sources": "Se conservan las fuentes de B1 sobre DPFP y reglas asociativas, con las desviaciones ya descritas. La mezcla y el contrato temporal de B2 son una propuesta del proyecto.",
+  "lean_executed": false,
+  "novelty_demonstrated": false
+}

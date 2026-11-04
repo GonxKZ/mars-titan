@@ -1,0 +1,381 @@
+{
+  "schema_version": 1,
+  "date": "2026-10-26",
+  "scope": "screening_origin_cohorts",
+  "issue": 746,
+  "source_sha256": "119af0637745a8d6c35e5a74a8e22d78267c1eb328100d197a6492f52b99ce7e",
+  "tests_sha256": "890f188d498cd7897f472141a11d1fda2a3379669d26f85103da42caa8a5af0d",
+  "tests": {
+    "passed": 46,
+    "failed": 0,
+    "skipped": 0,
+    "xml_sha256": "8dc7a91e1da8824b13e42e2ceea00e41910ea218b07fc7e81b4bd0cdb28b56ef",
+    "fixture_kind": "synthetic_manifests_no_row_files",
+    "command": "uv run --with coverage==7.16.1 coverage run --branch --source=mars_titan.training.screening_cohorts -m pytest -q tests/training/test_screening_cohorts.py"
+  },
+  "quality": {
+    "schema_version": 1,
+    "measured_at": "2026-10-26T10:50:11.246437",
+    "tools": {
+      "coverage": "7.16.1",
+      "radon": "6.0.1",
+      "branch_coverage": true,
+      "python": "3.12.14",
+      "summarizer_sha256": "75cc60c88037e0bb17aff6e8ab666ce78b35d600d6c7ad217bf68b1afb4c4ec6"
+    },
+    "complexity_convention": "ComplexityVisitor de Radon sobre la región de coverage.py: if, elif, expresión condicional, for y while con su else, except, else de try, assert, cada operando booleano después del primero y cada cláusula de comprensión suman uno. Las funciones anidadas son regiones propias.",
+    "coverage_convention": "Sentencias ejecutadas entre sentencias de la región según coverage.py.",
+    "crap_convention": "C² × (1 − cobertura de sentencias)³ + C.",
+    "limits": [
+      "CRAP combina complejidad y recorridos observados. No demuestra ausencia de errores.",
+      "La cobertura de sentencias no distingue qué operandos de una condición se evaluaron, aunque la complejidad sí los cuenta.",
+      "Como en Radon 6.0.1, los manejadores de except* y la condición de un assert no suman, y el cuerpo de una clase definida dentro de una función no suma en ella aunque coverage.py cuente allí sus sentencias.",
+      "Una función sin sentencias medibles (solo documentación o puntos suspensivos) conserva C.",
+      "Si dos funciones comparten nombre cualificado en un archivo, coverage.py solo mide la última. Las anteriores aparecen en shadowed_regions sin CRAP.",
+      "La fuente se contrasta con la medida por sus regiones y sus líneas de sentencia. Un cambio que las conserva, como otra condición en la misma línea, no se detecta, así que el resumen se ejecuta sobre el mismo árbol que se midió."
+    ],
+    "include": [],
+    "totals": {
+      "statements": 117,
+      "covered_statements": 117,
+      "branches": 24,
+      "covered_branches": 24
+    },
+    "files": [
+      {
+        "path": "src/mars_titan/training/screening_cohorts.py",
+        "source_sha256": "119af0637745a8d6c35e5a74a8e22d78267c1eb328100d197a6492f52b99ce7e",
+        "statements": 117,
+        "covered_statements": 117,
+        "branches": 24,
+        "covered_branches": 24
+      }
+    ],
+    "functions": [
+      {
+        "path": "src/mars_titan/training/screening_cohorts.py",
+        "function": "_source",
+        "start_line": 35,
+        "end_line": 94,
+        "cyclomatic_complexity": 28,
+        "statements": 19,
+        "covered_statements": 19,
+        "coverage_fraction": 1.0,
+        "branches": 6,
+        "covered_branches": 6,
+        "crap": 28.0
+      },
+      {
+        "path": "src/mars_titan/training/screening_cohorts.py",
+        "function": "verify",
+        "start_line": 200,
+        "end_line": 235,
+        "cyclomatic_complexity": 15,
+        "statements": 15,
+        "covered_statements": 15,
+        "coverage_fraction": 1.0,
+        "branches": 2,
+        "covered_branches": 2,
+        "crap": 15.0
+      },
+      {
+        "path": "src/mars_titan/training/screening_cohorts.py",
+        "function": "project_origin_cohort",
+        "start_line": 101,
+        "end_line": 148,
+        "cyclomatic_complexity": 14,
+        "statements": 14,
+        "covered_statements": 14,
+        "coverage_fraction": 1.0,
+        "branches": 2,
+        "covered_branches": 2,
+        "crap": 14.0
+      },
+      {
+        "path": "src/mars_titan/training/screening_cohorts.py",
+        "function": "prepare",
+        "start_line": 151,
+        "end_line": 197,
+        "cyclomatic_complexity": 6,
+        "statements": 28,
+        "covered_statements": 28,
+        "coverage_fraction": 1.0,
+        "branches": 10,
+        "covered_branches": 10,
+        "crap": 6.0
+      },
+      {
+        "path": "src/mars_titan/training/screening_cohorts.py",
+        "function": "main",
+        "start_line": 238,
+        "end_line": 253,
+        "cyclomatic_complexity": 3,
+        "statements": 11,
+        "covered_statements": 11,
+        "coverage_fraction": 1.0,
+        "branches": 0,
+        "covered_branches": 0,
+        "crap": 3.0
+      },
+      {
+        "path": "src/mars_titan/training/screening_cohorts.py",
+        "function": "_require",
+        "start_line": 30,
+        "end_line": 32,
+        "cyclomatic_complexity": 2,
+        "statements": 2,
+        "covered_statements": 2,
+        "coverage_fraction": 1.0,
+        "branches": 2,
+        "covered_branches": 2,
+        "crap": 2.0
+      },
+      {
+        "path": "src/mars_titan/training/screening_cohorts.py",
+        "function": "_rank",
+        "start_line": 97,
+        "end_line": 98,
+        "cyclomatic_complexity": 1,
+        "statements": 1,
+        "covered_statements": 1,
+        "coverage_fraction": 1.0,
+        "branches": 0,
+        "covered_branches": 0,
+        "crap": 1.0
+      }
+    ],
+    "shadowed_regions": [],
+    "coverage_sha256": "6bb744a600f52320b76aedb684f09e1f8ca060385e0efd080bd9dcf7491d85d2",
+    "functions_measured": 7
+  },
+  "mutations": [
+    {
+      "id": "select_from_future_counts",
+      "status": "killed_with_green_controls",
+      "phases": [
+        {
+          "phase": "G1",
+          "returncode": 0,
+          "optimizer_attempts": 0,
+          "xml_sha256": "3ca1c56261ce1e529eba3861fb99eac8bc0d08b212b1389671e68d82ad919620"
+        },
+        {
+          "phase": "M1",
+          "returncode": 1,
+          "optimizer_attempts": 0,
+          "xml_sha256": "5e4fd22eafae4079d96e62861294d561a12c48e9827577968df8750476b7fee0"
+        },
+        {
+          "phase": "G2",
+          "returncode": 0,
+          "optimizer_attempts": 0,
+          "xml_sha256": "98e2a12fd3ef8ad056bd7b783c2fc7b237d39f8b3baac7477175984063defdd5"
+        }
+      ]
+    },
+    {
+      "id": "choose_source_order",
+      "status": "killed_with_green_controls",
+      "phases": [
+        {
+          "phase": "G1",
+          "returncode": 0,
+          "optimizer_attempts": 0,
+          "xml_sha256": "d40b7b38a85d8802cf49a281b9220e01f86a1a8d762ebd1a00cfb75869c5ed50"
+        },
+        {
+          "phase": "M1",
+          "returncode": 1,
+          "optimizer_attempts": 0,
+          "xml_sha256": "5fd842065f2d1ac0bf0cce5ef508d88315d1c77c8bc96d3596d230f5b2b76799"
+        },
+        {
+          "phase": "G2",
+          "returncode": 0,
+          "optimizer_attempts": 0,
+          "xml_sha256": "29e4576f49114a201615192bf2ab1d4b31f67be484c1ef9d4df14ec7c740e870"
+        }
+      ]
+    },
+    {
+      "id": "report_later_information_cutoff",
+      "status": "killed_with_green_controls",
+      "phases": [
+        {
+          "phase": "G1",
+          "returncode": 0,
+          "optimizer_attempts": 0,
+          "xml_sha256": "b47e92879159152fcedcad6d5a2365069138e9ee893a5c150386a5e1317d2b8f"
+        },
+        {
+          "phase": "M1",
+          "returncode": 1,
+          "optimizer_attempts": 0,
+          "xml_sha256": "df66b40d3781745c28cfe657be7fa5fe28040f4c37013f8581250a80ba4fd18a"
+        },
+        {
+          "phase": "G2",
+          "returncode": 0,
+          "optimizer_attempts": 0,
+          "xml_sha256": "d6e4254425c74745cbd53861fa2c272a2082e8156512f2a00fc951ec857fb464"
+        }
+      ]
+    },
+    {
+      "id": "ignore_source_change",
+      "status": "killed_with_green_controls",
+      "phases": [
+        {
+          "phase": "G1",
+          "returncode": 0,
+          "optimizer_attempts": 0,
+          "xml_sha256": "33b78691465db00a8cabe0f58daa51dde94895862f253becfdb353e95649d468"
+        },
+        {
+          "phase": "M1",
+          "returncode": 1,
+          "optimizer_attempts": 0,
+          "xml_sha256": "2cb722475e383279142d7a9186149441863c15208a057c48aef1e087d9c61bba"
+        },
+        {
+          "phase": "G2",
+          "returncode": 0,
+          "optimizer_attempts": 0,
+          "xml_sha256": "30728292ad996a06b05bfb6f371cc753f3ab8806c79fa08fee38fec4179bc984"
+        }
+      ]
+    },
+    {
+      "id": "ignore_selection_tamper",
+      "status": "killed_with_green_controls",
+      "phases": [
+        {
+          "phase": "G1",
+          "returncode": 0,
+          "optimizer_attempts": 0,
+          "xml_sha256": "9f883116d616624be6217340c581de890ba852470c3b3dee515d6e088e00fe7c"
+        },
+        {
+          "phase": "M1",
+          "returncode": 1,
+          "optimizer_attempts": 0,
+          "xml_sha256": "1552987ece91a798c76520f190e4fe4b57fd70aa83ceb9e6154786cb92e189d0"
+        },
+        {
+          "phase": "G2",
+          "returncode": 0,
+          "optimizer_attempts": 0,
+          "xml_sha256": "f42e16a6936a402d9c6fd54fa1c20b220524655bfcd8c8a4ccbce1a7fd23a30d"
+        }
+      ]
+    }
+  ],
+  "mutation_scope": "Cinco alteraciones dirigidas de la selección temporal y la publicación. No es una puntuación global de mutación.",
+  "real_preparation": {
+    "verification_scope": "manifests_only",
+    "row_files_opened": false,
+    "origins": [
+      {
+        "origin": 2019,
+        "source": "US/fold-014/manifest.json",
+        "source_sha256": "d0a6faec08d20c7db80359f2846e863bc989d43a22dd8b8050e290ac5b143a29",
+        "information_before": "2018-04-01",
+        "eligible_assets": 3474,
+        "selected_assets": 256,
+        "assets_sha256": "b6cff71c380e4cfcb660e5c7ff5a98afa09a3ca4504da1ff84d026b8b65f5b76",
+        "projected_manifest_sha256": "ba432bc3db85aa2733f05947814e3ab780b5ca5c5fdaa8158f01456ec2598ab0",
+        "full_view_label_counts": {
+          "train": 732321,
+          "validation": 32256,
+          "calibration": 15872,
+          "evaluation": 64256
+        }
+      },
+      {
+        "origin": 2020,
+        "source": "US/fold-015/manifest.json",
+        "source_sha256": "a7d176425d2e8115fa23b3fb202a42d9645d77d5981827cb25769af7616522b6",
+        "information_before": "2019-04-01",
+        "eligible_assets": 3728,
+        "selected_assets": 256,
+        "assets_sha256": "0e1108708f5748e018ffc8dde088dfb3dbb9ea076636f8738e6b76e6074ef1d6",
+        "projected_manifest_sha256": "1ae1a77a95ef3018ea6a6951410b3e8113c70cd440bcf70d239f4dc7c73cbb56",
+        "full_view_label_counts": {
+          "train": 747944,
+          "validation": 32256,
+          "calibration": 16128,
+          "evaluation": 64458
+        }
+      },
+      {
+        "origin": 2021,
+        "source": "US/fold-016/manifest.json",
+        "source_sha256": "5d3ad62595c4ad4e127827b01f3bd36d803ecda5c18a306b05be7e2e2fa09ef7",
+        "information_before": "2020-04-01",
+        "eligible_assets": 3973,
+        "selected_assets": 256,
+        "assets_sha256": "6e09fd5e8db4feda099e51b6becc7a6eee6838496f5a70574e41ac95eab2e2bf",
+        "projected_manifest_sha256": "8f5189cf1d97185c080c02973413862cb3672876345772819fe6594a38b26b68",
+        "full_view_label_counts": {
+          "train": 778794,
+          "validation": 32256,
+          "calibration": 16074,
+          "evaluation": 64051
+        }
+      },
+      {
+        "origin": 2022,
+        "source": "US/fold-017/manifest.json",
+        "source_sha256": "c00079184cbef69b65154efbbf6038d5ae37b3e15e251dc99e2628a32873a9dd",
+        "information_before": "2021-04-01",
+        "eligible_assets": 4162,
+        "selected_assets": 256,
+        "assets_sha256": "690594e7d35d813b37ac0e8a0f19a18517e1cc15cb37aa7dc4f28e40d26e5364",
+        "projected_manifest_sha256": "01d63080c8b32d2e721eee66d97625863f91f1da0be0db093dc9499b7142297a",
+        "full_view_label_counts": {
+          "train": 812690,
+          "validation": 32061,
+          "calibration": 16128,
+          "evaluation": 64000
+        }
+      }
+    ],
+    "measured_at_utc": "2026-10-26T09:49:03.947957+00:00",
+    "prepare_total_seconds": 2.89846822200343,
+    "verify_total_seconds": 2.350835104007274,
+    "combined_child_peak_ram_bytes": 159965184,
+    "ram_measure": "getrusage_RUSAGE_CHILDREN_ru_maxrss_combined_high_water",
+    "instrumentation": "coverage.py_7.16.1",
+    "repetitions": 1,
+    "performance_comparison": false,
+    "interpretation": "Una ejecución instrumentada de preparación y verificación. No permite estimar p95, aceleración, caudal de aprendizaje ni energía."
+  },
+  "environment": {
+    "python": "3.12.14",
+    "os": "Linux",
+    "architecture": "x86_64",
+    "packages": {
+      "numpy": "2.5.3",
+      "pyarrow": "25.0.1",
+      "pytest": "9.1.1"
+    },
+    "device": "cpu",
+    "gpu_used": false
+  },
+  "learning": {
+    "optimizer_steps": 0,
+    "scientific_runs": 0,
+    "final_test_opened": false,
+    "global_hold_sha256": "8a658080c1ac4e63847eba58b177020339da6ec47021cf26d2701830073c87fd"
+  },
+  "resolved_setup_incidents": [
+    "pytest-cov no estaba instalado. La cobertura se midió con coverage.py 7.16.1 mediante uv, sin añadir una dependencia al proyecto.",
+    "La primera invocación del módulo desde el entorno compartido apuntaba al checkout principal. Se fijó PYTHONPATH al src de la rama comprobada y se verificó su huella."
+  ],
+  "limits": [
+    "Los recuentos publicados pertenecen a las ventanas completas del manifiesto. No son filas efectivamente ajustadas con fit_months.",
+    "No se han leído ni contrastado los bytes de los archivos Parquet referenciados.",
+    "La selección hereda las limitaciones retrospectivas del universo y de las fuentes.",
+    "No se ha ejecutado la criba ni medido un cambio predictivo."
+  ]
+}

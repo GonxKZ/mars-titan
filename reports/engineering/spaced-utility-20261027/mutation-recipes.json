@@ -1,0 +1,113 @@
+{
+  "sources": {
+    "core": {
+      "path": "src/mars_titan/memory/spaced_utility.py",
+      "sha256": "12666ef980f905a4bb4114de2056131f961c8f9b4f957b78a867fc83191fb527"
+    },
+    "state": {
+      "path": "src/mars_titan/memory/spaced_utility_state.py",
+      "sha256": "eabf2f1fe959bde36442a9d142b8b873aa45cee2504a530874bcf3c76a3b27d8"
+    }
+  },
+  "test_path": "tests/memory/test_spaced_utility.py",
+  "test_sha256": "fcfc20f8876f782a7ccd734de6ff5dd8f58e209b7017aefed8a094378aba0ddb",
+  "recipes": [
+    {
+      "id": "reverse_gain",
+      "family": "Objective",
+      "source_key": "core",
+      "nodeid": "tests/memory/test_spaced_utility.py::test_two_assets_in_one_session_are_only_one_positive_confirmation",
+      "anchor": "difference = abs(target - point) - original_error",
+      "replacement": "difference = original_error - abs(target - point)",
+      "expected_failure": {
+        "exception_type": "AssertionError",
+        "longrepr_contains": "assert"
+      }
+    },
+    {
+      "id": "count_assets_as_sessions",
+      "family": "Objective",
+      "source_key": "core",
+      "nodeid": "tests/memory/test_spaced_utility.py::test_two_assets_in_one_session_are_only_one_positive_confirmation",
+      "anchor": "previous[\"sessions\"] + 1",
+      "replacement": "previous[\"sessions\"] + 2",
+      "expected_failure": {
+        "exception_type": "AssertionError",
+        "longrepr_contains": "assert"
+      }
+    },
+    {
+      "id": "ignore_required_gap",
+      "family": "Objective",
+      "source_key": "core",
+      "nodeid": "tests/memory/test_spaced_utility.py::test_positive_evidence_on_separated_days_is_required",
+      "anchor": "last - first >= self.config.min_gap_days",
+      "replacement": "last - first >= 1",
+      "expected_failure": {
+        "exception_type": "AssertionError",
+        "longrepr_contains": "assert"
+      }
+    },
+    {
+      "id": "allow_early_labels",
+      "family": "Objective",
+      "source_key": "core",
+      "nodeid": "tests/memory/test_spaced_utility.py::test_future_or_early_labels_cannot_change_the_state",
+      "anchor": "decision < earliest <= available <= self.clock",
+      "replacement": "decision < available <= self.clock",
+      "expected_failure": {
+        "exception_type": "Failed",
+        "longrepr_contains": "DID NOT RAISE"
+      }
+    },
+    {
+      "id": "publish_partial_session",
+      "family": "Objective",
+      "source_key": "core",
+      "nodeid": "tests/memory/test_spaced_utility.py::test_partial_labels_wait_for_the_whole_session_and_censoring_is_not_a_target",
+      "anchor": "if all(r[\"status\"] is not None for r in c[\"rows\"].values())",
+      "replacement": "if any(r[\"status\"] is not None for r in c[\"rows\"].values())",
+      "expected_failure": {
+        "exception_type": "TypeError",
+        "longrepr_contains": "NoneType"
+      }
+    },
+    {
+      "id": "ignore_state_checksum",
+      "family": "Objective",
+      "source_key": "state",
+      "nodeid": "tests/memory/test_spaced_utility.py::test_valid_state_with_only_a_changed_checksum_is_rejected",
+      "anchor": "hashlib.sha256(_canonical(state).encode()).hexdigest() == expected",
+      "replacement": "True",
+      "expected_failure": {
+        "exception_type": "Failed",
+        "longrepr_contains": "DID NOT RAISE"
+      }
+    },
+    {
+      "id": "serialize_before_validation",
+      "family": "Objective",
+      "source_key": "state",
+      "nodeid": "tests/memory/test_spaced_utility.py::test_malformed_deep_state_is_rejected_before_recursive_serialization",
+      "anchor": "    _identity(state[\"identity\"], run)",
+      "replacement": "    _canonical(state)\n    _identity(state[\"identity\"], run)",
+      "expected_failure": {
+        "exception_type": "Failed",
+        "longrepr_contains": "campo escalar"
+      }
+    },
+    {
+      "id": "ignore_pending_row_limit",
+      "family": "Objective",
+      "source_key": "core",
+      "nodeid": "tests/memory/test_spaced_utility.py::test_exhausted_pending_budget_fails_before_copying_another_snapshot",
+      "anchor": "total_rows <= self.config.max_pending_rows",
+      "replacement": "total_rows >= 0",
+      "expected_failure": {
+        "exception_type": "Failed",
+        "longrepr_contains": "presupuesto agotado"
+      }
+    }
+  ],
+  "method": "Por receta, copiar fuentes y pruebas fijadas, comprobar una referencia verde, aplicar solo el reemplazo indicado, observar el fallo esperado y restaurar la referencia verde. Guardas de bloqueo, origen de importaciones y ausencia de pasos de optimizador."
+}

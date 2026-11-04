@@ -1,0 +1,53 @@
+{
+  "schema_version": 1,
+  "kind": "mature_correction_variants",
+  "variant_id": "redundant_area_memory_v1",
+  "issue": 750,
+  "status": "declared_not_executed",
+  "default_enabled": false,
+  "final_test_access": false,
+  "parent": "titans_mac_mac_online_of_the_same_window_view_and_seed",
+  "window": "src/mars_titan/training/mars_titan_correction.py:run_correction_window",
+  "arms": {
+    "area_memory": {
+      "recipe": "configs/titans/mature-correction-historical-masked.json",
+      "components": {"associative_memory": {"rule": "proximal", "key": "codec", "areas": {"areas": 4, "shifts": 1, "permutation": "seeded_random", "seed": 0, "labels": "mature"}}}
+    },
+    "single_area_same_coordinates": {
+      "recipe": "configs/titans/mature-correction-historical-masked.json",
+      "components": {"associative_memory": {"rule": "proximal", "key": "codec", "areas": {"areas": 1, "shifts": 4, "permutation": "identity", "seed": 0, "labels": "mature"}}}
+    },
+    "identical_areas": {
+      "recipe": "configs/titans/mature-correction-historical-masked.json",
+      "components": {"associative_memory": {"rule": "proximal", "key": "codec", "areas": {"areas": 4, "shifts": 1, "permutation": "identity", "seed": 0, "labels": "mature"}}}
+    },
+    "shuffled_labels": {
+      "recipe": "configs/titans/mature-correction-historical-masked.json",
+      "components": {"associative_memory": {"rule": "proximal", "key": "codec", "areas": {"areas": 4, "shifts": 1, "permutation": "seeded_random", "seed": 0, "labels": "shuffled_within_cohort"}}}
+    },
+    "nadaraya_watson": {
+      "recipe": "configs/titans/kernel-correction-historical-masked.json",
+      "components": {"associative_memory": {"rule": "nadaraya_watson", "key": "codec"}}
+    },
+    "linear_codec": {
+      "recipe": "configs/titans/mature-correction-historical-masked.json",
+      "components": {"associative_memory": {"rule": "proximal", "key": "codec"}}
+    }
+  },
+  "references": {
+    "zero_memory": "predicciones del padre Titans-MAC en los mismos tramos. La ventana con η = 0 las reproduce exactamente"
+  },
+  "comparisons": [
+    {"variant": "area_memory", "control": "single_area_same_coordinates", "question": "Repartir el mismo número de coordenadas en áreas promediadas frente a una sola regresión conjunta"},
+    {"variant": "area_memory", "control": "identical_areas", "question": "Que las permutaciones elijan pares distintos de DPFP frente a repetir la misma área"},
+    {"variant": "area_memory", "control": "shuffled_labels", "question": "Que la memoria use la asociación entre clave y error y no solo el sesgo de la cohorte"},
+    {"variant": "area_memory", "control": "zero_memory", "question": "Que corregir con errores maduros aporte algo frente al padre"},
+    {"variant": "area_memory", "control": "nadaraya_watson", "question": "Que resumir asociaciones en estados fijos compita con guardar los episodios y promediarlos por parecido"},
+    {"variant": "area_memory", "control": "linear_codec", "question": "Que la proyección por áreas aporte frente a la corrección B6 con la clave lineal del codec"}
+  ],
+  "pending": [
+    "Declarada sin ejecutar. La memoria por áreas no tiene parámetros entrenables ni épocas, pero la validación elige η o τ entre los casos de su receta, así que espera al bloqueo de aprendizaje y al padre Titans-MAC de cada ventana.",
+    "El contraste principal, la familia de comparaciones y los orígenes los fija el protocolo de la criba (#746). Este archivo solo declara los modelos y sus controles.",
+    "El ensemble de semillas como control de la redundancia pertenece a otra familia del estudio (#742)."
+  ]
+}

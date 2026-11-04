@@ -1,0 +1,178 @@
+{
+ "schema_version": 1,
+ "kind": "pit_region_gate_cost",
+ "issue": 751,
+ "measured_at": "2026-10-27T23:21:52+00:00",
+ "commit": "dd5880805c3b1a794e2e8283f8e6bc4f383aa337",
+ "sources_sha256": {
+  "src/mars_titan/evaluation/pit_region_gate.py": "8f32da030eb22e43d61bc0c84355384e6a4edd6533e74c5c0afd19ff0813f41d",
+  "src/mars_titan/evaluation/scale_diagnostics.py": "bed0a484a2eb7af721561d3401c16cdce48035d585c77e5a15d3365878953d74",
+  "benchmarks/output_stage_cost.py": "aa41119908e739b4019428e6ceb4e49bf9c80fc55422e2988515d3e820f7d421",
+  "benchmarks/pit_region_gate_cost.py": "a337f58b2c15c2a753d0ae8a309d0a86ae50ca9170d1a2b8ba738614a4792862"
+ },
+ "config": {
+  "regions": "residual_correlation",
+  "clusters": 8,
+  "window": 126,
+  "min_labels": 60,
+  "seed": 20261027
+ },
+ "data": "sintéticos con semilla fija, solo para fijar formas. Nada se ajusta ni evalúa",
+ "environment": {
+  "cpu": "AMD Ryzen 9 8945HS w/ Radeon 780M Graphics",
+  "cpu_count": 16,
+  "threads": {
+   "omp": "2",
+   "openblas": "2"
+  },
+  "python": "3.12.14",
+  "numpy": "2.5.3",
+  "scipy": "1.18.1",
+  "load_average_at_start": [
+   30.3388671875,
+   31.60595703125,
+   34.52587890625
+  ],
+  "concurrent_load": "otras sesiones comparten la máquina, ver load_average_at_start"
+ },
+ "not_measured": [
+  "forward y backward, porque la etapa no tiene tensores ni parámetros entrenables",
+  "GPU, por el mismo motivo",
+  "lectura de Parquet y alineación con la vista, que hace la criba",
+  "energía, sin instrumento adecuado"
+ ],
+ "cases": {
+  "s_block_256": {
+   "assets": 256,
+   "sessions": 63,
+   "rows": 16128,
+   "calibration_rows": 16128,
+   "history_rows": 48384,
+   "regions": {
+    "1": 32,
+    "2": 32,
+    "3": 32,
+    "4": 32,
+    "5": 32,
+    "6": 32,
+    "7": 32,
+    "8": 32
+   },
+   "panel_assets": {
+    "median_s": 0.020715374033898115,
+    "min_s": 0.020156714133918285,
+    "repeats": 5
+   },
+   "residual_regions": {
+    "median_s": 0.05540603003464639,
+    "min_s": 0.05400153994560242,
+    "repeats": 5
+   },
+   "fit": {
+    "median_s": 0.08179351803846657,
+    "min_s": 0.08144372003152966,
+    "repeats": 5
+   },
+   "fit_permuted": {
+    "median_s": 0.0845649370457977,
+    "min_s": 0.0814935730304569,
+    "repeats": 5
+   },
+   "apply": {
+    "median_s": 0.004615145968273282,
+    "min_s": 0.0045655828434973955,
+    "repeats": 5
+   },
+   "fit_numpy_peak_bytes": 7787782,
+   "apply_numpy_peak_bytes": 1717659
+  },
+  "year_256": {
+   "assets": 256,
+   "sessions": 252,
+   "rows": 64512,
+   "calibration_rows": 16128,
+   "history_rows": 48384,
+   "regions": {
+    "1": 32,
+    "2": 32,
+    "3": 32,
+    "4": 32,
+    "5": 32,
+    "6": 32,
+    "7": 32,
+    "8": 32
+   },
+   "panel_assets": {
+    "median_s": 0.11541104619391263,
+    "min_s": 0.11353421793319285,
+    "repeats": 5
+   },
+   "residual_regions": {
+    "median_s": 0.05108246183954179,
+    "min_s": 0.0509983750525862,
+    "repeats": 5
+   },
+   "fit": {
+    "median_s": 0.08802226698026061,
+    "min_s": 0.08641359303146601,
+    "repeats": 5
+   },
+   "fit_permuted": {
+    "median_s": 0.08718696609139442,
+    "min_s": 0.08687620307318866,
+    "repeats": 5
+   },
+   "apply": {
+    "median_s": 0.02376392506994307,
+    "min_s": 0.023606529226526618,
+    "repeats": 5
+   },
+   "fit_numpy_peak_bytes": 7787731,
+   "apply_numpy_peak_bytes": 6846299
+  },
+  "population_4200": {
+   "assets": 4200,
+   "sessions": 252,
+   "rows": 1058400,
+   "calibration_rows": 264600,
+   "history_rows": 793800,
+   "regions": {
+    "1": 525,
+    "2": 525,
+    "3": 525,
+    "4": 525,
+    "5": 525,
+    "6": 525,
+    "7": 525,
+    "8": 525
+   },
+   "panel_assets": {
+    "median_s": 1.4692064260598272,
+    "min_s": 1.4349014479666948,
+    "repeats": 5
+   },
+   "residual_regions": {
+    "median_s": 7.230838603107259,
+    "min_s": 6.43743838602677,
+    "repeats": 5
+   },
+   "fit": {
+    "median_s": 10.838487830013037,
+    "min_s": 9.667655186960474,
+    "repeats": 5
+   },
+   "fit_permuted": {
+    "median_s": 10.514292566105723,
+    "min_s": 9.06287457398139,
+    "repeats": 5
+   },
+   "apply": {
+    "median_s": 0.2256936221383512,
+    "min_s": 0.2197244509588927,
+    "repeats": 5
+   },
+   "fit_numpy_peak_bytes": 1071846059,
+   "apply_numpy_peak_bytes": 112293083
+  }
+ }
+}

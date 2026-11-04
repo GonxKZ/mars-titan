@@ -1,0 +1,15 @@
+# Fuentes y límites de los operadores regionales C1 y C6
+
+El entrenador cronológico registra `mars_titan.models.titans.regional_variants` cuando el predictor declara un `regional_variant` activo. La misma fuente cubre C1 con o sin mezcla y C6 con escritura densa o competitiva. La huella se incorpora a `identity.implementation` y la comprobación del recorrido detecta un cambio de ese archivo. Sin variante regional no se añade esa dependencia.
+
+La huella comprueba los bytes del archivo utilizado. No valida sus ecuaciones, no autentica los datos ni demuestra que la arquitectura mejore las predicciones. Los recibos anteriores conservan sus versiones y fuentes. No se sustituyen sus hashes para admitir otro programa al reanudar.
+
+El [consumidor congelado](../../src/mars_titan/models/titans/frozen_financial.py) todavía no registra estos operadores. Los cargadores de padres también los rechazan, tanto si aparecen en la receta como si se declaran mediante `predictor_changes`. El rechazo ocurre antes de construir el predictor o leer sus pesos. Esta frontera impide que una variante nueva se combine implícitamente con un lector o corrector que aún no la identifica.
+
+Las configuraciones sin el factor conservan sus parámetros e identidad geométrica. El cambio de código propio sigue produciendo una nueva huella de ejecución. Ampliar el registro congelado requerirá identificar sus fuentes, estados, controles y costes, con pruebas de recuperación y del recorrido completo.
+
+Las pruebas de `tests/training/test_regional_source_pins.py` comprueban las cuatro configuraciones y las fuentes con archivos temporales. No construyen un entrenador ni un optimizador. La comprobación del archivo modificado utiliza el método real de verificación del recorrido, sin ejecutar el contenido de ese archivo. Estas comprobaciones son técnicas y no habilitan la campaña ni el test final.
+
+La [verificación del 27 de octubre de 2026](../../reports/engineering/regional-source-pins-20261027/verification.json) reúne 138 casos CPU distintos, doce nuevos y 126 regresiones. Cuatro casos nativos inicialmente omitidos se ejecutaron al declarar el enlace correcto. Se detectaron cinco mutaciones dirigidas con controles verdes y cero intentos de pasos de optimizador. Las funciones de registro y comprobación de fuentes cubren sus ocho sentencias y cuatro ramas. El cargador conserva ramas anteriores no recorridas en esta batería. La cobertura y CRAP se publican con su alcance, sin afirmar que sean los de un entrenamiento completo.
+
+Un checkpoint de fixture guardado antes de incorporar los operadores regionales reproduce exactamente sus 64 pronósticos de validación con el factor desactivado. Los parámetros no cambian ni se inicializa CUDA. Los recibos distinguen esa comprobación de la auditoría previa de sincronización, cuya primera selección mezcló cuatro pruebas CUDA con las CPU sin admisión GPU. Esa ejecución no se usa como validación CUDA admitida. La selección corregida conserva las comprobaciones CPU separadas. No hay una nueva evaluación científica ni mejora predictiva medida.

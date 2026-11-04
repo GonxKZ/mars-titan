@@ -1,0 +1,364 @@
+{
+ "schema_version": 1,
+ "date": "2026-10-29",
+ "issue": 751,
+ "scope": "axial_time_region_v1_with_its_time_only_control",
+ "implementation_commit": "0ff84be9bb883c0b500c4d35a99ff496ee1d2b8e",
+ "base_commit": "f1e9c52091364b12b9f140f859fad63a383cc1c9",
+ "scientific_experiments": 0,
+ "training_runs": 0,
+ "real_optimizer_steps": 0,
+ "final_test_opened": false,
+ "hold_sha256": "8a658080c1ac4e63847eba58b177020339da6ec47021cf26d2701830073c87fd",
+ "test_optimizers": "Las pruebas del módulo solo calculan gradientes con autograd y la medida de coste propaga una suma de cuadrados con un gancho de torch.optim que rechaza cualquier paso. La protección global del aprendizaje sigue activa y omite la prueba que daría un paso de AdamW.",
+ "final_commit": "02e3ca825f7cce85e687b365e1fef014db2fc806",
+ "suites": [
+  {
+   "name": "targeted_with_coverage",
+   "tests": 551,
+   "failures": 0,
+   "errors": 0,
+   "skipped": 1,
+   "xml_sha256": "23c45e30648e0239cae4bd1f81a10932e5f5718b59657d9448fdf493e5ccef30",
+   "note": "C2, su medida de coste y los módulos que comparten su configuración, su estado y la identidad del entrenador (H1, C5, variantes regionales, consumidor congelado, Dust, recorrido, época común, selección y recuperación), con cobertura de ramas sobre el árbol de implementation_commit. La omisión es la protección del aprendizaje y las pruebas CUDA quedan deseleccionadas porque la GPU estaba ocupada por otros procesos."
+  },
+  {
+   "name": "regression_of_the_changed_paths",
+   "tests": 7551,
+   "failures": 1,
+   "errors": 0,
+   "skipped": 166,
+   "xml_sha256": "23a3348a6276a116ce0d6790208f8dd9578bf70246d467d4c24927f3f7737b37",
+   "note": "Los módulos que importan los caminos cambiados, con tres procesos sobre el árbol de implementation_commit. El único fallo es `test_benchmark_preserves_paired_originals_and_the_next_transition`, que agotó su plazo de 100 s con una carga media de 29 en 16 hilos lógicos. Repetida sola pasó en 89 s, y #804 ajustó después ese presupuesto para una máquina cargada (suite lesion_timing_on_the_final_commit)."
+  },
+  {
+   "name": "after_merging_develop_0a805e762",
+   "tests": 805,
+   "failures": 1,
+   "errors": 0,
+   "skipped": 1,
+   "xml_sha256": "68b757b4df6890026c42dfd156fc172f978fd8919f5c889ffc9772349294e537",
+   "note": "Las pruebas de C2, de la fiabilidad madura, de las variantes del núcleo y las que cambió la fusión de develop en 0a805e762 (#805, #806 y #807), en el commit de fusión 86634b26a. El fallo es el doble del entrenador de C2, que no tenía el campo mature_reliability que #806 empezó a leer en la identidad del código. 58605ec20 se lo añade."
+  },
+  {
+   "name": "final_after_merging_develop_and_the_atomic_receipt",
+   "tests": 859,
+   "failures": 0,
+   "errors": 0,
+   "skipped": 1,
+   "xml_sha256": "b402a05cfabc8e0ff37cc49c1f6a8d1170ccbad17c292b1649f16b46e1c04bb6",
+   "note": "Las mismas pruebas y las de los recibos de coste en final_commit, tras corregir el doble, fusionar develop con #808 y escribir el recibo de C2 con atomic_json. La omisión es la protección del aprendizaje."
+  },
+  {
+   "name": "lesion_timing_on_the_final_commit",
+   "tests": 12,
+   "failures": 0,
+   "errors": 0,
+   "skipped": 0,
+   "xml_sha256": "9c4433d9a3d8ba756284da73ef5a098c7db2bc73956fc3e6bcd1801ecd24be1a",
+   "note": "Las pruebas de tiempo de las lesiones en final_commit, con el presupuesto de #804."
+  }
+ ],
+ "quality": {
+  "tools": {
+   "coverage": "7.16.1",
+   "radon": "6.0.1",
+   "branch_coverage": true,
+   "python": "3.12.14",
+   "summarizer_sha256": "75cc60c88037e0bb17aff6e8ab666ce78b35d600d6c7ad217bf68b1afb4c4ec6"
+  },
+  "totals": {
+   "statements": 3052,
+   "covered_statements": 2526,
+   "branches": 1190,
+   "covered_branches": 859
+  },
+  "files": [
+   {
+    "path": "benchmarks/axial_time_region_cost.py",
+    "source_sha256": "3799b6ace761af79c496edb1b8ff417f3f7214dd3ba8d9543c5c8f9dafcfc9ed",
+    "statements": 117,
+    "covered_statements": 112,
+    "branches": 38,
+    "covered_branches": 34
+   },
+   {
+    "path": "src/mars_titan/models/titans/axial_time_region.py",
+    "source_sha256": "dc42c42dc663dbb63239a186f224e149c3463ba4b21f708807227d88ed5ef7f1",
+    "statements": 154,
+    "covered_statements": 154,
+    "branches": 30,
+    "covered_branches": 30
+   },
+   {
+    "path": "src/mars_titan/models/titans/financial.py",
+    "source_sha256": "2ec8c0ef9cc6bc41f64b0ba0c130212a2d9fb00fcc5ec678cf8d8b66437139ed",
+    "statements": 822,
+    "covered_statements": 653,
+    "branches": 402,
+    "covered_branches": 260
+   },
+   {
+    "path": "src/mars_titan/models/titans/financial_blocks.py",
+    "source_sha256": "6869880079cfc5a6fab46762abdb103f50c2a8df163d7e00358873fc2044e1fe",
+    "statements": 194,
+    "covered_statements": 190,
+    "branches": 78,
+    "covered_branches": 75
+   },
+   {
+    "path": "src/mars_titan/models/titans/frozen_financial.py",
+    "source_sha256": "5d39b95b025c4597529771a805b3bd35a7a2fecc83296dcfce3b5ef5674d4911",
+    "statements": 215,
+    "covered_statements": 179,
+    "branches": 116,
+    "covered_branches": 86
+   },
+   {
+    "path": "src/mars_titan/training/dust/financial.py",
+    "source_sha256": "afb22b3423d032eedcefa283c88b4f2474c3f66d2c2579672a2a0c723a5bfd6e",
+    "statements": 241,
+    "covered_statements": 223,
+    "branches": 84,
+    "covered_branches": 64
+   },
+   {
+    "path": "src/mars_titan/training/financial_run.py",
+    "source_sha256": "0836e93cb3b7b616bd6ea6af25de9bfa2f9fd7d124d9fa09c8076250b277fe26",
+    "statements": 918,
+    "covered_statements": 743,
+    "branches": 376,
+    "covered_branches": 262
+   },
+   {
+    "path": "src/mars_titan/training/mars_titan_walk_forward.py",
+    "source_sha256": "4c050e1e03f7cf582cf8132d576ffa6bf7453111d5a98670bd1ae4d1c39d4909",
+    "statements": 363,
+    "covered_statements": 247,
+    "branches": 52,
+    "covered_branches": 37
+   },
+   {
+    "path": "src/mars_titan/training/search_cases.py",
+    "source_sha256": "47bf1f9532cc44c97ce9dcd19d985ede2e276437aaf65bfc4b613c3f03eb5589",
+    "statements": 28,
+    "covered_statements": 25,
+    "branches": 14,
+    "covered_branches": 11
+   }
+  ],
+  "max_crap": 1295.203030341144,
+  "quality_sha256": "a6f39243d61a309b311655220d69e5b7f09284b7ee4bd0b1dd903315c09495d9",
+  "limits": "CRAP y cobertura localizan complejidad poco comprobada. No demuestran ausencia de errores."
+ },
+ "changed": {
+  "base": "f1e9c52091364b12b9f140f859fad63a383cc1c9",
+  "head": "0ff84be9bb883c0b500c4d35a99ff496ee1d2b8e",
+  "functions": 54,
+  "max_crap": 1295.203030341144,
+  "changed_executable_lines": 303,
+  "changed_covered_lines": 299,
+  "highest": [
+   {
+    "path": "src/mars_titan/models/titans/financial.py",
+    "function": "FinancialConfig.__post_init__",
+    "cyclomatic_complexity": 114,
+    "crap": 1295.203030341144,
+    "changed_executable_lines": 1,
+    "changed_covered_lines": 1,
+    "changed_missing_lines": [],
+    "changed_missing_branches": []
+   },
+   {
+    "path": "src/mars_titan/models/titans/financial.py",
+    "function": "FinancialPredictor._prepare",
+    "cyclomatic_complexity": 50,
+    "crap": 87.69997964583757,
+    "changed_executable_lines": 4,
+    "changed_covered_lines": 4,
+    "changed_missing_lines": [],
+    "changed_missing_branches": []
+   },
+   {
+    "path": "benchmarks/axial_time_region_cost.py",
+    "function": "run",
+    "cyclomatic_complexity": 28,
+    "crap": 28.589030803906837,
+    "changed_executable_lines": 45,
+    "changed_covered_lines": 41,
+    "changed_missing_lines": [
+     149,
+     159,
+     163,
+     164
+    ],
+    "changed_missing_branches": [
+     [
+      148,
+      149
+     ],
+     [
+      158,
+      159
+     ],
+     [
+      162,
+      163
+     ]
+    ]
+   },
+   {
+    "path": "src/mars_titan/models/titans/financial.py",
+    "function": "FinancialConfig.identity",
+    "cyclomatic_complexity": 26,
+    "crap": 27.854944,
+    "changed_executable_lines": 2,
+    "changed_covered_lines": 2,
+    "changed_missing_lines": [],
+    "changed_missing_branches": []
+   },
+   {
+    "path": "src/mars_titan/models/titans/financial.py",
+    "function": "FinancialPredictor.__init__",
+    "cyclomatic_complexity": 27,
+    "crap": 27.823974609375,
+    "changed_executable_lines": 1,
+    "changed_covered_lines": 1,
+    "changed_missing_lines": [],
+    "changed_missing_branches": []
+   }
+  ],
+  "uncovered": [
+   {
+    "path": "benchmarks/axial_time_region_cost.py",
+    "function": "run",
+    "cyclomatic_complexity": 28,
+    "crap": 28.589030803906837,
+    "changed_executable_lines": 45,
+    "changed_covered_lines": 41,
+    "changed_missing_lines": [
+     149,
+     159,
+     163,
+     164
+    ],
+    "changed_missing_branches": [
+     [
+      148,
+      149
+     ],
+     [
+      158,
+      159
+     ],
+     [
+      162,
+      163
+     ]
+    ]
+   }
+  ],
+  "unmeasured": [
+   {
+    "path": "benchmarks/axial_time_region_cost.py",
+    "function": "inputs.<locals>.presence"
+   },
+   {
+    "path": "benchmarks/axial_time_region_cost.py",
+    "function": "measure.<locals>.call"
+   },
+   {
+    "path": "src/mars_titan/models/titans/financial.py",
+    "function": "FinancialPredictor._axial_fuse.<locals>.modulation"
+   }
+  ],
+  "note": "Funciones con líneas cambiadas frente a develop (base_commit), con su CRAP y la cobertura de esas líneas. FinancialConfig.__post_init__ ya tenía complejidad 113 en develop y C2 la deja en 114, y su separación está en #801. Las líneas sin cubrir son los caminos CUDA de la medida de coste.",
+  "changed_sha256": "de460ace23977c31a5065804881d45e4917422a97c1ecf284fd0e8d9f219e2a9"
+ },
+ "mutations": {
+  "tree_commit": "0ff84be9bb883c0b500c4d35a99ff496ee1d2b8e",
+  "planned": 34,
+  "killed": 34,
+  "optimizer_attempts": 0,
+  "hold_sha256_unchanged": true,
+  "recipes_sha256": "99dcea134b2b15d6a768454ae08b70dfcefad020dc54ef580b622e552021d42f",
+  "executor_sha256": "dad256d4395d2a3edc055d4b93de42ec4a87d4ec9874471f09c51e861142b5cd",
+  "source_sha256": {
+   "benchmarks/axial_time_region_cost.py": "3799b6ace761af79c496edb1b8ff417f3f7214dd3ba8d9543c5c8f9dafcfc9ed",
+   "src/mars_titan/training/mars_titan_walk_forward.py": "4c050e1e03f7cf582cf8132d576ffa6bf7453111d5a98670bd1ae4d1c39d4909",
+   "src/mars_titan/models/titans/axial_time_region.py": "dc42c42dc663dbb63239a186f224e149c3463ba4b21f708807227d88ed5ef7f1",
+   "src/mars_titan/models/titans/frozen_financial.py": "5d39b95b025c4597529771a805b3bd35a7a2fecc83296dcfce3b5ef5674d4911",
+   "src/mars_titan/training/financial_run.py": "0836e93cb3b7b616bd6ea6af25de9bfa2f9fd7d124d9fa09c8076250b277fe26",
+   "src/mars_titan/models/titans/financial.py": "2ec8c0ef9cc6bc41f64b0ba0c130212a2d9fb00fcc5ec678cf8d8b66437139ed",
+   "src/mars_titan/models/titans/financial_blocks.py": "6869880079cfc5a6fab46762abdb103f50c2a8df163d7e00358873fc2044e1fe"
+  },
+  "cases": [
+   "causal_mask_ignored",
+   "current_position_not_admitted",
+   "absent_regions_send_messages",
+   "absent_region_output_kept",
+   "lag_order_reversed",
+   "region_embedding_left_out_of_the_second_layer",
+   "attention_scale_omitted",
+   "history_keeps_the_oldest_and_drops_the_current",
+   "history_stores_the_outputs",
+   "time_only_mixes_regions",
+   "random_second_projection",
+   "initialization_ignores_the_seed",
+   "seed_depends_on_the_kind",
+   "history_bytes_without_presence",
+   "counts_unchecked_on_decode",
+   "gather_drops_the_history",
+   "select_keeps_the_history_rows",
+   "usage_without_the_history",
+   "state_accepts_a_missing_history",
+   "row_wise_tokens_accept_c2",
+   "auxiliary_heads_admitted",
+   "regional_variant_admitted",
+   "engine_keeps_the_history_graph",
+   "engine_gather_ignores_the_order",
+   "trainer_identity_without_c2",
+   "frozen_consumer_accepts_c2",
+   "frozen_parent_accepts_c2",
+   "parent_with_c2_verified",
+   "plain_state_accepts_a_history",
+   "holographic_network_admitted",
+   "axial_module_mismatch_accepted",
+   "cost_receipt_folder_not_created",
+   "existing_cost_receipt_overwritten",
+   "any_cuda_device_measured"
+  ],
+  "summary_sha256": "5a2a8216ff82540d222ed694355151fc9fa0a3b85015b6dc77127157c9efadaf",
+  "scope": "Treinta y cuatro defectos dirigidos de C2, de su integración en el predictor, el recorrido, el entrenador, el consumidor congelado y la medida de coste, cada uno con una fase en verde antes, la mutación y otra fase en verde después, en una copia aislada del árbol final. No es una puntuación global.",
+  "additional": [
+   {
+    "tree_commit": "02e3ca825f7cce85e687b365e1fef014db2fc806",
+    "planned": 4,
+    "killed": 4,
+    "recipes_sha256": "42e29e606e4cf19195e7160b45be009f857061b4e45b59eccb679544e418362e",
+    "executor_sha256": "dad256d4395d2a3edc055d4b93de42ec4a87d4ec9874471f09c51e861142b5cd",
+    "source_sha256": {
+     "benchmarks/axial_time_region_cost.py": "cae8b8208218623c2b7b1f38578bb82bbf2b175d2a576756167e95cca44ffad2"
+    },
+    "cases": [
+     "axial_time_region_cost__destination_overwritten",
+     "axial_time_region_cost__folder_not_created",
+     "axial_time_region_cost__measured_before_refusal",
+     "axial_time_region_cost__nan_written"
+    ],
+    "summary_sha256": "8c82c4e443ff72401234fc5bf6040d89e33464a2955851c260bc4e226221f977",
+    "scope": "Las cuatro mutaciones de #802 para la medida de C2 tras pasarla a atomic_json: quitar la comprobación del destino, medir antes de rechazarlo, escribir un recibo con NaN y escribir sin crear la carpeta."
+   }
+  ]
+ },
+ "native_link": {
+  "source_commit": "39abf2c99",
+  "preset": "native-candidate-cuda",
+  "used_by": "regression_of_the_changed_paths, final_after_merging_develop_and_the_atomic_receipt",
+  "sha256": "9fda744aa9c6672f9fb47c0896a5e9b19fc8795cdbfff42b944ed751953b1046"
+ },
+ "cost": {
+  "receipt": "cost-cpu.json",
+  "sha256": "8df5372ba27a0382cbdf9a5e9f7e20c9ab047d1b125963fa5360252ad51d2b44"
+ }
+}

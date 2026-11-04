@@ -1,0 +1,29 @@
+{
+  "repositories": {
+    "Objective": {
+      "root": ".",
+      "test_path": "tests/training/test_readout_regularization_profiles.py",
+      "test_sha256": "71df70e7de9638c27b015027ac64e72c4ade92ce1ca392d34a77ba487aee0c8d"
+    }
+  },
+  "sources": {
+    "profile": {
+      "path": "configs/titans/episodic-readout-weight-decay-1e-3.json",
+      "sha256": "5bfbe4afaffc0e94d063b00a2a1b1ff2fb1ce3eb8e677c7c7df28740fe14d3e1"
+    }
+  },
+  "recipes": [
+    {
+      "id": "disable_readout_regularization",
+      "family": "Objective",
+      "source_key": "profile",
+      "nodeid": "tests/training/test_readout_regularization_profiles.py::test_readout_profile_reaches_its_optimizer_without_updates[lr1e-4-0.001-path1]",
+      "anchor": "\"weight_decay\": 0.001",
+      "replacement": "\"weight_decay\": 0.0",
+      "expected_failure": {
+        "exception_type": "AssertionError",
+        "longrepr_contains": "0.001"
+      }
+    }
+  ]
+}

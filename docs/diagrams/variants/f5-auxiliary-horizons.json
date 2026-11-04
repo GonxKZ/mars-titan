@@ -1,0 +1,75 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "F5 · Horizontes auxiliares de 5 y 20 sesiones (auxiliary_horizons_v1)",
+    "quality_profile": "showcase",
+    "viewBox": [1300, 592],
+    "legend": {
+      "entries": {
+        "external": {"label": "Entradas"},
+        "backend": {"label": "Cálculo"},
+        "frontend": {"label": "Salida"},
+        "security": {"label": "Control o protección"},
+        "cloud": {"label": "Evaluación"}
+      }
+    }
+  },
+  "components": [
+    {
+      "id": "inputs",
+      "type": "external",
+      "label": "Entradas en la emisión",
+      "sublabel": "4 modalidades y macro",
+      "tag": "con máscaras",
+      "pos": [40, 230],
+      "size": [180, 72]
+    },
+    {"id": "trunk", "type": "backend", "label": "Tronco compartido", "sublabel": "estado de B", "pos": [300, 230], "size": [180, 72]},
+    {"id": "h5", "type": "backend", "label": "Cabeza a 5 sesiones", "sublabel": "residuo acumulado", "pos": [560, 40], "size": [180, 72]},
+    {"id": "main", "type": "frontend", "label": "Cabeza principal", "sublabel": "sesión siguiente", "pos": [560, 230], "size": [180, 72]},
+    {"id": "h20", "type": "backend", "label": "Cabeza a 20 sesiones", "sublabel": "residuo acumulado", "pos": [560, 420], "size": [180, 72]},
+    {"id": "loss5", "type": "security", "label": "Pérdida a 5 sesiones", "sublabel": "solo con etiqueta madura", "pos": [820, 40], "size": [180, 72]},
+    {
+      "id": "loss20",
+      "type": "security",
+      "label": "Pérdida a 20 sesiones",
+      "sublabel": "solo con etiqueta madura",
+      "pos": [820, 420],
+      "size": [180, 72]
+    },
+    {"id": "screen", "type": "cloud", "label": "Criba", "sublabel": "solo el objetivo principal", "pos": [1080, 230], "size": [180, 72]},
+    {"id": "control", "type": "security", "label": "Control", "sublabel": "mismas cabezas, peso cero", "pos": [1080, 420], "size": [180, 72]}
+  ],
+  "connections": [
+    {"id": "inputs-trunk", "from": "inputs", "to": "trunk"},
+    {"id": "trunk-h5", "from": "trunk", "to": "h5"},
+    {"id": "trunk-main", "from": "trunk", "to": "main", "variant": "emphasis"},
+    {"id": "trunk-h20", "from": "trunk", "to": "h20"},
+    {"id": "h5-loss5", "from": "h5", "to": "loss5"},
+    {"id": "h20-loss20", "from": "h20", "to": "loss20"},
+    {"id": "main-screen", "from": "main", "to": "screen", "label": "predicción", "variant": "emphasis"},
+    {"id": "control-screen", "from": "control", "to": "screen", "label": "control", "variant": "dashed"}
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "Mecanismo",
+      "items": [
+        "Dos cabezas auxiliares aprenden residuos a 5 y 20 sesiones",
+        "Su etiqueta solo entra en la pérdida cuando ha madurado",
+        "El objetivo principal y su evaluación no cambian"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "Control que la descarta",
+      "items": ["Las mismas cabezas con peso cero en la pérdida"]
+    },
+    {
+      "dot": "amber",
+      "title": "Estado",
+      "items": ["Registrada en #749 y en implementación, sin entrenar ni evaluar", "El retraso de 20 sesiones reduce las filas de ajuste"]
+    }
+  ]
+}

@@ -1,0 +1,104 @@
+{
+  "schema_version": 1,
+  "recorded_at_utc": "2026-10-27T19:11:55.998684+00:00",
+  "kind": "technical_core_checks_without_scientific_learning",
+  "base_commit": "cfd1edc4e81b9f1cedc36835de915b68e2441d88",
+  "tests": {
+    "passed": 127,
+    "new": 68,
+    "regressions": 59,
+    "skipped": 0,
+    "failures": 0,
+    "xml_sha256": "7daeca2e4abe5b8f7798c138c11a50398326a325ab4553f212ee7f8f6c59edcd",
+    "full_suite_executed": false
+  },
+  "tests_by_module": {
+    "tests.memory.test_salience_budget": 57,
+    "tests.memory.test_salience_budget_catalog": 1,
+    "tests.benchmarks.test_salience_budget_cost": 10,
+    "tests.memory.test_area_memory": 15,
+    "tests.memory.test_multiscale_mixture": 30,
+    "tests.training.test_learning_hold": 14
+  },
+  "quality": {
+    "totals": {
+      "statements": 229,
+      "covered_statements": 222,
+      "branches": 76,
+      "covered_branches": 69
+    },
+    "max_crap": 20.4,
+    "convention": "CRAP por cobertura de sentencias. Ramas publicadas por separado.",
+    "tools": {
+      "coverage": "7.16.1",
+      "radon": "6.0.1",
+      "branch_coverage": true,
+      "python": "3.12.14",
+      "summarizer_sha256": "75cc60c88037e0bb17aff6e8ab666ce78b35d600d6c7ad217bf68b1afb4c4ec6"
+    }
+  },
+  "mutations": {
+    "planned": 5,
+    "killed": 5,
+    "optimizer_attempts": 0,
+    "green_controls": true
+  },
+  "red_to_green": {
+    "initial_missing_module": true,
+    "adversarial_failures": [
+      "La recuperación aceptaba booleanos equivalentes a enteros.",
+      "Los enteros demasiado grandes provocaban OverflowError sin tratar."
+    ],
+    "final_source_and_tests_pinned": true
+  },
+  "harness_notes": [
+    "Una orden inicial de coverage usó pytest como archivo en vez de -m pytest y no ejecutó pruebas. Se corrigió la invocación.",
+    "Ruff detectó cinco cadenas largas y el orden de un import. Se corrigió sin cambiar el algoritmo. La batería y las cinco mutaciones se repitieron sobre las fuentes finales.",
+    "Las primeras medidas anteriores al formato se conservan como recibos privados. cost.json contiene la ejecución de los archivos finales."
+  ],
+  "sources": {
+    "src/mars_titan/memory/salience_budget.py": "4e876a3a5dd04a92169ef6d35ae00cb3ee9e1fc88b1255b20964ced75c1627db",
+    "src/mars_titan/memory/flow_cursors.py": "12c3bbec60f7d98a8bc0ec3e37964c553ead49378d6e09e4be649684e85fe410",
+    "benchmarks/salience_budget_cost.py": "fca2447d55b3541560d44a1cb9d4db9cdcc5634a11f8dbf71d4a49603f4f8aa1",
+    "configs/experiments/salience-write-budget-v1.json": "cd2b26bb008c3e53f3f74c7a5b1409929be59fa570a41308a9eefb8b638e72e3",
+    "tests/memory/test_salience_budget.py": "379939415b567a3202f6e9e67608de4808fb4aaad87a68d546ab6db93aca91b8",
+    "tests/memory/test_salience_budget_catalog.py": "91524dddd9ab9d8b0c93f41b26f89623407c7e478c21d48b0d00bb940be15c15",
+    "tests/benchmarks/test_salience_budget_cost.py": "dc7eed86723535b65f534f7fe0f58b377a26daa7eca3e7e5df653a86523d7dca",
+    "scripts/summarize_python_quality.py": "75cc60c88037e0bb17aff6e8ab666ce78b35d600d6c7ad217bf68b1afb4c4ec6"
+  },
+  "workload_device": "cpu",
+  "cuda_workload": false,
+  "native_changes": false,
+  "scientific_training_executed": false,
+  "predictive_improvement_measured": false,
+  "final_test_access": false,
+  "integration": {
+    "financial_session": false,
+    "correction_window": false,
+    "paired_predictive_study": false
+  },
+  "limits": [
+    "El núcleo valida valores recibidos y su disponibilidad declarada. La procedencia de la emisión debe vincularla el consumidor.",
+    "El cupo es por mercado y publicación completa, no se ha conectado al calendario de sesiones.",
+    "La recuperación del selector no publica conjuntamente un banco ni una cola de etiquetas.",
+    "Los costes solo cubren selección y persistencia JSON con fixtures. No son los del modelo, sus datos ni CUDA.",
+    "No se ha demostrado separar ruido de observación y cambios latentes."
+  ],
+  "artifacts": {
+    "quality.json": "21a3b3112c76887cd33617593e23fb6d81e7fc3947cea401987ab6e2cb220def",
+    "mutations.json": "0629c8a74c035c638ead0a9afd1abb051e5db3c02685793ae5aaacefed4b2b2d",
+    "cost.json": "225cb1c3d1c20c3d2040e12fd792a6526490e42343a218c0bb1897cd4a5c292e"
+  },
+  "benchmark_configuration": {
+    "writes_per_market": 32,
+    "min_history": 2,
+    "initial_scale": 0.01,
+    "scale_floor": 1e-08,
+    "seed": 0,
+    "prior_publications": 2,
+    "warmup_cycles_per_profile": 2,
+    "measured_cycles_per_profile": 7,
+    "profiled_cycles_per_profile": 1,
+    "profiles": 12
+  }
+}

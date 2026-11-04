@@ -1,0 +1,234 @@
+{
+  "schema_version": 1,
+  "measured_at": "2026-10-27T12:37:14.686580",
+  "tools": {
+    "coverage": "7.16.1",
+    "radon": "6.0.1",
+    "branch_coverage": true,
+    "python": "3.12.14",
+    "summarizer_sha256": "75cc60c88037e0bb17aff6e8ab666ce78b35d600d6c7ad217bf68b1afb4c4ec6"
+  },
+  "complexity_convention": "ComplexityVisitor de Radon sobre la región de coverage.py: if, elif, expresión condicional, for y while con su else, except, else de try, assert, cada operando booleano después del primero y cada cláusula de comprensión suman uno. Las funciones anidadas son regiones propias.",
+  "coverage_convention": "Sentencias ejecutadas entre sentencias de la región según coverage.py.",
+  "crap_convention": "C² × (1 − cobertura de sentencias)³ + C.",
+  "limits": [
+    "CRAP combina complejidad y recorridos observados. No demuestra ausencia de errores.",
+    "La cobertura de sentencias no distingue qué operandos de una condición se evaluaron, aunque la complejidad sí los cuenta.",
+    "Como en Radon 6.0.1, los manejadores de except* y la condición de un assert no suman, y el cuerpo de una clase definida dentro de una función no suma en ella aunque coverage.py cuente allí sus sentencias.",
+    "Una función sin sentencias medibles (solo documentación o puntos suspensivos) conserva C.",
+    "Si dos funciones comparten nombre cualificado en un archivo, coverage.py solo mide la última. Las anteriores aparecen en shadowed_regions sin CRAP.",
+    "La fuente se contrasta con la medida por sus regiones y sus líneas de sentencia. Un cambio que las conserva, como otra condición en la misma línea, no se detecta, así que el resumen se ejecuta sobre el mismo árbol que se midió."
+  ],
+  "include": [
+    "src/mars_titan/memory/spaced_study.py",
+    "src/mars_titan/training/spaced_window.py",
+    "scripts/run_spaced_window.py"
+  ],
+  "totals": {
+    "statements": 241,
+    "covered_statements": 238,
+    "branches": 46,
+    "covered_branches": 43
+  },
+  "files": [
+    {
+      "path": "scripts/run_spaced_window.py",
+      "source_sha256": "eae40129563db1185a3ad563deb5b6733c5590a0c82b464d606f0233ae06dea6",
+      "statements": 23,
+      "covered_statements": 21,
+      "branches": 6,
+      "covered_branches": 4
+    },
+    {
+      "path": "src/mars_titan/memory/spaced_study.py",
+      "source_sha256": "90f418b3c0433d8f0b48c39a444c2f11cf45ddcfeee5fe038abbb44f4f3ae022",
+      "statements": 30,
+      "covered_statements": 30,
+      "branches": 8,
+      "covered_branches": 8
+    },
+    {
+      "path": "src/mars_titan/training/spaced_window.py",
+      "source_sha256": "817766b9b33756f054c7361b28026c44b9e11dcef068d1b07040be04500e3a75",
+      "statements": 188,
+      "covered_statements": 187,
+      "branches": 32,
+      "covered_branches": 31
+    }
+  ],
+  "functions": [
+    {
+      "path": "src/mars_titan/memory/spaced_study.py",
+      "function": "load_study",
+      "start_line": 39,
+      "end_line": 89,
+      "cyclomatic_complexity": 27,
+      "statements": 10,
+      "covered_statements": 10,
+      "coverage_fraction": 1.0,
+      "branches": 6,
+      "covered_branches": 6,
+      "crap": 27.0
+    },
+    {
+      "path": "src/mars_titan/training/spaced_window.py",
+      "function": "_prepare",
+      "start_line": 173,
+      "end_line": 305,
+      "cyclomatic_complexity": 22,
+      "statements": 51,
+      "covered_statements": 51,
+      "coverage_fraction": 1.0,
+      "branches": 8,
+      "covered_branches": 8,
+      "crap": 22.0
+    },
+    {
+      "path": "src/mars_titan/training/spaced_window.py",
+      "function": "run_spaced_window",
+      "start_line": 308,
+      "end_line": 384,
+      "cyclomatic_complexity": 14,
+      "statements": 54,
+      "covered_statements": 54,
+      "coverage_fraction": 1.0,
+      "branches": 12,
+      "covered_branches": 12,
+      "crap": 14.0
+    },
+    {
+      "path": "src/mars_titan/training/spaced_window.py",
+      "function": "_session_table",
+      "start_line": 139,
+      "end_line": 170,
+      "cyclomatic_complexity": 12,
+      "statements": 8,
+      "covered_statements": 8,
+      "coverage_fraction": 1.0,
+      "branches": 4,
+      "covered_branches": 4,
+      "crap": 12.0
+    },
+    {
+      "path": "src/mars_titan/training/spaced_window.py",
+      "function": "_spent",
+      "start_line": 74,
+      "end_line": 88,
+      "cyclomatic_complexity": 8,
+      "statements": 3,
+      "covered_statements": 3,
+      "coverage_fraction": 1.0,
+      "branches": 0,
+      "covered_branches": 0,
+      "crap": 8.0
+    },
+    {
+      "path": "src/mars_titan/training/spaced_window.py",
+      "function": "_verify_outputs",
+      "start_line": 105,
+      "end_line": 136,
+      "cyclomatic_complexity": 7,
+      "statements": 21,
+      "covered_statements": 20,
+      "coverage_fraction": 0.9523809523809523,
+      "branches": 6,
+      "covered_branches": 5,
+      "crap": 7.005291005291006
+    },
+    {
+      "path": "scripts/run_spaced_window.py",
+      "function": "main",
+      "start_line": 10,
+      "end_line": 43,
+      "cyclomatic_complexity": 4,
+      "statements": 16,
+      "covered_statements": 15,
+      "coverage_fraction": 0.9375,
+      "branches": 4,
+      "covered_branches": 3,
+      "crap": 4.00390625
+    },
+    {
+      "path": "src/mars_titan/memory/spaced_study.py",
+      "function": "SpacedStudy.retention_for",
+      "start_line": 33,
+      "end_line": 36,
+      "cyclomatic_complexity": 4,
+      "statements": 3,
+      "covered_statements": 3,
+      "coverage_fraction": 1.0,
+      "branches": 2,
+      "covered_branches": 2,
+      "crap": 4.0
+    },
+    {
+      "path": "src/mars_titan/training/spaced_window.py",
+      "function": "_Budget.requested",
+      "start_line": 97,
+      "end_line": 102,
+      "cyclomatic_complexity": 3,
+      "statements": 4,
+      "covered_statements": 4,
+      "coverage_fraction": 1.0,
+      "branches": 2,
+      "covered_branches": 2,
+      "crap": 3.0
+    },
+    {
+      "path": "src/mars_titan/training/spaced_window.py",
+      "function": "_code",
+      "start_line": 70,
+      "end_line": 71,
+      "cyclomatic_complexity": 2,
+      "statements": 1,
+      "covered_statements": 1,
+      "coverage_fraction": 1.0,
+      "branches": 0,
+      "covered_branches": 0,
+      "crap": 2.0
+    },
+    {
+      "path": "src/mars_titan/memory/spaced_study.py",
+      "function": "SpacedStudy.identity",
+      "start_line": 22,
+      "end_line": 31,
+      "cyclomatic_complexity": 1,
+      "statements": 1,
+      "covered_statements": 1,
+      "coverage_fraction": 1.0,
+      "branches": 0,
+      "covered_branches": 0,
+      "crap": 1.0
+    },
+    {
+      "path": "src/mars_titan/training/spaced_window.py",
+      "function": "_digest",
+      "start_line": 64,
+      "end_line": 67,
+      "cyclomatic_complexity": 1,
+      "statements": 2,
+      "covered_statements": 2,
+      "coverage_fraction": 1.0,
+      "branches": 0,
+      "covered_branches": 0,
+      "crap": 1.0
+    },
+    {
+      "path": "src/mars_titan/training/spaced_window.py",
+      "function": "_Budget.__init__",
+      "start_line": 92,
+      "end_line": 94,
+      "cyclomatic_complexity": 1,
+      "statements": 2,
+      "covered_statements": 2,
+      "coverage_fraction": 1.0,
+      "branches": 0,
+      "covered_branches": 0,
+      "crap": 1.0
+    }
+  ],
+  "shadowed_regions": [],
+  "coverage_sha256": "f81482df4b3480fe1b5d1cbdf6110812ba32f483ce0a4b7a22c4da682630281e",
+  "functions_measured": 13,
+  "scope": "Configuración, controlador y CLI nuevos. Cobertura de sentencias para CRAP. No incluye CUDA ni aprendizaje."
+}

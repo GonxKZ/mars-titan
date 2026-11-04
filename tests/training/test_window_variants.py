@@ -16,10 +16,14 @@ from mars_titan.training.checkpoints import StopRequest, load_training_state
 from mars_titan.training.corpus_inputs import CorpusDataset
 from mars_titan.training.edition_subsets import materialize
 from mars_titan.training.kernel_policy import FP32_STRICT, declared_policy
-from mars_titan.training.learning_hold import HOLD_ENV, LearningHoldError
+from mars_titan.training.learning_hold import HOLD_ENV, LearningHoldError, learning_blocked
 from mars_titan.training.temporal_corpus import prepare_temporal_corpus
+from tests.learning_hold_lowering import allowed_hold, lowers_learning_hold
 from tests.suite_support import requires_cuda
 from tests.training.edition_catalog_fixture import built_catalog
+
+# Clave de inventario de las pruebas que actualizan pesos sobre fixtures (#745).
+HOLD_KEY = "tests/training/test_window_variants.py::"
 
 
 def engine():
@@ -167,8 +171,7 @@ def short_view(window_source, tmp_path):
 
 @pytest.fixture
 def allowed_child(tmp_path, monkeypatch):
-    hold = tmp_path / "child-hold.json"
-    hold.write_text(json.dumps(dict(training_allowed=True)))
+    hold = allowed_hold(tmp_path / "child-hold.json")
     monkeypatch.setenv(HOLD_ENV, str(hold))
     monkeypatch.setenv("CUBLAS_WORKSPACE_CONFIG", ":4096:8")
     return hold
@@ -339,6 +342,7 @@ def test_admission_timeout_records_zero_updates_before_cuda(
     assert json.loads((output / "report.json").read_text()) == report
 
 
+@lowers_learning_hold(HOLD_KEY + "test_resume_admission_preserves_confirmed_runtime")
 @requires_cuda
 @pytest.mark.parametrize(
     ("previous_status", "interruption"),
@@ -455,6 +459,7 @@ def test_resume_admission_preserves_confirmed_runtime(
         assert restored == [1]
 
 
+@lowers_learning_hold(HOLD_KEY + "test_full_short_epochs_seal_configuration_before_first_update")
 @requires_cuda
 def test_full_short_epochs_seal_configuration_before_first_update(
     short_view, tmp_path, monkeypatch, allowed_child
@@ -503,13 +508,16 @@ def test_full_short_epochs_seal_configuration_before_first_update(
     assert config["identity"] == report["identity"]
     assert report["identity"]["manifest_sha256"] == sha256(short_view)
     assert report["identity"]["sources"]
-    assert allowed_child.read_text() == json.dumps(dict(training_allowed=True))
+    assert not learning_blocked(allowed_child)
     for partition, count in (("train", 6), ("validation", 4)):
         rows = pq.read_table(output / f"{partition}-predictions.parquet").to_pylist()
         assert len(rows) == len({row["sample_id"] for row in rows}) == count
         assert all(row["prediction_at"].year == 2015 for row in rows)
 
 
+@lowers_learning_hold(
+    HOLD_KEY + "test_six_published_routes_complete_fixture_updates_and_recover_checkpoint"
+)
 @requires_cuda
 @pytest.mark.parametrize(
     "arm",
@@ -622,6 +630,7 @@ def test_six_published_routes_complete_fixture_updates_and_recover_checkpoint(
         assert saved["estimator"] is report["estimator"] is None
 
 
+@lowers_learning_hold(HOLD_KEY + "test_resume_restores_exact_optimizer_rng_cursor_and_weights")
 @requires_cuda
 @pytest.mark.parametrize(
     "estimator,temporal_encoder",
@@ -686,6 +695,9 @@ def test_resume_restores_exact_optimizer_rng_cursor_and_weights(
     )
 
 
+@lowers_learning_hold(
+    HOLD_KEY + "test_selection_can_keep_initial_checkpoint_without_stopping_fixed_updates"
+)
 @requires_cuda
 def test_selection_can_keep_initial_checkpoint_without_stopping_fixed_updates(
     short_view, tmp_path, monkeypatch, allowed_child
@@ -717,6 +729,7 @@ def test_selection_can_keep_initial_checkpoint_without_stopping_fixed_updates(
     assert report["global_step"] == expected and len(report["epochs"]) == 2
 
 
+@lowers_learning_hold(HOLD_KEY + "test_timeout_is_partial_and_has_recoverable_confirmed_checkpoint")
 @requires_cuda
 def test_timeout_is_partial_and_has_recoverable_confirmed_checkpoint(
     short_view, tmp_path, monkeypatch, allowed_child
@@ -742,6 +755,7 @@ def test_timeout_is_partial_and_has_recoverable_confirmed_checkpoint(
     assert not (output / "validation-predictions.parquet").exists()
 
 
+@lowers_learning_hold(HOLD_KEY + "test_fp32_strict_is_applied_and_enforced_before_checkpoint")
 @requires_cuda
 @pytest.mark.parametrize("drift", [False, True], ids=["apply-before-forward", "reject-drift"])
 def test_fp32_strict_is_applied_and_enforced_before_checkpoint(
@@ -810,6 +824,10 @@ def test_fp32_strict_rejects_cpu_autocast_before_reading_sources(
     assert not output.exists()
 
 
+@lowers_learning_hold(
+    HOLD_KEY
+    + "test_selected_session_artifacts_reuse_predictions_and_completed_resume_verifies_them"
+)
 @requires_cuda
 def test_selected_session_artifacts_reuse_predictions_and_completed_resume_verifies_them(
     short_view, tmp_path, monkeypatch, allowed_child
@@ -894,6 +912,9 @@ def test_selected_session_artifacts_reuse_predictions_and_completed_resume_verif
     assert all(path.read_bytes() == values for path, values in prediction_bytes.items())
 
 
+@lowers_learning_hold(
+    HOLD_KEY + "test_published_precomputed_recipe_completes_fixture_updates_and_checkpoint"
+)
 @requires_cuda
 def test_published_precomputed_recipe_completes_fixture_updates_and_checkpoint(
     short_view, tmp_path, monkeypatch, allowed_child

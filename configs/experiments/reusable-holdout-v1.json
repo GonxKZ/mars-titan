@@ -1,0 +1,35 @@
+{
+  "schema_version": 1,
+  "kind": "reusable_holdout_declaration",
+  "identity": "parameter_free_ladder_block_bootstrap_v1",
+  "issue": 794,
+  "status": "declared_not_executed",
+  "declared_at": "2026-10-29",
+  "final_test_access": false,
+  "executions": 0,
+  "holdout": "S de la criba de variantes: los años de evaluación 2019 a 2022 de sus cuatro orígenes.",
+  "score": "session_ic",
+  "score_definition": "Media sobre las sesiones de S de la correlación de Pearson por sesión entre la predicción emitida y el residuo, promediada entre semillas. Es la serie de cada modelo que entra en el contraste principal de la criba.",
+  "direction": "greater",
+  "threshold": "one_bootstrap_standard_error_of_the_paired_mean_difference",
+  "resampling": "circular_block_bootstrap_of_utc_days",
+  "block_days": 16,
+  "replicates": 2000,
+  "seed": 20261023,
+  "resolution": 0.001,
+  "initial_best": "El modelo de mayor IC medio en S entre los que ya haya publicado la criba de la primera ola.",
+  "order": "Los envíos entran en el orden en que el motor sella el análisis de cada modelo de la segunda ola. Los que se sellan a la vez entran en el orden de su catálogo.",
+  "public": ["identity", "released", "improved"],
+  "sealed": ["score", "defined_sessions", "common_sessions", "paired_mean_difference", "standard_error", "best_before"],
+  "opening": "Las cifras selladas de la segunda ola se abren una sola vez, después del último envío y antes de la confirmación, con su fecha y su commit registrados.",
+  "reading": "Un modelo de la segunda ola solo cambia el tablero de S si su IC medio supera al del mejor publicado en más de un error típico de la diferencia emparejada. El valor publicado es su IC medio redondeado a milésimas. Si no mejora, el tablero repite el valor anterior. La escalera limita lo que S revela al elegir los siguientes modelos, pero no sustituye al contraste de la criba ni a la confirmación en E.",
+  "deviations": {
+    "standard_error": "El artículo divide la desviación típica de la diferencia por la raíz de n, que supone sesiones independientes. Aquí el error típico sale del bootstrap circular por bloques de 16 días UTC de la criba, con sus 2.000 réplicas y su semilla.",
+    "sessions": "La diferencia se mide en las sesiones que definen a la vez el envío y el mejor. El valor publicado es la media del envío en sus propias sesiones definidas.",
+    "resolution": "El artículo redondea a 1/n. Con unas 1.000 sesiones en S, la resolución declarada es 0,001."
+  },
+  "limits": {
+    "heuristic": "Como advierten Blum y Hardt, con envíos adaptativos el contraste de un error típico es heurístico. Corresponde aproximadamente a un nivel de 0,15 y no a una prueba con su tamaño garantizado.",
+    "scope": "La escalera solo protege la parte de S que la segunda ola reutiliza. Las cifras de la primera ola ya publicadas siguen visibles."
+  }
+}

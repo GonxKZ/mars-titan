@@ -1,0 +1,89 @@
+{
+  "schema_version": 1,
+  "kind": "technical_verification",
+  "verified_at_utc": "2026-10-27T04:48:08.982565+00:00",
+  "issue": 750,
+  "base_commit": "38fcf4f4619a0f3d2d5db5a03ea7a483066a39e1",
+  "implementation_status": "evidence_core_only",
+  "tests": {
+    "tests": 102,
+    "errors": 0,
+    "failures": 0,
+    "skipped": 0,
+    "junit_sha256": "2cf364d5c6356e428a519dfc77d4f7a541308869a4c16d2519ea400c4a2313ef",
+    "test_files": [
+      "tests/memory/test_spaced_utility.py",
+      "tests/memory/test_lesion_protocol.py",
+      "tests/memory/test_lesion_ledger.py"
+    ],
+    "e2_cases": 51,
+    "pytest_seconds": 1.604,
+    "overlap": "Las baterías anteriores están incluidas y no se suman."
+  },
+  "quality": {
+    "path": "quality.json",
+    "sha256": "2d8f15c30266a93f3bebad4b3a08ce3dbf706e9d67f726e50433884e1ab67799",
+    "statements": 320,
+    "covered_statements": 320,
+    "branches": 60,
+    "covered_branches": 60,
+    "max_function_crap": 19.0
+  },
+  "mutations": {
+    "path": "mutation-results.json",
+    "sha256": "3bd599d7ccd13845dd786d4943722ce892cb3a1c86f5b9a5b377c81790f629f5",
+    "planned": 8,
+    "killed": 8,
+    "optimizer_attempts": 0
+  },
+  "sources": {
+    "src/mars_titan/memory/spaced_utility.py": "12666ef980f905a4bb4114de2056131f961c8f9b4f957b78a867fc83191fb527",
+    "src/mars_titan/memory/spaced_utility_state.py": "eabf2f1fe959bde36442a9d142b8b873aa45cee2504a530874bcf3c76a3b27d8",
+    "tests/memory/test_spaced_utility.py": "fcfc20f8876f782a7ccd734de6ff5dd8f58e209b7017aefed8a094378aba0ddb",
+    "reports/engineering/spaced-utility-20261027/cost_probe.py": "e9378c0e9b70b2b2b5ae40bb50d9f0ed9635a8cc18135a426ccf06be6908768b",
+    "docs/experiments/spaced-utility-consolidation-v1.md": "edfa86c3855e4408e5d30b8638ad3632c26d4b9e4d25e43d017c4fb07ec1762d",
+    "README.md": "f44ccc93ec2a2026e2c8c1fd2895978fad78e9bc5563dbcb03621b54480fd6ee",
+    "tests/training/test_learning_hold_guards.py": "01d21f96386a5e010db3f7045eae17b9ea971ba7e64361be64ce2b1b80360a70"
+  },
+  "cost": {
+    "path": "cost.json",
+    "sha256": "f0fb593c563cc7dc5effb7b6358891046792ed30a63046d902983a87e3844ec9"
+  },
+  "literature": [
+    {
+      "doi": "10.1038/s41593-018-0232-z",
+      "url": "https://www.nature.com/articles/s41593-018-0232-z",
+      "access_date": "2026-10-27",
+      "inspected": "Metadatos y resumen. No se declara lectura integral ni reproducción."
+    },
+    {
+      "doi": "10.1016/j.cub.2021.06.085",
+      "url": "https://pubmed.ncbi.nlm.nih.gov/34324833/",
+      "access_date": "2026-10-27",
+      "inspected": "Metadatos y resumen. No se declara lectura integral ni reproducción."
+    }
+  ],
+  "limits": [
+    "No se ejecutó la suite completa del repositorio.",
+    "No hay productor de supresiones, selector, integración de sesión ni comparación científica E2.",
+    "Cobertura y CRAP describen recorridos observados. Ocho mutaciones detectadas no prueban ausencia de otros fallos.",
+    "Los costes son de registro CPU con fixtures, no del modelo completo.",
+    "No hubo pasos de optimizador, datos financieros reales, acceso a 2024 ni cambios de la protección.",
+    "Las comprobaciones CUDA de B1/B2/B3/E1/B4 siguen pendientes. Este registro escalar no añade un backend CUDA."
+  ],
+  "hold_guards": {
+    "tests": 155,
+    "errors": 0,
+    "failures": 0,
+    "skipped": 0,
+    "pytest_seconds": 6.039,
+    "junit_sha256": "26f303e24eb76631a934312213785f50f813ff0d0fa2398c92f58a1f93ec205e",
+    "scope": "Puntos de entrada protegidos y ajustes sustituidos por dobles. No ejecuta campañas reales."
+  },
+  "checks": {
+    "ruff": "passed",
+    "format": "passed",
+    "repository": "passed"
+  },
+  "hold_sha256": "8a658080c1ac4e63847eba58b177020339da6ec47021cf26d2701830073c87fd"
+}

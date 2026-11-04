@@ -1,0 +1,122 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "Núcleo Titans-MAC adaptado (mac_online)",
+    "quality_profile": "showcase",
+    "viewBox": [1240, 580],
+    "legend": {
+      "entries": {
+        "external": {"label": "Entradas"},
+        "backend": {"label": "Cálculo"},
+        "database": {"label": "Memoria y estado"},
+        "frontend": {"label": "Salida"}
+      }
+    }
+  },
+  "components": [
+    {
+      "id": "inputs",
+      "type": "external",
+      "label": "Entradas del instante",
+      "sublabel": "4 modalidades y macro",
+      "tag": "con máscaras",
+      "pos": [40, 230],
+      "size": [170, 70]
+    },
+    {
+      "id": "fusion",
+      "type": "backend",
+      "label": "Codificadores y fusión",
+      "sublabel": "token x_t de dimensión D",
+      "pos": [270, 230],
+      "size": [180, 70]
+    },
+    {
+      "id": "attention",
+      "type": "backend",
+      "label": "Atención MAC",
+      "sublabel": "Attn([P; h; S])",
+      "tag": "ec. (7) y (8)",
+      "pos": [520, 230],
+      "size": [180, 70]
+    },
+    {
+      "id": "gate",
+      "type": "backend",
+      "label": "Puerta de salida",
+      "sublabel": "o = y ⊗ M_t(y)",
+      "tag": "ec. (10)",
+      "pos": [770, 230],
+      "size": [170, 70]
+    },
+    {"id": "head", "type": "frontend", "label": "Cabeza de cuantiles", "sublabel": "5 niveles, mediana", "pos": [1010, 230], "size": [180, 70]},
+    {
+      "id": "persistent",
+      "type": "database",
+      "label": "Memoria persistente P",
+      "sublabel": "4 tokens aprendidos",
+      "tag": "fija en inferencia",
+      "pos": [520, 40],
+      "size": [180, 70]
+    },
+    {
+      "id": "update",
+      "type": "backend",
+      "label": "Actualización interna",
+      "sublabel": "sorpresa, momentum y olvido",
+      "tag": "ec. (1) a (3)",
+      "pos": [520, 430],
+      "size": [180, 70]
+    },
+    {
+      "id": "memory",
+      "type": "database",
+      "label": "Memoria neuronal M",
+      "sublabel": "pesos rápidos por flujo",
+      "tag": "sin etiquetas",
+      "pos": [770, 430],
+      "size": [170, 70]
+    }
+  ],
+  "connections": [
+    {"id": "observed", "from": "inputs", "to": "fusion", "label": "x_t"},
+    {"id": "segment", "from": "fusion", "to": "attention", "label": "S", "variant": "emphasis"},
+    {"id": "prefix", "from": "persistent", "to": "attention", "label": "P", "labelAt": [610, 205]},
+    {"id": "retrieve", "from": "memory", "to": "attention", "label": "h = M_{t−1}(q)", "variant": "dashed", "fromSide": "top", "toSide": "bottom"},
+    {"id": "write", "from": "attention", "to": "update", "label": "y en S", "fromSide": "bottom", "toSide": "top", "labelDy": 40, "labelDx": -34},
+    {"id": "commit", "from": "update", "to": "memory", "label": "M_t"},
+    {"id": "read", "from": "memory", "to": "gate", "label": "M_t(y)", "labelDx": 30},
+    {"id": "combine", "from": "attention", "to": "gate", "label": "y", "variant": "emphasis"},
+    {"id": "emit", "from": "gate", "to": "head", "label": "o_t", "variant": "emphasis"}
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "Ecuaciones del artículo",
+      "items": [
+        "ℓ = ‖M(k) − v‖², S_t = η_t S_{t−1} − θ_t ∇ℓ",
+        "M_t = (1 − α_t) M_{t−1} + S_t con puertas dependientes de la entrada",
+        "Orden [P; h; S] de la figura 4a y del preprint v1"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "Desviaciones declaradas",
+      "items": [
+        "Segmento de un token por decisión y flujo (C = 1)",
+        "BPTT externo truncado a 8 instantes",
+        "MLP de memoria D×D sin expansión ni bias, 4 tokens persistentes"
+      ]
+    },
+    {
+      "dot": "violet",
+      "title": "Estados",
+      "items": [
+        "Parámetros compartidos: ajuste externo, congelados al evaluar",
+        "Pesos rápidos: bucle interno con entradas, nunca con la etiqueta",
+        "Implementado y comprobado en CPU y CUDA, sin resultado que acredite mejora"
+      ]
+    }
+  ]
+}

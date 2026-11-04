@@ -1,0 +1,115 @@
+{
+  "schema_version": 1,
+  "recorded_at_utc": "2026-10-27T10:42:22.881237+00:00",
+  "kind": "technical_selected_state_loading_without_training",
+  "base_commit": "f84a7f731d144dd2cdd1286c55c35dad38b0b5c0",
+  "tests": {
+    "distinct_passed": 47,
+    "new_loader_passed": 34,
+    "suites": [
+      {
+        "receipt": "release-tests.xml",
+        "passed": 44,
+        "skipped": 1,
+        "xml_sha256": "7bfc04c81f054da51ffea715a2702b8d3c8f0162a735f0d6864740d078522034"
+      },
+      {
+        "receipt": "current-tests.xml",
+        "passed": 34,
+        "skipped": 0,
+        "xml_sha256": "b10ad3de98fa0b639097a8e73b0127de3f2ce8d8cd87c6f2da3a7b5cc499f0f9"
+      }
+    ],
+    "counts_overlap": true,
+    "legacy_optimizer_test_skipped": 1,
+    "legacy_cuda_test_deselected": 1,
+    "full_suite_executed": false,
+    "guard_inventory_and_graph_passed": 17,
+    "total_distinct_passed_with_guards": 64,
+    "guard_receipt_sha256": "72fc7edd60e07b6a9707e08902d1d75cf5c2292c277ac3df7e5a811c4de5395a"
+  },
+  "quality": {
+    "path": "quality.json",
+    "tools": {
+      "coverage": "7.16.1",
+      "radon": "6.0.1",
+      "branch_coverage": true,
+      "python": "3.12.14",
+      "summarizer_sha256": "75cc60c88037e0bb17aff6e8ab666ce78b35d600d6c7ad217bf68b1afb4c4ec6"
+    },
+    "totals": {
+      "statements": 97,
+      "covered_statements": 97,
+      "branches": 0,
+      "covered_branches": 0
+    },
+    "max_crap": 30.0
+  },
+  "mutations": {
+    "planned": 5,
+    "killed": 5,
+    "optimizer_attempts": 0,
+    "phases": "G1/M1/G2 con pins y cero omisiones"
+  },
+  "sources": {
+    "src/mars_titan/training/spaced_selected.py": "0f81b24e1642a57ecb9ff166618c2416fc81f80306b182e0bb2e133bfd03cc1d",
+    "tests/memory/spaced_selected_fixture.py": "1b5404a7bf031dd2b36c8e2d1507724c3760f5b609b501b020150fdaeb6cc5f3",
+    "tests/memory/test_spaced_selected.py": "d58ca690f41799ee626a71161896af530da49c52bed2678784783e62a7c09362",
+    "reports/engineering/spaced-selected-20261027/cost_probe.py": "1c85c38a9794746483a47c0bcf05330bc5fe7f1943e531aa7b91e43e4128835e"
+  },
+  "preserved_canonical_sources": {
+    "src/mars_titan/models/titans/config.py": "119f71fd5dfb4a8e81633bbd1c6ba1e06e04ecdfcbd2c8edd94871bdbd390780",
+    "src/mars_titan/models/titans/state.py": "c0b40f3240be3177e9e636e82c4b988ccb4703fcfe5c5a1c3b71e070be68b0b1",
+    "src/mars_titan/models/titans/causal_convolution.py": "19be8fd9d81abd132aded2e57c91d67501baedbba3deff2042cdfd8eaa779706",
+    "src/mars_titan/models/titans/neural_memory.py": "0fce65c8e0de49c3989f82ee982edc3e8a271993869807897aad9b1cc0f525f3",
+    "src/mars_titan/models/titans/mac.py": "bcc0a87a045ccb0fbc4a0bb6911c6c6e631e9f6829848520fc7dda22806dc333",
+    "src/mars_titan/models/titans/financial.py": "bd7ac0284ddb9283512d83d42e7d59ee8b4db8500232996678a1713d574c2c4a",
+    "src/mars_titan/models/titans/financial_inputs.py": "1a0284a6e60c2ef6107d1aa63602b129f0b4f238fe21d4cd2187226c0848923d",
+    "src/mars_titan/models/titans/financial_blocks.py": "20debec174fe1196f18bb66566153a3fd780ca189fcbb316d58d5c7665753a15",
+    "src/mars_titan/models/titans/presence_modulation.py": "fa5b42e32008c743dc573464982010e6399baed23218dd100527c5434a994f1a",
+    "src/mars_titan/models/titans/regional_fusion.py": "3558f5e475fbeb894512228a07ef686f5ffa68643b5900ea5abeee5cc72f34a3",
+    "src/mars_titan/models/titans/regional_execution.py": "132c217bb143b7f23e35c14bb523daa861635e8753151bae98beb35377463687",
+    "src/mars_titan/models/titans/bank_readout.py": "eb8853e99e7de816197d19dc3a957db8d7ed00d69d638ab29e7aca3bda17e8a3",
+    "src/mars_titan/models/titans/session_context.py": "ae87396b105bfc5d9bfc5e189028f8cb5f8c011517fcef78da0e09f14b41522d",
+    "src/mars_titan/models/titans/local_control.py": "f91de24d8686d7157e9fc5be0af2a2991a80e10a1f44586438c0da9c7042a00e",
+    "src/mars_titan/models/titans/episodic_readout.py": "440b74e9939dba5bf47db1127b2620815074f9575e72b27fe3f619b863a8351e",
+    "src/mars_titan/models/titans/episodic_snapshot.py": "0bc661f801e9e343862280a46e9b4eaf522ff11a39cb91c5d402711cb41a3bda",
+    "src/mars_titan/models/titans/evidence_bridge.py": "36e81235b1c2f88000606b4df975698d820ad06497f4ff63e459d482eff471cf",
+    "src/mars_titan/models/titans/bridge_intervention.py": "aacce65d22466366a5a8e56ffae88cd39c3ea4dc79351401094357a200b67e8e",
+    "src/mars_titan/models/titans/bridge_hierarchy.py": "5b6fd9732862b0a6c6c11ea3e052d366bcca14bf7c2d97697ed63d64f41aaf84",
+    "src/mars_titan/models/titans/bridge_recurrence.py": "eff1e08489860b6b380503602be375b21d948af3b41a802025d2d9942b7d95ab",
+    "src/mars_titan/models/titans/bridge_stopping_record.py": "91d2bfa04832915ed7ef9572415ade86029a888aee0a4303f5f76a5222c3bc3c",
+    "src/mars_titan/models/titans/regional_mechanism_trace.py": "608dd0e1b4a7f49b890d65b934c342d3e799f3ad36b0bf28f00181df24dd6639",
+    "src/mars_titan/models/titans/regional_episode_readout.py": "15bcce538b607f65f281df94cadfd64db87d3d55b9f7d5df67542b2e89f60c36",
+    "src/mars_titan/models/titans/frozen_financial.py": "e9c87101a2a15b18dcfe572515939a58e34ca24d7ad31026f8de2212d7f5a29a",
+    "src/mars_titan/models/baselines/transformer.py": "1363ebe5cde08013e8133ba437a39c8de1cb8c5af5934695963c3c75a51fa58a",
+    "src/mars_titan/models/baselines/multimodal.py": "bf3f688a7f347b4b00c18fc71d66a601e3057260646a0152995da8593b564dde",
+    "src/mars_titan/models/quantile_head.py": "d28e1aae5aa8936ab1e53ec02a31c02b4db1683b391fafdb5be9dfa9aa4c08df",
+    "src/mars_titan/models/quantile_routing.py": "0e132182550ddfa044d7e25c9fad41ef50ab53c42c4641963b140d9ed1522aa4",
+    "src/mars_titan/cm/numerical_radius.py": "bdacfbbe699b8fa43abd59b6c9d48d25b5324d3d1c5b04ec80b34b254089faea",
+    "src/mars_titan/data/input_policy.py": "6dddae3fbc9736216322bfdd3d119d1ac03297549dcc9a08275ab7ed24245381",
+    "src/mars_titan/training/cohort_contract.py": "75d27e6edd09610cd285a56e105a6a6749720f8a8243a714ce1dc3e0754acb6f",
+    "src/mars_titan/training/corpus_inputs.py": "c0b7fb1efde23938c60217c81736a9962ce50b00a6734f38342ae9ceb24ec5af",
+    "src/mars_titan/data/audited_prices.py": "ef726471bf0f6ff4ac5b494da3641cbef7d26c9d043d1f10a99bcc35e02dde1b",
+    "src/mars_titan/data/temporal.py": "d860c1ac8e3e2e53773a51cc86464b9c9063830278c9ab15a136e3679b722d70"
+  },
+  "artifacts": {
+    "quality.json": "dfa475d978be26581fa3fd3996ddc4836eec891ae557116cb90198997a06a7ac",
+    "mutations.json": "3aff22622b6f7cd30f8e3de50139b25d5a5e4d87886c8da3972f4d2fb826f5b5",
+    "cost.json": "56be2a649ce6b5520ef5ec42d6107df980bfeb3f6aed534bccbbae62936d497f"
+  },
+  "hold_sha256": "8a658080c1ac4e63847eba58b177020339da6ec47021cf26d2701830073c87fd",
+  "cuda_executed": false,
+  "scientific_training_executed": false,
+  "predictive_improvement_measured": false,
+  "final_test_access": false,
+  "window_cli_integrated": false,
+  "limits": [
+    "Solo se carga la misma vista y el índice original. Otro índice se rechaza antes de los pesos. Un traslado necesita un contrato temporal independiente.",
+    "Se cargan exclusivamente parámetros compartidos. No se transfiere optimizador, RNG, memoria rápida, episodios o pendientes.",
+    "Los metadatos y checkpoints de prueba están identificados como fixtures sin entrenamiento y no contienen métricas científicas.",
+    "Los checksums no autentican que el modelo haya sido entrenado.",
+    "La medida usa checkpoints pequeños con cache caliente y ningún archivo de predicciones que auditar. No estima el coste de cargar una campaña real.",
+    "No se ha verificado CUDA ni integración completa con el controlador y la CLI del estudio."
+  ]
+}

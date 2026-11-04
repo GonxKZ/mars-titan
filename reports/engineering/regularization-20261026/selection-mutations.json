@@ -1,0 +1,37 @@
+{
+  "repositories": {
+    "Objective": {
+      "root": ".",
+      "test_path": "tests/training/test_selection_budget.py",
+      "test_sha256": "fd73537720c24feda6c08e71dd1b32994a8b6b8368fbde72a3c0e87943e48e57"
+    }
+  },
+  "sources": {
+    "adamw": {
+      "path": "src/mars_titan/training/anchored_decay.py",
+      "sha256": "6eb96360f654021355aa48d8475f8f85f43c9bcec824bce07a3de06e4ea90714"
+    },
+    "fusion": {
+      "path": "src/mars_titan/models/baselines/multimodal.py",
+      "sha256": "bf3f688a7f347b4b00c18fc71d66a601e3057260646a0152995da8593b564dde"
+    },
+    "selection": {
+      "path": "src/mars_titan/training/selection.py",
+      "sha256": "3d1fd15d6de2ea5e4a3a3510860cd341de9778b77f639d5b3e234475df99253a"
+    }
+  },
+  "recipes": [
+    {
+      "id": "select_last_instead_of_best",
+      "family": "Objective",
+      "source_key": "selection",
+      "nodeid": "tests/training/test_selection_budget.py::test_parent_can_remain_selected_without_consuming_the_budget",
+      "anchor": "best_epoch=epoch if improved else previous[\"best_epoch\"],",
+      "replacement": "best_epoch=epoch,",
+      "expected_failure": {
+        "exception_type": "AssertionError",
+        "longrepr_contains": "assert"
+      }
+    }
+  ]
+}

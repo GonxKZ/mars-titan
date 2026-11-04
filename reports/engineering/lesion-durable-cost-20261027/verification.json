@@ -1,0 +1,94 @@
+{
+  "schema_version": 1,
+  "kind": "technical_fixture_cost_verification",
+  "verified_at_utc": "2026-10-27T02:26:12.539981+00:00",
+  "source_commit": "de139a83d135a5540256ac2503887267ccc5c192",
+  "tests": {
+    "passed": 39,
+    "failed": 0,
+    "skipped": 0,
+    "pytest_seconds": 83.171,
+    "junit_sha256": "45d2311974dc4945cf121b38b4aa245e9afa227cf940bb250d05a00e3972c5dc"
+  },
+  "quality": {
+    "statements": 268,
+    "covered_statements": 256,
+    "branches": 58,
+    "covered_branches": 51,
+    "max_crap": 31.120125,
+    "sha256": "3dcb2dd0b385cbabd9124ca10859d4bbbad92abdbfae08cd597315266734c12e"
+  },
+  "mutations": {
+    "planned": 4,
+    "killed": 4,
+    "sha256": "4489ef00f5872ca65be8346b5c6feb3fd3cede5808c110b1ac775acc7ff98d04"
+  },
+  "matrix": {
+    "raw_cases": 72,
+    "measured_cases": 54,
+    "warmup_cases": 18,
+    "profiles": [
+      "areas",
+      "bridge",
+      "multiscale"
+    ],
+    "sizes": [
+      64,
+      256,
+      1024
+    ],
+    "protocol_sha256": "cbcd4570e914c5420c50e91892aabdacdf486ab27c1e892f8a6e019e41c6d906",
+    "script_sha256": "acf95c8a9582d2a6f6a0277bd0eebab09246885ace7f68dace31b916bdf43b79",
+    "native_sha256": "22fdb1fdbaa7faee9f2c3de7240608ea60bfa271151430771591906f90d709d1",
+    "files": {
+      "small": {
+        "sha256": "36167d90fa9fb3c33a665d330cb9ee7ab113a3956252c3c8df7d72f34c4d87d2",
+        "source_receipt_sha256": "f525a6268ce311470ff272f14fc733278c5c40f4bf297e042635d73a7a218486",
+        "process_seconds": 482.66,
+        "peak_rss_kib": 838644,
+        "user_seconds": 544.69,
+        "system_seconds": 36.59,
+        "raw_receipt_sha256": "c8ec8084709d2aeb6215897d64ae8264f7ef9cdbedb0c8df3eea241520d6f5db"
+      },
+      "large": {
+        "sha256": "17a7c69a931144a94561d2fa261aa9aaecefa5d9ed1b466393217a131f101abd",
+        "source_receipt_sha256": "948fc0a39b859685dc7c755d40c5c15dc2736f6d8945729330ac53e394b713eb",
+        "process_seconds": 1661.0,
+        "peak_rss_kib": 921416,
+        "user_seconds": 1929.54,
+        "system_seconds": 168.69,
+        "raw_receipt_sha256": "fa77fc6be912b3cf226752358d611f98d58850717b969343190138f6f5ea973a"
+      }
+    },
+    "summary_sha256": "fac7b0c311bb27b5e431a99dbdf699674e1feb6b76830bce37a6d23cc3199938"
+  },
+  "sources": {
+    "benchmarks/lesion_session_cost.py": "acf95c8a9582d2a6f6a0277bd0eebab09246885ace7f68dace31b916bdf43b79",
+    "tests/tooling/test_lesion_session_cost.py": "3555000420aeca7b8eec1c2d7195f710cff44d08ed0fbf0f2a2bb48041638726",
+    "docs/experiments/lesion-protocol-v1.md": "b79f2fb51039dbd5e23db2661f60a0da66ced5d8d0e1377dacc34df64c360138",
+    "README.md": "d75bb07c94b8e20d8cbee071466ffb188cd06ec306237fdea02bc61c28083cd1"
+  },
+  "real_corpus": false,
+  "scientific_evaluation": false,
+  "optimizer_steps": 0,
+  "final_test_opened": false,
+  "limitations": [
+    "No se ejecutó la suite completa del repositorio ni CUDA.",
+    "No hay mejoras predictivas medidas ni se modificó código productivo.",
+    "El primer piloto mezcló identificadores de contratos y se detuvo. La paridad entre configuraciones usa identidad de observación y contenido numérico; la reproducción dentro de cada configuración sigue incluyendo los ID nativos.",
+    "La primera versión del test negativo aceptaba cualquier error. Se reforzó para rechazar falsos positivos por errores de sintaxis.",
+    "El pico RSS es de todo el proceso, no un pico por configuración. No se mide energía ni VRAM.",
+    "El coste de preparación de etiquetas manuales está fuera del intervalo principal de step."
+  ],
+  "profile": {
+    "kind": "separate_instrumented_run",
+    "rows": 64,
+    "configuration": "bridge_with_twenty_diagnostic_conditions",
+    "included_in_primary_matrix": false,
+    "measurement_sha256": "a6bdee646f4e4c963ea98fd7f0159be638fa2a54f93bafb3352597c4ca881e7f",
+    "text_sha256": "e62f9d71ca78a6e324b6fa2314de883c92a3c6a7f3cdede616789b5bf6e819d1",
+    "raw_cprofile_sha256": "f8de22f340e4edec03cc4e27ac420844d5b5dca8ccce88364365fa5840a49246",
+    "raw_text_sha256": "0feee92b7c2a27db10ee73b7ced45014020c85e8e6887550d581b3387b6cdfda",
+    "text_normalization": "trim_trailing_blank_lines_only"
+  }
+}

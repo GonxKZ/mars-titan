@@ -1,0 +1,166 @@
+{
+  "schema_version": 1,
+  "kind": "holographic_network_variants",
+  "issue": 783,
+  "epic": 782,
+  "variant": "mac_online",
+  "base_recipe": "configs/titans/chronological-training-historical-sequence-v1.json",
+  "base_head": "scalar",
+  "base_loss": "mae",
+  "default_enabled": false,
+  "final_test_access": false,
+  "status": "declared_not_trained",
+  "requirements": {
+    "input_policy": "historical_masked_for_the_19_and_38_area_layouts",
+    "macro_catalog": "data/catalogs/macro-indicators.csv",
+    "macro_families": "the_twelve_catalog_categories",
+    "fundamental_families": "accounting_concepts_and_company_ratios"
+  },
+  "layouts": {
+    "5": "one_area_per_modality",
+    "19": "three_price_areas_news_charts_two_fundamental_and_twelve_macro_families",
+    "38": "each_of_the_19_split_in_two_values_and_observation_or_two_views"
+  },
+  "levels": {
+    "declared": [
+      1
+    ],
+    "deferred": {
+      "2": "needs_the_asset_groups_of_h4",
+      "3": "needs_a_regime_state_in_time"
+    }
+  },
+  "arms": {
+    "reference": {
+      "role": "reference",
+      "predictor_changes": {}
+    },
+    "h1_5_areas": {
+      "role": "variant",
+      "predictor_changes": {
+        "holographic_network": {
+          "kind": "holographic_network_v1",
+          "areas": 5,
+          "hidden_groups": 4,
+          "rank": 4,
+          "leakage": 0.1,
+          "topology": "ring",
+          "cycles": 2,
+          "local_steps": 1,
+          "summary": true,
+          "local_gain": 0.25,
+          "summary_gain": 0.25,
+          "levels": 1
+        }
+      }
+    },
+    "h1_19_areas": {
+      "role": "variant",
+      "predictor_changes": {
+        "holographic_network": {
+          "kind": "holographic_network_v1",
+          "areas": 19,
+          "hidden_groups": 4,
+          "rank": 4,
+          "leakage": 0.1,
+          "topology": "ring",
+          "cycles": 2,
+          "local_steps": 1,
+          "summary": true,
+          "local_gain": 0.25,
+          "summary_gain": 0.25,
+          "levels": 1
+        }
+      }
+    },
+    "h1_38_areas": {
+      "role": "variant",
+      "predictor_changes": {
+        "holographic_network": {
+          "kind": "holographic_network_v1",
+          "areas": 38,
+          "hidden_groups": 4,
+          "rank": 4,
+          "leakage": 0.1,
+          "topology": "ring",
+          "cycles": 2,
+          "local_steps": 1,
+          "summary": true,
+          "local_gain": 0.25,
+          "summary_gain": 0.25,
+          "levels": 1
+        }
+      }
+    },
+    "h2_19_areas": {
+      "role": "ablation",
+      "predictor_changes": {
+        "holographic_network": {
+          "kind": "catalog_membership_only_v1",
+          "areas": 19,
+          "hidden_groups": 4,
+          "rank": 4,
+          "leakage": 0.1,
+          "topology": "ring",
+          "cycles": 2,
+          "local_steps": 1,
+          "summary": true,
+          "local_gain": 0.25,
+          "summary_gain": 0.25,
+          "levels": 1
+        }
+      }
+    },
+    "h3_23_slots": {
+      "role": "ablation",
+      "predictor_changes": {
+        "holographic_network": {
+          "kind": "hidden_groups_only_v1",
+          "areas": 19,
+          "hidden_groups": 23,
+          "rank": null,
+          "leakage": null,
+          "topology": "complete",
+          "cycles": 2,
+          "local_steps": 1,
+          "summary": true,
+          "local_gain": 0.25,
+          "summary_gain": 0.25,
+          "levels": 1
+        }
+      }
+    }
+  },
+  "contrasts": [
+    {
+      "name": "holographic_network",
+      "variant": "h1_19_areas",
+      "control": "reference"
+    },
+    {
+      "name": "catalog_families",
+      "variant": "h1_19_areas",
+      "control": "h1_5_areas"
+    },
+    {
+      "name": "split_areas",
+      "variant": "h1_38_areas",
+      "control": "h1_19_areas"
+    },
+    {
+      "name": "learned_membership",
+      "variant": "h1_19_areas",
+      "control": "h2_19_areas"
+    },
+    {
+      "name": "catalog_areas_against_hidden_groups",
+      "variant": "h1_19_areas",
+      "control": "h3_23_slots"
+    }
+  ],
+  "reasons": {
+    "h3_slots": "the_same_23_nodes_as_h1_with_19_areas_so_the_bridge_does_the_same_work",
+    "capacity": "the_parameters_of_every_arm_are_reported_and_no_arm_matches_them_exactly",
+    "topology": "ring_for_every_area_count_small_world_and_complete_stay_unscreened_options"
+  }
+}

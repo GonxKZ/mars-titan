@@ -1,0 +1,81 @@
+{
+  "schema_version": 1,
+  "kind": "technical_verification",
+  "verified_at_utc": "2026-10-27T07:14:53.552197+00:00",
+  "base_commit": "f2a6265da448857df2ac45811017487877b2f91c",
+  "issue": 750,
+  "implementation_status": "native_retention_and_scoped_evidence_not_financial_session_integration",
+  "tests": {
+    "tests": 232,
+    "errors": 0,
+    "failures": 0,
+    "skipped": 0,
+    "deselected_cuda": 2,
+    "test_classes": {
+      "tests.memory.test_spaced_retention": 34,
+      "tests.memory.test_spaced_utility": 57,
+      "tests.memory.test_spaced_utility_readout": 60,
+      "tests.memory.test_retention_bank": 81
+    },
+    "junit_sha256": "25e421f3122c9bdb0287a34f5ee8fb37d0b5f3e93f997e138db22df198b25c5b",
+    "pytest_seconds": 2.331,
+    "overlap": "Se solapa con el registro, productor y retención histórica. No se suma a baterías anteriores."
+  },
+  "quality": {
+    "path": "quality.json",
+    "sha256": "c566658321526b3eec5e6075116b11322110abafbb20c2aaeab834adada512ce",
+    "statements": 567,
+    "covered_statements": 566,
+    "branches": 92,
+    "covered_branches": 91,
+    "max_function_crap": 19.0
+  },
+  "mutations": {
+    "path": "mutation-results.json",
+    "sha256": "d4ebeb7e18b4dbf6a725e33f9c2395e8e5941bef8d059feb9097bfd7e73a71f1",
+    "planned": 8,
+    "killed": 8,
+    "optimizer_attempts": 0
+  },
+  "native_sha256": "22fdb1fdbaa7faee9f2c3de7240608ea60bfa271151430771591906f90d709d1",
+  "cost": {
+    "path": "cost.json",
+    "sha256": "a6c854d23c9071ebf51d792fc9ac017b323a73e51c760468cbeca838ff756829"
+  },
+  "legacy_parity": {
+    "path": "legacy-parity.json",
+    "sha256": "9228a63f9204f76980667acd7c328854eb360961a0ade934f4ce45b2959f4c54",
+    "checkpoints": 5
+  },
+  "sources": {
+    "src/mars_titan/memory/spaced_retention.py": "70d65da29702db566915978298ce77aac5e5bb47d6b7155561c70f9722220795",
+    "src/mars_titan/memory/spaced_retention_state.py": "6ceadc6cb2d6bdc9741835d0d98898bb8398c5b4cfcb9d77372ad12a3ce03bc0",
+    "src/mars_titan/memory/spaced_utility.py": "616ab3336efe23718372a67aff3b5790997ccf9a1fe40befe1da2e25b3266b9f",
+    "src/mars_titan/memory/spaced_utility_state.py": "ede6c5ef2e744a0a84f45dca236c41e33b542dc720144d4e89604d09869ddc5c",
+    "tests/memory/test_spaced_retention.py": "a247f271c5659afe38f7d4c05ff06ed19235959bba64c50fa4efee4e74796db9",
+    "tests/memory/test_spaced_utility.py": "96e0549262603cf0c3de697f05487b71fc0106d8099b011bae7d185109a0ae2a",
+    "reports/engineering/spaced-retention-20261027/cost_probe.py": "842320ca953c59450ec3bfcc88d664b5570ae7af08cf13748e4c5df41696bf57",
+    "docs/experiments/spaced-utility-consolidation-v1.md": "be8778c1386cc33f0e68792083c03568c3dc2603dc1799c4fa5a6aacd7e6b232",
+    "README.md": "efec0409b4fbc7301732c1719f28463e93d232c351411585a77a336505143c8e"
+  },
+  "hold_sha256": "8a658080c1ac4e63847eba58b177020339da6ec47021cf26d2701830073c87fd",
+  "limits": [
+    "Sin conexión al consumidor financiero, publicación durable ni evaluación científica.",
+    "M2/M3 conservan sus tres índices. Este backend no los sustituye.",
+    "Dos comprobaciones CUDA del productor se excluyeron y siguen pendientes. El selector es CPU.",
+    "Estimación de trabajo conservadora, no certificación numérica de RAM.",
+    "Snapshots y checksums no autentican la historia ni la verdad de las utilidades.",
+    "No se ejecutó la suite completa ni se recompiló el enlace C++ existente.",
+    "Sin entrenamientos, acceso a 2024 ni modificación de la protección. No hay mejora predictiva medida."
+  ],
+  "preserved_canonical_sources": {
+    "reference_commit": "404b916492230c73bf7a4fb976fd4439e6bc87a6",
+    "modules": 34,
+    "all_sources_equal": true
+  },
+  "checks": {
+    "ruff": "passed",
+    "format": "passed",
+    "repository": "passed"
+  }
+}

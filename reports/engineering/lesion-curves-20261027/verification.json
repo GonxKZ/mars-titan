@@ -1,0 +1,65 @@
+{
+  "schema_version": 1,
+  "kind": "technical_verification",
+  "verified_at_utc": "2026-10-27T00:56:02.510198+00:00",
+  "issue": 750,
+  "base_commit": "86f8fdd6f193f56feeafb0f2bc7301543dc62926",
+  "tests": {
+    "passed": 137,
+    "failed": 0,
+    "errors": 0,
+    "skipped": 0,
+    "pytest_seconds": 26.661,
+    "process_seconds": 30.8,
+    "process_peak_rss_kib": 1144348,
+    "junit_sha256": "f6754b3a98a50d5364e398490ddf8b399cd776b45d2574ba008c7a39cbef5218",
+    "process_resource_sha256": "6f48de8867041b990f7e9aeb819ee8b6721bdcc0e5c8d95b4643af66563cb0b5",
+    "scope": "Configuración B4, sus dos CLI, análisis por sesión, integración de emisiones y regresiones de métricas, máscaras y bloqueo. Fixtures técnicos sin datos reales.",
+    "overlap": "Las baterías previas de 39, 132 y 136 casos están incluidas, no se suman."
+  },
+  "quality": {
+    "path": "quality.json",
+    "sha256": "f7770ca80101992fe55557ae5cbf8421f2a65cdabd9d1472f453d306f1c1a6e0",
+    "statements": 264,
+    "covered_statements": 253,
+    "branches": 62,
+    "covered_branches": 50,
+    "max_function_crap": 18.0
+  },
+  "mutations": {
+    "path": "mutation-results.json",
+    "sha256": "0d674ffa2ea9ae02f464f17c5f1e59f35526126dc3e4e7646437a71cbd0663b7",
+    "planned": 6,
+    "killed": 6,
+    "optimizer_attempts": 0
+  },
+  "sources": {
+    "src/mars_titan/memory/lesion_study.py": "9ce4efe69d5cb20e9268b5e82cc4cbe83fd24eb3923a25605fb56a53add00b1c",
+    "src/mars_titan/evaluation/lesion_curves.py": "9b3d3037389aade649b0bd5836ed34e5218e6aab94a87ce7578a20cf563eb79a",
+    "scripts/run_lesion_window.py": "020dcbfab5b9a9c13aa9fb8bb795d5acc5cfebb6fe14729b74f37af63468a577",
+    "scripts/analyze_lesion_curves.py": "35153f913bf2f02ff7a132444147b260c3e126c3a28eb1040593b3d939690e2f",
+    "configs/experiments/lesion-protocol-v1.json": "378881ea441ea46b00659669fbf2e4973332d20659cc284eedd39212a31d8430",
+    "tests/memory/test_lesion_study.py": "3d9571651bba247d839fc1a6764dd4a261bef1c14ea844825cf9ea039f3e51f6",
+    "tests/evaluation/test_lesion_curves.py": "6ecc4f6e193982603e07749d1e5338505ea5ef2eb6eae988f2c16ae375e7544e",
+    "tests/memory/test_lesion_inference.py": "33164e5897a2dc0ed391ff3cef69313a2cdacc16e45cc6169011b0d4825148dc",
+    "tests/training/learning_hold_inventory.py": "c405273cad430051fc84aa6a1d4ad1ecf0965fad8324d40ff334961b4e291f41",
+    "docs/experiments/lesion-protocol-v1.md": "598bb1ac6781140ed56f1ed72fc7e5d44f044716e2d11ab6fb4c93e8c5af87c6",
+    "README.md": "2dd3e8d2f2c1a19cb64155add5724eeb73d7d626e8cceb77a98cac5ad7aec5e2"
+  },
+  "evidence": {
+    "config_red_xml_sha256": "9a1b3383c89050a9313d4cfda3baed88b62509d005dd6424bc3459990591ca2a",
+    "curves_red_xml_sha256": "558e8f7cff79cc4e015e188f27d4f4bb94f8dfbb1b961a35e6ceba51c4edbbf1",
+    "source_change_red_xml_sha256": "22bb0d255074939f4250817bd06226d1e4b70b18b13c1c7f0d71c798bcd42968",
+    "cli_checks_sha256": "225a9f730273311794cd0dbd17232a8ca2ae7f85a1141a4990b5aaa9e26c7052",
+    "selection_sha_red_xml_sha256": "db9bab289f85d35bcc2ce12d0ba7994d1c1aae0acff5b4e21d1efd88e11ff29b"
+  },
+  "limits": [
+    "Las cifras de tiempo y RSS corresponden al proceso de pruebas instrumentado, no a inferencia ni a una campaña científica.",
+    "No se ejecutó la suite completa del repositorio.",
+    "Las comprobaciones CUDA B4 siguen pendientes.",
+    "No hay curvas científicas, intervalos sobre datos reales ni mejora predictiva medida.",
+    "No se abrió 2024 ni se modificó el bloqueo de aprendizaje.",
+    "El coste completo de persistencia, predictor y transferencias sigue pendiente.",
+    "La batería inicial de la CLI dejó dos casos omitidos por sustituir otro enlace de la guarda. El doble local se corrigió. La batería final y la mutación no tienen omisiones."
+  ]
+}

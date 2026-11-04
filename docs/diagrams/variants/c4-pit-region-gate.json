@@ -1,0 +1,89 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "C4 · Regiones en fecha como puerta de escala (pit_region_gate_v1)",
+    "quality_profile": "showcase",
+    "viewBox": [1300, 592],
+    "legend": {
+      "entries": {
+        "external": {"label": "Entradas"},
+        "backend": {"label": "Cálculo"},
+        "database": {"label": "Memoria y estado"},
+        "frontend": {"label": "Salida"},
+        "security": {"label": "Control o protección"},
+        "cloud": {"label": "Evaluación"}
+      }
+    }
+  },
+  "components": [
+    {
+      "id": "residuals",
+      "type": "database",
+      "label": "Residuos maduros",
+      "sublabel": "hasta la primera emisión de G",
+      "pos": [40, 40],
+      "size": [180, 72]
+    },
+    {
+      "id": "clusters",
+      "type": "backend",
+      "label": "Clústeres de correlación",
+      "sublabel": "enlace medio, k = 8",
+      "pos": [300, 40],
+      "size": [180, 72]
+    },
+    {
+      "id": "inputs",
+      "type": "external",
+      "label": "Entradas en la emisión",
+      "sublabel": "4 modalidades y macro",
+      "tag": "con máscaras",
+      "pos": [40, 230],
+      "size": [180, 72]
+    },
+    {"id": "base", "type": "backend", "label": "Referencia B", "sublabel": "predicción ya emitida", "pos": [300, 230], "size": [180, 72]},
+    {"id": "gate", "type": "backend", "label": "Factor por región", "sublabel": "λ de A1 ajustado en G", "pos": [560, 230], "size": [180, 72]},
+    {"id": "emit", "type": "frontend", "label": "Predicción reescalada", "sublabel": "λ de su región por x", "pos": [820, 230], "size": [180, 72]},
+    {"id": "screen", "type": "cloud", "label": "Criba", "sublabel": "IC por sesión frente al control", "pos": [1080, 230], "size": [180, 72]},
+    {
+      "id": "controls",
+      "type": "security",
+      "label": "Controles",
+      "sublabel": "regiones permutadas",
+      "tag": "sector actual y A1",
+      "pos": [560, 420],
+      "size": [180, 72]
+    }
+  ],
+  "connections": [
+    {"id": "residuals-clusters", "from": "residuals", "to": "clusters", "label": "correlaciones"},
+    {"id": "clusters-gate", "from": "clusters", "to": "gate", "label": "región"},
+    {"id": "inputs-base", "from": "inputs", "to": "base"},
+    {"id": "base-gate", "from": "base", "to": "gate", "label": "predicción", "variant": "emphasis", "labelDx": 36, "labelDy": -37},
+    {"id": "gate-emit", "from": "gate", "to": "emit", "variant": "emphasis"},
+    {"id": "emit-screen", "from": "emit", "to": "screen"},
+    {"id": "controls-screen", "from": "controls", "to": "screen", "label": "control", "variant": "dashed"}
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "Mecanismo",
+      "items": [
+        "Agrupa activos con residuos maduros antes de G",
+        "Cada región reescala la predicción con su propio λ de A1",
+        "Fuentes: Mantegna (1999), MASTER (2024) y Borde (2026)"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "Control que la descarta",
+      "items": ["Regiones permutadas con los mismos tamaños", "Sector actual como control de fuga y A1 como modelo plano"]
+    },
+    {
+      "dot": "amber",
+      "title": "Estado",
+      "items": ["Etapa de salida implementada y probada en CPU", "Sin evaluar con datos por el bloqueo de aprendizaje"]
+    }
+  ]
+}

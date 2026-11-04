@@ -1,0 +1,196 @@
+{
+  "status": "completed",
+  "stage": "PrefixTargetVerifier",
+  "steps": [
+    {
+      "stage": "CorpusDataset",
+      "seconds": 1.901623744983226
+    },
+    {
+      "stage": "sources",
+      "seconds": 1.2141517070122063
+    },
+    {
+      "stage": "train_specification",
+      "seconds": 75.45741856005043
+    },
+    {
+      "stage": "PrefixTargetVerifier",
+      "seconds": 3.058226734166965
+    }
+  ],
+  "total_seconds": 81.78025052906014,
+  "scientific_data": false,
+  "profiled": true,
+  "price_row_group_size": 3,
+  "top_by_cumulative": [
+    {
+      "file": "src/mars_titan/memory/financial_observations.py",
+      "line": 855,
+      "function": "specification",
+      "primitive_calls": 1,
+      "total_calls": 1,
+      "own_seconds": 8.401900000000001e-05,
+      "cumulative_seconds": 75.455551513
+    },
+    {
+      "file": "src/mars_titan/memory/financial_observations.py",
+      "line": 755,
+      "function": "events",
+      "primitive_calls": 2,
+      "total_calls": 2,
+      "own_seconds": 0.000580166,
+      "cumulative_seconds": 75.45474800400001
+    },
+    {
+      "file": "src/mars_titan/memory/financial_observations.py",
+      "line": 713,
+      "function": "_event",
+      "primitive_calls": 1,
+      "total_calls": 1,
+      "own_seconds": 0.063824033,
+      "cumulative_seconds": 75.305166883
+    },
+    {
+      "file": "src/mars_titan/memory/financial_observations.py",
+      "line": 673,
+      "function": "_input",
+      "primitive_calls": 256,
+      "total_calls": 256,
+      "own_seconds": 3.4426962850000002,
+      "cumulative_seconds": 75.24065707300001
+    },
+    {
+      "file": "src/mars_titan/training/corpus_inputs.py",
+      "line": 813,
+      "function": "_prices",
+      "primitive_calls": 256,
+      "total_calls": 256,
+      "own_seconds": 1.887376259,
+      "cumulative_seconds": 70.28524754300001
+    },
+    {
+      "file": "src/mars_titan/data/batches.py",
+      "line": 13,
+      "function": "read_bounded_table",
+      "primitive_calls": 256,
+      "total_calls": 256,
+      "own_seconds": 61.71042365500001,
+      "cumulative_seconds": 67.426852721
+    },
+    {
+      "file": "src/mars_titan/training/prefix_eligibility.py",
+      "line": 95,
+      "function": "__init__",
+      "primitive_calls": 1,
+      "total_calls": 1,
+      "own_seconds": 0.036562818000000004,
+      "cumulative_seconds": 3.057710648
+    },
+    {
+      "file": "src/mars_titan/data/temporal.py",
+      "line": 20,
+      "function": "__init__",
+      "primitive_calls": 2,
+      "total_calls": 2,
+      "own_seconds": 0.112522166,
+      "cumulative_seconds": 1.9264155520000001
+    },
+    {
+      "file": "src/mars_titan/training/corpus_inputs.py",
+      "line": 457,
+      "function": "__init__",
+      "primitive_calls": 1,
+      "total_calls": 1,
+      "own_seconds": 0.00133163,
+      "cumulative_seconds": 1.9012507390000002
+    },
+    {
+      "file": "src/mars_titan/training/prefix_eligibility.py",
+      "line": 172,
+      "function": "_register",
+      "primitive_calls": 259,
+      "total_calls": 259,
+      "own_seconds": 0.0041761920000000004,
+      "cumulative_seconds": 1.8512965270000001
+    },
+    {
+      "file": "src/mars_titan/training/corpus_inputs.py",
+      "line": 636,
+      "function": "_file",
+      "primitive_calls": 8448,
+      "total_calls": 8448,
+      "own_seconds": 0.055431703000000006,
+      "cumulative_seconds": 1.669568017
+    },
+    {
+      "file": "src/mars_titan/data/storage.py",
+      "line": 15,
+      "function": "sha256",
+      "primitive_calls": 367,
+      "total_calls": 1133,
+      "own_seconds": 0.011295448000000001,
+      "cumulative_seconds": 1.525313163
+    },
+    {
+      "file": "src/mars_titan/memory/financial_observations.py",
+      "line": 657,
+      "function": "_confirm",
+      "primitive_calls": 9,
+      "total_calls": 9,
+      "own_seconds": 0.004001777000000001,
+      "cumulative_seconds": 1.2702109430000001
+    },
+    {
+      "file": "src/mars_titan/training/titans_walk_forward.py",
+      "line": 220,
+      "function": "_sources",
+      "primitive_calls": 1,
+      "total_calls": 1,
+      "own_seconds": 6.993000000000001e-06,
+      "cumulative_seconds": 1.2138207010000002
+    },
+    {
+      "file": "src/mars_titan/training/window_indices.py",
+      "line": 71,
+      "function": "phase_sources",
+      "primitive_calls": 1,
+      "total_calls": 1,
+      "own_seconds": 0.000130528,
+      "cumulative_seconds": 1.213813708
+    },
+    {
+      "file": "src/mars_titan/memory/financial_observations.py",
+      "line": 609,
+      "function": "__init__",
+      "primitive_calls": 8,
+      "total_calls": 8,
+      "own_seconds": 0.0005343090000000001,
+      "cumulative_seconds": 1.1803957440000001
+    },
+    {
+      "file": "src/mars_titan/training/corpus_inputs.py",
+      "line": 591,
+      "function": "_verify_files",
+      "primitive_calls": 1,
+      "total_calls": 1,
+      "own_seconds": 0.003272323,
+      "cumulative_seconds": 1.066447556
+    },
+    {
+      "file": "src/mars_titan/training/corpus_inputs.py",
+      "line": 888,
+      "function": "_sample_group",
+      "primitive_calls": 256,
+      "total_calls": 256,
+      "own_seconds": 0.030389141,
+      "cumulative_seconds": 1.003638002
+    }
+  ],
+  "limits": [
+    "Perfil diagnóstico de preparación, no medida de inferencia ni de mejora financiera.",
+    "Los tiempos acumulados se solapan y no deben sumarse.",
+    "Los precios tenían grupos Parquet de tres filas. La medida completa usa otro perfil físico con 8.192 filas por grupo, con valores de fixture iguales.",
+    "La tabla de funciones conserva solo marcos del proyecto. El perfil no identifica por sí solo el coste de cada biblioteca nativa."
+  ]
+}

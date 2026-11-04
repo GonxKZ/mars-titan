@@ -1,0 +1,113 @@
+{
+  "schema_version": 1,
+  "kind": "fractal_shared_operator_variants",
+  "issue": 751,
+  "variant": "mac_online",
+  "base_recipe": "configs/titans/chronological-training-historical-sequence-v1.json",
+  "base_head": "scalar",
+  "base_loss": "mae",
+  "default_enabled": false,
+  "final_test_access": false,
+  "status": "declared_not_trained",
+  "requirements": {
+    "session": "every_row_of_the_market_session_in_one_block",
+    "sectors": "statistical_from_the_daily_returns_of_the_received_price_window",
+    "row_wise_tokens": "not_available_so_no_auxiliary_horizons"
+  },
+  "arms": {
+    "reference": {
+      "role": "reference",
+      "predictor_changes": {}
+    },
+    "per_level": {
+      "role": "control",
+      "predictor_changes": {
+        "fractal_shared_operator": {
+          "kind": "per_level",
+          "rank": 4,
+          "heads": 4,
+          "sectors": 8,
+          "min_returns": 32
+        }
+      }
+    },
+    "all_shared": {
+      "role": "control",
+      "predictor_changes": {
+        "fractal_shared_operator": {
+          "kind": "all_shared",
+          "rank": 4,
+          "heads": 4,
+          "sectors": 8,
+          "min_returns": 32
+        }
+      }
+    },
+    "random_partition": {
+      "role": "control",
+      "predictor_changes": {
+        "fractal_shared_operator": {
+          "kind": "random_partition",
+          "rank": 4,
+          "heads": 4,
+          "sectors": 8,
+          "min_returns": 32
+        }
+      }
+    },
+    "dense_block": {
+      "role": "control",
+      "predictor_changes": {
+        "fractal_shared_operator": {
+          "kind": "dense_block",
+          "rank": 4,
+          "heads": 4,
+          "sectors": 8,
+          "min_returns": 32
+        }
+      }
+    },
+    "fractal_shared_operator": {
+      "role": "variant",
+      "control": "per_level",
+      "predictor_changes": {
+        "fractal_shared_operator": {
+          "kind": "shared_lora",
+          "rank": 4,
+          "heads": 4,
+          "sectors": 8,
+          "min_returns": 32
+        }
+      }
+    }
+  },
+  "contrasts": [
+    {
+      "name": "shared_operator_with_lora_against_own_weights_per_level",
+      "variant": "fractal_shared_operator",
+      "control": "per_level"
+    },
+    {
+      "name": "lora_per_level_against_a_fully_shared_operator",
+      "variant": "fractal_shared_operator",
+      "control": "all_shared"
+    },
+    {
+      "name": "statistical_sectors_against_random_sectors_of_the_same_sizes",
+      "variant": "fractal_shared_operator",
+      "control": "random_partition"
+    },
+    {
+      "name": "hierarchy_against_flat_attention_over_the_session",
+      "variant": "fractal_shared_operator",
+      "control": "dense_block"
+    }
+  ],
+  "reasons": {
+    "rank": "Rango 4 con H = 64: cada nivel añade 2.048 parámetros, un 12 % del operador compartido. Fijado al declarar la variante, antes de abrir datos y sin ajustar",
+    "heads": "Las cuatro cabezas de C2, C5 y de la atención de MAC",
+    "sectors": "Ocho sectores, el mismo número de regiones que C4",
+    "min_returns": "La mitad de los 63 rendimientos de la ventana de 64 sesiones, una proporción parecida a la de las 60 etiquetas de 126 que exige C4",
+    "per_level": "R = 15 con H = 64 y r = 4, el menor rango con el que el control no tiene menos parámetros que la variante (23.424 frente a 22.656)"
+  }
+}

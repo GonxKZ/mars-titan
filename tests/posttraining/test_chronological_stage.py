@@ -28,6 +28,7 @@ from mars_titan.training import prediction_regeneration as regeneration
 from mars_titan.training.campaign_plan import TITANS
 from mars_titan.training.financial_run import ChronologicalTrainer
 from mars_titan.training.label_maturity import FIT_PARTITIONS, label_maturity
+from tests.hardware.platform_doubles import laptop
 from tests.posttraining.campaign_fixture import CpuLease
 from tests.posttraining.real_only import real_data_only
 from tests.training.test_masked_campaign import write_campaign
@@ -107,6 +108,7 @@ def campaign_run(tmp_path_factory, unfused, permitted):  # noqa: F811
         executors=executors(Factory()),
         lease=nullcontext,
         stop=SimpleNamespace(requested=False),
+        platform=laptop(),
     )
     assert summary["status"] == "completed"
     return SimpleNamespace(
@@ -162,6 +164,7 @@ def run(stage_path, campaign_run, output):  # noqa: F811
             lease=CpuLease,
             device="cpu",
             stop=SimpleNamespace(requested=False),
+            platform=laptop(),
         )
 
 

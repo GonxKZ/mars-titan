@@ -1,0 +1,58 @@
+{
+  "kind": "prefix_signature_affinity_abba_confirmation",
+  "declared_at_utc": "2026-10-27T03:20:32.045141+00:00",
+  "reason": "Referencia final más de dos veces más lenta. No atribuir la diferencia agrupada al código.",
+  "cpus": [
+    0,
+    1
+  ],
+  "allowed_cpus": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11,
+    12,
+    13,
+    14,
+    15
+  ],
+  "topology": "CPU CORE SOCKET    MAXMHZ ONLINE\n  0    0      0 4001.0000    yes\n  1    1      0 4001.0000    yes\n  2    2      0 4001.0000    yes\n  3    3      0 4001.0000    yes\n  4    4      0 4001.0000    yes\n  5    5      0 4001.0000    yes\n  6    6      0 4001.0000    yes\n  7    7      0 4001.0000    yes\n  8    0      0 4001.0000    yes\n  9    1      0 4001.0000    yes\n 10    2      0 4001.0000    yes\n 11    3      0 4001.0000    yes\n 12    4      0 4001.0000    yes\n 13    5      0 4001.0000    yes\n 14    6      0 4001.0000    yes\n 15    7      0 4001.0000    yes\n",
+  "order": [
+    "a1",
+    "b1",
+    "b2",
+    "a2"
+  ],
+  "repeats": 5,
+  "warmup": 1,
+  "rows": 256,
+  "profile": "bridge",
+  "dtype": "torch.float64",
+  "cpu_threads": 2,
+  "per_process_seconds": 480,
+  "minimum_median_reduction_percent": 5,
+  "maximum_reference_drift_percent": 10,
+  "other_workloads": "No se detienen aplicaciones ni se modifica el modo de energía.",
+  "versions": {
+    "before_sha256": "dea9d0a47aa5164152f6f6cc6147dd6ae3e01ef9c52f83a766d88dcc8ef41863",
+    "candidate_sha256": "ec8b3566b2176830f213a2d45e7e313ab9e0a411c2d8be12b89263c989b5ae3c",
+    "benchmark_sha256": "acf95c8a9582d2a6f6a0277bd0eebab09246885ace7f68dace31b916bdf43b79",
+    "base_commit": "093bb69431077a9d6963ab053eed714110196f3c",
+    "candidate_runs": [
+      "b1",
+      "b2"
+    ],
+    "reference_runs": [
+      "a1",
+      "a2"
+    ]
+  }
+}

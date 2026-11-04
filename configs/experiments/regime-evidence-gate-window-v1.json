@@ -1,0 +1,39 @@
+{
+  "schema_version": 1,
+  "kind": "regime_gate_correction_window_profiles",
+  "variant_id": "regime_gate_correction_window_v1",
+  "issue": 750,
+  "status": "declared_not_executed",
+  "default_enabled": false,
+  "final_test_access": false,
+  "entrypoint": "mars_titan.training.mars_titan_correction.run_correction_window",
+  "arguments": {
+    "recipe": "configs/titans/mature-correction-historical-masked.json",
+    "components": {
+      "associative_memory": {"rule": "proximal", "key": "codec"}
+    }
+  },
+  "arms": {
+    "baseline": null,
+    "cusum": {
+      "mode": "cusum", "threshold": 4.0, "drift": 0.5, "floor_gate": 0.25,
+      "half_life": 63.0, "min_history": 4, "scale_floor": 1e-8, "constant": null
+    },
+    "matched_constant": {
+      "control_of": "cusum",
+      "constant": "mean_gate_of_the_validation_phase_of_the_same_cusum_window",
+      "builder": "mars_titan.training.regime_gate_inference.matched_control"
+    }
+  },
+  "parent": "same_selected_checkpoint_window_and_seed",
+  "search_cases": "all_cases_of_the_same_correction_recipe",
+  "recovery": "verify_completed_phases_and_repeat_an_interrupted_phase_from_its_start",
+  "pending": [
+    "Las ventanas están integradas en CPU con fixtures, sin una comparación científica ejecutada.",
+    "El valor cusum se convierte en RegimeGateConfig y se pasa por el argumento regime_gate. El control emparejado se construye con matched_control a partir del run.json de la ventana cusum.",
+    "La puerta solo admite la corrección proximal simple. Delta, kalman, E1 y las áreas B2 quedan fuera hasta tener su propia regla de tasa.",
+    "Umbral, deriva, suelo de puerta y semivida son valores de desarrollo sin ajuste ni validación predictiva.",
+    "FinancialSession aún no admite E4. Su publicación por generación nativa queda pendiente.",
+    "Las rutas CUDA siguen pendientes de admisión."
+  ]
+}

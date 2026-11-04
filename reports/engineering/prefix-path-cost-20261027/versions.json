@@ -1,0 +1,14 @@
+{
+  "before_sha256": "dea9d0a47aa5164152f6f6cc6147dd6ae3e01ef9c52f83a766d88dcc8ef41863",
+  "candidate_sha256": "ec8b3566b2176830f213a2d45e7e313ab9e0a411c2d8be12b89263c989b5ae3c",
+  "benchmark_sha256": "acf95c8a9582d2a6f6a0277bd0eebab09246885ace7f68dace31b916bdf43b79",
+  "base_commit": "093bb69431077a9d6963ab053eed714110196f3c",
+  "candidate_runs": [
+    "b1",
+    "b2"
+  ],
+  "reference_runs": [
+    "a1",
+    "a2"
+  ]
+}

@@ -1,0 +1,49 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "D1 · Bucles anidados frente a bucle plano (nested_equal_depth_v1)",
+    "quality_profile": "showcase",
+    "viewBox": [1300, 592],
+    "legend": {
+      "entries": {"external": {"label": "Entradas"}, "backend": {"label": "Cálculo"}, "frontend": {"label": "Salida"}, "cloud": {"label": "Evaluación"}}
+    }
+  },
+  "components": [
+    {"id": "state", "type": "external", "label": "Estado de trabajo", "sublabel": "salida de MAC", "pos": [40, 230], "size": [180, 72]},
+    {"id": "outer", "type": "backend", "label": "Lecturas del banco K", "sublabel": "refinamientos del lector", "pos": [300, 40], "size": [180, 72]},
+    {"id": "inner", "type": "backend", "label": "Pasos del puente J", "sublabel": "dentro de cada lectura", "pos": [560, 40], "size": [180, 72]},
+    {"id": "flat", "type": "backend", "label": "Bucle plano", "sublabel": "K=4 con J=1", "tag": "control", "pos": [300, 420], "size": [180, 72]},
+    {"id": "head", "type": "frontend", "label": "Cabeza", "sublabel": "pérdida final o en 2 y 4", "pos": [820, 230], "size": [180, 72]},
+    {"id": "screen", "type": "cloud", "label": "Criba", "sublabel": "IC por sesión frente al control", "pos": [1080, 230], "size": [180, 72]}
+  ],
+  "connections": [
+    {"id": "state-outer", "from": "state", "to": "outer"},
+    {"id": "outer-inner", "from": "outer", "to": "inner", "label": "K veces", "variant": "emphasis"},
+    {"id": "inner-head", "from": "inner", "to": "head", "label": "estado", "variant": "emphasis"},
+    {"id": "state-flat", "from": "state", "to": "flat", "variant": "dashed"},
+    {"id": "flat-head", "from": "flat", "to": "head", "label": "control", "variant": "dashed"},
+    {"id": "head-screen", "from": "head", "to": "screen", "label": "predicción"}
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "Mecanismo",
+      "items": [
+        "K=2 lecturas con J=2 pasos del puente, cuatro en total",
+        "Pérdida final o media en las profundidades 2 y 4",
+        "Fuente: TRM (2025) y análisis de HRM de ARC Prize"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "Control que la descarta",
+      "items": ["Bucle plano K=4 con J=1 y la misma supervisión", "Mismos parámetros y el mismo trabajo del puente"]
+    },
+    {
+      "dot": "amber",
+      "title": "Estado",
+      "items": ["Implementada en #751 con pruebas técnicas", "Sin entrenar ni evaluar"]
+    }
+  ]
+}

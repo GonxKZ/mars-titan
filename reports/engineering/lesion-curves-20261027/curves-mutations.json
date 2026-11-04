@@ -1,0 +1,65 @@
+{
+  "repositories": {
+    "Objective": {
+      "root": ".",
+      "test_path": "tests/evaluation/test_lesion_curves.py",
+      "test_sha256": "6ecc4f6e193982603e07749d1e5338505ea5ef2eb6eae988f2c16ae375e7544e"
+    }
+  },
+  "sources": {
+    "subject": {
+      "path": "src/mars_titan/evaluation/lesion_curves.py",
+      "sha256": "9b3d3037389aade649b0bd5836ed34e5218e6aab94a87ce7578a20cf563eb79a"
+    }
+  },
+  "recipes": [
+    {
+      "id": "invert_loss_delta",
+      "family": "Objective",
+      "source_key": "subject",
+      "nodeid": "tests/evaluation/test_lesion_curves.py::test_streaming_matches_session_scores_and_paired_delta[7]",
+      "anchor": "delta(\"intact\", name)",
+      "replacement": "delta(name, \"intact\")",
+      "expected_failure": {
+        "exception_type": "AssertionError",
+        "longrepr_contains": "assert"
+      }
+    },
+    {
+      "id": "ignore_intact_mismatch",
+      "family": "Objective",
+      "source_key": "subject",
+      "nodeid": "tests/evaluation/test_lesion_curves.py::test_bad_predictions_are_rejected_without_publishing_curves[intact]",
+      "anchor": "table[\"prediction\"].to_numpy(), table[\"lesion_intact\"].to_numpy()",
+      "replacement": "table[\"prediction\"].to_numpy(), table[\"prediction\"].to_numpy()",
+      "expected_failure": {
+        "exception_type": "Failed",
+        "longrepr_contains": "DID NOT RAISE"
+      }
+    },
+    {
+      "id": "open_reserved_year",
+      "family": "Objective",
+      "source_key": "subject",
+      "nodeid": "tests/evaluation/test_lesion_curves.py::test_bad_predictions_are_rejected_without_publishing_curves[future]",
+      "anchor": "last < FINAL_TEST_START_US",
+      "replacement": "last < 2**63 - 1",
+      "expected_failure": {
+        "exception_type": "Failed",
+        "longrepr_contains": "DID NOT RAISE"
+      }
+    },
+    {
+      "id": "ignore_concurrent_source_change",
+      "family": "Objective",
+      "source_key": "subject",
+      "nodeid": "tests/evaluation/test_lesion_curves.py::test_source_change_during_scoring_prevents_publication",
+      "anchor": "sha256(path) == info[\"sha256\"]",
+      "replacement": "True",
+      "expected_failure": {
+        "exception_type": "Failed",
+        "longrepr_contains": "DID NOT RAISE"
+      }
+    }
+  ]
+}

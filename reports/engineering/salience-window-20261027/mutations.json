@@ -1,0 +1,611 @@
+{
+  "schema_version": 1,
+  "planned": 12,
+  "killed": 12,
+  "optimizer_attempts": 0,
+  "cases": [
+    {
+      "id": "use_core_instead_of_issued_point",
+      "status": "killed_with_green_controls",
+      "phases": [
+        {
+          "phase": "G1",
+          "nodeid": "tests/memory/test_salience_correction.py::test_scores_use_final_issued_points_and_the_core_residual_remains_the_write_value",
+          "exit_code": 0,
+          "xml_counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0,
+          "origins_verified": true
+        },
+        {
+          "phase": "M1",
+          "nodeid": "tests/memory/test_salience_correction.py::test_scores_use_final_issued_points_and_the_core_residual_remains_the_write_value",
+          "exit_code": 1,
+          "xml_counts": {
+            "total": 1,
+            "failure": 1,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0,
+          "origins_verified": true
+        },
+        {
+          "phase": "G2",
+          "nodeid": "tests/memory/test_salience_correction.py::test_scores_use_final_issued_points_and_the_core_residual_remains_the_write_value",
+          "exit_code": 0,
+          "xml_counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0,
+          "origins_verified": true
+        }
+      ]
+    },
+    {
+      "id": "write_every_row_despite_the_quota",
+      "status": "killed_with_green_controls",
+      "phases": [
+        {
+          "phase": "G1",
+          "nodeid": "tests/memory/test_salience_correction.py::test_scores_use_final_issued_points_and_the_core_residual_remains_the_write_value",
+          "exit_code": 0,
+          "xml_counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0,
+          "origins_verified": true
+        },
+        {
+          "phase": "M1",
+          "nodeid": "tests/memory/test_salience_correction.py::test_scores_use_final_issued_points_and_the_core_residual_remains_the_write_value",
+          "exit_code": 1,
+          "xml_counts": {
+            "total": 1,
+            "failure": 1,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0,
+          "origins_verified": true
+        },
+        {
+          "phase": "G2",
+          "nodeid": "tests/memory/test_salience_correction.py::test_scores_use_final_issued_points_and_the_core_residual_remains_the_write_value",
+          "exit_code": 0,
+          "xml_counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0,
+          "origins_verified": true
+        }
+      ]
+    },
+    {
+      "id": "keep_discarded_expert_components",
+      "status": "killed_with_green_controls",
+      "phases": [
+        {
+          "phase": "G1",
+          "nodeid": "tests/memory/test_salience_correction.py::test_zero_quota_keeps_the_frozen_core_and_observes_every_mature_error[correction4]",
+          "exit_code": 0,
+          "xml_counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0,
+          "origins_verified": true
+        },
+        {
+          "phase": "M1",
+          "nodeid": "tests/memory/test_salience_correction.py::test_zero_quota_keeps_the_frozen_core_and_observes_every_mature_error[correction4]",
+          "exit_code": 1,
+          "xml_counts": {
+            "total": 1,
+            "failure": 1,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0,
+          "origins_verified": true
+        },
+        {
+          "phase": "G2",
+          "nodeid": "tests/memory/test_salience_correction.py::test_zero_quota_keeps_the_frozen_core_and_observes_every_mature_error[correction4]",
+          "exit_code": 0,
+          "xml_counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0,
+          "origins_verified": true
+        }
+      ]
+    },
+    {
+      "id": "reuse_scales_across_phases",
+      "status": "killed_with_green_controls",
+      "phases": [
+        {
+          "phase": "G1",
+          "nodeid": "tests/memory/test_salience_correction.py::test_future_labels_do_not_change_earlier_emissions_and_repeating_a_phase_resets_scales",
+          "exit_code": 0,
+          "xml_counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0,
+          "origins_verified": true
+        },
+        {
+          "phase": "M1",
+          "nodeid": "tests/memory/test_salience_correction.py::test_future_labels_do_not_change_earlier_emissions_and_repeating_a_phase_resets_scales",
+          "exit_code": 1,
+          "xml_counts": {
+            "total": 1,
+            "failure": 1,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0,
+          "origins_verified": true
+        },
+        {
+          "phase": "G2",
+          "nodeid": "tests/memory/test_salience_correction.py::test_future_labels_do_not_change_earlier_emissions_and_repeating_a_phase_resets_scales",
+          "exit_code": 0,
+          "xml_counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0,
+          "origins_verified": true
+        }
+      ]
+    },
+    {
+      "id": "ignore_anchor_source_versions",
+      "status": "killed_with_green_controls",
+      "phases": [
+        {
+          "phase": "G1",
+          "nodeid": "tests/memory/test_salience_correction.py::test_configuration_restoration_requires_the_same_identity_and_sources",
+          "exit_code": 0,
+          "xml_counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0,
+          "origins_verified": true
+        },
+        {
+          "phase": "M1",
+          "nodeid": "tests/memory/test_salience_correction.py::test_configuration_restoration_requires_the_same_identity_and_sources",
+          "exit_code": 1,
+          "xml_counts": {
+            "total": 1,
+            "failure": 1,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0,
+          "origins_verified": true
+        },
+        {
+          "phase": "G2",
+          "nodeid": "tests/memory/test_salience_correction.py::test_configuration_restoration_requires_the_same_identity_and_sources",
+          "exit_code": 0,
+          "xml_counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0,
+          "origins_verified": true
+        }
+      ]
+    },
+    {
+      "id": "ignore_learning_guard",
+      "status": "killed_with_green_controls",
+      "phases": [
+        {
+          "phase": "G1",
+          "nodeid": "tests/training/test_salience_correction_window.py::test_guard_still_precedes_recipe_reads_and_output_creation",
+          "exit_code": 0,
+          "xml_counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0,
+          "origins_verified": true
+        },
+        {
+          "phase": "M1",
+          "nodeid": "tests/training/test_salience_correction_window.py::test_guard_still_precedes_recipe_reads_and_output_creation",
+          "exit_code": 1,
+          "xml_counts": {
+            "total": 1,
+            "failure": 1,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0,
+          "origins_verified": true
+        },
+        {
+          "phase": "G2",
+          "nodeid": "tests/training/test_salience_correction_window.py::test_guard_still_precedes_recipe_reads_and_output_creation",
+          "exit_code": 0,
+          "xml_counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0,
+          "origins_verified": true
+        }
+      ]
+    },
+    {
+      "id": "reuse_baseline_variant_identity",
+      "status": "killed_with_green_controls",
+      "phases": [
+        {
+          "phase": "G1",
+          "nodeid": "tests/training/test_salience_correction_window.py::test_window_persists_the_factor_and_preserves_all_rows_and_parent",
+          "exit_code": 0,
+          "xml_counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0,
+          "origins_verified": true
+        },
+        {
+          "phase": "M1",
+          "nodeid": "tests/training/test_salience_correction_window.py::test_window_persists_the_factor_and_preserves_all_rows_and_parent",
+          "exit_code": 1,
+          "xml_counts": {
+            "total": 1,
+            "failure": 1,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0,
+          "origins_verified": true
+        },
+        {
+          "phase": "G2",
+          "nodeid": "tests/training/test_salience_correction_window.py::test_window_persists_the_factor_and_preserves_all_rows_and_parent",
+          "exit_code": 0,
+          "xml_counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0,
+          "origins_verified": true
+        }
+      ]
+    },
+    {
+      "id": "drop_the_factor_when_regenerating",
+      "status": "killed_with_green_controls",
+      "phases": [
+        {
+          "phase": "G1",
+          "nodeid": "tests/training/test_salience_correction_window.py::test_regeneration_keeps_the_chosen_factor_and_exact_predictions",
+          "exit_code": 0,
+          "xml_counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0,
+          "origins_verified": true
+        },
+        {
+          "phase": "M1",
+          "nodeid": "tests/training/test_salience_correction_window.py::test_regeneration_keeps_the_chosen_factor_and_exact_predictions",
+          "exit_code": 1,
+          "xml_counts": {
+            "total": 1,
+            "failure": 1,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0,
+          "origins_verified": true
+        },
+        {
+          "phase": "G2",
+          "nodeid": "tests/training/test_salience_correction_window.py::test_regeneration_keeps_the_chosen_factor_and_exact_predictions",
+          "exit_code": 0,
+          "xml_counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0,
+          "origins_verified": true
+        }
+      ]
+    },
+    {
+      "id": "ignore_inconsistent_anchor_identity",
+      "status": "killed_with_green_controls",
+      "phases": [
+        {
+          "phase": "G1",
+          "nodeid": "tests/training/test_salience_correction_window.py::test_carry_rejects_an_anchor_that_disagrees_about_the_factor",
+          "exit_code": 0,
+          "xml_counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0,
+          "origins_verified": true
+        },
+        {
+          "phase": "M1",
+          "nodeid": "tests/training/test_salience_correction_window.py::test_carry_rejects_an_anchor_that_disagrees_about_the_factor",
+          "exit_code": 1,
+          "xml_counts": {
+            "total": 1,
+            "failure": 1,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0,
+          "origins_verified": true
+        },
+        {
+          "phase": "G2",
+          "nodeid": "tests/training/test_salience_correction_window.py::test_carry_rejects_an_anchor_that_disagrees_about_the_factor",
+          "exit_code": 0,
+          "xml_counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0,
+          "origins_verified": true
+        }
+      ]
+    },
+    {
+      "id": "allow_reused_outputs_as_fresh_timings",
+      "status": "killed_with_green_controls",
+      "phases": [
+        {
+          "phase": "G1",
+          "nodeid": "tests/training/test_salience_correction_window.py::test_cost_harness_rejects_reused_output_before_timing_any_window",
+          "exit_code": 0,
+          "xml_counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0,
+          "origins_verified": true
+        },
+        {
+          "phase": "M1",
+          "nodeid": "tests/training/test_salience_correction_window.py::test_cost_harness_rejects_reused_output_before_timing_any_window",
+          "exit_code": 1,
+          "xml_counts": {
+            "total": 1,
+            "failure": 1,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0,
+          "origins_verified": true
+        },
+        {
+          "phase": "G2",
+          "nodeid": "tests/training/test_salience_correction_window.py::test_cost_harness_rejects_reused_output_before_timing_any_window",
+          "exit_code": 0,
+          "xml_counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0,
+          "origins_verified": true
+        }
+      ]
+    },
+    {
+      "id": "lose_confirmed_cost_samples",
+      "status": "killed_with_green_controls",
+      "phases": [
+        {
+          "phase": "G1",
+          "nodeid": "tests/training/test_salience_correction_window.py::test_cost_harness_keeps_confirmed_samples_when_a_later_window_fails",
+          "exit_code": 0,
+          "xml_counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0,
+          "origins_verified": true
+        },
+        {
+          "phase": "M1",
+          "nodeid": "tests/training/test_salience_correction_window.py::test_cost_harness_keeps_confirmed_samples_when_a_later_window_fails",
+          "exit_code": 1,
+          "xml_counts": {
+            "total": 1,
+            "failure": 1,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0,
+          "origins_verified": true
+        },
+        {
+          "phase": "G2",
+          "nodeid": "tests/training/test_salience_correction_window.py::test_cost_harness_keeps_confirmed_samples_when_a_later_window_fails",
+          "exit_code": 0,
+          "xml_counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0,
+          "origins_verified": true
+        }
+      ]
+    },
+    {
+      "id": "ignore_compact_price_row_groups",
+      "status": "killed_with_green_controls",
+      "phases": [
+        {
+          "phase": "G1",
+          "nodeid": "tests/training/test_historical_fixture_layout.py::test_compact_price_groups_keep_every_literal_price_sample_and_label",
+          "exit_code": 0,
+          "xml_counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0,
+          "origins_verified": true
+        },
+        {
+          "phase": "M1",
+          "nodeid": "tests/training/test_historical_fixture_layout.py::test_compact_price_groups_keep_every_literal_price_sample_and_label",
+          "exit_code": 1,
+          "xml_counts": {
+            "total": 1,
+            "failure": 1,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0,
+          "origins_verified": true
+        },
+        {
+          "phase": "G2",
+          "nodeid": "tests/training/test_historical_fixture_layout.py::test_compact_price_groups_keep_every_literal_price_sample_and_label",
+          "exit_code": 0,
+          "xml_counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0,
+          "origins_verified": true
+        }
+      ]
+    }
+  ],
+  "batches": [
+    {
+      "name": "adapter-mutations",
+      "elapsed_seconds": 156.22024780604988,
+      "executor_sha256": "b43f267ea6bead6ffd107b5cdecd6e967cfd72d731da698a4e71f126bf49c699",
+      "recipes_sha256": "9cda444ac04f10c7e7abab1448d051fd8e2db5ca1cf2d39809430e3290360224",
+      "baseline": {
+        "receipt_sha256": "76ee93c5ad9073dccef842033433402790fba5666eb6aa41339b98c618357fa9",
+        "xml_sha256": "11fdc08d734b4308590cfff2824a4876176bd8be39fe3bfcddeef3d8220629cc",
+        "passed": 160
+      }
+    },
+    {
+      "name": "window-mutations-strengthened",
+      "elapsed_seconds": 232.7311620861292,
+      "executor_sha256": "b43f267ea6bead6ffd107b5cdecd6e967cfd72d731da698a4e71f126bf49c699",
+      "recipes_sha256": "71adbbc6b67b56106fd8410f043c81926fca01a4f70c5c3a33b5e06ade552b61",
+      "baseline": {
+        "receipt_sha256": "76ee93c5ad9073dccef842033433402790fba5666eb6aa41339b98c618357fa9",
+        "xml_sha256": "11fdc08d734b4308590cfff2824a4876176bd8be39fe3bfcddeef3d8220629cc",
+        "passed": 160
+      }
+    },
+    {
+      "name": "benchmark-mutations",
+      "elapsed_seconds": 111.32227778784,
+      "executor_sha256": "b43f267ea6bead6ffd107b5cdecd6e967cfd72d731da698a4e71f126bf49c699",
+      "recipes_sha256": "65dfc13d93618fbaad9acee2158b021303ae51b5c85d32e2b4c2e4a963478465",
+      "baseline": {
+        "receipt_sha256": "76ee93c5ad9073dccef842033433402790fba5666eb6aa41339b98c618357fa9",
+        "xml_sha256": "11fdc08d734b4308590cfff2824a4876176bd8be39fe3bfcddeef3d8220629cc",
+        "passed": 160
+      }
+    },
+    {
+      "name": "layout-mutations",
+      "elapsed_seconds": 32.048209321917966,
+      "executor_sha256": "b43f267ea6bead6ffd107b5cdecd6e967cfd72d731da698a4e71f126bf49c699",
+      "recipes_sha256": "37f50be7132c9a367ea27ff578cf0dfce3108aa81a8924835aacdb1716ab5b95",
+      "baseline": {
+        "receipt_sha256": "76ee93c5ad9073dccef842033433402790fba5666eb6aa41339b98c618357fa9",
+        "xml_sha256": "11fdc08d734b4308590cfff2824a4876176bd8be39fe3bfcddeef3d8220629cc",
+        "passed": 160
+      }
+    }
+  ],
+  "earlier_attempt": {
+    "status": "failed",
+    "killed": 2,
+    "survived": [
+      "drop_the_factor_when_regenerating"
+    ],
+    "not_started": [
+      "ignore_inconsistent_anchor_identity"
+    ],
+    "source_unchanged": true,
+    "cause": "Comparar solo pronósticos no distinguía el factor en un fixture homogéneo. La prueba final verifica también configuración, estado y contadores de escritura."
+  },
+  "limits": [
+    "Son doce mutaciones dirigidas, sin pretensión de enumerar todos los programas incorrectos.",
+    "La repetición reforzada conserva los resultados anteriores y no los suma como mutaciones distintas.",
+    "Los controles verdes y las mutaciones utilizan exclusivamente fixtures CPU, sin pasos de optimizador."
+  ]
+}

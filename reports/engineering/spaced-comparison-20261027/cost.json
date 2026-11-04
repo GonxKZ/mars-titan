@@ -1,0 +1,878 @@
+{
+  "kind": "technical_spaced_comparison_cost_without_models_or_learning",
+  "status": "completed",
+  "samples": [
+    {
+      "max_us_assets": 64,
+      "head": "scalar",
+      "repetition": 0,
+      "warmup": true,
+      "seconds": 0.8618145440705121,
+      "prediction_rows": 27648,
+      "sessions_per_control": 96,
+      "comparison_sha256": "4d6442a8f1e6b29babc0bc61bac9bc97a488460a1cfeeea9da8ae2b650e5dd20",
+      "session_table_sha256": "ad7f5070676b8db50efdfc7981ab3109649b958dd604c6da87294b7c2b12e2af"
+    },
+    {
+      "max_us_assets": 64,
+      "head": "scalar",
+      "repetition": 1,
+      "warmup": false,
+      "seconds": 0.9144046870060265,
+      "prediction_rows": 27648,
+      "sessions_per_control": 96,
+      "comparison_sha256": "f474bfbc22b29ca056210ea34e853794b85dce8290058ea1b5bd5bdcd4cd6e5b",
+      "session_table_sha256": "ad7f5070676b8db50efdfc7981ab3109649b958dd604c6da87294b7c2b12e2af"
+    },
+    {
+      "max_us_assets": 64,
+      "head": "scalar",
+      "repetition": 2,
+      "warmup": false,
+      "seconds": 0.9065511471126229,
+      "prediction_rows": 27648,
+      "sessions_per_control": 96,
+      "comparison_sha256": "8ac056c129dd40ae06f02f30f9f549cd6cc3fd8246a3fc0d44ea08f5e97761ee",
+      "session_table_sha256": "ad7f5070676b8db50efdfc7981ab3109649b958dd604c6da87294b7c2b12e2af"
+    },
+    {
+      "max_us_assets": 64,
+      "head": "scalar",
+      "repetition": 3,
+      "warmup": false,
+      "seconds": 0.8565156059339643,
+      "prediction_rows": 27648,
+      "sessions_per_control": 96,
+      "comparison_sha256": "e1d75265a69fb539b4c7a3540fa60d5024717820b357696857300f967a60cb49",
+      "session_table_sha256": "ad7f5070676b8db50efdfc7981ab3109649b958dd604c6da87294b7c2b12e2af"
+    },
+    {
+      "max_us_assets": 64,
+      "head": "quantiles",
+      "repetition": 0,
+      "warmup": true,
+      "seconds": 1.504118133801967,
+      "prediction_rows": 27648,
+      "sessions_per_control": 96,
+      "comparison_sha256": "cbbf52b359471d175d9d6108a2e6812c6bac3b4176d691a0ca856368edc079b6",
+      "session_table_sha256": "e190aad530bfb86e78072c88438e39b6db6883e19e37bb3a2e88ad3456bec60c"
+    },
+    {
+      "max_us_assets": 64,
+      "head": "quantiles",
+      "repetition": 1,
+      "warmup": false,
+      "seconds": 1.2851520420517772,
+      "prediction_rows": 27648,
+      "sessions_per_control": 96,
+      "comparison_sha256": "e7aaf8c7ade550ab50e2e0fb697eb7699d886d75f296443152ff23b5818d63a1",
+      "session_table_sha256": "e190aad530bfb86e78072c88438e39b6db6883e19e37bb3a2e88ad3456bec60c"
+    },
+    {
+      "max_us_assets": 64,
+      "head": "quantiles",
+      "repetition": 2,
+      "warmup": false,
+      "seconds": 1.2438038710970432,
+      "prediction_rows": 27648,
+      "sessions_per_control": 96,
+      "comparison_sha256": "100c337e41bce5682d816bf34f1b1b9ddd27bd577062ece4a2ba758a83e25488",
+      "session_table_sha256": "e190aad530bfb86e78072c88438e39b6db6883e19e37bb3a2e88ad3456bec60c"
+    },
+    {
+      "max_us_assets": 64,
+      "head": "quantiles",
+      "repetition": 3,
+      "warmup": false,
+      "seconds": 1.2854921880643815,
+      "prediction_rows": 27648,
+      "sessions_per_control": 96,
+      "comparison_sha256": "4fea5ba013cf7924fd611320de5c12a2177456246fd63293fa6f457cd2888089",
+      "session_table_sha256": "e190aad530bfb86e78072c88438e39b6db6883e19e37bb3a2e88ad3456bec60c"
+    },
+    {
+      "max_us_assets": 256,
+      "head": "scalar",
+      "repetition": 0,
+      "warmup": true,
+      "seconds": 1.1579246991313994,
+      "prediction_rows": 110592,
+      "sessions_per_control": 96,
+      "comparison_sha256": "b0e5ec74c8b62e4e40d3f3aaec49b4993451f58dc20a435287061907c3ed0207",
+      "session_table_sha256": "1fbf71f3b1a70045d8e9b2bcdc854ac7881702c41d9c1d0dc2030b588863451c"
+    },
+    {
+      "max_us_assets": 256,
+      "head": "scalar",
+      "repetition": 1,
+      "warmup": false,
+      "seconds": 0.9968393538147211,
+      "prediction_rows": 110592,
+      "sessions_per_control": 96,
+      "comparison_sha256": "2dac384103e08bc1dfdb85b0992d5902af3ec6ce5aa5b3c48bdf76dadd9978b8",
+      "session_table_sha256": "1fbf71f3b1a70045d8e9b2bcdc854ac7881702c41d9c1d0dc2030b588863451c"
+    },
+    {
+      "max_us_assets": 256,
+      "head": "scalar",
+      "repetition": 2,
+      "warmup": false,
+      "seconds": 0.9447277390863746,
+      "prediction_rows": 110592,
+      "sessions_per_control": 96,
+      "comparison_sha256": "086804ffed97a9d288f4e351e3b9dd89014e1196a006d4065b453f50d7ed6109",
+      "session_table_sha256": "1fbf71f3b1a70045d8e9b2bcdc854ac7881702c41d9c1d0dc2030b588863451c"
+    },
+    {
+      "max_us_assets": 256,
+      "head": "scalar",
+      "repetition": 3,
+      "warmup": false,
+      "seconds": 1.0074798548594117,
+      "prediction_rows": 110592,
+      "sessions_per_control": 96,
+      "comparison_sha256": "da8f802f0c325d36b4b9536a60f211e0b25f92a926d62cbea763c6d3231d6ef9",
+      "session_table_sha256": "1fbf71f3b1a70045d8e9b2bcdc854ac7881702c41d9c1d0dc2030b588863451c"
+    },
+    {
+      "max_us_assets": 256,
+      "head": "quantiles",
+      "repetition": 0,
+      "warmup": true,
+      "seconds": 1.3936151310335845,
+      "prediction_rows": 110592,
+      "sessions_per_control": 96,
+      "comparison_sha256": "8325946120d3914b7885bcc9b84f8d9289b2153313615de0bfde2f3e89215839",
+      "session_table_sha256": "b5d1536cde9fee26ff90ccf20008a4bd6dd6fa1e592d9726cc132b026aaa4a83"
+    },
+    {
+      "max_us_assets": 256,
+      "head": "quantiles",
+      "repetition": 1,
+      "warmup": false,
+      "seconds": 1.4966099460143596,
+      "prediction_rows": 110592,
+      "sessions_per_control": 96,
+      "comparison_sha256": "18524e330f2d5bac7573c9c48b12f2b8d072242aa33f52558b222b6477ea6a93",
+      "session_table_sha256": "b5d1536cde9fee26ff90ccf20008a4bd6dd6fa1e592d9726cc132b026aaa4a83"
+    },
+    {
+      "max_us_assets": 256,
+      "head": "quantiles",
+      "repetition": 2,
+      "warmup": false,
+      "seconds": 1.3918449101038277,
+      "prediction_rows": 110592,
+      "sessions_per_control": 96,
+      "comparison_sha256": "dedd633fe554de26106f58c80664d006692c4b73ae0a575bbba551cf990e6735",
+      "session_table_sha256": "b5d1536cde9fee26ff90ccf20008a4bd6dd6fa1e592d9726cc132b026aaa4a83"
+    },
+    {
+      "max_us_assets": 256,
+      "head": "quantiles",
+      "repetition": 3,
+      "warmup": false,
+      "seconds": 1.4036147659644485,
+      "prediction_rows": 110592,
+      "sessions_per_control": 96,
+      "comparison_sha256": "368c3f5f1afb1a11ada5b947c59d94adc9e8e19d9d9ca4312521e98dd07d5191",
+      "session_table_sha256": "b5d1536cde9fee26ff90ccf20008a4bd6dd6fa1e592d9726cc132b026aaa4a83"
+    },
+    {
+      "max_us_assets": 1024,
+      "head": "scalar",
+      "repetition": 0,
+      "warmup": true,
+      "seconds": 1.616965777007863,
+      "prediction_rows": 442368,
+      "sessions_per_control": 96,
+      "comparison_sha256": "6ad2bfb5fb42309242d9dee95395fa0cc41c5528d94c05d6ad8f7bacc538c8c7",
+      "session_table_sha256": "30860f00a0697ad23e69a14d08363f62941bc37b8b60c4c76e33ad84df92659b"
+    },
+    {
+      "max_us_assets": 1024,
+      "head": "scalar",
+      "repetition": 1,
+      "warmup": false,
+      "seconds": 1.7047746370080858,
+      "prediction_rows": 442368,
+      "sessions_per_control": 96,
+      "comparison_sha256": "66abb395c3b6449fd75e22712d9802fb04987180f48fcf690e4083b4bb01a94d",
+      "session_table_sha256": "30860f00a0697ad23e69a14d08363f62941bc37b8b60c4c76e33ad84df92659b"
+    },
+    {
+      "max_us_assets": 1024,
+      "head": "scalar",
+      "repetition": 2,
+      "warmup": false,
+      "seconds": 1.714021448045969,
+      "prediction_rows": 442368,
+      "sessions_per_control": 96,
+      "comparison_sha256": "9bebbd6127cd8178c7cc53688e90e86a8c311b30d89d3c13357ec62799caf111",
+      "session_table_sha256": "30860f00a0697ad23e69a14d08363f62941bc37b8b60c4c76e33ad84df92659b"
+    },
+    {
+      "max_us_assets": 1024,
+      "head": "scalar",
+      "repetition": 3,
+      "warmup": false,
+      "seconds": 1.487639517057687,
+      "prediction_rows": 442368,
+      "sessions_per_control": 96,
+      "comparison_sha256": "34c2bfba2ad3508087c303e4bde1c405ab1525c6bd1fe09d42fe6b0f1c4b021a",
+      "session_table_sha256": "30860f00a0697ad23e69a14d08363f62941bc37b8b60c4c76e33ad84df92659b"
+    },
+    {
+      "max_us_assets": 1024,
+      "head": "quantiles",
+      "repetition": 0,
+      "warmup": true,
+      "seconds": 2.056398935150355,
+      "prediction_rows": 442368,
+      "sessions_per_control": 96,
+      "comparison_sha256": "68e7112a99fcc36623747e2a66c67a204bd53f1eb5df4f954cb7ef2358cfa5dd",
+      "session_table_sha256": "5c2ded9c6117ee986591721e83611c577724e06c4741aa8f9de51e135b8487e6"
+    },
+    {
+      "max_us_assets": 1024,
+      "head": "quantiles",
+      "repetition": 1,
+      "warmup": false,
+      "seconds": 2.0514596740249544,
+      "prediction_rows": 442368,
+      "sessions_per_control": 96,
+      "comparison_sha256": "863c51f6f4c8ea0e34ac50690455adc1b8218d20b5d052ad8eaa53c28d104bad",
+      "session_table_sha256": "5c2ded9c6117ee986591721e83611c577724e06c4741aa8f9de51e135b8487e6"
+    },
+    {
+      "max_us_assets": 1024,
+      "head": "quantiles",
+      "repetition": 2,
+      "warmup": false,
+      "seconds": 2.0361513230018318,
+      "prediction_rows": 442368,
+      "sessions_per_control": 96,
+      "comparison_sha256": "0d74ad3bad2180fbcf0666d41a1b9b4b1ddb876d44469d31e3908c92d40a868a",
+      "session_table_sha256": "5c2ded9c6117ee986591721e83611c577724e06c4741aa8f9de51e135b8487e6"
+    },
+    {
+      "max_us_assets": 1024,
+      "head": "quantiles",
+      "repetition": 3,
+      "warmup": false,
+      "seconds": 1.742395221022889,
+      "prediction_rows": 442368,
+      "sessions_per_control": 96,
+      "comparison_sha256": "478203707e3ba1c290e7cf23a8c91ee1dc7750b8b35559da86b8bb0090612d65",
+      "session_table_sha256": "5c2ded9c6117ee986591721e83611c577724e06c4741aa8f9de51e135b8487e6"
+    }
+  ],
+  "fixtures": [
+    {
+      "max_us_assets": 64,
+      "cn_assets": [
+        16,
+        48
+      ],
+      "head": "scalar",
+      "days_per_partition": 48,
+      "row_group_size": 4096,
+      "rows_per_control": 4608,
+      "reports": {
+        "baseline": "1114ebe2e5fc3667ee0259766a6d211f67937e7e677433c6bb580a743048977b",
+        "reservoir": "c98914d0ab7e53b07ee348cd5035556fff3461a20bb4d4c2413baf40e0f546fe",
+        "utility": "131506061c92538be871819b34c6935a9bf3edae773eb37b68860bae6863d10b",
+        "permuted_utility": "eac158e3d2eea015ef2ce0dfe91b3a602f802fd72f8db408491d5d360e8a2ce1",
+        "uniform_frontier": "20279feaef6e42dac9aa3eb5a3df29b6c295ce51ab7e5bbfa8f592374fb37fe8",
+        "recent": "b9cda38f60dafbd9ecb781a09d1324abb252a2eccd7170449cabb85ea3bf4646"
+      },
+      "study_sha256": "403039cb6e9d744e9c264ce5ef095f8693ec06c713c545b623ea434d56fbb581"
+    },
+    {
+      "max_us_assets": 64,
+      "cn_assets": [
+        16,
+        48
+      ],
+      "head": "quantiles",
+      "days_per_partition": 48,
+      "row_group_size": 4096,
+      "rows_per_control": 4608,
+      "reports": {
+        "baseline": "8d625afa39d512572d25970550a1a46f8f0bd4bb313db03c66fc3f0b26fd8ef4",
+        "reservoir": "72d2ce738c3ea9ada902d579ab00d8bdc272dbe8de1a5a1c588143d734e8fab4",
+        "utility": "31a9f8c39e3a81072affd6541b83362b2e8e0cd2564811f542c9d4a8931bc97f",
+        "permuted_utility": "a0f18c3a0738b2d67fb49016afcbeac0034d4d760f325b809af94640f6b69fe8",
+        "uniform_frontier": "310bfea56fda11421559743dd96663a49ad70babf51a246db78d42920ce96e02",
+        "recent": "1c92301ebbee8ecf50af136ffbaa2f94c9d1363fc2fda7a0c4465af4c9bbed6d"
+      },
+      "study_sha256": "403039cb6e9d744e9c264ce5ef095f8693ec06c713c545b623ea434d56fbb581"
+    },
+    {
+      "max_us_assets": 256,
+      "cn_assets": [
+        64,
+        192
+      ],
+      "head": "scalar",
+      "days_per_partition": 48,
+      "row_group_size": 4096,
+      "rows_per_control": 18432,
+      "reports": {
+        "baseline": "eefad6c99419ac8073922d68034fd36102a23f2f3afd403b180b427392a0c97d",
+        "reservoir": "cd2c8a74c4c8e8ab751b6f3890512fd270a946a8e29b7c8820a0908d8a446746",
+        "utility": "b6e1863c269286bc3aaf451e9432b876cf94fd476ca3c64d24cff221e40a9a82",
+        "permuted_utility": "6ef317ff9f62d2fba7949933d26a25892231e4ca0f1337cc3da2bb42f9bf5dd2",
+        "uniform_frontier": "5f6707b48edcc7854c7fb3c943a73ee1bbfd7376cc8b5dfd98a6b3ec4b2ab298",
+        "recent": "cf40bca39a5eb0eff8789a8e871698f0b423205f0916945a60b51932e073c707"
+      },
+      "study_sha256": "403039cb6e9d744e9c264ce5ef095f8693ec06c713c545b623ea434d56fbb581"
+    },
+    {
+      "max_us_assets": 256,
+      "cn_assets": [
+        64,
+        192
+      ],
+      "head": "quantiles",
+      "days_per_partition": 48,
+      "row_group_size": 4096,
+      "rows_per_control": 18432,
+      "reports": {
+        "baseline": "ccb21399626282c9700f9fc401e27195ca8765210b7c30b23b6d780699ee772e",
+        "reservoir": "e225c0b1a28d6123cd52a8d01692e585fbb54b14df2cf40c4680f9397395b4d2",
+        "utility": "640395ccda301faf022fd9da11e4792cd7406d2cc70a36232b71da1677107532",
+        "permuted_utility": "78f768292fa89277fb881766f6a9dcf0c364a3e36d7cbff219c04ea5e7f0d23d",
+        "uniform_frontier": "057a1c17e082cb3599cd0c73d56e310b2b217e56b3cdae8d0e6e75ef6316b607",
+        "recent": "768b17c03bc6b9971b878b2fcbeee02c666d8195783fd952747123784c871f11"
+      },
+      "study_sha256": "403039cb6e9d744e9c264ce5ef095f8693ec06c713c545b623ea434d56fbb581"
+    },
+    {
+      "max_us_assets": 1024,
+      "cn_assets": [
+        256,
+        768
+      ],
+      "head": "scalar",
+      "days_per_partition": 48,
+      "row_group_size": 4096,
+      "rows_per_control": 73728,
+      "reports": {
+        "baseline": "b7a0e4d940095b390e572caba4e02d2e32b3022cbbee5050befe90609db764df",
+        "reservoir": "be161741722800656722eb27d93fd29bbdd6228187112f8205f98fda2d8fd21e",
+        "utility": "c86b8d068230bf308d346bd61fbcdf93787bbfecff3069f498f8a593cf6c59cc",
+        "permuted_utility": "a0c8dcdeb8ecbd7a74f56a602552b6f8e5efec884a8598b0c63ae548e1ac5e26",
+        "uniform_frontier": "af96620c303b0db983517c90948eb58b97a644163fdf4ad12ff830291823a0d6",
+        "recent": "3a7764001fc504406c3614d69efc740329dadab30d50fe5fc73b71084da879c1"
+      },
+      "study_sha256": "403039cb6e9d744e9c264ce5ef095f8693ec06c713c545b623ea434d56fbb581"
+    },
+    {
+      "max_us_assets": 1024,
+      "cn_assets": [
+        256,
+        768
+      ],
+      "head": "quantiles",
+      "days_per_partition": 48,
+      "row_group_size": 4096,
+      "rows_per_control": 73728,
+      "reports": {
+        "baseline": "0fb79a37efbcbb63584effaf87268bcd3e378157a5b9b52f4ae90d1506234afd",
+        "reservoir": "dc15c4480e6ab238044b5fbbbf3ad3dced9bd7c8f66796ea3f3f52a994a536a0",
+        "utility": "d9d00933274cfa6724582d93ae022384dec71253c2d0893664f4f70a6922608f",
+        "permuted_utility": "77480c6e2baab00f8948ac2a6393f919bb095cb0d5dcd13d3c42eddb92fe5f1a",
+        "uniform_frontier": "b999ddcc0fe63bc9eab937a3d1dc603ff970b591af8ff250a5ab29551a9a758c",
+        "recent": "ffd17d83c3d6f79f424cee326dfd9b051b35690ab17a717246c7c2a312bbb8eb"
+      },
+      "study_sha256": "403039cb6e9d744e9c264ce5ef095f8693ec06c713c545b623ea434d56fbb581"
+    }
+  ],
+  "budget_seconds": 600,
+  "warmup": 1,
+  "measured_repetitions": 3,
+  "source_code": {
+    "src/mars_titan/memory/spaced_study.py": "286241ec1c98dbe9ebb1cff4a0cdc3c82b5ab5bc77ca7ab0b1c1eb6922cc3ac7",
+    "src/mars_titan/evaluation/spaced_sources.py": "b10711a540787a8a460d10711dcf80831cb7326ffcbca7e3ad6411c5cb6759fb",
+    "src/mars_titan/evaluation/spaced_comparison.py": "67e74b932ce8b782d31ee5df235b07edd8cf07f56b43cc63d343bc7565c14d72",
+    "src/mars_titan/evaluation/forecast_files.py": "0e5e79cd1b1f4bf17d6d1a0ad45f8db4be55dda199d82e18551d23186fd39f1f",
+    "src/mars_titan/evaluation/paired_comparisons.py": "c6604b201275a0cd2ab2330143414efc270009bb3a18b7ea13000e86f83bd11e",
+    "tests/evaluation/spaced_run_fixture.py": "7236c40d382ddcbded8c9911e6cba0247287777fc3015a0b966a002d180a74ad"
+  },
+  "probe_sha256": "7e70d160bca8496e2c294ed71fa1c5524324ec2a7d379e4d6ba615cbb037295c",
+  "hardware": {
+    "cpu": "AMD Ryzen 9 8945HS w/ Radeon 780M Graphics",
+    "platform": "Linux-7.0.0-38-generic-x86_64-with-glibc2.43"
+  },
+  "runtime": {
+    "python": "3.12.14",
+    "torch": "2.14.0+cu130",
+    "numpy": "2.5.3",
+    "pyarrow": "25.0.1",
+    "duckdb": "1.5.5",
+    "device": "cpu",
+    "dtype": "float64",
+    "threads": 2
+  },
+  "analysis": {
+    "block_length": 16,
+    "replicates": 2000,
+    "seed": 20261027,
+    "confidence": 0.95,
+    "market_weighting": "session",
+    "sensitivity_block_lengths": [
+      8,
+      32
+    ],
+    "rank_ic_min_assets": 3,
+    "primary_contrast": "utility_minus_baseline",
+    "min_relevant_mae": 1e-05
+  },
+  "profile": {
+    "seconds": 2.0312257930636406,
+    "scope": "Una ejecución adicional instrumentada, fuera de las medianas",
+    "functions": [
+      {
+        "file": "src/mars_titan/evaluation/forecast_files.py",
+        "line": 140,
+        "function": "_session_scores",
+        "calls": 576,
+        "primitive_calls": 576,
+        "own_seconds": 0.082104933,
+        "cumulative_seconds": 1.5474130830000001
+      },
+      {
+        "file": "src/mars_titan/evaluation/forecast_scores.py",
+        "line": 632,
+        "function": "score_sessions",
+        "calls": 1152,
+        "primitive_calls": 1152,
+        "own_seconds": 0.056156111,
+        "cumulative_seconds": 0.9037912480000001
+      },
+      {
+        "file": "src/mars_titan/evaluation/forecast_panel.py",
+        "line": 137,
+        "function": "from_columns",
+        "calls": 1152,
+        "primitive_calls": 1152,
+        "own_seconds": 0.088543725,
+        "cumulative_seconds": 0.529997586
+      },
+      {
+        "file": "src/mars_titan/evaluation/forecast_scores.py",
+        "line": 698,
+        "function": "_selective_hits",
+        "calls": 1152,
+        "primitive_calls": 1152,
+        "own_seconds": 0.049062587000000005,
+        "cumulative_seconds": 0.297012251
+      },
+      {
+        "file": "src/mars_titan/evaluation/forecast_scores.py",
+        "line": 160,
+        "function": "_rank_ic",
+        "calls": 1152,
+        "primitive_calls": 1152,
+        "own_seconds": 0.054342520000000005,
+        "cumulative_seconds": 0.22391354000000002
+      },
+      {
+        "file": "src/mars_titan/evaluation/forecast_scores.py",
+        "line": 723,
+        "function": "_quantile_scores",
+        "calls": 576,
+        "primitive_calls": 576,
+        "own_seconds": 0.078168392,
+        "cumulative_seconds": 0.221642256
+      },
+      {
+        "file": "src/mars_titan/evaluation/forecast_scores.py",
+        "line": 693,
+        "function": "_eligible_retained",
+        "calls": 11650,
+        "primitive_calls": 11650,
+        "own_seconds": 0.042513430000000005,
+        "cumulative_seconds": 0.196472733
+      },
+      {
+        "file": "src/mars_titan/evaluation/forecast_scores.py",
+        "line": 904,
+        "function": "_retained",
+        "calls": 11650,
+        "primitive_calls": 11650,
+        "own_seconds": 0.069071124,
+        "cumulative_seconds": 0.152192201
+      },
+      {
+        "file": "src/mars_titan/evaluation/forecast_panel.py",
+        "line": 81,
+        "function": "_identities",
+        "calls": 1152,
+        "primitive_calls": 1152,
+        "own_seconds": 0.038878317,
+        "cumulative_seconds": 0.146923872
+      },
+      {
+        "file": "src/mars_titan/evaluation/forecast_scores.py",
+        "line": 147,
+        "function": "_average_ranks",
+        "calls": 2304,
+        "primitive_calls": 2304,
+        "own_seconds": 0.043979477,
+        "cumulative_seconds": 0.11409472300000001
+      },
+      {
+        "file": "src/mars_titan/evaluation/spaced_comparison.py",
+        "line": 155,
+        "function": "_comparisons",
+        "calls": 1,
+        "primitive_calls": 1,
+        "own_seconds": 0.000220959,
+        "cumulative_seconds": 0.09987928500000001
+      },
+      {
+        "file": "src/mars_titan/evaluation/paired_comparisons.py",
+        "line": 239,
+        "function": "compare_series",
+        "calls": 7,
+        "primitive_calls": 7,
+        "own_seconds": 0.001482311,
+        "cumulative_seconds": 0.097470888
+      },
+      {
+        "file": "src/mars_titan/evaluation/paired_comparisons.py",
+        "line": 198,
+        "function": "_family",
+        "calls": 21,
+        "primitive_calls": 21,
+        "own_seconds": 0.004439525000000001,
+        "cumulative_seconds": 0.08368748200000001
+      },
+      {
+        "file": "src/mars_titan/evaluation/forecast_scores.py",
+        "line": 813,
+        "function": "_sign_scores",
+        "calls": 576,
+        "primitive_calls": 576,
+        "own_seconds": 0.023598099,
+        "cumulative_seconds": 0.082192655
+      },
+      {
+        "file": "src/mars_titan/evaluation/forecast_scores.py",
+        "line": 107,
+        "function": "_count",
+        "calls": 32832,
+        "primitive_calls": 32832,
+        "own_seconds": 0.063738372,
+        "cumulative_seconds": 0.08050056300000001
+      },
+      {
+        "file": "numpy/_core/fromnumeric.py",
+        "line": 48,
+        "function": "_wrapfunc",
+        "calls": 14463,
+        "primitive_calls": 14463,
+        "own_seconds": 0.011446476,
+        "cumulative_seconds": 0.068040063
+      },
+      {
+        "file": "src/mars_titan/evaluation/forecast_scores.py",
+        "line": 131,
+        "function": "_within_session_order",
+        "calls": 3456,
+        "primitive_calls": 3456,
+        "own_seconds": 0.024035985000000003,
+        "cumulative_seconds": 0.063557773
+      },
+      {
+        "file": "src/mars_titan/evaluation/paired_comparisons.py",
+        "line": 159,
+        "function": "_bootstrap",
+        "calls": 21,
+        "primitive_calls": 21,
+        "own_seconds": 0.002901494,
+        "cumulative_seconds": 0.062493557000000005
+      },
+      {
+        "file": "~",
+        "line": 0,
+        "function": "<built-in method _duckdb.connect>",
+        "calls": 6,
+        "primitive_calls": 6,
+        "own_seconds": 0.056806153000000005,
+        "cumulative_seconds": 0.056806153000000005
+      },
+      {
+        "file": "src/mars_titan/evaluation/forecast_scores.py",
+        "line": 778,
+        "function": "implied_up_probability",
+        "calls": 576,
+        "primitive_calls": 576,
+        "own_seconds": 0.028651802,
+        "cumulative_seconds": 0.053365791
+      },
+      {
+        "file": "src/mars_titan/evaluation/forecast_panel.py",
+        "line": 32,
+        "function": "_real",
+        "calls": 2880,
+        "primitive_calls": 2880,
+        "own_seconds": 0.026409193,
+        "cumulative_seconds": 0.052390394
+      },
+      {
+        "file": "functools.py",
+        "line": 982,
+        "function": "__get__",
+        "calls": 1152,
+        "primitive_calls": 1152,
+        "own_seconds": 0.003403994,
+        "cumulative_seconds": 0.05045741
+      },
+      {
+        "file": "src/mars_titan/evaluation/forecast_files.py",
+        "line": 109,
+        "function": "_sessions",
+        "calls": 582,
+        "primitive_calls": 582,
+        "own_seconds": 0.045208888,
+        "cumulative_seconds": 0.049264527
+      },
+      {
+        "file": "pyarrow/compute.py",
+        "line": 256,
+        "function": "wrapper",
+        "calls": 2316,
+        "primitive_calls": 2316,
+        "own_seconds": 0.041383734000000005,
+        "cumulative_seconds": 0.048950633
+      },
+      {
+        "file": "fractions.py",
+        "line": 186,
+        "function": "__new__",
+        "calls": 13980,
+        "primitive_calls": 13980,
+        "own_seconds": 0.021748567,
+        "cumulative_seconds": 0.048788554000000005
+      },
+      {
+        "file": "src/mars_titan/evaluation/forecast_panel.py",
+        "line": 246,
+        "function": "cohort_sha256",
+        "calls": 1152,
+        "primitive_calls": 1152,
+        "own_seconds": 0.019600547000000003,
+        "cumulative_seconds": 0.046534459
+      },
+      {
+        "file": "numpy/lib/_arraysetops_impl.py",
+        "line": 145,
+        "function": "unique",
+        "calls": 1247,
+        "primitive_calls": 1247,
+        "own_seconds": 0.00319542,
+        "cumulative_seconds": 0.042801096000000004
+      },
+      {
+        "file": "~",
+        "line": 0,
+        "function": "<method 'reduce' of 'numpy.ufunc' objects>",
+        "calls": 12495,
+        "primitive_calls": 12495,
+        "own_seconds": 0.042306193000000006,
+        "cumulative_seconds": 0.042306193000000006
+      },
+      {
+        "file": "src/mars_titan/data/storage.py",
+        "line": 23,
+        "function": "atomic_json",
+        "calls": 1,
+        "primitive_calls": 1,
+        "own_seconds": 5.9653000000000006e-05,
+        "cumulative_seconds": 0.041227582000000006
+      },
+      {
+        "file": "src/mars_titan/evaluation/forecast_panel.py",
+        "line": 71,
+        "function": "_market_codes",
+        "calls": 1152,
+        "primitive_calls": 1152,
+        "own_seconds": 0.028186716,
+        "cumulative_seconds": 0.040962451000000004
+      },
+      {
+        "file": "numpy/lib/_function_base_impl.py",
+        "line": 823,
+        "function": "select",
+        "calls": 1152,
+        "primitive_calls": 1152,
+        "own_seconds": 0.019859669,
+        "cumulative_seconds": 0.040957842
+      },
+      {
+        "file": "pyarrow/compute.py",
+        "line": 348,
+        "function": "cast",
+        "calls": 1212,
+        "primitive_calls": 1212,
+        "own_seconds": 0.040793728,
+        "cumulative_seconds": 0.040793728
+      },
+      {
+        "file": "__init__.py",
+        "line": 120,
+        "function": "dump",
+        "calls": 1,
+        "primitive_calls": 1,
+        "own_seconds": 0.005178384,
+        "cumulative_seconds": 0.03890842
+      },
+      {
+        "file": "numpy/lib/_arraysetops_impl.py",
+        "line": 350,
+        "function": "_unique1d",
+        "calls": 1247,
+        "primitive_calls": 1247,
+        "own_seconds": 0.0188204,
+        "cumulative_seconds": 0.038724759000000004
+      },
+      {
+        "file": "fractions.py",
+        "line": 340,
+        "function": "limit_denominator",
+        "calls": 11650,
+        "primitive_calls": 11650,
+        "own_seconds": 0.024601647,
+        "cumulative_seconds": 0.038015446
+      },
+      {
+        "file": "src/mars_titan/training/spaced_window.py",
+        "line": 112,
+        "function": "_verify_outputs",
+        "calls": 12,
+        "primitive_calls": 12,
+        "own_seconds": 0.000744154,
+        "cumulative_seconds": 0.036284697000000005
+      },
+      {
+        "file": "src/mars_titan/evaluation/forecast_scores.py",
+        "line": 111,
+        "function": "_mean",
+        "calls": 7488,
+        "primitive_calls": 7488,
+        "own_seconds": 0.030999141,
+        "cumulative_seconds": 0.034827301000000005
+      },
+      {
+        "file": "numpy/_core/fromnumeric.py",
+        "line": 2876,
+        "function": "cumsum",
+        "calls": 4632,
+        "primitive_calls": 4632,
+        "own_seconds": 0.0036055960000000004,
+        "cumulative_seconds": 0.033441687000000005
+      },
+      {
+        "file": "src/mars_titan/evaluation/forecast_panel.py",
+        "line": 53,
+        "function": "_microseconds",
+        "calls": 1152,
+        "primitive_calls": 1152,
+        "own_seconds": 0.008561328,
+        "cumulative_seconds": 0.031879439
+      },
+      {
+        "file": "encoder.py",
+        "line": 414,
+        "function": "_iterencode",
+        "calls": 18371,
+        "primitive_calls": 18371,
+        "own_seconds": 0.003275693,
+        "cumulative_seconds": 0.030757006000000003
+      }
+    ]
+  },
+  "optimizer_attempts": 0,
+  "cuda_initialized": false,
+  "seconds_without_imports": 214.59966888092458,
+  "peak_rss_kib": 978228,
+  "summaries": [
+    {
+      "max_us_assets": 64,
+      "head": "scalar",
+      "repetitions": 3,
+      "median_seconds": 0.9065511471126229,
+      "min_seconds": 0.8565156059339643,
+      "max_seconds": 0.9144046870060265,
+      "prediction_rows_per_analysis": 27648,
+      "rows_per_second_at_median": 30498.00343649582
+    },
+    {
+      "max_us_assets": 64,
+      "head": "quantiles",
+      "repetitions": 3,
+      "median_seconds": 1.2851520420517772,
+      "min_seconds": 1.2438038710970432,
+      "max_seconds": 1.2854921880643815,
+      "prediction_rows_per_analysis": 27648,
+      "rows_per_second_at_median": 21513.407826718525
+    },
+    {
+      "max_us_assets": 256,
+      "head": "scalar",
+      "repetitions": 3,
+      "median_seconds": 0.9968393538147211,
+      "min_seconds": 0.9447277390863746,
+      "max_seconds": 1.0074798548594117,
+      "prediction_rows_per_analysis": 110592,
+      "rows_per_second_at_median": 110942.65046497686
+    },
+    {
+      "max_us_assets": 256,
+      "head": "quantiles",
+      "repetitions": 3,
+      "median_seconds": 1.4036147659644485,
+      "min_seconds": 1.3918449101038277,
+      "max_seconds": 1.4966099460143596,
+      "prediction_rows_per_analysis": 110592,
+      "rows_per_second_at_median": 78790.84965596689
+    },
+    {
+      "max_us_assets": 1024,
+      "head": "scalar",
+      "repetitions": 3,
+      "median_seconds": 1.7047746370080858,
+      "min_seconds": 1.487639517057687,
+      "max_seconds": 1.714021448045969,
+      "prediction_rows_per_analysis": 442368,
+      "rows_per_second_at_median": 259487.67091957963
+    },
+    {
+      "max_us_assets": 1024,
+      "head": "quantiles",
+      "repetitions": 3,
+      "median_seconds": 2.0361513230018318,
+      "min_seconds": 1.742395221022889,
+      "max_seconds": 2.0514596740249544,
+      "prediction_rows_per_analysis": 442368,
+      "rows_per_second_at_median": 217256.9371454334
+    }
+  ],
+  "limits": [
+    "Informes manuales replicados, sin cargar ni entrenar modelos.",
+    "Seis controles y 48 días por partición. No son observaciones financieras reales.",
+    "Tiempo por análisis: guardas de fixture, metadatos, hashes, lectura, puntuación, remuestreo y publicación. Excluye crear fixtures y comparar firmas después. El total sí incluye ambos.",
+    "El proceso realiza 24 análisis ordinarios y uno perfilado. Las tres muestras medidas por caso no caracterizan p95/p99.",
+    "CPU FP64. Sin GPU, transferencias ni energía medidas. El pico RSS pertenece al proceso completo, incluida preparación."
+  ],
+  "external_process": {
+    "user_seconds": 189.15,
+    "system_seconds": 29.67,
+    "wall_clock_hms": "3:37.01",
+    "max_rss_kib": 978228.0,
+    "exit_status": 0.0
+  }
+}

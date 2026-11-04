@@ -1,0 +1,211 @@
+{
+  "schema_version": 1,
+  "status": "passed",
+  "scope": "Tres mutaciones dirigidas en el cargador, la fábrica de AdamW y la identidad. No es mutación exhaustiva.",
+  "executor_sha256": "b43f267ea6bead6ffd107b5cdecd6e967cfd72d731da698a4e71f126bf49c699",
+  "source_manifest_sha256": "349348d6e06fb0e6658a9b6e4bfa735826668326d3990b5e440f4bbfdebeaee0",
+  "baseline": {
+    "receipt_sha256": "c77f0e565ecfcf517be7cfae6535f5523f6c420d323df0931d9fd1a24b0f6abb",
+    "xml_sha256": "9ee04f5ca3ed524dc40f68e165f4659c83b682ebce397d07af18df4e17e06795",
+    "passed": 37
+  },
+  "cases": [
+    {
+      "id": "ignore_optimizer_decay",
+      "status": "killed_with_green_controls",
+      "nodeid": "tests/training/test_candidate_regularization_profiles.py::test_declared_decay_reaches_adamw_without_changing_parameters[lr1e-4-m1_k1-0.001-path1]",
+      "phases": [
+        {
+          "phase": "G1",
+          "returncode": 0,
+          "elapsed_s": 4.325720479944721,
+          "counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0,
+          "xml_sha256": "3e902980fcc2a03ad47a5bdea0ca3b04e63bed5667f5825d37fa3b51cbfb1595",
+          "events_sha256": "d2ff2fedc90f8e509d87b327c116e954c6c116cdd36a675d604c8fc79777fef4"
+        },
+        {
+          "phase": "M1",
+          "returncode": 1,
+          "elapsed_s": 3.573332962114364,
+          "counts": {
+            "total": 1,
+            "failure": 1,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0,
+          "xml_sha256": "c8b99da5782b20f49188a827d574e012abe7c5f9d7515d86b6139c1d7578764e",
+          "events_sha256": "01afb1d81473514b09ff4ba24ba91b34fa8ade87e5461a3e1fe8ac80eec67b5e"
+        },
+        {
+          "phase": "G2",
+          "returncode": 0,
+          "elapsed_s": 3.6241444998886436,
+          "counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0,
+          "xml_sha256": "aab7a5d50d9c4e96678d7cd2833fd32bcf3921041aba9d7d24d7e205a232c450",
+          "events_sha256": "bce4e6297f5e04253ab8555562173d242cb76b1fbac9e6b5cfb99dc60daf641b"
+        }
+      ]
+    },
+    {
+      "id": "ignore_loaded_decay",
+      "status": "killed_with_green_controls",
+      "nodeid": "tests/training/test_candidate_regularization_profiles.py::test_declared_decay_reaches_adamw_without_changing_parameters[lr1e-4-m1_k1-0.001-path1]",
+      "phases": [
+        {
+          "phase": "G1",
+          "returncode": 0,
+          "elapsed_s": 4.225987308192998,
+          "counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0,
+          "xml_sha256": "7a5a29e32e6674fd5e0c1487cc2a281f5e8d72ce7fd6d721c2ffe36708fdb1da",
+          "events_sha256": "f21811901f69674201491bf273704380d1ed64e14e0f10451ff2e7039de5d988"
+        },
+        {
+          "phase": "M1",
+          "returncode": 1,
+          "elapsed_s": 4.1256672230083495,
+          "counts": {
+            "total": 1,
+            "failure": 1,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0,
+          "xml_sha256": "554f2cf14a458a4c28df888305f6d3cc3e3f0a0814cf4cfe755e05412bc5dd76",
+          "events_sha256": "a0242998a93e4a95ef3152fc2236a78ba29531a5699623fe456d84b5fc0480fc"
+        },
+        {
+          "phase": "G2",
+          "returncode": 0,
+          "elapsed_s": 3.5236531731206924,
+          "counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0,
+          "xml_sha256": "19b7a0683ef6b59415e752825e1e6d5cc5da4c02e39fff2b5c850f4f347fb7d6",
+          "events_sha256": "b9c9e559192a2189cba2655f88d0aba8ccf518cbc7c3fb003e4e0662c75c2e5a"
+        }
+      ]
+    },
+    {
+      "id": "collapse_decay_identity",
+      "status": "killed_with_green_controls",
+      "nodeid": "tests/training/test_candidate_regularization_profiles.py::test_each_decay_and_rate_has_its_own_training_identity[m1_k1]",
+      "phases": [
+        {
+          "phase": "G1",
+          "returncode": 0,
+          "elapsed_s": 2.4708478569518775,
+          "counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0,
+          "xml_sha256": "c6e0154430f92b2f8ebf44f8a34899a08d2b24046508b2fb8c2606059c5eb038",
+          "events_sha256": "4bc2385b11f9779ae521067e2bbd06ad8add526be1067f6cd4c82a50db31ac3f"
+        },
+        {
+          "phase": "M1",
+          "returncode": 1,
+          "elapsed_s": 2.971919541945681,
+          "counts": {
+            "total": 1,
+            "failure": 1,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0,
+          "xml_sha256": "9af2b93a162e2a4423eeebe54cd419d3242ed14b4346255ca643faa5c5e1c90c",
+          "events_sha256": "0d95593c2d9805a320328015b8ef8b570da1d7f3bb96e74335c494c1b2b0037d"
+        },
+        {
+          "phase": "G2",
+          "returncode": 0,
+          "elapsed_s": 2.9721748118754476,
+          "counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "optimizer_attempts": 0,
+          "xml_sha256": "7d80d6c99277637fe83d48b2b425bb0d0f6efcc5117c5a51b6468fb69b005245",
+          "events_sha256": "7718220a794c3fb742f1e9813c52face15b1ea407e7a50d643a1d14d19d4004a"
+        }
+      ]
+    }
+  ],
+  "sources": {
+    "factory": {
+      "path": "src/mars_titan/training/anchored_decay.py",
+      "sha256": "6eb96360f654021355aa48d8475f8f85f43c9bcec824bce07a3de06e4ea90714"
+    },
+    "candidate": {
+      "path": "src/mars_titan/training/candidate_run.py",
+      "sha256": "035bfd9849ebef1306ac58ff475d5635d2b24af3c07c824baa14e9077ee0a832"
+    }
+  },
+  "recipes": [
+    {
+      "id": "ignore_optimizer_decay",
+      "family": "Objective",
+      "source_key": "factory",
+      "nodeid": "tests/training/test_candidate_regularization_profiles.py::test_declared_decay_reaches_adamw_without_changing_parameters[lr1e-4-m1_k1-0.001-path1]",
+      "anchor": "weight_decay=recipe.weight_decay,",
+      "replacement": "weight_decay=0.0,",
+      "expected_failure": {
+        "exception_type": "AssertionError",
+        "longrepr_contains": "assert"
+      }
+    },
+    {
+      "id": "ignore_loaded_decay",
+      "family": "Objective",
+      "source_key": "candidate",
+      "nodeid": "tests/training/test_candidate_regularization_profiles.py::test_declared_decay_reaches_adamw_without_changing_parameters[lr1e-4-m1_k1-0.001-path1]",
+      "anchor": "recipe = CandidateRecipe(**(base | document[\"variants\"][variant]))",
+      "replacement": "recipe = CandidateRecipe(**(base | document[\"variants\"][variant] | dict(weight_decay=0.0)))",
+      "expected_failure": {
+        "exception_type": "AssertionError",
+        "longrepr_contains": "assert"
+      }
+    },
+    {
+      "id": "collapse_decay_identity",
+      "family": "Objective",
+      "source_key": "candidate",
+      "nodeid": "tests/training/test_candidate_regularization_profiles.py::test_each_decay_and_rate_has_its_own_training_identity[m1_k1]",
+      "anchor": "fields = asdict(self)",
+      "replacement": "fields = asdict(self)\n        fields[\"weight_decay\"] = 0.0",
+      "expected_failure": {
+        "exception_type": "AssertionError",
+        "longrepr_contains": "assert"
+      }
+    }
+  ],
+  "test_path": "tests/training/test_candidate_regularization_profiles.py",
+  "test_sha256": "eab2d28f6994bd8df694fe8815f9228c36a7720cd8b3e88f045c0284082868e4"
+}

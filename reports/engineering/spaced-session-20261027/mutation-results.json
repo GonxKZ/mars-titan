@@ -1,0 +1,370 @@
+{
+  "kind": "directed_mutation_evidence",
+  "planned": 6,
+  "killed": 6,
+  "groups": [
+    {
+      "status": "passed",
+      "recipes_sha256": "19fe9adacb31b138e0954dc695a161c436b5c45262d8b5107fb67c42c7acbda5",
+      "executor_sha256": "b43f267ea6bead6ffd107b5cdecd6e967cfd72d731da698a4e71f126bf49c699",
+      "hold_sha256_before": "8a658080c1ac4e63847eba58b177020339da6ec47021cf26d2701830073c87fd",
+      "hold_sha256_after": "8a658080c1ac4e63847eba58b177020339da6ec47021cf26d2701830073c87fd",
+      "elapsed_s": 36.468782478012145,
+      "killed": 3
+    },
+    {
+      "status": "passed",
+      "recipes_sha256": "31d5df4c4c72083d894c4a5701ecd2a7fd4ae17287fd760a497de07e4584f7e4",
+      "executor_sha256": "b43f267ea6bead6ffd107b5cdecd6e967cfd72d731da698a4e71f126bf49c699",
+      "hold_sha256_before": "8a658080c1ac4e63847eba58b177020339da6ec47021cf26d2701830073c87fd",
+      "hold_sha256_after": "8a658080c1ac4e63847eba58b177020339da6ec47021cf26d2701830073c87fd",
+      "elapsed_s": 40.486891676904634,
+      "killed": 3
+    }
+  ],
+  "cases": [
+    {
+      "id": "ignore_native_pending_point",
+      "status": "killed_with_green_controls",
+      "phases": [
+        {
+          "phase": "G1",
+          "nodeid": "tests/memory/test_spaced_session.py::test_pending_emitted_point_is_checked_against_native_prediction[ledger]",
+          "returncode": 0,
+          "elapsed_s": 4.074114163173363,
+          "xml_counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "xml_sha256": "fdf534cfb0c896ee281b28400cf34640c2518f51a5ae453392b2f7ee57549608",
+          "events_sha256": "4565d820bfec8cd81beff70720938eefc231a8f5e269e854edf87266288db00a",
+          "optimizer_attempts": 0,
+          "outcome": "passed",
+          "exception_type": null
+        },
+        {
+          "phase": "M1",
+          "nodeid": "tests/memory/test_spaced_session.py::test_pending_emitted_point_is_checked_against_native_prediction[ledger]",
+          "returncode": 1,
+          "elapsed_s": 3.3735139451455325,
+          "xml_counts": {
+            "total": 1,
+            "failure": 1,
+            "error": 0,
+            "skipped": 0
+          },
+          "xml_sha256": "c3d55d85224e6ba2f1504a2be338bb05b98f79a38f500ef157a374333b6bfc36",
+          "events_sha256": "11423313746c03269c02e0b9835cbc3cb009c7fbe01840a85c79ff09108678d2",
+          "optimizer_attempts": 0,
+          "outcome": "failed",
+          "exception_type": "Failed"
+        },
+        {
+          "phase": "G2",
+          "nodeid": "tests/memory/test_spaced_session.py::test_pending_emitted_point_is_checked_against_native_prediction[ledger]",
+          "returncode": 0,
+          "elapsed_s": 3.272570315981284,
+          "xml_counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "xml_sha256": "3dd73506f1a1058f59be20a7df52cf0bf98cb7161dfe2c4b3096c20dfd643f1d",
+          "events_sha256": "c2cc34338facfceeaa25e9ef4c7009bd47ab7abef53636a3e724cb77122925eb",
+          "optimizer_attempts": 0,
+          "outcome": "passed",
+          "exception_type": null
+        }
+      ]
+    },
+    {
+      "id": "ignore_native_emission",
+      "status": "killed_with_green_controls",
+      "phases": [
+        {
+          "phase": "G1",
+          "nodeid": "tests/memory/test_spaced_session.py::test_pending_emitted_point_is_checked_against_native_prediction[event]",
+          "returncode": 0,
+          "elapsed_s": 4.124653385952115,
+          "xml_counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "xml_sha256": "e412794d810df25398fc07b22e4e98b4e0a072eea74332bd2c386e67ff37568a",
+          "events_sha256": "08d25cc92fa9f057df82c3dce068a7021edd384a4c10958c5b15a313bfcc8930",
+          "optimizer_attempts": 0,
+          "outcome": "passed",
+          "exception_type": null
+        },
+        {
+          "phase": "M1",
+          "nodeid": "tests/memory/test_spaced_session.py::test_pending_emitted_point_is_checked_against_native_prediction[event]",
+          "returncode": 1,
+          "elapsed_s": 4.174106599064544,
+          "xml_counts": {
+            "total": 1,
+            "failure": 1,
+            "error": 0,
+            "skipped": 0
+          },
+          "xml_sha256": "f1b402e0dd07f032da4d4bd7d27bbe4dd28b2da7709271a6dd6cf542df498a14",
+          "events_sha256": "10025c08566b6cdcd9bd62647b9673ee2489d41ad547807ce989f93f05d396a6",
+          "optimizer_attempts": 0,
+          "outcome": "failed",
+          "exception_type": "Failed"
+        },
+        {
+          "phase": "G2",
+          "nodeid": "tests/memory/test_spaced_session.py::test_pending_emitted_point_is_checked_against_native_prediction[event]",
+          "returncode": 0,
+          "elapsed_s": 3.972222926095128,
+          "xml_counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "xml_sha256": "a94bcce6af39322cbdf88f321c50a59093e47e13dc5f6ccbb9ec9f978f64d06b",
+          "events_sha256": "e00e37bc0cfa204986956aff97bc7299097005412c6396e9067dcf8f362357fc",
+          "optimizer_attempts": 0,
+          "outcome": "passed",
+          "exception_type": null
+        }
+      ]
+    },
+    {
+      "id": "ignore_pending_queue",
+      "status": "killed_with_green_controls",
+      "phases": [
+        {
+          "phase": "G1",
+          "nodeid": "tests/memory/test_spaced_session.py::test_evidence_pending_keys_must_match_the_financial_queue",
+          "returncode": 0,
+          "elapsed_s": 3.572913214098662,
+          "xml_counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "xml_sha256": "2c9515d13a8b47f78e3e8c06941cc417fb1821c84a2e1775d1884798fcbc4c91",
+          "events_sha256": "a1953414a0a45ac12a82f308af072d0781ff542b91a27b04caa607985ac73f36",
+          "optimizer_attempts": 0,
+          "outcome": "passed",
+          "exception_type": null
+        },
+        {
+          "phase": "M1",
+          "nodeid": "tests/memory/test_spaced_session.py::test_evidence_pending_keys_must_match_the_financial_queue",
+          "returncode": 1,
+          "elapsed_s": 4.0245070229284465,
+          "xml_counts": {
+            "total": 1,
+            "failure": 1,
+            "error": 0,
+            "skipped": 0
+          },
+          "xml_sha256": "5d0e8abf8c499ddda040aeaf13753243e25764bad5be1ef2dc0fd2f3d48614cf",
+          "events_sha256": "53a89b05f05884fd46a4c1d9920424307f9870df27059e067df9315a2c386477",
+          "optimizer_attempts": 0,
+          "outcome": "failed",
+          "exception_type": "Failed"
+        },
+        {
+          "phase": "G2",
+          "nodeid": "tests/memory/test_spaced_session.py::test_evidence_pending_keys_must_match_the_financial_queue",
+          "returncode": 0,
+          "elapsed_s": 3.7741326531395316,
+          "xml_counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "xml_sha256": "4b261b79f064c55923e991695606a2f883be3b2e725e063a29c5a76f2732b7f8",
+          "events_sha256": "03928ed4f53aa4da19518fbb02b9dfe2e31f1b3f3003e3d4aa6212377f1c607a",
+          "optimizer_attempts": 0,
+          "outcome": "passed",
+          "exception_type": null
+        }
+      ]
+    },
+    {
+      "id": "drop_same_cut_feedback",
+      "status": "killed_with_green_controls",
+      "phases": [
+        {
+          "phase": "G1",
+          "nodeid": "tests/memory/test_spaced_session.py::test_settlement_after_decision_at_same_cut_and_phase_closure",
+          "returncode": 0,
+          "elapsed_s": 4.675734841031954,
+          "xml_counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "xml_sha256": "2195059c8637a86f4b0517a003d25e15f071ef06e8730b8caf796e5eee2a6f88",
+          "events_sha256": "65eb9c7389618f44463db7eb9e8fe12a5c7828a2ef2d3c907cd0c388fe0c50bb",
+          "optimizer_attempts": 0,
+          "outcome": "passed",
+          "exception_type": null
+        },
+        {
+          "phase": "M1",
+          "nodeid": "tests/memory/test_spaced_session.py::test_settlement_after_decision_at_same_cut_and_phase_closure",
+          "returncode": 1,
+          "elapsed_s": 3.8238778722006828,
+          "xml_counts": {
+            "total": 1,
+            "failure": 1,
+            "error": 0,
+            "skipped": 0
+          },
+          "xml_sha256": "72a7a11d111eb61285db77a6b7b62411eeecbb0b0143ded2f95112adc9c570d9",
+          "events_sha256": "65a360ce00a5a08b3c2f03070929c9ee49617d62b2cd7215e5030b0abe3b999d",
+          "optimizer_attempts": 0,
+          "outcome": "failed",
+          "exception_type": "ValueError"
+        },
+        {
+          "phase": "G2",
+          "nodeid": "tests/memory/test_spaced_session.py::test_settlement_after_decision_at_same_cut_and_phase_closure",
+          "returncode": 0,
+          "elapsed_s": 3.824400888988748,
+          "xml_counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "xml_sha256": "4c4ae8ad7f867f8f5dca93a7b4425d4b95552370b6fd93d474aaa4320a5567c8",
+          "events_sha256": "27415d5164264902c89f0fb4bacbb9c899256ac134da118abb5a84e93a5b246d",
+          "optimizer_attempts": 0,
+          "outcome": "passed",
+          "exception_type": null
+        }
+      ]
+    },
+    {
+      "id": "allow_implicit_stability",
+      "status": "killed_with_green_controls",
+      "phases": [
+        {
+          "phase": "G1",
+          "nodeid": "tests/memory/test_spaced_session.py::test_active_stability_is_not_an_implicit_extra_axis",
+          "returncode": 0,
+          "elapsed_s": 3.7243309719488025,
+          "xml_counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "xml_sha256": "88f9d8af9c964876be289f0c9b778f44cc30679d6b34f901b31fcbd9a45ffca1",
+          "events_sha256": "1e96e1e408b9c915703a404f7250967a2c2619bc97c669239fee6d992a5cf68e",
+          "optimizer_attempts": 0,
+          "outcome": "passed",
+          "exception_type": null
+        },
+        {
+          "phase": "M1",
+          "nodeid": "tests/memory/test_spaced_session.py::test_active_stability_is_not_an_implicit_extra_axis",
+          "returncode": 1,
+          "elapsed_s": 3.6745406228583306,
+          "xml_counts": {
+            "total": 1,
+            "failure": 1,
+            "error": 0,
+            "skipped": 0
+          },
+          "xml_sha256": "35f7459401f29850c16749e01d03afdfd5f029f22ebddc1a997d3d259a3e513c",
+          "events_sha256": "5dd263a15afbfc5ad35314665405b531d438cdf881014e62ffc2a28b4ef75f73",
+          "optimizer_attempts": 0,
+          "outcome": "failed",
+          "exception_type": "Failed"
+        },
+        {
+          "phase": "G2",
+          "nodeid": "tests/memory/test_spaced_session.py::test_active_stability_is_not_an_implicit_extra_axis",
+          "returncode": 0,
+          "elapsed_s": 3.072723772143945,
+          "xml_counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "xml_sha256": "589512216112bc8e1e0d2f0ddc129ef139cd0e3afc999d0a37b61f89a5a0275f",
+          "events_sha256": "08aa50feb3aed882f00202c1d597faa613fa9822397eaa4c1622080f2bc05cba",
+          "optimizer_attempts": 0,
+          "outcome": "passed",
+          "exception_type": null
+        }
+      ]
+    },
+    {
+      "id": "drop_mature_targets",
+      "status": "killed_with_green_controls",
+      "phases": [
+        {
+          "phase": "G1",
+          "nodeid": "tests/memory/test_spaced_session.py::test_original_reservoir_with_diagnostics_keeps_emissions_records_and_fast_state",
+          "returncode": 0,
+          "elapsed_s": 5.3285212009213865,
+          "xml_counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "xml_sha256": "5ce78b1489b61eaf32878af54edf987e5204828b8feaa1e366dcf2140ef23662",
+          "events_sha256": "a14ebf9a5488488a151e6c639badb34138f2a3386aa736973036613e2696b1d1",
+          "optimizer_attempts": 0,
+          "outcome": "passed",
+          "exception_type": null
+        },
+        {
+          "phase": "M1",
+          "nodeid": "tests/memory/test_spaced_session.py::test_original_reservoir_with_diagnostics_keeps_emissions_records_and_fast_state",
+          "returncode": 1,
+          "elapsed_s": 4.7268481648061424,
+          "xml_counts": {
+            "total": 1,
+            "failure": 1,
+            "error": 0,
+            "skipped": 0
+          },
+          "xml_sha256": "9977bc96ab768e7124aaa1ad793f913089f7f8d5a694747d7b7a18c14bd58f65",
+          "events_sha256": "49f8bd08e1169c0a670f4f610a574a64ea372efcbe2ec3a06a572d029e91b432",
+          "optimizer_attempts": 0,
+          "outcome": "failed",
+          "exception_type": "ValueError"
+        },
+        {
+          "phase": "G2",
+          "nodeid": "tests/memory/test_spaced_session.py::test_original_reservoir_with_diagnostics_keeps_emissions_records_and_fast_state",
+          "returncode": 0,
+          "elapsed_s": 5.5278635448776186,
+          "xml_counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "xml_sha256": "0a9da796f94b14335c6781c58e9375f0eb70d640103a0b01c6e424662d48f053",
+          "events_sha256": "e2fcb98c16189ad4e0587a95a1932c4d1f230604ba94c49878271baeca4b62ea",
+          "optimizer_attempts": 0,
+          "outcome": "passed",
+          "exception_type": null
+        }
+      ]
+    }
+  ],
+  "scope": "Puntos nativos, emisiones, colas, liquidación en el mismo corte, C desactivado y aplicación de targets maduros. No cubre todos los mutantes posibles."
+}

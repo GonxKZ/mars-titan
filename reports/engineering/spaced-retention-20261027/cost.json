@@ -1,0 +1,389 @@
+{
+  "kind": "technical_native_retention_cost",
+  "torch": "2.14.0+cu130",
+  "python": "3.12.14",
+  "native_sha256": "22fdb1fdbaa7faee9f2c3de7240608ea60bfa271151430771591906f90d709d1",
+  "probe_sha256": "842320ca953c59450ec3bfcc88d664b5570ae7af08cf13748e4c5df41696bf57",
+  "device": "cpu",
+  "cpu_threads": 2,
+  "process_seconds_without_imports": 10.705456126015633,
+  "process_peak_rss_kib": 625056,
+  "results": [
+    {
+      "capacity": 64,
+      "policy": "utility",
+      "pending": {
+        "episodes": 64,
+        "pending_sessions": 1,
+        "pending_rows": 1,
+        "references": 64
+      },
+      "warmup": 1,
+      "repetitions": 5,
+      "cycle_ms": [
+        13.531518,
+        12.579884,
+        12.990999,
+        13.116987,
+        12.071766
+      ],
+      "median_ms": 12.990999,
+      "logical_payload_bytes": 62071,
+      "estimated_working_bytes": 9080832,
+      "python_peak_bytes": 467787,
+      "recovery_parity": true
+    },
+    {
+      "capacity": 64,
+      "policy": "permuted_utility",
+      "pending": {
+        "episodes": 64,
+        "pending_sessions": 1,
+        "pending_rows": 1,
+        "references": 64
+      },
+      "warmup": 1,
+      "repetitions": 5,
+      "cycle_ms": [
+        13.625776,
+        13.121706,
+        12.303903,
+        13.892198,
+        12.477812
+      ],
+      "median_ms": 13.121706,
+      "logical_payload_bytes": 62094,
+      "estimated_working_bytes": 9080832,
+      "python_peak_bytes": 468169,
+      "recovery_parity": true
+    },
+    {
+      "capacity": 64,
+      "policy": "uniform_frontier",
+      "pending": {
+        "episodes": 64,
+        "pending_sessions": 1,
+        "pending_rows": 1,
+        "references": 64
+      },
+      "warmup": 1,
+      "repetitions": 5,
+      "cycle_ms": [
+        11.830772,
+        13.360045,
+        11.461135,
+        12.97046,
+        13.214099
+      ],
+      "median_ms": 12.97046,
+      "logical_payload_bytes": 61150,
+      "estimated_working_bytes": 9080832,
+      "python_peak_bytes": 423824,
+      "recovery_parity": true
+    },
+    {
+      "capacity": 64,
+      "policy": "recent",
+      "pending": {
+        "episodes": 64,
+        "pending_sessions": 1,
+        "pending_rows": 1,
+        "references": 64
+      },
+      "warmup": 1,
+      "repetitions": 5,
+      "cycle_ms": [
+        12.789068,
+        11.337542,
+        12.025519,
+        12.05772,
+        11.319438
+      ],
+      "median_ms": 12.025519,
+      "logical_payload_bytes": 61360,
+      "estimated_working_bytes": 9080832,
+      "python_peak_bytes": 422998,
+      "recovery_parity": true
+    },
+    {
+      "capacity": 64,
+      "policy": "reservoir",
+      "pending": {
+        "episodes": 64,
+        "pending_sessions": 1,
+        "pending_rows": 1,
+        "references": 64
+      },
+      "warmup": 1,
+      "repetitions": 5,
+      "cycle_ms": [
+        11.743808,
+        12.466109,
+        13.12393,
+        11.645082,
+        13.566083
+      ],
+      "median_ms": 12.466109,
+      "logical_payload_bytes": 61067,
+      "estimated_working_bytes": 9080832,
+      "python_peak_bytes": 422350,
+      "recovery_parity": true
+    },
+    {
+      "capacity": 256,
+      "policy": "utility",
+      "pending": {
+        "episodes": 256,
+        "pending_sessions": 1,
+        "pending_rows": 4,
+        "references": 256
+      },
+      "warmup": 1,
+      "repetitions": 5,
+      "cycle_ms": [
+        33.366839,
+        33.392247,
+        32.961915,
+        112.40464,
+        32.757671
+      ],
+      "median_ms": 33.366839,
+      "logical_payload_bytes": 209389,
+      "estimated_working_bytes": 10371072,
+      "python_peak_bytes": 1586604,
+      "recovery_parity": true
+    },
+    {
+      "capacity": 256,
+      "policy": "permuted_utility",
+      "pending": {
+        "episodes": 256,
+        "pending_sessions": 1,
+        "pending_rows": 4,
+        "references": 256
+      },
+      "warmup": 1,
+      "repetitions": 5,
+      "cycle_ms": [
+        36.462324,
+        35.632189,
+        36.87923,
+        33.8291,
+        32.746289
+      ],
+      "median_ms": 35.632189,
+      "logical_payload_bytes": 209408,
+      "estimated_working_bytes": 10371072,
+      "python_peak_bytes": 1588607,
+      "recovery_parity": true
+    },
+    {
+      "capacity": 256,
+      "policy": "uniform_frontier",
+      "pending": {
+        "episodes": 256,
+        "pending_sessions": 1,
+        "pending_rows": 4,
+        "references": 256
+      },
+      "warmup": 1,
+      "repetitions": 5,
+      "cycle_ms": [
+        31.322996,
+        31.982299,
+        31.085798,
+        30.764553,
+        30.698128
+      ],
+      "median_ms": 31.085798,
+      "logical_payload_bytes": 204504,
+      "estimated_working_bytes": 10371072,
+      "python_peak_bytes": 1413231,
+      "recovery_parity": true
+    },
+    {
+      "capacity": 256,
+      "policy": "recent",
+      "pending": {
+        "episodes": 256,
+        "pending_sessions": 1,
+        "pending_rows": 4,
+        "references": 256
+      },
+      "warmup": 1,
+      "repetitions": 5,
+      "cycle_ms": [
+        31.890065,
+        31.103953,
+        31.519857,
+        31.81854,
+        30.961534
+      ],
+      "median_ms": 31.519857,
+      "logical_payload_bytes": 204659,
+      "estimated_working_bytes": 10371072,
+      "python_peak_bytes": 1423406,
+      "recovery_parity": true
+    },
+    {
+      "capacity": 256,
+      "policy": "reservoir",
+      "pending": {
+        "episodes": 256,
+        "pending_sessions": 1,
+        "pending_rows": 4,
+        "references": 256
+      },
+      "warmup": 1,
+      "repetitions": 5,
+      "cycle_ms": [
+        31.217547,
+        31.497655,
+        30.317009,
+        29.045723,
+        30.26955
+      ],
+      "median_ms": 30.317009,
+      "logical_payload_bytes": 204396,
+      "estimated_working_bytes": 10371072,
+      "python_peak_bytes": 1405005,
+      "recovery_parity": true
+    },
+    {
+      "capacity": 1024,
+      "policy": "utility",
+      "pending": {
+        "episodes": 1024,
+        "pending_sessions": 1,
+        "pending_rows": 16,
+        "references": 1024
+      },
+      "warmup": 1,
+      "repetitions": 5,
+      "cycle_ms": [
+        185.961817,
+        104.284451,
+        98.951188,
+        101.162116,
+        183.407121
+      ],
+      "median_ms": 104.284451,
+      "logical_payload_bytes": 801068,
+      "estimated_working_bytes": 15532032,
+      "python_peak_bytes": 6881734,
+      "recovery_parity": true
+    },
+    {
+      "capacity": 1024,
+      "policy": "permuted_utility",
+      "pending": {
+        "episodes": 1024,
+        "pending_sessions": 1,
+        "pending_rows": 16,
+        "references": 1024
+      },
+      "warmup": 1,
+      "repetitions": 5,
+      "cycle_ms": [
+        106.366054,
+        102.473626,
+        182.151271,
+        106.392303,
+        105.246923
+      ],
+      "median_ms": 106.366054,
+      "logical_payload_bytes": 801076,
+      "estimated_working_bytes": 15532032,
+      "python_peak_bytes": 6953963,
+      "recovery_parity": true
+    },
+    {
+      "capacity": 1024,
+      "policy": "uniform_frontier",
+      "pending": {
+        "episodes": 1024,
+        "pending_sessions": 1,
+        "pending_rows": 16,
+        "references": 1024
+      },
+      "warmup": 1,
+      "repetitions": 5,
+      "cycle_ms": [
+        91.442381,
+        171.407096,
+        89.172973,
+        89.52196,
+        89.642327
+      ],
+      "median_ms": 89.642327,
+      "logical_payload_bytes": 779338,
+      "estimated_working_bytes": 15532032,
+      "python_peak_bytes": 5791087,
+      "recovery_parity": true
+    },
+    {
+      "capacity": 1024,
+      "policy": "recent",
+      "pending": {
+        "episodes": 1024,
+        "pending_sessions": 1,
+        "pending_rows": 16,
+        "references": 1024
+      },
+      "warmup": 1,
+      "repetitions": 5,
+      "cycle_ms": [
+        107.633038,
+        115.097068,
+        108.293303,
+        167.852973,
+        91.210642
+      ],
+      "median_ms": 108.293303,
+      "logical_payload_bytes": 779552,
+      "estimated_working_bytes": 15532032,
+      "python_peak_bytes": 5818795,
+      "recovery_parity": true
+    },
+    {
+      "capacity": 1024,
+      "policy": "reservoir",
+      "pending": {
+        "episodes": 1024,
+        "pending_sessions": 1,
+        "pending_rows": 16,
+        "references": 1024
+      },
+      "warmup": 1,
+      "repetitions": 5,
+      "cycle_ms": [
+        88.601052,
+        87.16222,
+        89.996011,
+        89.525515,
+        164.225203
+      ],
+      "median_ms": 89.525515,
+      "logical_payload_bytes": 779244,
+      "estimated_working_bytes": 15532032,
+      "python_peak_bytes": 5779977,
+      "recovery_parity": true
+    }
+  ],
+  "limits": [
+    "Incluye propuesta, snapshots, recuperación, conciliación y dos continuaciones emparejadas.",
+    "Preparación de fixtures fuera del tiempo por ciclo. Sin predictor, disco ni GPU.",
+    "Valores y pronósticos literales. No son datos financieros ni resultados predictivos.",
+    "Pico Python en una pasada aparte. Excluye asignaciones nativas.",
+    "Payload lógico sin framing del almacenamiento. RSS absoluto del proceso completo.",
+    "Cinco muestras por caso no permiten estimar colas p95/p99 con precisión.",
+    "Energía no medida."
+  ],
+  "cpu": "AMD Ryzen 9 8945HS",
+  "process_wall_seconds_including_imports": 13.03,
+  "process_peak_rss_kib_external": 738416,
+  "source_receipt_sha256": "539f96990da9eb1151edf7d8e43db36f5d17ad06a7b8bfdbe6ed65ad751fc598",
+  "energy_joules": null,
+  "vram_peak_bytes": null,
+  "concurrency": "Sin otras pruebas propias en la medida. Otras aplicaciones activas y perfil de energía sin cambios."
+}

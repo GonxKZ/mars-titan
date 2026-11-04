@@ -1,0 +1,33 @@
+{
+  "repositories": {
+    "Objective": {
+      "root": ".",
+      "test_path": "tests/training/test_mars_titan_correction.py",
+      "test_sha256": "3bf38335736bba2e217b64927c95ec72520661c57bb59de851487d837cff7df5"
+    }
+  },
+  "sources": {
+    "window": {
+      "path": "src/mars_titan/training/mars_titan_correction.py",
+      "sha256": "3efc11e98dce247ec9ab1186c0815d223ce9666ddabedcd07887ca0b738eb7b4"
+    },
+    "session": {
+      "path": "src/mars_titan/memory/lesion_session.py",
+      "sha256": "ac5d2579a6639f8f2874541b4fcc08e33c25f45b166c9a3ea89f52655e390a46"
+    }
+  },
+  "recipes": [
+    {
+      "id": "discard_diagnostics_on_regeneration",
+      "family": "Objective",
+      "source_key": "window",
+      "nodeid": "tests/training/test_mars_titan_correction.py::test_lesion_window_regenerates_the_same_auxiliary_predictions",
+      "anchor": "lesions = diagnostic_protocol(request)",
+      "replacement": "lesions = None",
+      "expected_failure": {
+        "exception_type": "KeyError",
+        "longrepr_contains": "'lesions'"
+      }
+    }
+  ]
+}

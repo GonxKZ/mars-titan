@@ -1,0 +1,795 @@
+{
+ "schema_version": 1,
+ "date": "2026-10-28",
+ "issue": 746,
+ "scope": "common_epoch_selection_amendment",
+ "base_commit": "ceee586e94bd309c81eeedb320de1e373572dbf9",
+ "scientific_experiments": 0,
+ "training_runs": 0,
+ "real_optimizer_steps": 0,
+ "final_test_opened": false,
+ "hold_sha256": "8a658080c1ac4e63847eba58b177020339da6ec47021cf26d2701830073c87fd",
+ "test_runners": "pytest con xdist (-n 2, loadfile) en la suite dirigida y un solo proceso con coverage 7.16.1 y ramas. CPU con CUDA_VISIBLE_DEVICES=-1, dos hilos de BLAS y TMPDIR en disco. La protección global del aprendizaje sigue activa y omite cualquier paso de optimizador.",
+ "suites": [
+  {
+   "name": "targeted_on_the_final_tree",
+   "tests": 1051,
+   "failures": 0,
+   "errors": 0,
+   "skipped": 36,
+   "xml_sha256": "f368e2cf7310e53610542fb0333b122ea3eb7f2b22fd5f77a6532de842b0f660",
+   "modules": 43,
+   "note": "Los 43 módulos que recorren la selección, los puntos de control, las ventanas de Titans-MAC y del lector, la criba, su análisis, la ejecución de C5 y la paridad de precisión, sobre el árbol final tras integrar develop y con el enlace episódico recompilado desde develop. Las 36 omisiones son de la protección del aprendizaje."
+  },
+  {
+   "name": "targeted_with_coverage",
+   "tests": 284,
+   "failures": 0,
+   "errors": 0,
+   "skipped": 2,
+   "xml_sha256": "f827ef80331ac94a9b05e0747d46f5478db6f55376f86448ebcef92cfca77faa",
+   "note": "Las pruebas de la enmienda con cobertura de ramas sobre el mismo árbol. Las siete pruebas CUDA quedan deseleccionadas porque la GPU estaba ocupada por otros procesos y las dos omisiones son de la protección del aprendizaje."
+  }
+ ],
+ "coverage": {
+  "tool": "coverage 7.16.1 con ramas y Radon 6.0.1",
+  "convention": "C² × (1 − cobertura de sentencias)³ + C.",
+  "files": [
+   {
+    "path": "benchmarks/variant_screening_study.py",
+    "source_sha256": "fd3ae8d5dde06cb7a9e9f11af62e523767eb92811360c2eb6e94c31ef5f0e094",
+    "statements": 493,
+    "covered_statements": 485,
+    "branches": 110,
+    "covered_branches": 104
+   },
+   {
+    "path": "src/mars_titan/evaluation/variant_screening_analysis.py",
+    "source_sha256": "381a47106e857f15bdb4d652be35c94617da622963717b5452f4f0efa27d621e",
+    "statements": 304,
+    "covered_statements": 304,
+    "branches": 72,
+    "covered_branches": 72
+   },
+   {
+    "path": "src/mars_titan/training/checkpoints.py",
+    "source_sha256": "efd5004afc219cad354f3571caf09c74d1ec3f9885e6044398a75056b4f8aac6",
+    "statements": 227,
+    "covered_statements": 204,
+    "branches": 108,
+    "covered_branches": 86
+   },
+   {
+    "path": "src/mars_titan/training/common_epoch.py",
+    "source_sha256": "8a395b845fd3aefef43af6530ff2cc9fd7832d9ce6387fd5d618d1954accd24b",
+    "statements": 55,
+    "covered_statements": 55,
+    "branches": 18,
+    "covered_branches": 18
+   },
+   {
+    "path": "src/mars_titan/training/financial_run.py",
+    "source_sha256": "67d26351774db21d3657108fcebf2de67d0da52d4616a798c877535ec44ae0c0",
+    "statements": 904,
+    "covered_statements": 672,
+    "branches": 368,
+    "covered_branches": 223
+   },
+   {
+    "path": "src/mars_titan/training/mars_titan_run.py",
+    "source_sha256": "06091e9079112df415118e10222a520eec435a7e234c536b98c8c8f6003a0617",
+    "statements": 731,
+    "covered_statements": 655,
+    "branches": 272,
+    "covered_branches": 200
+   },
+   {
+    "path": "src/mars_titan/training/mars_titan_walk_forward.py",
+    "source_sha256": "32cd5eceb60934e54b171d47aed1da039ad6eba1107bf8bca48489d7f597df8b",
+    "statements": 359,
+    "covered_statements": 243,
+    "branches": 52,
+    "covered_branches": 37
+   },
+   {
+    "path": "src/mars_titan/training/selection.py",
+    "source_sha256": "76dde107a8f917a61477666f9b41185df15aa7d0a3dce46b7b22451058af919a",
+    "statements": 116,
+    "covered_statements": 116,
+    "branches": 58,
+    "covered_branches": 58
+   },
+   {
+    "path": "src/mars_titan/training/titans_walk_forward.py",
+    "source_sha256": "7ed1fa41634fb7fdc311272f1bd10f5c4a4cb510896489243bc47edf281a74c3",
+    "statements": 375,
+    "covered_statements": 282,
+    "branches": 80,
+    "covered_branches": 67
+   },
+   {
+    "path": "src/mars_titan/training/variant_screening.py",
+    "source_sha256": "521a5dbe78ebb8a4ae187976dc551a00cc0ff28e864dbb1048cf5531b3671ff6",
+    "statements": 267,
+    "covered_statements": 266,
+    "branches": 112,
+    "covered_branches": 110
+   }
+  ],
+  "changed_functions": [
+   {
+    "path": "src/mars_titan/training/selection.py",
+    "function": "validate_selection",
+    "complexity": 16,
+    "statements": 6,
+    "covered_statements": 6,
+    "branches": 6,
+    "covered_branches": 6,
+    "crap": 16.0
+   },
+   {
+    "path": "src/mars_titan/training/selection.py",
+    "function": "advance_selection",
+    "complexity": 19,
+    "statements": 17,
+    "covered_statements": 17,
+    "branches": 8,
+    "covered_branches": 8,
+    "crap": 19.0
+   },
+   {
+    "path": "src/mars_titan/training/selection.py",
+    "function": "epoch_decision",
+    "complexity": 15,
+    "statements": 17,
+    "covered_statements": 17,
+    "branches": 12,
+    "covered_branches": 12,
+    "crap": 15.0
+   },
+   {
+    "path": "src/mars_titan/training/selection.py",
+    "function": "_common_decision",
+    "complexity": 6,
+    "statements": 5,
+    "covered_statements": 5,
+    "branches": 4,
+    "covered_branches": 4,
+    "crap": 6.0
+   },
+   {
+    "path": "src/mars_titan/training/selection.py",
+    "function": "campaign_rule",
+    "complexity": 9,
+    "statements": 6,
+    "covered_statements": 6,
+    "branches": 4,
+    "covered_branches": 4,
+    "crap": 9.0
+   },
+   {
+    "path": "src/mars_titan/training/selection.py",
+    "function": "seed_epoch_scores",
+    "complexity": 13,
+    "statements": 16,
+    "covered_statements": 16,
+    "branches": 10,
+    "covered_branches": 10,
+    "crap": 13.0
+   },
+   {
+    "path": "src/mars_titan/training/selection.py",
+    "function": "common_epoch",
+    "complexity": 8,
+    "statements": 8,
+    "covered_statements": 8,
+    "branches": 4,
+    "covered_branches": 4,
+    "crap": 8.0
+   },
+   {
+    "path": "src/mars_titan/training/common_epoch.py",
+    "function": "checked_scoring",
+    "complexity": 9,
+    "statements": 8,
+    "covered_statements": 8,
+    "branches": 6,
+    "covered_branches": 6,
+    "crap": 9.0
+   },
+   {
+    "path": "src/mars_titan/training/common_epoch.py",
+    "function": "bind_versions",
+    "complexity": 10,
+    "statements": 9,
+    "covered_statements": 9,
+    "branches": 6,
+    "covered_branches": 6,
+    "crap": 10.0
+   },
+   {
+    "path": "src/mars_titan/training/common_epoch.py",
+    "function": "version_path",
+    "complexity": 1,
+    "statements": 1,
+    "covered_statements": 1,
+    "branches": 0,
+    "covered_branches": 0,
+    "crap": 1.0
+   },
+   {
+    "path": "src/mars_titan/training/common_epoch.py",
+    "function": "EpochValidation.__init__",
+    "complexity": 3,
+    "statements": 4,
+    "covered_statements": 4,
+    "branches": 2,
+    "covered_branches": 2,
+    "crap": 3.0
+   },
+   {
+    "path": "src/mars_titan/training/common_epoch.py",
+    "function": "EpochValidation.rows",
+    "complexity": 1,
+    "statements": 1,
+    "covered_statements": 1,
+    "branches": 0,
+    "covered_branches": 0,
+    "crap": 1.0
+   },
+   {
+    "path": "src/mars_titan/training/common_epoch.py",
+    "function": "EpochValidation.score",
+    "complexity": 3,
+    "statements": 9,
+    "covered_statements": 9,
+    "branches": 2,
+    "covered_branches": 2,
+    "crap": 3.0
+   },
+   {
+    "path": "src/mars_titan/training/common_epoch.py",
+    "function": "chosen_state",
+    "complexity": 5,
+    "statements": 6,
+    "covered_statements": 6,
+    "branches": 2,
+    "covered_branches": 2,
+    "crap": 5.0
+   },
+   {
+    "path": "src/mars_titan/training/checkpoints.py",
+    "function": "_pinned",
+    "complexity": 5,
+    "statements": 4,
+    "covered_statements": 4,
+    "branches": 2,
+    "covered_branches": 2,
+    "crap": 5.0
+   },
+   {
+    "path": "src/mars_titan/training/checkpoints.py",
+    "function": "choose_pinned",
+    "complexity": 4,
+    "statements": 8,
+    "covered_statements": 8,
+    "branches": 4,
+    "covered_branches": 4,
+    "crap": 4.0
+   },
+   {
+    "path": "src/mars_titan/training/checkpoints.py",
+    "function": "load_training_state",
+    "complexity": 20,
+    "statements": 29,
+    "covered_statements": 27,
+    "branches": 20,
+    "covered_branches": 18,
+    "crap": 20.13120669154127
+   },
+   {
+    "path": "src/mars_titan/training/titans_walk_forward.py",
+    "function": "_confirmed_records",
+    "complexity": 2,
+    "statements": 3,
+    "covered_statements": 3,
+    "branches": 2,
+    "covered_branches": 2,
+    "crap": 2.0
+   },
+   {
+    "path": "src/mars_titan/training/titans_walk_forward.py",
+    "function": "emit_versions",
+    "complexity": 6,
+    "statements": 20,
+    "covered_statements": 20,
+    "branches": 10,
+    "covered_branches": 10,
+    "crap": 6.0
+   },
+   {
+    "path": "src/mars_titan/training/titans_walk_forward.py",
+    "function": "run_titans_window",
+    "complexity": 27,
+    "statements": 89,
+    "covered_statements": 86,
+    "branches": 26,
+    "covered_branches": 25,
+    "crap": 27.027920376640676
+   },
+   {
+    "path": "src/mars_titan/training/mars_titan_walk_forward.py",
+    "function": "run_readout_window",
+    "complexity": 32,
+    "statements": 105,
+    "covered_statements": 97,
+    "branches": 30,
+    "covered_branches": 28,
+    "crap": 32.45289968685887
+   },
+   {
+    "path": "src/mars_titan/training/financial_run.py",
+    "function": "ChronologicalTrainer.load_epoch",
+    "complexity": 1,
+    "statements": 3,
+    "covered_statements": 3,
+    "branches": 0,
+    "covered_branches": 0,
+    "crap": 1.0
+   },
+   {
+    "path": "src/mars_titan/training/mars_titan_run.py",
+    "function": "ReadoutTrainer.load_epoch",
+    "complexity": 1,
+    "statements": 2,
+    "covered_statements": 2,
+    "branches": 0,
+    "covered_branches": 0,
+    "crap": 1.0
+   },
+   {
+    "path": "src/mars_titan/training/mars_titan_run.py",
+    "function": "ReadoutTrainer._load_readout",
+    "complexity": 2,
+    "statements": 5,
+    "covered_statements": 4,
+    "branches": 2,
+    "covered_branches": 1,
+    "crap": 2.032
+   },
+   {
+    "path": "src/mars_titan/training/variant_screening.py",
+    "function": "checked_selection",
+    "complexity": 26,
+    "statements": 10,
+    "covered_statements": 10,
+    "branches": 0,
+    "covered_branches": 0,
+    "crap": 26.0
+   },
+   {
+    "path": "src/mars_titan/training/variant_screening.py",
+    "function": "combination_sources",
+    "complexity": 4,
+    "statements": 7,
+    "covered_statements": 7,
+    "branches": 4,
+    "covered_branches": 4,
+    "crap": 4.0
+   },
+   {
+    "path": "src/mars_titan/training/variant_screening.py",
+    "function": "screening_jobs",
+    "complexity": 19,
+    "statements": 31,
+    "covered_statements": 31,
+    "branches": 18,
+    "covered_branches": 18,
+    "crap": 19.0
+   },
+   {
+    "path": "src/mars_titan/training/variant_screening.py",
+    "function": "cost_estimate",
+    "complexity": 6,
+    "statements": 21,
+    "covered_statements": 21,
+    "branches": 8,
+    "covered_branches": 8,
+    "crap": 6.0
+   },
+   {
+    "path": "benchmarks/variant_screening_study.py",
+    "function": "_awaiting",
+    "complexity": 1,
+    "statements": 1,
+    "covered_statements": 1,
+    "branches": 0,
+    "covered_branches": 0,
+    "crap": 1.0
+   },
+   {
+    "path": "benchmarks/variant_screening_study.py",
+    "function": "_decision",
+    "complexity": 2,
+    "statements": 2,
+    "covered_statements": 2,
+    "branches": 0,
+    "covered_branches": 0,
+    "crap": 2.0
+   },
+   {
+    "path": "benchmarks/variant_screening_study.py",
+    "function": "_members",
+    "complexity": 3,
+    "statements": 2,
+    "covered_statements": 2,
+    "branches": 0,
+    "covered_branches": 0,
+    "crap": 3.0
+   },
+   {
+    "path": "benchmarks/variant_screening_study.py",
+    "function": "_budget",
+    "complexity": 1,
+    "statements": 1,
+    "covered_statements": 1,
+    "branches": 0,
+    "covered_branches": 0,
+    "crap": 1.0
+   },
+   {
+    "path": "benchmarks/variant_screening_study.py",
+    "function": "_fit_report",
+    "complexity": 7,
+    "statements": 6,
+    "covered_statements": 6,
+    "branches": 0,
+    "covered_branches": 0,
+    "crap": 7.0
+   },
+   {
+    "path": "benchmarks/variant_screening_study.py",
+    "function": "_same_sessions",
+    "complexity": 3,
+    "statements": 2,
+    "covered_statements": 2,
+    "branches": 0,
+    "covered_branches": 0,
+    "crap": 3.0
+   },
+   {
+    "path": "benchmarks/variant_screening_study.py",
+    "function": "_epoch_panels",
+    "complexity": 4,
+    "statements": 10,
+    "covered_statements": 10,
+    "branches": 2,
+    "covered_branches": 2,
+    "crap": 4.0
+   },
+   {
+    "path": "benchmarks/variant_screening_study.py",
+    "function": "combination_epoch",
+    "complexity": 8,
+    "statements": 16,
+    "covered_statements": 16,
+    "branches": 2,
+    "covered_branches": 2,
+    "crap": 8.0
+   },
+   {
+    "path": "benchmarks/variant_screening_study.py",
+    "function": "decide_group",
+    "complexity": 12,
+    "statements": 25,
+    "covered_statements": 25,
+    "branches": 8,
+    "covered_branches": 8,
+    "crap": 12.0
+   },
+   {
+    "path": "benchmarks/variant_screening_study.py",
+    "function": "common_options",
+    "complexity": 3,
+    "statements": 4,
+    "covered_statements": 4,
+    "branches": 0,
+    "covered_branches": 0,
+    "crap": 3.0
+   },
+   {
+    "path": "benchmarks/variant_screening_study.py",
+    "function": "run_job",
+    "complexity": 9,
+    "statements": 19,
+    "covered_statements": 19,
+    "branches": 6,
+    "covered_branches": 6,
+    "crap": 9.0
+   },
+   {
+    "path": "benchmarks/variant_screening_study.py",
+    "function": "_ready",
+    "complexity": 5,
+    "statements": 3,
+    "covered_statements": 3,
+    "branches": 2,
+    "covered_branches": 2,
+    "crap": 5.0
+   },
+   {
+    "path": "benchmarks/variant_screening_study.py",
+    "function": "_group_waits",
+    "complexity": 2,
+    "statements": 1,
+    "covered_statements": 1,
+    "branches": 0,
+    "covered_branches": 0,
+    "crap": 2.0
+   },
+   {
+    "path": "benchmarks/variant_screening_study.py",
+    "function": "run_queue",
+    "complexity": 16,
+    "statements": 22,
+    "covered_statements": 22,
+    "branches": 10,
+    "covered_branches": 10,
+    "crap": 16.0
+   },
+   {
+    "path": "benchmarks/variant_screening_study.py",
+    "function": "status",
+    "complexity": 13,
+    "statements": 7,
+    "covered_statements": 7,
+    "branches": 0,
+    "covered_branches": 0,
+    "crap": 13.0
+   },
+   {
+    "path": "benchmarks/variant_screening_study.py",
+    "function": "rule_check",
+    "complexity": 7,
+    "statements": 22,
+    "covered_statements": 22,
+    "branches": 4,
+    "covered_branches": 4,
+    "crap": 7.0
+   },
+   {
+    "path": "src/mars_titan/evaluation/variant_screening_analysis.py",
+    "function": "choose_case",
+    "complexity": 6,
+    "statements": 14,
+    "covered_statements": 14,
+    "branches": 4,
+    "covered_branches": 4,
+    "crap": 6.0
+   },
+   {
+    "path": "src/mars_titan/evaluation/variant_screening_analysis.py",
+    "function": "_months",
+    "complexity": 1,
+    "statements": 2,
+    "covered_statements": 2,
+    "branches": 0,
+    "covered_branches": 0,
+    "crap": 1.0
+   },
+   {
+    "path": "src/mars_titan/evaluation/variant_screening_analysis.py",
+    "function": "_measured",
+    "complexity": 2,
+    "statements": 9,
+    "covered_statements": 9,
+    "branches": 2,
+    "covered_branches": 2,
+    "crap": 2.0
+   },
+   {
+    "path": "src/mars_titan/evaluation/variant_screening_analysis.py",
+    "function": "group_rule_check",
+    "complexity": 9,
+    "statements": 16,
+    "covered_statements": 16,
+    "branches": 2,
+    "covered_branches": 2,
+    "crap": 9.0
+   },
+   {
+    "path": "src/mars_titan/evaluation/variant_screening_analysis.py",
+    "function": "rule_check",
+    "complexity": 4,
+    "statements": 10,
+    "covered_statements": 10,
+    "branches": 2,
+    "covered_branches": 2,
+    "crap": 4.0
+   }
+  ],
+  "max_crap_of_changed_functions": 32.45289968685887,
+  "uncovered": [
+   "En run_readout_window, el bucle anterior de las predicciones principales cuando ya existen o se pide parar y los manejadores de pausa y fallo, que no cambian con la enmienda. Las versiones del lector usan emit_versions, cuya pausa y reanudación se comprueban con la ventana de Titans-MAC.",
+   "La rama CUDA de run_titans_window, con la GPU ocupada.",
+   "Dos rechazos de load_training_state: una selección desconocida y una identidad explícita no válida.",
+   "La memoria CUDA del intento y la línea de órdenes del motor en benchmarks/variant_screening_study.py."
+  ]
+ },
+ "mutations": {
+  "scope": "Treinta defectos dirigidos de la enmienda sobre el árbol final, cada uno con una fase en verde antes, la mutación y otra fase en verde después. No es una puntuación global.",
+  "planned": 30,
+  "killed": 30,
+  "optimizer_attempts": 0,
+  "hold_sha256_unchanged": true,
+  "recipes_sha256": "5002c232d6ce19bb027f8e0be0e99e8331259fbe1eae54ab41963d89faba1540",
+  "source_sha256": {
+   "src/mars_titan/training/selection.py": "76dde107a8f917a61477666f9b41185df15aa7d0a3dce46b7b22451058af919a",
+   "src/mars_titan/training/variant_screening.py": "521a5dbe78ebb8a4ae187976dc551a00cc0ff28e864dbb1048cf5531b3671ff6",
+   "src/mars_titan/training/checkpoints.py": "efd5004afc219cad354f3571caf09c74d1ec3f9885e6044398a75056b4f8aac6",
+   "src/mars_titan/evaluation/variant_screening_analysis.py": "381a47106e857f15bdb4d652be35c94617da622963717b5452f4f0efa27d621e",
+   "src/mars_titan/training/mars_titan_walk_forward.py": "32cd5eceb60934e54b171d47aed1da039ad6eba1107bf8bca48489d7f597df8b",
+   "src/mars_titan/training/mars_titan_run.py": "06091e9079112df415118e10222a520eec435a7e234c536b98c8c8f6003a0617",
+   "benchmarks/variant_screening_study.py": "fd3ae8d5dde06cb7a9e9f11af62e523767eb92811360c2eb6e94c31ef5f0e094",
+   "src/mars_titan/training/financial_run.py": "67d26351774db21d3657108fcebf2de67d0da52d4616a798c877535ec44ae0c0",
+   "src/mars_titan/training/common_epoch.py": "8a395b845fd3aefef43af6530ff2cc9fd7832d9ce6387fd5d618d1954accd24b",
+   "src/mars_titan/training/titans_walk_forward.py": "7ed1fa41634fb7fdc311272f1bd10f5c4a4cb510896489243bc47edf281a74c3"
+  },
+  "cases": [
+   {
+    "id": "no_plateau_in_common_mode",
+    "status": "killed_with_green_controls"
+   },
+   {
+    "id": "await_only_after_the_budget",
+    "status": "killed_with_green_controls"
+   },
+   {
+    "id": "common_epoch_after_the_budget",
+    "status": "killed_with_green_controls"
+   },
+   {
+    "id": "sessions_defined_by_every_seed",
+    "status": "killed_with_green_controls"
+   },
+   {
+    "id": "symmetric_smoothing_window",
+    "status": "killed_with_green_controls"
+   },
+   {
+    "id": "ties_keep_the_earliest_epoch",
+    "status": "killed_with_green_controls"
+   },
+   {
+    "id": "choosing_a_pin_rewrites_the_index",
+    "status": "killed_with_green_controls"
+   },
+   {
+    "id": "a_pinned_state_must_be_intact",
+    "status": "killed_with_green_controls"
+   },
+   {
+    "id": "versions_exclude_the_common_epoch",
+    "status": "killed_with_green_controls"
+   },
+   {
+    "id": "the_ic_scores_the_prediction",
+    "status": "killed_with_green_controls"
+   },
+   {
+    "id": "versions_release_the_pinned_states",
+    "status": "killed_with_green_controls"
+   },
+   {
+    "id": "titans_pins_each_validated_epoch",
+    "status": "killed_with_green_controls"
+   },
+   {
+    "id": "the_reader_pins_each_validated_epoch",
+    "status": "killed_with_green_controls"
+   },
+   {
+    "id": "seeds_of_a_group_run_together",
+    "status": "killed_with_green_controls"
+   },
+   {
+    "id": "versions_cost_inference",
+    "status": "killed_with_green_controls"
+   },
+   {
+    "id": "the_amendment_needs_a_reason",
+    "status": "killed_with_green_controls"
+   },
+   {
+    "id": "a_waiting_job_is_not_charged",
+    "status": "killed_with_green_controls"
+   },
+   {
+    "id": "a_decided_job_cannot_wait_again",
+    "status": "killed_with_green_controls"
+   },
+   {
+    "id": "seeds_validate_the_same_rows",
+    "status": "killed_with_green_controls"
+   },
+   {
+    "id": "a_combination_averages_its_seeds",
+    "status": "killed_with_green_controls"
+   },
+   {
+    "id": "the_limit_counts_executions",
+    "status": "killed_with_green_controls"
+   },
+   {
+    "id": "the_case_maximizes_the_ic",
+    "status": "killed_with_green_controls"
+   },
+   {
+    "id": "the_rule_check_chooses_with_the_first_months",
+    "status": "killed_with_green_controls"
+   },
+   {
+    "id": "the_analysis_checks_the_group_versions",
+    "status": "killed_with_green_controls"
+   },
+   {
+    "id": "a_group_adds_the_combination_epoch",
+    "status": "killed_with_green_controls"
+   },
+   {
+    "id": "a_combination_needs_its_source",
+    "status": "killed_with_green_controls"
+   },
+   {
+    "id": "versions_skip_confirmed_partitions",
+    "status": "killed_with_green_controls"
+   },
+   {
+    "id": "a_stop_pauses_the_versions",
+    "status": "killed_with_green_controls"
+   },
+   {
+    "id": "each_epoch_keeps_its_prediction",
+    "status": "killed_with_green_controls"
+   },
+   {
+    "id": "the_reader_versions_predict_their_partition",
+    "status": "killed_with_green_controls"
+   }
+  ]
+ },
+ "cost": {
+  "before_the_amendment_hours": 94.34303162746775,
+  "after_the_amendment": {
+   "jobs": 1740,
+   "hours": 97.17973223198578,
+   "hours_by_runner": {
+    "correction": 10.335751405239122,
+    "correction_profile": 1.9876445010075292,
+    "fit": 59.389669659070705,
+    "reader": 12.733333333333333,
+    "spaced": 12.733333333333333
+   },
+   "budget_hours": 150,
+   "within_budget": true,
+   "estimate": "pilot_measurements_not_a_measured_screening_cost"
+  },
+  "protocol_sha256": "591de3c2ec9c4a36dfb86da239cf3f2102f08c4d0956707deb950e8df1ef9006",
+  "jobs": 1740,
+  "contrasts": 62
+ },
+ "state_sizes": {
+  "titans_fit_state_mb": [
+   2.3,
+   3.1
+  ],
+  "reader_state_mb": 0.5,
+  "group_of_fits_mb": 190,
+  "source": "pilotos anteriores, sin medir con los modelos de la criba"
+ },
+ "native_link": {
+  "sha256": "9fda744aa9c6672f9fb47c0896a5e9b19fc8795cdbfff42b944ed751953b1046",
+  "built_from": "develop 39abf2c99 in the native-develop-20261028 worktree",
+  "file": "_episodic_native.cpython-312-x86_64-linux-gnu.so"
+ }
+}

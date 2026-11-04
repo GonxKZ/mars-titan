@@ -1,0 +1,112 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "MARS-TITAN: ampliaciones sobre Titans-MAC",
+    "quality_profile": "showcase",
+    "viewBox": [1360, 592],
+    "legend": {
+      "entries": {
+        "external": {"label": "Entradas"},
+        "backend": {"label": "Cálculo"},
+        "database": {"label": "Memoria y estado"},
+        "frontend": {"label": "Salida"},
+        "security": {"label": "Control o protección"},
+        "messagebus": {"label": "Cola temporal"}
+      }
+    }
+  },
+  "components": [
+    {"id": "inputs", "type": "external", "label": "Entradas del evento", "sublabel": "vista y máscaras", "pos": [40, 230], "size": [180, 72]},
+    {
+      "id": "core",
+      "type": "backend",
+      "label": "Titans-MAC mac_online",
+      "sublabel": "padre congelado",
+      "tag": "una escritura por observación",
+      "pos": [300, 230],
+      "size": [180, 72]
+    },
+    {"id": "bridge", "type": "backend", "label": "Puente de evidencia", "sublabel": "vistas regionales", "pos": [300, 40], "size": [180, 72]},
+    {
+      "id": "bank",
+      "type": "database",
+      "label": "Banco episódico",
+      "sublabel": "M0 a M3",
+      "tag": "instantánea g − 1",
+      "pos": [560, 40],
+      "size": [180, 72]
+    },
+    {
+      "id": "readout",
+      "type": "backend",
+      "label": "Lector episódico",
+      "sublabel": "K = 1, 2 o 4",
+      "tag": "per_step o first_read",
+      "pos": [560, 230],
+      "size": [180, 72]
+    },
+    {"id": "head", "type": "frontend", "label": "Cabeza de cuantiles", "sublabel": "predicción emitida", "pos": [820, 230], "size": [180, 72]},
+    {"id": "queue", "type": "messagebus", "label": "Cola de pendientes", "sublabel": "hasta que madura", "pos": [1080, 230], "size": [180, 72]},
+    {"id": "mature", "type": "security", "label": "Resolución madura", "sublabel": "error contra lo emitido", "pos": [1080, 40], "size": [180, 72]},
+    {
+      "id": "assoc",
+      "type": "database",
+      "label": "Memoria asociativa A",
+      "sublabel": "B6: delta, proximal, kalman",
+      "tag": "sin banco",
+      "pos": [1080, 420],
+      "size": [180, 72]
+    }
+  ],
+  "connections": [
+    {"id": "inputs-core", "from": "inputs", "to": "core", "label": "x_t"},
+    {"id": "core-readout", "from": "core", "to": "readout", "label": "estado h", "variant": "emphasis", "labelDx": -6, "labelDy": 16},
+    {"id": "bridge-readout", "from": "bridge", "to": "readout", "label": "vistas", "variant": "dashed"},
+    {"id": "bank-readout", "from": "bank", "to": "readout", "label": "episodios", "labelDy": 24},
+    {"id": "readout-head", "from": "readout", "to": "head", "label": "estado refinado", "variant": "emphasis"},
+    {"id": "head-queue", "from": "head", "to": "queue", "label": "emisión", "variant": "emphasis"},
+    {"id": "queue-mature", "from": "queue", "to": "mature", "label": "al madurar"},
+    {"id": "mature-bank", "from": "mature", "to": "bank", "label": "admisión", "variant": "security"},
+    {
+      "id": "mature-assoc",
+      "from": "mature",
+      "to": "assoc",
+      "label": "y − núcleo",
+      "variant": "security",
+      "fromSide": "right",
+      "toSide": "right",
+      "labelDy": 60
+    },
+    {"id": "assoc-head", "from": "assoc", "to": "head", "label": "kᵀA", "variant": "dashed"}
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "Componentes conectados",
+      "items": [
+        "episodic_bank, refinements y refinement_episodes",
+        "evidence_bridge sobre una única evidencia episódica",
+        "associative_memory, que no se combina con el banco"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "Orden en cada evento",
+      "items": [
+        "Instantánea del banco y A de g − 1 comunes a todo el evento",
+        "Emitir, resolver lo que madura en t y proponer escrituras sobre copias",
+        "Publicar la generación g de forma atómica para el evento siguiente"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "Paridad y estado",
+      "items": [
+        "Todo apagado reproduce mac_online bit a bit",
+        "Banco y A aprenden de resultados maduros, los pesos rápidos nunca ven etiquetas",
+        "Ensayos acotados sin ventaja general acreditada del banco"
+      ]
+    }
+  ]
+}

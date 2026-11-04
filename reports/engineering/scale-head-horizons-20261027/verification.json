@@ -1,0 +1,436 @@
+{
+  "schema_version": 1,
+  "date": "2026-10-28",
+  "issue": 749,
+  "scope": "laplace_scale_head_v1_and_auxiliary_horizons_v1",
+  "implementation_commit": "7156b7c1cd414150b1273efa1a3ab3b95bd47972",
+  "scientific_experiments": 0,
+  "training_runs": 0,
+  "real_optimizer_steps": 0,
+  "final_test_opened": false,
+  "test_optimizers": "Los recorridos usan RecordingOptimizer, que registra gradientes y llamadas sin modificar pesos. La protección global del aprendizaje sigue activa.",
+  "suites": [
+    {
+      "name": "targeted_with_coverage",
+      "tests": 91,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "xml_sha256": "d62f4eb3d6e9b19e289553b7cad0f204e54aef497a985da2252448941d46bb9b"
+    },
+    {
+      "name": "regression_of_changed_paths",
+      "tests": 393,
+      "failures": 1,
+      "errors": 0,
+      "skipped": 7,
+      "xml_sha256": "261a0d0a82c17ca7acd6f21294a9adf4350f3460329197304368788de8c7fc1d",
+      "known_failure": "tests/posttraining/test_readout_adapters.py::test_core_without_bank_trains_only_the_core falla igual en develop desde #772, porque ReadoutTrainer._loss pide otro argumento. No pasa por F1 ni F5."
+    },
+    {
+      "name": "ledger_unit_tests_after_the_last_case",
+      "tests": 31,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "xml_sha256": "8f6bd9f3cd587c88d34a86b0d10bf8e5ce8afdfbf9cdc92533617122aa989fe0"
+    },
+    {
+      "name": "confirmation_after_integrating_develop",
+      "tests": 281,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "xml_sha256": "7bb04f18a6cd237de4d0f6adfee3f55bd48e49c2dc999b9ffd49c2a91e729aa5"
+    },
+    {
+      "name": "integration_with_the_output_objective_framework_20261028",
+      "tests": 593,
+      "failures": 4,
+      "errors": 0,
+      "skipped": 1,
+      "xml_sha256": "848947df00d1d7e9e1bc662fab010e7d3033e6c7f6c6db48ddc26f5313b1e2a4",
+      "note": "22 módulos tras pasar F1 al marco de objetivos de salida de #760. Los cuatro fallos eran pruebas del recorrido de F1 sin actualizar: el espía de la pérdida, el mensaje de la receta y la identidad del objetivo. La omisión es la guarda del bloqueo."
+    },
+    {
+      "name": "f1_run_tests_after_their_update_20261028",
+      "tests": 9,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "xml_sha256": "fccd557eb958922555b2a8a20db17ad28ef64d8a68231cab09574f04a1cb0c56"
+    }
+  ],
+  "suites_note": "La batería dirigida con cobertura y las mutaciones se ejecutaron antes de integrar los últimos cambios de develop, con el mismo código de F1 y F5. La confirmación posterior, la regresión, test-fast y la guarda se ejecutaron sobre implementation_commit. El 28 de octubre se repitió la regresión tras integrar #760 y pasar F1 al marco común de objetivos de salida.",
+  "fast_suite": {
+    "command": "memslot suite --max 6G -- make test-fast",
+    "summary": "11220 passed, 381 skipped, 2 warnings in 376.05s (0:06:16)"
+  },
+  "learning_hold_guard": {
+    "command": "pytest tests/test_learning_hold_guard.py tests/test_suite_support.py",
+    "summary": "54 passed, 1 skipped in 351.39s (0:05:51)"
+  },
+  "mutations": {
+    "scope": "Quince defectos dirigidos de F1 y F5, ejecutados antes de integrar C1, C6 y el registro de sus fuentes desde develop, sobre el mismo código de F1 y F5. No es una puntuación global.",
+    "regional_guards": "Quitar la variante regional del rechazo de la configuración o de fused_tokens hace fallar dos casos de la prueba de operadores que mezclan filas.",
+    "green_before": {
+      "returncode": 0,
+      "tests": 84,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "xml_sha256": "3aa5abf1f86c8cc42e2be0746425f5e91de353435b9217d1b657376fab379211"
+    },
+    "green_after": {
+      "returncode": 0,
+      "tests": 84,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "xml_sha256": "40c1c3d4dbd079db4499f0c6f9687fcebe08e215d30008050bfe9bb76b70740e"
+    },
+    "results": [
+      {
+        "id": "beta_nll_without_stop_gradient",
+        "file": "src/mars_titan/models/titans/laplace_scale.py",
+        "status": "killed",
+        "returncode": 1,
+        "xml_sha256": "3c10d814df5f849f18ab2fc5bd870b5b7e397aac500a621e4c1a10b782f37cac"
+      },
+      {
+        "id": "beta_nll_without_log_scale",
+        "file": "src/mars_titan/models/titans/laplace_scale.py",
+        "status": "killed",
+        "returncode": 1,
+        "xml_sha256": "0f090304690b64f218df7c4d16d5ac02ad7ba6b4b0a7e52552baab18e1801708"
+      },
+      {
+        "id": "upper_laplace_quantile_sign",
+        "file": "src/mars_titan/models/titans/laplace_scale.py",
+        "status": "killed",
+        "returncode": 1,
+        "xml_sha256": "826925e9615b5b77e566058f5e55eb86927e0e084ed08704e48663f424b36737"
+      },
+      {
+        "id": "scale_head_on_detached_state",
+        "file": "src/mars_titan/models/titans/financial.py",
+        "status": "killed",
+        "returncode": 1,
+        "xml_sha256": "d05a25d3533770b744e64436e6475bf960f22e67c1a1ce1455336a2e4c50ffe8"
+      },
+      {
+        "id": "trainer_ignores_the_scale",
+        "file": "src/mars_titan/training/financial_run.py",
+        "status": "killed",
+        "returncode": 1,
+        "xml_sha256": "993aca6174feea6462d3ece5b588efbe8a311cb0589d28f493f431b4d1b73441"
+      },
+      {
+        "id": "rows_without_laplace_levels",
+        "file": "src/mars_titan/training/financial_run.py",
+        "status": "killed",
+        "returncode": 1,
+        "xml_sha256": "8f2dc51379b060feb8f833b28b3ab2c08717b310dc1aaea5859f8f0756bf8767"
+      },
+      {
+        "id": "lenient_maturity_slack",
+        "file": "src/mars_titan/training/horizon_labels.py",
+        "status": "killed",
+        "returncode": 1,
+        "xml_sha256": "77a96fc1f9bf9218fcd03e9ff432aee35120fb6e4035b4ed00daecfd40e24c40"
+      },
+      {
+        "id": "deliver_before_the_longest_window",
+        "file": "src/mars_titan/training/horizon_labels.py",
+        "status": "killed",
+        "returncode": 1,
+        "xml_sha256": "987bb0a463994758ba46ee23386452ade6bd06f6464f1d839b60742a4bb1a35f"
+      },
+      {
+        "id": "window_sum_drops_its_last_component",
+        "file": "src/mars_titan/training/horizon_labels.py",
+        "status": "killed",
+        "returncode": 1,
+        "xml_sha256": "b08f673e76b360187f20880a2ff91147a7a7e2c725cebab38d4a090f63f1515e"
+      },
+      {
+        "id": "contiguous_run_limited_to_the_shortest_horizon",
+        "file": "src/mars_titan/training/horizon_labels.py",
+        "status": "killed",
+        "returncode": 1,
+        "xml_sha256": "d0fce69874fe258432d0773bf85110a898c8252dccf27d7b5aaf0d411f1981ce"
+      },
+      {
+        "id": "restore_forgets_completed_windows",
+        "file": "src/mars_titan/training/horizon_labels.py",
+        "status": "killed",
+        "returncode": 1,
+        "xml_sha256": "9cac5f47a308e8f57c5c6e585a4446f0eb2fc9c7579137fefa1fe5cd535eee8b"
+      },
+      {
+        "id": "auxiliary_mean_per_block",
+        "file": "src/mars_titan/training/financial_run.py",
+        "status": "killed",
+        "returncode": 1,
+        "xml_sha256": "0b131205000afce509b8e29cc0a6c8899912f26ae5a38232657e61a2a3226fa0"
+      },
+      {
+        "id": "row_tokens_without_presence",
+        "file": "src/mars_titan/models/titans/financial.py",
+        "status": "killed",
+        "returncode": 1,
+        "xml_sha256": "526e9331135632d4379ed7389e1816f79d3b2c5d54dbe8ec195d22d06c8376c8"
+      },
+      {
+        "id": "auxiliary_heads_with_global_rng",
+        "file": "src/mars_titan/models/titans/auxiliary_horizons.py",
+        "status": "killed",
+        "returncode": 1,
+        "xml_sha256": "05f23cc92bbe820bbe4d77591f6d0a34ce9535dd6f610529f6b4d133394c1908"
+      },
+      {
+        "id": "no_delivery_at_phase_close",
+        "file": "src/mars_titan/training/financial_run.py",
+        "status": "killed",
+        "returncode": 1,
+        "xml_sha256": "add9d331549252c23466d115475c5245ae06f7c42509cb746cc8fb8a1794ca89"
+      }
+    ]
+  },
+  "quality": {
+    "tools": {
+      "coverage": "7.16.1",
+      "radon": "6.0.1",
+      "branch_coverage": true
+    },
+    "crap_convention": "C² × (1 − cobertura de sentencias de la función)³ + C",
+    "data": "coverage combine de la batería dirigida y de las pruebas del registro",
+    "modules": {
+      "src/mars_titan/models/titans/laplace_scale.py": {
+        "statements": 49,
+        "covered_statements": 49,
+        "branches": 10,
+        "covered_branches": 10,
+        "missing_lines": [],
+        "max_crap": 10.0,
+        "functions": [
+          {
+            "name": "_number",
+            "complexity": 4,
+            "statement_coverage": 1.0,
+            "crap": 4.0
+          },
+          {
+            "name": "laplace_beta_nll",
+            "complexity": 10,
+            "statement_coverage": 1.0,
+            "crap": 10.0
+          },
+          {
+            "name": "laplace_quantiles",
+            "complexity": 3,
+            "statement_coverage": 1.0,
+            "crap": 3.0
+          },
+          {
+            "name": "LaplaceScaleHead",
+            "complexity": 3,
+            "statement_coverage": 1.0,
+            "crap": 3.0
+          },
+          {
+            "name": "LaplaceScaleHead.__post_init__",
+            "complexity": 3,
+            "statement_coverage": 1.0,
+            "crap": 3.0
+          },
+          {
+            "name": "LaplaceScaleHead.identity",
+            "complexity": 1,
+            "statement_coverage": 1.0,
+            "crap": 1.0
+          },
+          {
+            "name": "LaplaceScale",
+            "complexity": 3,
+            "statement_coverage": 1.0,
+            "crap": 3.0
+          },
+          {
+            "name": "LaplaceScale.__init__",
+            "complexity": 2,
+            "statement_coverage": 1.0,
+            "crap": 2.0
+          },
+          {
+            "name": "LaplaceScale.forward",
+            "complexity": 1,
+            "statement_coverage": 1.0,
+            "crap": 1.0
+          }
+        ]
+      },
+      "src/mars_titan/models/titans/auxiliary_horizons.py": {
+        "statements": 49,
+        "covered_statements": 49,
+        "branches": 10,
+        "covered_branches": 10,
+        "missing_lines": [],
+        "max_crap": 14.0,
+        "functions": [
+          {
+            "name": "auxiliary_errors",
+            "complexity": 6,
+            "statement_coverage": 1.0,
+            "crap": 6.0
+          },
+          {
+            "name": "AuxiliaryHorizons",
+            "complexity": 6,
+            "statement_coverage": 1.0,
+            "crap": 6.0
+          },
+          {
+            "name": "AuxiliaryHorizons.__post_init__",
+            "complexity": 14,
+            "statement_coverage": 1.0,
+            "crap": 14.0
+          },
+          {
+            "name": "AuxiliaryHorizons.span",
+            "complexity": 1,
+            "statement_coverage": 1.0,
+            "crap": 1.0
+          },
+          {
+            "name": "AuxiliaryHorizons.identity",
+            "complexity": 1,
+            "statement_coverage": 1.0,
+            "crap": 1.0
+          },
+          {
+            "name": "AuxiliaryHeads",
+            "complexity": 3,
+            "statement_coverage": 1.0,
+            "crap": 3.0
+          },
+          {
+            "name": "AuxiliaryHeads.__init__",
+            "complexity": 2,
+            "statement_coverage": 1.0,
+            "crap": 2.0
+          },
+          {
+            "name": "AuxiliaryHeads.forward",
+            "complexity": 1,
+            "statement_coverage": 1.0,
+            "crap": 1.0
+          }
+        ]
+      },
+      "src/mars_titan/training/horizon_labels.py": {
+        "statements": 106,
+        "covered_statements": 106,
+        "branches": 42,
+        "covered_branches": 42,
+        "missing_lines": [],
+        "max_crap": 19.0,
+        "functions": [
+          {
+            "name": "_market",
+            "complexity": 1,
+            "statement_coverage": 1.0,
+            "crap": 1.0
+          },
+          {
+            "name": "HorizonLabels",
+            "complexity": 8,
+            "statement_coverage": 1.0,
+            "crap": 8.0
+          },
+          {
+            "name": "HorizonLabels.__init__",
+            "complexity": 1,
+            "statement_coverage": 1.0,
+            "crap": 1.0
+          },
+          {
+            "name": "HorizonLabels.observe",
+            "complexity": 2,
+            "statement_coverage": 1.0,
+            "crap": 2.0
+          },
+          {
+            "name": "HorizonLabels.remember",
+            "complexity": 8,
+            "statement_coverage": 1.0,
+            "crap": 8.0
+          },
+          {
+            "name": "HorizonLabels.mature",
+            "complexity": 12,
+            "statement_coverage": 1.0,
+            "crap": 12.0
+          },
+          {
+            "name": "HorizonLabels._deliver",
+            "complexity": 4,
+            "statement_coverage": 1.0,
+            "crap": 4.0
+          },
+          {
+            "name": "HorizonLabels.flush",
+            "complexity": 3,
+            "statement_coverage": 1.0,
+            "crap": 3.0
+          },
+          {
+            "name": "HorizonLabels.take",
+            "complexity": 1,
+            "statement_coverage": 1.0,
+            "crap": 1.0
+          },
+          {
+            "name": "HorizonLabels.export",
+            "complexity": 19,
+            "statement_coverage": 1.0,
+            "crap": 19.0
+          },
+          {
+            "name": "HorizonLabels.restore",
+            "complexity": 14,
+            "statement_coverage": 1.0,
+            "crap": 14.0
+          }
+        ]
+      }
+    }
+  },
+  "cuda_status": "not_executed_gpu_occupied",
+  "cuda_pending": [
+    "tests/models/titans/test_laplace_scale_head.py::test_declared_arms_build_with_the_walk_forward_factory[cuda:0]",
+    "tests/models/titans/test_auxiliary_horizon_heads.py::test_declared_arms_build_with_the_walk_forward_factory[cuda:0]"
+  ],
+  "benchmark": {
+    "cost-1024.json": {
+      "path": "reports/engineering/scale-head-horizons-20261027/cost-1024.json",
+      "sha256": "1e8392feace726ea030695042e64b30e49ee7677792539fbe0f74dbb29fec552",
+      "sources_match_implementation": true
+    },
+    "cost-256.json": {
+      "path": "reports/engineering/scale-head-horizons-20261027/cost-256.json",
+      "sha256": "f7fc819e4478e9213a717aa4acba390dc61fc8c8cc598f84e443af9c573de2d4",
+      "sources_match_implementation": true
+    }
+  },
+  "benchmark_note": "Los recibos de coste registran el commit en que se midieron, anterior a integrar los últimos cambios de develop. Sus huellas de código coinciden con implementation_commit.",
+  "limits": [
+    "Las medidas de coste usan entradas sintéticas y otra carga concurrente en el equipo.",
+    "Los cuantiles de Laplace emitidos aún no están declarados en el comparador de la criba.",
+    "F5 se rechaza con la fusión regional, sus variantes C1 y C6 y el postentrenamiento.",
+    "F1 y F5 se rechazan en el ajuste Dust inicial.",
+    "La combinación de F5 con F4 queda pendiente hasta integrar F4 en develop.",
+    "El término auxiliar de F5 no ajusta MAC ni la cabeza principal.",
+    "No hay comparación predictiva ni entrenamiento. El bloqueo de aprendizaje sigue vigente."
+  ]
+}

@@ -1,0 +1,30 @@
+{
+  "schema_version": 1,
+  "kind": "backtest_overfitting_declaration",
+  "identity": "backtest_overfitting_v1",
+  "issue": 794,
+  "status": "declared_not_executed",
+  "declared_at": "2026-10-29",
+  "final_test_access": false,
+  "executions": 0,
+  "source": "long_short_comparison_report",
+  "statistic": "session_sharpe_ddof_1",
+  "seeds": "mean_per_session",
+  "blocks": 16,
+  "trim": "earliest_sessions",
+  "constant_series": "excluded_and_reported",
+  "trials_sensitivity": [28, 100],
+  "trials_provenance": {
+    "comparison": "Los modelos de la comparación, que se cuentan en la propia fuente.",
+    "28": "Las entradas del catálogo de la criba en configs/experiments/variant-screening-v1.json el 29 de octubre de 2026.",
+    "100": "El ejemplo numérico de Bailey y López de Prado (2014)."
+  },
+  "reading": "La elección que se mide es quedarse con el modelo de la comparación cuya cartera larga y corta tiene el mayor Sharpe por sesión, en cada mercado y coste. PBO es la fracción de mitades de CSCV en que el elegido dentro no supera la mediana fuera. El DSR de cada modelo usa como ensayos los modelos de la comparación y, como sensibilidad, los recuentos de trials_provenance. Cuando se cierre el catálogo de la segunda ola, su recuento se añadirá con una versión nueva de esta declaración antes de ejecutarla. La campaña no elige modelos por Sharpe, así que estas cifras solo describen una afirmación del tipo «este modelo tiene la mejor cartera». No prueban rentabilidad futura.",
+  "limits": {
+    "time_order": "Las mitades de CSCV mezclan bloques de fechas distintas. No respetan el orden temporal del walk-forward ni separan cambios de régimen.",
+    "independence": "Los modelos comparten filas, padre y datos, así que no son ensayos independientes. El número de ensayos se informa con su sensibilidad en lugar de estimarlo por agrupación.",
+    "granularity": "Con N modelos el rango relativo solo toma N valores, así que con pocos modelos el PBO es una estimación gruesa. El artículo pide N mucho mayor que 10 para distinguir valores por debajo de 1/10.",
+    "trimming": "Las sesiones más antiguas que no llenan un bloque se descartan y el informe dice cuántas.",
+    "constant_series": "Un modelo cuya cartera no varía en las sesiones analizadas, como el control cero, que no abre posiciones, no tiene Sharpe. Queda fuera del PBO y del DSR y el informe lo nombra. Si un modelo incluido no varía en alguna mitad de CSCV, el análisis se detiene en lugar de dar un Sharpe por convenio."
+  }
+}

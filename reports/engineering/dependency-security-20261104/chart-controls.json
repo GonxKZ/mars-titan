@@ -1,0 +1,30 @@
+{
+  "pillow": "13.0.0",
+  "fixtures": "OHLC sintético. No son observaciones de un mercado.",
+  "cases": [
+    {
+      "case": "alternating",
+      "png_sha256": "283fe58fd0e27c48200c4efd7af21b0f1280efe24b65e615a3b34ef92aa756c8",
+      "pixels_sha256": "e7797ee242c7edfc1b7576d2fd6c1d4eaec38c5064ec8eec56288723a0a677c2",
+      "vectors_sha256": "75be3e75f0a6768d3a32399bcce82aad087b6d942b6363d061c8ae45f3590c7c"
+    },
+    {
+      "case": "flat",
+      "png_sha256": "c1c945409ad619f2775783847e5ca8631cad7ec9e9dc0e325a1f2cf70311d474",
+      "pixels_sha256": "6b4d2e0e8350327e8d1ecefa32594880322818e7f6dd7d3276a6042290090d95",
+      "vectors_sha256": "01f734342ca008ba021ebc8a67fd01d65d64b0e1722e18672436db3fa47b8b2f"
+    },
+    {
+      "case": "masked",
+      "png_sha256": "fa8b7ae9000a557d42d05fffaade3c9428f8fbfd0c7066986446a1a3e84b158f",
+      "pixels_sha256": "c8e2637f79a05a9330e0496d16426c578ecfbb0523b6c78d00b2ff39c9d1aa38",
+      "vectors_sha256": "30b56408bf79a26213b05f2717037494dd3049c0475775cc4701c60ff4e8664f"
+    }
+  ],
+  "numerical_parity": true,
+  "png_bytes_equal": [
+    true,
+    true,
+    true
+  ]
+}

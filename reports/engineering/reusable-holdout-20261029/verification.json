@@ -1,0 +1,250 @@
+{
+ "schema_version": 1,
+ "date": "2026-10-29",
+ "issue": 794,
+ "implementation_commit": "805dbbdcc5f00e4013a91b92668603a58b31beb1",
+ "base_commit": "1cbfcfde5ac90645cfdf01ae2dc87819f8ce2e88",
+ "scientific_experiments": 0,
+ "training_runs": 0,
+ "real_optimizer_steps": 0,
+ "final_test_opened": false,
+ "hold_sha256": "8a658080c1ac4e63847eba58b177020339da6ec47021cf26d2701830073c87fd",
+ "test_optimizers": "Los dos módulos trabajan con NumPy y no crean optimizadores. Las mutaciones registran un gancho de torch.optim que rechaza cualquier paso y no hubo ningún intento.",
+ "scope": "reusable_holdout_ladder_v1",
+ "suites": [
+  {
+   "name": "targeted_with_coverage",
+   "tests": 80,
+   "failures": 0,
+   "errors": 0,
+   "skipped": 0,
+   "xml_sha256": "40e8f0cb2370376c9216fbc33f762959e87cc6d6384fa980d46b5883eb0d7ee6",
+   "note": "Pruebas del PBO, del DSR y de la escalera con cobertura de ramas sobre implementation_commit."
+  },
+  {
+   "name": "evaluation_regression",
+   "tests": 1696,
+   "failures": 0,
+   "errors": 0,
+   "skipped": 7,
+   "xml_sha256": "655916d96be61662909817a8416551031ca47ba0ae52cb960a04e79029a481f5",
+   "note": "Toda la carpeta tests/evaluation con tres procesos sobre implementation_commit. Las siete omisiones son la paridad con scoringrules, del grupo de dependencias reference, que el entorno compartido no instala."
+  }
+ ],
+ "quality": {
+  "tools": {
+   "coverage": "7.16.1",
+   "radon": "6.0.1",
+   "branch_coverage": true,
+   "python": "3.12.14",
+   "summarizer_sha256": "75cc60c88037e0bb17aff6e8ab666ce78b35d600d6c7ad217bf68b1afb4c4ec6"
+  },
+  "totals": {
+   "statements": 286,
+   "covered_statements": 285,
+   "branches": 32,
+   "covered_branches": 31
+  },
+  "files": [
+   {
+    "path": "src/mars_titan/evaluation/backtest_overfitting.py",
+    "source_sha256": "a0acd760019b2af7fe3625253b0586a62566954891f8fc4a111ca78df4b559a7",
+    "statements": 194,
+    "covered_statements": 193,
+    "branches": 22,
+    "covered_branches": 21
+   },
+   {
+    "path": "src/mars_titan/evaluation/reusable_holdout.py",
+    "source_sha256": "0fb821c186d485a6e6c2d37473c304fbdcabb48a7836de4a1519e014a1ba7243",
+    "statements": 92,
+    "covered_statements": 92,
+    "branches": 10,
+    "covered_branches": 10
+   }
+  ],
+  "max_crap": 11.0,
+  "quality_sha256": "ce41d198b10755f266e6472f25db3bb8d75fa148ef967cbbf4257baeb89d9002",
+  "limits": "CRAP y cobertura localizan complejidad poco comprobada. No demuestran ausencia de errores."
+ },
+ "changed": {
+  "base": "1cbfcfde5ac90645cfdf01ae2dc87819f8ce2e88",
+  "head": "805dbbdcc5f00e4013a91b92668603a58b31beb1",
+  "functions": 28,
+  "max_crap": 11.0,
+  "changed_executable_lines": 246,
+  "changed_covered_lines": 246,
+  "highest": [
+   {
+    "path": "src/mars_titan/evaluation/backtest_overfitting.py",
+    "function": "_market",
+    "cyclomatic_complexity": 11,
+    "crap": 11.0,
+    "changed_executable_lines": 20,
+    "changed_covered_lines": 20,
+    "changed_missing_lines": [],
+    "changed_missing_branches": []
+   },
+   {
+    "path": "src/mars_titan/evaluation/backtest_overfitting.py",
+    "function": "load_declaration",
+    "cyclomatic_complexity": 10,
+    "crap": 10.0,
+    "changed_executable_lines": 10,
+    "changed_covered_lines": 10,
+    "changed_missing_lines": [],
+    "changed_missing_branches": []
+   },
+   {
+    "path": "src/mars_titan/evaluation/backtest_overfitting.py",
+    "function": "pbo_cscv",
+    "cyclomatic_complexity": 7,
+    "crap": 7.0,
+    "changed_executable_lines": 34,
+    "changed_covered_lines": 34,
+    "changed_missing_lines": [],
+    "changed_missing_branches": []
+   },
+   {
+    "path": "src/mars_titan/evaluation/reusable_holdout.py",
+    "function": "Ladder.__init__",
+    "cyclomatic_complexity": 7,
+    "crap": 7.0,
+    "changed_executable_lines": 15,
+    "changed_covered_lines": 15,
+    "changed_missing_lines": [],
+    "changed_missing_branches": []
+   },
+   {
+    "path": "src/mars_titan/evaluation/backtest_overfitting.py",
+    "function": "_strategies",
+    "cyclomatic_complexity": 6,
+    "crap": 6.0,
+    "changed_executable_lines": 20,
+    "changed_covered_lines": 20,
+    "changed_missing_lines": [],
+    "changed_missing_branches": []
+   }
+  ],
+  "uncovered": [],
+  "unmeasured": [
+   {
+    "path": "benchmarks/backtest_overfitting_cost.py",
+    "function": "returns"
+   },
+   {
+    "path": "benchmarks/backtest_overfitting_cost.py",
+    "function": "direct_sharpe"
+   },
+   {
+    "path": "benchmarks/backtest_overfitting_cost.py",
+    "function": "reference_error"
+   },
+   {
+    "path": "benchmarks/backtest_overfitting_cost.py",
+    "function": "measure_cscv"
+   },
+   {
+    "path": "benchmarks/backtest_overfitting_cost.py",
+    "function": "portfolio"
+   },
+   {
+    "path": "benchmarks/backtest_overfitting_cost.py",
+    "function": "measure_analysis"
+   },
+   {
+    "path": "benchmarks/backtest_overfitting_cost.py",
+    "function": "main"
+   },
+   {
+    "path": "benchmarks/reusable_holdout_cost.py",
+    "function": "submissions"
+   },
+   {
+    "path": "benchmarks/reusable_holdout_cost.py",
+    "function": "measure"
+   },
+   {
+    "path": "benchmarks/reusable_holdout_cost.py",
+    "function": "main"
+   }
+  ],
+  "note": "Funciones con líneas cambiadas frente a develop (base_commit), con su CRAP y la cobertura de esas líneas. Las medidas de coste no tienen pruebas y se comprueban al ejecutarlas, por eso quedan sin medir.",
+  "changed_sha256": "6e192f9c5621e4aba8d4ce0f1a5cd90295894399021d6c29dd80fa874058c82f"
+ },
+ "mutations": {
+  "tree_commit": "622ad936eb1b2a0759f086e82fe254dd9ba88cb3",
+  "planned": 39,
+  "killed": 39,
+  "optimizer_attempts": 0,
+  "hold_sha256_unchanged": true,
+  "recipes_sha256": "2d1f50419fe6d0cfc1a2d677a8349e88686380ec356e8e6055a3ffdda6e6a391",
+  "executor_sha256": "70be614efb17d75429211524a8af379e2938cb6759d03851b2a856465a8d3527",
+  "source_sha256": {
+   "src/mars_titan/evaluation/reusable_holdout.py": "0fb821c186d485a6e6c2d37473c304fbdcabb48a7836de4a1519e014a1ba7243"
+  },
+  "cases": [
+   "released_floor",
+   "error_population_spread",
+   "error_sessions_as_days",
+   "error_day_sizes_ignored",
+   "error_unweighted_mean",
+   "error_block_as_long_as_the_days",
+   "submission_mask_type_unchecked",
+   "submission_without_defined_sessions",
+   "submission_finite_everywhere",
+   "score_over_every_session",
+   "days_order_unchecked",
+   "resolution_accepts_int",
+   "resolution_accepts_inf",
+   "resolution_accepts_zero",
+   "resolution_accepts_negative",
+   "block_accepts_float",
+   "block_accepts_zero",
+   "one_replicate",
+   "seed_accepts_text",
+   "initial_best_unchecked",
+   "initial_best_not_released",
+   "submission_type_unchecked",
+   "repeated_identity_accepted",
+   "length_unchecked",
+   "first_not_released",
+   "own_sessions_only",
+   "shared_sessions_unchecked",
+   "tie_improves",
+   "any_gain_improves",
+   "median_difference",
+   "best_not_replaced",
+   "score_always_released",
+   "declaration_type_unchecked",
+   "declaration_unchecked",
+   "public_field_added",
+   "decisions_as_days",
+   "declared_seed_ignored",
+   "declared_blocks_ignored",
+   "initial_not_reported"
+  ],
+  "summary_sha256": "0791d638fbf0a350d51d4f63e67dfccf306c6aedd856e86739b84dddca0a01bd",
+  "scope": "Treinta y nueve defectos dirigidos del redondeo, del error típico, de los envíos, de las sesiones comunes, del criterio de mejora, de la parte pública, de las opciones y de la declaración, cada uno con una fase en verde antes, la mutación y otra fase en verde después, en una copia aislada. No es una puntuación global.",
+  "first_pass_killed": 38,
+  "reruns": [
+   {
+    "tree_commit": "805dbbdcc5f00e4013a91b92668603a58b31beb1",
+    "cases": [
+     "error_unweighted_mean"
+    ],
+    "killed": 1,
+    "recipes_sha256": "2d1f50419fe6d0cfc1a2d677a8349e88686380ec356e8e6055a3ffdda6e6a391",
+    "source_sha256": {
+     "src/mars_titan/evaluation/reusable_holdout.py": "0fb821c186d485a6e6c2d37473c304fbdcabb48a7836de4a1519e014a1ba7243"
+    },
+    "summary_sha256": "3c8106e30a36132c2fa358352a1d0c9c3fdb5caa65af2a9ac00e47b2da6d13ac",
+    "reason": "Con días alternos de una y tres sesiones y bloques de ocho días, todas las réplicas tenían el tamaño de la muestra. 805dbbdcc usa días de una, tres y dos sesiones, con réplicas de 15, 16 o 17 sesiones por bloque."
+   }
+  ]
+ },
+ "cost": {
+  "receipt": "cost-cpu.json",
+  "sha256": "b919a6a5f0e0d68b447aeddf5940ace0c0bff7ed3e6f538652c71d7ed4153ebd"
+ }
+}

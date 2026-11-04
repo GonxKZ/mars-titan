@@ -1,0 +1,28 @@
+--- a/cost_probe.py
++++ b/cost_probe.py
+@@ -177,20 +177,12 @@
+             cuda_initialized=torch.cuda.is_initialized(),
+             seconds_without_imports=time.perf_counter() - started,
+             peak_rss_kib=resource.getrusage(resource.RUSAGE_SELF).ru_maxrss,
+-            timing_scope=(
+-                "Lectura, ordenación y puntuación B4. Excluye crear fixtures, "
+-                "comparación posterior, importaciones y carga de la referencia. "
+-                "El tiempo total incluye fixtures y comparación."
+-            ),
++            timing_scope="Lectura, ordenación y puntuación B4. Excluye crear fixtures, comparación posterior, importaciones y carga de la referencia. El tiempo total incluye fixtures y comparación.",
+             limits=[
+-                "Fixtures de 32 sesiones con 64/256/1024 activos, cinco condiciones "
+-                "y grupos Parquet de 37 filas.",
+-                "Una muestra de calentamiento y tres medidas por implementación y tamaño. "
+-                "No caracteriza p95 o p99.",
+-                "CPU FP64. Sin GPU, transferencias, energía, padre, inferencia "
+-                "ni evaluación científica.",
+-                "El pico RSS corresponde a todo el proceso y no atribuye memoria "
+-                "por implementación.",
++                "Fixtures de 32 sesiones con 64/256/1024 activos, cinco condiciones y grupos Parquet de 37 filas.",
++                "Una muestra de calentamiento y tres medidas por implementación y tamaño. No caracteriza p95 o p99.",
++                "CPU FP64. Sin GPU, transferencias, energía, padre, inferencia ni evaluación científica.",
++                "El pico RSS corresponde a todo el proceso y no atribuye memoria por implementación.",
+             ],
+         )
+         atomic_json(output / "cost.json", result)

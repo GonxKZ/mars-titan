@@ -1,0 +1,52 @@
+{
+ "checked_at_utc": "2026-10-30T17:10:09.098160+00:00",
+ "commit": "54355232463878d2eebb91fe0ee5fa7fa1f5976c",
+ "files": [
+  {
+   "name": "workflow",
+   "url": "https://raw.githubusercontent.com/microsoft/qlib/54355232463878d2eebb91fe0ee5fa7fa1f5976c/examples/benchmarks/LightGBM/workflow_config_lightgbm_Alpha158.yaml",
+   "status": 200,
+   "bytes": 2080,
+   "sha256": "0cbe1f729f43a2b8cd735759e6244c2e9f8db967555bfe24a7143fce4605d680",
+   "matches_declared": true
+  },
+  {
+   "name": "model",
+   "url": "https://raw.githubusercontent.com/microsoft/qlib/54355232463878d2eebb91fe0ee5fa7fa1f5976c/qlib/contrib/model/gbdt.py",
+   "status": 200,
+   "bytes": 5040,
+   "sha256": "a1afddb3bb965d108a916565b57e474cfddc55ce029f781765876e825623ad39",
+   "matches_declared": true
+  },
+  {
+   "name": "handler",
+   "url": "https://raw.githubusercontent.com/microsoft/qlib/54355232463878d2eebb91fe0ee5fa7fa1f5976c/qlib/contrib/data/handler.py",
+   "status": 200,
+   "bytes": 5092,
+   "sha256": "b621481c6009c39066c67c71390fd2bea635f56daf9f2c4e38817eff268e3232",
+   "matches_declared": true
+  },
+  {
+   "name": "processor",
+   "url": "https://raw.githubusercontent.com/microsoft/qlib/54355232463878d2eebb91fe0ee5fa7fa1f5976c/qlib/data/dataset/processor.py",
+   "bytes": 14534,
+   "sha256": "424af44e81c99467171c2d0b7978fb9f95d3b4c8b743a535ff4fe45d708cf517",
+   "role": "Cadena de normalización transversal de la etiqueta",
+   "pinned_in_model_configuration": false
+  },
+  {
+   "name": "zscore",
+   "url": "https://raw.githubusercontent.com/microsoft/qlib/54355232463878d2eebb91fe0ee5fa7fa1f5976c/qlib/utils/data.py",
+   "bytes": 3353,
+   "sha256": "19585548db215efd91198748c5b5f3c1f9c83bb9766bd75d87d6c9eb33d030ef",
+   "role": "Cadena de normalización transversal de la etiqueta",
+   "pinned_in_model_configuration": false
+  }
+ ],
+ "claim": "Las tres fuentes fijadas coinciden byte a byte. Se inspeccionó además la cadena CSZScoreNorm a zscore en la misma revisión. No se ejecutó Qlib ni se ajustaron modelos.",
+ "pandas_api": {
+  "version": "3.0.6",
+  "dataframe_std_ddof_default": 1,
+  "series_std_ddof_default": 1
+ }
+}

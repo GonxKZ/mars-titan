@@ -1,0 +1,437 @@
+{
+ "schema_version": 1,
+ "date": "2026-10-29",
+ "issue": 791,
+ "scope": "mature_reliability_signal_and_titans_gates",
+ "implementation_commit": "e6d710f99179e8d39832f369f3d5923736af895d",
+ "base_commit": "1cbfcfde5ac90645cfdf01ae2dc87819f8ce2e88",
+ "scientific_experiments": 0,
+ "training_runs": 0,
+ "real_optimizer_steps": 0,
+ "final_test_opened": false,
+ "screening_predictions_read": false,
+ "hold_sha256": "8a658080c1ac4e63847eba58b177020339da6ec47021cf26d2701830073c87fd",
+ "test_optimizers": "Las pruebas del recorrido usan un optimizador registrador que guarda los gradientes y no cambia pesos. La medida de coste comprueba que los parámetros no cambian y las mutaciones registran un gancho de torch.optim que rechaza cualquier paso. La protección global del aprendizaje sigue activa.",
+ "suites": [
+  {
+   "name": "targeted_with_coverage_at_the_final_commit",
+   "tests": 704,
+   "failures": 0,
+   "errors": 0,
+   "skipped": 1,
+   "xml_sha256": "2d5ce9740fa072ec781df52cda1d66bd373263da44ea9c8df82248021f126973",
+   "note": "Señal, puertas, recorrido, medida de coste, adaptador financiero, memoria neuronal, MAC, consumidor congelado, recorrido cronológico, Dust, protecciones del bloqueo, medida de lesiones de develop y los cuatro módulos con dobles de la identidad, con cobertura de ramas sobre implementation_commit. La omisión necesita una protección que permita aprender."
+  },
+  {
+   "name": "targeted_at_34d56ce1c",
+   "tests": 689,
+   "failures": 0,
+   "errors": 0,
+   "skipped": 1,
+   "xml_sha256": "c01a07a78cd0fd56236015278ff3d9a2806d401953f5f9ddb64702631b88141d",
+   "note": "Las mismas pruebas dirigidas sin la medida de lesiones de develop, sobre 34d56ce1c, el último cambio de código fuente."
+  },
+  {
+   "name": "doubles_and_identity_at_791a01d6e",
+   "tests": 198,
+   "failures": 1,
+   "errors": 0,
+   "skipped": 0,
+   "xml_sha256": "40556190449e1e18b7e8062d2d329b7411b447ae8f1c834a80fbe9e0717ffa9e",
+   "note": "Repetición de los cuatro módulos con dobles corregidos, de la prueba de las puertas y de la prueba del recorrido. El fallo es la prueba de identidad reforzada en ese commit, que mostró que las puertas ya están en la implementación de todo predictor. 34d56ce1c ajustó la identidad y la prueba."
+  },
+  {
+   "name": "targeted_with_coverage_at_90e26af37",
+   "tests": 552,
+   "failures": 0,
+   "errors": 0,
+   "skipped": 1,
+   "xml_sha256": "7d550175578083b6765d7891c06691dab3ab5c76ffb059f2ba92841b540fb739",
+   "note": "Primera verificación dirigida, sobre el árbol de las mutaciones."
+  },
+  {
+   "name": "regression_training_at_90e26af37",
+   "tests": 1944,
+   "failures": 7,
+   "errors": 0,
+   "skipped": 42,
+   "xml_sha256": "fc3f64d60085ecaede8f3ac34755a4c4968f739e9d158484aae657214284736a",
+   "note": "Módulos de tests/training que importan el código cambiado, con tres procesos. Los siete fallos son de dobles de configuración sin el campo nuevo, corregidos en 791a01d6e. Las 42 omisiones son de la protección del aprendizaje."
+  },
+  {
+   "name": "regression_other_at_90e26af37",
+   "tests": 5970,
+   "failures": 2,
+   "errors": 0,
+   "skipped": 124,
+   "xml_sha256": "a832a28c4ac6aac7bc9aa89f35be2fe714d16a840bb4942d0bfc68278f5b8370",
+   "note": "Resto de módulos que importan el código cambiado, con tres procesos. Los dos fallos son de dobles de configuración sin el campo nuevo, corregidos en 791a01d6e. De las omisiones, 84 son de la protección del aprendizaje, una espera a que se levante y 39 necesitan binarios nativos de simulación sin compilar."
+  }
+ ],
+ "quality": {
+  "tools": {
+   "coverage": "7.16.1",
+   "radon": "6.0.1",
+   "branch_coverage": true,
+   "python": "3.12.14",
+   "summarizer_sha256": "75cc60c88037e0bb17aff6e8ab666ce78b35d600d6c7ad217bf68b1afb4c4ec6"
+  },
+  "totals": {
+   "statements": 2834,
+   "covered_statements": 2185,
+   "branches": 1236,
+   "covered_branches": 791
+  },
+  "files": [
+   {
+    "path": "benchmarks/mature_reliability_cost.py",
+    "source_sha256": "fc0b62fa7c3ad798e30feaecb8edb1ef43ce469cab996bc2ab3c224a4a647d80",
+    "statements": 147,
+    "covered_statements": 130,
+    "branches": 46,
+    "covered_branches": 38
+   },
+   {
+    "path": "src/mars_titan/memory/mature_reliability.py",
+    "source_sha256": "3a035ad47d041850fed2b3cb13fe5ec7a104933bf12d339731e92fda5d46adf0",
+    "statements": 115,
+    "covered_statements": 115,
+    "branches": 50,
+    "covered_branches": 50
+   },
+   {
+    "path": "src/mars_titan/models/titans/financial.py",
+    "source_sha256": "e29be59d2ad9c8f2f4a945141255adca24250373439bc4e05b3571e419d83a16",
+    "statements": 805,
+    "covered_statements": 576,
+    "branches": 402,
+    "covered_branches": 223
+   },
+   {
+    "path": "src/mars_titan/models/titans/frozen_financial.py",
+    "source_sha256": "3814f1412d657620fcc571ca6c6cff607e3e713b7d3c381c369461bb7c09f3b5",
+    "statements": 215,
+    "covered_statements": 177,
+    "branches": 116,
+    "covered_branches": 84
+   },
+   {
+    "path": "src/mars_titan/models/titans/mac.py",
+    "source_sha256": "94fda096a6e06c3fd32998374f1476bc14b2d6ed1f987b4f71f91160147c0750",
+    "statements": 105,
+    "covered_statements": 99,
+    "branches": 28,
+    "covered_branches": 22
+   },
+   {
+    "path": "src/mars_titan/models/titans/neural_memory.py",
+    "source_sha256": "f1f4263ec8155735b4e4cebe9fff32d7513edded796784952f696cf241002488",
+    "statements": 406,
+    "covered_statements": 248,
+    "branches": 170,
+    "covered_branches": 88
+   },
+   {
+    "path": "src/mars_titan/models/titans/reliability_gates.py",
+    "source_sha256": "7c8e66aecb8108c09c16d30b7b7002065d9675bc5cd2a3c84478e5a501ce901e",
+    "statements": 74,
+    "covered_statements": 74,
+    "branches": 20,
+    "covered_branches": 20
+   },
+   {
+    "path": "src/mars_titan/training/financial_run.py",
+    "source_sha256": "29ca7af375e8a91cf509266bcc6bd7e6ba5f1bc7ca0c231f356585b5df067f0a",
+    "statements": 939,
+    "covered_statements": 753,
+    "branches": 390,
+    "covered_branches": 263
+   },
+   {
+    "path": "src/mars_titan/training/search_cases.py",
+    "source_sha256": "0c19a664d8b4585132d311a6f867f03eff25a6fc36a1cf440e6f50a626a097e5",
+    "statements": 28,
+    "covered_statements": 13,
+    "branches": 14,
+    "covered_branches": 3
+   }
+  ],
+  "max_crap": 2225.4665829074715,
+  "quality_sha256": "e39b80541b1a1793e65fa5db351018e5243e6d6de530980a0bb8b42e8b0fbe9d",
+  "limits": "CRAP y cobertura localizan complejidad poco comprobada. No demuestran ausencia de errores."
+ },
+ "changed": {
+  "base": "1cbfcfde5ac90645cfdf01ae2dc87819f8ce2e88",
+  "head": "e6d710f99179e8d39832f369f3d5923736af895d",
+  "functions": 51,
+  "max_crap": 2225.4665829074715,
+  "changed_executable_lines": 350,
+  "changed_covered_lines": 334,
+  "highest": [
+   {
+    "path": "src/mars_titan/models/titans/financial.py",
+    "function": "FinancialConfig.__post_init__",
+    "cyclomatic_complexity": 119,
+    "crap": 2225.4665829074715,
+    "changed_executable_lines": 6,
+    "changed_covered_lines": 6,
+    "changed_missing_lines": [],
+    "changed_missing_branches": []
+   },
+   {
+    "path": "src/mars_titan/models/titans/financial.py",
+    "function": "FinancialPredictor._prepare",
+    "cyclomatic_complexity": 55,
+    "crap": 149.74491067025556,
+    "changed_executable_lines": 11,
+    "changed_covered_lines": 11,
+    "changed_missing_lines": [],
+    "changed_missing_branches": []
+   },
+   {
+    "path": "src/mars_titan/training/financial_run.py",
+    "function": "ChronologicalInference._observe",
+    "cyclomatic_complexity": 43,
+    "crap": 56.15003413746017,
+    "changed_executable_lines": 10,
+    "changed_covered_lines": 10,
+    "changed_missing_lines": [],
+    "changed_missing_branches": []
+   },
+   {
+    "path": "src/mars_titan/models/titans/financial.py",
+    "function": "FinancialConfig.identity",
+    "cyclomatic_complexity": 26,
+    "crap": 44.25200000000001,
+    "changed_executable_lines": 2,
+    "changed_covered_lines": 2,
+    "changed_missing_lines": [],
+    "changed_missing_branches": []
+   },
+   {
+    "path": "src/mars_titan/training/financial_run.py",
+    "function": "ChronologicalTrainer._replay",
+    "cyclomatic_complexity": 37,
+    "crap": 42.74418448524722,
+    "changed_executable_lines": 2,
+    "changed_covered_lines": 2,
+    "changed_missing_lines": [],
+    "changed_missing_branches": []
+   }
+  ],
+  "uncovered": [
+   {
+    "path": "benchmarks/mature_reliability_cost.py",
+    "function": "_measure",
+    "cyclomatic_complexity": 16,
+    "crap": 16.382134110787174,
+    "changed_executable_lines": 36,
+    "changed_covered_lines": 32,
+    "changed_missing_lines": [
+     177,
+     178,
+     179,
+     191
+    ],
+    "changed_missing_branches": [
+     [
+      176,
+      177
+     ],
+     [
+      177,
+      176
+     ],
+     [
+      177,
+      178
+     ],
+     [
+      190,
+      191
+     ]
+    ]
+   },
+   {
+    "path": "benchmarks/mature_reliability_cost.py",
+    "function": "graph_pass",
+    "cyclomatic_complexity": 6,
+    "crap": 6.0163859808830225,
+    "changed_executable_lines": 14,
+    "changed_covered_lines": 13,
+    "changed_missing_lines": [
+     89
+    ],
+    "changed_missing_branches": [
+     [
+      88,
+      89
+     ]
+    ]
+   },
+   {
+    "path": "benchmarks/mature_reliability_cost.py",
+    "function": "main",
+    "cyclomatic_complexity": 2,
+    "crap": 6.0,
+    "changed_executable_lines": 12,
+    "changed_covered_lines": 1,
+    "changed_missing_lines": [
+     238,
+     239,
+     240,
+     241,
+     242,
+     243,
+     244,
+     245,
+     246,
+     254,
+     255
+    ],
+    "changed_missing_branches": [
+     [
+      254,
+      -237
+     ],
+     [
+      254,
+      255
+     ]
+    ]
+   }
+  ],
+  "unmeasured": [
+   {
+    "path": "src/mars_titan/training/dust/financial.py",
+    "function": "FinancialDustAdapter.__init__"
+   }
+  ],
+  "note": "Funciones con líneas cambiadas frente a develop (base_commit), con su CRAP y la cobertura de esas líneas. Las líneas sin cubrir son de la medida de coste: el calentamiento, dos comprobaciones defensivas y la orden de línea de comandos. FinancialDustAdapter.__init__ quedó fuera de los archivos medidos. El CRAP de FinancialConfig.__post_init__ es una deuda previa recogida en #801.",
+  "changed_sha256": "c4724ebf37f0736ff0e418521bfba1c9dc6e47b5c8489ef530ecbf61f3d20135"
+ },
+ "mutations": {
+  "tree_commit": "90e26af373ea73152e64ff01b48e22f070a7eafa",
+  "planned": 47,
+  "killed": 46,
+  "optimizer_attempts": 0,
+  "hold_sha256_unchanged": true,
+  "recipes_sha256": "9b52939d9f17e1a637c667e62ef530baef1b75382b98c3449a61b634e0535ba3",
+  "executor_sha256": "cf553fecd1d7692bfd058d96341106713b37cf2db11042d4557d3147f767824f",
+  "source_sha256": {
+   "src/mars_titan/models/titans/frozen_financial.py": "3814f1412d657620fcc571ca6c6cff607e3e713b7d3c381c369461bb7c09f3b5",
+   "src/mars_titan/memory/mature_reliability.py": "3a035ad47d041850fed2b3cb13fe5ec7a104933bf12d339731e92fda5d46adf0",
+   "benchmarks/mature_reliability_cost.py": "fc0b62fa7c3ad798e30feaecb8edb1ef43ce469cab996bc2ab3c224a4a647d80",
+   "src/mars_titan/models/titans/neural_memory.py": "f1f4263ec8155735b4e4cebe9fff32d7513edded796784952f696cf241002488",
+   "src/mars_titan/training/financial_run.py": "99b24eb5cefe0c6efebf305d16baf418125c2a525a06a33b2435e546c3d91666",
+   "src/mars_titan/training/search_cases.py": "0c19a664d8b4585132d311a6f867f03eff25a6fc36a1cf440e6f50a626a097e5",
+   "src/mars_titan/models/titans/reliability_gates.py": "7c8e66aecb8108c09c16d30b7b7002065d9675bc5cd2a3c84478e5a501ce901e",
+   "src/mars_titan/models/titans/financial.py": "e29be59d2ad9c8f2f4a945141255adca24250373439bc4e05b3571e419d83a16",
+   "src/mars_titan/models/titans/mac.py": "94fda096a6e06c3fd32998374f1476bc14b2d6ed1f987b4f71f91160147c0750"
+  },
+  "cases": [
+   "margin_ignored",
+   "bound_without_tanh",
+   "signal_range_unchecked",
+   "signal_with_graph_accepted",
+   "independent_with_one_consumer",
+   "unordered_time_constants",
+   "unordered_consumers",
+   "decay_formula",
+   "roles_swapped",
+   "one_channel_always",
+   "write_shift_ignored",
+   "forget_shift_ignored",
+   "forget_reads_the_write_shift",
+   "surprise_of_another_loss",
+   "mac_drops_the_shift",
+   "mac_shift_without_online_memory",
+   "component_without_online_memory",
+   "identity_without_the_component",
+   "missing_signal_accepted",
+   "signal_without_component_accepted",
+   "surprise_not_returned",
+   "local_control_accepted",
+   "frozen_consumer_accepts_the_signal",
+   "predictor_changes_without_the_signal",
+   "hit_ignores_the_outcome",
+   "event_sum_instead_of_mean",
+   "average_weights_swapped",
+   "shuffle_draws_the_first_score",
+   "shuffle_keeps_the_true_score",
+   "surprise_reference_frozen",
+   "surprise_score_sign",
+   "partition_ignores_the_seed",
+   "independent_values_shared",
+   "restore_skips_the_configuration",
+   "restore_skips_the_history",
+   "restore_skips_the_reference",
+   "non_finite_labels_accepted",
+   "labels_not_settled",
+   "decisions_read_a_neutral_signal",
+   "signal_kept_across_passes",
+   "replay_with_the_whole_block_signal",
+   "checkpoint_without_the_signal",
+   "resume_without_the_signal",
+   "restore_presence_unchecked",
+   "code_identity_without_the_signal",
+   "surprise_not_observed",
+   "benchmark_without_labels"
+  ],
+  "summary_sha256": "7119ded517b017f20147fedc9a554c27abb4c77b1b5d5f12ab7a501bdf895f0f",
+  "scope": "Cuarenta y siete defectos dirigidos de la señal, las puertas, el predictor, el recorrido, el consumidor congelado y la medida de coste, cada uno con una fase en verde antes, la mutación y otra fase en verde después, en una copia aislada del árbol. No es una puntuación global.",
+  "first_pass_killed": 45,
+  "reruns": [
+   {
+    "tree_commit": "a248f22194d8eec8f9456be75da73413ce1b52a3",
+    "cases": [
+     "roles_swapped"
+    ],
+    "killed": 1,
+    "recipes_sha256": "740f338320ff6b705200fd7fbe6aa8ccdf7126219e83715f09c7241fb170399b",
+    "source_sha256": {
+     "src/mars_titan/models/titans/reliability_gates.py": "7c8e66aecb8108c09c16d30b7b7002065d9675bc5cd2a3c84478e5a501ce901e"
+    },
+    "summary_sha256": "9a368dd67952a611cb2635f965560d516f588b4a24ed7d5a7a47a17efa22ba22",
+    "reason": "roles_swapped sobrevivió en la primera pasada. aa73b28f7 añade la prueba de que cada control conserva su papel."
+   },
+   {
+    "tree_commit": "34d56ce1c9c24b78944c5edaba9c880dc3d84cd3",
+    "cases": [
+     "checkpoint_without_the_signal",
+     "code_identity_without_the_signal",
+     "decisions_read_a_neutral_signal",
+     "labels_not_settled",
+     "replay_with_the_whole_block_signal",
+     "restore_presence_unchecked",
+     "resume_without_the_signal",
+     "signal_kept_across_passes",
+     "surprise_not_observed"
+    ],
+    "killed": 8,
+    "recipes_sha256": "880d18fce2bcb5f75c8ec9c674fb059ffca6d9b6449156c53f329aa60d0a0b0b",
+    "source_sha256": {
+     "src/mars_titan/training/financial_run.py": "29ca7af375e8a91cf509266bcc6bd7e6ba5f1bc7ca0c231f356585b5df067f0a"
+    },
+    "summary_sha256": "4b61cad171882c6a962b461ac840ae2a37de0fb74a427a72516681ee63a5b347",
+    "reason": "34d56ce1c cambió la identidad de código del recorrido, así que se repitieron las nueve mutaciones del recorrido sobre ese árbol."
+   }
+  ],
+  "equivalent": [
+   {
+    "id": "signal_kept_across_passes",
+    "reason": "Quita run.reliability = None del cierre de la fase. El cierre es siempre el último evento de la fase, después solo se leen métricas que no usan la señal, cada fase crea su propio _Pass y el checkpoint posterior al ajuste no guarda el recorrido cerrado."
+   }
+  ]
+ },
+ "native_link": {
+  "source_commit": "39abf2c99",
+  "preset": "native-candidate-cuda",
+  "used_by": "todas las suites",
+  "sha256": "9fda744aa9c6672f9fb47c0896a5e9b19fc8795cdbfff42b944ed751953b1046"
+ },
+ "cost": {
+  "receipt": "cost-cpu.json",
+  "sha256": "86afbc58aaecfc38fe6b617e8e4eb1e3f14a23e35eb60511542dc0b71b705e73"
+ }
+}

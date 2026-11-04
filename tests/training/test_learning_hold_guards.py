@@ -59,6 +59,15 @@ def _blocks():
     return lambda: iter([(rng.normal(size=(4, 3)), rng.normal(size=4))])
 
 
+def _common(name):
+    """Declaración válida de un control común, la que usan las pruebas de su módulo."""
+    from tests.models import test_momentum_reversal, test_same_inputs_lightgbm
+
+    if name == "momentum_reversal":
+        return test_momentum_reversal.CONFIG
+    return test_same_inputs_lightgbm.declared()
+
+
 def _simple(name, attribute, call):
     def prepare(tmp_path, monkeypatch):
         module, double = _module(name, attribute, monkeypatch)
@@ -226,6 +235,13 @@ def _titans_window_script(tmp_path, monkeypatch):
     return lambda: main([*arguments, "--output", str(tmp_path / "out")]), double
 
 
+def _signal_ceiling_script(tmp_path, monkeypatch):
+    # Tras la guarda, el script lee primero su declaración.
+    main, double = _script("run_signal_ceiling.py", "read_declaration", monkeypatch)
+    arguments = ["--run", "--cohorts", str(tmp_path / "cohorts")]
+    return lambda: main([*arguments, "--output", str(tmp_path / "out")]), double
+
+
 ENTRY_POINTS = {
     "reference_run": _simple(
         "mars_titan.training.reference_run",
@@ -254,6 +270,48 @@ ENTRY_POINTS = {
         "CorpusDataset",
         lambda m, out: m.run_tabular_reference(out.with_name("m.json"), out, kind="boosting"),
     ),
+    # Tras la guarda y la declaración, el primer paso de las dos ventanas lee el protocolo.
+    "common_rule_window": _simple(
+        "mars_titan.training.common_control_windows",
+        "_protocol",
+        lambda m, out: m.run_rule_window(
+            out.with_name("v.json"), {}, "fold-000", output=out, config=_common("momentum_reversal")
+        ),
+    ),
+    "common_tabular_window": _simple(
+        "mars_titan.training.common_control_windows",
+        "_protocol",
+        lambda m, out: m.run_tabular_window(
+            out.with_name("v.json"),
+            {},
+            "fold-000",
+            seeds=[42, 43],
+            fit_months=12,
+            output=out,
+            config=_common("lightgbm"),
+            radius=1,
+            min_assets=3,
+        ),
+    ),
+    "qlib_lightgbm": _simple(
+        "mars_titan.models.baselines.qlib_lightgbm",
+        "_checked_training",
+        lambda m, out: m.fit(None, None, {}, 42, min_assets=3),
+    ),
+    "session_ridge": _simple(
+        "mars_titan.models.baselines.session_ridge",
+        "_declares_training",
+        lambda m, out: m.fit(None, None, {}, min_assets=3),
+    ),
+    # Tras la guarda, el origen del techo comprueba primero su declaración.
+    "signal_ceiling": _simple(
+        "mars_titan.training.signal_ceiling",
+        "checked_declaration",
+        lambda m, out: m.run_origin(
+            out.with_name("v.json"), {"year": 2019, "fold": "fold-014"}, {}, out
+        ),
+    ),
+    "run_signal_ceiling": _signal_ceiling_script,
     "external_corpus": _simple(
         "mars_titan.training.external_corpus",
         "CorpusDataset",

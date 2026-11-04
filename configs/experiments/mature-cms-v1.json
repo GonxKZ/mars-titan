@@ -1,0 +1,58 @@
+{
+  "schema_version": 1,
+  "kind": "mature_correction_variants",
+  "variant_id": "mature_cms_v1",
+  "issue": 786,
+  "epic": 782,
+  "status": "declared_not_executed",
+  "default_enabled": false,
+  "final_test_access": false,
+  "parent": "titans_mac_mac_online_of_the_same_window_view_and_seed",
+  "window": "src/mars_titan/training/mars_titan_correction.py:run_correction_window",
+  "arms": {
+    "mature_cms": {
+      "recipe": "configs/titans/mature-correction-calendar-scales.json",
+      "components": {
+        "associative_memory": {
+          "rule": "proximal",
+          "key": "codec",
+          "multiscale": {
+            "half_lives_days": [91.0, 91.0, 91.0],
+            "weighting": "uniform",
+            "weight_rate": 0.0,
+            "loss_scale": 0.02,
+            "write_periods": ["session", "week", "month"]
+          }
+        }
+      }
+    },
+    "same_frequency": {
+      "recipe": "configs/titans/mature-correction-calendar-scales.json",
+      "components": {
+        "associative_memory": {
+          "rule": "proximal",
+          "key": "codec",
+          "multiscale": {
+            "half_lives_days": [91.0, 91.0, 91.0],
+            "weighting": "uniform",
+            "weight_rate": 0.0,
+            "loss_scale": 0.02
+          }
+        }
+      }
+    }
+  },
+  "comparisons": [
+    {"variant": "mature_cms", "control": "same_frequency"}
+  ],
+  "memory_reads": 1,
+  "reasons": {
+    "mature_cms": "Tres copias del corrector proximal con la misma semivida, escritas en cada sesión, al cerrar cada semana ISO y al cerrar cada mes UTC.",
+    "same_frequency": "Las mismas tres copias escritas en cada sesión. Es el control replicated_quarter de E1 y el mismo trabajo de la criba."
+  },
+  "pending": [
+    "Un periodo cerrado se aplica en la primera escritura de un periodo posterior, así que la lectura del primer evento de ese periodo aún no lo incluye.",
+    "Las semanas y los meses son de calendario UTC sobre el corte de publicación de cada escritura.",
+    "No se presupone una mejora predictiva. Con la misma frecuencia las tres copias coinciden y la mezcla es un único corrector."
+  ]
+}

@@ -1,0 +1,200 @@
+{
+  "planned": 4,
+  "killed": 4,
+  "cases": [
+    {
+      "id": "ignore_ancestor_link",
+      "status": "killed_with_green_controls",
+      "phases": [
+        {
+          "phase": "G1",
+          "returncode": 0,
+          "elapsed_s": 2.871051999973133,
+          "log_sha256": "866432d567eb30f716ad0380ad29e9453b6fd80645780de4fbe94565dc3eab20",
+          "xml_sha256": "8bb9891039a8b71b2e5b8fb3a36da983492a0e5a2487e2a946d2f581fa0c2457",
+          "events_sha256": "8eb04535fd6ba880d6d59c9741166a269fa3cf704eda2ba7dadcf4baa987dd59",
+          "xml_counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          }
+        },
+        {
+          "phase": "M1",
+          "returncode": 1,
+          "elapsed_s": 3.0217104009352624,
+          "log_sha256": "81329613d9400c90e75cd053a19129766c6d9aee11f7fc9ff2bb3fad75b01ca7",
+          "xml_sha256": "10aa9399e8e41a0a53a9abf108dcda64ef92e8f3d88859f35e69db1303121864",
+          "events_sha256": "7ffd8a439c2c52d267502475ad67f68a56d716782560e9954dbf44f4489b2af1",
+          "xml_counts": {
+            "total": 1,
+            "failure": 1,
+            "error": 0,
+            "skipped": 0
+          }
+        },
+        {
+          "phase": "G2",
+          "returncode": 0,
+          "elapsed_s": 2.51972129708156,
+          "log_sha256": "718af798eb1450a812074f301573c1f498edd3575a2450f85ee649d7e03c3c72",
+          "xml_sha256": "9f14c873d3d8e2c835103a89bdaa5c9b6e9b4c1104f8f8a489024c6b50ecc9b1",
+          "events_sha256": "08d3345a4705c3dacb632823a52c55bf09ff12dca04508d64ae9c03948bc2097",
+          "xml_counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          }
+        }
+      ]
+    },
+    {
+      "id": "follow_final_target_link",
+      "status": "killed_with_green_controls",
+      "phases": [
+        {
+          "phase": "G1",
+          "returncode": 0,
+          "elapsed_s": 2.419541612965986,
+          "log_sha256": "7f20721722339faad833bedbd918bbce72ec5ee8917b82cf8b1a09bf4e47f2f3",
+          "xml_sha256": "f34831ee3e8fbb842800a395458806fb453a356f219b2bd94e56e4825041c9b4",
+          "events_sha256": "84efa5719b5d758da9e9909d1ab3c654c6cf05e58373af473763c97372606b2e",
+          "xml_counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          }
+        },
+        {
+          "phase": "M1",
+          "returncode": 1,
+          "elapsed_s": 2.569499355973676,
+          "log_sha256": "c8af76792f767467f726b53e1833c89902630b248be7dad4530ec22a76440ae1",
+          "xml_sha256": "a931b0b35fd5e7be75ad5b2007a2cfa27cd7eae10196bc20608abad96bcac3b7",
+          "events_sha256": "630f3e44c229627a0a139f77ffa0bf3483d501688beeef932e78d71ada09c9e2",
+          "xml_counts": {
+            "total": 1,
+            "failure": 1,
+            "error": 0,
+            "skipped": 0
+          }
+        },
+        {
+          "phase": "G2",
+          "returncode": 0,
+          "elapsed_s": 2.520195855991915,
+          "log_sha256": "acb50bc88917f57929611d63c707e0ccd387dae970fefba6e9100a81f12eba7b",
+          "xml_sha256": "a63aa1fbae3ac6e80349022511988ee932c7532d271754bc556d8ad819d644ed",
+          "events_sha256": "a5626b8e1191ab266cdda5030888ff5c93e58c9f0556d5cd9634eac3380da5a7",
+          "xml_counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          }
+        }
+      ]
+    },
+    {
+      "id": "omit_ctime",
+      "status": "killed_with_green_controls",
+      "phases": [
+        {
+          "phase": "G1",
+          "returncode": 0,
+          "elapsed_s": 2.3704842010047287,
+          "log_sha256": "ac03dc55bdc1ce87ab5a711fdf5a7d72d345e62c471c4cb4e9de283e03475f14",
+          "xml_sha256": "bc50bee2465266407bb8ffa6d4fb27db1375bea7054bfaeed66b789227e541db",
+          "events_sha256": "095e96a1c58ef14aeeb5213ca59b29823d4d1fc0543abc7b3de8295794469df3",
+          "xml_counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          }
+        },
+        {
+          "phase": "M1",
+          "returncode": 1,
+          "elapsed_s": 2.1199553720653057,
+          "log_sha256": "37b560d5dfd734cd47e50a4327439869bd79fbfe86c455e4674ecfbca92a5ee8",
+          "xml_sha256": "b3176b4fe4a2a5289dd3ecccbba46969922745f0fd3654053b2fd906a097eb3a",
+          "events_sha256": "0e64dc2ecc31d7514d6781bf7855f22c264706c8b894e0d207b07a1fd3341add",
+          "xml_counts": {
+            "total": 1,
+            "failure": 1,
+            "error": 0,
+            "skipped": 0
+          }
+        },
+        {
+          "phase": "G2",
+          "returncode": 0,
+          "elapsed_s": 2.06976521294564,
+          "log_sha256": "b55e3964fe4f7284de74686d27b00bb12462ea7b499eabe3caf7613fc3e5f418",
+          "xml_sha256": "96609765192b09f7ea12e6a3639b0caeaac395c95bccb34fbeab43c3fffce389",
+          "events_sha256": "607df1ef7ecb6f1aedf5d59a976644cafd24ba26606bcd56bb79c4021014f9d4",
+          "xml_counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          }
+        }
+      ]
+    },
+    {
+      "id": "return_initial_metadata",
+      "status": "killed_with_green_controls",
+      "phases": [
+        {
+          "phase": "G1",
+          "returncode": 0,
+          "elapsed_s": 2.220305675873533,
+          "log_sha256": "b55e3964fe4f7284de74686d27b00bb12462ea7b499eabe3caf7613fc3e5f418",
+          "xml_sha256": "b3ef934ee75365cfae3b6f6be02d5240094df5a3d198d8fc4d5c43fcafab487f",
+          "events_sha256": "ab9d78f137f00a4c9b82247a9ec56744211be8aa460b24e41bf335f1e6f25aea",
+          "xml_counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          }
+        },
+        {
+          "phase": "M1",
+          "returncode": 1,
+          "elapsed_s": 2.6197685261722654,
+          "log_sha256": "7d2a1cc739c69f7a2d7468c64efa20a93636ba7805c79220f67193cb65ba273e",
+          "xml_sha256": "2cfa041c725232c080fd2733298b0ab60b89a477f748ff084d1f5304513bb381",
+          "events_sha256": "4b0e024e7481d766478844b8195f7773a37cefb42111d9c6f12fbb0f8c2d253b",
+          "xml_counts": {
+            "total": 1,
+            "failure": 1,
+            "error": 0,
+            "skipped": 0
+          }
+        },
+        {
+          "phase": "G2",
+          "returncode": 0,
+          "elapsed_s": 2.571020766859874,
+          "log_sha256": "0c33791aa03cbc8826ba04efd1b062adb3baa875c47625e4de7090bd753d7635",
+          "xml_sha256": "8ba49e6ca53d73047f1bf39881475467e80824a101f4f2d33d4e09f041dd06ad",
+          "events_sha256": "1e7e44f5a8920d5776bdac0284aa59d396247f72ae5e6c146965b1f787567a9e",
+          "xml_counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          }
+        }
+      ]
+    }
+  ],
+  "executor_sha256": "b43f267ea6bead6ffd107b5cdecd6e967cfd72d731da698a4e71f126bf49c699",
+  "raw_summary_sha256": "60adf94d03d338eb5256f601911f70b6aa5d802bf57c971a054018b246aca68b"
+}

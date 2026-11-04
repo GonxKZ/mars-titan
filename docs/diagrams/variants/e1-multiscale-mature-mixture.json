@@ -1,0 +1,236 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "E1 · Mezcla de escalas con errores maduros (multiscale_mature_mixture_v1)",
+    "quality_profile": "showcase",
+    "viewBox": [
+      1300,
+      592
+    ],
+    "legend": {
+      "entries": {
+        "backend": {
+          "label": "Cálculo"
+        },
+        "database": {
+          "label": "Memoria y estado"
+        },
+        "frontend": {
+          "label": "Salida"
+        },
+        "security": {
+          "label": "Control o protección"
+        },
+        "cloud": {
+          "label": "Evaluación"
+        },
+        "external": {
+          "label": "Entrada"
+        }
+      }
+    }
+  },
+  "components": [
+    {
+      "id": "query",
+      "type": "external",
+      "label": "Clave de la decisión",
+      "sublabel": "mismo codec y padre",
+      "pos": [
+        40,
+        230
+      ],
+      "size": [
+        180,
+        72
+      ]
+    },
+    {
+      "id": "experts",
+      "type": "database",
+      "label": "Correctores por escala",
+      "sublabel": "7, 91 y 365 días",
+      "pos": [
+        300,
+        230
+      ],
+      "size": [
+        180,
+        72
+      ],
+      "tag": "decaimiento de calendario"
+    },
+    {
+      "id": "mix",
+      "type": "backend",
+      "label": "Mezcla convexa",
+      "sublabel": "pesos confirmados",
+      "pos": [
+        560,
+        230
+      ],
+      "size": [
+        180,
+        72
+      ]
+    },
+    {
+      "id": "emit",
+      "type": "frontend",
+      "label": "Predicción mixta",
+      "sublabel": "componentes guardados",
+      "pos": [
+        820,
+        230
+      ],
+      "size": [
+        180,
+        72
+      ]
+    },
+    {
+      "id": "screen",
+      "type": "cloud",
+      "label": "Comparación pendiente",
+      "sublabel": "variantes y controles",
+      "pos": [
+        1080,
+        230
+      ],
+      "size": [
+        180,
+        72
+      ]
+    },
+    {
+      "id": "pending",
+      "type": "database",
+      "label": "Cola pendiente",
+      "sublabel": "componentes al decidir",
+      "pos": [
+        820,
+        40
+      ],
+      "size": [
+        180,
+        72
+      ]
+    },
+    {
+      "id": "mature",
+      "type": "backend",
+      "label": "Actualización madura",
+      "sublabel": "Hedge y escritura posterior",
+      "pos": [
+        560,
+        40
+      ],
+      "size": [
+        180,
+        72
+      ]
+    },
+    {
+      "id": "controls",
+      "type": "security",
+      "label": "Controles",
+      "sublabel": "uniforme y una escala",
+      "pos": [
+        820,
+        420
+      ],
+      "size": [
+        180,
+        72
+      ],
+      "tag": "tres copias trimestrales"
+    }
+  ],
+  "connections": [
+    {
+      "id": "query-experts",
+      "from": "query",
+      "to": "experts"
+    },
+    {
+      "id": "experts-mix",
+      "from": "experts",
+      "to": "mix",
+      "label": "componentes",
+      "labelDy": 24
+    },
+    {
+      "id": "mix-emit",
+      "from": "mix",
+      "to": "emit",
+      "variant": "emphasis"
+    },
+    {
+      "id": "emit-screen",
+      "from": "emit",
+      "to": "screen"
+    },
+    {
+      "id": "emit-pending",
+      "from": "emit",
+      "to": "pending",
+      "label": "registro"
+    },
+    {
+      "id": "pending-mature",
+      "from": "pending",
+      "to": "mature",
+      "label": "al madurar"
+    },
+    {
+      "id": "mature-mix",
+      "from": "mature",
+      "to": "mix",
+      "label": "pesos posteriores",
+      "labelDy": 24
+    },
+    {
+      "id": "mature-experts",
+      "from": "mature",
+      "to": "experts",
+      "label": "etiqueta menos núcleo"
+    },
+    {
+      "id": "controls-screen",
+      "from": "controls",
+      "to": "screen",
+      "label": "control",
+      "variant": "dashed"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "Operador",
+      "items": [
+        "Semividas de calendario de los coeficientes, incluidas las T de B2",
+        "Hedge usa los componentes guardados y etiquetas maduras",
+        "Freund y Schapire (1997), adaptado sin reivindicar su cota"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "Controles",
+      "items": [
+        "Pesos uniformes con los mismos expertos",
+        "Tres copias de una escala y una sola copia",
+        "B6 con su retención original, sin cambiar su identidad"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "Estado",
+      "items": [
+        "E1 y PT5 son mecanismos distintos",
+        "Comparación predictiva y CUDA pendientes",
+        "La lectura no rebasa el reloj ni modifica la memoria"
+      ]
+    }
+  ]
+}

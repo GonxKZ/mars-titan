@@ -1,0 +1,895 @@
+{
+  "schema_version": 1,
+  "scientific_data": false,
+  "device": "cpu",
+  "python": "3.12.14",
+  "platform": "Linux-7.0.0-38-generic-x86_64-with-glibc2.43",
+  "measured": [
+    {
+      "price_context": 64,
+      "input_widths": [
+        5,
+        384,
+        512,
+        3,
+        6
+      ],
+      "configuration": {
+        "writes_per_market": 64,
+        "min_history": 4,
+        "initial_scale": 0.01,
+        "scale_floor": 1e-08
+      },
+      "cases": [
+        {
+          "arm": "baseline",
+          "repetition": 0,
+          "warmup": true,
+          "seconds": 2.787257189163938,
+          "selected": {
+            "validation": 64,
+            "calibration": 64,
+            "evaluation": 256
+          },
+          "rows": {
+            "validation": 64,
+            "calibration": 64,
+            "evaluation": 256
+          },
+          "mature_rows_per_second": 137.76984825544,
+          "output_bytes": 30728,
+          "population_sha256": {
+            "validation": "59c61174cd7bb2149c7c85d80685b07ac3750a4a5cce93d28d50e94622ebf965",
+            "calibration": "59462ede254ce5ef74b1891e378ba7184b894fff6a862b236251cc02452bc6cb",
+            "evaluation": "a385e69c65fb3c8bdba308bdbf3a7a4622b8ff942fedd4c7a504241ff826e0fa"
+          }
+        },
+        {
+          "arm": "standardized_error",
+          "repetition": 0,
+          "warmup": true,
+          "seconds": 2.81314430385828,
+          "selected": {
+            "validation": 64,
+            "calibration": 64,
+            "evaluation": 256
+          },
+          "rows": {
+            "validation": 64,
+            "calibration": 64,
+            "evaluation": 256
+          },
+          "mature_rows_per_second": 136.50206264688833,
+          "output_bytes": 37042,
+          "population_sha256": {
+            "validation": "59c61174cd7bb2149c7c85d80685b07ac3750a4a5cce93d28d50e94622ebf965",
+            "calibration": "59462ede254ce5ef74b1891e378ba7184b894fff6a862b236251cc02452bc6cb",
+            "evaluation": "a385e69c65fb3c8bdba308bdbf3a7a4622b8ff942fedd4c7a504241ff826e0fa"
+          }
+        },
+        {
+          "arm": "absolute_error",
+          "repetition": 0,
+          "warmup": true,
+          "seconds": 2.7932735530193895,
+          "selected": {
+            "validation": 64,
+            "calibration": 64,
+            "evaluation": 256
+          },
+          "rows": {
+            "validation": 64,
+            "calibration": 64,
+            "evaluation": 256
+          },
+          "mature_rows_per_second": 137.47310913566454,
+          "output_bytes": 37009,
+          "population_sha256": {
+            "validation": "59c61174cd7bb2149c7c85d80685b07ac3750a4a5cce93d28d50e94622ebf965",
+            "calibration": "59462ede254ce5ef74b1891e378ba7184b894fff6a862b236251cc02452bc6cb",
+            "evaluation": "a385e69c65fb3c8bdba308bdbf3a7a4622b8ff942fedd4c7a504241ff826e0fa"
+          }
+        },
+        {
+          "arm": "uniform",
+          "repetition": 0,
+          "warmup": true,
+          "seconds": 2.9025492679793388,
+          "selected": {
+            "validation": 64,
+            "calibration": 64,
+            "evaluation": 256
+          },
+          "rows": {
+            "validation": 64,
+            "calibration": 64,
+            "evaluation": 256
+          },
+          "mature_rows_per_second": 132.2974959413276,
+          "output_bytes": 36954,
+          "population_sha256": {
+            "validation": "59c61174cd7bb2149c7c85d80685b07ac3750a4a5cce93d28d50e94622ebf965",
+            "calibration": "59462ede254ce5ef74b1891e378ba7184b894fff6a862b236251cc02452bc6cb",
+            "evaluation": "a385e69c65fb3c8bdba308bdbf3a7a4622b8ff942fedd4c7a504241ff826e0fa"
+          }
+        },
+        {
+          "arm": "uniform",
+          "repetition": 1,
+          "warmup": false,
+          "seconds": 4.01083534094505,
+          "selected": {
+            "validation": 64,
+            "calibration": 64,
+            "evaluation": 256
+          },
+          "rows": {
+            "validation": 64,
+            "calibration": 64,
+            "evaluation": 256
+          },
+          "mature_rows_per_second": 95.74065434197563,
+          "output_bytes": 36954,
+          "population_sha256": {
+            "validation": "59c61174cd7bb2149c7c85d80685b07ac3750a4a5cce93d28d50e94622ebf965",
+            "calibration": "59462ede254ce5ef74b1891e378ba7184b894fff6a862b236251cc02452bc6cb",
+            "evaluation": "a385e69c65fb3c8bdba308bdbf3a7a4622b8ff942fedd4c7a504241ff826e0fa"
+          }
+        },
+        {
+          "arm": "absolute_error",
+          "repetition": 1,
+          "warmup": false,
+          "seconds": 3.5602995860390365,
+          "selected": {
+            "validation": 64,
+            "calibration": 64,
+            "evaluation": 256
+          },
+          "rows": {
+            "validation": 64,
+            "calibration": 64,
+            "evaluation": 256
+          },
+          "mature_rows_per_second": 107.8560920844344,
+          "output_bytes": 37010,
+          "population_sha256": {
+            "validation": "59c61174cd7bb2149c7c85d80685b07ac3750a4a5cce93d28d50e94622ebf965",
+            "calibration": "59462ede254ce5ef74b1891e378ba7184b894fff6a862b236251cc02452bc6cb",
+            "evaluation": "a385e69c65fb3c8bdba308bdbf3a7a4622b8ff942fedd4c7a504241ff826e0fa"
+          }
+        },
+        {
+          "arm": "standardized_error",
+          "repetition": 1,
+          "warmup": false,
+          "seconds": 2.7598418530542403,
+          "selected": {
+            "validation": 64,
+            "calibration": 64,
+            "evaluation": 256
+          },
+          "rows": {
+            "validation": 64,
+            "calibration": 64,
+            "evaluation": 256
+          },
+          "mature_rows_per_second": 139.1384073602036,
+          "output_bytes": 37041,
+          "population_sha256": {
+            "validation": "59c61174cd7bb2149c7c85d80685b07ac3750a4a5cce93d28d50e94622ebf965",
+            "calibration": "59462ede254ce5ef74b1891e378ba7184b894fff6a862b236251cc02452bc6cb",
+            "evaluation": "a385e69c65fb3c8bdba308bdbf3a7a4622b8ff942fedd4c7a504241ff826e0fa"
+          }
+        },
+        {
+          "arm": "baseline",
+          "repetition": 1,
+          "warmup": false,
+          "seconds": 3.106859260937199,
+          "selected": {
+            "validation": 64,
+            "calibration": 64,
+            "evaluation": 256
+          },
+          "rows": {
+            "validation": 64,
+            "calibration": 64,
+            "evaluation": 256
+          },
+          "mature_rows_per_second": 123.59748792874659,
+          "output_bytes": 30726,
+          "population_sha256": {
+            "validation": "59c61174cd7bb2149c7c85d80685b07ac3750a4a5cce93d28d50e94622ebf965",
+            "calibration": "59462ede254ce5ef74b1891e378ba7184b894fff6a862b236251cc02452bc6cb",
+            "evaluation": "a385e69c65fb3c8bdba308bdbf3a7a4622b8ff942fedd4c7a504241ff826e0fa"
+          }
+        },
+        {
+          "arm": "baseline",
+          "repetition": 2,
+          "warmup": false,
+          "seconds": 3.1321671449113637,
+          "selected": {
+            "validation": 64,
+            "calibration": 64,
+            "evaluation": 256
+          },
+          "rows": {
+            "validation": 64,
+            "calibration": 64,
+            "evaluation": 256
+          },
+          "mature_rows_per_second": 122.59882127422887,
+          "output_bytes": 30728,
+          "population_sha256": {
+            "validation": "59c61174cd7bb2149c7c85d80685b07ac3750a4a5cce93d28d50e94622ebf965",
+            "calibration": "59462ede254ce5ef74b1891e378ba7184b894fff6a862b236251cc02452bc6cb",
+            "evaluation": "a385e69c65fb3c8bdba308bdbf3a7a4622b8ff942fedd4c7a504241ff826e0fa"
+          }
+        },
+        {
+          "arm": "standardized_error",
+          "repetition": 2,
+          "warmup": false,
+          "seconds": 2.421146821929142,
+          "selected": {
+            "validation": 64,
+            "calibration": 64,
+            "evaluation": 256
+          },
+          "rows": {
+            "validation": 64,
+            "calibration": 64,
+            "evaluation": 256
+          },
+          "mature_rows_per_second": 158.60252526694487,
+          "output_bytes": 37042,
+          "population_sha256": {
+            "validation": "59c61174cd7bb2149c7c85d80685b07ac3750a4a5cce93d28d50e94622ebf965",
+            "calibration": "59462ede254ce5ef74b1891e378ba7184b894fff6a862b236251cc02452bc6cb",
+            "evaluation": "a385e69c65fb3c8bdba308bdbf3a7a4622b8ff942fedd4c7a504241ff826e0fa"
+          }
+        },
+        {
+          "arm": "absolute_error",
+          "repetition": 2,
+          "warmup": false,
+          "seconds": 2.2259584278799593,
+          "selected": {
+            "validation": 64,
+            "calibration": 64,
+            "evaluation": 256
+          },
+          "rows": {
+            "validation": 64,
+            "calibration": 64,
+            "evaluation": 256
+          },
+          "mature_rows_per_second": 172.50996028965739,
+          "output_bytes": 37010,
+          "population_sha256": {
+            "validation": "59c61174cd7bb2149c7c85d80685b07ac3750a4a5cce93d28d50e94622ebf965",
+            "calibration": "59462ede254ce5ef74b1891e378ba7184b894fff6a862b236251cc02452bc6cb",
+            "evaluation": "a385e69c65fb3c8bdba308bdbf3a7a4622b8ff942fedd4c7a504241ff826e0fa"
+          }
+        },
+        {
+          "arm": "uniform",
+          "repetition": 2,
+          "warmup": false,
+          "seconds": 3.1134498179890215,
+          "selected": {
+            "validation": 64,
+            "calibration": 64,
+            "evaluation": 256
+          },
+          "rows": {
+            "validation": 64,
+            "calibration": 64,
+            "evaluation": 256
+          },
+          "mature_rows_per_second": 123.33585650917148,
+          "output_bytes": 36952,
+          "population_sha256": {
+            "validation": "59c61174cd7bb2149c7c85d80685b07ac3750a4a5cce93d28d50e94622ebf965",
+            "calibration": "59462ede254ce5ef74b1891e378ba7184b894fff6a862b236251cc02452bc6cb",
+            "evaluation": "a385e69c65fb3c8bdba308bdbf3a7a4622b8ff942fedd4c7a504241ff826e0fa"
+          }
+        },
+        {
+          "arm": "uniform",
+          "repetition": 3,
+          "warmup": false,
+          "seconds": 3.102724615018815,
+          "selected": {
+            "validation": 64,
+            "calibration": 64,
+            "evaluation": 256
+          },
+          "rows": {
+            "validation": 64,
+            "calibration": 64,
+            "evaluation": 256
+          },
+          "mature_rows_per_second": 123.76219215241937,
+          "output_bytes": 36953,
+          "population_sha256": {
+            "validation": "59c61174cd7bb2149c7c85d80685b07ac3750a4a5cce93d28d50e94622ebf965",
+            "calibration": "59462ede254ce5ef74b1891e378ba7184b894fff6a862b236251cc02452bc6cb",
+            "evaluation": "a385e69c65fb3c8bdba308bdbf3a7a4622b8ff942fedd4c7a504241ff826e0fa"
+          }
+        },
+        {
+          "arm": "absolute_error",
+          "repetition": 3,
+          "warmup": false,
+          "seconds": 2.797397766029462,
+          "selected": {
+            "validation": 64,
+            "calibration": 64,
+            "evaluation": 256
+          },
+          "rows": {
+            "validation": 64,
+            "calibration": 64,
+            "evaluation": 256
+          },
+          "mature_rows_per_second": 137.2704320648105,
+          "output_bytes": 37010,
+          "population_sha256": {
+            "validation": "59c61174cd7bb2149c7c85d80685b07ac3750a4a5cce93d28d50e94622ebf965",
+            "calibration": "59462ede254ce5ef74b1891e378ba7184b894fff6a862b236251cc02452bc6cb",
+            "evaluation": "a385e69c65fb3c8bdba308bdbf3a7a4622b8ff942fedd4c7a504241ff826e0fa"
+          }
+        },
+        {
+          "arm": "standardized_error",
+          "repetition": 3,
+          "warmup": false,
+          "seconds": 2.4274234790354967,
+          "selected": {
+            "validation": 64,
+            "calibration": 64,
+            "evaluation": 256
+          },
+          "rows": {
+            "validation": 64,
+            "calibration": 64,
+            "evaluation": 256
+          },
+          "mature_rows_per_second": 158.1924222602383,
+          "output_bytes": 37041,
+          "population_sha256": {
+            "validation": "59c61174cd7bb2149c7c85d80685b07ac3750a4a5cce93d28d50e94622ebf965",
+            "calibration": "59462ede254ce5ef74b1891e378ba7184b894fff6a862b236251cc02452bc6cb",
+            "evaluation": "a385e69c65fb3c8bdba308bdbf3a7a4622b8ff942fedd4c7a504241ff826e0fa"
+          }
+        },
+        {
+          "arm": "baseline",
+          "repetition": 3,
+          "warmup": false,
+          "seconds": 2.2148973818402737,
+          "selected": {
+            "validation": 64,
+            "calibration": 64,
+            "evaluation": 256
+          },
+          "rows": {
+            "validation": 64,
+            "calibration": 64,
+            "evaluation": 256
+          },
+          "mature_rows_per_second": 173.37146323273407,
+          "output_bytes": 30727,
+          "population_sha256": {
+            "validation": "59c61174cd7bb2149c7c85d80685b07ac3750a4a5cce93d28d50e94622ebf965",
+            "calibration": "59462ede254ce5ef74b1891e378ba7184b894fff6a862b236251cc02452bc6cb",
+            "evaluation": "a385e69c65fb3c8bdba308bdbf3a7a4622b8ff942fedd4c7a504241ff826e0fa"
+          }
+        }
+      ],
+      "summaries": [
+        {
+          "arm": "baseline",
+          "samples": 3,
+          "median_seconds": 3.106859260937199,
+          "minimum_seconds": 2.2148973818402737,
+          "maximum_seconds": 3.1321671449113637
+        },
+        {
+          "arm": "standardized_error",
+          "samples": 3,
+          "median_seconds": 2.4274234790354967,
+          "minimum_seconds": 2.421146821929142,
+          "maximum_seconds": 2.7598418530542403
+        },
+        {
+          "arm": "absolute_error",
+          "samples": 3,
+          "median_seconds": 2.797397766029462,
+          "minimum_seconds": 2.2259584278799593,
+          "maximum_seconds": 3.5602995860390365
+        },
+        {
+          "arm": "uniform",
+          "samples": 3,
+          "median_seconds": 3.1134498179890215,
+          "minimum_seconds": 3.102724615018815,
+          "maximum_seconds": 4.01083534094505
+        }
+      ],
+      "warmup": 1,
+      "repeats": 3,
+      "total_seconds": 46.28282049088739,
+      "parent_unchanged": true,
+      "assets": 64,
+      "price_row_group_size": 8192
+    },
+    {
+      "price_context": 64,
+      "input_widths": [
+        5,
+        384,
+        512,
+        3,
+        6
+      ],
+      "configuration": {
+        "writes_per_market": 64,
+        "min_history": 4,
+        "initial_scale": 0.01,
+        "scale_floor": 1e-08
+      },
+      "cases": [
+        {
+          "arm": "baseline",
+          "repetition": 0,
+          "warmup": true,
+          "seconds": 9.94216178683564,
+          "selected": {
+            "validation": 256,
+            "calibration": 256,
+            "evaluation": 1024
+          },
+          "rows": {
+            "validation": 256,
+            "calibration": 256,
+            "evaluation": 1024
+          },
+          "mature_rows_per_second": 154.4935631638794,
+          "output_bytes": 33508,
+          "population_sha256": {
+            "validation": "92cca9021bf680532fca6b0438670c99a7674d8d23ad4e97037ab4d00f71a6da",
+            "calibration": "8a60f42781bc9e39d0658989099d85780a2751e6b8b6f83cbf511e9244863f5c",
+            "evaluation": "bcd04b5b853870212311c99644ca0c3f65c5fbeabe76804b168a16a175472646"
+          }
+        },
+        {
+          "arm": "standardized_error",
+          "repetition": 0,
+          "warmup": true,
+          "seconds": 9.531749915098771,
+          "selected": {
+            "validation": 64,
+            "calibration": 64,
+            "evaluation": 256
+          },
+          "rows": {
+            "validation": 256,
+            "calibration": 256,
+            "evaluation": 1024
+          },
+          "mature_rows_per_second": 161.14564625398938,
+          "output_bytes": 39822,
+          "population_sha256": {
+            "validation": "92cca9021bf680532fca6b0438670c99a7674d8d23ad4e97037ab4d00f71a6da",
+            "calibration": "8a60f42781bc9e39d0658989099d85780a2751e6b8b6f83cbf511e9244863f5c",
+            "evaluation": "bcd04b5b853870212311c99644ca0c3f65c5fbeabe76804b168a16a175472646"
+          }
+        },
+        {
+          "arm": "absolute_error",
+          "repetition": 0,
+          "warmup": true,
+          "seconds": 11.293521354906261,
+          "selected": {
+            "validation": 64,
+            "calibration": 64,
+            "evaluation": 256
+          },
+          "rows": {
+            "validation": 256,
+            "calibration": 256,
+            "evaluation": 1024
+          },
+          "mature_rows_per_second": 136.00718073045599,
+          "output_bytes": 39790,
+          "population_sha256": {
+            "validation": "92cca9021bf680532fca6b0438670c99a7674d8d23ad4e97037ab4d00f71a6da",
+            "calibration": "8a60f42781bc9e39d0658989099d85780a2751e6b8b6f83cbf511e9244863f5c",
+            "evaluation": "bcd04b5b853870212311c99644ca0c3f65c5fbeabe76804b168a16a175472646"
+          }
+        },
+        {
+          "arm": "uniform",
+          "repetition": 0,
+          "warmup": true,
+          "seconds": 17.249349856982008,
+          "selected": {
+            "validation": 64,
+            "calibration": 64,
+            "evaluation": 256
+          },
+          "rows": {
+            "validation": 256,
+            "calibration": 256,
+            "evaluation": 1024
+          },
+          "mature_rows_per_second": 89.04683438711021,
+          "output_bytes": 39734,
+          "population_sha256": {
+            "validation": "92cca9021bf680532fca6b0438670c99a7674d8d23ad4e97037ab4d00f71a6da",
+            "calibration": "8a60f42781bc9e39d0658989099d85780a2751e6b8b6f83cbf511e9244863f5c",
+            "evaluation": "bcd04b5b853870212311c99644ca0c3f65c5fbeabe76804b168a16a175472646"
+          }
+        },
+        {
+          "arm": "uniform",
+          "repetition": 1,
+          "warmup": false,
+          "seconds": 17.702097994973883,
+          "selected": {
+            "validation": 64,
+            "calibration": 64,
+            "evaluation": 256
+          },
+          "rows": {
+            "validation": 256,
+            "calibration": 256,
+            "evaluation": 1024
+          },
+          "mature_rows_per_second": 86.7693761742881,
+          "output_bytes": 39734,
+          "population_sha256": {
+            "validation": "92cca9021bf680532fca6b0438670c99a7674d8d23ad4e97037ab4d00f71a6da",
+            "calibration": "8a60f42781bc9e39d0658989099d85780a2751e6b8b6f83cbf511e9244863f5c",
+            "evaluation": "bcd04b5b853870212311c99644ca0c3f65c5fbeabe76804b168a16a175472646"
+          }
+        },
+        {
+          "arm": "absolute_error",
+          "repetition": 1,
+          "warmup": false,
+          "seconds": 17.488958491012454,
+          "selected": {
+            "validation": 64,
+            "calibration": 64,
+            "evaluation": 256
+          },
+          "rows": {
+            "validation": 256,
+            "calibration": 256,
+            "evaluation": 1024
+          },
+          "mature_rows_per_second": 87.82684233537107,
+          "output_bytes": 39790,
+          "population_sha256": {
+            "validation": "92cca9021bf680532fca6b0438670c99a7674d8d23ad4e97037ab4d00f71a6da",
+            "calibration": "8a60f42781bc9e39d0658989099d85780a2751e6b8b6f83cbf511e9244863f5c",
+            "evaluation": "bcd04b5b853870212311c99644ca0c3f65c5fbeabe76804b168a16a175472646"
+          }
+        },
+        {
+          "arm": "standardized_error",
+          "repetition": 1,
+          "warmup": false,
+          "seconds": 18.26244145515375,
+          "selected": {
+            "validation": 64,
+            "calibration": 64,
+            "evaluation": 256
+          },
+          "rows": {
+            "validation": 256,
+            "calibration": 256,
+            "evaluation": 1024
+          },
+          "mature_rows_per_second": 84.10704580610899,
+          "output_bytes": 39822,
+          "population_sha256": {
+            "validation": "92cca9021bf680532fca6b0438670c99a7674d8d23ad4e97037ab4d00f71a6da",
+            "calibration": "8a60f42781bc9e39d0658989099d85780a2751e6b8b6f83cbf511e9244863f5c",
+            "evaluation": "bcd04b5b853870212311c99644ca0c3f65c5fbeabe76804b168a16a175472646"
+          }
+        },
+        {
+          "arm": "baseline",
+          "repetition": 1,
+          "warmup": false,
+          "seconds": 17.190813391003758,
+          "selected": {
+            "validation": 256,
+            "calibration": 256,
+            "evaluation": 1024
+          },
+          "rows": {
+            "validation": 256,
+            "calibration": 256,
+            "evaluation": 1024
+          },
+          "mature_rows_per_second": 89.35004790429606,
+          "output_bytes": 33509,
+          "population_sha256": {
+            "validation": "92cca9021bf680532fca6b0438670c99a7674d8d23ad4e97037ab4d00f71a6da",
+            "calibration": "8a60f42781bc9e39d0658989099d85780a2751e6b8b6f83cbf511e9244863f5c",
+            "evaluation": "bcd04b5b853870212311c99644ca0c3f65c5fbeabe76804b168a16a175472646"
+          }
+        },
+        {
+          "arm": "baseline",
+          "repetition": 2,
+          "warmup": false,
+          "seconds": 17.761086937971413,
+          "selected": {
+            "validation": 256,
+            "calibration": 256,
+            "evaluation": 1024
+          },
+          "rows": {
+            "validation": 256,
+            "calibration": 256,
+            "evaluation": 1024
+          },
+          "mature_rows_per_second": 86.48119371096523,
+          "output_bytes": 33508,
+          "population_sha256": {
+            "validation": "92cca9021bf680532fca6b0438670c99a7674d8d23ad4e97037ab4d00f71a6da",
+            "calibration": "8a60f42781bc9e39d0658989099d85780a2751e6b8b6f83cbf511e9244863f5c",
+            "evaluation": "bcd04b5b853870212311c99644ca0c3f65c5fbeabe76804b168a16a175472646"
+          }
+        },
+        {
+          "arm": "standardized_error",
+          "repetition": 2,
+          "warmup": false,
+          "seconds": 17.039595291018486,
+          "selected": {
+            "validation": 64,
+            "calibration": 64,
+            "evaluation": 256
+          },
+          "rows": {
+            "validation": 256,
+            "calibration": 256,
+            "evaluation": 1024
+          },
+          "mature_rows_per_second": 90.1429860138533,
+          "output_bytes": 39823,
+          "population_sha256": {
+            "validation": "92cca9021bf680532fca6b0438670c99a7674d8d23ad4e97037ab4d00f71a6da",
+            "calibration": "8a60f42781bc9e39d0658989099d85780a2751e6b8b6f83cbf511e9244863f5c",
+            "evaluation": "bcd04b5b853870212311c99644ca0c3f65c5fbeabe76804b168a16a175472646"
+          }
+        },
+        {
+          "arm": "absolute_error",
+          "repetition": 2,
+          "warmup": false,
+          "seconds": 16.85603359201923,
+          "selected": {
+            "validation": 64,
+            "calibration": 64,
+            "evaluation": 256
+          },
+          "rows": {
+            "validation": 256,
+            "calibration": 256,
+            "evaluation": 1024
+          },
+          "mature_rows_per_second": 91.12464042117504,
+          "output_bytes": 39791,
+          "population_sha256": {
+            "validation": "92cca9021bf680532fca6b0438670c99a7674d8d23ad4e97037ab4d00f71a6da",
+            "calibration": "8a60f42781bc9e39d0658989099d85780a2751e6b8b6f83cbf511e9244863f5c",
+            "evaluation": "bcd04b5b853870212311c99644ca0c3f65c5fbeabe76804b168a16a175472646"
+          }
+        },
+        {
+          "arm": "uniform",
+          "repetition": 2,
+          "warmup": false,
+          "seconds": 18.87095383508131,
+          "selected": {
+            "validation": 64,
+            "calibration": 64,
+            "evaluation": 256
+          },
+          "rows": {
+            "validation": 256,
+            "calibration": 256,
+            "evaluation": 1024
+          },
+          "mature_rows_per_second": 81.39493177841172,
+          "output_bytes": 39735,
+          "population_sha256": {
+            "validation": "92cca9021bf680532fca6b0438670c99a7674d8d23ad4e97037ab4d00f71a6da",
+            "calibration": "8a60f42781bc9e39d0658989099d85780a2751e6b8b6f83cbf511e9244863f5c",
+            "evaluation": "bcd04b5b853870212311c99644ca0c3f65c5fbeabe76804b168a16a175472646"
+          }
+        },
+        {
+          "arm": "uniform",
+          "repetition": 3,
+          "warmup": false,
+          "seconds": 17.77922955295071,
+          "selected": {
+            "validation": 64,
+            "calibration": 64,
+            "evaluation": 256
+          },
+          "rows": {
+            "validation": 256,
+            "calibration": 256,
+            "evaluation": 1024
+          },
+          "mature_rows_per_second": 86.39294494879164,
+          "output_bytes": 39734,
+          "population_sha256": {
+            "validation": "92cca9021bf680532fca6b0438670c99a7674d8d23ad4e97037ab4d00f71a6da",
+            "calibration": "8a60f42781bc9e39d0658989099d85780a2751e6b8b6f83cbf511e9244863f5c",
+            "evaluation": "bcd04b5b853870212311c99644ca0c3f65c5fbeabe76804b168a16a175472646"
+          }
+        },
+        {
+          "arm": "absolute_error",
+          "repetition": 3,
+          "warmup": false,
+          "seconds": 17.88340264512226,
+          "selected": {
+            "validation": 64,
+            "calibration": 64,
+            "evaluation": 256
+          },
+          "rows": {
+            "validation": 256,
+            "calibration": 256,
+            "evaluation": 1024
+          },
+          "mature_rows_per_second": 85.88969506979969,
+          "output_bytes": 39791,
+          "population_sha256": {
+            "validation": "92cca9021bf680532fca6b0438670c99a7674d8d23ad4e97037ab4d00f71a6da",
+            "calibration": "8a60f42781bc9e39d0658989099d85780a2751e6b8b6f83cbf511e9244863f5c",
+            "evaluation": "bcd04b5b853870212311c99644ca0c3f65c5fbeabe76804b168a16a175472646"
+          }
+        },
+        {
+          "arm": "standardized_error",
+          "repetition": 3,
+          "warmup": false,
+          "seconds": 17.34349242784083,
+          "selected": {
+            "validation": 64,
+            "calibration": 64,
+            "evaluation": 256
+          },
+          "rows": {
+            "validation": 256,
+            "calibration": 256,
+            "evaluation": 1024
+          },
+          "mature_rows_per_second": 88.56347741901853,
+          "output_bytes": 39823,
+          "population_sha256": {
+            "validation": "92cca9021bf680532fca6b0438670c99a7674d8d23ad4e97037ab4d00f71a6da",
+            "calibration": "8a60f42781bc9e39d0658989099d85780a2751e6b8b6f83cbf511e9244863f5c",
+            "evaluation": "bcd04b5b853870212311c99644ca0c3f65c5fbeabe76804b168a16a175472646"
+          }
+        },
+        {
+          "arm": "baseline",
+          "repetition": 3,
+          "warmup": false,
+          "seconds": 17.70207697385922,
+          "selected": {
+            "validation": 256,
+            "calibration": 256,
+            "evaluation": 1024
+          },
+          "rows": {
+            "validation": 256,
+            "calibration": 256,
+            "evaluation": 1024
+          },
+          "mature_rows_per_second": 86.76947921242359,
+          "output_bytes": 33509,
+          "population_sha256": {
+            "validation": "92cca9021bf680532fca6b0438670c99a7674d8d23ad4e97037ab4d00f71a6da",
+            "calibration": "8a60f42781bc9e39d0658989099d85780a2751e6b8b6f83cbf511e9244863f5c",
+            "evaluation": "bcd04b5b853870212311c99644ca0c3f65c5fbeabe76804b168a16a175472646"
+          }
+        }
+      ],
+      "summaries": [
+        {
+          "arm": "baseline",
+          "samples": 3,
+          "median_seconds": 17.70207697385922,
+          "minimum_seconds": 17.190813391003758,
+          "maximum_seconds": 17.761086937971413
+        },
+        {
+          "arm": "standardized_error",
+          "samples": 3,
+          "median_seconds": 17.34349242784083,
+          "minimum_seconds": 17.039595291018486,
+          "maximum_seconds": 18.26244145515375
+        },
+        {
+          "arm": "absolute_error",
+          "samples": 3,
+          "median_seconds": 17.488958491012454,
+          "minimum_seconds": 16.85603359201923,
+          "maximum_seconds": 17.88340264512226
+        },
+        {
+          "arm": "uniform",
+          "samples": 3,
+          "median_seconds": 17.77922955295071,
+          "minimum_seconds": 17.702097994973883,
+          "maximum_seconds": 18.87095383508131
+        }
+      ],
+      "warmup": 1,
+      "repeats": 3,
+      "total_seconds": 260.1119671051856,
+      "parent_unchanged": true,
+      "assets": 256,
+      "price_row_group_size": 8192
+    }
+  ],
+  "total_seconds": 326.7201980180107,
+  "process_peak_rss_kib": 1382980,
+  "sources": {
+    "benchmarks/salience_window_cost_check.py": "e3876f38706f826630f431b299dd492fb40bea7bc867533fa61392f9be290041",
+    "src/mars_titan/training/salience_inference.py": "878ea152ebd00c445ca9cd1d63d79fb67413bc6c082c55e93f81b1a1c4c79bd3",
+    "src/mars_titan/training/mars_titan_correction.py": "f609f0652fee20384a6b947805965c0324bb7d0912cf5eb566fb9a32c6ef3f53"
+  },
+  "limits": [
+    "Corpus manual y padres sin entrenar. No mide calidad predictiva ni CUDA.",
+    "El tiempo interno de cada ventana incluye sus tres fases y su publicación.",
+    "La preparación del corpus y las comparaciones de población están en el tiempo de proceso.",
+    "Los tamaños, máscaras y calendarios de fixture no representan toda la edición histórica.",
+    "El RSS es absoluto y tres muestras no acreditan colas de latencia estables.",
+    "El cupo de 64 conserva todos los candidatos del fixture de 64 activos. Sus diferencias temporales no acreditan una aceleración.",
+    "No hubo inventario continuo de cargas CPU ajenas. Las observaciones de GPU se registraron antes de la ejecución.",
+    "Los presupuestos temporales se ampliaron para completar la misma matriz técnica, sin cambiar controles, precisión o número de repeticiones."
+  ],
+  "external_process": {
+    "wall_seconds": 331.61,
+    "user_seconds": 298.17,
+    "system_seconds": 44.97,
+    "peak_rss_kib": 1382980,
+    "exit_code": 0,
+    "receipt_sha256": "e52e2db6d3a4c4c2800fb8c852215c65e30364b247ebaffef0e0ad9d153a4f72"
+  },
+  "runtime": {
+    "torch": "2.14.0+cu130",
+    "model_dtype": "float64",
+    "hidden_size": 32,
+    "cpu": "AMD Ryzen 9 8945HS w/ Radeon 780M Graphics",
+    "omp_threads": 2,
+    "mkl_threads": 2,
+    "openblas_threads": 2,
+    "ram_limit_gib": 6
+  },
+  "observed_gpu_before_execution": {
+    "model": "NVIDIA GeForce RTX 4070 Laptop GPU",
+    "total_mib": 8188,
+    "free_mib": 745,
+    "compute_processes": 2,
+    "workload_started": false
+  }
+}

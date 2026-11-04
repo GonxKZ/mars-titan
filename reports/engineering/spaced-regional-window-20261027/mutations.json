@@ -1,0 +1,594 @@
+{
+  "schema_version": 1,
+  "status": "passed",
+  "planned": 9,
+  "killed": 9,
+  "optimizer_attempts": 0,
+  "skipped": 0,
+  "scope": "Nueve fallos dirigidos con G1/M1/G2. No es una puntuación universal de mutación.",
+  "groups": [
+    {
+      "family": "phase",
+      "receipt_sha256": "70ffe58a8db441e9a67212e8ddb228b841ced44beb1ffd983f0ff56af464f8b3",
+      "recipes_sha256": "7772896265e9c6f7a6aeeffcc2c355576a98558107c6c3011d09d636cbfcedd3",
+      "executor_sha256": "2e7d46ec545dae4b55a02a0d057c24c80ea4dff6b8bf517dfe8edb761a9ee95a",
+      "killed": 3,
+      "seconds": 42.746551191899925
+    },
+    {
+      "family": "selected",
+      "receipt_sha256": "26ca2633a5fe7015ca55835c37f03072e74bc446c5b86ac5afec1f6b4958681c",
+      "recipes_sha256": "9288c0134df9f32992e0434ef0e8d73ab684fe0caafd211d4466d1910a86f942",
+      "executor_sha256": "2e7d46ec545dae4b55a02a0d057c24c80ea4dff6b8bf517dfe8edb761a9ee95a",
+      "killed": 3,
+      "seconds": 38.35189008992165
+    },
+    {
+      "family": "study",
+      "receipt_sha256": "ad3029c803bd5e5cfcbeab0451e94be5b1f1e527fd10459734d1a52e0817cb5f",
+      "recipes_sha256": "99cd794ad65f8b77e1b9fde91c9aa46ab77e8759dea44a6541102296ea0664f7",
+      "executor_sha256": "2e7d46ec545dae4b55a02a0d057c24c80ea4dff6b8bf517dfe8edb761a9ee95a",
+      "killed": 1,
+      "seconds": 8.91828107694164
+    },
+    {
+      "family": "window",
+      "receipt_sha256": "d3dad380093ceb40b200dc98984c4444199685dfcbde4bf28e0509b413f6545a",
+      "recipes_sha256": "da117f645e8db55d5800e553fe3667b29a042a2eb43e3fd3eecd155d6b9afdf4",
+      "executor_sha256": "2e7d46ec545dae4b55a02a0d057c24c80ea4dff6b8bf517dfe8edb761a9ee95a",
+      "killed": 2,
+      "seconds": 45.98537479992956
+    }
+  ],
+  "cases": [
+    {
+      "id": "late_clock_check",
+      "status": "killed_with_green_controls",
+      "source": {
+        "path": "src/mars_titan/training/spaced_regional_phase.py",
+        "sha256": "7ddc5384742b91a83b930d6772f13f46a438ad5eda344966dd1abd77c00be248"
+      },
+      "recipe": {
+        "nodeid": "tests/memory/test_spaced_regional_inference.py::test_future_block_is_refused_before_any_parent_preparation",
+        "anchor": "all(at == cutoff for batch in batches for at in batch.prediction_at)",
+        "replacement": "True",
+        "expected_failure": {
+          "exception_type": "AssertionError",
+          "longrepr_contains": "assert"
+        }
+      },
+      "phases": [
+        {
+          "phase": "G1",
+          "returncode": 0,
+          "elapsed_s": 3.9238521091174334,
+          "log_sha256": "c61d2369f9e3d20a1d9963c3e0d427ddd3a892aeeccb8c1eee8e01a82d15b650",
+          "xml_sha256": "a7eb08e012fff655ad6c31262c1decb2fa02e5e426200630f23b281f0eef9441",
+          "events_sha256": "2789a54c6e2e4dd4001523e860a11c5bebbb46ebd110f411c7b42e98ad4dec15",
+          "xml_counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          }
+        },
+        {
+          "phase": "M1",
+          "returncode": 1,
+          "elapsed_s": 4.373185483040288,
+          "log_sha256": "c835c43bad291858dede6f9466092de511fee193759c9f33a756b34a9d129b59",
+          "xml_sha256": "ca2b372919751ea7793772c27bdeebffb048cc9a0aa91a23ffac9427d652eb1e",
+          "events_sha256": "8cb7163783889429e6481dfd69e75a34a739d4b7c8b20d5f5a7b089633b572a5",
+          "xml_counts": {
+            "total": 1,
+            "failure": 1,
+            "error": 0,
+            "skipped": 0
+          }
+        },
+        {
+          "phase": "G2",
+          "returncode": 0,
+          "elapsed_s": 4.075850056950003,
+          "log_sha256": "2581df6f5672a6567b264f7a0acae07d2467ce99ecb6f946aa3e6fd7629cfaed",
+          "xml_sha256": "d193a4d66261eaf13ebe5b78688f914424a93c71ca8cf98d73f973affa3f5ea8",
+          "events_sha256": "bf309cc853aaa1d2d5dfcc8dbf048bbc897e256e88eadf1ae34cfa84233bde55",
+          "xml_counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          }
+        }
+      ]
+    },
+    {
+      "id": "undercount_irregular_blocks",
+      "status": "killed_with_green_controls",
+      "source": {
+        "path": "src/mars_titan/training/spaced_regional_phase.py",
+        "sha256": "7ddc5384742b91a83b930d6772f13f46a438ad5eda344966dd1abd77c00be248"
+      },
+      "recipe": {
+        "nodeid": "tests/memory/test_spaced_regional_inference.py::test_irregular_blocks_keep_points_and_count_actual_projection_calls",
+        "anchor": "work[\"extra_pool_projection_calls\"] = len(batches) if support > 1 else 0",
+        "replacement": "pass",
+        "expected_failure": {
+          "exception_type": "AssertionError",
+          "longrepr_contains": "assert"
+        }
+      },
+      "phases": [
+        {
+          "phase": "G1",
+          "returncode": 0,
+          "elapsed_s": 4.828427911037579,
+          "log_sha256": "169c83f66e94c449c3c1a0d5644666a236a88e470e173e22044316b935935eaf",
+          "xml_sha256": "8fec70e36fd583ed382ba04979a521885ce9f3bd383206bc394cdfc9bb313e1b",
+          "events_sha256": "6af30f6aa3c28a5cca46474bb42408c0a21a3e50af99fdf7f88e975e896d1b82",
+          "xml_counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          }
+        },
+        {
+          "phase": "M1",
+          "returncode": 1,
+          "elapsed_s": 5.382642745040357,
+          "log_sha256": "e95496e3ed91dffdbaa42dd6170a593b0dda0dfea224cb432c086020682a9ce7",
+          "xml_sha256": "f85ff668693e88b7832c2cc6adfd155cd518b712f089985b0ac01636fbbd7d64",
+          "events_sha256": "f206062486d84bba995306ed0c3fdd7a90e498cdd65c0b05ef16864b3829a20e",
+          "xml_counts": {
+            "total": 1,
+            "failure": 1,
+            "error": 0,
+            "skipped": 0
+          }
+        },
+        {
+          "phase": "G2",
+          "returncode": 0,
+          "elapsed_s": 5.128932845080271,
+          "log_sha256": "c33dd053456ce1ef49a25182446d27165a429f40555c58f20c1a1758bc86a121",
+          "xml_sha256": "88c3ba0f0a66a1a66edaf7b07e5dfd688cb0f0ff786eb7ac4a9ee2cb27dd7e28",
+          "events_sha256": "5da616fb990a6d277c3d854e8ecad4dfa4bfea45677c72040125c7dccba387a8",
+          "xml_counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          }
+        }
+      ]
+    },
+    {
+      "id": "dispatch_standard_in_regional_phase",
+      "status": "killed_with_green_controls",
+      "source": {
+        "path": "src/mars_titan/training/spaced_inference.py",
+        "sha256": "108ded493a68f0c2e2f004a5a1f26834a52ef7e7008518c100f575216b34075f"
+      },
+      "recipe": {
+        "nodeid": "tests/memory/test_spaced_regional_inference.py::test_late_financial_outcomes_do_not_change_already_emitted_regional_points",
+        "anchor": "if regional\n            else apply_spaced_utility_readout",
+        "replacement": "if False\n            else apply_spaced_utility_readout",
+        "expected_failure": {
+          "exception_type": "ValueError",
+          "longrepr_contains": "lector estándar"
+        }
+      },
+      "phases": [
+        {
+          "phase": "G1",
+          "returncode": 0,
+          "elapsed_s": 3.924350111046806,
+          "log_sha256": "f4ea00f50ce290b49e54b69852d194d58ca6f8d8cb6774ce181cf2db7b9e8c75",
+          "xml_sha256": "f485bec9048172aff43af62e910e397ae5aaa154a9d8eaa50ea65b1a5fc7c35a",
+          "events_sha256": "4e71e5a0dc08ebd04be0de75f69d6f13477d60777ce9c4f6c0e08cc954d5960d",
+          "xml_counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          }
+        },
+        {
+          "phase": "M1",
+          "returncode": 1,
+          "elapsed_s": 4.3236338349524885,
+          "log_sha256": "2973505e28c98f56ccc20d46eda799649bafa19a4f95655bc31b4c3b91f4b962",
+          "xml_sha256": "8bdd0f36a643cde7c560a83fc3096d71f0d740e89fa89d9b2a8414b895cb2f11",
+          "events_sha256": "ed9ae4d0f628f8efe88677095844881b85427b505c37ba79be293b197f788beb",
+          "xml_counts": {
+            "total": 1,
+            "failure": 1,
+            "error": 0,
+            "skipped": 0
+          }
+        },
+        {
+          "phase": "G2",
+          "returncode": 0,
+          "elapsed_s": 4.577084954828024,
+          "log_sha256": "43320ff4b79ea3894d108145d2d01a1409e5600f9c3e30bef26daff9cc27a2e7",
+          "xml_sha256": "d99bfa454b7a4375d86f0e2e185828349183e3a2fd44e6336d96450042fe69e8",
+          "events_sha256": "ffe93bcdeaed315e317a44bc7416a4471ab0a1e03c1bd08a21ec26bfb489f0a2",
+          "xml_counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          }
+        }
+      ]
+    },
+    {
+      "id": "implicitly_accept_standard_checkpoint",
+      "status": "killed_with_green_controls",
+      "source": {
+        "path": "src/mars_titan/training/spaced_selected.py",
+        "sha256": "4c294038d98c1e027da15d585e242519a801539efc022213f25d0144d9e62049"
+      },
+      "recipe": {
+        "nodeid": "tests/memory/test_spaced_regional_selected.py::test_regional_loader_rejects_standard_state_before_gpu_or_parent_loading",
+        "anchor": "and (components.get(\"evidence_bridge\") is not None) == (reader_contract == \"regional\")",
+        "replacement": "and True",
+        "expected_failure": {
+          "exception_type": "Failed",
+          "longrepr_contains": "Reservó GPU"
+        }
+      },
+      "phases": [
+        {
+          "phase": "G1",
+          "returncode": 0,
+          "elapsed_s": 4.378442595014349,
+          "log_sha256": "abcad5411c13fcbadae639a11e65d117fc07189448f3fef9c9747a73dd2f8dd1",
+          "xml_sha256": "a6ad6383a2bedec4474f8d3f4512150029e42578ae404dad67fb042e9b679b5f",
+          "events_sha256": "7bb393b053eac867bd4ae7316e889966ea5d782a46c1c0ad3d56a866d8aac5f8",
+          "xml_counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          }
+        },
+        {
+          "phase": "M1",
+          "returncode": 1,
+          "elapsed_s": 4.076133111957461,
+          "log_sha256": "18c6aab54fc60aa5597b83a64fa53438f6b44ddfc0ec2bd2d6813972b0d6c4e5",
+          "xml_sha256": "0e6e7f4810beb7ae1e6ecf6749fb588cac0fa0e3b2e4a14e129805a7ebad516f",
+          "events_sha256": "60409133abf32a98b6562860b30fa66672d423c1091f9a28234a94c256d4c7cb",
+          "xml_counts": {
+            "total": 1,
+            "failure": 1,
+            "error": 0,
+            "skipped": 0
+          }
+        },
+        {
+          "phase": "G2",
+          "returncode": 0,
+          "elapsed_s": 3.5764906080439687,
+          "log_sha256": "5059e8cab1917830313cc43d37cfdd4ecf17d2efd090c6732645c0ea98e41ff8",
+          "xml_sha256": "60c6b2239bc880c0fc3952ede18cedbdcfc180443b4447b491ac1f8bc85789c1",
+          "events_sha256": "dd136cb6df6f543ff7e89ca8a679f84821f32b11664416a0b20ef7de5b6dbf1a",
+          "xml_counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          }
+        }
+      ]
+    },
+    {
+      "id": "ignore_canonical_variant_identity",
+      "status": "killed_with_green_controls",
+      "source": {
+        "path": "src/mars_titan/training/spaced_selected.py",
+        "sha256": "4c294038d98c1e027da15d585e242519a801539efc022213f25d0144d9e62049"
+      },
+      "recipe": {
+        "nodeid": "tests/memory/test_spaced_regional_selected.py::test_json_normalization_does_not_allow_a_different_variant",
+        "anchor": "and canonical(variant.identity()) == canonical(identity.get(\"variant\"))",
+        "replacement": "and True",
+        "expected_failure": {
+          "exception_type": "Failed",
+          "longrepr_contains": "DID NOT RAISE"
+        }
+      },
+      "phases": [
+        {
+          "phase": "G1",
+          "returncode": 0,
+          "elapsed_s": 3.823945594020188,
+          "log_sha256": "117fc97efab587b02a2738f5b524caed8febb1be274d8e11bdb4e245c4ebed78",
+          "xml_sha256": "bf7b9d784f1d3e956495b9c81b87a94fac39d35cec52efde364edfb5f0511817",
+          "events_sha256": "e778d98aa8931fb1e7eca1c2707c7bf31e1689f4aa0cf221eb5012a22aed7aa6",
+          "xml_counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          }
+        },
+        {
+          "phase": "M1",
+          "returncode": 1,
+          "elapsed_s": 4.272747631184757,
+          "log_sha256": "b8d4fd3dd86a2d3e8ddffde43096a6d2cb9bbdb2096f4be52504528448369882",
+          "xml_sha256": "a9a4f6f9b93203e32f077ecad109b1f9871681095da882aadf655a79111587f6",
+          "events_sha256": "75dfb873307cd7f37f4b1df98e66ea585ed3dd2b907892b4d842b17ee95f731d",
+          "xml_counts": {
+            "total": 1,
+            "failure": 1,
+            "error": 0,
+            "skipped": 0
+          }
+        },
+        {
+          "phase": "G2",
+          "returncode": 0,
+          "elapsed_s": 3.87526696594432,
+          "log_sha256": "32397ceb739e04bbfcda77323a43691e4a7bae6f7f08881f0c8c4ce30f21b5ac",
+          "xml_sha256": "816426ec686e2fa774688acab2e935ee4812d4831e3e1ea27502eef622bb60b5",
+          "events_sha256": "4718f0605a0e5051868daecf3c41de2617e916b00fe5a9d4aace899a5d5e673e",
+          "xml_counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          }
+        }
+      ]
+    },
+    {
+      "id": "copy_incompatible_regional_contract",
+      "status": "killed_with_green_controls",
+      "source": {
+        "path": "src/mars_titan/training/spaced_selected.py",
+        "sha256": "4c294038d98c1e027da15d585e242519a801539efc022213f25d0144d9e62049"
+      },
+      "recipe": {
+        "nodeid": "tests/memory/test_spaced_regional_selected.py::test_changed_regional_payload_is_rejected_before_copying_any_reader_parameter",
+        "anchor": "and canonical(state[\"model\"][\"_extra_state\"]) == canonical(fit[\"identity\"][\"readout\"])",
+        "replacement": "and True",
+        "expected_failure": {
+          "exception_type": "Failed",
+          "longrepr_contains": "Copió parámetros"
+        }
+      },
+      "phases": [
+        {
+          "phase": "G1",
+          "returncode": 0,
+          "elapsed_s": 3.5242250820156187,
+          "log_sha256": "9ca0431a9d28c4a8e4298778c5611e8efe69e04e22f6175b3f20383a2bf45704",
+          "xml_sha256": "fcb72f3f3667142de59192fcea6cca13758fb6fecbf7e1a35ffa1cf44edec4a2",
+          "events_sha256": "16f8ef968e5cbc5a1590b77449e6e40ea6179aa73ceeeae6acaa35b35d3e2694",
+          "xml_counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          }
+        },
+        {
+          "phase": "M1",
+          "returncode": 1,
+          "elapsed_s": 4.07422178494744,
+          "log_sha256": "035f1bfed759d6908f3027f86ce24f314ccca3f9b8a82e707954dc6cb86cbe69",
+          "xml_sha256": "5467eef17cbb02788cd7d0907dd3f9e377e329b75fd74c004f0a56b01883ef36",
+          "events_sha256": "1e2050fdec30c39c05d98f31a724b6ad077806db840ddf7b6f8fcaf435b55233",
+          "xml_counts": {
+            "total": 1,
+            "failure": 1,
+            "error": 0,
+            "skipped": 0
+          }
+        },
+        {
+          "phase": "G2",
+          "returncode": 0,
+          "elapsed_s": 4.426375566981733,
+          "log_sha256": "a564a9c89571adfb9d8eed4fb5c6512d523ff8ba55f083b662b778276ae458b1",
+          "xml_sha256": "bdefa82df9b14548807c810d9dfa11f245161359d7c30a69d0e4f6f7950a58df",
+          "events_sha256": "3dac3c48c7d2793cf351c0b0b6ff22c8868676d75163aab43850a50f0c44ad18",
+          "xml_counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          }
+        }
+      ]
+    },
+    {
+      "id": "infer_regional_profile_from_kind_only",
+      "status": "killed_with_green_controls",
+      "source": {
+        "path": "src/mars_titan/memory/spaced_study.py",
+        "sha256": "f7ea7c039c80cb70767ebc8cacc9c576d48818805eb87d5b6b8c8a7d59c85eb9"
+      },
+      "recipe": {
+        "nodeid": "tests/memory/test_spaced_regional_study.py::test_regional_profile_cannot_masquerade_as_the_standard_study[reader_contract-standard]",
+        "anchor": "or (regional and document[\"reader_contract\"] != \"regional\")",
+        "replacement": "or False",
+        "expected_failure": {
+          "exception_type": "Failed",
+          "longrepr_contains": "DID NOT RAISE"
+        }
+      },
+      "phases": [
+        {
+          "phase": "G1",
+          "returncode": 0,
+          "elapsed_s": 2.621468167984858,
+          "log_sha256": "3dd8a455f93386b2d78b9d5605f1c2f52fd55f0962f89b0bd7d602cae0ead952",
+          "xml_sha256": "d542c4bf454f5cb2ec12131bb9d27c8910a00a8f41bb7a3d198372e792ec92ba",
+          "events_sha256": "7854ae8e58ed4d881672b58adebb51154b5b35475b1397264a9ec5083201a505",
+          "xml_counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          }
+        },
+        {
+          "phase": "M1",
+          "returncode": 1,
+          "elapsed_s": 2.521341370185837,
+          "log_sha256": "76090ed74be71d1d832b62a214a2f120cf8ae9875f6226d05ec99ec91a1c5f48",
+          "xml_sha256": "3b842b56e2f9fe74462542271da5bd7c4c56bf2b852836d7bc07214dcd642cb1",
+          "events_sha256": "c91b674ad77cf197c323575ace915d813cef4f75296110efb550227d782ca02e",
+          "xml_counts": {
+            "total": 1,
+            "failure": 1,
+            "error": 0,
+            "skipped": 0
+          }
+        },
+        {
+          "phase": "G2",
+          "returncode": 0,
+          "elapsed_s": 2.570678188931197,
+          "log_sha256": "8a5d3f8c1b452931de963c4bdff9775f7404361fdf3f79b4d740fb5a4f7e6e92",
+          "xml_sha256": "b683ff3d00f57943ded457270c8281e7d1f5038551b3424272017e4841cd4559",
+          "events_sha256": "f46d6461cc16edb659a13f1d6753e24459daacac9398d50e3bf9b679bd90d119",
+          "xml_counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          }
+        }
+      ]
+    },
+    {
+      "id": "standard_kind_for_regional_window",
+      "status": "killed_with_green_controls",
+      "source": {
+        "path": "src/mars_titan/training/spaced_window.py",
+        "sha256": "ac0e0fa13f76660b17196ecfb23a7defe6aa90403f06f6454301a6ee9ece7bef"
+      },
+      "recipe": {
+        "nodeid": "tests/memory/test_spaced_regional_window.py::test_regional_window_uses_selected_architecture_and_completes_all_three_phases[utility]",
+        "anchor": "kind = \"spaced_regional_utility_frozen_window_v1\" if regional else KIND",
+        "replacement": "kind = KIND",
+        "expected_failure": {
+          "exception_type": "AssertionError",
+          "longrepr_contains": "assert"
+        }
+      },
+      "phases": [
+        {
+          "phase": "G1",
+          "returncode": 0,
+          "elapsed_s": 6.330337541177869,
+          "log_sha256": "e2983970016a0d54e97f3fdb720814e3f4c535f78cd3b1f056c983a810ce4619",
+          "xml_sha256": "35c860f532b41e3bd40e76c747bc7b0d1ea18073bbb325355c5e321857842ee5",
+          "events_sha256": "3df60d6d9702783aa70b5b17f33f34b7d2e6f41a3e4c017ea30433b3bded25bb",
+          "xml_counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          }
+        },
+        {
+          "phase": "M1",
+          "returncode": 1,
+          "elapsed_s": 7.4374294460285455,
+          "log_sha256": "3709b6f949e22fd94f9e41c3d6219c15f54b2615e1d58b67d3a4c72249caa0df",
+          "xml_sha256": "1bcb22a532082377b94d448cacada7517ee4e89150662071fcdb9a9350a0a7fc",
+          "events_sha256": "6b832d5d1d3f84bb7cb928ee96741bee2b585d01245e235b4cadb961f565acaa",
+          "xml_counts": {
+            "total": 1,
+            "failure": 1,
+            "error": 0,
+            "skipped": 0
+          }
+        },
+        {
+          "phase": "G2",
+          "returncode": 0,
+          "elapsed_s": 6.38259006710723,
+          "log_sha256": "77f7bab6b2cfa87727e6a3a1cb4e4849e86871bfbe7c0d6657abf12e6eee72f3",
+          "xml_sha256": "35346a5c5c5270fabc2a07834d710217e3e5175db64c05284a0d04a2279a4ab2",
+          "events_sha256": "3016b3576ee163a085e5b9558ca1d894e04bc9b390855671a789885b28186c68",
+          "xml_counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          }
+        }
+      ]
+    },
+    {
+      "id": "adopt_forged_standard_run_kind",
+      "status": "killed_with_green_controls",
+      "source": {
+        "path": "src/mars_titan/training/spaced_window.py",
+        "sha256": "ac0e0fa13f76660b17196ecfb23a7defe6aa90403f06f6454301a6ee9ece7bef"
+      },
+      "recipe": {
+        "nodeid": "tests/memory/test_spaced_regional_window.py::test_regional_run_cannot_be_reopened_as_a_standard_kind",
+        "anchor": "and report.get(\"kind\") == kind",
+        "replacement": "and True",
+        "expected_failure": {
+          "exception_type": "Failed",
+          "longrepr_contains": "DID NOT RAISE"
+        }
+      },
+      "phases": [
+        {
+          "phase": "G1",
+          "returncode": 0,
+          "elapsed_s": 7.839326262008399,
+          "log_sha256": "486c52a096f0bbc6ee2fe78a96128abd9f6f45a3c3f7379de592bc8c2e4affe5",
+          "xml_sha256": "b57511d280374c1beedc9d1cdfdae9d16718646dcb34f837a7ac87f002ed2c6f",
+          "events_sha256": "fdb615bc8b759306761ada7e6d879df5724ca6123bcfeb4c514f55905cfbaf83",
+          "xml_counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          }
+        },
+        {
+          "phase": "M1",
+          "returncode": 1,
+          "elapsed_s": 7.484275913098827,
+          "log_sha256": "bc847be16a8eba1e4bbc7c8f3726d40a474ea1de0d513ecea2ba66309f661e19",
+          "xml_sha256": "6b15f09c71307cb32d76d7b6504af6a7ab9120ae125065039657e0a575a25eac",
+          "events_sha256": "f943c54284ca818759beb96e164779150a8ae52c950c5b9fbc8da7af8b444364",
+          "xml_counts": {
+            "total": 1,
+            "failure": 1,
+            "error": 0,
+            "skipped": 0
+          }
+        },
+        {
+          "phase": "G2",
+          "returncode": 0,
+          "elapsed_s": 8.6877396190539,
+          "log_sha256": "716782509880fffed32fd0e326d4419b446a4a6273eb323f7df28fb6a5ac5bd5",
+          "xml_sha256": "bc4869004fe34a2d364e445ebca8f551a9ac566d42ece979423c7b4d19cafee0",
+          "events_sha256": "ea280e06bc2f5a40dd8fbc0b8ec3657a3bf7608a0c58438053d03812d35ef814",
+          "xml_counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          }
+        }
+      ]
+    }
+  ]
+}

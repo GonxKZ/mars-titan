@@ -389,5 +389,31 @@
       "year": 2022,
       "url": "https://www.microsoft.com/en-us/research/publication/lora-low-rank-adaptation-of-large-language-models/"
     }
+  },
+  {
+    "id": "drozdov2022knnlm",
+    "title": "You can't pick your neighbors, or can you? When and How to Rely on Retrieval in the kNN-LM",
+    "authors": [
+      "Andrew Drozdov",
+      "Shufan Wang",
+      "Razieh Rahimi",
+      "Andrew McCallum",
+      "Hamed Zamani",
+      "Mohit Iyyer"
+    ],
+    "year": 2022,
+    "publication": "Findings of the Association for Computational Linguistics: EMNLP 2022, pp. 2997-3007",
+    "read_version": "Ficha de ACL Anthology y resumen de arXiv:2210.15859v1",
+    "url": "https://aclanthology.org/2022.findings-emnlp.218/",
+    "pdf_url": "https://aclanthology.org/2022.findings-emnlp.218.pdf",
+    "access": "Actas abiertas de ACL Anthology, revisadas por pares. DOI 10.18653/v1/2022.findings-emnlp.218.",
+    "redistribution": "unknown",
+    "relevance": "Antecedente de R3 de #786: el peso de la recuperación depende de cuánto se parecen los elementos recuperados a la consulta. Su mezcla es entre distribuciones de palabras y no se traslada al mercado.",
+    "phase": [
+      3,
+      4,
+      6
+    ],
+    "verification_date": "2026-10-28"
   }
 ]

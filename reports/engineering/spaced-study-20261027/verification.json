@@ -1,0 +1,116 @@
+{
+  "schema_version": 1,
+  "recorded_at_utc": "2026-10-27T12:12:14.505562+00:00",
+  "kind": "technical_frozen_spaced_window_controller_without_training",
+  "base_commit": "084a1dd487551fe77619f8f9f4010960df748fae",
+  "tests": {
+    "distinct_passed": 94,
+    "new_study_cli_window": 43,
+    "selected_loader_regression": 34,
+    "hold_inventory_and_graph": 17,
+    "skipped": 0,
+    "by_module": {
+      "tests.memory.test_spaced_selected": 34,
+      "tests.memory.test_spaced_study": 18,
+      "tests.memory.test_spaced_window": 25,
+      "tests.training.test_learning_hold_graph": 12,
+      "tests.training.test_learning_hold_inventory": 5
+    },
+    "xml_sha256": "764190c8dc4eba862344fed4c6776b5d059cb5d526217796334823f69f310f78",
+    "full_suite_executed": false
+  },
+  "quality": {
+    "path": "quality.json",
+    "tools": {
+      "coverage": "7.16.1",
+      "radon": "6.0.1",
+      "branch_coverage": true,
+      "python": "3.12.14",
+      "summarizer_sha256": "75cc60c88037e0bb17aff6e8ab666ce78b35d600d6c7ad217bf68b1afb4c4ec6"
+    },
+    "totals": {
+      "statements": 241,
+      "covered_statements": 238,
+      "branches": 46,
+      "covered_branches": 43
+    },
+    "max_crap": 27.0
+  },
+  "mutations": {
+    "path": "mutations.json",
+    "planned": 10,
+    "killed": 10,
+    "optimizer_attempts": 0,
+    "phases": "G1/M1/G2 con cero omisiones"
+  },
+  "sources": {
+    "configs/experiments/spaced-utility-study-v1.json": "5c206b4f3c5bc87f562a2da0df927c2b21b51460ebfa67e2c4f13e826ae5a3ea",
+    "scripts/run_spaced_window.py": "eae40129563db1185a3ad563deb5b6733c5590a0c82b464d606f0233ae06dea6",
+    "src/mars_titan/memory/spaced_study.py": "90f418b3c0433d8f0b48c39a444c2f11cf45ddcfeee5fe038abbb44f4f3ae022",
+    "src/mars_titan/training/spaced_window.py": "817766b9b33756f054c7361b28026c44b9e11dcef068d1b07040be04500e3a75",
+    "tests/memory/spaced_selected_fixture.py": "e44efbaf47b2d285ad6b25ac78c082189234d39ad105849bd7f9b01dbf156bd7",
+    "tests/memory/spaced_window_fixture.py": "48730da393fb86cc1617c2fd8179696530075dc585a0e734109ee135a53b68e7",
+    "tests/training/historical_temporal_fixture.py": "940566b858b0afefbb07aaef99a6a389839e4a2217ac407653e3fee4da9925bb",
+    "tests/memory/test_financial_session_controls.py": "0130148ebf00a506418031cb3baa42d7d229dee5177f01dbb9b25c2b5ec42042",
+    "tests/memory/test_spaced_study.py": "67b09153a9bb80535850457927602b7569ce72f7e8549447b0983ea0db34db11",
+    "tests/memory/test_spaced_window.py": "962c6d4c31a0a0a527c41b014ce4e8c49c869f343eba6167f433a8f04d206cd8",
+    "tests/training/learning_hold_inventory.py": "fd8baebe4e170f3e3843cf9903da5fb9bce4720c903d4fa574aa44bdedb4a049",
+    "reports/engineering/spaced-study-20261027/cost_probe.py": "627fa24583c571cbae4e96fe75f9a8fc62c8f77e0aa2d46d2a8454309833e423"
+  },
+  "preserved_canonical_sources": {
+    "count": 34,
+    "baseline": "f84a7f731d144dd2cdd1286c55c35dad38b0b5c0",
+    "manifest_sha256": "c65abebf157c9734def0b96e08c9eca727f351854fbc63aa8f6aaf1872f768e5",
+    "manifest_path": "reports/engineering/spaced-selected-20261027/verification.json"
+  },
+  "hold_sha256": "8a658080c1ac4e63847eba58b177020339da6ec47021cf26d2701830073c87fd",
+  "cuda_executed": false,
+  "scientific_training_executed": false,
+  "predictive_improvement_measured": false,
+  "final_test_access": false,
+  "window_cli_integrated": true,
+  "scientific_window_executed": false,
+  "checks": {
+    "ruff_check": "passed",
+    "ruff_format": {
+      "status": "passed",
+      "files": 2074
+    },
+    "repository": {
+      "status": "passed",
+      "files": 4163,
+      "references": 361,
+      "tasks": 64
+    },
+    "cli_help": "passed"
+  },
+  "cuda_check": {
+    "available": true,
+    "initialized_by_our_probe": false,
+    "gpu": "NVIDIA GeForce RTX 4070 Laptop GPU",
+    "free_mib": 802,
+    "other_compute_processes": 5,
+    "reason": "La reserva exige exclusividad y hay procesos CUDA ajenos. La carga técnica se ejecutó expresamente en CPU."
+  },
+  "limits": [
+    "El diagnóstico mantiene parámetros seleccionados. No sustituye el contraste de aprendizaje de cada variante.",
+    "Las pruebas usan etiquetas manuales y pesos fijados. No calculan objetivos financieros ni ajustan parámetros compartidos mediante un optimizador externo.",
+    "La opción CUDA de la CLI solo se comprueba con un doble. No verifica una ruta CUDA real.",
+    "Cada fase empieza vacía. La interrumpida se repite desde cero. Solo se recuperan las fases confirmadas.",
+    "La pausa es cooperativa. Los límites de filas rechazan la fase completa, sin truncarla.",
+    "Las tablas permanecen en memoria dentro del límite de filas. No se acredita streaming ilimitado.",
+    "La API y la CLI del diagnóstico siguen protegidas por el bloqueo de aprendizaje.",
+    "El productor regional, CUDA y la comparación científica permanecen pendientes."
+  ],
+  "cost": {
+    "path": "cost.json",
+    "technical_windows": 48,
+    "measured_windows": 36,
+    "scientific_training_executed": false
+  },
+  "artifacts": {
+    "quality.json": "7ba6a566d882c7ff11a02501602c6d79f543301f16ff61e97ed24afaded65898",
+    "mutations.json": "1b19a8a782b216493599905e171d7e64ab6e516e72796583b5884e9e7f2a8036",
+    "cost.json": "b98328e56a3345e71058cece14b72c602df7b9f3d24e4d756adc38f157a1aca8"
+  }
+}

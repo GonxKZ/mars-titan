@@ -1,0 +1,244 @@
+{
+  "kind": "directed_mutations_with_green_controls",
+  "planned": 6,
+  "killed": 6,
+  "optimizer_attempts": 0,
+  "recipes_sha256": "fbd00a5ad4c66254c66bf72ec752e3fc73108caacaee2614b98f22726f7c5562",
+  "executor_sha256": "3023946309288f8010d382590cbef6f88b48f93285443ac71d0d1094bd860b2e",
+  "cases": [
+    {
+      "id": "accept_final_test_rows",
+      "status": "killed_with_green_controls",
+      "phases": [
+        {
+          "phase": "G1",
+          "returncode": 0,
+          "counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "events_sha256": "07bce3122a37796f1bb325f626fc3d0387d631b91153b2a4407b01abb3ca9c54"
+        },
+        {
+          "phase": "M1",
+          "returncode": 1,
+          "counts": {
+            "total": 1,
+            "failure": 1,
+            "error": 0,
+            "skipped": 0
+          },
+          "events_sha256": "e101ff9626a189f43ff87f23e5a2012a50fe237368484dcfe050bf0b6d924db2"
+        },
+        {
+          "phase": "G2",
+          "returncode": 0,
+          "counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "events_sha256": "17a7a38c4153ac56a01c777df2448f31e6dfc458a0d49988d3269390ff344f17"
+        }
+      ]
+    },
+    {
+      "id": "ignore_session_budget",
+      "status": "killed_with_green_controls",
+      "phases": [
+        {
+          "phase": "G1",
+          "returncode": 0,
+          "counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "events_sha256": "7276efdd81b00c8ae3e1c0c2caf800235d5e4c8c14068617e3699e2b26eb7768"
+        },
+        {
+          "phase": "M1",
+          "returncode": 1,
+          "counts": {
+            "total": 1,
+            "failure": 1,
+            "error": 0,
+            "skipped": 0
+          },
+          "events_sha256": "3c1def6f8b11ae31e4b41cca00822b283973375c1fbc4123d0d716fd07e64607"
+        },
+        {
+          "phase": "G2",
+          "returncode": 0,
+          "counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "events_sha256": "687e4371e323279963ca6645ce6f3c83d0e34991f3dcbebea92f3e2d2259d89a"
+        }
+      ]
+    },
+    {
+      "id": "replace_model_with_zero",
+      "status": "killed_with_green_controls",
+      "phases": [
+        {
+          "phase": "G1",
+          "returncode": 0,
+          "counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "events_sha256": "bd37ae4cea85a4e3e36aa5d2625d4c94b75cbcdd731680e2ff7fb28c867b4dcf"
+        },
+        {
+          "phase": "M1",
+          "returncode": 1,
+          "counts": {
+            "total": 1,
+            "failure": 1,
+            "error": 0,
+            "skipped": 0
+          },
+          "events_sha256": "cf85c6876b427b8976dcf5622b9b6a36b1fe3b75359f35761f252249f1da7761"
+        },
+        {
+          "phase": "G2",
+          "returncode": 0,
+          "counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "events_sha256": "c04ce2cb2192fa1a40b353070456d5ebd1a4ec49d274015f972654f7a8791458"
+        }
+      ]
+    },
+    {
+      "id": "ignore_emission_equality",
+      "status": "killed_with_green_controls",
+      "phases": [
+        {
+          "phase": "G1",
+          "returncode": 0,
+          "counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "events_sha256": "3d760343bfab99c30bb022286e3581b9b6ecedeaad81ca9051085d77dc62aceb"
+        },
+        {
+          "phase": "M1",
+          "returncode": 1,
+          "counts": {
+            "total": 1,
+            "failure": 1,
+            "error": 0,
+            "skipped": 0
+          },
+          "events_sha256": "a9ca7364f0c589b2b69ebfa13caa8e41216ed059f07cbbbd12b2cd65b7cb72e9"
+        },
+        {
+          "phase": "G2",
+          "returncode": 0,
+          "counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "events_sha256": "ee497a9d9dace6f59da78325e57e16dacb9c9e7c04edd6de8906da1374e96379"
+        }
+      ]
+    },
+    {
+      "id": "reverse_quantile_columns",
+      "status": "killed_with_green_controls",
+      "phases": [
+        {
+          "phase": "G1",
+          "returncode": 0,
+          "counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "events_sha256": "60798526e693766ed1924ab007744062f3e77f82138e29aefa9ddd564da09365"
+        },
+        {
+          "phase": "M1",
+          "returncode": 1,
+          "counts": {
+            "total": 1,
+            "failure": 1,
+            "error": 0,
+            "skipped": 0
+          },
+          "events_sha256": "0ee7e4c4d015223fde13a90ddd2dee1fc18d48ec8de01c786cff838305890308"
+        },
+        {
+          "phase": "G2",
+          "returncode": 0,
+          "counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "events_sha256": "3f224f5d02606c52ba78a40f55eafe791f5a31cdb34f51281e2c3283f0b681e4"
+        }
+      ]
+    },
+    {
+      "id": "lose_lesion_points",
+      "status": "killed_with_green_controls",
+      "phases": [
+        {
+          "phase": "G1",
+          "returncode": 0,
+          "counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "events_sha256": "f123d4e6936ce898bab2a26270c28587267336b5ca071619ef8873da54b18464"
+        },
+        {
+          "phase": "M1",
+          "returncode": 1,
+          "counts": {
+            "total": 1,
+            "failure": 1,
+            "error": 0,
+            "skipped": 0
+          },
+          "events_sha256": "9263640824085ea61ebda4c20769fac3a6f11c0077da27378b9fb7b33e4d7776"
+        },
+        {
+          "phase": "G2",
+          "returncode": 0,
+          "counts": {
+            "total": 1,
+            "failure": 0,
+            "error": 0,
+            "skipped": 0
+          },
+          "events_sha256": "990176f7a29fef1811aff2e27b070749bcb2910e3ada4b8b4c6d31f90e8fd815"
+        }
+      ]
+    }
+  ]
+}
