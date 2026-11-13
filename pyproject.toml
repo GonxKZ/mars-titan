@@ -76,10 +76,11 @@ package = true
 exclude-newer = "2026-09-26T23:59:59Z"
 environments = ["sys_platform == 'linux' and platform_machine == 'x86_64'"]
 required-environments = ["sys_platform == 'linux' and platform_machine == 'x86_64'"]
-# Versiones mínimas corregidas según la revisión de seguridad de #832.
+# Versiones mínimas corregidas según las revisiones de seguridad de #832 y #838.
 constraint-dependencies = [
     "certifi>=2026.10.18", "filelock>=4.2.1", "nbconvert>=7.17.2",
     "setuptools>=84.1.0", "tornado>=6.6",
+    "soupsieve>=4.0",
 ]
 
 # Solo estos paquetes admiten las correcciones posteriores al corte general.
@@ -89,6 +90,7 @@ filelock = "2026-11-04T00:00:00Z"
 nbconvert = "2026-11-04T00:00:00Z"
 pillow = "2026-11-04T00:00:00Z"
 setuptools = "2026-11-04T00:00:00Z"
+soupsieve = "2026-11-04T00:00:00Z"
 tornado = "2026-11-04T00:00:00Z"
 
 [[tool.uv.index]]
