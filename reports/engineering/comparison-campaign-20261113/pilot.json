@@ -1,0 +1,1363 @@
+{
+  "schema_version": 1,
+  "date": "2026-11-13",
+  "scope": {
+    "market": "US",
+    "origin": 2018,
+    "assets": 1024,
+    "final_test_opened": false,
+    "neural_seeds": [
+      42
+    ],
+    "tabular_seeds": [
+      42,
+      43,
+      44
+    ]
+  },
+  "hardware": {
+    "gpu": "NVIDIA GeForce RTX 4070 Laptop GPU",
+    "vram_mib": 8188,
+    "ram_gib": 32,
+    "precision": "fp32_strict"
+  },
+  "runs": [
+    {
+      "name": "p2-online-1024",
+      "scores": {
+        "seeds": 1,
+        "sessions": 250,
+        "rows": 255750,
+        "cohort_sha256": "d0b5f82f79026d10215d51cd879b2ca587fef8361fada64350071a76373380e4",
+        "zero": 0.011931747967653086,
+        "raw": 0.011994622060161225,
+        "calibrated": 0.011930926305737142,
+        "scale": 0.08669494525421023,
+        "pearson_ic": 0.00880080391902292,
+        "rank_ic": 0.015383964800539638
+      },
+      "seconds": 301.28246587107424,
+      "epochs": 1,
+      "best_epoch": 1,
+      "best_validation_mae": 0.010854055955689428,
+      "timers": {
+        "train": 59.272098637069575,
+        "validation": 185.69982005201746,
+        "train_calls": 1,
+        "validation_calls": 5
+      },
+      "peak_torch_vram_mib": 2420.90771484375,
+      "peak_rss_gib": null,
+      "history": [
+        {
+          "epoch": 0,
+          "step": 0,
+          "validation": {
+            "session_mae": 0.010767611698910367,
+            "labels": 127875,
+            "sessions": null
+          },
+          "train": null
+        },
+        {
+          "epoch": 1,
+          "step": 32,
+          "validation": {
+            "session_mae": 0.010854055955689428,
+            "labels": 127875,
+            "sessions": null
+          },
+          "train": {
+            "samples": 249320,
+            "session_count": 252,
+            "session_mae": 0.011597888778289767,
+            "session_mse": 0.0005317487627905381,
+            "observations": 492518,
+            "warmup_observations": 239049,
+            "predictions": 253469,
+            "labels": 249320,
+            "labels_in_loss": 249320,
+            "labels_without_graph": 0,
+            "updates": 32,
+            "segments": 32,
+            "unresolved": 4149,
+            "mean_loss": 0.003099745670104148
+          }
+        }
+      ]
+    },
+    {
+      "name": "h14-areas-groups-1024",
+      "scores": {
+        "seeds": 1,
+        "sessions": 250,
+        "rows": 255750,
+        "cohort_sha256": "d0b5f82f79026d10215d51cd879b2ca587fef8361fada64350071a76373380e4",
+        "zero": 0.011931747967653086,
+        "raw": 0.011943768380062898,
+        "calibrated": 0.011931092262201973,
+        "scale": 0.40820959105701277,
+        "pearson_ic": 0.004522243853744891,
+        "rank_ic": 0.011711641812520839
+      },
+      "seconds": 380.96586693509016,
+      "epochs": 1,
+      "best_epoch": 1,
+      "best_validation_mae": 0.010787019625930991,
+      "timers": {
+        "train": 60.981202312977985,
+        "validation": 256.7597710089758,
+        "train_calls": 1,
+        "validation_calls": 5
+      },
+      "peak_torch_vram_mib": 3388.83740234375,
+      "peak_rss_gib": null,
+      "history": [
+        {
+          "epoch": 0,
+          "step": 0,
+          "validation": {
+            "session_mae": 0.010767611698910367,
+            "labels": 127875,
+            "sessions": null
+          },
+          "train": null
+        },
+        {
+          "epoch": 1,
+          "step": 32,
+          "validation": {
+            "session_mae": 0.010787019625930991,
+            "labels": 127875,
+            "sessions": null
+          },
+          "train": {
+            "samples": 249320,
+            "session_count": 252,
+            "session_mae": 0.011592505872226766,
+            "session_mse": 0.0005311714833648138,
+            "observations": 492518,
+            "warmup_observations": 239049,
+            "predictions": 253469,
+            "labels": 249320,
+            "labels_in_loss": 249320,
+            "labels_without_graph": 0,
+            "updates": 32,
+            "segments": 32,
+            "unresolved": 4149,
+            "mean_loss": 0.003081397279700975
+          }
+        }
+      ]
+    },
+    {
+      "name": "r0-m0-1024",
+      "scores": {
+        "seeds": 1,
+        "sessions": 250,
+        "rows": 255750,
+        "cohort_sha256": "d0b5f82f79026d10215d51cd879b2ca587fef8361fada64350071a76373380e4",
+        "zero": 0.011931747967653086,
+        "raw": 0.011974202743546606,
+        "calibrated": 0.011930396308660985,
+        "scale": 0.144897609789063,
+        "pearson_ic": 0.008855390593804842,
+        "rank_ic": 0.015077008569626302
+      },
+      "seconds": 327.17353873408865,
+      "epochs": 1,
+      "best_epoch": 1,
+      "best_validation_mae": 0.01083180705643166,
+      "timers": {
+        "train": 55.32101543492172,
+        "validation": 231.33845598611515,
+        "train_calls": 1,
+        "validation_calls": 5
+      },
+      "peak_torch_vram_mib": 277.6142578125,
+      "peak_rss_gib": null,
+      "history": [
+        {
+          "epoch": 0,
+          "step": 0,
+          "validation": {
+            "session_mae": 0.010855129567865364,
+            "labels": 127875,
+            "sessions": null
+          },
+          "train": null
+        },
+        {
+          "epoch": 1,
+          "step": 32,
+          "validation": {
+            "session_mae": 0.01083180705643166,
+            "labels": 127875,
+            "sessions": null
+          },
+          "train": {
+            "samples": 249320,
+            "session_count": 252,
+            "session_mae": 0.011689781162940355,
+            "session_mse": 0.0005374126913876579,
+            "observations": 492518,
+            "warmup_observations": 239049,
+            "predictions": 253469,
+            "labels": 249320,
+            "labels_in_loss": 249320,
+            "labels_without_graph": 0,
+            "admitted": 0,
+            "mac_updates": 492518,
+            "refinements": 253469,
+            "updates": 32,
+            "segments": 32,
+            "unresolved": 4149,
+            "mean_loss": 0.002987688564828136
+          }
+        }
+      ]
+    },
+    {
+      "name": "r2-m1-1024",
+      "scores": {
+        "seeds": 1,
+        "sessions": 250,
+        "rows": 255750,
+        "cohort_sha256": "d0b5f82f79026d10215d51cd879b2ca587fef8361fada64350071a76373380e4",
+        "zero": 0.011931747967653086,
+        "raw": 0.011974223964190976,
+        "calibrated": 0.011930338539070306,
+        "scale": 0.14812132707244824,
+        "pearson_ic": 0.008837529390438952,
+        "rank_ic": 0.015121858385023789
+      },
+      "seconds": 460.0680135759758,
+      "epochs": 1,
+      "best_epoch": 1,
+      "best_validation_mae": 0.010832443616839145,
+      "timers": {
+        "train": 88.77077733410988,
+        "validation": 329.98796527902596,
+        "train_calls": 1,
+        "validation_calls": 5
+      },
+      "peak_torch_vram_mib": 283.853515625,
+      "peak_rss_gib": null,
+      "history": [
+        {
+          "epoch": 0,
+          "step": 0,
+          "validation": {
+            "session_mae": 0.01085472457147908,
+            "labels": 127875,
+            "sessions": null
+          },
+          "train": null
+        },
+        {
+          "epoch": 1,
+          "step": 32,
+          "validation": {
+            "session_mae": 0.010832443616839145,
+            "labels": 127875,
+            "sessions": null
+          },
+          "train": {
+            "samples": 249320,
+            "session_count": 252,
+            "session_mae": 0.01168936063232268,
+            "session_mse": 0.000537406548240769,
+            "observations": 492518,
+            "warmup_observations": 239049,
+            "predictions": 253469,
+            "labels": 249320,
+            "labels_in_loss": 249320,
+            "labels_without_graph": 0,
+            "admitted": 249320,
+            "mac_updates": 492518,
+            "refinements": 253469,
+            "updates": 32,
+            "segments": 32,
+            "unresolved": 4149,
+            "mean_loss": 0.0029854353112774967
+          }
+        }
+      ]
+    },
+    {
+      "name": "r3-m3-1024",
+      "scores": {
+        "seeds": 1,
+        "sessions": 250,
+        "rows": 255750,
+        "cohort_sha256": "d0b5f82f79026d10215d51cd879b2ca587fef8361fada64350071a76373380e4",
+        "zero": 0.011931747967653086,
+        "raw": 0.01197430713186405,
+        "calibrated": 0.01193033764607779,
+        "scale": 0.14802098827310736,
+        "pearson_ic": 0.00883010750001506,
+        "rank_ic": 0.015139793743275069
+      },
+      "seconds": 500.0974572439445,
+      "epochs": 1,
+      "best_epoch": 1,
+      "best_validation_mae": 0.010832499586783773,
+      "timers": {
+        "train": 83.5227647270076,
+        "validation": 332.33927307801787,
+        "train_calls": 1,
+        "validation_calls": 5
+      },
+      "peak_torch_vram_mib": 283.83251953125,
+      "peak_rss_gib": null,
+      "history": [
+        {
+          "epoch": 0,
+          "step": 0,
+          "validation": {
+            "session_mae": 0.010854707601631732,
+            "labels": 127875,
+            "sessions": null
+          },
+          "train": null
+        },
+        {
+          "epoch": 1,
+          "step": 32,
+          "validation": {
+            "session_mae": 0.010832499586783773,
+            "labels": 127875,
+            "sessions": null
+          },
+          "train": {
+            "samples": 249320,
+            "session_count": 252,
+            "session_mae": 0.011689330562602915,
+            "session_mse": 0.0005374078218965285,
+            "observations": 492518,
+            "warmup_observations": 239049,
+            "predictions": 253469,
+            "labels": 249320,
+            "labels_in_loss": 249320,
+            "labels_without_graph": 0,
+            "admitted": 249320,
+            "mac_updates": 492518,
+            "refinements": 253469,
+            "updates": 32,
+            "segments": 32,
+            "unresolved": 4149,
+            "selective_admitted": 1747,
+            "selective_rejected": 247573,
+            "selective_evicted": 1491,
+            "relevance_unknown": 89136,
+            "mean_loss": 0.0029852531445043328
+          }
+        }
+      ]
+    },
+    {
+      "name": "r4-m3-k2-1024",
+      "scores": {
+        "seeds": 1,
+        "sessions": 250,
+        "rows": 255750,
+        "cohort_sha256": "d0b5f82f79026d10215d51cd879b2ca587fef8361fada64350071a76373380e4",
+        "zero": 0.011931747967653086,
+        "raw": 0.01196141484888655,
+        "calibrated": 0.011929675741104888,
+        "scale": 0.216126492900482,
+        "pearson_ic": 0.008967854544777814,
+        "rank_ic": 0.014973671353800629
+      },
+      "seconds": 536.2951532069128,
+      "epochs": 1,
+      "best_epoch": 1,
+      "best_validation_mae": 0.01081984707922307,
+      "timers": {
+        "train": 92.81434057990555,
+        "validation": 348.64365041500423,
+        "train_calls": 1,
+        "validation_calls": 5
+      },
+      "peak_torch_vram_mib": 284.1328125,
+      "peak_rss_gib": null,
+      "history": [
+        {
+          "epoch": 0,
+          "step": 0,
+          "validation": {
+            "session_mae": 0.01085530729259664,
+            "labels": 127875,
+            "sessions": null
+          },
+          "train": null
+        },
+        {
+          "epoch": 1,
+          "step": 32,
+          "validation": {
+            "session_mae": 0.01081984707922307,
+            "labels": 127875,
+            "sessions": null
+          },
+          "train": {
+            "samples": 249320,
+            "session_count": 252,
+            "session_mae": 0.011678398254550464,
+            "session_mse": 0.0005370698980715706,
+            "observations": 492518,
+            "warmup_observations": 239049,
+            "predictions": 253469,
+            "labels": 249320,
+            "labels_in_loss": 249320,
+            "labels_without_graph": 0,
+            "admitted": 249320,
+            "mac_updates": 492518,
+            "refinements": 506938,
+            "updates": 32,
+            "segments": 32,
+            "unresolved": 4149,
+            "selective_admitted": 1748,
+            "selective_rejected": 247572,
+            "selective_evicted": 1492,
+            "relevance_unknown": 89136,
+            "mean_loss": 0.0029712035424118086
+          }
+        }
+      ]
+    },
+    {
+      "name": "a-old-full",
+      "scores": {
+        "seeds": 1,
+        "sessions": 250,
+        "rows": 255750,
+        "cohort_sha256": "d0b5f82f79026d10215d51cd879b2ca587fef8361fada64350071a76373380e4",
+        "zero": 0.011931747967653086,
+        "raw": 0.012287789481167025,
+        "calibrated": 0.01193077009041281,
+        "scale": 0.07366702141153325,
+        "pearson_ic": -0.0076830733180133556,
+        "rank_ic": 0.00802466489068323
+      },
+      "seconds": 954.7853602999821,
+      "epochs": 2,
+      "best_epoch": 2,
+      "best_validation_mae": 0.01138336461184982,
+      "timers": {
+        "train": 687.5304660190595,
+        "validation": 211.56529347912874,
+        "train_calls": 2,
+        "validation_calls": 6
+      },
+      "peak_torch_vram_mib": 2419.23974609375,
+      "peak_rss_gib": null,
+      "history": [
+        {
+          "epoch": 0,
+          "step": 0,
+          "validation": {
+            "session_mae": 0.05630317839739808,
+            "labels": 127875,
+            "sessions": null
+          },
+          "train": null
+        },
+        {
+          "epoch": 1,
+          "step": 528,
+          "validation": {
+            "session_mae": 0.012274992281133792,
+            "labels": 127875,
+            "sessions": null
+          },
+          "train": {
+            "samples": 2726802,
+            "session_count": 4213,
+            "session_mae": 0.032394793967855426,
+            "session_mse": 0.0023618167863038914,
+            "observations": 2791261,
+            "warmup_observations": 0,
+            "predictions": 2791261,
+            "labels": 2726802,
+            "labels_in_loss": 2726802,
+            "labels_without_graph": 0,
+            "updates": 528,
+            "segments": 535,
+            "unresolved": 64459,
+            "mean_loss": 0.008338943389747874
+          }
+        },
+        {
+          "epoch": 2,
+          "step": 1056,
+          "validation": {
+            "session_mae": 0.01138336461184982,
+            "labels": 127875,
+            "sessions": null
+          },
+          "train": {
+            "samples": 2726802,
+            "session_count": 4213,
+            "session_mae": 0.01719301134283421,
+            "session_mse": 0.0009961350394730453,
+            "observations": 2791261,
+            "warmup_observations": 0,
+            "predictions": 2791261,
+            "labels": 2726802,
+            "labels_in_loss": 2726802,
+            "labels_without_graph": 0,
+            "updates": 528,
+            "segments": 535,
+            "unresolved": 64459,
+            "mean_loss": 0.004159161844069114
+          }
+        }
+      ]
+    },
+    {
+      "name": "b-scaled-full",
+      "scores": {
+        "seeds": 1,
+        "sessions": 250,
+        "rows": 255750,
+        "cohort_sha256": "d0b5f82f79026d10215d51cd879b2ca587fef8361fada64350071a76373380e4",
+        "zero": 0.011931747967653086,
+        "raw": 0.01192642446056454,
+        "calibrated": 0.01192573818333092,
+        "scale": 0.6358359265498004,
+        "pearson_ic": 0.03518265023834956,
+        "rank_ic": 0.01994687259520499
+      },
+      "seconds": 3132.7695223819464,
+      "epochs": 5,
+      "best_epoch": 5,
+      "best_validation_mae": 0.010757877455900821,
+      "timers": {
+        "train": 2338.6236423630035,
+        "validation": 460.13707511499524,
+        "train_calls": 5,
+        "validation_calls": 9
+      },
+      "peak_torch_vram_mib": 2423.6982421875,
+      "peak_rss_gib": null,
+      "history": [
+        {
+          "epoch": 0,
+          "step": 0,
+          "validation": {
+            "session_mae": 0.010767611698910367,
+            "labels": 127875,
+            "sessions": null
+          },
+          "train": null
+        },
+        {
+          "epoch": 1,
+          "step": 528,
+          "validation": {
+            "session_mae": 0.010775809648328343,
+            "labels": 127875,
+            "sessions": null
+          },
+          "train": {
+            "samples": 2726802,
+            "session_count": 4213,
+            "session_mae": 0.014886499027336615,
+            "session_mse": 0.0009200457012256339,
+            "observations": 2791261,
+            "warmup_observations": 0,
+            "predictions": 2791261,
+            "labels": 2726802,
+            "labels_in_loss": 2726802,
+            "labels_without_graph": 0,
+            "updates": 528,
+            "segments": 535,
+            "unresolved": 64459,
+            "mean_loss": 0.003632800565516418
+          }
+        },
+        {
+          "epoch": 2,
+          "step": 1056,
+          "validation": {
+            "session_mae": 0.010763843109287371,
+            "labels": 127875,
+            "sessions": null
+          },
+          "train": {
+            "samples": 2726802,
+            "session_count": 4213,
+            "session_mae": 0.014863280285430316,
+            "session_mse": 0.0009202533174052352,
+            "observations": 2791261,
+            "warmup_observations": 0,
+            "predictions": 2791261,
+            "labels": 2726802,
+            "labels_in_loss": 2726802,
+            "labels_without_graph": 0,
+            "updates": 528,
+            "segments": 535,
+            "unresolved": 64459,
+            "mean_loss": 0.0035153726680986746
+          }
+        },
+        {
+          "epoch": 3,
+          "step": 1584,
+          "validation": {
+            "session_mae": 0.01077287688816459,
+            "labels": 127875,
+            "sessions": null
+          },
+          "train": {
+            "samples": 2726802,
+            "session_count": 4213,
+            "session_mae": 0.014865649762683791,
+            "session_mse": 0.0009205630930896832,
+            "observations": 2791261,
+            "warmup_observations": 0,
+            "predictions": 2791261,
+            "labels": 2726802,
+            "labels_in_loss": 2726802,
+            "labels_without_graph": 0,
+            "updates": 528,
+            "segments": 535,
+            "unresolved": 64459,
+            "mean_loss": 0.00351760414159996
+          }
+        },
+        {
+          "epoch": 4,
+          "step": 2112,
+          "validation": {
+            "session_mae": 0.010765060309118068,
+            "labels": 127875,
+            "sessions": null
+          },
+          "train": {
+            "samples": 2726802,
+            "session_count": 4213,
+            "session_mae": 0.014857286430204843,
+            "session_mse": 0.0009204867728562336,
+            "observations": 2791261,
+            "warmup_observations": 0,
+            "predictions": 2791261,
+            "labels": 2726802,
+            "labels_in_loss": 2726802,
+            "labels_without_graph": 0,
+            "updates": 528,
+            "segments": 535,
+            "unresolved": 64459,
+            "mean_loss": 0.003493043613563887
+          }
+        },
+        {
+          "epoch": 5,
+          "step": 2640,
+          "validation": {
+            "session_mae": 0.010757877455900821,
+            "labels": 127875,
+            "sessions": null
+          },
+          "train": {
+            "samples": 2726802,
+            "session_count": 4213,
+            "session_mae": 0.014851298772662157,
+            "session_mse": 0.0009205182833471086,
+            "observations": 2791261,
+            "warmup_observations": 0,
+            "predictions": 2791261,
+            "labels": 2726802,
+            "labels_in_loss": 2726802,
+            "labels_without_graph": 0,
+            "updates": 528,
+            "segments": 535,
+            "unresolved": 64459,
+            "mean_loss": 0.003485048627364248
+          }
+        }
+      ]
+    },
+    {
+      "name": "d-sf-full",
+      "scores": {
+        "seeds": 1,
+        "sessions": 250,
+        "rows": 255750,
+        "cohort_sha256": "d0b5f82f79026d10215d51cd879b2ca587fef8361fada64350071a76373380e4",
+        "zero": 0.011931747967653086,
+        "raw": 0.011927822999348383,
+        "calibrated": 0.011925957767780191,
+        "scale": 0.7206644426923563,
+        "pearson_ic": 0.019022842711332665,
+        "rank_ic": 0.019036922490806296
+      },
+      "seconds": 2166.8556266960222,
+      "epochs": 5,
+      "best_epoch": 5,
+      "best_validation_mae": 0.010764529650526973,
+      "timers": {
+        "train": 1798.4580574781867,
+        "validation": 311.49273569486104,
+        "train_calls": 5,
+        "validation_calls": 9
+      },
+      "peak_torch_vram_mib": 2423.6982421875,
+      "peak_rss_gib": null,
+      "history": [
+        {
+          "epoch": 0,
+          "step": 0,
+          "validation": {
+            "session_mae": 0.010767611698910367,
+            "labels": 127875,
+            "sessions": null
+          },
+          "train": null
+        },
+        {
+          "epoch": 1,
+          "step": 528,
+          "validation": {
+            "session_mae": 0.010775315827276803,
+            "labels": 127875,
+            "sessions": null
+          },
+          "train": {
+            "samples": 2726802,
+            "session_count": 4213,
+            "session_mae": 0.014878104316937953,
+            "session_mse": 0.0009187406823052484,
+            "observations": 2791261,
+            "warmup_observations": 0,
+            "predictions": 2791261,
+            "labels": 2726802,
+            "labels_in_loss": 2726802,
+            "labels_without_graph": 0,
+            "updates": 528,
+            "segments": 535,
+            "unresolved": 64459,
+            "mean_loss": 0.003864769547474614
+          }
+        },
+        {
+          "epoch": 2,
+          "step": 1056,
+          "validation": {
+            "session_mae": 0.010774741672376187,
+            "labels": 127875,
+            "sessions": null
+          },
+          "train": {
+            "samples": 2726802,
+            "session_count": 4213,
+            "session_mae": 0.014870264032950014,
+            "session_mse": 0.0009192951861263304,
+            "observations": 2791261,
+            "warmup_observations": 0,
+            "predictions": 2791261,
+            "labels": 2726802,
+            "labels_in_loss": 2726802,
+            "labels_without_graph": 0,
+            "updates": 528,
+            "segments": 535,
+            "unresolved": 64459,
+            "mean_loss": 0.003620443020303267
+          }
+        },
+        {
+          "epoch": 3,
+          "step": 1584,
+          "validation": {
+            "session_mae": 0.010765419918848815,
+            "labels": 127875,
+            "sessions": null
+          },
+          "train": {
+            "samples": 2726802,
+            "session_count": 4213,
+            "session_mae": 0.014863832346536373,
+            "session_mse": 0.0009192879124252074,
+            "observations": 2791261,
+            "warmup_observations": 0,
+            "predictions": 2791261,
+            "labels": 2726802,
+            "labels_in_loss": 2726802,
+            "labels_without_graph": 0,
+            "updates": 528,
+            "segments": 535,
+            "unresolved": 64459,
+            "mean_loss": 0.0035467893298315716
+          }
+        },
+        {
+          "epoch": 4,
+          "step": 2112,
+          "validation": {
+            "session_mae": 0.010766955282056671,
+            "labels": 127875,
+            "sessions": null
+          },
+          "train": {
+            "samples": 2726802,
+            "session_count": 4213,
+            "session_mae": 0.014860934774103884,
+            "session_mse": 0.0009202048924765439,
+            "observations": 2791261,
+            "warmup_observations": 0,
+            "predictions": 2791261,
+            "labels": 2726802,
+            "labels_in_loss": 2726802,
+            "labels_without_graph": 0,
+            "updates": 528,
+            "segments": 535,
+            "unresolved": 64459,
+            "mean_loss": 0.00352467449097908
+          }
+        },
+        {
+          "epoch": 5,
+          "step": 2640,
+          "validation": {
+            "session_mae": 0.010764529650526973,
+            "labels": 127875,
+            "sessions": null
+          },
+          "train": {
+            "samples": 2726802,
+            "session_count": 4213,
+            "session_mae": 0.01485662824488918,
+            "session_mse": 0.0009199993804003318,
+            "observations": 2791261,
+            "warmup_observations": 0,
+            "predictions": 2791261,
+            "labels": 2726802,
+            "labels_in_loss": 2726802,
+            "labels_without_graph": 0,
+            "updates": 528,
+            "segments": 535,
+            "unresolved": 64459,
+            "mean_loss": 0.003510406540327642
+          }
+        }
+      ]
+    },
+    {
+      "name": "e-ema-full",
+      "scores": {
+        "seeds": 1,
+        "sessions": 250,
+        "rows": 255750,
+        "cohort_sha256": "d0b5f82f79026d10215d51cd879b2ca587fef8361fada64350071a76373380e4",
+        "zero": 0.011931747967653086,
+        "raw": 0.011926082004874074,
+        "calibrated": 0.011924065333355955,
+        "scale": 0.6157458975294615,
+        "pearson_ic": 0.025272739657705223,
+        "rank_ic": 0.01677875131590457
+      },
+      "seconds": 2105.73221988196,
+      "epochs": 5,
+      "best_epoch": 5,
+      "best_validation_mae": 0.01076276353633347,
+      "timers": {
+        "train": 1748.3466845918447,
+        "validation": 303.5387512490852,
+        "train_calls": 5,
+        "validation_calls": 9
+      },
+      "peak_torch_vram_mib": 2424.41455078125,
+      "peak_rss_gib": null,
+      "history": [
+        {
+          "epoch": 0,
+          "step": 0,
+          "validation": {
+            "session_mae": 0.010767611698910367,
+            "labels": 127875,
+            "sessions": null
+          },
+          "train": null
+        },
+        {
+          "epoch": 1,
+          "step": 528,
+          "validation": {
+            "session_mae": 0.010772770841451215,
+            "labels": 127875,
+            "sessions": null
+          },
+          "train": {
+            "samples": 2726802,
+            "session_count": 4213,
+            "session_mae": 0.01487777885446776,
+            "session_mse": 0.0009203322943292639,
+            "observations": 2791261,
+            "warmup_observations": 0,
+            "predictions": 2791261,
+            "labels": 2726802,
+            "labels_in_loss": 2726802,
+            "labels_without_graph": 0,
+            "updates": 528,
+            "segments": 535,
+            "unresolved": 64459,
+            "mean_loss": 0.0036062557218643054
+          }
+        },
+        {
+          "epoch": 2,
+          "step": 1056,
+          "validation": {
+            "session_mae": 0.0107677871864156,
+            "labels": 127875,
+            "sessions": null
+          },
+          "train": {
+            "samples": 2726802,
+            "session_count": 4213,
+            "session_mae": 0.014865499984295694,
+            "session_mse": 0.0009201859276878698,
+            "observations": 2791261,
+            "warmup_observations": 0,
+            "predictions": 2791261,
+            "labels": 2726802,
+            "labels_in_loss": 2726802,
+            "labels_without_graph": 0,
+            "updates": 528,
+            "segments": 535,
+            "unresolved": 64459,
+            "mean_loss": 0.003521085973254178
+          }
+        },
+        {
+          "epoch": 3,
+          "step": 1584,
+          "validation": {
+            "session_mae": 0.010767534829011213,
+            "labels": 127875,
+            "sessions": null
+          },
+          "train": {
+            "samples": 2726802,
+            "session_count": 4213,
+            "session_mae": 0.01489324075841621,
+            "session_mse": 0.0009205164923272328,
+            "observations": 2791261,
+            "warmup_observations": 0,
+            "predictions": 2791261,
+            "labels": 2726802,
+            "labels_in_loss": 2726802,
+            "labels_without_graph": 0,
+            "updates": 528,
+            "segments": 535,
+            "unresolved": 64459,
+            "mean_loss": 0.003647993440494817
+          }
+        },
+        {
+          "epoch": 4,
+          "step": 2112,
+          "validation": {
+            "session_mae": 0.010763962928681745,
+            "labels": 127875,
+            "sessions": null
+          },
+          "train": {
+            "samples": 2726802,
+            "session_count": 4213,
+            "session_mae": 0.014882003869628936,
+            "session_mse": 0.0009204002419427459,
+            "observations": 2791261,
+            "warmup_observations": 0,
+            "predictions": 2791261,
+            "labels": 2726802,
+            "labels_in_loss": 2726802,
+            "labels_without_graph": 0,
+            "updates": 528,
+            "segments": 535,
+            "unresolved": 64459,
+            "mean_loss": 0.0035365071746978984
+          }
+        },
+        {
+          "epoch": 5,
+          "step": 2640,
+          "validation": {
+            "session_mae": 0.01076276353633347,
+            "labels": 127875,
+            "sessions": null
+          },
+          "train": {
+            "samples": 2726802,
+            "session_count": 4213,
+            "session_mae": 0.014862245994230363,
+            "session_mse": 0.0009204890850927724,
+            "observations": 2791261,
+            "warmup_observations": 0,
+            "predictions": 2791261,
+            "labels": 2726802,
+            "labels_in_loss": 2726802,
+            "labels_without_graph": 0,
+            "updates": 528,
+            "segments": 535,
+            "unresolved": 64459,
+            "mean_loss": 0.003502519920900074
+          }
+        }
+      ]
+    },
+    {
+      "name": "c-scaled-lr1e-4-full",
+      "scores": {
+        "seeds": 1,
+        "sessions": 250,
+        "rows": 255750,
+        "cohort_sha256": "d0b5f82f79026d10215d51cd879b2ca587fef8361fada64350071a76373380e4",
+        "zero": 0.011931747967653086,
+        "raw": 0.01192959767217545,
+        "calibrated": 0.011928198581487049,
+        "scale": 0.8222834676515577,
+        "pearson_ic": 0.013529891409123427,
+        "rank_ic": 0.016952605028281616
+      },
+      "seconds": 2107.5806833721,
+      "epochs": 5,
+      "best_epoch": 5,
+      "best_validation_mae": 0.010766512703857319,
+      "timers": {
+        "train": 1743.0537383910269,
+        "validation": 310.50979933177587,
+        "train_calls": 5,
+        "validation_calls": 9
+      },
+      "peak_torch_vram_mib": 2423.6982421875,
+      "peak_rss_gib": null,
+      "history": [
+        {
+          "epoch": 0,
+          "step": 0,
+          "validation": {
+            "session_mae": 0.010767611698910367,
+            "labels": 127875,
+            "sessions": null
+          },
+          "train": null
+        },
+        {
+          "epoch": 1,
+          "step": 528,
+          "validation": {
+            "session_mae": 0.010771033294850574,
+            "labels": 127875,
+            "sessions": null
+          },
+          "train": {
+            "samples": 2726802,
+            "session_count": 4213,
+            "session_mae": 0.014878501180342734,
+            "session_mse": 0.0009181902613123997,
+            "observations": 2791261,
+            "warmup_observations": 0,
+            "predictions": 2791261,
+            "labels": 2726802,
+            "labels_in_loss": 2726802,
+            "labels_without_graph": 0,
+            "updates": 528,
+            "segments": 535,
+            "unresolved": 64459,
+            "mean_loss": 0.004136373109438839
+          }
+        },
+        {
+          "epoch": 2,
+          "step": 1056,
+          "validation": {
+            "session_mae": 0.01077564139706791,
+            "labels": 127875,
+            "sessions": null
+          },
+          "train": {
+            "samples": 2726802,
+            "session_count": 4213,
+            "session_mae": 0.014877044406820123,
+            "session_mse": 0.0009189839085562111,
+            "observations": 2791261,
+            "warmup_observations": 0,
+            "predictions": 2791261,
+            "labels": 2726802,
+            "labels_in_loss": 2726802,
+            "labels_without_graph": 0,
+            "updates": 528,
+            "segments": 535,
+            "unresolved": 64459,
+            "mean_loss": 0.003888474001861207
+          }
+        },
+        {
+          "epoch": 3,
+          "step": 1584,
+          "validation": {
+            "session_mae": 0.010771506021362844,
+            "labels": 127875,
+            "sessions": null
+          },
+          "train": {
+            "samples": 2726802,
+            "session_count": 4213,
+            "session_mae": 0.014867850587930536,
+            "session_mse": 0.0009193911109866005,
+            "observations": 2791261,
+            "warmup_observations": 0,
+            "predictions": 2791261,
+            "labels": 2726802,
+            "labels_in_loss": 2726802,
+            "labels_without_graph": 0,
+            "updates": 528,
+            "segments": 535,
+            "unresolved": 64459,
+            "mean_loss": 0.0037443841786208667
+          }
+        },
+        {
+          "epoch": 4,
+          "step": 2112,
+          "validation": {
+            "session_mae": 0.010767686033329355,
+            "labels": 127875,
+            "sessions": null
+          },
+          "train": {
+            "samples": 2726802,
+            "session_count": 4213,
+            "session_mae": 0.01486559007385207,
+            "session_mse": 0.0009190627310796656,
+            "observations": 2791261,
+            "warmup_observations": 0,
+            "predictions": 2791261,
+            "labels": 2726802,
+            "labels_in_loss": 2726802,
+            "labels_without_graph": 0,
+            "updates": 528,
+            "segments": 535,
+            "unresolved": 64459,
+            "mean_loss": 0.003671442850946504
+          }
+        },
+        {
+          "epoch": 5,
+          "step": 2640,
+          "validation": {
+            "session_mae": 0.010766512703857319,
+            "labels": 127875,
+            "sessions": null
+          },
+          "train": {
+            "samples": 2726802,
+            "session_count": 4213,
+            "session_mae": 0.014864391650429552,
+            "session_mse": 0.0009192658667009387,
+            "observations": 2791261,
+            "warmup_observations": 0,
+            "predictions": 2791261,
+            "labels": 2726802,
+            "labels_in_loss": 2726802,
+            "labels_without_graph": 0,
+            "updates": 528,
+            "segments": 535,
+            "unresolved": 64459,
+            "mean_loss": 0.0036397294801039427
+          }
+        }
+      ]
+    },
+    {
+      "name": "rule-1024",
+      "scores": {
+        "seeds": 1,
+        "sessions": 250,
+        "rows": 255750,
+        "cohort_sha256": "d0b5f82f79026d10215d51cd879b2ca587fef8361fada64350071a76373380e4",
+        "zero": 0.011931747967653086,
+        "raw": null,
+        "calibrated": 0.011931747967653086,
+        "scale": 0.0,
+        "pearson_ic": 0.007412503328744923,
+        "rank_ic": 0.006483443749483428
+      },
+      "seconds": 50.57635799399577,
+      "epochs": null,
+      "best_epoch": null,
+      "best_validation_mae": null,
+      "timers": null,
+      "peak_torch_vram_mib": null,
+      "peak_rss_gib": 2.591472625732422,
+      "history": null
+    },
+    {
+      "name": "ridge-1024",
+      "scores": {
+        "seeds": 1,
+        "sessions": 250,
+        "rows": 255750,
+        "cohort_sha256": "d0b5f82f79026d10215d51cd879b2ca587fef8361fada64350071a76373380e4",
+        "zero": 0.011931747967653086,
+        "raw": 0.011939832238385026,
+        "calibrated": 0.011931721930087206,
+        "scale": 0.5131340578549362,
+        "pearson_ic": 0.016030895266861307,
+        "rank_ic": 0.009750950317358294
+      },
+      "seconds": 812.4131569250021,
+      "epochs": null,
+      "best_epoch": null,
+      "best_validation_mae": null,
+      "timers": null,
+      "peak_torch_vram_mib": 113.888671875,
+      "peak_rss_gib": 2.72607421875,
+      "history": null
+    },
+    {
+      "name": "lgbm-1024-streamed",
+      "scores": {
+        "seeds": 3,
+        "sessions": 250,
+        "rows": 255750,
+        "cohort_sha256": "d0b5f82f79026d10215d51cd879b2ca587fef8361fada64350071a76373380e4",
+        "zero": 0.011931747967653086,
+        "raw": null,
+        "calibrated": 0.01193182950325194,
+        "scale": 0.005070619210527973,
+        "pearson_ic": 0.022793920680905785,
+        "rank_ic": 0.011624582842359012
+      },
+      "seconds": 1334.1909183909884,
+      "epochs": null,
+      "best_epoch": null,
+      "best_validation_mae": null,
+      "timers": null,
+      "peak_torch_vram_mib": null,
+      "peak_rss_gib": 11.247512817382812,
+      "history": null
+    },
+    {
+      "name": "r6-m3-ring-1024-work256m",
+      "scores": {
+        "seeds": 1,
+        "sessions": 250,
+        "rows": 255750,
+        "cohort_sha256": "d0b5f82f79026d10215d51cd879b2ca587fef8361fada64350071a76373380e4",
+        "zero": 0.011931747967653086,
+        "raw": 0.011977496812897616,
+        "calibrated": 0.01193027049904396,
+        "scale": 0.14795484790839392,
+        "pearson_ic": 0.00871628148349538,
+        "rank_ic": 0.01524192167438706
+      },
+      "seconds": 518.3447422169847,
+      "epochs": 1,
+      "best_epoch": 1,
+      "best_validation_mae": 0.010837322459861755,
+      "timers": {
+        "train": 89.27425125800073,
+        "validation": 327.33218300086446,
+        "train_calls": 1,
+        "validation_calls": 5
+      },
+      "peak_torch_vram_mib": 288.68408203125,
+      "peak_rss_gib": null,
+      "history": [
+        {
+          "epoch": 0,
+          "step": 0,
+          "validation": {
+            "session_mae": 0.0108551004461109,
+            "labels": 127875,
+            "sessions": null
+          },
+          "train": null
+        },
+        {
+          "epoch": 1,
+          "step": 32,
+          "validation": {
+            "session_mae": 0.010837322459861755,
+            "labels": 127875,
+            "sessions": null
+          },
+          "train": {
+            "samples": 249320,
+            "session_count": 252,
+            "session_mae": 0.011689312786508817,
+            "session_mse": 0.0005374103263208986,
+            "observations": 492518,
+            "warmup_observations": 239049,
+            "predictions": 253469,
+            "labels": 249320,
+            "labels_in_loss": 249320,
+            "labels_without_graph": 0,
+            "admitted": 249320,
+            "mac_updates": 492518,
+            "refinements": 253469,
+            "updates": 32,
+            "segments": 32,
+            "unresolved": 4149,
+            "selective_admitted": 1746,
+            "selective_rejected": 247574,
+            "selective_evicted": 1490,
+            "relevance_unknown": 89136,
+            "mean_loss": 0.002982515546745151
+          }
+        }
+      ]
+    }
+  ],
+  "pilot_budget": {
+    "limit_hours": 7,
+    "accounted_seconds": 24434.289265390405,
+    "failed_attempts_reserve_seconds": 2014.911,
+    "note": "Contabilidad conservadora de ejecución que incluye fallos y una reserva para intentos iniciales. No incluye esperas por recursos ni suma el tiempo de los hilos CPU."
+  },
+  "trace": {
+    "jobs_completed": 13,
+    "assets": 64,
+    "files_in_bundle": 710,
+    "relevant_files_opened": 195,
+    "missing_relevant_files": 0
+  },
+  "initial_rehearsal": {
+    "jobs_completed": 28,
+    "assets": 64,
+    "epochs": 1
+  },
+  "tabular_staging": {
+    "name": "tabular-stage-64",
+    "status": "completed",
+    "seconds": 216.0958960079588,
+    "role": "technical_parity_with_real_development_rows",
+    "year": 2018,
+    "assets": 64,
+    "seeds": [
+      42,
+      43,
+      44
+    ],
+    "max_rounds": 1000,
+    "states": [
+      "paused",
+      "paused",
+      "paused",
+      "completed"
+    ],
+    "exact_seed_report_parity": true,
+    "selected_rounds": 420
+  },
+  "limits": [
+    "Una ventana y una semilla en las comparaciones neuronales. LightGBM usa tres semillas.",
+    "La receta anterior solo recibió dos épocas, frente a cinco de las alternativas con escala.",
+    "Los tiempos tienen una repetición por configuración y hubo trabajo concurrente.",
+    "La medida de VRAM es la asignada por PyTorch. No se midieron energía ni coste económico.",
+    "El control tabular de 1.024 activos se completó tras reanudar una semilla guardada. Su tiempo incluye intentos fallidos separados de la ejecución final.",
+    "El fraccionamiento del control tabular se contrastó con datos reales de 64 activos y conserva exactamente informes, modelos y predicciones."
+  ]
+}

@@ -413,6 +413,10 @@ def run_tabular_window(
     # El ajuste solo necesita validación. Los demás tramos se leen y emiten de uno en uno.
     predictions = {seed: {} for seed in seeds}
     for name in PREDICTED:
+        if stop is not None and stop.requested:
+            report["status"] = "paused"
+            atomic_json(output / "run.json", report)
+            return report
         rows = (
             validation
             if name == "validation"

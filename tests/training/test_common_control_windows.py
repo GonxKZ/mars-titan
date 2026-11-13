@@ -503,6 +503,30 @@ def test_completed_tabular_models_remain_recoverable_and_their_hash_is_checked(
         tabular(manifest, protocol, output)
 
 
+def test_a_stop_during_tabular_emission_keeps_the_models_and_resumes_without_fitting(
+    view, tmp_path, doubled_fit, monkeypatch
+):
+    manifest, protocol = view
+    output = tmp_path / "stopped-emission"
+    stop = types.SimpleNamespace(requested=False)
+    write = windows._write
+
+    def stop_after_validation(folder, partition, *args):
+        result = write(folder, partition, *args)
+        if partition == "validation":
+            stop.requested = True
+        return result
+
+    with monkeypatch.context() as patch:
+        patch.setattr(windows, "_write", stop_after_validation)
+        paused = tabular(manifest, protocol, output, stop=stop)
+    assert paused["status"] == "paused" and len(paused["fits"]) == 3
+    assert not (output / "seed-42/calibration-predictions.parquet").exists()
+    assert len(doubled_fit) == 3
+    completed = tabular(manifest, protocol, output)
+    assert completed["status"] == "completed" and len(doubled_fit) == 3
+
+
 def test_a_stop_inside_a_seed_keeps_only_the_previously_confirmed_seeds(
     view, tmp_path, doubled_fit, monkeypatch
 ):
