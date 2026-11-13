@@ -30,6 +30,53 @@ La investigación incorpora mecanismos de aprendizaje y memoria, recurrencia int
 
 La pregunta principal es: **¿mejora una memoria adaptativa de eventos la predicción de retornos residuales fuera de muestra, con un presupuesto de cómputo comparable y después de controlar la fuga temporal?** La utilidad financiera se examinará mediante simulaciones con costes. Una mejora predictiva no implica por sí sola rentabilidad.
 
+## Campaña de comparación en dos equipos
+
+La [campaña de comparación](docs/experiments/comparison-campaign-v1.md) ([#836](https://github.com/GonxKZ/mars-titan/issues/836)) vuelve a ajustar las referencias y la familia de Titans-MAC y MARS-TITAN. Los modelos neuronales comparten receta. Mide a todos los modelos con el MAE residual por sesión y lo compara con la predicción cero sobre las mismas filas. El trabajo se reparte en dos colas para dos equipos con 8 GB de VRAM. La campaña está declarada y su motor se ha comprobado con un piloto acotado sobre el origen 2018, que no forma parte de ella. Sus ajustes no se han ejecutado y este apartado no contiene resultados.
+
+| Cola | Equipo | Modelos | Trabajos |
+| --- | --- | --- | --- |
+| `references` | El portátil que tiene la edición de datos | Transformer compacto, GRU, LSTM, RNN, DLinear, Ridge, la regla de momentum y reversión y LightGBM | 144 |
+| `mars_titan` | El segundo equipo | Titans-MAC y sus dos controles de memoria, MARS-TITAN con las políticas M0 a M3, la red de áreas, los grupos de activos, la atención entre activos, los refinamientos K = 2 y K = 4 y el puente de evidencia | 480 |
+
+Las dos colas comparten cohortes de 1.024 activos por origen, ventanas y semillas. Los ajustes neuronales comparten escala de aprendizaje, receta y regla de parada. Los lectores comparten su propio presupuesto, incluido M0, que permite separar el efecto de continuar el ajuste del efecto del banco. Ridge y LightGBM conservan las diferencias de preparación y presupuesto descritas en el diseño. Los orígenes 2019 a 2022 son de desarrollo y 2023 sirve de comprobación posterior. Como 2023 ya se utilizó en estudios anteriores, no es una confirmación independiente. Los años 2015 a 2017 forman una segunda etapa que amplía la evidencia. El test de 2024 permanece cerrado.
+
+En el equipo de las referencias, desde la raíz del repositorio:
+
+```bash
+uv run python -m mars_titan.training.comparison_campaign prepare
+uv run python -m mars_titan.training.comparison_campaign doctor --machine references
+read -r -p "Carpeta nueva para el paquete en el disco externo: " export_dir
+test -n "$export_dir" && uv run python -m mars_titan.training.comparison_campaign export --destination "$export_dir"
+uv run python -m mars_titan.training.comparison_campaign authorize --note "Campaña de comparación, equipo de las referencias"
+uv run python -m mars_titan.training.comparison_campaign run --machine references
+```
+
+En el segundo equipo, con el repositorio clonado en el mismo commit y el disco del paquete conectado:
+
+```bash
+uv sync --locked --all-extras
+read -r -p "Carpeta del paquete de datos dentro de WSL: " data_dir
+test -d "$data_dir" && uv run python -m mars_titan.training.comparison_campaign import --source "$data_dir"
+uv run python -m mars_titan.training.comparison_campaign prepare
+uv run python -m mars_titan.training.comparison_campaign doctor --machine mars_titan
+uv run python -m mars_titan.training.comparison_campaign authorize --note "Campaña de comparación, equipo de MARS-TITAN"
+uv run python -m mars_titan.training.comparison_campaign run --machine mars_titan
+```
+
+La orden `run` solo ejecuta los modelos de su cola. Al comienzo del 5 de diciembre pide una parada recuperable según la fecha límite declarada. Primero arranca hasta su primera barrera los modelos que no necesitan un padre ajustado. Los lectores se comprueban cuando su padre está disponible. `Ctrl+C` solicita una parada recuperable y la misma orden continúa el trabajo. La guía describe qué estado conserva cada ejecutor. Un trabajo que falla se reintenta hasta tres veces sin detener la cola.
+
+```bash
+uv run python -m mars_titan.training.comparison_campaign status --machine mars_titan
+uv run python -m mars_titan.training.comparison_campaign results --machine mars_titan
+uv run python -m mars_titan.training.comparison_campaign plan --machine mars_titan
+uv run python -m mars_titan.training.comparison_campaign retry --machine mars_titan
+```
+
+`status` cuenta los trabajos por nivel, estima las horas restantes e identifica fallos e intentos abiertos. `results` muestra el error frente a cero, el error tras calibrar y el IC por sesión con lo ya terminado. `plan` lista la cola en su orden y `retry` devuelve a la cola los trabajos fallidos.
+
+La campaña no modifica la protección local del aprendizaje. Cada equipo registra su propio permiso con `authorize`, ligado a la declaración, el commit y los cambios locales del código. `doctor` muestra esas identidades para compararlas entre equipos. Otra identidad necesita otro estado si ya hay trabajos iniciados. El paquete de datos viaja en un disco, solo contiene derivados locales de la edición y no se publica. La [guía de uso](docs/engineering/comparison-campaign-two-machines.md) detalla la preparación de Windows 11 con WSL2, el seguimiento, la recogida de resultados y qué comprobar si algo falla.
+
 ## Campaña sobre la edición desde 2000
 
 La [ronda de refinamientos del 19 de octubre](reports/research/refinement-development-20261019/completed-v1/README.md) terminó sus 288 tareas, con tres semillas, cohortes de 64 y 256 acciones y dos representaciones gráficas. Ninguno de sus 48 selectores supera al residual cero en MAE. Los intervalos, la variación entre semillas y los costes están publicados. El componente se conserva experimental y desactivado por defecto. Esta ronda acotada no completa la campaña del universo histórico.
@@ -443,6 +490,7 @@ Los objetivos se gestionan como seis hitos y 64 tareas canónicas, con prioridad
 - [Variante ampliada y comparaciones justas](docs/research/neuroarchitecture-review.md), con [condiciones de memoria y contraejemplos](docs/research/memory-mathematics.md). Estos documentos conservan las propuestas y sus controles. Los informes de desarrollo registran las evaluaciones ejecutadas.
 - [Atención, repetición y autoevaluación](docs/research/attention-replay-review.md), [eventos públicos y señales reducidas](docs/research/event-signal-comparison.md), con [límites de información y replay](docs/research/attention-replay-mathematics.md).
 - [Integración arquitectónica y postentrenamiento](docs/research/system-integration.md), con responsabilidades, puntos de extensión, dependencias de estado y estimaciones matemáticas.
+- [Campaña de comparación en dos equipos](docs/experiments/comparison-campaign-v1.md), con su [guía de uso](docs/engineering/comparison-campaign-two-machines.md): reparto de modelos, receta común, regla de parada, análisis previsto y órdenes de cada equipo.
 - [Campaña sobre la edición desde 2000](docs/research/training-campaign-2000.md), con el [protocolo walk-forward v2](docs/research/walk-forward-2000.md), las [métricas y la calibración común](docs/research/metrics.md) y la [auditoría de los entornos de refuerzo](docs/engineering/rl-environment-integrity.md).
 - [Preparación experimental ejecutable](docs/engineering/experimental-controls.md), con controles C++20, lectores y vistas, recuperación, medidas y perfiles de verificación conjuntos.
 - [Contrato de datos](docs/data/data-contract.md), [inspección inicial de FinMultiTime](docs/data/finmultitime-card.md) y [arquitectura](docs/engineering/architecture.md).

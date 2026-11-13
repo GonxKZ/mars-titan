@@ -1,0 +1,4269 @@
+{
+  "schema_version": 1,
+  "date": "2026-11-13",
+  "base_commit": "46e289ec6d11d2068b3dedae3edcc2022ffc7685",
+  "source_sha256": {
+    "configs/experiments/comparison-campaign-v1.json": "5cb070c0fc08744f5efb08b4f496c189400df62cfb82451af2473455675aee1f",
+    "configs/titans/comparison-campaign-core-v1.json": "8678ffb6e785affd6b45ad1ad3fcb44d97c45ae78f9fefdd8daf4d613004dd02",
+    "configs/titans/comparison-campaign-reader-v1.json": "eaf142281b383c36b8e28a340e53e3dc571984d6a49684c3120fdcd55695137c",
+    "src/mars_titan/models/learning_scale.py": "4dae1eb314bb3bc28a275e247c9c22d784ef73154b78749c84de899919029458",
+    "src/mars_titan/models/quantile_head.py": "4533e5f9a60cf9037bcafeecb55c23ea5fecf452b72b8e458deab381fcbaa579",
+    "src/mars_titan/models/titans/financial.py": "dfacaf0cb4bb396faa656282fc0363256fc8dac87da12bf66e196e41dc241067",
+    "src/mars_titan/training/common_control_windows.py": "20cde44692e5143c78d0726cc2efa3bdbc48d544b1c9f0ea613c871376a4d106",
+    "src/mars_titan/training/comparison_campaign.py": "15106d20df900fa68e0b66b577c219ae75546a33a40f076a09ce1bf2dd039185",
+    "src/mars_titan/training/comparison_cohorts.py": "81e24fc09f456486c0d272529be30b84faa67b9e86a52a22b925e3e739718c8d",
+    "src/mars_titan/training/comparison_data.py": "25947cb67c82cf0c7966b3d6e0c6b8a1023e94651dc497d37c36436c8585aa8d",
+    "src/mars_titan/training/comparison_ridge.py": "bb13f1f1f237479fa56aaa58d6403524ca7fd628e05463eca867e20096d3efc6",
+    "src/mars_titan/training/comparison_scores.py": "7920f72a85042324db5f476510ab50404bf8d86bf8b1148834f99c339396a12e",
+    "src/mars_titan/training/financial_run.py": "94857d41e4a142300316ed2398d68dca8a64a7b7d1d57e7e8a5390020f34f158",
+    "src/mars_titan/training/learning_statistics.py": "f531b3782e49df710eb15d1e5740aaed376211a85e4140e2f78628e035be0903",
+    "src/mars_titan/training/search_cases.py": "8dc6af752a84728dab76224cbd7ab64300c705184ddbf77d34bd15f6bdad1392",
+    "src/mars_titan/training/selection.py": "14c4286a68eea116fecccd532e6409b50aae14ddb49d8a1b521a70ce6ed03f19",
+    "src/mars_titan/training/titans_walk_forward.py": "cb8b81b006cab630c71a6724a638bdf44257e521415eaa062fcfeb8853ba386d",
+    "src/mars_titan/training/variant_screening.py": "1081197beb8062409757941d979d8e343b1b36e88621a78445266823f74d7652",
+    "src/mars_titan/training/walk_forward_phases.py": "e5c9415dffc193e30dfd3790576d4455e1847499de8702f43d1116b95fb0f009"
+  },
+  "versions": {
+    "torch": "2.14.0+cu130",
+    "numpy": "2.5.3",
+    "pyarrow": "25.0.1",
+    "lightgbm": "4.7.0",
+    "coverage": "7.16.1",
+    "radon": "6.0.1"
+  },
+  "suites": [
+    {
+      "name": "Guardas e inventarios",
+      "passed": 198,
+      "skipped": 0
+    },
+    {
+      "name": "Ventanas cronológicas",
+      "passed": 68,
+      "skipped": 1
+    },
+    {
+      "name": "Modelos y selección en CPU",
+      "passed": 4039,
+      "skipped": 1131
+    },
+    {
+      "name": "Regresión inicial de entrenamiento",
+      "passed": 409,
+      "failed": 1,
+      "skipped": 87,
+      "note": "El fallo era una prueba que igualaba el límite de la criba y el de las ventanas generales. La prueba se corrigió y su archivo completo pasó después."
+    },
+    {
+      "name": "Última pasada de campaña, datos, controles y lectores con enlace nativo",
+      "passed": 374,
+      "skipped": 0,
+      "deselected": 3
+    },
+    {
+      "name": "Escalas, gradientes y recuperación CUDA",
+      "passed": 32,
+      "skipped": 0
+    },
+    {
+      "name": "Revisión final de parada, identidad y recuperación de los controles",
+      "passed": 116,
+      "skipped": 0
+    },
+    {
+      "name": "make check con dos trabajadores",
+      "passed": 14338,
+      "skipped": 401,
+      "warnings": 16,
+      "seconds": 419.4,
+      "note": "Pruebas rápidas de CPU. Se excluyen las marcadas lentas, nativas o CUDA. Las advertencias proceden de comprobaciones de tensores dispersos, cuantización y espacios Gymnasium."
+    }
+  ],
+  "coverage": {
+    "tools": {
+      "coverage": "7.16.1",
+      "radon": "6.0.1",
+      "branch_coverage": true,
+      "python": "3.12.14",
+      "summarizer_sha256": "75cc60c88037e0bb17aff6e8ab666ce78b35d600d6c7ad217bf68b1afb4c4ec6"
+    },
+    "totals": {
+      "statements": 4542,
+      "covered_statements": 4339,
+      "branches": 1690,
+      "covered_branches": 1559
+    },
+    "convention": "Sentencias ejecutadas entre sentencias de la región según coverage.py.",
+    "changed_lines": 1304,
+    "changed_lines_covered": 1276
+  },
+  "complexity": {
+    "functions_measured": 140,
+    "unmeasured": 0,
+    "max_crap": 59.398201014526045,
+    "convention": "C² × (1 − cobertura de sentencias)³ + C.",
+    "functions": [
+      {
+        "path": "src/mars_titan/models/titans/financial.py",
+        "function": "FinancialPredictor._prepare",
+        "cyclomatic_complexity": 59,
+        "statements": 103,
+        "covered_statements": 98,
+        "branches": 72,
+        "covered_branches": 67,
+        "crap": 59.398201014526045,
+        "changed_executable_lines": 2,
+        "changed_covered_lines": 2,
+        "changed_missing_lines": [],
+        "changed_missing_branches": []
+      },
+      {
+        "path": "src/mars_titan/training/comparison_campaign.py",
+        "function": "checked_declaration",
+        "cyclomatic_complexity": 58,
+        "statements": 34,
+        "covered_statements": 34,
+        "branches": 12,
+        "covered_branches": 12,
+        "crap": 58.0,
+        "changed_executable_lines": 35,
+        "changed_covered_lines": 35,
+        "changed_missing_lines": [],
+        "changed_missing_branches": []
+      },
+      {
+        "path": "src/mars_titan/models/titans/financial.py",
+        "function": "FinancialPredictor.__init__",
+        "cyclomatic_complexity": 45,
+        "statements": 67,
+        "covered_statements": 64,
+        "branches": 26,
+        "covered_branches": 23,
+        "crap": 45.181787653401514,
+        "changed_executable_lines": 14,
+        "changed_covered_lines": 14,
+        "changed_missing_lines": [],
+        "changed_missing_branches": []
+      },
+      {
+        "path": "src/mars_titan/training/titans_walk_forward.py",
+        "function": "run_titans_window",
+        "cyclomatic_complexity": 37,
+        "statements": 102,
+        "covered_statements": 99,
+        "branches": 32,
+        "covered_branches": 31,
+        "crap": 37.034831060451864,
+        "changed_executable_lines": 6,
+        "changed_covered_lines": 6,
+        "changed_missing_lines": [],
+        "changed_missing_branches": []
+      },
+      {
+        "path": "src/mars_titan/models/titans/financial.py",
+        "function": "FinancialConfig.identity",
+        "cyclomatic_complexity": 35,
+        "statements": 69,
+        "covered_statements": 69,
+        "branches": 64,
+        "covered_branches": 64,
+        "crap": 35.0,
+        "changed_executable_lines": 4,
+        "changed_covered_lines": 4,
+        "changed_missing_lines": [],
+        "changed_missing_branches": []
+      },
+      {
+        "path": "src/mars_titan/training/comparison_campaign.py",
+        "function": "main",
+        "cyclomatic_complexity": 24,
+        "statements": 69,
+        "covered_statements": 65,
+        "branches": 28,
+        "covered_branches": 25,
+        "crap": 24.11221610366839,
+        "changed_executable_lines": 70,
+        "changed_covered_lines": 66,
+        "changed_missing_lines": [
+          1365,
+          1366,
+          1367,
+          1368
+        ],
+        "changed_missing_branches": [
+          [
+            1364,
+            1365
+          ],
+          [
+            1366,
+            1367
+          ],
+          [
+            1366,
+            1368
+          ]
+        ]
+      },
+      {
+        "path": "src/mars_titan/training/financial_run.py",
+        "function": "ChronologicalRecipe.__post_init__",
+        "cyclomatic_complexity": 23,
+        "statements": 11,
+        "covered_statements": 10,
+        "branches": 6,
+        "covered_branches": 5,
+        "crap": 23.397445529676936,
+        "changed_executable_lines": 1,
+        "changed_covered_lines": 1,
+        "changed_missing_lines": [],
+        "changed_missing_branches": []
+      },
+      {
+        "path": "src/mars_titan/training/comparison_cohorts.py",
+        "function": "_fold",
+        "cyclomatic_complexity": 22,
+        "statements": 13,
+        "covered_statements": 13,
+        "branches": 2,
+        "covered_branches": 2,
+        "crap": 22.0,
+        "changed_executable_lines": 14,
+        "changed_covered_lines": 14,
+        "changed_missing_lines": [],
+        "changed_missing_branches": []
+      },
+      {
+        "path": "src/mars_titan/models/learning_scale.py",
+        "function": "fit_statistics",
+        "cyclomatic_complexity": 20,
+        "statements": 32,
+        "covered_statements": 31,
+        "branches": 14,
+        "covered_branches": 13,
+        "crap": 20.01220703125,
+        "changed_executable_lines": 33,
+        "changed_covered_lines": 32,
+        "changed_missing_lines": [
+          211
+        ],
+        "changed_missing_branches": [
+          [
+            210,
+            211
+          ]
+        ]
+      },
+      {
+        "path": "src/mars_titan/training/comparison_data.py",
+        "function": "_checked_manifest",
+        "cyclomatic_complexity": 20,
+        "statements": 10,
+        "covered_statements": 10,
+        "branches": 2,
+        "covered_branches": 2,
+        "crap": 20.0,
+        "changed_executable_lines": 11,
+        "changed_covered_lines": 11,
+        "changed_missing_lines": [],
+        "changed_missing_branches": []
+      },
+      {
+        "path": "src/mars_titan/training/common_control_windows.py",
+        "function": "run_tabular_window",
+        "cyclomatic_complexity": 19,
+        "statements": 61,
+        "covered_statements": 61,
+        "branches": 18,
+        "covered_branches": 18,
+        "crap": 19.0,
+        "changed_executable_lines": 29,
+        "changed_covered_lines": 29,
+        "changed_missing_lines": [],
+        "changed_missing_branches": []
+      },
+      {
+        "path": "src/mars_titan/training/comparison_data.py",
+        "function": "campaign_files",
+        "cyclomatic_complexity": 19,
+        "statements": 32,
+        "covered_statements": 32,
+        "branches": 24,
+        "covered_branches": 23,
+        "crap": 19.0,
+        "changed_executable_lines": 38,
+        "changed_covered_lines": 38,
+        "changed_missing_lines": [],
+        "changed_missing_branches": [
+          [
+            94,
+            93
+          ]
+        ]
+      },
+      {
+        "path": "src/mars_titan/training/selection.py",
+        "function": "advance_selection",
+        "cyclomatic_complexity": 19,
+        "statements": 17,
+        "covered_statements": 17,
+        "branches": 8,
+        "covered_branches": 8,
+        "crap": 19.0,
+        "changed_executable_lines": 1,
+        "changed_covered_lines": 1,
+        "changed_missing_lines": [],
+        "changed_missing_branches": []
+      },
+      {
+        "path": "src/mars_titan/training/selection.py",
+        "function": "validate_selection",
+        "cyclomatic_complexity": 18,
+        "statements": 9,
+        "covered_statements": 9,
+        "branches": 8,
+        "covered_branches": 8,
+        "crap": 18.0,
+        "changed_executable_lines": 4,
+        "changed_covered_lines": 4,
+        "changed_missing_lines": [],
+        "changed_missing_branches": []
+      },
+      {
+        "path": "src/mars_titan/training/comparison_campaign.py",
+        "function": "summary",
+        "cyclomatic_complexity": 17,
+        "statements": 18,
+        "covered_statements": 18,
+        "branches": 6,
+        "covered_branches": 6,
+        "crap": 17.0,
+        "changed_executable_lines": 19,
+        "changed_covered_lines": 19,
+        "changed_missing_lines": [],
+        "changed_missing_branches": []
+      },
+      {
+        "path": "src/mars_titan/training/comparison_campaign.py",
+        "function": "results",
+        "cyclomatic_complexity": 16,
+        "statements": 18,
+        "covered_statements": 18,
+        "branches": 8,
+        "covered_branches": 8,
+        "crap": 16.0,
+        "changed_executable_lines": 19,
+        "changed_covered_lines": 19,
+        "changed_missing_lines": [],
+        "changed_missing_branches": []
+      },
+      {
+        "path": "src/mars_titan/training/comparison_data.py",
+        "function": "export_bundle",
+        "cyclomatic_complexity": 16,
+        "statements": 44,
+        "covered_statements": 44,
+        "branches": 10,
+        "covered_branches": 9,
+        "crap": 16.0,
+        "changed_executable_lines": 45,
+        "changed_covered_lines": 45,
+        "changed_missing_lines": [],
+        "changed_missing_branches": [
+          [
+            180,
+            182
+          ]
+        ]
+      },
+      {
+        "path": "src/mars_titan/training/comparison_campaign.py",
+        "function": "plan",
+        "cyclomatic_complexity": 15,
+        "statements": 19,
+        "covered_statements": 19,
+        "branches": 14,
+        "covered_branches": 14,
+        "crap": 15.0,
+        "changed_executable_lines": 20,
+        "changed_covered_lines": 20,
+        "changed_missing_lines": [],
+        "changed_missing_branches": []
+      },
+      {
+        "path": "src/mars_titan/training/comparison_data.py",
+        "function": "import_bundle",
+        "cyclomatic_complexity": 13,
+        "statements": 45,
+        "covered_statements": 42,
+        "branches": 8,
+        "covered_branches": 8,
+        "crap": 13.050074074074073,
+        "changed_executable_lines": 46,
+        "changed_covered_lines": 43,
+        "changed_missing_lines": [
+          314,
+          315,
+          319
+        ],
+        "changed_missing_branches": []
+      },
+      {
+        "path": "src/mars_titan/training/comparison_campaign.py",
+        "function": "doctor",
+        "cyclomatic_complexity": 13,
+        "statements": 20,
+        "covered_statements": 20,
+        "branches": 8,
+        "covered_branches": 7,
+        "crap": 13.0,
+        "changed_executable_lines": 21,
+        "changed_covered_lines": 21,
+        "changed_missing_lines": [],
+        "changed_missing_branches": [
+          [
+            1234,
+            1242
+          ]
+        ]
+      },
+      {
+        "path": "src/mars_titan/training/comparison_cohorts.py",
+        "function": "project_cohort",
+        "cyclomatic_complexity": 13,
+        "statements": 15,
+        "covered_statements": 15,
+        "branches": 4,
+        "covered_branches": 4,
+        "crap": 13.0,
+        "changed_executable_lines": 16,
+        "changed_covered_lines": 16,
+        "changed_missing_lines": [],
+        "changed_missing_branches": []
+      },
+      {
+        "path": "src/mars_titan/training/learning_statistics.py",
+        "function": "read_fit_sample",
+        "cyclomatic_complexity": 12,
+        "statements": 24,
+        "covered_statements": 20,
+        "branches": 14,
+        "covered_branches": 10,
+        "crap": 12.666666666666666,
+        "changed_executable_lines": 25,
+        "changed_covered_lines": 21,
+        "changed_missing_lines": [
+          73,
+          82,
+          89,
+          94
+        ],
+        "changed_missing_branches": [
+          [
+            72,
+            73
+          ],
+          [
+            81,
+            82
+          ],
+          [
+            88,
+            89
+          ],
+          [
+            93,
+            94
+          ]
+        ]
+      },
+      {
+        "path": "src/mars_titan/models/learning_scale.py",
+        "function": "LearningScaler.load",
+        "cyclomatic_complexity": 12,
+        "statements": 14,
+        "covered_statements": 14,
+        "branches": 8,
+        "covered_branches": 8,
+        "crap": 12.0,
+        "changed_executable_lines": 15,
+        "changed_covered_lines": 15,
+        "changed_missing_lines": [],
+        "changed_missing_branches": []
+      },
+      {
+        "path": "src/mars_titan/training/comparison_ridge.py",
+        "function": "checked_config",
+        "cyclomatic_complexity": 12,
+        "statements": 2,
+        "covered_statements": 2,
+        "branches": 0,
+        "covered_branches": 0,
+        "crap": 12.0,
+        "changed_executable_lines": 3,
+        "changed_covered_lines": 3,
+        "changed_missing_lines": [],
+        "changed_missing_branches": []
+      },
+      {
+        "path": "src/mars_titan/training/common_control_windows.py",
+        "function": "partition_rows",
+        "cyclomatic_complexity": 11,
+        "statements": 22,
+        "covered_statements": 22,
+        "branches": 6,
+        "covered_branches": 6,
+        "crap": 11.0,
+        "changed_executable_lines": 1,
+        "changed_covered_lines": 1,
+        "changed_missing_lines": [],
+        "changed_missing_branches": []
+      },
+      {
+        "path": "src/mars_titan/training/comparison_campaign.py",
+        "function": "Queue.preflight",
+        "cyclomatic_complexity": 11,
+        "statements": 21,
+        "covered_statements": 21,
+        "branches": 14,
+        "covered_branches": 14,
+        "crap": 11.0,
+        "changed_executable_lines": 22,
+        "changed_covered_lines": 22,
+        "changed_missing_lines": [],
+        "changed_missing_branches": []
+      },
+      {
+        "path": "src/mars_titan/training/comparison_campaign.py",
+        "function": "Queue._abnormal_exit",
+        "cyclomatic_complexity": 11,
+        "statements": 16,
+        "covered_statements": 16,
+        "branches": 10,
+        "covered_branches": 9,
+        "crap": 11.0,
+        "changed_executable_lines": 17,
+        "changed_covered_lines": 17,
+        "changed_missing_lines": [],
+        "changed_missing_branches": [
+          [
+            1036,
+            1044
+          ]
+        ]
+      },
+      {
+        "path": "src/mars_titan/training/comparison_ridge.py",
+        "function": "run_ridge_window",
+        "cyclomatic_complexity": 11,
+        "statements": 36,
+        "covered_statements": 36,
+        "branches": 16,
+        "covered_branches": 16,
+        "crap": 11.0,
+        "changed_executable_lines": 37,
+        "changed_covered_lines": 37,
+        "changed_missing_lines": [],
+        "changed_missing_branches": []
+      },
+      {
+        "path": "src/mars_titan/training/comparison_campaign.py",
+        "function": "run_job",
+        "cyclomatic_complexity": 10,
+        "statements": 24,
+        "covered_statements": 23,
+        "branches": 6,
+        "covered_branches": 5,
+        "crap": 10.007233796296296,
+        "changed_executable_lines": 25,
+        "changed_covered_lines": 24,
+        "changed_missing_lines": [
+          638
+        ],
+        "changed_missing_branches": [
+          [
+            637,
+            638
+          ]
+        ]
+      },
+      {
+        "path": "src/mars_titan/models/titans/financial.py",
+        "function": "FinancialConfig._check_learning_scale",
+        "cyclomatic_complexity": 10,
+        "statements": 5,
+        "covered_statements": 5,
+        "branches": 4,
+        "covered_branches": 4,
+        "crap": 10.0,
+        "changed_executable_lines": 6,
+        "changed_covered_lines": 6,
+        "changed_missing_lines": [],
+        "changed_missing_branches": []
+      },
+      {
+        "path": "src/mars_titan/training/comparison_campaign.py",
+        "function": "_checked_budget",
+        "cyclomatic_complexity": 10,
+        "statements": 3,
+        "covered_statements": 3,
+        "branches": 2,
+        "covered_branches": 2,
+        "crap": 10.0,
+        "changed_executable_lines": 4,
+        "changed_covered_lines": 4,
+        "changed_missing_lines": [],
+        "changed_missing_branches": []
+      },
+      {
+        "path": "src/mars_titan/training/search_cases.py",
+        "function": "checked_predictor_changes",
+        "cyclomatic_complexity": 10,
+        "statements": 5,
+        "covered_statements": 5,
+        "branches": 4,
+        "covered_branches": 4,
+        "crap": 10.0,
+        "changed_executable_lines": 0,
+        "changed_covered_lines": 0,
+        "changed_missing_lines": [],
+        "changed_missing_branches": []
+      },
+      {
+        "path": "src/mars_titan/training/selection.py",
+        "function": "campaign_rule",
+        "cyclomatic_complexity": 9,
+        "statements": 6,
+        "covered_statements": 5,
+        "branches": 4,
+        "covered_branches": 3,
+        "crap": 9.375,
+        "changed_executable_lines": 1,
+        "changed_covered_lines": 1,
+        "changed_missing_lines": [],
+        "changed_missing_branches": []
+      },
+      {
+        "path": "src/mars_titan/training/comparison_scores.py",
+        "function": "prediction_tables",
+        "cyclomatic_complexity": 9,
+        "statements": 10,
+        "covered_statements": 10,
+        "branches": 2,
+        "covered_branches": 2,
+        "crap": 9.0,
+        "changed_executable_lines": 11,
+        "changed_covered_lines": 11,
+        "changed_missing_lines": [],
+        "changed_missing_branches": []
+      },
+      {
+        "path": "src/mars_titan/training/comparison_campaign.py",
+        "function": "_print_results",
+        "cyclomatic_complexity": 8,
+        "statements": 11,
+        "covered_statements": 10,
+        "branches": 6,
+        "covered_branches": 5,
+        "crap": 8.0480841472577,
+        "changed_executable_lines": 13,
+        "changed_covered_lines": 12,
+        "changed_missing_lines": [
+          817
+        ],
+        "changed_missing_branches": [
+          [
+            816,
+            817
+          ]
+        ]
+      },
+      {
+        "path": "src/mars_titan/models/learning_scale.py",
+        "function": "LearningScaler.__init__",
+        "cyclomatic_complexity": 8,
+        "statements": 11,
+        "covered_statements": 11,
+        "branches": 6,
+        "covered_branches": 6,
+        "crap": 8.0,
+        "changed_executable_lines": 12,
+        "changed_covered_lines": 12,
+        "changed_missing_lines": [],
+        "changed_missing_branches": []
+      },
+      {
+        "path": "src/mars_titan/models/titans/financial.py",
+        "function": "FinancialPredictor.fused_tokens",
+        "cyclomatic_complexity": 8,
+        "statements": 14,
+        "covered_statements": 14,
+        "branches": 10,
+        "covered_branches": 10,
+        "crap": 8.0,
+        "changed_executable_lines": 2,
+        "changed_covered_lines": 2,
+        "changed_missing_lines": [],
+        "changed_missing_branches": []
+      },
+      {
+        "path": "src/mars_titan/training/comparison_campaign.py",
+        "function": "Queue._work",
+        "cyclomatic_complexity": 8,
+        "statements": 19,
+        "covered_statements": 19,
+        "branches": 10,
+        "covered_branches": 10,
+        "crap": 8.0,
+        "changed_executable_lines": 20,
+        "changed_covered_lines": 20,
+        "changed_missing_lines": [],
+        "changed_missing_branches": []
+      },
+      {
+        "path": "src/mars_titan/training/comparison_campaign.py",
+        "function": "Queue.run",
+        "cyclomatic_complexity": 8,
+        "statements": 12,
+        "covered_statements": 12,
+        "branches": 10,
+        "covered_branches": 10,
+        "crap": 8.0,
+        "changed_executable_lines": 13,
+        "changed_covered_lines": 13,
+        "changed_missing_lines": [],
+        "changed_missing_branches": []
+      },
+      {
+        "path": "src/mars_titan/training/comparison_cohorts.py",
+        "function": "write_cohort",
+        "cyclomatic_complexity": 8,
+        "statements": 18,
+        "covered_statements": 18,
+        "branches": 4,
+        "covered_branches": 4,
+        "crap": 8.0,
+        "changed_executable_lines": 19,
+        "changed_covered_lines": 19,
+        "changed_missing_lines": [],
+        "changed_missing_branches": []
+      },
+      {
+        "path": "src/mars_titan/models/quantile_head.py",
+        "function": "QuantileHead.__init__",
+        "cyclomatic_complexity": 7,
+        "statements": 11,
+        "covered_statements": 10,
+        "branches": 8,
+        "covered_branches": 7,
+        "crap": 7.036814425244177,
+        "changed_executable_lines": 6,
+        "changed_covered_lines": 5,
+        "changed_missing_lines": [
+          136
+        ],
+        "changed_missing_branches": [
+          [
+            135,
+            136
+          ]
+        ]
+      },
+      {
+        "path": "src/mars_titan/models/quantile_head.py",
+        "function": "QuantileHead._quantiles",
+        "cyclomatic_complexity": 7,
+        "statements": 8,
+        "covered_statements": 8,
+        "branches": 2,
+        "covered_branches": 2,
+        "crap": 7.0,
+        "changed_executable_lines": 1,
+        "changed_covered_lines": 1,
+        "changed_missing_lines": [],
+        "changed_missing_branches": []
+      },
+      {
+        "path": "src/mars_titan/training/comparison_campaign.py",
+        "function": "Layout.__init__",
+        "cyclomatic_complexity": 7,
+        "statements": 5,
+        "covered_statements": 5,
+        "branches": 0,
+        "covered_branches": 0,
+        "crap": 7.0,
+        "changed_executable_lines": 6,
+        "changed_covered_lines": 6,
+        "changed_missing_lines": [],
+        "changed_missing_branches": []
+      },
+      {
+        "path": "src/mars_titan/training/comparison_campaign.py",
+        "function": "job_state",
+        "cyclomatic_complexity": 7,
+        "statements": 9,
+        "covered_statements": 9,
+        "branches": 6,
+        "covered_branches": 6,
+        "crap": 7.0,
+        "changed_executable_lines": 10,
+        "changed_covered_lines": 10,
+        "changed_missing_lines": [],
+        "changed_missing_branches": []
+      },
+      {
+        "path": "src/mars_titan/training/comparison_campaign.py",
+        "function": "execute_job",
+        "cyclomatic_complexity": 7,
+        "statements": 28,
+        "covered_statements": 28,
+        "branches": 12,
+        "covered_branches": 12,
+        "crap": 7.0,
+        "changed_executable_lines": 29,
+        "changed_covered_lines": 29,
+        "changed_missing_lines": [],
+        "changed_missing_branches": []
+      },
+      {
+        "path": "src/mars_titan/training/comparison_campaign.py",
+        "function": "_data_checks",
+        "cyclomatic_complexity": 7,
+        "statements": 14,
+        "covered_statements": 14,
+        "branches": 4,
+        "covered_branches": 4,
+        "crap": 7.0,
+        "changed_executable_lines": 15,
+        "changed_covered_lines": 15,
+        "changed_missing_lines": [],
+        "changed_missing_branches": []
+      },
+      {
+        "path": "src/mars_titan/training/comparison_campaign.py",
+        "function": "_print_summary",
+        "cyclomatic_complexity": 7,
+        "statements": 11,
+        "covered_statements": 11,
+        "branches": 8,
+        "covered_branches": 8,
+        "crap": 7.0,
+        "changed_executable_lines": 12,
+        "changed_covered_lines": 12,
+        "changed_missing_lines": [],
+        "changed_missing_branches": []
+      },
+      {
+        "path": "src/mars_titan/training/comparison_scores.py",
+        "function": "job_scores",
+        "cyclomatic_complexity": 7,
+        "statements": 8,
+        "covered_statements": 8,
+        "branches": 2,
+        "covered_branches": 2,
+        "crap": 7.0,
+        "changed_executable_lines": 9,
+        "changed_covered_lines": 9,
+        "changed_missing_lines": [],
+        "changed_missing_branches": []
+      },
+      {
+        "path": "src/mars_titan/training/comparison_campaign.py",
+        "function": "_code_check",
+        "cyclomatic_complexity": 6,
+        "statements": 13,
+        "covered_statements": 11,
+        "branches": 6,
+        "covered_branches": 6,
+        "crap": 6.131087847064179,
+        "changed_executable_lines": 14,
+        "changed_covered_lines": 12,
+        "changed_missing_lines": [
+          1162,
+          1163
+        ],
+        "changed_missing_branches": []
+      },
+      {
+        "path": "src/mars_titan/training/comparison_campaign.py",
+        "function": "_claim",
+        "cyclomatic_complexity": 6,
+        "statements": 15,
+        "covered_statements": 14,
+        "branches": 6,
+        "covered_branches": 5,
+        "crap": 6.010666666666666,
+        "changed_executable_lines": 16,
+        "changed_covered_lines": 15,
+        "changed_missing_lines": [
+          851
+        ],
+        "changed_missing_branches": [
+          [
+            849,
+            851
+          ]
+        ]
+      },
+      {
+        "path": "src/mars_titan/models/learning_scale.py",
+        "function": "LearningScale.__post_init__",
+        "cyclomatic_complexity": 6,
+        "statements": 2,
+        "covered_statements": 2,
+        "branches": 2,
+        "covered_branches": 2,
+        "crap": 6.0,
+        "changed_executable_lines": 3,
+        "changed_covered_lines": 3,
+        "changed_missing_lines": [],
+        "changed_missing_branches": []
+      },
+      {
+        "path": "src/mars_titan/models/learning_scale.py",
+        "function": "LearningScaler.forward",
+        "cyclomatic_complexity": 6,
+        "statements": 21,
+        "covered_statements": 21,
+        "branches": 10,
+        "covered_branches": 10,
+        "crap": 6.0,
+        "changed_executable_lines": 22,
+        "changed_covered_lines": 22,
+        "changed_missing_lines": [],
+        "changed_missing_branches": []
+      },
+      {
+        "path": "src/mars_titan/models/titans/financial.py",
+        "function": "FinancialPredictor.set_learning_statistics",
+        "cyclomatic_complexity": 6,
+        "statements": 9,
+        "covered_statements": 9,
+        "branches": 4,
+        "covered_branches": 4,
+        "crap": 6.0,
+        "changed_executable_lines": 10,
+        "changed_covered_lines": 10,
+        "changed_missing_lines": [],
+        "changed_missing_branches": []
+      },
+      {
+        "path": "src/mars_titan/training/comparison_campaign.py",
+        "function": "_checked_rule",
+        "cyclomatic_complexity": 6,
+        "statements": 3,
+        "covered_statements": 3,
+        "branches": 0,
+        "covered_branches": 0,
+        "crap": 6.0,
+        "changed_executable_lines": 4,
+        "changed_covered_lines": 4,
+        "changed_missing_lines": [],
+        "changed_missing_branches": []
+      },
+      {
+        "path": "src/mars_titan/training/comparison_campaign.py",
+        "function": "authorize",
+        "cyclomatic_complexity": 6,
+        "statements": 11,
+        "covered_statements": 11,
+        "branches": 4,
+        "covered_branches": 4,
+        "crap": 6.0,
+        "changed_executable_lines": 12,
+        "changed_covered_lines": 12,
+        "changed_missing_lines": [],
+        "changed_missing_branches": []
+      },
+      {
+        "path": "src/mars_titan/training/comparison_campaign.py",
+        "function": "Queue.__init__",
+        "cyclomatic_complexity": 6,
+        "statements": 14,
+        "covered_statements": 14,
+        "branches": 2,
+        "covered_branches": 2,
+        "crap": 6.0,
+        "changed_executable_lines": 15,
+        "changed_covered_lines": 15,
+        "changed_missing_lines": [],
+        "changed_missing_branches": []
+      },
+      {
+        "path": "src/mars_titan/training/comparison_campaign.py",
+        "function": "_export",
+        "cyclomatic_complexity": 6,
+        "statements": 10,
+        "covered_statements": 10,
+        "branches": 0,
+        "covered_branches": 0,
+        "crap": 6.0,
+        "changed_executable_lines": 11,
+        "changed_covered_lines": 11,
+        "changed_missing_lines": [],
+        "changed_missing_branches": []
+      },
+      {
+        "path": "src/mars_titan/training/learning_statistics.py",
+        "function": "sample_identity",
+        "cyclomatic_complexity": 4,
+        "statements": 5,
+        "covered_statements": 3,
+        "branches": 4,
+        "covered_branches": 2,
+        "crap": 5.024,
+        "changed_executable_lines": 6,
+        "changed_covered_lines": 4,
+        "changed_missing_lines": [
+          51,
+          53
+        ],
+        "changed_missing_branches": [
+          [
+            50,
+            51
+          ],
+          [
+            52,
+            53
+          ]
+        ]
+      },
+      {
+        "path": "src/mars_titan/models/learning_scale.py",
+        "function": "parse_learning_scale",
+        "cyclomatic_complexity": 5,
+        "statements": 5,
+        "covered_statements": 5,
+        "branches": 4,
+        "covered_branches": 4,
+        "crap": 5.0,
+        "changed_executable_lines": 6,
+        "changed_covered_lines": 6,
+        "changed_missing_lines": [],
+        "changed_missing_branches": []
+      },
+      {
+        "path": "src/mars_titan/models/learning_scale.py",
+        "function": "price_returns",
+        "cyclomatic_complexity": 5,
+        "statements": 14,
+        "covered_statements": 14,
+        "branches": 4,
+        "covered_branches": 4,
+        "crap": 5.0,
+        "changed_executable_lines": 15,
+        "changed_covered_lines": 15,
+        "changed_missing_lines": [],
+        "changed_missing_branches": []
+      },
+      {
+        "path": "src/mars_titan/training/common_control_windows.py",
+        "function": "_records",
+        "cyclomatic_complexity": 5,
+        "statements": 10,
+        "covered_statements": 10,
+        "branches": 8,
+        "covered_branches": 7,
+        "crap": 5.0,
+        "changed_executable_lines": 2,
+        "changed_covered_lines": 2,
+        "changed_missing_lines": [],
+        "changed_missing_branches": [
+          [
+            165,
+            167
+          ]
+        ]
+      },
+      {
+        "path": "src/mars_titan/training/common_control_windows.py",
+        "function": "_fit_seeds",
+        "cyclomatic_complexity": 5,
+        "statements": 15,
+        "covered_statements": 15,
+        "branches": 6,
+        "covered_branches": 6,
+        "crap": 5.0,
+        "changed_executable_lines": 5,
+        "changed_covered_lines": 5,
+        "changed_missing_lines": [],
+        "changed_missing_branches": []
+      },
+      {
+        "path": "src/mars_titan/training/comparison_campaign.py",
+        "function": "code_changes",
+        "cyclomatic_complexity": 5,
+        "statements": 12,
+        "covered_statements": 12,
+        "branches": 4,
+        "covered_branches": 4,
+        "crap": 5.0,
+        "changed_executable_lines": 13,
+        "changed_covered_lines": 13,
+        "changed_missing_lines": [],
+        "changed_missing_branches": []
+      },
+      {
+        "path": "src/mars_titan/training/comparison_campaign.py",
+        "function": "authorized",
+        "cyclomatic_complexity": 5,
+        "statements": 4,
+        "covered_statements": 4,
+        "branches": 2,
+        "covered_branches": 2,
+        "crap": 5.0,
+        "changed_executable_lines": 5,
+        "changed_covered_lines": 5,
+        "changed_missing_lines": [],
+        "changed_missing_branches": []
+      },
+      {
+        "path": "src/mars_titan/training/comparison_campaign.py",
+        "function": "_result",
+        "cyclomatic_complexity": 5,
+        "statements": 7,
+        "covered_statements": 7,
+        "branches": 2,
+        "covered_branches": 2,
+        "crap": 5.0,
+        "changed_executable_lines": 8,
+        "changed_covered_lines": 8,
+        "changed_missing_lines": [],
+        "changed_missing_branches": []
+      },
+      {
+        "path": "src/mars_titan/training/comparison_campaign.py",
+        "function": "Queue._launch",
+        "cyclomatic_complexity": 5,
+        "statements": 20,
+        "covered_statements": 20,
+        "branches": 4,
+        "covered_branches": 4,
+        "crap": 5.0,
+        "changed_executable_lines": 21,
+        "changed_covered_lines": 21,
+        "changed_missing_lines": [],
+        "changed_missing_branches": []
+      },
+      {
+        "path": "src/mars_titan/training/comparison_campaign.py",
+        "function": "retry_failed",
+        "cyclomatic_complexity": 5,
+        "statements": 11,
+        "covered_statements": 11,
+        "branches": 8,
+        "covered_branches": 7,
+        "crap": 5.0,
+        "changed_executable_lines": 12,
+        "changed_covered_lines": 12,
+        "changed_missing_lines": [],
+        "changed_missing_branches": [
+          [
+            1078,
+            1077
+          ]
+        ]
+      },
+      {
+        "path": "src/mars_titan/training/comparison_data.py",
+        "function": "campaign_files.add",
+        "cyclomatic_complexity": 5,
+        "statements": 5,
+        "covered_statements": 5,
+        "branches": 0,
+        "covered_branches": 0,
+        "crap": 5.0,
+        "changed_executable_lines": 6,
+        "changed_covered_lines": 6,
+        "changed_missing_lines": [],
+        "changed_missing_branches": []
+      },
+      {
+        "path": "src/mars_titan/training/comparison_data.py",
+        "function": "_same",
+        "cyclomatic_complexity": 4,
+        "statements": 7,
+        "covered_statements": 6,
+        "branches": 4,
+        "covered_branches": 3,
+        "crap": 4.0466472303206995,
+        "changed_executable_lines": 8,
+        "changed_covered_lines": 7,
+        "changed_missing_lines": [
+          238
+        ],
+        "changed_missing_branches": [
+          [
+            237,
+            238
+          ]
+        ]
+      },
+      {
+        "path": "src/mars_titan/training/learning_statistics.py",
+        "function": "learning_statistics",
+        "cyclomatic_complexity": 4,
+        "statements": 15,
+        "covered_statements": 14,
+        "branches": 4,
+        "covered_branches": 3,
+        "crap": 4.004740740740741,
+        "changed_executable_lines": 16,
+        "changed_covered_lines": 15,
+        "changed_missing_lines": [
+          116
+        ],
+        "changed_missing_branches": [
+          [
+            113,
+            116
+          ]
+        ]
+      },
+      {
+        "path": "src/mars_titan/training/comparison_campaign.py",
+        "function": "_last_error",
+        "cyclomatic_complexity": 4,
+        "statements": 2,
+        "covered_statements": 2,
+        "branches": 0,
+        "covered_branches": 0,
+        "crap": 4.0,
+        "changed_executable_lines": 3,
+        "changed_covered_lines": 3,
+        "changed_missing_lines": [],
+        "changed_missing_branches": []
+      },
+      {
+        "path": "src/mars_titan/training/comparison_campaign.py",
+        "function": "Queue._deadline_reached",
+        "cyclomatic_complexity": 4,
+        "statements": 6,
+        "covered_statements": 6,
+        "branches": 4,
+        "covered_branches": 3,
+        "crap": 4.0,
+        "changed_executable_lines": 7,
+        "changed_covered_lines": 7,
+        "changed_missing_lines": [],
+        "changed_missing_branches": [
+          [
+            978,
+            984
+          ]
+        ]
+      },
+      {
+        "path": "src/mars_titan/training/comparison_campaign.py",
+        "function": "_bundle_check",
+        "cyclomatic_complexity": 4,
+        "statements": 10,
+        "covered_statements": 10,
+        "branches": 4,
+        "covered_branches": 4,
+        "crap": 4.0,
+        "changed_executable_lines": 11,
+        "changed_covered_lines": 11,
+        "changed_missing_lines": [],
+        "changed_missing_branches": []
+      },
+      {
+        "path": "src/mars_titan/training/titans_walk_forward.py",
+        "function": "_recipe",
+        "cyclomatic_complexity": 4,
+        "statements": 5,
+        "covered_statements": 5,
+        "branches": 0,
+        "covered_branches": 0,
+        "crap": 4.0,
+        "changed_executable_lines": 0,
+        "changed_covered_lines": 0,
+        "changed_missing_lines": [],
+        "changed_missing_branches": []
+      },
+      {
+        "path": "src/mars_titan/training/walk_forward_phases.py",
+        "function": "checked_fit_months",
+        "cyclomatic_complexity": 4,
+        "statements": 3,
+        "covered_statements": 3,
+        "branches": 2,
+        "covered_branches": 2,
+        "crap": 4.0,
+        "changed_executable_lines": 1,
+        "changed_covered_lines": 1,
+        "changed_missing_lines": [],
+        "changed_missing_branches": []
+      },
+      {
+        "path": "src/mars_titan/training/comparison_campaign.py",
+        "function": "_gpu_check",
+        "cyclomatic_complexity": 3,
+        "statements": 9,
+        "covered_statements": 6,
+        "branches": 2,
+        "covered_branches": 1,
+        "crap": 3.3333333333333335,
+        "changed_executable_lines": 10,
+        "changed_covered_lines": 7,
+        "changed_missing_lines": [
+          1180,
+          1181,
+          1182
+        ],
+        "changed_missing_branches": [
+          [
+            1178,
+            1180
+          ]
+        ]
+      },
+      {
+        "path": "src/mars_titan/training/comparison_campaign.py",
+        "function": "_available_memory_gib",
+        "cyclomatic_complexity": 3,
+        "statements": 4,
+        "covered_statements": 3,
+        "branches": 4,
+        "covered_branches": 3,
+        "crap": 3.140625,
+        "changed_executable_lines": 5,
+        "changed_covered_lines": 4,
+        "changed_missing_lines": [
+          1211
+        ],
+        "changed_missing_branches": [
+          [
+            1208,
+            1211
+          ]
+        ]
+      },
+      {
+        "path": "src/mars_titan/models/learning_scale.py",
+        "function": "LearningScale.identity",
+        "cyclomatic_complexity": 3,
+        "statements": 1,
+        "covered_statements": 1,
+        "branches": 0,
+        "covered_branches": 0,
+        "crap": 3.0,
+        "changed_executable_lines": 2,
+        "changed_covered_lines": 2,
+        "changed_missing_lines": [],
+        "changed_missing_branches": []
+      },
+      {
+        "path": "src/mars_titan/models/learning_scale.py",
+        "function": "_masked_columns",
+        "cyclomatic_complexity": 3,
+        "statements": 7,
+        "covered_statements": 7,
+        "branches": 4,
+        "covered_branches": 4,
+        "crap": 3.0,
+        "changed_executable_lines": 8,
+        "changed_covered_lines": 8,
+        "changed_missing_lines": [],
+        "changed_missing_branches": []
+      },
+      {
+        "path": "src/mars_titan/models/titans/financial.py",
+        "function": "ReferencePriceEncoder.encode_last",
+        "cyclomatic_complexity": 3,
+        "statements": 6,
+        "covered_statements": 6,
+        "branches": 2,
+        "covered_branches": 2,
+        "crap": 3.0,
+        "changed_executable_lines": 7,
+        "changed_covered_lines": 7,
+        "changed_missing_lines": [],
+        "changed_missing_branches": []
+      },
+      {
+        "path": "src/mars_titan/training/comparison_campaign.py",
+        "function": "_git",
+        "cyclomatic_complexity": 3,
+        "statements": 5,
+        "covered_statements": 5,
+        "branches": 0,
+        "covered_branches": 0,
+        "crap": 3.0,
+        "changed_executable_lines": 6,
+        "changed_covered_lines": 6,
+        "changed_missing_lines": [],
+        "changed_missing_branches": []
+      },
+      {
+        "path": "src/mars_titan/training/comparison_campaign.py",
+        "function": "code_commit",
+        "cyclomatic_complexity": 3,
+        "statements": 3,
+        "covered_statements": 3,
+        "branches": 0,
+        "covered_branches": 0,
+        "crap": 3.0,
+        "changed_executable_lines": 4,
+        "changed_covered_lines": 4,
+        "changed_missing_lines": [],
+        "changed_missing_branches": []
+      },
+      {
+        "path": "src/mars_titan/training/comparison_campaign.py",
+        "function": "prepare",
+        "cyclomatic_complexity": 3,
+        "statements": 9,
+        "covered_statements": 9,
+        "branches": 2,
+        "covered_branches": 2,
+        "crap": 3.0,
+        "changed_executable_lines": 10,
+        "changed_covered_lines": 10,
+        "changed_missing_lines": [],
+        "changed_missing_branches": []
+      },
+      {
+        "path": "src/mars_titan/training/comparison_campaign.py",
+        "function": "Queue.request_stop",
+        "cyclomatic_complexity": 3,
+        "statements": 5,
+        "covered_statements": 5,
+        "branches": 4,
+        "covered_branches": 4,
+        "crap": 3.0,
+        "changed_executable_lines": 6,
+        "changed_covered_lines": 6,
+        "changed_missing_lines": [],
+        "changed_missing_branches": []
+      },
+      {
+        "path": "src/mars_titan/training/comparison_campaign.py",
+        "function": "Queue._command",
+        "cyclomatic_complexity": 3,
+        "statements": 5,
+        "covered_statements": 5,
+        "branches": 2,
+        "covered_branches": 2,
+        "crap": 3.0,
+        "changed_executable_lines": 6,
+        "changed_covered_lines": 6,
+        "changed_missing_lines": [],
+        "changed_missing_branches": []
+      },
+      {
+        "path": "src/mars_titan/training/comparison_campaign.py",
+        "function": "Queue._disk_exhausted",
+        "cyclomatic_complexity": 3,
+        "statements": 7,
+        "covered_statements": 7,
+        "branches": 4,
+        "covered_branches": 3,
+        "crap": 3.0,
+        "changed_executable_lines": 8,
+        "changed_covered_lines": 8,
+        "changed_missing_lines": [],
+        "changed_missing_branches": [
+          [
+            991,
+            997
+          ]
+        ]
+      },
+      {
+        "path": "src/mars_titan/training/comparison_campaign.py",
+        "function": "cohort_identity",
+        "cyclomatic_complexity": 3,
+        "statements": 7,
+        "covered_statements": 7,
+        "branches": 4,
+        "covered_branches": 4,
+        "crap": 3.0,
+        "changed_executable_lines": 8,
+        "changed_covered_lines": 8,
+        "changed_missing_lines": [],
+        "changed_missing_branches": []
+      },
+      {
+        "path": "src/mars_titan/training/titans_walk_forward.py",
+        "function": "_predictor",
+        "cyclomatic_complexity": 3,
+        "statements": 9,
+        "covered_statements": 9,
+        "branches": 2,
+        "covered_branches": 2,
+        "crap": 3.0,
+        "changed_executable_lines": 5,
+        "changed_covered_lines": 5,
+        "changed_missing_lines": [],
+        "changed_missing_branches": []
+      },
+      {
+        "path": "src/mars_titan/models/learning_scale.py",
+        "function": "_robust",
+        "cyclomatic_complexity": 2,
+        "statements": 6,
+        "covered_statements": 5,
+        "branches": 2,
+        "covered_branches": 1,
+        "crap": 2.0185185185185186,
+        "changed_executable_lines": 7,
+        "changed_covered_lines": 6,
+        "changed_missing_lines": [
+          139
+        ],
+        "changed_missing_branches": [
+          [
+            138,
+            139
+          ]
+        ]
+      },
+      {
+        "path": "src/mars_titan/training/comparison_campaign.py",
+        "function": "_native_check",
+        "cyclomatic_complexity": 2,
+        "statements": 6,
+        "covered_statements": 5,
+        "branches": 0,
+        "covered_branches": 0,
+        "crap": 2.0185185185185186,
+        "changed_executable_lines": 7,
+        "changed_covered_lines": 6,
+        "changed_missing_lines": [
+          1192
+        ],
+        "changed_missing_branches": []
+      },
+      {
+        "path": "src/mars_titan/models/learning_scale.py",
+        "function": "_floored",
+        "cyclomatic_complexity": 2,
+        "statements": 4,
+        "covered_statements": 4,
+        "branches": 2,
+        "covered_branches": 2,
+        "crap": 2.0,
+        "changed_executable_lines": 5,
+        "changed_covered_lines": 5,
+        "changed_missing_lines": [],
+        "changed_missing_branches": []
+      },
+      {
+        "path": "src/mars_titan/models/quantile_head.py",
+        "function": "QuantileHead.forward",
+        "cyclomatic_complexity": 2,
+        "statements": 2,
+        "covered_statements": 2,
+        "branches": 0,
+        "covered_branches": 0,
+        "crap": 2.0,
+        "changed_executable_lines": 2,
+        "changed_covered_lines": 2,
+        "changed_missing_lines": [],
+        "changed_missing_branches": []
+      },
+      {
+        "path": "src/mars_titan/models/titans/financial.py",
+        "function": "ReferencePriceEncoder.__init__",
+        "cyclomatic_complexity": 2,
+        "statements": 4,
+        "covered_statements": 4,
+        "branches": 2,
+        "covered_branches": 2,
+        "crap": 2.0,
+        "changed_executable_lines": 5,
+        "changed_covered_lines": 5,
+        "changed_missing_lines": [],
+        "changed_missing_branches": []
+      },
+      {
+        "path": "src/mars_titan/training/comparison_campaign.py",
+        "function": "_require",
+        "cyclomatic_complexity": 2,
+        "statements": 2,
+        "covered_statements": 2,
+        "branches": 2,
+        "covered_branches": 2,
+        "crap": 2.0,
+        "changed_executable_lines": 3,
+        "changed_covered_lines": 3,
+        "changed_missing_lines": [],
+        "changed_missing_branches": []
+      },
+      {
+        "path": "src/mars_titan/training/comparison_campaign.py",
+        "function": "job_rule",
+        "cyclomatic_complexity": 2,
+        "statements": 4,
+        "covered_statements": 4,
+        "branches": 2,
+        "covered_branches": 2,
+        "crap": 2.0,
+        "changed_executable_lines": 5,
+        "changed_covered_lines": 5,
+        "changed_missing_lines": [],
+        "changed_missing_branches": []
+      },
+      {
+        "path": "src/mars_titan/training/comparison_campaign.py",
+        "function": "load_declaration",
+        "cyclomatic_complexity": 2,
+        "statements": 3,
+        "covered_statements": 3,
+        "branches": 0,
+        "covered_branches": 0,
+        "crap": 2.0,
+        "changed_executable_lines": 4,
+        "changed_covered_lines": 4,
+        "changed_missing_lines": [],
+        "changed_missing_branches": []
+      },
+      {
+        "path": "src/mars_titan/training/comparison_campaign.py",
+        "function": "_deadline",
+        "cyclomatic_complexity": 2,
+        "statements": 6,
+        "covered_statements": 6,
+        "branches": 0,
+        "covered_branches": 0,
+        "crap": 2.0,
+        "changed_executable_lines": 7,
+        "changed_covered_lines": 7,
+        "changed_missing_lines": [],
+        "changed_missing_branches": []
+      },
+      {
+        "path": "src/mars_titan/training/comparison_campaign.py",
+        "function": "Job.key",
+        "cyclomatic_complexity": 2,
+        "statements": 2,
+        "covered_statements": 2,
+        "branches": 0,
+        "covered_branches": 0,
+        "crap": 2.0,
+        "changed_executable_lines": 3,
+        "changed_covered_lines": 3,
+        "changed_missing_lines": [],
+        "changed_missing_branches": []
+      },
+      {
+        "path": "src/mars_titan/training/comparison_campaign.py",
+        "function": "Job.stage",
+        "cyclomatic_complexity": 2,
+        "statements": 1,
+        "covered_statements": 1,
+        "branches": 0,
+        "covered_branches": 0,
+        "crap": 2.0,
+        "changed_executable_lines": 2,
+        "changed_covered_lines": 2,
+        "changed_missing_lines": [],
+        "changed_missing_branches": []
+      },
+      {
+        "path": "src/mars_titan/training/comparison_campaign.py",
+        "function": "Layout.cohort",
+        "cyclomatic_complexity": 2,
+        "statements": 2,
+        "covered_statements": 2,
+        "branches": 0,
+        "covered_branches": 0,
+        "crap": 2.0,
+        "changed_executable_lines": 3,
+        "changed_covered_lines": 3,
+        "changed_missing_lines": [],
+        "changed_missing_branches": []
+      },
+      {
+        "path": "src/mars_titan/training/comparison_campaign.py",
+        "function": "read_record",
+        "cyclomatic_complexity": 2,
+        "statements": 4,
+        "covered_statements": 4,
+        "branches": 2,
+        "covered_branches": 2,
+        "crap": 2.0,
+        "changed_executable_lines": 5,
+        "changed_covered_lines": 5,
+        "changed_missing_lines": [],
+        "changed_missing_branches": []
+      },
+      {
+        "path": "src/mars_titan/training/comparison_campaign.py",
+        "function": "_scores",
+        "cyclomatic_complexity": 2,
+        "statements": 5,
+        "covered_statements": 5,
+        "branches": 0,
+        "covered_branches": 0,
+        "crap": 2.0,
+        "changed_executable_lines": 6,
+        "changed_covered_lines": 6,
+        "changed_missing_lines": [],
+        "changed_missing_branches": []
+      },
+      {
+        "path": "src/mars_titan/training/comparison_campaign.py",
+        "function": "_print_results.number",
+        "cyclomatic_complexity": 2,
+        "statements": 1,
+        "covered_statements": 1,
+        "branches": 0,
+        "covered_branches": 0,
+        "crap": 2.0,
+        "changed_executable_lines": 2,
+        "changed_covered_lines": 2,
+        "changed_missing_lines": [],
+        "changed_missing_branches": []
+      },
+      {
+        "path": "src/mars_titan/training/comparison_campaign.py",
+        "function": "Queue._finished",
+        "cyclomatic_complexity": 2,
+        "statements": 1,
+        "covered_statements": 1,
+        "branches": 0,
+        "covered_branches": 0,
+        "crap": 2.0,
+        "changed_executable_lines": 2,
+        "changed_covered_lines": 2,
+        "changed_missing_lines": [],
+        "changed_missing_branches": []
+      },
+      {
+        "path": "src/mars_titan/training/comparison_campaign.py",
+        "function": "_free_gib",
+        "cyclomatic_complexity": 2,
+        "statements": 5,
+        "covered_statements": 5,
+        "branches": 2,
+        "covered_branches": 2,
+        "crap": 2.0,
+        "changed_executable_lines": 6,
+        "changed_covered_lines": 6,
+        "changed_missing_lines": [],
+        "changed_missing_branches": []
+      },
+      {
+        "path": "src/mars_titan/training/comparison_cohorts.py",
+        "function": "_require",
+        "cyclomatic_complexity": 2,
+        "statements": 2,
+        "covered_statements": 2,
+        "branches": 2,
+        "covered_branches": 2,
+        "crap": 2.0,
+        "changed_executable_lines": 3,
+        "changed_covered_lines": 3,
+        "changed_missing_lines": [],
+        "changed_missing_branches": []
+      },
+      {
+        "path": "src/mars_titan/training/comparison_data.py",
+        "function": "_require",
+        "cyclomatic_complexity": 2,
+        "statements": 2,
+        "covered_statements": 2,
+        "branches": 2,
+        "covered_branches": 2,
+        "crap": 2.0,
+        "changed_executable_lines": 3,
+        "changed_covered_lines": 3,
+        "changed_missing_lines": [],
+        "changed_missing_branches": []
+      },
+      {
+        "path": "src/mars_titan/training/comparison_data.py",
+        "function": "_regular",
+        "cyclomatic_complexity": 2,
+        "statements": 1,
+        "covered_statements": 1,
+        "branches": 0,
+        "covered_branches": 0,
+        "crap": 2.0,
+        "changed_executable_lines": 2,
+        "changed_covered_lines": 2,
+        "changed_missing_lines": [],
+        "changed_missing_branches": []
+      },
+      {
+        "path": "src/mars_titan/training/comparison_ridge.py",
+        "function": "_require",
+        "cyclomatic_complexity": 2,
+        "statements": 2,
+        "covered_statements": 2,
+        "branches": 2,
+        "covered_branches": 2,
+        "crap": 2.0,
+        "changed_executable_lines": 3,
+        "changed_covered_lines": 3,
+        "changed_missing_lines": [],
+        "changed_missing_branches": []
+      },
+      {
+        "path": "src/mars_titan/training/comparison_ridge.py",
+        "function": "_fit",
+        "cyclomatic_complexity": 2,
+        "statements": 6,
+        "covered_statements": 6,
+        "branches": 0,
+        "covered_branches": 0,
+        "crap": 2.0,
+        "changed_executable_lines": 7,
+        "changed_covered_lines": 7,
+        "changed_missing_lines": [],
+        "changed_missing_branches": []
+      },
+      {
+        "path": "src/mars_titan/training/comparison_scores.py",
+        "function": "_require",
+        "cyclomatic_complexity": 2,
+        "statements": 2,
+        "covered_statements": 2,
+        "branches": 2,
+        "covered_branches": 2,
+        "crap": 2.0,
+        "changed_executable_lines": 3,
+        "changed_covered_lines": 3,
+        "changed_missing_lines": [],
+        "changed_missing_branches": []
+      },
+      {
+        "path": "src/mars_titan/training/comparison_scores.py",
+        "function": "table_scores",
+        "cyclomatic_complexity": 2,
+        "statements": 5,
+        "covered_statements": 5,
+        "branches": 0,
+        "covered_branches": 0,
+        "crap": 2.0,
+        "changed_executable_lines": 6,
+        "changed_covered_lines": 6,
+        "changed_missing_lines": [],
+        "changed_missing_branches": []
+      },
+      {
+        "path": "src/mars_titan/training/selection.py",
+        "function": "initial_selection",
+        "cyclomatic_complexity": 2,
+        "statements": 5,
+        "covered_statements": 5,
+        "branches": 2,
+        "covered_branches": 2,
+        "crap": 2.0,
+        "changed_executable_lines": 2,
+        "changed_covered_lines": 2,
+        "changed_missing_lines": [],
+        "changed_missing_branches": []
+      },
+      {
+        "path": "src/mars_titan/training/titans_walk_forward.py",
+        "function": "_predictor.build",
+        "cyclomatic_complexity": 2,
+        "statements": 5,
+        "covered_statements": 5,
+        "branches": 2,
+        "covered_branches": 2,
+        "crap": 2.0,
+        "changed_executable_lines": 4,
+        "changed_covered_lines": 4,
+        "changed_missing_lines": [],
+        "changed_missing_branches": []
+      },
+      {
+        "path": "src/mars_titan/models/learning_scale.py",
+        "function": "statistics_digest",
+        "cyclomatic_complexity": 1,
+        "statements": 2,
+        "covered_statements": 2,
+        "branches": 0,
+        "covered_branches": 0,
+        "crap": 1.0,
+        "changed_executable_lines": 3,
+        "changed_covered_lines": 3,
+        "changed_missing_lines": [],
+        "changed_missing_branches": []
+      },
+      {
+        "path": "src/mars_titan/models/learning_scale.py",
+        "function": "LearningScaler._scale",
+        "cyclomatic_complexity": 1,
+        "statements": 2,
+        "covered_statements": 2,
+        "branches": 0,
+        "covered_branches": 0,
+        "crap": 1.0,
+        "changed_executable_lines": 3,
+        "changed_covered_lines": 3,
+        "changed_missing_lines": [],
+        "changed_missing_branches": []
+      },
+      {
+        "path": "src/mars_titan/models/quantile_head.py",
+        "function": "ScaledLinear.__init__",
+        "cyclomatic_complexity": 1,
+        "statements": 2,
+        "covered_statements": 2,
+        "branches": 0,
+        "covered_branches": 0,
+        "crap": 1.0,
+        "changed_executable_lines": 3,
+        "changed_covered_lines": 3,
+        "changed_missing_lines": [],
+        "changed_missing_branches": []
+      },
+      {
+        "path": "src/mars_titan/models/quantile_head.py",
+        "function": "ScaledLinear.forward",
+        "cyclomatic_complexity": 1,
+        "statements": 1,
+        "covered_statements": 1,
+        "branches": 0,
+        "covered_branches": 0,
+        "crap": 1.0,
+        "changed_executable_lines": 2,
+        "changed_covered_lines": 2,
+        "changed_missing_lines": [],
+        "changed_missing_branches": []
+      },
+      {
+        "path": "src/mars_titan/models/titans/financial.py",
+        "function": "FinancialConfig.__post_init__",
+        "cyclomatic_complexity": 1,
+        "statements": 23,
+        "covered_statements": 23,
+        "branches": 0,
+        "covered_branches": 0,
+        "crap": 1.0,
+        "changed_executable_lines": 1,
+        "changed_covered_lines": 1,
+        "changed_missing_lines": [],
+        "changed_missing_branches": []
+      },
+      {
+        "path": "src/mars_titan/models/titans/financial.py",
+        "function": "ReferencePriceEncoder.configuration",
+        "cyclomatic_complexity": 1,
+        "statements": 1,
+        "covered_statements": 1,
+        "branches": 0,
+        "covered_branches": 0,
+        "crap": 1.0,
+        "changed_executable_lines": 2,
+        "changed_covered_lines": 2,
+        "changed_missing_lines": [],
+        "changed_missing_branches": []
+      },
+      {
+        "path": "src/mars_titan/training/comparison_campaign.py",
+        "function": "Layout.authorization",
+        "cyclomatic_complexity": 1,
+        "statements": 1,
+        "covered_statements": 1,
+        "branches": 0,
+        "covered_branches": 0,
+        "crap": 1.0,
+        "changed_executable_lines": 2,
+        "changed_covered_lines": 2,
+        "changed_missing_lines": [],
+        "changed_missing_branches": []
+      },
+      {
+        "path": "src/mars_titan/training/comparison_campaign.py",
+        "function": "Layout.indices",
+        "cyclomatic_complexity": 1,
+        "statements": 1,
+        "covered_statements": 1,
+        "branches": 0,
+        "covered_branches": 0,
+        "crap": 1.0,
+        "changed_executable_lines": 2,
+        "changed_covered_lines": 2,
+        "changed_missing_lines": [],
+        "changed_missing_branches": []
+      },
+      {
+        "path": "src/mars_titan/training/comparison_campaign.py",
+        "function": "Layout.bundle",
+        "cyclomatic_complexity": 1,
+        "statements": 1,
+        "covered_statements": 1,
+        "branches": 0,
+        "covered_branches": 0,
+        "crap": 1.0,
+        "changed_executable_lines": 2,
+        "changed_covered_lines": 2,
+        "changed_missing_lines": [],
+        "changed_missing_branches": []
+      },
+      {
+        "path": "src/mars_titan/training/comparison_campaign.py",
+        "function": "Layout.source",
+        "cyclomatic_complexity": 1,
+        "statements": 1,
+        "covered_statements": 1,
+        "branches": 0,
+        "covered_branches": 0,
+        "crap": 1.0,
+        "changed_executable_lines": 2,
+        "changed_covered_lines": 2,
+        "changed_missing_lines": [],
+        "changed_missing_branches": []
+      },
+      {
+        "path": "src/mars_titan/training/comparison_campaign.py",
+        "function": "Layout.output",
+        "cyclomatic_complexity": 1,
+        "statements": 1,
+        "covered_statements": 1,
+        "branches": 0,
+        "covered_branches": 0,
+        "crap": 1.0,
+        "changed_executable_lines": 2,
+        "changed_covered_lines": 2,
+        "changed_missing_lines": [],
+        "changed_missing_branches": []
+      },
+      {
+        "path": "src/mars_titan/training/comparison_campaign.py",
+        "function": "Layout.record",
+        "cyclomatic_complexity": 1,
+        "statements": 1,
+        "covered_statements": 1,
+        "branches": 0,
+        "covered_branches": 0,
+        "crap": 1.0,
+        "changed_executable_lines": 2,
+        "changed_covered_lines": 2,
+        "changed_missing_lines": [],
+        "changed_missing_branches": []
+      },
+      {
+        "path": "src/mars_titan/training/comparison_campaign.py",
+        "function": "Layout.lock",
+        "cyclomatic_complexity": 1,
+        "statements": 1,
+        "covered_statements": 1,
+        "branches": 0,
+        "covered_branches": 0,
+        "crap": 1.0,
+        "changed_executable_lines": 2,
+        "changed_covered_lines": 2,
+        "changed_missing_lines": [],
+        "changed_missing_branches": []
+      },
+      {
+        "path": "src/mars_titan/training/comparison_campaign.py",
+        "function": "Layout.log",
+        "cyclomatic_complexity": 1,
+        "statements": 1,
+        "covered_statements": 1,
+        "branches": 0,
+        "covered_branches": 0,
+        "crap": 1.0,
+        "changed_executable_lines": 2,
+        "changed_covered_lines": 2,
+        "changed_missing_lines": [],
+        "changed_missing_branches": []
+      },
+      {
+        "path": "src/mars_titan/training/comparison_campaign.py",
+        "function": "_write_record",
+        "cyclomatic_complexity": 1,
+        "statements": 3,
+        "covered_statements": 3,
+        "branches": 0,
+        "covered_branches": 0,
+        "crap": 1.0,
+        "changed_executable_lines": 4,
+        "changed_covered_lines": 4,
+        "changed_missing_lines": [],
+        "changed_missing_branches": []
+      },
+      {
+        "path": "src/mars_titan/training/comparison_campaign.py",
+        "function": "_now",
+        "cyclomatic_complexity": 1,
+        "statements": 1,
+        "covered_statements": 1,
+        "branches": 0,
+        "covered_branches": 0,
+        "crap": 1.0,
+        "changed_executable_lines": 2,
+        "changed_covered_lines": 2,
+        "changed_missing_lines": [],
+        "changed_missing_branches": []
+      },
+      {
+        "path": "src/mars_titan/training/comparison_campaign.py",
+        "function": "_environment",
+        "cyclomatic_complexity": 1,
+        "statements": 9,
+        "covered_statements": 9,
+        "branches": 0,
+        "covered_branches": 0,
+        "crap": 1.0,
+        "changed_executable_lines": 10,
+        "changed_covered_lines": 10,
+        "changed_missing_lines": [],
+        "changed_missing_branches": []
+      },
+      {
+        "path": "src/mars_titan/training/comparison_campaign.py",
+        "function": "_import",
+        "cyclomatic_complexity": 1,
+        "statements": 7,
+        "covered_statements": 7,
+        "branches": 0,
+        "covered_branches": 0,
+        "crap": 1.0,
+        "changed_executable_lines": 8,
+        "changed_covered_lines": 8,
+        "changed_missing_lines": [],
+        "changed_missing_branches": []
+      },
+      {
+        "path": "src/mars_titan/training/comparison_cohorts.py",
+        "function": "_rank",
+        "cyclomatic_complexity": 1,
+        "statements": 1,
+        "covered_statements": 1,
+        "branches": 0,
+        "covered_branches": 0,
+        "crap": 1.0,
+        "changed_executable_lines": 2,
+        "changed_covered_lines": 2,
+        "changed_missing_lines": [],
+        "changed_missing_branches": []
+      },
+      {
+        "path": "src/mars_titan/training/comparison_data.py",
+        "function": "_Hashing.__init__",
+        "cyclomatic_complexity": 1,
+        "statements": 1,
+        "covered_statements": 1,
+        "branches": 0,
+        "covered_branches": 0,
+        "crap": 1.0,
+        "changed_executable_lines": 2,
+        "changed_covered_lines": 2,
+        "changed_missing_lines": [],
+        "changed_missing_branches": []
+      },
+      {
+        "path": "src/mars_titan/training/comparison_data.py",
+        "function": "_Hashing.read",
+        "cyclomatic_complexity": 1,
+        "statements": 3,
+        "covered_statements": 3,
+        "branches": 0,
+        "covered_branches": 0,
+        "crap": 1.0,
+        "changed_executable_lines": 4,
+        "changed_covered_lines": 4,
+        "changed_missing_lines": [],
+        "changed_missing_branches": []
+      },
+      {
+        "path": "src/mars_titan/training/comparison_data.py",
+        "function": "_tar_size",
+        "cyclomatic_complexity": 1,
+        "statements": 2,
+        "covered_statements": 2,
+        "branches": 0,
+        "covered_branches": 0,
+        "crap": 1.0,
+        "changed_executable_lines": 3,
+        "changed_covered_lines": 3,
+        "changed_missing_lines": [],
+        "changed_missing_branches": []
+      },
+      {
+        "path": "src/mars_titan/training/comparison_ridge.py",
+        "function": "_now",
+        "cyclomatic_complexity": 1,
+        "statements": 1,
+        "covered_statements": 1,
+        "branches": 0,
+        "covered_branches": 0,
+        "crap": 1.0,
+        "changed_executable_lines": 2,
+        "changed_covered_lines": 2,
+        "changed_missing_lines": [],
+        "changed_missing_branches": []
+      },
+      {
+        "path": "src/mars_titan/training/comparison_scores.py",
+        "function": "_panel",
+        "cyclomatic_complexity": 1,
+        "statements": 3,
+        "covered_statements": 3,
+        "branches": 0,
+        "covered_branches": 0,
+        "crap": 1.0,
+        "changed_executable_lines": 4,
+        "changed_covered_lines": 4,
+        "changed_missing_lines": [],
+        "changed_missing_branches": []
+      },
+      {
+        "path": "src/mars_titan/training/comparison_scores.py",
+        "function": "_mean",
+        "cyclomatic_complexity": 1,
+        "statements": 1,
+        "covered_statements": 1,
+        "branches": 0,
+        "covered_branches": 0,
+        "crap": 1.0,
+        "changed_executable_lines": 2,
+        "changed_covered_lines": 2,
+        "changed_missing_lines": [],
+        "changed_missing_branches": []
+      },
+      {
+        "path": "src/mars_titan/training/learning_statistics.py",
+        "function": "_decision_rows",
+        "cyclomatic_complexity": 1,
+        "statements": 4,
+        "covered_statements": 4,
+        "branches": 0,
+        "covered_branches": 0,
+        "crap": 1.0,
+        "changed_executable_lines": 5,
+        "changed_covered_lines": 5,
+        "changed_missing_lines": [],
+        "changed_missing_branches": []
+      }
+    ]
+  },
+  "mutations": {
+    "unique_cases": 41,
+    "detected": 41,
+    "optimizer_attempts": 0,
+    "hold_unchanged": true,
+    "cases": [
+      {
+        "id": "scores_future_calibration",
+        "path": "src/mars_titan/training/comparison_scores.py",
+        "status": "killed_with_green_controls",
+        "phases": [
+          {
+            "phase": "G1",
+            "nodeid": "tests/training/test_comparison_scores.py::test_the_scale_comes_from_the_calibration_and_never_from_the_evaluation",
+            "exit_code": 0,
+            "elapsed_s": 10.43,
+            "xml_counts": {
+              "total": 1,
+              "failure": 0,
+              "error": 0,
+              "skipped": 0
+            },
+            "optimizer_attempts": 0,
+            "expected_text_found": false
+          },
+          {
+            "phase": "M1",
+            "nodeid": "tests/training/test_comparison_scores.py::test_the_scale_comes_from_the_calibration_and_never_from_the_evaluation",
+            "exit_code": 1,
+            "elapsed_s": 8.29,
+            "xml_counts": {
+              "total": 1,
+              "failure": 1,
+              "error": 0,
+              "skipped": 0
+            },
+            "optimizer_attempts": 0,
+            "expected_text_found": true
+          },
+          {
+            "phase": "G2",
+            "nodeid": "tests/training/test_comparison_scores.py::test_the_scale_comes_from_the_calibration_and_never_from_the_evaluation",
+            "exit_code": 0,
+            "elapsed_s": 7.63,
+            "xml_counts": {
+              "total": 1,
+              "failure": 0,
+              "error": 0,
+              "skipped": 0
+            },
+            "optimizer_attempts": 0,
+            "expected_text_found": false
+          }
+        ]
+      },
+      {
+        "id": "scores_magnitude_inverted",
+        "path": "src/mars_titan/training/comparison_scores.py",
+        "status": "killed_with_green_controls",
+        "phases": [
+          {
+            "phase": "G1",
+            "nodeid": "tests/training/test_comparison_scores.py::test_a_model_that_predicts_an_order_has_no_raw_error_but_keeps_the_rest",
+            "exit_code": 0,
+            "elapsed_s": 7.94,
+            "xml_counts": {
+              "total": 1,
+              "failure": 0,
+              "error": 0,
+              "skipped": 0
+            },
+            "optimizer_attempts": 0,
+            "expected_text_found": false
+          },
+          {
+            "phase": "M1",
+            "nodeid": "tests/training/test_comparison_scores.py::test_a_model_that_predicts_an_order_has_no_raw_error_but_keeps_the_rest",
+            "exit_code": 1,
+            "elapsed_s": 7.92,
+            "xml_counts": {
+              "total": 1,
+              "failure": 1,
+              "error": 0,
+              "skipped": 0
+            },
+            "optimizer_attempts": 0,
+            "expected_text_found": true
+          },
+          {
+            "phase": "G2",
+            "nodeid": "tests/training/test_comparison_scores.py::test_a_model_that_predicts_an_order_has_no_raw_error_but_keeps_the_rest",
+            "exit_code": 0,
+            "elapsed_s": 7.76,
+            "xml_counts": {
+              "total": 1,
+              "failure": 0,
+              "error": 0,
+              "skipped": 0
+            },
+            "optimizer_attempts": 0,
+            "expected_text_found": false
+          }
+        ]
+      },
+      {
+        "id": "scores_first_seed_only",
+        "path": "src/mars_titan/training/comparison_scores.py",
+        "status": "killed_with_green_controls",
+        "phases": [
+          {
+            "phase": "G1",
+            "nodeid": "tests/training/test_comparison_scores.py::test_job_scores_average_the_seeds_of_a_job_over_the_same_rows",
+            "exit_code": 0,
+            "elapsed_s": 8.14,
+            "xml_counts": {
+              "total": 1,
+              "failure": 0,
+              "error": 0,
+              "skipped": 0
+            },
+            "optimizer_attempts": 0,
+            "expected_text_found": false
+          },
+          {
+            "phase": "M1",
+            "nodeid": "tests/training/test_comparison_scores.py::test_job_scores_average_the_seeds_of_a_job_over_the_same_rows",
+            "exit_code": 1,
+            "elapsed_s": 8.51,
+            "xml_counts": {
+              "total": 1,
+              "failure": 1,
+              "error": 0,
+              "skipped": 0
+            },
+            "optimizer_attempts": 0,
+            "expected_text_found": true
+          },
+          {
+            "phase": "G2",
+            "nodeid": "tests/training/test_comparison_scores.py::test_job_scores_average_the_seeds_of_a_job_over_the_same_rows",
+            "exit_code": 0,
+            "elapsed_s": 8.74,
+            "xml_counts": {
+              "total": 1,
+              "failure": 0,
+              "error": 0,
+              "skipped": 0
+            },
+            "optimizer_attempts": 0,
+            "expected_text_found": false
+          }
+        ]
+      },
+      {
+        "id": "scores_mismatched_cohort",
+        "path": "src/mars_titan/training/comparison_scores.py",
+        "status": "killed_with_green_controls",
+        "phases": [
+          {
+            "phase": "G1",
+            "nodeid": "tests/training/test_comparison_scores.py::test_job_scores_average_the_seeds_of_a_job_over_the_same_rows",
+            "exit_code": 0,
+            "elapsed_s": 8.08,
+            "xml_counts": {
+              "total": 1,
+              "failure": 0,
+              "error": 0,
+              "skipped": 0
+            },
+            "optimizer_attempts": 0,
+            "expected_text_found": false
+          },
+          {
+            "phase": "M1",
+            "nodeid": "tests/training/test_comparison_scores.py::test_job_scores_average_the_seeds_of_a_job_over_the_same_rows",
+            "exit_code": 1,
+            "elapsed_s": 8.38,
+            "xml_counts": {
+              "total": 1,
+              "failure": 1,
+              "error": 0,
+              "skipped": 0
+            },
+            "optimizer_attempts": 0,
+            "expected_text_found": true
+          },
+          {
+            "phase": "G2",
+            "nodeid": "tests/training/test_comparison_scores.py::test_job_scores_average_the_seeds_of_a_job_over_the_same_rows",
+            "exit_code": 0,
+            "elapsed_s": 8.35,
+            "xml_counts": {
+              "total": 1,
+              "failure": 0,
+              "error": 0,
+              "skipped": 0
+            },
+            "optimizer_attempts": 0,
+            "expected_text_found": false
+          }
+        ]
+      },
+      {
+        "id": "permission_ignores_changes",
+        "path": "src/mars_titan/training/comparison_campaign.py",
+        "status": "killed_with_green_controls",
+        "phases": [
+          {
+            "phase": "G1",
+            "nodeid": "tests/training/test_comparison_campaign.py::test_the_permission_is_bound_to_the_commit_that_runs_the_campaign",
+            "exit_code": 0,
+            "elapsed_s": 3.02,
+            "xml_counts": {
+              "total": 1,
+              "failure": 0,
+              "error": 0,
+              "skipped": 0
+            },
+            "optimizer_attempts": 0,
+            "expected_text_found": false
+          },
+          {
+            "phase": "M1",
+            "nodeid": "tests/training/test_comparison_campaign.py::test_the_permission_is_bound_to_the_commit_that_runs_the_campaign",
+            "exit_code": 1,
+            "elapsed_s": 3.09,
+            "xml_counts": {
+              "total": 1,
+              "failure": 1,
+              "error": 0,
+              "skipped": 0
+            },
+            "optimizer_attempts": 0,
+            "expected_text_found": true
+          },
+          {
+            "phase": "G2",
+            "nodeid": "tests/training/test_comparison_campaign.py::test_the_permission_is_bound_to_the_commit_that_runs_the_campaign",
+            "exit_code": 0,
+            "elapsed_s": 3.02,
+            "xml_counts": {
+              "total": 1,
+              "failure": 0,
+              "error": 0,
+              "skipped": 0
+            },
+            "optimizer_attempts": 0,
+            "expected_text_found": false
+          }
+        ]
+      },
+      {
+        "id": "permission_mixes_runs",
+        "path": "src/mars_titan/training/comparison_campaign.py",
+        "status": "killed_with_green_controls",
+        "phases": [
+          {
+            "phase": "G1",
+            "nodeid": "tests/training/test_comparison_campaign.py::test_authorization_cannot_mix_existing_jobs_with_another_execution_identity",
+            "exit_code": 0,
+            "elapsed_s": 3.04,
+            "xml_counts": {
+              "total": 3,
+              "failure": 0,
+              "error": 0,
+              "skipped": 0
+            },
+            "optimizer_attempts": 0,
+            "expected_text_found": false
+          },
+          {
+            "phase": "M1",
+            "nodeid": "tests/training/test_comparison_campaign.py::test_authorization_cannot_mix_existing_jobs_with_another_execution_identity",
+            "exit_code": 1,
+            "elapsed_s": 3.13,
+            "xml_counts": {
+              "total": 3,
+              "failure": 3,
+              "error": 0,
+              "skipped": 0
+            },
+            "optimizer_attempts": 0,
+            "expected_text_found": true
+          },
+          {
+            "phase": "G2",
+            "nodeid": "tests/training/test_comparison_campaign.py::test_authorization_cannot_mix_existing_jobs_with_another_execution_identity",
+            "exit_code": 0,
+            "elapsed_s": 3.03,
+            "xml_counts": {
+              "total": 3,
+              "failure": 0,
+              "error": 0,
+              "skipped": 0
+            },
+            "optimizer_attempts": 0,
+            "expected_text_found": false
+          }
+        ]
+      },
+      {
+        "id": "permission_ignores_new_files",
+        "path": "src/mars_titan/training/comparison_campaign.py",
+        "status": "killed_with_green_controls",
+        "phases": [
+          {
+            "phase": "G1",
+            "nodeid": "tests/training/test_comparison_campaign.py::test_code_identity_includes_tracked_and_untracked_executable_files",
+            "exit_code": 0,
+            "elapsed_s": 3.43,
+            "xml_counts": {
+              "total": 4,
+              "failure": 0,
+              "error": 0,
+              "skipped": 0
+            },
+            "optimizer_attempts": 0,
+            "expected_text_found": false
+          },
+          {
+            "phase": "M1",
+            "nodeid": "tests/training/test_comparison_campaign.py::test_code_identity_includes_tracked_and_untracked_executable_files",
+            "exit_code": 1,
+            "elapsed_s": 3.31,
+            "xml_counts": {
+              "total": 4,
+              "failure": 4,
+              "error": 0,
+              "skipped": 0
+            },
+            "optimizer_attempts": 0,
+            "expected_text_found": true
+          },
+          {
+            "phase": "G2",
+            "nodeid": "tests/training/test_comparison_campaign.py::test_code_identity_includes_tracked_and_untracked_executable_files",
+            "exit_code": 0,
+            "elapsed_s": 3.35,
+            "xml_counts": {
+              "total": 4,
+              "failure": 0,
+              "error": 0,
+              "skipped": 0
+            },
+            "optimizer_attempts": 0,
+            "expected_text_found": false
+          }
+        ]
+      },
+      {
+        "id": "bundle_ignores_cohorts",
+        "path": "src/mars_titan/training/comparison_campaign.py",
+        "status": "killed_with_green_controls",
+        "phases": [
+          {
+            "phase": "G1",
+            "nodeid": "tests/training/test_comparison_campaign.py::test_export_and_import_carry_the_cohort_data_and_its_identity",
+            "exit_code": 0,
+            "elapsed_s": 3.71,
+            "xml_counts": {
+              "total": 1,
+              "failure": 0,
+              "error": 0,
+              "skipped": 0
+            },
+            "optimizer_attempts": 0,
+            "expected_text_found": false
+          },
+          {
+            "phase": "M1",
+            "nodeid": "tests/training/test_comparison_campaign.py::test_export_and_import_carry_the_cohort_data_and_its_identity",
+            "exit_code": 1,
+            "elapsed_s": 3.25,
+            "xml_counts": {
+              "total": 1,
+              "failure": 1,
+              "error": 0,
+              "skipped": 0
+            },
+            "optimizer_attempts": 0,
+            "expected_text_found": true
+          },
+          {
+            "phase": "G2",
+            "nodeid": "tests/training/test_comparison_campaign.py::test_export_and_import_carry_the_cohort_data_and_its_identity",
+            "exit_code": 0,
+            "elapsed_s": 3.28,
+            "xml_counts": {
+              "total": 1,
+              "failure": 0,
+              "error": 0,
+              "skipped": 0
+            },
+            "optimizer_attempts": 0,
+            "expected_text_found": false
+          }
+        ]
+      },
+      {
+        "id": "results_count_running",
+        "path": "src/mars_titan/training/comparison_campaign.py",
+        "status": "killed_with_green_controls",
+        "phases": [
+          {
+            "phase": "G1",
+            "nodeid": "tests/training/test_comparison_campaign.py::test_results_average_finished_jobs_against_the_zero_prediction_of_the_same_rows",
+            "exit_code": 0,
+            "elapsed_s": 3.02,
+            "xml_counts": {
+              "total": 1,
+              "failure": 0,
+              "error": 0,
+              "skipped": 0
+            },
+            "optimizer_attempts": 0,
+            "expected_text_found": false
+          },
+          {
+            "phase": "M1",
+            "nodeid": "tests/training/test_comparison_campaign.py::test_results_average_finished_jobs_against_the_zero_prediction_of_the_same_rows",
+            "exit_code": 1,
+            "elapsed_s": 3.07,
+            "xml_counts": {
+              "total": 1,
+              "failure": 1,
+              "error": 0,
+              "skipped": 0
+            },
+            "optimizer_attempts": 0,
+            "expected_text_found": true
+          },
+          {
+            "phase": "G2",
+            "nodeid": "tests/training/test_comparison_campaign.py::test_results_average_finished_jobs_against_the_zero_prediction_of_the_same_rows",
+            "exit_code": 0,
+            "elapsed_s": 3.06,
+            "xml_counts": {
+              "total": 1,
+              "failure": 0,
+              "error": 0,
+              "skipped": 0
+            },
+            "optimizer_attempts": 0,
+            "expected_text_found": false
+          }
+        ]
+      },
+      {
+        "id": "unbounded_startup_attempts",
+        "path": "src/mars_titan/training/comparison_campaign.py",
+        "status": "killed_with_green_controls",
+        "phases": [
+          {
+            "phase": "G1",
+            "nodeid": "tests/training/test_comparison_campaign.py::test_a_child_that_fails_before_writing_its_record_exhausts_its_retries",
+            "exit_code": 0,
+            "elapsed_s": 3.06,
+            "xml_counts": {
+              "total": 1,
+              "failure": 0,
+              "error": 0,
+              "skipped": 0
+            },
+            "optimizer_attempts": 0,
+            "expected_text_found": false
+          },
+          {
+            "phase": "M1",
+            "nodeid": "tests/training/test_comparison_campaign.py::test_a_child_that_fails_before_writing_its_record_exhausts_its_retries",
+            "exit_code": 1,
+            "elapsed_s": 3.11,
+            "xml_counts": {
+              "total": 1,
+              "failure": 1,
+              "error": 0,
+              "skipped": 0
+            },
+            "optimizer_attempts": 0,
+            "expected_text_found": true
+          },
+          {
+            "phase": "G2",
+            "nodeid": "tests/training/test_comparison_campaign.py::test_a_child_that_fails_before_writing_its_record_exhausts_its_retries",
+            "exit_code": 0,
+            "elapsed_s": 3.0,
+            "xml_counts": {
+              "total": 1,
+              "failure": 0,
+              "error": 0,
+              "skipped": 0
+            },
+            "optimizer_attempts": 0,
+            "expected_text_found": false
+          }
+        ]
+      },
+      {
+        "id": "disk_guard_reversed",
+        "path": "src/mars_titan/training/comparison_campaign.py",
+        "status": "killed_with_green_controls",
+        "phases": [
+          {
+            "phase": "G1",
+            "nodeid": "tests/training/test_comparison_campaign.py::test_queue_stops_without_claiming_when_the_disk_runs_out",
+            "exit_code": 0,
+            "elapsed_s": 4.21,
+            "xml_counts": {
+              "total": 1,
+              "failure": 0,
+              "error": 0,
+              "skipped": 0
+            },
+            "optimizer_attempts": 0,
+            "expected_text_found": false
+          },
+          {
+            "phase": "M1",
+            "nodeid": "tests/training/test_comparison_campaign.py::test_queue_stops_without_claiming_when_the_disk_runs_out",
+            "exit_code": 1,
+            "elapsed_s": 3.05,
+            "xml_counts": {
+              "total": 1,
+              "failure": 1,
+              "error": 0,
+              "skipped": 0
+            },
+            "optimizer_attempts": 0,
+            "expected_text_found": true
+          },
+          {
+            "phase": "G2",
+            "nodeid": "tests/training/test_comparison_campaign.py::test_queue_stops_without_claiming_when_the_disk_runs_out",
+            "exit_code": 0,
+            "elapsed_s": 4.21,
+            "xml_counts": {
+              "total": 1,
+              "failure": 0,
+              "error": 0,
+              "skipped": 0
+            },
+            "optimizer_attempts": 0,
+            "expected_text_found": false
+          }
+        ]
+      },
+      {
+        "id": "history_runs_first",
+        "path": "src/mars_titan/training/comparison_campaign.py",
+        "status": "killed_with_green_controls",
+        "phases": [
+          {
+            "phase": "G1",
+            "nodeid": "tests/training/test_comparison_campaign.py::test_history_origins_form_a_second_stage_after_every_tier_of_the_first",
+            "exit_code": 0,
+            "elapsed_s": 2.98,
+            "xml_counts": {
+              "total": 1,
+              "failure": 0,
+              "error": 0,
+              "skipped": 0
+            },
+            "optimizer_attempts": 0,
+            "expected_text_found": false
+          },
+          {
+            "phase": "M1",
+            "nodeid": "tests/training/test_comparison_campaign.py::test_history_origins_form_a_second_stage_after_every_tier_of_the_first",
+            "exit_code": 1,
+            "elapsed_s": 2.99,
+            "xml_counts": {
+              "total": 1,
+              "failure": 1,
+              "error": 0,
+              "skipped": 0
+            },
+            "optimizer_attempts": 0,
+            "expected_text_found": true
+          },
+          {
+            "phase": "G2",
+            "nodeid": "tests/training/test_comparison_campaign.py::test_history_origins_form_a_second_stage_after_every_tier_of_the_first",
+            "exit_code": 0,
+            "elapsed_s": 2.92,
+            "xml_counts": {
+              "total": 1,
+              "failure": 0,
+              "error": 0,
+              "skipped": 0
+            },
+            "optimizer_attempts": 0,
+            "expected_text_found": false
+          }
+        ]
+      },
+      {
+        "id": "tar_headers_ignored",
+        "path": "src/mars_titan/training/comparison_data.py",
+        "status": "killed_with_green_controls",
+        "phases": [
+          {
+            "phase": "G1",
+            "nodeid": "tests/training/test_comparison_data.py::test_parts_include_tar_headers_padding_and_refuse_an_indivisible_file",
+            "exit_code": 0,
+            "elapsed_s": 7.78,
+            "xml_counts": {
+              "total": 1,
+              "failure": 0,
+              "error": 0,
+              "skipped": 0
+            },
+            "optimizer_attempts": 0,
+            "expected_text_found": false
+          },
+          {
+            "phase": "M1",
+            "nodeid": "tests/training/test_comparison_data.py::test_parts_include_tar_headers_padding_and_refuse_an_indivisible_file",
+            "exit_code": 1,
+            "elapsed_s": 7.35,
+            "xml_counts": {
+              "total": 1,
+              "failure": 1,
+              "error": 0,
+              "skipped": 0
+            },
+            "optimizer_attempts": 0,
+            "expected_text_found": true
+          },
+          {
+            "phase": "G2",
+            "nodeid": "tests/training/test_comparison_data.py::test_parts_include_tar_headers_padding_and_refuse_an_indivisible_file",
+            "exit_code": 0,
+            "elapsed_s": 8.25,
+            "xml_counts": {
+              "total": 1,
+              "failure": 0,
+              "error": 0,
+              "skipped": 0
+            },
+            "optimizer_attempts": 0,
+            "expected_text_found": false
+          }
+        ]
+      },
+      {
+        "id": "import_duplicate_accepted",
+        "path": "src/mars_titan/training/comparison_data.py",
+        "status": "killed_with_green_controls",
+        "phases": [
+          {
+            "phase": "G1",
+            "nodeid": "tests/training/test_comparison_data.py::test_import_rejects_repeated_archive_members",
+            "exit_code": 0,
+            "elapsed_s": 7.61,
+            "xml_counts": {
+              "total": 1,
+              "failure": 0,
+              "error": 0,
+              "skipped": 0
+            },
+            "optimizer_attempts": 0,
+            "expected_text_found": false
+          },
+          {
+            "phase": "M1",
+            "nodeid": "tests/training/test_comparison_data.py::test_import_rejects_repeated_archive_members",
+            "exit_code": 1,
+            "elapsed_s": 8.59,
+            "xml_counts": {
+              "total": 1,
+              "failure": 1,
+              "error": 0,
+              "skipped": 0
+            },
+            "optimizer_attempts": 0,
+            "expected_text_found": true
+          },
+          {
+            "phase": "G2",
+            "nodeid": "tests/training/test_comparison_data.py::test_import_rejects_repeated_archive_members",
+            "exit_code": 0,
+            "elapsed_s": 7.53,
+            "xml_counts": {
+              "total": 1,
+              "failure": 0,
+              "error": 0,
+              "skipped": 0
+            },
+            "optimizer_attempts": 0,
+            "expected_text_found": false
+          }
+        ]
+      },
+      {
+        "id": "import_missing_accepted",
+        "path": "src/mars_titan/training/comparison_data.py",
+        "status": "killed_with_green_controls",
+        "phases": [
+          {
+            "phase": "G1",
+            "nodeid": "tests/training/test_comparison_data.py::test_import_does_not_trust_completed_flags_in_the_received_manifest",
+            "exit_code": 0,
+            "elapsed_s": 7.71,
+            "xml_counts": {
+              "total": 1,
+              "failure": 0,
+              "error": 0,
+              "skipped": 0
+            },
+            "optimizer_attempts": 0,
+            "expected_text_found": false
+          },
+          {
+            "phase": "M1",
+            "nodeid": "tests/training/test_comparison_data.py::test_import_does_not_trust_completed_flags_in_the_received_manifest",
+            "exit_code": 1,
+            "elapsed_s": 8.39,
+            "xml_counts": {
+              "total": 1,
+              "failure": 1,
+              "error": 0,
+              "skipped": 0
+            },
+            "optimizer_attempts": 0,
+            "expected_text_found": true
+          },
+          {
+            "phase": "G2",
+            "nodeid": "tests/training/test_comparison_data.py::test_import_does_not_trust_completed_flags_in_the_received_manifest",
+            "exit_code": 0,
+            "elapsed_s": 8.25,
+            "xml_counts": {
+              "total": 1,
+              "failure": 0,
+              "error": 0,
+              "skipped": 0
+            },
+            "optimizer_attempts": 0,
+            "expected_text_found": false
+          }
+        ]
+      },
+      {
+        "id": "import_existing_content_ignored",
+        "path": "src/mars_titan/training/comparison_data.py",
+        "status": "killed_with_green_controls",
+        "phases": [
+          {
+            "phase": "G1",
+            "nodeid": "tests/training/test_comparison_data.py::test_import_refuses_another_home_damage_and_different_existing_files",
+            "exit_code": 0,
+            "elapsed_s": 7.89,
+            "xml_counts": {
+              "total": 1,
+              "failure": 0,
+              "error": 0,
+              "skipped": 0
+            },
+            "optimizer_attempts": 0,
+            "expected_text_found": false
+          },
+          {
+            "phase": "M1",
+            "nodeid": "tests/training/test_comparison_data.py::test_import_refuses_another_home_damage_and_different_existing_files",
+            "exit_code": 1,
+            "elapsed_s": 9.27,
+            "xml_counts": {
+              "total": 1,
+              "failure": 1,
+              "error": 0,
+              "skipped": 0
+            },
+            "optimizer_attempts": 0,
+            "expected_text_found": true
+          },
+          {
+            "phase": "G2",
+            "nodeid": "tests/training/test_comparison_data.py::test_import_refuses_another_home_damage_and_different_existing_files",
+            "exit_code": 0,
+            "elapsed_s": 7.15,
+            "xml_counts": {
+              "total": 1,
+              "failure": 0,
+              "error": 0,
+              "skipped": 0
+            },
+            "optimizer_attempts": 0,
+            "expected_text_found": false
+          }
+        ]
+      },
+      {
+        "id": "ridge_uses_evaluation",
+        "path": "src/mars_titan/training/comparison_ridge.py",
+        "status": "killed_with_green_controls",
+        "phases": [
+          {
+            "phase": "G1",
+            "nodeid": "tests/training/test_comparison_ridge.py::test_ridge_fits_each_alpha_once_and_emits_the_best_validation",
+            "exit_code": 0,
+            "elapsed_s": 9.59,
+            "xml_counts": {
+              "total": 1,
+              "failure": 0,
+              "error": 0,
+              "skipped": 0
+            },
+            "optimizer_attempts": 0,
+            "expected_text_found": false
+          },
+          {
+            "phase": "M1",
+            "nodeid": "tests/training/test_comparison_ridge.py::test_ridge_fits_each_alpha_once_and_emits_the_best_validation",
+            "exit_code": 1,
+            "elapsed_s": 9.42,
+            "xml_counts": {
+              "total": 1,
+              "failure": 1,
+              "error": 0,
+              "skipped": 0
+            },
+            "optimizer_attempts": 0,
+            "expected_text_found": true
+          },
+          {
+            "phase": "G2",
+            "nodeid": "tests/training/test_comparison_ridge.py::test_ridge_fits_each_alpha_once_and_emits_the_best_validation",
+            "exit_code": 0,
+            "elapsed_s": 8.24,
+            "xml_counts": {
+              "total": 1,
+              "failure": 0,
+              "error": 0,
+              "skipped": 0
+            },
+            "optimizer_attempts": 0,
+            "expected_text_found": false
+          }
+        ]
+      },
+      {
+        "id": "ridge_wrong_tie",
+        "path": "src/mars_titan/training/comparison_ridge.py",
+        "status": "killed_with_green_controls",
+        "phases": [
+          {
+            "phase": "G1",
+            "nodeid": "tests/training/test_comparison_ridge.py::test_a_tie_in_validation_goes_to_the_larger_alpha",
+            "exit_code": 0,
+            "elapsed_s": 9.07,
+            "xml_counts": {
+              "total": 1,
+              "failure": 0,
+              "error": 0,
+              "skipped": 0
+            },
+            "optimizer_attempts": 0,
+            "expected_text_found": false
+          },
+          {
+            "phase": "M1",
+            "nodeid": "tests/training/test_comparison_ridge.py::test_a_tie_in_validation_goes_to_the_larger_alpha",
+            "exit_code": 1,
+            "elapsed_s": 8.12,
+            "xml_counts": {
+              "total": 1,
+              "failure": 1,
+              "error": 0,
+              "skipped": 0
+            },
+            "optimizer_attempts": 0,
+            "expected_text_found": true
+          },
+          {
+            "phase": "G2",
+            "nodeid": "tests/training/test_comparison_ridge.py::test_a_tie_in_validation_goes_to_the_larger_alpha",
+            "exit_code": 0,
+            "elapsed_s": 5.96,
+            "xml_counts": {
+              "total": 1,
+              "failure": 0,
+              "error": 0,
+              "skipped": 0
+            },
+            "optimizer_attempts": 0,
+            "expected_text_found": false
+          }
+        ]
+      },
+      {
+        "id": "ridge_retains_discarded_tables",
+        "path": "src/mars_titan/training/comparison_ridge.py",
+        "status": "killed_with_green_controls",
+        "phases": [
+          {
+            "phase": "G1",
+            "nodeid": "tests/training/test_comparison_ridge.py::test_ridge_fits_each_alpha_once_and_emits_the_best_validation",
+            "exit_code": 0,
+            "elapsed_s": 7.23,
+            "xml_counts": {
+              "total": 1,
+              "failure": 0,
+              "error": 0,
+              "skipped": 0
+            },
+            "optimizer_attempts": 0,
+            "expected_text_found": false
+          },
+          {
+            "phase": "M1",
+            "nodeid": "tests/training/test_comparison_ridge.py::test_ridge_fits_each_alpha_once_and_emits_the_best_validation",
+            "exit_code": 1,
+            "elapsed_s": 6.54,
+            "xml_counts": {
+              "total": 1,
+              "failure": 1,
+              "error": 0,
+              "skipped": 0
+            },
+            "optimizer_attempts": 0,
+            "expected_text_found": true
+          },
+          {
+            "phase": "G2",
+            "nodeid": "tests/training/test_comparison_ridge.py::test_ridge_fits_each_alpha_once_and_emits_the_best_validation",
+            "exit_code": 0,
+            "elapsed_s": 9.88,
+            "xml_counts": {
+              "total": 1,
+              "failure": 0,
+              "error": 0,
+              "skipped": 0
+            },
+            "optimizer_attempts": 0,
+            "expected_text_found": false
+          }
+        ]
+      },
+      {
+        "id": "initial_state_selected",
+        "path": "src/mars_titan/training/selection.py",
+        "status": "killed_with_green_controls",
+        "phases": [
+          {
+            "phase": "G1",
+            "nodeid": "tests/training/test_selection.py::test_a_reported_initial_state_is_measured_but_never_selected",
+            "exit_code": 0,
+            "elapsed_s": 5.93,
+            "xml_counts": {
+              "total": 1,
+              "failure": 0,
+              "error": 0,
+              "skipped": 0
+            },
+            "optimizer_attempts": 0,
+            "expected_text_found": false
+          },
+          {
+            "phase": "M1",
+            "nodeid": "tests/training/test_selection.py::test_a_reported_initial_state_is_measured_but_never_selected",
+            "exit_code": 1,
+            "elapsed_s": 5.81,
+            "xml_counts": {
+              "total": 1,
+              "failure": 1,
+              "error": 0,
+              "skipped": 0
+            },
+            "optimizer_attempts": 0,
+            "expected_text_found": true
+          },
+          {
+            "phase": "G2",
+            "nodeid": "tests/training/test_selection.py::test_a_reported_initial_state_is_measured_but_never_selected",
+            "exit_code": 0,
+            "elapsed_s": 5.84,
+            "xml_counts": {
+              "total": 1,
+              "failure": 0,
+              "error": 0,
+              "skipped": 0
+            },
+            "optimizer_attempts": 0,
+            "expected_text_found": false
+          }
+        ]
+      },
+      {
+        "id": "scaler_does_not_clip",
+        "path": "src/mars_titan/models/learning_scale.py",
+        "status": "killed_with_green_controls",
+        "phases": [
+          {
+            "phase": "G1",
+            "nodeid": "tests/models/test_learning_scale.py::test_scaler_clips_drift_and_keeps_absent_sessions_at_zero",
+            "exit_code": 0,
+            "elapsed_s": 6.19,
+            "xml_counts": {
+              "total": 1,
+              "failure": 0,
+              "error": 0,
+              "skipped": 0
+            },
+            "optimizer_attempts": 0,
+            "expected_text_found": false
+          },
+          {
+            "phase": "M1",
+            "nodeid": "tests/models/test_learning_scale.py::test_scaler_clips_drift_and_keeps_absent_sessions_at_zero",
+            "exit_code": 1,
+            "elapsed_s": 6.49,
+            "xml_counts": {
+              "total": 1,
+              "failure": 1,
+              "error": 0,
+              "skipped": 0
+            },
+            "optimizer_attempts": 0,
+            "expected_text_found": true
+          },
+          {
+            "phase": "G2",
+            "nodeid": "tests/models/test_learning_scale.py::test_scaler_clips_drift_and_keeps_absent_sessions_at_zero",
+            "exit_code": 0,
+            "elapsed_s": 6.76,
+            "xml_counts": {
+              "total": 1,
+              "failure": 0,
+              "error": 0,
+              "skipped": 0
+            },
+            "optimizer_attempts": 0,
+            "expected_text_found": false
+          }
+        ]
+      },
+      {
+        "id": "statistics_use_absent_values",
+        "path": "src/mars_titan/models/learning_scale.py",
+        "status": "killed_with_green_controls",
+        "phases": [
+          {
+            "phase": "G1",
+            "nodeid": "tests/models/test_learning_scale.py::test_statistics_use_the_observed_entries_of_each_column_and_the_label_interval",
+            "exit_code": 0,
+            "elapsed_s": 6.07,
+            "xml_counts": {
+              "total": 1,
+              "failure": 0,
+              "error": 0,
+              "skipped": 0
+            },
+            "optimizer_attempts": 0,
+            "expected_text_found": false
+          },
+          {
+            "phase": "M1",
+            "nodeid": "tests/models/test_learning_scale.py::test_statistics_use_the_observed_entries_of_each_column_and_the_label_interval",
+            "exit_code": 1,
+            "elapsed_s": 5.7,
+            "xml_counts": {
+              "total": 1,
+              "failure": 1,
+              "error": 0,
+              "skipped": 0
+            },
+            "optimizer_attempts": 0,
+            "expected_text_found": true
+          },
+          {
+            "phase": "G2",
+            "nodeid": "tests/models/test_learning_scale.py::test_statistics_use_the_observed_entries_of_each_column_and_the_label_interval",
+            "exit_code": 0,
+            "elapsed_s": 5.4,
+            "xml_counts": {
+              "total": 1,
+              "failure": 0,
+              "error": 0,
+              "skipped": 0
+            },
+            "optimizer_attempts": 0,
+            "expected_text_found": false
+          }
+        ]
+      },
+      {
+        "id": "price_previous_close_ignored",
+        "path": "src/mars_titan/models/learning_scale.py",
+        "status": "killed_with_green_controls",
+        "phases": [
+          {
+            "phase": "G1",
+            "nodeid": "tests/models/test_learning_scale.py::test_an_absent_session_stays_at_zero_and_the_next_return_uses_the_last_present_close",
+            "exit_code": 0,
+            "elapsed_s": 5.6,
+            "xml_counts": {
+              "total": 1,
+              "failure": 0,
+              "error": 0,
+              "skipped": 0
+            },
+            "optimizer_attempts": 0,
+            "expected_text_found": false
+          },
+          {
+            "phase": "M1",
+            "nodeid": "tests/models/test_learning_scale.py::test_an_absent_session_stays_at_zero_and_the_next_return_uses_the_last_present_close",
+            "exit_code": 1,
+            "elapsed_s": 5.99,
+            "xml_counts": {
+              "total": 1,
+              "failure": 1,
+              "error": 0,
+              "skipped": 0
+            },
+            "optimizer_attempts": 0,
+            "expected_text_found": true
+          },
+          {
+            "phase": "G2",
+            "nodeid": "tests/models/test_learning_scale.py::test_an_absent_session_stays_at_zero_and_the_next_return_uses_the_last_present_close",
+            "exit_code": 0,
+            "elapsed_s": 5.41,
+            "xml_counts": {
+              "total": 1,
+              "failure": 0,
+              "error": 0,
+              "skipped": 0
+            },
+            "optimizer_attempts": 0,
+            "expected_text_found": false
+          }
+        ]
+      },
+      {
+        "id": "quantiles_not_scaled",
+        "path": "src/mars_titan/models/quantile_head.py",
+        "status": "killed_with_green_controls",
+        "phases": [
+          {
+            "phase": "G1",
+            "nodeid": "tests/models/titans/test_financial_learning_scale.py::test_output_is_the_head_output_times_the_label_scale",
+            "exit_code": 0,
+            "elapsed_s": 11.36,
+            "xml_counts": {
+              "total": 2,
+              "failure": 0,
+              "error": 0,
+              "skipped": 0
+            },
+            "optimizer_attempts": 0,
+            "expected_text_found": false
+          },
+          {
+            "phase": "M1",
+            "nodeid": "tests/models/titans/test_financial_learning_scale.py::test_output_is_the_head_output_times_the_label_scale",
+            "exit_code": 1,
+            "elapsed_s": 9.79,
+            "xml_counts": {
+              "total": 2,
+              "failure": 1,
+              "error": 0,
+              "skipped": 0
+            },
+            "optimizer_attempts": 0,
+            "expected_text_found": true
+          },
+          {
+            "phase": "G2",
+            "nodeid": "tests/models/titans/test_financial_learning_scale.py::test_output_is_the_head_output_times_the_label_scale",
+            "exit_code": 0,
+            "elapsed_s": 10.53,
+            "xml_counts": {
+              "total": 2,
+              "failure": 0,
+              "error": 0,
+              "skipped": 0
+            },
+            "optimizer_attempts": 0,
+            "expected_text_found": false
+          }
+        ]
+      },
+      {
+        "id": "initial_median_not_zero",
+        "path": "src/mars_titan/models/titans/financial.py",
+        "status": "killed_with_green_controls",
+        "phases": [
+          {
+            "phase": "G1",
+            "nodeid": "tests/models/titans/test_financial_learning_scale.py::test_scaled_predictor_starts_at_zero_with_label_sized_quantiles_and_the_same_trunk",
+            "exit_code": 0,
+            "elapsed_s": 8.53,
+            "xml_counts": {
+              "total": 16,
+              "failure": 0,
+              "error": 0,
+              "skipped": 0
+            },
+            "optimizer_attempts": 0,
+            "expected_text_found": false
+          },
+          {
+            "phase": "M1",
+            "nodeid": "tests/models/titans/test_financial_learning_scale.py::test_scaled_predictor_starts_at_zero_with_label_sized_quantiles_and_the_same_trunk",
+            "exit_code": 1,
+            "elapsed_s": 9.25,
+            "xml_counts": {
+              "total": 16,
+              "failure": 16,
+              "error": 0,
+              "skipped": 0
+            },
+            "optimizer_attempts": 0,
+            "expected_text_found": true
+          },
+          {
+            "phase": "G2",
+            "nodeid": "tests/models/titans/test_financial_learning_scale.py::test_scaled_predictor_starts_at_zero_with_label_sized_quantiles_and_the_same_trunk",
+            "exit_code": 0,
+            "elapsed_s": 8.81,
+            "xml_counts": {
+              "total": 16,
+              "failure": 0,
+              "error": 0,
+              "skipped": 0
+            },
+            "optimizer_attempts": 0,
+            "expected_text_found": false
+          }
+        ]
+      },
+      {
+        "id": "statistics_from_validation",
+        "path": "src/mars_titan/training/titans_walk_forward.py",
+        "status": "killed_with_green_controls",
+        "phases": [
+          {
+            "phase": "G1",
+            "nodeid": "tests/training/test_titans_walk_forward.py::test_learning_scale_reads_its_statistics_only_from_the_fit_rows",
+            "exit_code": 0,
+            "elapsed_s": 57.62,
+            "xml_counts": {
+              "total": 1,
+              "failure": 0,
+              "error": 0,
+              "skipped": 0
+            },
+            "optimizer_attempts": 0,
+            "expected_text_found": false
+          },
+          {
+            "phase": "M1",
+            "nodeid": "tests/training/test_titans_walk_forward.py::test_learning_scale_reads_its_statistics_only_from_the_fit_rows",
+            "exit_code": 1,
+            "elapsed_s": 15.89,
+            "xml_counts": {
+              "total": 1,
+              "failure": 1,
+              "error": 0,
+              "skipped": 0
+            },
+            "optimizer_attempts": 0,
+            "expected_text_found": true
+          },
+          {
+            "phase": "G2",
+            "nodeid": "tests/training/test_titans_walk_forward.py::test_learning_scale_reads_its_statistics_only_from_the_fit_rows",
+            "exit_code": 0,
+            "elapsed_s": 52.92,
+            "xml_counts": {
+              "total": 1,
+              "failure": 0,
+              "error": 0,
+              "skipped": 0
+            },
+            "optimizer_attempts": 0,
+            "expected_text_found": false
+          }
+        ]
+      },
+      {
+        "id": "deadline_ignored",
+        "path": "src/mars_titan/training/comparison_campaign.py",
+        "status": "killed_with_green_controls",
+        "phases": [
+          {
+            "phase": "G1",
+            "nodeid": "tests/training/test_comparison_campaign.py::test_an_expired_campaign_starts_no_job_or_preflight",
+            "exit_code": 0,
+            "elapsed_s": 2.96,
+            "xml_counts": {
+              "total": 1,
+              "failure": 0,
+              "error": 0,
+              "skipped": 0
+            },
+            "optimizer_attempts": 0,
+            "expected_text_found": false
+          },
+          {
+            "phase": "M1",
+            "nodeid": "tests/training/test_comparison_campaign.py::test_an_expired_campaign_starts_no_job_or_preflight",
+            "exit_code": 1,
+            "elapsed_s": 3.14,
+            "xml_counts": {
+              "total": 1,
+              "failure": 1,
+              "error": 0,
+              "skipped": 0
+            },
+            "optimizer_attempts": 0,
+            "expected_text_found": true
+          },
+          {
+            "phase": "G2",
+            "nodeid": "tests/training/test_comparison_campaign.py::test_an_expired_campaign_starts_no_job_or_preflight",
+            "exit_code": 0,
+            "elapsed_s": 2.93,
+            "xml_counts": {
+              "total": 1,
+              "failure": 0,
+              "error": 0,
+              "skipped": 0
+            },
+            "optimizer_attempts": 0,
+            "expected_text_found": false
+          }
+        ]
+      },
+      {
+        "id": "tier_exit_counts_unselected_jobs",
+        "path": "src/mars_titan/training/comparison_campaign.py",
+        "status": "killed_with_green_controls",
+        "phases": [
+          {
+            "phase": "G1",
+            "nodeid": "tests/training/test_comparison_campaign.py::test_running_one_tier_returns_success_when_that_tier_finishes",
+            "exit_code": 0,
+            "elapsed_s": 2.98,
+            "xml_counts": {
+              "total": 1,
+              "failure": 0,
+              "error": 0,
+              "skipped": 0
+            },
+            "optimizer_attempts": 0,
+            "expected_text_found": false
+          },
+          {
+            "phase": "M1",
+            "nodeid": "tests/training/test_comparison_campaign.py::test_running_one_tier_returns_success_when_that_tier_finishes",
+            "exit_code": 1,
+            "elapsed_s": 3.17,
+            "xml_counts": {
+              "total": 1,
+              "failure": 1,
+              "error": 0,
+              "skipped": 0
+            },
+            "optimizer_attempts": 0,
+            "expected_text_found": true
+          },
+          {
+            "phase": "G2",
+            "nodeid": "tests/training/test_comparison_campaign.py::test_running_one_tier_returns_success_when_that_tier_finishes",
+            "exit_code": 0,
+            "elapsed_s": 3.02,
+            "xml_counts": {
+              "total": 1,
+              "failure": 0,
+              "error": 0,
+              "skipped": 0
+            },
+            "optimizer_attempts": 0,
+            "expected_text_found": false
+          }
+        ]
+      },
+      {
+        "id": "stop_race_ignored",
+        "path": "src/mars_titan/training/comparison_campaign.py",
+        "status": "killed_with_green_controls",
+        "phases": [
+          {
+            "phase": "G1",
+            "nodeid": "tests/training/test_comparison_campaign.py::test_a_stop_during_process_creation_reaches_the_new_child",
+            "exit_code": 0,
+            "elapsed_s": 2.94,
+            "xml_counts": {
+              "total": 1,
+              "failure": 0,
+              "error": 0,
+              "skipped": 0
+            },
+            "optimizer_attempts": 0,
+            "expected_text_found": false
+          },
+          {
+            "phase": "M1",
+            "nodeid": "tests/training/test_comparison_campaign.py::test_a_stop_during_process_creation_reaches_the_new_child",
+            "exit_code": 1,
+            "elapsed_s": 3.07,
+            "xml_counts": {
+              "total": 1,
+              "failure": 1,
+              "error": 0,
+              "skipped": 0
+            },
+            "optimizer_attempts": 0,
+            "expected_text_found": true
+          },
+          {
+            "phase": "G2",
+            "nodeid": "tests/training/test_comparison_campaign.py::test_a_stop_during_process_creation_reaches_the_new_child",
+            "exit_code": 0,
+            "elapsed_s": 3.01,
+            "xml_counts": {
+              "total": 1,
+              "failure": 0,
+              "error": 0,
+              "skipped": 0
+            },
+            "optimizer_attempts": 0,
+            "expected_text_found": false
+          }
+        ]
+      },
+      {
+        "id": "export_ignores_free_space",
+        "path": "src/mars_titan/training/comparison_data.py",
+        "status": "killed_with_green_controls",
+        "phases": [
+          {
+            "phase": "G1",
+            "nodeid": "tests/training/test_comparison_data.py::test_export_refuses_insufficient_space_before_creating_an_archive",
+            "exit_code": 0,
+            "elapsed_s": 8.71,
+            "xml_counts": {
+              "total": 1,
+              "failure": 0,
+              "error": 0,
+              "skipped": 0
+            },
+            "optimizer_attempts": 0,
+            "expected_text_found": false
+          },
+          {
+            "phase": "M1",
+            "nodeid": "tests/training/test_comparison_data.py::test_export_refuses_insufficient_space_before_creating_an_archive",
+            "exit_code": 1,
+            "elapsed_s": 7.91,
+            "xml_counts": {
+              "total": 1,
+              "failure": 1,
+              "error": 0,
+              "skipped": 0
+            },
+            "optimizer_attempts": 0,
+            "expected_text_found": true
+          },
+          {
+            "phase": "G2",
+            "nodeid": "tests/training/test_comparison_data.py::test_export_refuses_insufficient_space_before_creating_an_archive",
+            "exit_code": 0,
+            "elapsed_s": 8.89,
+            "xml_counts": {
+              "total": 1,
+              "failure": 0,
+              "error": 0,
+              "skipped": 0
+            },
+            "optimizer_attempts": 0,
+            "expected_text_found": false
+          }
+        ]
+      },
+      {
+        "id": "training_matrix_retained",
+        "path": "src/mars_titan/training/common_control_windows.py",
+        "status": "killed_with_green_controls",
+        "phases": [
+          {
+            "phase": "G1",
+            "nodeid": "tests/training/test_common_control_windows.py::test_tabular_releases_training_inputs_before_reading_later_partitions",
+            "exit_code": 0,
+            "elapsed_s": 5.27,
+            "xml_counts": {
+              "total": 1,
+              "failure": 0,
+              "error": 0,
+              "skipped": 0
+            },
+            "optimizer_attempts": 0,
+            "expected_text_found": false
+          },
+          {
+            "phase": "M1",
+            "nodeid": "tests/training/test_common_control_windows.py::test_tabular_releases_training_inputs_before_reading_later_partitions",
+            "exit_code": 1,
+            "elapsed_s": 5.37,
+            "xml_counts": {
+              "total": 1,
+              "failure": 1,
+              "error": 0,
+              "skipped": 0
+            },
+            "optimizer_attempts": 0,
+            "expected_text_found": true
+          },
+          {
+            "phase": "G2",
+            "nodeid": "tests/training/test_common_control_windows.py::test_tabular_releases_training_inputs_before_reading_later_partitions",
+            "exit_code": 0,
+            "elapsed_s": 5.34,
+            "xml_counts": {
+              "total": 1,
+              "failure": 0,
+              "error": 0,
+              "skipped": 0
+            },
+            "optimizer_attempts": 0,
+            "expected_text_found": false
+          }
+        ]
+      },
+      {
+        "id": "feature_chunks_retained",
+        "path": "src/mars_titan/training/common_control_windows.py",
+        "status": "killed_with_green_controls",
+        "phases": [
+          {
+            "phase": "G1",
+            "nodeid": "tests/training/test_common_control_windows.py::test_partition_releases_feature_chunks_before_building_the_canonical_order",
+            "exit_code": 0,
+            "elapsed_s": 5.11,
+            "xml_counts": {
+              "total": 1,
+              "failure": 0,
+              "error": 0,
+              "skipped": 0
+            },
+            "optimizer_attempts": 0,
+            "expected_text_found": false
+          },
+          {
+            "phase": "M1",
+            "nodeid": "tests/training/test_common_control_windows.py::test_partition_releases_feature_chunks_before_building_the_canonical_order",
+            "exit_code": 1,
+            "elapsed_s": 5.15,
+            "xml_counts": {
+              "total": 1,
+              "failure": 1,
+              "error": 0,
+              "skipped": 0
+            },
+            "optimizer_attempts": 0,
+            "expected_text_found": true
+          },
+          {
+            "phase": "G2",
+            "nodeid": "tests/training/test_common_control_windows.py::test_partition_releases_feature_chunks_before_building_the_canonical_order",
+            "exit_code": 0,
+            "elapsed_s": 5.27,
+            "xml_counts": {
+              "total": 1,
+              "failure": 0,
+              "error": 0,
+              "skipped": 0
+            },
+            "optimizer_attempts": 0,
+            "expected_text_found": false
+          }
+        ]
+      },
+      {
+        "id": "later_matrix_loaded_during_fit",
+        "path": "src/mars_titan/training/common_control_windows.py",
+        "status": "killed_with_green_controls",
+        "phases": [
+          {
+            "phase": "G1",
+            "nodeid": "tests/training/test_common_control_windows.py::test_tabular_releases_training_inputs_before_reading_later_partitions",
+            "exit_code": 0,
+            "elapsed_s": 5.85,
+            "xml_counts": {
+              "total": 1,
+              "failure": 0,
+              "error": 0,
+              "skipped": 0
+            },
+            "optimizer_attempts": 0,
+            "expected_text_found": false
+          },
+          {
+            "phase": "M1",
+            "nodeid": "tests/training/test_common_control_windows.py::test_tabular_releases_training_inputs_before_reading_later_partitions",
+            "exit_code": 1,
+            "elapsed_s": 5.71,
+            "xml_counts": {
+              "total": 1,
+              "failure": 1,
+              "error": 0,
+              "skipped": 0
+            },
+            "optimizer_attempts": 0,
+            "expected_text_found": true
+          },
+          {
+            "phase": "G2",
+            "nodeid": "tests/training/test_common_control_windows.py::test_tabular_releases_training_inputs_before_reading_later_partitions",
+            "exit_code": 0,
+            "elapsed_s": 7.57,
+            "xml_counts": {
+              "total": 1,
+              "failure": 0,
+              "error": 0,
+              "skipped": 0
+            },
+            "optimizer_attempts": 0,
+            "expected_text_found": false
+          }
+        ]
+      },
+      {
+        "id": "new_seed_limit_ignored",
+        "path": "src/mars_titan/training/common_control_windows.py",
+        "status": "killed_with_green_controls",
+        "phases": [
+          {
+            "phase": "G1",
+            "nodeid": "tests/training/test_common_control_windows.py::test_one_new_seed_per_attempt_reuses_confirmed_models_and_emits_without_training_rows",
+            "exit_code": 0,
+            "elapsed_s": 10.08,
+            "xml_counts": {
+              "total": 1,
+              "failure": 0,
+              "error": 0,
+              "skipped": 0
+            },
+            "optimizer_attempts": 0,
+            "expected_text_found": false
+          },
+          {
+            "phase": "M1",
+            "nodeid": "tests/training/test_common_control_windows.py::test_one_new_seed_per_attempt_reuses_confirmed_models_and_emits_without_training_rows",
+            "exit_code": 1,
+            "elapsed_s": 6.75,
+            "xml_counts": {
+              "total": 1,
+              "failure": 1,
+              "error": 0,
+              "skipped": 0
+            },
+            "optimizer_attempts": 0,
+            "expected_text_found": true
+          },
+          {
+            "phase": "G2",
+            "nodeid": "tests/training/test_common_control_windows.py::test_one_new_seed_per_attempt_reuses_confirmed_models_and_emits_without_training_rows",
+            "exit_code": 0,
+            "elapsed_s": 8.87,
+            "xml_counts": {
+              "total": 1,
+              "failure": 0,
+              "error": 0,
+              "skipped": 0
+            },
+            "optimizer_attempts": 0,
+            "expected_text_found": false
+          }
+        ]
+      },
+      {
+        "id": "saved_models_not_verified",
+        "path": "src/mars_titan/training/common_control_windows.py",
+        "status": "killed_with_green_controls",
+        "phases": [
+          {
+            "phase": "G1",
+            "nodeid": "tests/training/test_common_control_windows.py::test_completed_tabular_models_remain_recoverable_and_their_hash_is_checked",
+            "exit_code": 0,
+            "elapsed_s": 5.77,
+            "xml_counts": {
+              "total": 1,
+              "failure": 0,
+              "error": 0,
+              "skipped": 0
+            },
+            "optimizer_attempts": 0,
+            "expected_text_found": false
+          },
+          {
+            "phase": "M1",
+            "nodeid": "tests/training/test_common_control_windows.py::test_completed_tabular_models_remain_recoverable_and_their_hash_is_checked",
+            "exit_code": 1,
+            "elapsed_s": 5.71,
+            "xml_counts": {
+              "total": 1,
+              "failure": 1,
+              "error": 0,
+              "skipped": 0
+            },
+            "optimizer_attempts": 0,
+            "expected_text_found": true
+          },
+          {
+            "phase": "G2",
+            "nodeid": "tests/training/test_common_control_windows.py::test_completed_tabular_models_remain_recoverable_and_their_hash_is_checked",
+            "exit_code": 0,
+            "elapsed_s": 5.74,
+            "xml_counts": {
+              "total": 1,
+              "failure": 0,
+              "error": 0,
+              "skipped": 0
+            },
+            "optimizer_attempts": 0,
+            "expected_text_found": false
+          }
+        ]
+      },
+      {
+        "id": "saved_models_not_copied",
+        "path": "src/mars_titan/training/common_control_windows.py",
+        "status": "killed_with_green_controls",
+        "phases": [
+          {
+            "phase": "G1",
+            "nodeid": "tests/training/test_common_control_windows.py::test_completed_tabular_models_remain_recoverable_and_their_hash_is_checked",
+            "exit_code": 0,
+            "elapsed_s": 5.74,
+            "xml_counts": {
+              "total": 1,
+              "failure": 0,
+              "error": 0,
+              "skipped": 0
+            },
+            "optimizer_attempts": 0,
+            "expected_text_found": false
+          },
+          {
+            "phase": "M1",
+            "nodeid": "tests/training/test_common_control_windows.py::test_completed_tabular_models_remain_recoverable_and_their_hash_is_checked",
+            "exit_code": 1,
+            "elapsed_s": 5.78,
+            "xml_counts": {
+              "total": 1,
+              "failure": 1,
+              "error": 0,
+              "skipped": 0
+            },
+            "optimizer_attempts": 0,
+            "expected_text_found": true
+          },
+          {
+            "phase": "G2",
+            "nodeid": "tests/training/test_common_control_windows.py::test_completed_tabular_models_remain_recoverable_and_their_hash_is_checked",
+            "exit_code": 0,
+            "elapsed_s": 5.96,
+            "xml_counts": {
+              "total": 1,
+              "failure": 0,
+              "error": 0,
+              "skipped": 0
+            },
+            "optimizer_attempts": 0,
+            "expected_text_found": false
+          }
+        ]
+      },
+      {
+        "id": "tabular_not_staged_in_campaign",
+        "path": "src/mars_titan/training/comparison_campaign.py",
+        "status": "killed_with_green_controls",
+        "phases": [
+          {
+            "phase": "G1",
+            "nodeid": "tests/training/test_comparison_campaign.py::test_execute_job_gives_each_runner_its_window_rule_and_parent",
+            "exit_code": 0,
+            "elapsed_s": 4.88,
+            "xml_counts": {
+              "total": 1,
+              "failure": 0,
+              "error": 0,
+              "skipped": 0
+            },
+            "optimizer_attempts": 0,
+            "expected_text_found": false
+          },
+          {
+            "phase": "M1",
+            "nodeid": "tests/training/test_comparison_campaign.py::test_execute_job_gives_each_runner_its_window_rule_and_parent",
+            "exit_code": 1,
+            "elapsed_s": 4.34,
+            "xml_counts": {
+              "total": 1,
+              "failure": 1,
+              "error": 0,
+              "skipped": 0
+            },
+            "optimizer_attempts": 0,
+            "expected_text_found": true
+          },
+          {
+            "phase": "G2",
+            "nodeid": "tests/training/test_comparison_campaign.py::test_execute_job_gives_each_runner_its_window_rule_and_parent",
+            "exit_code": 0,
+            "elapsed_s": 4.08,
+            "xml_counts": {
+              "total": 1,
+              "failure": 0,
+              "error": 0,
+              "skipped": 0
+            },
+            "optimizer_attempts": 0,
+            "expected_text_found": false
+          }
+        ]
+      },
+      {
+        "id": "machine_memory_budget_ignored",
+        "path": "src/mars_titan/training/comparison_campaign.py",
+        "status": "killed_with_green_controls",
+        "phases": [
+          {
+            "phase": "G1",
+            "nodeid": "tests/training/test_comparison_campaign.py::test_doctor_uses_the_memory_budget_of_each_machine",
+            "exit_code": 0,
+            "elapsed_s": 3.18,
+            "xml_counts": {
+              "total": 1,
+              "failure": 0,
+              "error": 0,
+              "skipped": 0
+            },
+            "optimizer_attempts": 0,
+            "expected_text_found": false
+          },
+          {
+            "phase": "M1",
+            "nodeid": "tests/training/test_comparison_campaign.py::test_doctor_uses_the_memory_budget_of_each_machine",
+            "exit_code": 1,
+            "elapsed_s": 3.31,
+            "xml_counts": {
+              "total": 1,
+              "failure": 1,
+              "error": 0,
+              "skipped": 0
+            },
+            "optimizer_attempts": 0,
+            "expected_text_found": true
+          },
+          {
+            "phase": "G2",
+            "nodeid": "tests/training/test_comparison_campaign.py::test_doctor_uses_the_memory_budget_of_each_machine",
+            "exit_code": 0,
+            "elapsed_s": 3.24,
+            "xml_counts": {
+              "total": 1,
+              "failure": 0,
+              "error": 0,
+              "skipped": 0
+            },
+            "optimizer_attempts": 0,
+            "expected_text_found": false
+          }
+        ]
+      },
+      {
+        "id": "reader_workspace_too_small",
+        "path": "configs/titans/comparison-campaign-reader-v1.json",
+        "status": "killed_with_green_controls",
+        "phases": [
+          {
+            "phase": "G1",
+            "nodeid": "tests/training/test_comparison_campaign.py::test_declared_readers_can_replay_a_full_batch_with_a_full_bank",
+            "exit_code": 0,
+            "elapsed_s": 2.97,
+            "xml_counts": {
+              "total": 1,
+              "failure": 0,
+              "error": 0,
+              "skipped": 0
+            },
+            "optimizer_attempts": 0,
+            "expected_text_found": false
+          },
+          {
+            "phase": "M1",
+            "nodeid": "tests/training/test_comparison_campaign.py::test_declared_readers_can_replay_a_full_batch_with_a_full_bank",
+            "exit_code": 1,
+            "elapsed_s": 3.07,
+            "xml_counts": {
+              "total": 1,
+              "failure": 1,
+              "error": 0,
+              "skipped": 0
+            },
+            "optimizer_attempts": 0,
+            "expected_text_found": true
+          },
+          {
+            "phase": "G2",
+            "nodeid": "tests/training/test_comparison_campaign.py::test_declared_readers_can_replay_a_full_batch_with_a_full_bank",
+            "exit_code": 0,
+            "elapsed_s": 3.02,
+            "xml_counts": {
+              "total": 1,
+              "failure": 0,
+              "error": 0,
+              "skipped": 0
+            },
+            "optimizer_attempts": 0,
+            "expected_text_found": false
+          }
+        ]
+      },
+      {
+        "id": "origin_signal_handler_omitted",
+        "path": "src/mars_titan/training/comparison_campaign.py",
+        "status": "killed_with_green_controls",
+        "phases": [
+          {
+            "phase": "G1",
+            "nodeid": "tests/training/test_comparison_campaign.py::test_origin_controls_receive_a_cooperative_stop_signal",
+            "exit_code": 0,
+            "elapsed_s": 3.85,
+            "xml_counts": {
+              "total": 3,
+              "failure": 0,
+              "error": 0,
+              "skipped": 0
+            },
+            "optimizer_attempts": 0,
+            "expected_text_found": false
+          },
+          {
+            "phase": "M1",
+            "nodeid": "tests/training/test_comparison_campaign.py::test_origin_controls_receive_a_cooperative_stop_signal",
+            "exit_code": 1,
+            "elapsed_s": 4.04,
+            "xml_counts": {
+              "total": 3,
+              "failure": 3,
+              "error": 0,
+              "skipped": 0
+            },
+            "optimizer_attempts": 0,
+            "expected_text_found": true
+          },
+          {
+            "phase": "G2",
+            "nodeid": "tests/training/test_comparison_campaign.py::test_origin_controls_receive_a_cooperative_stop_signal",
+            "exit_code": 0,
+            "elapsed_s": 3.83,
+            "xml_counts": {
+              "total": 3,
+              "failure": 0,
+              "error": 0,
+              "skipped": 0
+            },
+            "optimizer_attempts": 0,
+            "expected_text_found": false
+          }
+        ]
+      },
+      {
+        "id": "tabular_emission_ignores_stop",
+        "path": "src/mars_titan/training/common_control_windows.py",
+        "status": "killed_with_green_controls",
+        "phases": [
+          {
+            "phase": "G1",
+            "nodeid": "tests/training/test_common_control_windows.py::test_a_stop_during_tabular_emission_keeps_the_models_and_resumes_without_fitting",
+            "exit_code": 0,
+            "elapsed_s": 5.84,
+            "xml_counts": {
+              "total": 1,
+              "failure": 0,
+              "error": 0,
+              "skipped": 0
+            },
+            "optimizer_attempts": 0,
+            "expected_text_found": false
+          },
+          {
+            "phase": "M1",
+            "nodeid": "tests/training/test_common_control_windows.py::test_a_stop_during_tabular_emission_keeps_the_models_and_resumes_without_fitting",
+            "exit_code": 1,
+            "elapsed_s": 5.52,
+            "xml_counts": {
+              "total": 1,
+              "failure": 1,
+              "error": 0,
+              "skipped": 0
+            },
+            "optimizer_attempts": 0,
+            "expected_text_found": true
+          },
+          {
+            "phase": "G2",
+            "nodeid": "tests/training/test_common_control_windows.py::test_a_stop_during_tabular_emission_keeps_the_models_and_resumes_without_fitting",
+            "exit_code": 0,
+            "elapsed_s": 5.9,
+            "xml_counts": {
+              "total": 1,
+              "failure": 0,
+              "error": 0,
+              "skipped": 0
+            },
+            "optimizer_attempts": 0,
+            "expected_text_found": false
+          }
+        ]
+      }
+    ]
+  },
+  "limitations": [
+    "Las pasadas se solapan y sus recuentos no se suman como pruebas únicas.",
+    "Las omisiones de CPU incluyen CUDA, recursos externos y ajustes bloqueados. La pasada final con enlace nativo y la comprobación CUDA se informan aparte.",
+    "La revisión es local. No se ha ejecutado el segundo equipo con Windows 11 y RTX 5060 Laptop.",
+    "La cobertura y CRAP son diagnósticos, no una demostración de ausencia de defectos."
+  ],
+  "dependency_files_sha256": {
+    "pyproject.toml": "8abdaa4f9bd90516e965820be2f36fce40dcd7074f567dffd0648f6857d17524",
+    "uv.lock": "dd001d1f8f7f81f9e33eb0f2f34636c3c64d1663b293c597048004a6e26f25ab",
+    ".python-version": "7b55f8e67b5623c4bef3fa691288da9437d79d3aba156de48d481db32ac7d16d"
+  }
+}

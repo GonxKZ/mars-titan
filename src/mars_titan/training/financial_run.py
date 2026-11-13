@@ -177,7 +177,9 @@ class ChronologicalRecipe:
     def __post_init__(self):
         # Los controles puntuales conservan la cabeza y validan los mismos hiperparámetros.
         validate_loss("mae" if self.loss in QUANTILE_OBJECTIVES else self.loss, self.huber_delta)
-        validate_selection(self.selection, epochs=self.epochs, modes=CHRONOLOGICAL_MODES)
+        validate_selection(
+            self.selection, epochs=self.epochs, modes=CHRONOLOGICAL_MODES, initial_reported=True
+        )
         distillation.checked_weight(self.distillation_weight)
         if self.loss in POINT_OBJECTIVES and self.distillation_weight is not None:
             raise ValueError("El control de solo mediana no admite destilación de las colas")

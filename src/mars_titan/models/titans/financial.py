@@ -1,6 +1,7 @@
 """Predictor financiero por decisión, sin banco ni publicación de estado."""
 
 import hashlib
+import math
 from contextlib import nullcontext
 from dataclasses import asdict, dataclass, fields, replace
 
@@ -20,7 +21,16 @@ from mars_titan.models.baselines.multimodal import (
     fuse_modalities,
     validate_architecture,
 )
-from mars_titan.models.quantile_head import CONTRACT, QUANTILE_HEAD, QuantileHead, median
+from mars_titan.models.learning_scale import TRANSFORM as LEARNING_TRANSFORM
+from mars_titan.models.learning_scale import LearningScale, LearningScaler, parse_learning_scale
+from mars_titan.models.quantile_head import (
+    CONTRACT,
+    MEDIAN_INDEX,
+    QUANTILE_HEAD,
+    QuantileHead,
+    ScaledLinear,
+    median,
+)
 from mars_titan.models.quantile_routing import QuantileRouting
 
 from .asset_groups import (
@@ -140,6 +150,10 @@ from .state import (
 )
 
 VARIANTS = ("transformer_direct", "mac_disabled", "mac_frozen", "mac_online")
+# Codificadores de precios de las referencias que admite el mismo predictor (#836). Sin
+# declarar ninguno se construye el Transformer compacto de siempre.
+REFERENCE_ENCODERS = ("rnn", "lstm", "gru", "dlinear")
+REFERENCE_CONTRACT = "reference_price_encoder_v1"
 _TEMPORAL_ENCODERS = {
     "kronlstm_v1": ("scalar", "reference"),
     "vector_delta_v1": ("vector", "reference"),
@@ -231,6 +245,12 @@ class FinancialConfig:
     memory_huber: HuberMemory | None = None
     memory_time_scales: ScaleInvariantTime | None = None
     differential_attention: str | None = None
+    # #836: escalas de aprendizaje del tramo de ajuste (entradas normalizadas, precios como
+    # rendimientos y salida en la escala de la etiqueta). Sin declararlas nada cambia.
+    learning_scale: LearningScale | None = None
+    # #836: codificador de precios de una referencia en lugar del Transformer compacto, para
+    # que las referencias recurrentes y DLinear compartan entrenador, receta y filas.
+    reference_encoder: str | None = None
 
     def __post_init__(self):
         self._check_input_contract()
@@ -253,6 +273,7 @@ class FinancialConfig:
         self._check_auxiliary_horizons()
         self._check_mature_reliability()
         self._check_core_variants()
+        self._check_learning_scale()
         self._check_memory_projections()
         self._check_runtime_limits()
 
@@ -502,6 +523,28 @@ class FinancialConfig:
         ):
             raise ValueError(
                 "session_rank_inputs admite session_rank_inputs_v1 con la política con máscaras"
+            )
+
+    def _check_learning_scale(self):
+        """Escalas de aprendizaje y codificador de referencia de #836."""
+        object.__setattr__(self, "learning_scale", parse_learning_scale(self.learning_scale))
+        if self.learning_scale is not None and (
+            self.session_rank_inputs is not None
+            or self.session_ic_objective is not None
+            or self.laplace_scale_head is not None
+            or self.opponent_heads is not None
+        ):
+            raise ValueError(
+                "learning_scale escala la cabeza común y no se combina con los rangos por "
+                "sesión ni con los objetivos de salida"
+            )
+        if self.reference_encoder is not None and (
+            type(self.reference_encoder) is not str
+            or self.reference_encoder not in REFERENCE_ENCODERS
+            or self.temporal_encoder is not None
+        ):
+            raise ValueError(
+                "reference_encoder admite rnn, lstm, gru o dlinear, sin otro codificador temporal"
             )
 
     def _check_session_mixers(self):
@@ -780,6 +823,13 @@ class FinancialConfig:
                     initial="zero_output",
                 )
             )
+        # #836: solo aparecen si se declaran, así que las identidades anteriores no cambian.
+        if self.learning_scale is not None:
+            result.update(learning_scale=self.learning_scale.identity())
+        if self.reference_encoder is not None:
+            result.update(
+                reference_encoder=dict(kind=self.reference_encoder, contract=REFERENCE_CONTRACT)
+            )
         return result
 
 
@@ -827,6 +877,36 @@ def _tensor_digest(value):
     return digest.hexdigest()
 
 
+class ReferencePriceEncoder(nn.Module):
+    """Codificador de precios de una referencia con la interfaz del Transformer (#836).
+
+    Devuelve el último estado oculto de la pila recurrente o la salida de DLinear, igual que
+    `MultimodalReference`, junto con las comprobaciones de finitud que resuelve el llamante.
+    """
+
+    def __init__(self, kind, encoder):
+        super().__init__()
+        if kind not in REFERENCE_ENCODERS:
+            raise ValueError("El codificador no pertenece a las referencias admitidas")
+        self.kind, self.encoder = kind, encoder
+
+    @property
+    def configuration(self):
+        return dict(kind=self.kind, contract=REFERENCE_CONTRACT)
+
+    def encode_last(self, prices):
+        if self.kind == "dlinear":
+            representation = self.encoder(prices)
+        else:
+            _, hidden = self.encoder(prices)
+            representation = (hidden[0] if self.kind == "lstm" else hidden)[-1]
+        checks = [
+            (prices, "Los precios contienen valores no finitos"),
+            (representation, "La representación de precios contiene valores no finitos"),
+        ]
+        return representation, checks
+
+
 class FinancialPredictor(nn.Module):
     """Preparar una decisión por flujo. El llamante confirma o descarta la propuesta."""
 
@@ -858,17 +938,22 @@ class FinancialPredictor(nn.Module):
         self.masked = masked_inputs(config.inputs.input_policy)
         with torch.device("cpu"), torch.random.fork_rng(devices=[]):
             torch.random.default_generator.manual_seed(config.seed)
+            kind = config.reference_encoder or "transformer"
             reference = MultimodalReference(
-                "transformer",
+                kind,
                 config.inputs.dimensions,
                 context=config.inputs.context,
                 hidden_size=config.hidden_size,
                 layers=config.layers,
                 dropout=0.0,
                 # Con el lote por defecto (256) el contrato del codificador no cambia.
-                max_batch=config.max_batch,
+                **({"max_batch": config.max_batch} if kind == "transformer" else {}),
             )
-            self.price_encoder = reference.price_encoder
+            self.price_encoder = (
+                reference.price_encoder
+                if kind == "transformer"
+                else ReferencePriceEncoder(kind, reference.price_encoder)
+            )
             self.encoders, self.fusion, self.head = (
                 reference.encoders,
                 reference.fusion,
@@ -876,10 +961,30 @@ class FinancialPredictor(nn.Module):
             )
             if self.masked:
                 self.fusion[0] = nn.Linear(5 * config.hidden_size + 5, config.hidden_size)
+            scaled = config.learning_scale is not None
             # La cabeza de cuantiles se crea al final. El tronco recibe los mismos pesos
             # iniciales que la variante escalar con la misma semilla.
             if config.head == QUANTILE_HEAD:
-                self.head = QuantileHead(config.hidden_size, routing=config.quantile_routing)
+                self.head = QuantileHead(
+                    config.hidden_size, routing=config.quantile_routing, scaled=scaled
+                )
+            elif scaled:
+                # La cabeza escalar conserva los pesos sorteados y añade su escala de salida.
+                head = ScaledLinear(config.hidden_size)
+                head.load_state_dict(reference.head.state_dict(), strict=False)
+                self.head = head
+            if scaled and config.learning_scale.zero_median:
+                # El predictor empieza emitiendo cero y solo se aleja si los datos lo piden.
+                with torch.no_grad():
+                    row = MEDIAN_INDEX if config.head == QUANTILE_HEAD else 0
+                    self.head.weight[row].zero_()
+                    self.head.bias[row].zero_()
+        # #836: el escalador no tiene parámetros y no consume ningún generador.
+        self.learning_scaler = (
+            LearningScaler(config.learning_scale, config.inputs.dimensions, dtype=dtype)
+            if config.learning_scale is not None
+            else None
+        )
         if config.temporal_encoder is not None:
             from mars_titan.models.kronlstm import CompactPriceKronLSTM
 
@@ -1760,6 +1865,8 @@ class FinancialPredictor(nn.Module):
             raise ValueError("C2 necesita el historial de cada flujo y no se calcula fila a fila")
         if self.fractal_shared_operator is not None:
             raise ValueError("C3 necesita todas las filas de la sesión y no se calcula fila a fila")
+        if self.learning_scaler is not None:
+            inputs = self.learning_scaler(inputs, presence)
         price, checks = self.price_encoder.encode_last(gate_price_window(inputs["prices"]))
         for value, message in checks:
             require_finite(value, message)
@@ -1847,6 +1954,12 @@ class FinancialPredictor(nn.Module):
             # Rangos entre las filas del bloque, que son todas las de su instante y mercado.
             batch = batch.derived(
                 rank_session_inputs(batch.inputs, markets), self.config.session_rank_inputs
+            )
+        if self.learning_scaler is not None:
+            # Todo lo posterior lee las entradas normalizadas. Los grupos de H4 siguen leyendo
+            # la ventana recibida, sin transformar.
+            batch = batch.derived(
+                self.learning_scaler(batch.inputs, batch.presence), LEARNING_TRANSFORM
             )
         if self.local_control is None:
             if control_selection is not None or control_context_id is not None:
@@ -1999,6 +2112,23 @@ class FinancialPredictor(nn.Module):
             surprise=None if sink is None else sink[0],
             **({"regional_trace": regional_trace} if regional_trace is not None else {}),
         )
+
+    def set_learning_statistics(self, statistics):
+        """Cargar las estadísticas del tramo de ajuste y la escala de su etiqueta (#836).
+
+        Se llama una vez, justo después de construir el predictor y antes de emparejarlo o
+        de crear estados. Las estadísticas son buffers, así que entran en la huella de los
+        parámetros y viajan en el estado guardado.
+        """
+        if self.learning_scaler is None:
+            raise ValueError("El predictor no declara learning_scale")
+        scale = statistics.get("label_scale") if isinstance(statistics, dict) else None
+        if type(scale) is not float or not math.isfinite(scale) or scale <= 0:
+            raise ValueError("Las estadísticas necesitan una escala positiva de la etiqueta")
+        self.learning_scaler.load(statistics)
+        with torch.no_grad():
+            self.head.output_scale.fill_(scale)
+        self._seal_parameters()
 
     def export_state(self, state):
         self.verify_parameter_identity()
