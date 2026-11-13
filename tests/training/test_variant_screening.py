@@ -604,10 +604,13 @@ def test_declarations_must_stay_disabled(tmp_path, protocol):
         screening.entry_arms(protocol, "F1", root=tmp_path)
 
 
-def test_the_fit_limit_is_the_one_of_the_walk_forward_phases():
-    from mars_titan.training.walk_forward_phases import MAX_FIT_MONTHS
+def test_screening_keeps_its_year_limit_while_general_windows_allow_longer_history(protocol):
+    from mars_titan.training.walk_forward_phases import checked_fit_months
 
-    assert screening.MAX_FIT_MONTHS == MAX_FIT_MONTHS
+    assert checked_fit_months(13) == 13 and checked_fit_months(300) == 300
+    screening.checked_protocol(_changed(protocol, ("fit", "fit_months"), 12))
+    with pytest.raises(ValueError):
+        screening.checked_protocol(_changed(protocol, ("fit", "fit_months"), 13))
 
 
 def test_the_module_does_not_import_torch(source_environment):

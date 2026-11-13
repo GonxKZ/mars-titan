@@ -9,9 +9,9 @@ filas y los objetivos de la vista (`check_view_rows`). Las tablas siguen el orde
 - LightGBM se ajusta con las filas de entrenamiento decididas en los meses de ajuste de la
   criba, las mismas que usan los modelos (`window_phases`). Ajusta las cinco semillas en el
   mismo trabajo, elige sus rondas con la época común de todas y deja una carpeta por semilla.
-  Cada booster se guarda con su serie de validación al terminar su ajuste, así que un
-  intento interrumpido solo ajusta las semillas que faltan. Los ajustes guardados se
-  borran cuando la ventana confirma sus predicciones.
+  Cada booster se guarda con su serie de validación al terminar su ajuste. Un intento
+  interrumpido solo ajusta las semillas que faltan. Cada semilla conserva su modelo y el
+  número de rondas seleccionado junto a las predicciones confirmadas.
 
 Las dos comprueban la protección del aprendizaje antes de leer la vista y se detienen en la
 siguiente barrera si el presupuesto del trabajo lo pide.
@@ -104,6 +104,8 @@ def partition_rows(dataset, partition, *, with_features, since=None):
             columns["features"].append(lightgbm_control.features(inputs, batch["presence"][keep]))
     _require(columns["target"], f"El tramo {partition} no tiene filas que leer")
     merged = {name: np.concatenate(parts) for name, parts in columns.items() if parts}
+    # Los bloques ya están reunidos. No se retienen durante la copia al orden canónico.
+    columns.clear()
     ids = pa.array(
         [f"{a}/{t}" for a, t in zip(merged["asset_id"], merged["prediction_at"], strict=True)]
     )
@@ -160,6 +162,8 @@ def _records(output, report):
         path = output / member["path"]
         yield path, member["sha256"]
         nested = read_manifest(path, 16 * 1024**2)[0]
+        if "model" in nested:
+            yield path.parent / nested["model"]["path"], nested["model"]["sha256"]
         for record in nested["predictions"].values():
             yield path.parent / record["path"], record["sha256"]
 
@@ -298,13 +302,13 @@ def _loaded_fit(output, seed, record):
     return qlib_lightgbm.load(document["model"]), series
 
 
-def _fit_seeds(train, validation, config, seeds, *, min_assets, stop, output, report):
+def _fit_seeds(train, validation, config, seeds, *, min_assets, stop, output, report, max_new_fits):
     """Booster y serie del IC de validación de cada semilla, con la barrera entre semillas.
 
     Una semilla ya guardada se carga sin ajustar. Las demás se ajustan y se guardan antes de
     pasar a la siguiente, con el informe actualizado.
     """
-    fits, saved = [], report.setdefault("fits", {})
+    fits, saved, fitted = [], report.setdefault("fits", {}), 0
 
     def check_stop():
         if stop is not None and stop.requested:
@@ -321,11 +325,26 @@ def _fit_seeds(train, validation, config, seeds, *, min_assets, stop, output, re
         saved[str(seed)] = _saved_fit(output, seed, booster, scored)
         atomic_json(output / "run.json", report)
         fits.append((booster, scored))
+        fitted += 1
+        if max_new_fits is not None and fitted >= max_new_fits:
+            # La siguiente llamada parte de los modelos guardados en un proceso nuevo.
+            raise Stopped
     return fits
 
 
 def run_tabular_window(
-    view, protocol, window, *, seeds, fit_months, output, config, radius, min_assets, stop=None
+    view,
+    protocol,
+    window,
+    *,
+    seeds,
+    fit_months,
+    output,
+    config,
+    radius,
+    min_assets,
+    stop=None,
+    max_new_fits=None,
 ):
     """Ajustar LightGBM con cada semilla, elegir sus rondas en común y emitir cada semilla.
 
@@ -336,6 +355,10 @@ def run_tabular_window(
     require_learning_allowed("la ventana LightGBM de los controles comunes")
     config = lightgbm_control.checked_config(config)
     seeds = _checked_seeds(seeds)
+    _require(
+        max_new_fits is None or (type(max_new_fits) is int and max_new_fits > 0),
+        "El límite de ajustes nuevos debe ser un entero positivo",
+    )
     view, output = Path(view), Path(output)
     document, digest = _protocol(protocol)
     request = dict(
@@ -358,18 +381,25 @@ def run_tabular_window(
     dataset, fold = _open(view, document, window, output)
     atomic_json(output / "run.json", report)
     since = window_phases(fold, 0, fit_months)["train"].decision_start
-    train = partition_rows(dataset, "train", with_features=True, since=since)
-    predicted = {name: partition_rows(dataset, name, with_features=True) for name in PREDICTED}
+    train = None
+    if not all(str(seed) in report.get("fits", {}) for seed in seeds):
+        train = partition_rows(dataset, "train", with_features=True, since=since)
+        report.update(
+            fit_rows=int(np.count_nonzero(qlib_lightgbm.session_labels(train.panel)[1])),
+            train_rows=train.panel.rows,
+        )
+    validation = partition_rows(dataset, "validation", with_features=True)
     try:
         fits = _fit_seeds(
             train,
-            predicted["validation"],
+            validation,
             config,
             seeds,
             min_assets=min_assets,
             stop=stop,
             output=output,
             report=report,
+            max_new_fits=max_new_fits,
         )
     except Stopped:
         report["status"] = "paused"
@@ -378,32 +408,46 @@ def run_tabular_window(
     series = [scored for _, scored in fits]
     chosen = selection.common_epoch(selection.seed_epoch_scores(series), radius=radius)
     rounds = chosen["epoch"] * config["checkpoint_rounds"]
+    fit_rows, train_rows = report["fit_rows"], report["train_rows"]
+    del train
+    # El ajuste solo necesita validación. Los demás tramos se leen y emiten de uno en uno.
+    predictions = {seed: {} for seed in seeds}
+    for name in PREDICTED:
+        rows = (
+            validation
+            if name == "validation"
+            else partition_rows(dataset, name, with_features=True)
+        )
+        if name == "validation":
+            del validation
+        for seed, (booster, scored) in zip(seeds, fits, strict=True):
+            emitted = qlib_lightgbm.predict(booster, rows.features, rounds)
+            if name == "validation":
+                values, defined = sd.session_correlations(
+                    rows.panel, emitted, min_assets=min_assets
+                )
+                _require(
+                    np.array_equal(values, scored[chosen["epoch"] - 1][0])
+                    and np.array_equal(defined, scored[chosen["epoch"] - 1][1]),
+                    "La validación emitida no reproduce la puntuada al elegir las rondas",
+                )
+            predictions[seed][name] = _write(output / f"seed-{seed}", name, rows, emitted, dataset)
+        del rows
     members = {}
-    for seed, (booster, scored) in zip(seeds, fits, strict=True):
+    for seed in seeds:
         folder = output / f"seed-{seed}"
-        emitted = {
-            name: qlib_lightgbm.predict(booster, predicted[name].features, rounds)
-            for name in PREDICTED
-        }
-        # La validación emitida es la que eligió las rondas.
-        values, defined = sd.session_correlations(
-            predicted["validation"].panel, emitted["validation"], min_assets=min_assets
-        )
-        _require(
-            np.array_equal(values, scored[chosen["epoch"] - 1][0])
-            and np.array_equal(defined, scored[chosen["epoch"] - 1][1]),
-            "La validación emitida no reproduce la puntuada al elegir las rondas",
-        )
+        checkpoint = report["fits"][str(seed)]
+        model = folder / "model.json"
+        shutil.copyfile(output / checkpoint["path"], model)
+        _require(sha256(model) == checkpoint["sha256"], "El modelo copiado no conserva su huella")
         record = dict(
             schema_version=1,
             kind=TABULAR_KIND,
             status="completed",
             seed=seed,
             rounds=rounds,
-            predictions={
-                name: _write(folder, name, predicted[name], emitted[name], dataset)
-                for name in PREDICTED
-            },
+            model=dict(path=model.name, sha256=checkpoint["sha256"]),
+            predictions=predictions[seed],
         )
         atomic_json(folder / "run.json", record)
         members[str(seed)] = dict(path=f"seed-{seed}/run.json", sha256=sha256(folder / "run.json"))
@@ -413,8 +457,8 @@ def run_tabular_window(
         output,
         report,
         selection=dict(chosen, rounds=rounds, checkpoint_rounds=config["checkpoint_rounds"]),
-        fit_rows=int(np.count_nonzero(qlib_lightgbm.session_labels(train.panel)[1])),
-        train_rows=train.panel.rows,
+        fit_rows=fit_rows,
+        train_rows=train_rows,
         seeds=members,
     )
     shutil.rmtree(output / "fits")

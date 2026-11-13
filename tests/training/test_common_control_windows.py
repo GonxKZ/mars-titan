@@ -7,6 +7,7 @@ función fija de las características y de las rondas, así que ninguna prueba e
 import json
 import shutil
 import types
+import weakref
 
 import numpy as np
 import pyarrow as pa
@@ -79,6 +80,26 @@ def test_the_rows_of_each_partition_are_those_of_the_view_in_canonical_order(vie
             np.testing.assert_array_equal(rows.prices[row], found[sample][0])
             np.testing.assert_array_equal(rows.features[row], found[sample][1])
         assert windows.partition_rows(data, name, with_features=False).features is None
+
+
+def test_partition_releases_feature_chunks_before_building_the_canonical_order(view, monkeypatch):
+    manifest, _ = view
+    features, from_columns = lightgbm_control.features, ForecastPanel.from_columns
+    chunks = []
+
+    def encoded(*args):
+        result = features(*args)
+        chunks.append(weakref.ref(result))
+        return result
+
+    def panel(cls, *args, **kwargs):
+        assert chunks and all(chunk() is None for chunk in chunks)
+        return from_columns(*args, **kwargs)
+
+    monkeypatch.setattr(lightgbm_control, "features", encoded)
+    monkeypatch.setattr(ForecastPanel, "from_columns", classmethod(panel))
+    rows = windows.partition_rows(dataset(manifest), "evaluation", with_features=True)
+    assert rows.features.shape[0] == rows.panel.rows
 
 
 def test_the_fit_rows_are_the_train_decisions_of_the_fit_months(view, tmp_path):
@@ -336,6 +357,39 @@ def test_the_tabular_window_emits_every_seed_with_their_common_rounds(view, tmp_
             assert table.column_names == COLUMNS
 
 
+def test_tabular_releases_training_inputs_before_reading_later_partitions(
+    view, tmp_path, doubled_fit, monkeypatch
+):
+    manifest, protocol = view
+    read, fit = windows.partition_rows, qlib_lightgbm.fit
+    partitions, matrices = [], []
+
+    def fitted(train, validation, *args, **kwargs):
+        matrices.append(weakref.ref(train.features))
+        result = fit(train, validation, *args, **kwargs)
+        # El doble conserva solo metadatos para no retener artificialmente las matrices.
+        doubled_fit[-1].pop("train")
+        doubled_fit[-1].pop("validation")
+        return result
+
+    def rows(data, name, **options):
+        if name in ("calibration", "evaluation"):
+            assert len(doubled_fit) == 3, (
+                "Se cargó una partición posterior antes de terminar el ajuste"
+            )
+            assert all(matrix() is None for matrix in matrices), (
+                "La matriz de ajuste sigue retenida"
+            )
+        partitions.append(name)
+        return read(data, name, **options)
+
+    monkeypatch.setattr(qlib_lightgbm, "fit", fitted)
+    monkeypatch.setattr(windows, "partition_rows", rows)
+    report = tabular(manifest, protocol, tmp_path / "streamed")
+    assert report["status"] == "completed"
+    assert partitions == ["train", "validation", "calibration", "evaluation"]
+
+
 def test_a_completed_tabular_window_checks_every_seed_file(view, tmp_path, doubled_fit):
     manifest, protocol = view
     output = tmp_path / "tabular"
@@ -393,6 +447,60 @@ def test_a_paused_tabular_window_keeps_its_fitted_seeds_and_fits_only_the_rest(
     assert {seed: member["sha256"] for seed, member in whole["seeds"].items()} == {
         seed: member["sha256"] for seed, member in resumed["seeds"].items()
     }
+
+
+def test_one_new_seed_per_attempt_reuses_confirmed_models_and_emits_without_training_rows(
+    view, tmp_path, doubled_fit, monkeypatch
+):
+    manifest, protocol = view
+    output = tmp_path / "bounded"
+    for count in (1, 2, 3):
+        paused = tabular(manifest, protocol, output, max_new_fits=1)
+        assert paused["status"] == "paused"
+        assert len(paused["fits"]) == count
+        assert len(doubled_fit) == count
+    original = windows.partition_rows
+
+    def rows(data, name, **options):
+        assert name != "train", "La emisión vuelve a cargar una matriz de ajuste que ya no necesita"
+        return original(data, name, **options)
+
+    with monkeypatch.context() as patch:
+        patch.setattr(windows, "partition_rows", rows)
+        completed = tabular(manifest, protocol, output, max_new_fits=1)
+    assert completed["status"] == "completed" and len(doubled_fit) == 3
+    whole = tabular(manifest, protocol, tmp_path / "whole")
+    assert whole["selection"] == completed["selection"]
+    assert {key: value["sha256"] for key, value in whole["seeds"].items()} == {
+        key: value["sha256"] for key, value in completed["seeds"].items()
+    }
+
+
+@pytest.mark.parametrize("limit", [0, -1, True, 1.5])
+def test_a_limit_of_new_tabular_fits_must_be_a_positive_integer(view, tmp_path, doubled_fit, limit):
+    manifest, protocol = view
+    with pytest.raises(ValueError, match="ajustes nuevos"):
+        tabular(manifest, protocol, tmp_path / "invalid", max_new_fits=limit)
+    assert not doubled_fit
+
+
+def test_completed_tabular_models_remain_recoverable_and_their_hash_is_checked(
+    view, tmp_path, doubled_fit
+):
+    manifest, protocol = view
+    output = tmp_path / "kept-models"
+    report = tabular(manifest, protocol, output)
+    assert not (output / "fits").exists()
+    for member in report["seeds"].values():
+        folder = (output / member["path"]).parent
+        record = json.loads((folder / "run.json").read_text())
+        model = folder / record["model"]["path"]
+        assert sha256(model) == record["model"]["sha256"]
+        fitted = json.loads(model.read_text())
+        assert fitted["seed"] == record["seed"] and fitted["model"]
+    model.write_text(model.read_text() + " ")
+    with pytest.raises(ValueError, match="Ha cambiado"):
+        tabular(manifest, protocol, output)
 
 
 def test_a_stop_inside_a_seed_keeps_only_the_previously_confirmed_seeds(
