@@ -6,6 +6,8 @@ La [evidencia de verificación](verification.json) recoge los resultados, las ve
 
 ## Comprobaciones
 
+`make check TEST_WORKERS=2` terminó con 14.338 pruebas superadas, 401 omitidas y 16 advertencias en 419,4 s. Es la batería rápida de CPU, con las exclusiones definidas por el repositorio. Las advertencias corresponden a pruebas de tensores dispersos, cuantización y espacios Gymnasium.
+
 - Última pasada de campaña, datos, controles y lectores con el enlace nativo: 374 pruebas superadas y tres casos CUDA excluidos de esa pasada CPU.
 - Revisión final de parada cooperativa, identidad de dependencias y recuperación: 116 pruebas superadas.
 - Escalas, gradientes y recuperación del predictor en `cuda:0`: 32 pruebas superadas, sin omisiones ni pasos de optimizador.

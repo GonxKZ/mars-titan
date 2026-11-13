@@ -69,6 +69,14 @@
       "name": "Revisión final de parada, identidad y recuperación de los controles",
       "passed": 116,
       "skipped": 0
+    },
+    {
+      "name": "make check con dos trabajadores",
+      "passed": 14338,
+      "skipped": 401,
+      "warnings": 16,
+      "seconds": 419.4,
+      "note": "Pruebas rápidas de CPU. Se excluyen las marcadas lentas, nativas o CUDA. Las advertencias proceden de comprobaciones de tensores dispersos, cuantización y espacios Gymnasium."
     }
   ],
   "coverage": {
