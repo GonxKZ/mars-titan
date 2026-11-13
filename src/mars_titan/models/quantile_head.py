@@ -127,15 +127,27 @@ class QuantileHead(nn.Linear):
     en el candidato nativo. La salida tiene forma [filas, 5].
     """
 
-    def __init__(self, in_features, *, device=None, dtype=None, routing=None):
+    def __init__(self, in_features, *, device=None, dtype=None, routing=None, scaled=False):
         if type(in_features) is not int or not 1 <= in_features <= 4096:
             raise ValueError("La anchura de entrada de la cabeza no es válida")
         if routing is not None and not isinstance(routing, QuantileRouting):
             raise ValueError("La ruta de cuantiles necesita QuantileRouting o None")
+        if type(scaled) is not bool:
+            raise ValueError("La escala de salida de la cabeza se declara con un booleano")
         super().__init__(in_features, len(LEVELS), device=device, dtype=dtype)
         self.routing = routing
+        # Con `learning_scale` (#836) los cinco cuantiles se multiplican por la escala de las
+        # etiquetas del ajuste. Sin ella no existe el buffer y el estado conserva sus nombres.
+        self.scaled = scaled
+        if scaled:
+            self.register_buffer("output_scale", torch.ones((), dtype=self.weight.dtype))
 
     def forward(self, value):
+        quantiles = self._quantiles(value)
+        # Un factor positivo conserva el orden de los niveles.
+        return quantiles * self.output_scale if self.scaled else quantiles
+
+    def _quantiles(self, value):
         raw = super().forward(value)
         routing = self.routing
         if (
@@ -152,3 +164,14 @@ class QuantileHead(nn.Linear):
         point = raw[..., MEDIAN_INDEX]
         location = point if routing.median_from_tails else point.detach()
         return _assemble(spreads, point, location)
+
+
+class ScaledLinear(nn.Linear):
+    """Cabeza escalar cuya salida se multiplica por la escala de las etiquetas (#836)."""
+
+    def __init__(self, in_features, *, device=None, dtype=None):
+        super().__init__(in_features, 1, device=device, dtype=dtype)
+        self.register_buffer("output_scale", torch.ones((), dtype=self.weight.dtype))
+
+    def forward(self, value):
+        return super().forward(value) * self.output_scale

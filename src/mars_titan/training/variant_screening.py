@@ -32,7 +32,7 @@ CATALOG = tuple(
 JOB_RUNNERS = ("fit", "correction", "correction_profile", "reader", "spaced")
 RUNNERS = (*JOB_RUNNERS, "output", "diagnostic", "policy", "audit")
 METRICS = ("session_ic", "session_mae_calibrated")
-# Igual que walk_forward_phases.MAX_FIT_MONTHS, que no se importa porque arrastra PyTorch.
+# Tope propio de la criba. `walk_forward_phases.MAX_FIT_MONTHS` admite ajustes más largos (#836).
 MAX_FIT_MONTHS = 12
 # Controles comunes. El cero y la mediana pasada se calculan en el análisis sobre las etiquetas
 # de la referencia B. La regla y LightGBM son trabajos de un origen.
