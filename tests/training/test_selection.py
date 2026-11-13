@@ -62,6 +62,51 @@ def test_initial_parent_selection_does_not_consume_patience():
     assert state["should_stop"] is False
 
 
+def test_a_reported_initial_state_is_measured_but_never_selected():
+    """Regla de #836 para un ajuste desde cero: el estado inicial no compite."""
+    engine = importlib.import_module("mars_titan.training.selection")
+    reported = dict(
+        metric="session_mae",
+        patience=5,
+        min_delta=0.0,
+        stopping="fixed_budget",
+        initial_state="reported",
+    )
+    state = engine.initial_selection(0.010, reported)
+    assert (state["last_epoch"], state["best_epoch"], state["best_score"]) == (0, 0, None)
+    # La primera época ajustada lo sustituye aunque puntúe peor que el estado inicial.
+    state = engine.advance_selection(state, 0.012, 1, reported)
+    assert (state["best_epoch"], state["best_score"], state["last_improved"]) == (1, 0.012, True)
+    # Con mejora mínima cero, un empate conserva la época anterior y una mejora mínima cuenta.
+    state = engine.advance_selection(state, 0.012, 2, reported)
+    assert state["best_epoch"] == 1 and state["last_improved"] is False
+    state = engine.advance_selection(state, 0.011999, 3, reported)
+    assert (state["best_epoch"], state["best_score"]) == (3, 0.011999)
+    # Sin declararlo, el estado inicial compite como siempre.
+    plain = {key: value for key, value in reported.items() if key != "initial_state"}
+    state = engine.advance_selection(engine.initial_selection(0.010, plain), 0.012, 1, plain)
+    assert (state["best_epoch"], state["best_score"], state["last_improved"]) == (0, 0.010, False)
+
+
+def test_only_a_trainer_that_declares_it_accepts_a_reported_initial_state():
+    engine = importlib.import_module("mars_titan.training.selection")
+    options = dict(metric="session_mae", patience=5, min_delta=0.0, initial_state="reported")
+    with pytest.raises(ValueError, match="paciencia y mejora mínima válidos"):
+        engine.validate_selection(options)
+    engine.validate_selection(options, initial_reported=True)
+    for value in ("selectable", None, True):
+        with pytest.raises(ValueError, match="medido y no emitido"):
+            engine.validate_selection(dict(options, initial_state=value), initial_reported=True)
+    protocol = dict(
+        metric="session_mae", stopping="fixed_budget", patience=5, min_delta=1e-5, max_epochs=30
+    )
+    override = dict(options, stopping="fixed_budget", max_epochs=8)
+    with pytest.raises(ValueError, match="paciencia y mejora mínima válidos"):
+        engine.campaign_rule(protocol, override)
+    assert engine.campaign_rule(protocol, override, initial_reported=True) == override
+    assert engine.campaign_rule(protocol, None, initial_reported=True) == protocol
+
+
 @requires_cuda
 def test_supervised_continuation_can_keep_parent_and_bound_checkpoint_retention(tmp_path):
     engine = importlib.import_module("mars_titan.training.reference_run")

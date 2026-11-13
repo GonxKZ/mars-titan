@@ -380,6 +380,11 @@ DOUBLES = {
         "la verificación de las cohortes y cada origen son dobles que devuelven informes "
         "sintéticos, así que el script solo une sus series",
     ),
+    "tests/training/test_comparison_ridge.py": (
+        1,
+        "sustituye el ajuste de Ridge por un doble que escribe el informe y las tablas con el "
+        "MAE de validación que la prueba asigna a cada alpha, así que no estima coeficientes",
+    ),
     "tests/training/test_common_control_windows.py": (
         4,
         "la regla no ajusta nada y el ajuste de LightGBM es un doble de predicción fija sobre la "
@@ -494,7 +499,7 @@ DOUBLES = {
     "tests/training/test_ridge_shared_cuda.py": (1, _ESTIMATOR),
     "tests/training/test_tabular_retention.py": (2, _ESTIMATOR),
     "tests/training/test_titans_campaign.py": (1, _RECORDER),
-    "tests/training/test_titans_walk_forward.py": (5, _RECORDER),
+    "tests/training/test_titans_walk_forward.py": (6, _RECORDER),
 }
 REDIRECTIONS = {
     "tests/memory/test_lesion_inference.py": (1, _CLOSES),
@@ -530,6 +535,11 @@ REDIRECTIONS = {
     "tests/test_learning_hold_lowering.py": (1, _CLOSES),
     "tests/training/test_campaign_a_joint.py": (1, _CAMPAIGN),
     "tests/training/test_candidate_walk_forward.py": (1, _RECORDER),
+    "tests/training/test_comparison_campaign.py": (
+        1,
+        "comprueba que la cola pasa a sus trabajos el permiso propio de la campaña en la "
+        "variable de la protección. Los trabajos son dobles que solo escriben su registro",
+    ),
     "tests/training/test_financial_run.py": (1, _CLOSES),
     "tests/training/test_learning_hold.py": (4, _READER),
     "tests/training/test_mars_titan_run.py": (1, _RECORDER),

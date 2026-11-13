@@ -1,0 +1,184 @@
+{
+  "date": "2026-11-13",
+  "issue": 838,
+  "package": "soupsieve",
+  "before": {
+    "version": "2.9.2",
+    "peak_rss_kib": 26420,
+    "cases": [
+      {
+        "case": "descendant",
+        "n": 16,
+        "seconds": [
+          0.010693997028283775,
+          0.0015309650916606188,
+          0.0014768310356885195
+        ],
+        "median_seconds": 0.0015309650916606188,
+        "matches": 0
+      },
+      {
+        "case": "sibling_has",
+        "n": 16,
+        "seconds": [
+          0.0039998380234465,
+          0.0038982839323580265,
+          0.0037113409489393234
+        ],
+        "median_seconds": 0.0038982839323580265,
+        "matches": 0
+      },
+      {
+        "case": "descendant",
+        "n": 32,
+        "seconds": [
+          0.00926920399069786,
+          0.00916116894222796,
+          0.008996195974759758
+        ],
+        "median_seconds": 0.00916116894222796,
+        "matches": 0
+      },
+      {
+        "case": "sibling_has",
+        "n": 32,
+        "seconds": [
+          0.013186314958147705,
+          0.012946659931913018,
+          0.012979632942005992
+        ],
+        "median_seconds": 0.012979632942005992,
+        "matches": 0
+      },
+      {
+        "case": "descendant",
+        "n": 64,
+        "seconds": [
+          0.05653715296648443,
+          0.05394739005714655,
+          0.049292490002699196
+        ],
+        "median_seconds": 0.05394739005714655,
+        "matches": 0
+      },
+      {
+        "case": "sibling_has",
+        "n": 64,
+        "seconds": [
+          0.039718948071822524,
+          0.03670802596025169,
+          0.03490219102241099
+        ],
+        "median_seconds": 0.03670802596025169,
+        "matches": 0
+      }
+    ]
+  },
+  "after": {
+    "version": "4.0",
+    "peak_rss_kib": 26788,
+    "cases": [
+      {
+        "case": "descendant",
+        "n": 16,
+        "seconds": [
+          0.14588488405570388,
+          0.0002338821068406105,
+          0.0002191739622503519
+        ],
+        "median_seconds": 0.0002338821068406105,
+        "outcome": "no_matches"
+      },
+      {
+        "case": "sibling_has",
+        "n": 16,
+        "seconds": [
+          0.00010935601312667131,
+          6.800901610404253e-05,
+          5.312100984156132e-05
+        ],
+        "median_seconds": 6.800901610404253e-05,
+        "outcome": "rejected_selector"
+      },
+      {
+        "case": "descendant",
+        "n": 32,
+        "seconds": [
+          0.0004776030546054244,
+          0.00044138391967862844,
+          0.0004565529525279999
+        ],
+        "median_seconds": 0.0004565529525279999,
+        "outcome": "no_matches"
+      },
+      {
+        "case": "sibling_has",
+        "n": 32,
+        "seconds": [
+          7.81079288572073e-05,
+          5.4301926866173744e-05,
+          4.842097405344248e-05
+        ],
+        "median_seconds": 5.4301926866173744e-05,
+        "outcome": "rejected_selector"
+      },
+      {
+        "case": "descendant",
+        "n": 64,
+        "seconds": [
+          0.00087140710093081,
+          0.000827222946099937,
+          0.0008259910391643643
+        ],
+        "median_seconds": 0.000827222946099937,
+        "outcome": "no_matches"
+      },
+      {
+        "case": "sibling_has",
+        "n": 64,
+        "seconds": [
+          8.214497938752174e-05,
+          5.33409183844924e-05,
+          4.4544925913214684e-05
+        ],
+        "median_seconds": 5.33409183844924e-05,
+        "outcome": "rejected_selector"
+      }
+    ]
+  },
+  "reader_tests": {
+    "passed": 255,
+    "skipped": 0,
+    "seconds": 35.97
+  },
+  "lock_reversion": {
+    "restored": true,
+    "scope": "Reversión completa de uv.lock sin retirar la restricción de seguridad de pyproject.toml",
+    "runs": [
+      {
+        "phase": "G1",
+        "exit_code": 0
+      },
+      {
+        "phase": "M1",
+        "exit_code": 1
+      },
+      {
+        "phase": "G2",
+        "exit_code": 0
+      }
+    ]
+  },
+  "numeric_dependencies_changed": [],
+  "advisories": [
+    "GHSA-mmhr-3c5m-f64f",
+    "GHSA-4j63-6c4x-wfg4"
+  ],
+  "make_check": {
+    "passed": 14338,
+    "skipped": 401,
+    "warnings": 16,
+    "seconds": 412.66,
+    "workers": 2
+  }
+}

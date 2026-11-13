@@ -74,6 +74,9 @@ PREDICTOR_CHANGES = (
     "memory_huber",
     "memory_time_scales",
     "differential_attention",
+    # #836: escalas de aprendizaje del tramo de ajuste y codificador de una referencia.
+    "learning_scale",
+    "reference_encoder",
 )
 # Cambios que se declaran con un nombre en lugar de un objeto.
 NAMED_CHANGES = (
@@ -82,6 +85,7 @@ NAMED_CHANGES = (
     "temporal_encoder",
     "session_rank_inputs",
     "differential_attention",
+    "reference_encoder",
 )
 
 
@@ -108,8 +112,9 @@ def checked_predictor_changes(changes):
             "cross_asset_attention, asset_groups, sector_map, laplace_scale_head, "
             "auxiliary_horizons, opponent_heads, "
             "mature_reliability, memory_huber y memory_time_scales como objetos no vacíos, y "
-            "presence_modulation, attention_layout, temporal_encoder, session_rank_inputs y "
-            "differential_attention como nombres no vacíos"
+            "presence_modulation, attention_layout, temporal_encoder, session_rank_inputs, "
+            "differential_attention y reference_encoder como nombres no vacíos. También "
+            "admiten learning_scale como objeto no vacío"
         )
     return changes
 

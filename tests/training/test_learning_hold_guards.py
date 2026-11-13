@@ -293,6 +293,16 @@ ENTRY_POINTS = {
             min_assets=3,
         ),
     ),
+    # Tras la guarda y la declaración, el primer paso de la ventana lee la huella de la vista.
+    "comparison_ridge_window": _simple(
+        "mars_titan.training.comparison_ridge",
+        "sha256",
+        lambda m, out: m.run_ridge_window(
+            out.with_name("v.json"),
+            output=out,
+            config=dict(identity=m.IDENTITY, alphas=[1.0], batch_size=1024),
+        ),
+    ),
     "qlib_lightgbm": _simple(
         "mars_titan.models.baselines.qlib_lightgbm",
         "_checked_training",

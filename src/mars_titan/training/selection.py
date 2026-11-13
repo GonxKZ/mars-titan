@@ -28,16 +28,22 @@ STOPPING_MODES = (VALIDATION_PLATEAU, FIXED_BUDGET, JOINT_PLATEAU)
 # admiten los entrenadores que lo implementan: Titans-MAC y el lector de MARS-TITAN.
 COMMON_EPOCH = "common_epoch"
 CHRONOLOGICAL_MODES = (*STOPPING_MODES, COMMON_EPOCH)
+# Un ajuste desde cero puede declarar que su estado inicial se mide en validación pero no se
+# emite (#836). Con la mediana inicial en cero ese estado es la predicción cero, y elegirlo
+# ocultaría si el modelo ajustado aprende algo. Solo lo admite el ajuste de Titans-MAC.
+INITIAL_STATE = "initial_state"
+INITIAL_REPORTED = "reported"
 # Estas son las decisiones posibles tras una validación completa.
 CONTINUE, FINISH, AWAIT = "continue", "finish", "awaiting_joint_stop"
 
 
-def validate_selection(options, *, epochs=None, modes=STOPPING_MODES):
+def validate_selection(options, *, epochs=None, modes=STOPPING_MODES, initial_reported=False):
+    optional = {"minimum_epochs", "stopping", *((INITIAL_STATE,) if initial_reported else ())}
     if (
         not isinstance(options, dict)
         or not {"metric", "patience", "min_delta"}
         <= set(options)
-        <= {"metric", "patience", "min_delta", "minimum_epochs", "stopping"}
+        <= {"metric", "patience", "min_delta", *optional}
         or options["metric"] != "session_mae"
         or type(options["patience"]) is not int
         or not 1 <= options["patience"] <= 1000
@@ -46,6 +52,8 @@ def validate_selection(options, *, epochs=None, modes=STOPPING_MODES):
         or options["min_delta"] < 0
     ):
         raise ValueError("La selección necesita MAE por sesión, paciencia y mejora mínima válidos")
+    if options.get(INITIAL_STATE, INITIAL_REPORTED) != INITIAL_REPORTED:
+        raise ValueError("El estado inicial solo se declara como medido y no emitido")
     if "stopping" in options and options["stopping"] not in modes:
         raise ValueError(
             "La parada debe ser meseta de validación, presupuesto fijo o meseta conjunta. "
@@ -63,7 +71,7 @@ def validate_selection(options, *, epochs=None, modes=STOPPING_MODES):
 
 def advance_selection(previous, score, epoch, options):
     """Aceptar una mejora estricta y contar solo las épocas ya evaluadas por completo."""
-    validate_selection(options, modes=CHRONOLOGICAL_MODES)
+    validate_selection(options, modes=CHRONOLOGICAL_MODES, initial_reported=True)
     if (
         type(score) not in (int, float)
         or not math.isfinite(score)
@@ -105,9 +113,15 @@ def advance_selection(previous, score, epoch, options):
 
 
 def initial_selection(score, options):
-    """Registrar el padre antes del ajuste sin consumir una época ni paciencia."""
+    """Registrar el padre antes del ajuste sin consumir una época ni paciencia.
+
+    Con `initial_state: reported` su puntuación queda en la historia del ajuste, pero no
+    compite: la primera época ajustada lo sustituye siempre como mejor estado.
+    """
     state = advance_selection(None, score, 1, options)
     state.update(last_epoch=0, best_epoch=0)
+    if options.get(INITIAL_STATE) == INITIAL_REPORTED:
+        state["best_score"] = None
     return state
 
 
@@ -215,12 +229,13 @@ def with_rule(recipe, rule):
     return replace(recipe, epochs=rule["max_epochs"], selection=selection)
 
 
-def campaign_rule(protocol_rule, override, *, modes=STOPPING_MODES):
+def campaign_rule(protocol_rule, override, *, modes=STOPPING_MODES, initial_reported=False):
     """Devuelve la regla de un ajuste, que es la del protocolo o la parada temprana de la campaña.
 
     La campaña puede cambiar el modo, la paciencia, la mejora mínima y las épocas mínima y
     máxima, nunca la métrica. Sin `override` se devuelve la del protocolo. `modes` son los
-    modos que admite el entrenador que la aplica.
+    modos que admite el entrenador que la aplica e `initial_reported` indica si admite un
+    estado inicial medido y no emitido.
     """
     if override is None:
         return dict(protocol_rule)
@@ -236,6 +251,7 @@ def campaign_rule(protocol_rule, override, *, modes=STOPPING_MODES):
         {key: value for key, value in override.items() if key != "max_epochs"},
         epochs=override["max_epochs"],
         modes=modes,
+        initial_reported=initial_reported,
     )
     return dict(override)
 

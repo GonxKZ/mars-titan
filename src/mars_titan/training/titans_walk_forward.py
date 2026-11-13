@@ -49,6 +49,7 @@ from mars_titan.data.input_policy import HISTORICAL_MASKED
 from mars_titan.data.storage import atomic_json, outside_source, sha256
 from mars_titan.evaluation.splits import build_folds, stopping_rule
 from mars_titan.learning_traces.trainers import attach as attach_traces
+from mars_titan.models.learning_scale import parse_learning_scale
 from mars_titan.models.quantile_head import QUANTILE_COLUMNS
 from mars_titan.models.titans.config import canonical
 from mars_titan.models.titans.financial import (
@@ -72,8 +73,9 @@ from .common_epoch import (
 from .corpus_inputs import CorpusDataset
 from .financial_run import ChronologicalRecipe, ChronologicalTrainer, Paused, load_recipe
 from .learning_hold import require_learning_allowed
+from .learning_statistics import learning_statistics
 from .search_cases import case_options, checked_predictor_changes, checked_search_cases
-from .selection import AWAIT, CHRONOLOGICAL_MODES, campaign_rule, with_rule
+from .selection import AWAIT, CHRONOLOGICAL_MODES, INITIAL_STATE, campaign_rule, with_rule
 from .temporal_contract import temporal_contracts
 from .walk_forward_phases import PREDICTED, checked_fit_months, checked_warmup, window_phases
 from .window_indices import index_root, phase_sources
@@ -109,6 +111,8 @@ _CODE = (
     "mars_titan.models.titans.differential_attention",
     "mars_titan.models.quantile_head",
     "mars_titan.models.quantile_routing",
+    "mars_titan.models.learning_scale",
+    "mars_titan.training.learning_statistics",
 )
 
 
@@ -207,7 +211,10 @@ def _recipe(path, rule, search_case=None, stopping=None):
         "La receta no aplica la regla de selección y parada del protocolo",
     )
     return (
-        with_rule(recipe, campaign_rule(rule, stopping, modes=CHRONOLOGICAL_MODES)),
+        with_rule(
+            recipe,
+            campaign_rule(rule, stopping, modes=CHRONOLOGICAL_MODES, initial_reported=True),
+        ),
         document,
         walk_forward_options(document, bounded_fit=True),
     )
@@ -264,12 +271,23 @@ def predictor_options(document, request):
     return options | (checked_predictor_changes(request.get(CHANGES)) or {})
 
 
-def _predictor(document, specification, variant, seed, device, local_control=None, changes=None):
+def _predictor(
+    document,
+    specification,
+    variant,
+    seed,
+    device,
+    local_control=None,
+    changes=None,
+    statistics=None,
+):
     """Construir la variante con los parámetros iniciales copiados del emparejamiento.
 
     Con el control C, la variante es `mac_online` y coincide con la fuente del emparejamiento.
     Los cambios del predictor se aplican también a la fuente, de modo que el emparejamiento
-    copia los parámetros de un predictor con la misma arquitectura.
+    copia los parámetros de un predictor con la misma arquitectura. `statistics` son las
+    escalas de aprendizaje del tramo de ajuste (#836), que reciben la variante y su fuente
+    antes de emparejarse.
     """
     options = predictor_options(document, {CHANGES: changes})
     dtype = DTYPES[document["predictor"]["dtype"]]
@@ -281,7 +299,10 @@ def _predictor(document, specification, variant, seed, device, local_control=Non
 
     def build(name):
         config = FinancialConfig(specification, variant=name, seed=seed, **options)
-        return FinancialPredictor(config, local_control=control, device=device, dtype=dtype)
+        predictor = FinancialPredictor(config, local_control=control, device=device, dtype=dtype)
+        if statistics is not None:
+            predictor.set_learning_statistics(statistics)
+        return predictor
 
     target = build(variant)
     if variant == document["pairing_source"]:
@@ -508,7 +529,11 @@ def run_titans_window(
     view, output = Path(view), Path(output)
     protocol_document, protocol_sha, rule, fold = _protocol(protocol, window, seed)
     chronological, document, options = _recipe(recipe, rule, search_case, stopping)
-    rule = campaign_rule(rule, stopping, modes=CHRONOLOGICAL_MODES)
+    rule = campaign_rule(rule, stopping, modes=CHRONOLOGICAL_MODES, initial_reported=True)
+    _require(
+        initial is None or INITIAL_STATE not in rule,
+        "Una continuación debe poder elegir el estado de su padre",
+    )
     scoring = checked_scoring(epoch_scoring, rule)
     _require(
         versions is None or (scoring is not None and joint_epoch is not None),
@@ -571,6 +596,14 @@ def run_titans_window(
     phases = window_phases(fold, options["warmup_months"], options.get("fit_months"))
     sources = _sources(dataset, phases, Path(indices) if indices else index_root(dataset, output))
     specification = sources["train"].specification()
+    # #836: las escalas de aprendizaje se estiman con el tramo de ajuste antes de construir
+    # el predictor. Una continuación conserva las de su padre, que llegan con su estado.
+    scale = parse_learning_scale(predictor_options(document, request).get("learning_scale"))
+    scales = (
+        learning_statistics(scale, sources["train"])
+        if scale is not None and parent is None
+        else None
+    )
     predictor, pairing = _predictor(
         document,
         specification,
@@ -579,6 +612,7 @@ def run_titans_window(
         device,
         request.get("local_control"),
         request.get(CHANGES),
+        None if scales is None else scales["statistics"],
     )
     if parent is not None:
         # Solo cambian las huellas de la entrada. La arquitectura y la semilla son las del padre.
@@ -613,6 +647,16 @@ def run_titans_window(
         expected_rows={name: dataset.manifest["counts"][name] for name in PREDICTED},
         final_test_opened=False,
     )
+    if scales is not None:
+        # Solo aparece con las escalas declaradas, así que las demás identidades no cambian.
+        identity["learning_scale"] = dict(
+            sample=scales["identity"],
+            stride=scales["stride"],
+            statistics_sha256=scales["statistics_sha256"],
+            rows=scales["statistics"]["rows"],
+            labels=scales["statistics"]["labels"],
+            label_scale=scales["statistics"]["label_scale"],
+        )
     run_id = hashlib.sha256(canonical(identity).encode()).hexdigest()
     if report_path.exists():
         _require(report["identity"] == identity, "La identidad de la ventana ha cambiado")

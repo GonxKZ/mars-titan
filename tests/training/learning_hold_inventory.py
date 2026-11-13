@@ -130,6 +130,8 @@ GUARDS = {
     # Controles comunes de la criba de variantes (#746).
     "mars_titan.training.common_control_windows:run_rule_window": ("common_rule_window",),
     "mars_titan.training.common_control_windows:run_tabular_window": ("common_tabular_window",),
+    # Ridge de la campaña de comparación en dos equipos (#836).
+    "mars_titan.training.comparison_ridge:run_ridge_window": ("comparison_ridge_window",),
     # Techo de señal con anomalías conocidas (#747).
     "mars_titan.training.signal_ceiling:run_origin": ("signal_ceiling",),
     "mars_titan.training.tabular_search:run_tabular_search": ("tabular_search",),

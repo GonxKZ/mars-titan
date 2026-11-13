@@ -1,0 +1,47 @@
+{
+  "train_labels": {
+    "2019": 2819756,
+    "2020": 2837753,
+    "2021": 2892903,
+    "2022": 3021675,
+    "2023": 3274785,
+    "2017": 2625627,
+    "2016": 2564272,
+    "2015": 2436887
+  },
+  "core_seconds_per_epoch": 354.68047420700316,
+  "evaluation_seconds_per_call": 34.555696390368716,
+  "fixed_seconds": 55.46098958613584,
+  "projections_hours": {
+    "observations": {
+      "references": {
+        "primary": 78.27343455609517,
+        "history": 41.433226234527865
+      },
+      "mars_titan": {
+        "primary": 265.3339920538459,
+        "history": 140.52014534230497
+      }
+    },
+    "labels": {
+      "references": {
+        "primary": 78.27343455609517,
+        "history": 41.433226234527865
+      },
+      "mars_titan": {
+        "primary": 339.82107152557313,
+        "history": 178.63757793869408
+      }
+    }
+  },
+  "available_hours": {
+    "start_1700": 511,
+    "start_2100": 507
+  },
+  "assumptions": [
+    "Coste del ajuste neuronal común normalizado por las etiquetas de cada origen más 64.459 observaciones sin etiqueta como aproximación.",
+    "Dos escenarios para el lector: proporcional a observaciones o a etiquetas, con tiempos de la pasada de 12 meses.",
+    "M2 se aproxima con M1, K4 con M3 multiplicado por 1,2 y las tres topologías de puente con ring.",
+    "LightGBM añade 126 segundos de preparación por su división entre procesos. No se ha medido la segunda máquina."
+  ]
+}

@@ -267,7 +267,7 @@ def test_phases_cover_each_v2_fold_with_a_warmup_bounded_by_its_partition(path, 
     assert (first.warmup_start == micros("2000-01-01")) == clipped
 
 
-@pytest.mark.parametrize("fit", [1, 6, 12])
+@pytest.mark.parametrize("fit", [1, 6, 12, 60, 300])
 @pytest.mark.parametrize("warmup", [0, 12])
 def test_bounded_fit_reads_its_last_months_after_their_warmup(fit, warmup):
     protocol = json.loads(
@@ -283,11 +283,12 @@ def test_bounded_fit_reads_its_last_months_after_their_warmup(fit, warmup):
         assert train.decision_start == max(origin, micros(first))
         assert train.warmup_start == max(origin, micros(months_before(first, warmup)))
         assert (train.decision_end, train.close_at) == (full["train"].decision_end,) * 2
-        assert train.decision_end - train.decision_start <= 366 * 86_400_000_000
+        # Un mes dura como mucho 31 días, así que el ajuste nunca supera ese recorrido.
+        assert train.decision_end - train.decision_start <= fit * 31 * 86_400_000_000
 
 
-@pytest.mark.parametrize("value", [0, 13, True, 1.0, "12"])
-def test_bounded_fit_rejects_months_outside_one_year(value):
+@pytest.mark.parametrize("value", [0, 301, True, 1.0, "12"])
+def test_bounded_fit_rejects_months_outside_its_bound(value):
     fold = build_folds(PROTOCOL)[0]
     with pytest.raises(ValueError, match="fit_months"):
         wf.window_phases(fold, 1, value)
@@ -1245,3 +1246,200 @@ def test_the_shrink_of_f3_only_runs_as_a_continuation_of_mac_online(tmp_path):
             initial=tmp_path / "absent",
         )
     assert not (tmp_path / "alone").exists() and not (tmp_path / "frozen").exists()
+
+
+# Escalas de aprendizaje de #836, con las tres opciones explícitas que declara la campaña.
+SCALE = dict(clip=5.0, price_returns=True, zero_median=True)
+VALIDATION_START = decision("2023-09-01")
+
+
+def scaled_recipe(root, name=QUANTILE_RECIPE):
+    path = recipe(root, name)
+    document = json.loads(path.read_text())
+    document["predictor"]["learning_scale"] = SCALE
+    path.write_text(json.dumps(document))
+    return path
+
+
+def saved_statistics(output):
+    """Archivo de estadísticas escrito junto al índice de ajuste de la ventana."""
+    (path,) = (output.parent / "indices").rglob("learning-scale-*.json")
+    return path, json.loads(path.read_text())
+
+
+def test_learning_scale_reads_its_statistics_only_from_the_fit_rows(
+    tmp_path, learning_doubles_module
+):
+    """Lo posterior al ajuste no cambia las estadísticas. Sus propias entradas sí."""
+    scaled, documents = scaled_recipe(tmp_path), {}
+    with unfused_attention():
+        for name, changes in (
+            ("clean", {}),
+            ("after", dict(perturb_after=VALIDATION_START - 1)),
+            ("inside", dict(perturb_before=decision("2023-08-01"))),
+        ):
+            view, protocol = views(tmp_path / name, **changes)
+            report, _ = window(view, protocol, scaled, tmp_path / name / "run")
+            _, documents[name] = saved_statistics(tmp_path / name / "run")
+            declared = report["identity"]["learning_scale"]
+            assert declared["statistics_sha256"] == documents[name]["statistics_sha256"]
+            assert declared["sample"]["partition"] == "train"
+            assert declared["sample"]["decision_end"] == micros("2023-09-01")
+    clean, after, inside = (documents[name]["statistics"] for name in ("clean", "after", "inside"))
+    assert clean == after
+    # `perturb_before` altera las modalidades distintas del precio y deja precios y etiquetas.
+    assert clean["modalities"]["prices"] == inside["modalities"]["prices"]
+    assert clean["label_scale"] == inside["label_scale"]
+    assert any(
+        clean["modalities"][name] != inside["modalities"][name] for name in ("news", "macro")
+    )
+    assert all(document["final_test_opened"] is False for document in documents.values())
+
+
+@pytest.mark.parametrize("name", [QUANTILE_RECIPE, SCALAR_RECIPE])
+def test_scaled_windows_share_their_statistics_and_start_from_the_zero_prediction(
+    base, tmp_path, name
+):
+    scaled = scaled_recipe(tmp_path, name)
+    with unfused_attention():
+        first, _ = window(base["view"], base["protocol"], scaled, tmp_path / "online")
+        path, document = saved_statistics(tmp_path / "online")
+        written = path.stat().st_mtime_ns
+        second, _ = window(
+            base["view"],
+            base["protocol"],
+            scaled,
+            tmp_path / "direct",
+            variant="transformer_direct",
+        )
+    # El segundo modelo de la ventana reutiliza el archivo del primero sin reescribirlo.
+    assert saved_statistics(tmp_path / "direct")[0] == path
+    assert path.stat().st_mtime_ns == written
+    declared = first["identity"]["learning_scale"]
+    assert declared == second["identity"]["learning_scale"]
+    assert declared["sample"] == document["identity"]
+    statistics = document["statistics"]
+    assert (declared["rows"], declared["labels"], declared["label_scale"]) == (
+        statistics["rows"],
+        statistics["labels"],
+        statistics["label_scale"],
+    )
+    assert statistics["rows"] >= 64 and statistics["label_scale"] > 0
+    assert "learning_scale" not in base["runs"]["mac_online"][0]["identity"]
+    fit = json.loads((tmp_path / "online" / "fit/run.json").read_text())["identity"]
+    assert fit["predictor"]["learning_scale"]["name"] == "learning_scale_v1"
+    plain = base["root"] / "runs" / ("mac_online" if name == QUANTILE_RECIPE else "scalar")
+    for output in ("online", "direct"):
+        for partition in wf.PREDICTED:
+            rows = table(tmp_path / output, partition)
+            # Mediana inicial en cero y un optimizador que no mueve pesos: predicción cero.
+            assert rows["prediction"] and set(rows["prediction"]) == {0.0}
+            if output == "online":
+                assert rows["sample_id"] == table(plain, partition)["sample_id"]
+                assert rows["target"] == table(plain, partition)["target"]
+
+
+@pytest.mark.parametrize("kind", ["gru", "dlinear"])
+def test_reference_encoders_fit_in_the_window_of_the_compact_transformer(base, tmp_path, kind):
+    """Las referencias recurrentes y DLinear comparten ejecutor, receta, filas y escalas."""
+    scaled = scaled_recipe(tmp_path)
+    changes = dict(reference_encoder=kind)
+    with unfused_attention():
+        report, factory = window(
+            base["view"],
+            base["protocol"],
+            scaled,
+            tmp_path / "run",
+            variant="transformer_direct",
+            predictor_changes=changes,
+        )
+        compact, _ = window(
+            base["view"],
+            base["protocol"],
+            scaled,
+            tmp_path / "compact",
+            variant="transformer_direct",
+        )
+    assert report["status"] == "completed" and report["request"]["predictor_changes"] == changes
+    fit = json.loads((tmp_path / "run" / "fit/run.json").read_text())["identity"]
+    assert fit["predictor"]["reference_encoder"] == dict(
+        kind=kind, contract="reference_price_encoder_v1"
+    )
+    reference = json.loads((tmp_path / "compact" / "fit/run.json").read_text())["identity"]
+    assert "reference_encoder" not in reference["predictor"]
+    assert fit["initial_parameters_sha256"] != reference["initial_parameters_sha256"]
+    assert report["identity"]["learning_scale"] == compact["identity"]["learning_scale"]
+    # El codificador recibe gradiente desde el primer paso por los cuantiles extremos.
+    gradients = [value for value in factory.records[0] if value is not None]
+    assert gradients and any(bool(value.abs().sum() > 0) for value in gradients)
+    for partition in wf.PREDICTED:
+        rows, expected = table(tmp_path / "run", partition), table(tmp_path / "compact", partition)
+        assert rows["sample_id"] == expected["sample_id"] and rows["target"] == expected["target"]
+
+
+def test_window_rejects_an_unknown_reference_encoder_and_incomplete_scales(base, tmp_path):
+    for changes, message in (
+        (dict(reference_encoder="tcn"), "reference_encoder"),
+        (dict(learning_scale=dict(clip=5.0)), "learning_scale"),
+        (dict(learning_scale=dict(SCALE, clip=0.5)), "learning_scale"),
+    ):
+        with pytest.raises(ValueError, match=message):
+            window(
+                base["view"],
+                base["protocol"],
+                base["recipe"],
+                tmp_path / "run",
+                variant="transformer_direct",
+                predictor_changes=changes,
+            )
+        assert not (tmp_path / "run").exists()
+
+
+REPORTED = dict(RULE, min_delta=0.0, initial_state="reported", max_epochs=2)
+
+
+def test_a_reported_initial_state_emits_the_first_fitted_epoch_instead_of_the_zero_prediction(
+    base, tmp_path
+):
+    """Con la mediana inicial en cero, el estado inicial es la predicción cero.
+
+    El optimizador sustituto no mueve pesos, así que todas las épocas puntúan igual: con la
+    regla del protocolo se elige el estado inicial y con la de #836, la primera época ajustada.
+    """
+    scaled = scaled_recipe(tmp_path)
+    selectable = dict(RULE, min_delta=0.0, max_epochs=2)
+    with unfused_attention():
+        report, _ = window(
+            base["view"], base["protocol"], scaled, tmp_path / "run", stopping=REPORTED
+        )
+        plain, _ = window(
+            base["view"], base["protocol"], scaled, tmp_path / "plain", stopping=selectable
+        )
+    assert report["request"]["stopping_rule"] == REPORTED
+    assert (report["fit"]["best_epoch"], plain["fit"]["best_epoch"]) == (1, 0)
+    fit = json.loads((tmp_path / "run" / "fit/run.json").read_text())
+    assert [item["epoch"] for item in fit["history"]] == [0, 1, 2]
+    assert fit["identity"]["recipe"]["selection"]["initial_state"] == "reported"
+    # El estado inicial queda medido en la historia con su MAE de validación.
+    initial = fit["history"][0]["validation"]["session_mae"]
+    assert initial == plain["fit"]["best_score"] == report["fit"]["best_score"]
+    assert report["validation_selection_check"]["absolute_difference"] == 0
+    other = json.loads((tmp_path / "plain" / "fit/run.json").read_text())
+    assert "initial_state" not in other["identity"]["recipe"]["selection"]
+    assert report["run_id"] != plain["run_id"]
+
+
+def test_a_continuation_cannot_declare_its_parent_state_as_reported_only(tmp_path):
+    views, protocol = two_windows(tmp_path)
+    rule = dict(REPORTED, max_epochs=2)
+    with pytest.raises(ValueError, match="debe poder elegir el estado de su padre"):
+        stage(
+            views,
+            protocol,
+            "fold-001",
+            recipe(tmp_path),
+            tmp_path / "child",
+            initial=tmp_path / "absent",
+            stopping=rule,
+        )
+    assert not (tmp_path / "child").exists()

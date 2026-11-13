@@ -22,8 +22,9 @@ from mars_titan.memory.financial_session import FinancialPhase
 PREDICTED = ("validation", "calibration", "evaluation")
 # La receta admite como mucho cinco años de entradas antes del tramo medido.
 MAX_WARMUP_MONTHS = 60
-# Un ajuste acotado cubre como mucho doce meses, es decir, hasta 366 días.
-MAX_FIT_MONTHS = 12
+# Un ajuste acotado cubre como mucho 300 meses, más que toda la edición desde 2000. La criba
+# de variantes conserva su propio tope de doce meses en `variant_screening` (#836).
+MAX_FIT_MONTHS = 300
 
 
 def micros(day):
@@ -46,9 +47,11 @@ def checked_warmup(months):
 
 
 def checked_fit_months(months):
-    """Lee el ajuste acotado de una receta: None o un entero de meses entre 1 y 12."""
+    """Lee el ajuste acotado de una receta: None o un entero de meses entre 1 y 300."""
     if months is not None and (type(months) is not int or not 1 <= months <= MAX_FIT_MONTHS):
-        raise ValueError("La receta necesita walk_forward.fit_months entero entre 1 y 12")
+        raise ValueError(
+            f"La receta necesita walk_forward.fit_months entero entre 1 y {MAX_FIT_MONTHS}"
+        )
     return months
 
 
