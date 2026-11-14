@@ -32,9 +32,9 @@ La pregunta principal es: **¿mejora una memoria adaptativa de eventos la predic
 
 ## Campaña de comparación en dos equipos
 
-La [campaña de comparación](docs/experiments/comparison-campaign-v1.md) ([#836](https://github.com/GonxKZ/mars-titan/issues/836)) vuelve a ajustar las referencias y la familia de Titans-MAC y MARS-TITAN. Los modelos neuronales comparten receta. Compara el MAE residual por sesión con la predicción cero sobre las mismas filas. Los controles que predicen un orden se comparan por IC y MAE calibrado. El trabajo se reparte en dos colas para dos equipos con 8 GB de VRAM. La campaña está declarada y su motor se ha comprobado con un piloto acotado sobre el origen 2018, que no forma parte de ella. Este apartado describe el protocolo fijado antes del arranque, sin anticipar resultados de la campaña.
+La [campaña de comparación](docs/experiments/comparison-campaign-v1.md) ([#836](https://github.com/GonxKZ/mars-titan/issues/836)) vuelve a ajustar las referencias y la familia de Titans-MAC y MARS-TITAN. Los modelos neuronales comparten receta. Compara el MAE residual por sesión con la predicción cero sobre las mismas filas. Los controles que predicen un orden se comparan por IC y MAE calibrado. El trabajo se reparte en dos colas para dos equipos con 8 GB de VRAM. El motor se comprobó con un piloto acotado de 2018, que no forma parte de la comparación. Este apartado describe el protocolo fijado antes del arranque, sin anticipar resultados de la campaña.
 
-La cola de la RTX 4070 arrancó el 14 de noviembre de 2026 a las 08:12 de Madrid desde la etiqueta fija `comparison-campaign-20261114`, en una copia separada de desarrollo. La [issue #836](https://github.com/GonxKZ/mars-titan/issues/836) conserva el seguimiento. El segundo equipo todavía debe completar su comprobación y lanzar su cola.
+La cola original de la RTX 4070 arrancó el 14 de noviembre de 2026 a las 08:12 de Madrid. La revisión GPU conserva sus resultados y continúa en otro estado, desde la etiqueta fija `comparison-campaign-gpu-20261114`. La [issue #836](https://github.com/GonxKZ/mars-titan/issues/836) conserva el seguimiento. El segundo equipo todavía debe completar su comprobación y lanzar su cola.
 
 | Cola | Equipo | Modelos | Trabajos |
 | --- | --- | --- | --- |
@@ -45,7 +45,9 @@ Las dos colas comparten cohortes de 1.024 activos por origen, ventanas y semilla
 
 El reparto del 14 de noviembre mantiene en la misma GPU todos los modelos neuronales de cada año y semilla, incluidos el padre y sus lectores. Son 10 épocas por ajuste y 5 por lector, con ocho años de evaluación y toda la historia utilizable desde 2000 hasta el corte de cada origen. La [revisión del aprendizaje y del presupuesto](docs/research/comparison-training-review-20261114.md) estima unas 353–429 horas para la primera cola y 352–429 para la segunda si esta tarda un 20 % más por trabajo. Ese factor es un supuesto pendiente de medir. Se reserva además un día por equipo para incidencias. Las proyecciones no acreditan convergencia ni garantizan el plazo.
 
-En el equipo con RTX 4070, desde una copia fija del repositorio:
+El control `lightgbm_gpu` usa OpenCL en doble precisión y la caché nativa de validación. En la [medición de ajuste y validación](reports/engineering/comparison-gpu-20261114/README.md), el recorrido pasó de 1.028 a 222 segundos. La mejora combina GPU y eliminación de trabajo repetido. CPU y GPU conservan identidades distintas. Las redes y Ridge ya usan CUDA.
+
+En el equipo con RTX 4070, desde una copia fija nueva del repositorio:
 
 ```bash
 uv run python -m mars_titan.training.comparison_campaign prepare

@@ -1,6 +1,6 @@
 # Campaña de comparación en dos equipos: guía de uso
 
-Estado: guía operativa de la campaña declarada en `configs/experiments/comparison-campaign-v1.json` (#836). Describe órdenes y comprobaciones. No contiene resultados. El diseño experimental, las medidas del piloto y el dimensionado están en [la declaración de la campaña](../experiments/comparison-campaign-v1.md). Fecha: 14 de noviembre de 2026.
+Estado: guía operativa de la campaña declarada en `configs/experiments/comparison-campaign-gpu-v1.json` (#836). Describe órdenes y comprobaciones. No contiene resultados. El diseño experimental, las medidas del piloto y el dimensionado están en [la declaración de la campaña](../experiments/comparison-campaign-v1.md). Fecha: 14 de noviembre de 2026.
 
 ## Qué hace cada equipo
 
@@ -26,7 +26,7 @@ Todos los modelos neuronales de un año y semilla van juntos, incluidos el padre
 
 Cada trabajo es un modelo en un origen y una semilla. La cola ejecuta primero los orígenes 2019 a 2023 por niveles de prioridad (`core`, `controls`, `networks`, `refinements` y `bridge`) y después repite esos niveles con los años añadidos 2017, 2016 y 2015. La fecha límite declarada es el 5 de diciembre de 2026 a las 00:00 de Madrid. La cola pide a los trabajos que terminen su siguiente barrera y deja pendiente lo que no haya completado. El orden da prioridad a la primera etapa sobre los años añadidos.
 
-El estado de la campaña vive fuera del repositorio, en `~/.local/state/mars-titan/comparison-campaign-v1`: cohortes, cola, registros, salidas y permiso. La opción `--state` o la variable `MARS_TITAN_COMPARISON_STATE` lo cambian de sitio.
+El estado de la campaña vive fuera del repositorio, en `~/.local/state/mars-titan/comparison-campaign-gpu-v1`: cohortes, cola, registros, salidas y permiso. La opción `--state` o la variable `MARS_TITAN_COMPARISON_STATE` lo cambian de sitio.
 
 El reparto conserva el modelo padre y todos sus lectores en un mismo equipo. Las variantes de redes se ajustan desde cero y comparten la GPU de sus controles en cada bloque. Un futuro posentrenamiento o RL sobre los pesos de un modelo debe permanecer con él, salvo una transferencia completa y verificada. El paquete de datos no lleva pesos y no permite continuar por sí solo un modelo de la otra máquina. RL no forma parte de esta campaña.
 
@@ -39,7 +39,7 @@ El reparto conserva el modelo padre y todos sus lectores en un mismo equipo. Las
 
 ## Equipo de las referencias
 
-Todas las órdenes se ejecutan desde una copia fija del repositorio, con el entorno ya creado (`make setup`). La campaña usa la etiqueta `comparison-campaign-20261114`. Después del arranque no se actualiza esa copia con `git pull`. El desarrollo continúa en otra copia.
+Todas las órdenes se ejecutan desde una copia fija del repositorio, con el entorno ya creado (`make setup`). La campaña usa la etiqueta `comparison-campaign-gpu-20261114`. Después del arranque no se actualiza esa copia con `git pull`. El desarrollo continúa en otra copia.
 
 ```bash
 # 1. Cohortes de cada origen. Solo lee y escribe manifiestos.
@@ -61,11 +61,30 @@ uv run python -m mars_titan.training.comparison_campaign run --machine reference
 
 Los ajustes tienen diez épocas y los lectores cinco. Se selecciona el mejor estado de validación.
 
+El nuevo control LightGBM utiliza GPU OpenCL float64, con la CPU para preparación, árboles y validación nativa. Los parámetros efectivos y el máximo GPU muestreado se guardan con el intento. La [medición](../../reports/engineering/comparison-gpu-20261114/README.md) conserva las diferencias respecto a CPU.
+
 El diagnóstico comprueba 12 GiB de RAM disponible para las referencias y 6 GiB para MARS-TITAN. LightGBM ajusta como máximo una semilla nueva por proceso y después emite en otro proceso. Cada semilla conserva su modelo en `model.json` y el campo `rounds` indica el prefijo elegido para predecir.
 
 El paquete ocupa unos 20,1 GiB. `export` crea la carpeta de destino si falta. Con `--part-gib 3.5`, cada tar ocupa como máximo 3,5 GiB, incluidas sus cabeceras, y cabe en un disco FAT32. Si un archivo individual no cabe, la exportación informa del motivo. Las salidas tienen una reserva declarada de 14 GiB para `references` y 10 GiB para `mars_titan`. La orden `doctor` comprueba ese espacio, y la cola se detiene sin perder trabajos cuando queda menos de 1 GiB.
 
 Se puede exportar antes del commit final si los datos y las cohortes ya están fijados. Al importar aparece un aviso si el paquete declara otro commit o declaración. Las cohortes deben coincidir y los dos equipos deben ejecutar la misma versión final del código.
+
+## Continuar un estado anterior
+
+Solo hace falta si este ordenador ya entrenó con la versión anterior. Parar primero su cola con `Ctrl+C` y esperar a que salga. Desde la copia nueva:
+
+```bash
+uv run --no-sync python -m mars_titan.training.comparison_campaign inherit \
+  --source "$HOME/.local/state/mars-titan/comparison-campaign-v1" \
+  --previous-declaration configs/experiments/comparison-campaign-v1.json
+uv run --no-sync python -m mars_titan.training.comparison_campaign doctor --machine references
+uv run --no-sync python -m mars_titan.training.comparison_campaign authorize --note "Continuación de la campaña con el control GPU identificado"
+uv run --no-sync python -m mars_titan.training.comparison_campaign run --machine references
+```
+
+El destino debe ser nuevo. La operación conserva las carpetas de origen y registra qué trabajos hereda y cuáles quedan fuera por cambiar de identidad. Copia los estados pausados, incluidos los alphas ya completados de Ridge. Los resultados completos y sus padres se consultan mediante referencias locales al origen. **No borrar el estado anterior**, porque contiene esos padres y los índices compartidos. El resultado CPU anterior de LightGBM no se sobrescribe ni se presenta como una ejecución GPU.
+
+El segundo equipo que todavía no ha entrenado sigue directamente la preparación que viene a continuación.
 
 ## Segundo equipo con Windows 11
 
@@ -99,14 +118,14 @@ exec bash
 mkdir -p ~/Escritorio && cd ~/Escritorio
 git clone https://github.com/GonxKZ/mars-titan.git "TFM TITANS"
 cd "TFM TITANS"
-git checkout --detach comparison-campaign-20261114
+git checkout --detach comparison-campaign-gpu-20261114
 uv sync --locked --all-extras
 nvidia-smi
 ```
 
 El entorno fijado usa Python 3.12 y PyTorch 2.14.0 con CUDA 13.0. El wheel incluye `sm_120`, correspondiente a la familia RTX 5060 en [la tabla de NVIDIA](https://developer.nvidia.com/cuda/gpus). Esto no sustituye una comprobación en el equipo de destino.
 
-La copia de ejecución debe estar en la etiqueta `comparison-campaign-20261114` y en el mismo commit que la copia de ejecución del portátil (`git rev-parse HEAD` en los dos). `main` puede avanzar después con documentación, sin cambiar esa versión científica. Con el disco externo conectado, Windows lo monta dentro de WSL en `/mnt/d`, `/mnt/e` o la letra que tenga:
+La copia de ejecución debe estar en la etiqueta `comparison-campaign-gpu-20261114` y en el mismo commit que la copia de ejecución del portátil (`git rev-parse HEAD` en los dos). `main` puede avanzar después con documentación, sin cambiar esa versión científica. Con el disco externo conectado, Windows lo monta dentro de WSL en `/mnt/d`, `/mnt/e` o la letra que tenga:
 
 ```bash
 # 1. Restaurar el paquete en las mismas rutas, con cada huella comprobada al escribir.
@@ -124,7 +143,7 @@ tmux new-session -d -s mars-titan "uv run --no-sync python -m mars_titan.trainin
 tmux attach -t mars-titan
 ```
 
-La orden `doctor` debe terminar sin ninguna línea `FALTA`. Comprueba las cohortes del paquete, que `cuda:0` responde, que el enlace episódico carga y que hay memoria y disco. La línea «código y declaración» debe mostrar el mismo commit y la misma huella en los dos equipos, sin cambios locales. El aviso del permiso desaparece al ejecutar `authorize`.
+La orden `doctor` debe terminar sin ninguna línea `FALTA`. Comprueba las cohortes del paquete, que `cuda:0` responde, que el enlace episódico carga y que hay memoria y disco. La línea «código y declaración» debe mostrar el mismo commit y la misma huella en las copias de ejecución de los dos equipos, sin cambios locales. El aviso del permiso desaparece al ejecutar `authorize`.
 
 La comprobación CUDA de esas órdenes verifica emisión, gradientes y recuperación sin pasos de optimizador.
 
