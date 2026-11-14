@@ -114,6 +114,23 @@ def test_an_existing_destination_is_preserved(tmp_path):
     assert (tmp_path / "continued/keep.txt").read_text() == "conservar"
 
 
+def test_inherited_indices_are_accepted_by_the_real_reader_and_do_not_alias_the_source(
+    tmp_path, monkeypatch
+):
+    from mars_titan.training.window_indices import SHARED_INDICES_ENV, shared_root
+
+    old, digest, original = source(tmp_path)
+    original.indices.mkdir()
+    cached = original.indices / "cache.json"
+    cached.write_text("índice original")
+    _, target = perform(tmp_path, old, digest, original)
+    monkeypatch.setenv(SHARED_INDICES_ENV, str(target.indices))
+    assert shared_root() == target.indices
+    assert not target.indices.is_symlink()
+    (target.indices / "cache.json").write_text("índice de la continuación")
+    assert cached.read_text() == "índice original"
+
+
 def test_incomplete_inheritance_cannot_be_authorized(tmp_path):
     target = campaign.Layout(tmp_path / "continued")
     atomic_json(target.state / "inheritance-status.json", dict(status="failed"))
