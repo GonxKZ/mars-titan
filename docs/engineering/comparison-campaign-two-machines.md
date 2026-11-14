@@ -99,7 +99,7 @@ read -r -p "Ruta del ZIP dentro de WSL: " kit_zip
 bash "$(dirname "$kit_zip")/PREPARAR-PC2.sh" "$kit_zip"
 ```
 
-El preparador instala las dependencias fijadas mediante uv, importa los datos, prepara las cohortes, comprueba CUDA y el enlace nativo, registra el permiso de esta cola y la inicia en tmux. La instalación de paquetes necesita conexión a Internet. La carpeta personal de Linux debe ser `/home/gonzalo` y el repositorio debe estar en `~/Escritorio/TFM TITANS`, por las rutas de los datos y las bibliotecas del paquete.
+El preparador instala las dependencias fijadas mediante uv, importa los datos, prepara las cohortes, comprueba CUDA y el enlace nativo, registra el permiso de esta cola y la inicia en tmux. La instalación de paquetes necesita conexión a Internet. La carpeta personal de Linux debe coincidir con la declarada en `bundle.json`, y el repositorio se instala en `~/Escritorio/TFM TITANS`. El preparador informa de la ruta requerida por los datos y las bibliotecas del paquete.
 
 Para todos los datos conviene disponer de al menos 120 GiB libres en el disco de WSL. El preparador calcula el espacio antes de restaurar. Si solo se van a ejecutar los 275 trabajos de esta cola, puede importar el paquete principal de unos 20,1 GiB y dejar los suplementos en el ZIP:
 
