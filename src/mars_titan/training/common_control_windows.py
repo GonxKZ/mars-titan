@@ -409,6 +409,15 @@ def run_tabular_window(
     chosen = selection.common_epoch(selection.seed_epoch_scores(series), radius=radius)
     rounds = chosen["epoch"] * config["checkpoint_rounds"]
     fit_rows, train_rows = report["fit_rows"], report["train_rows"]
+    validation_panel = validation.panel
+    validation_sessions = [
+        dict(
+            market=validation_panel.markets[int(validation_panel.market[start])],
+            prediction_at_us=int(validation_panel.prediction_at[start]),
+        )
+        for start in validation_panel.session_starts
+    ]
+    del validation_panel
     del train
     # El ajuste solo necesita validación. Los demás tramos se leen y emiten de uno en uno.
     predictions = {seed: {} for seed in seeds}
@@ -438,7 +447,7 @@ def run_tabular_window(
             predictions[seed][name] = _write(output / f"seed-{seed}", name, rows, emitted, dataset)
         del rows
     members = {}
-    for seed in seeds:
+    for seed, (_, scored) in zip(seeds, fits, strict=True):
         folder = output / f"seed-{seed}"
         checkpoint = report["fits"][str(seed)]
         model = folder / "model.json"
@@ -452,6 +461,18 @@ def run_tabular_window(
             rounds=rounds,
             model=dict(path=model.name, sha256=checkpoint["sha256"]),
             predictions=predictions[seed],
+            validation_metric="pearson_ic_per_session",
+            validation_sessions=validation_sessions,
+            validation_history=[
+                dict(
+                    rounds=(position + 1) * config["checkpoint_rounds"],
+                    values=values.tolist(),
+                    defined=defined.tolist(),
+                )
+                for position, (values, defined) in enumerate(scored)
+            ],
+            training_loss_history=None,
+            training_loss_reason="El ejecutor no registra la pérdida de ajuste por ronda",
         )
         atomic_json(folder / "run.json", record)
         members[str(seed)] = dict(path=f"seed-{seed}/run.json", sha256=sha256(folder / "run.json"))

@@ -9,9 +9,9 @@ es una ventana de los ejecutores ya probados (`titans_walk_forward.run_titans_wi
 comprueban la protección del aprendizaje, guardan checkpoints coherentes y se reanudan con la
 misma llamada.
 
-Reparto: el equipo `references` ajusta las referencias (Transformer compacto, RNN, LSTM, GRU,
-DLinear, Ridge y los controles de CPU) y el equipo `mars_titan` ajusta Titans-MAC, MARS-TITAN
-y sus variantes. Los dos leen la misma edición, las mismas cohortes y las mismas recetas.
+Reparto: cada bloque de año y semilla conserva todos sus modelos neuronales en un equipo,
+incluidos padre y lectores. Los controles por origen permanecen en `references`. Los dos
+equipos leen la misma edición, las mismas cohortes y las mismas recetas.
 
 Orden: etapa, nivel de prioridad, semilla, origen y modelo. Así la primera semilla de todos
 los orígenes y modelos de un nivel termina antes de empezar la segunda, y un plazo que se
@@ -28,6 +28,7 @@ import fcntl
 import hashlib
 import json
 import os
+import re
 import signal
 import subprocess
 import sys
@@ -106,6 +107,9 @@ _OPTIONAL = {
     "tabular": set(),
     "ridge": set(),
 }
+_MODEL_NAME = re.compile(r"[A-Za-z0-9_][A-Za-z0-9_.-]{0,127}")
+MAX_MODELS = 128
+MAX_SEEDS = 16
 
 
 def _require(condition, message):
@@ -220,7 +224,21 @@ def _checked_budget(budget):
         _deadline(budget["deadline_utc"])
 
 
-def checked_declaration(document, *, root=ROOT):
+def _checked_blocks(execution, origins, seeds):
+    """Un bloque anual de una semilla conserva juntos todos sus modelos neuronales."""
+    if "neural_blocks" not in execution:
+        return
+    blocks = execution["neural_blocks"]
+    expected = {f"{origin['year']}/seed-{seed}" for origin in origins for seed in seeds}
+    _require(
+        isinstance(blocks, dict)
+        and set(blocks) == expected
+        and all(machine in MACHINES for machine in blocks.values()),
+        "Los bloques neuronales deben asignar cada año y semilla a uno de los dos equipos",
+    )
+
+
+def checked_declaration(document, *, root=ROOT, check_recipe_files=True):
     """Comprobar la forma de la declaración, sus modelos y las dependencias entre ellos."""
     _require(
         isinstance(document, dict)
@@ -252,6 +270,7 @@ def checked_declaration(document, *, root=ROOT):
     _require(
         isinstance(seeds, list)
         and seeds
+        and len(seeds) <= MAX_SEEDS
         and all(type(seed) is int and 0 <= seed < 2**31 for seed in seeds)
         and len(set(seeds)) == len(seeds),
         "Las semillas deben ser enteros distintos",
@@ -271,13 +290,14 @@ def checked_declaration(document, *, root=ROOT):
     execution = document.get("execution")
     _require(
         isinstance(execution, dict)
-        and set(execution) == {"pipeline", "workers"}
+        and {"pipeline", "workers"} <= set(execution) <= {"pipeline", "workers", "neural_blocks"}
         and isinstance(execution["workers"], dict)
         and set(execution["workers"]) == set(MACHINES)
         and all(type(count) is int and 1 <= count <= 8 for count in execution["workers"].values()),
         "La ejecución declara la tubería de lectura y los trabajadores de cada equipo",
     )
     PipelineOptions(**execution["pipeline"])
+    _checked_blocks(execution, origins, seeds)
     _checked_budget(document.get("budget", {}))
     tiers, recipes, models = (document.get(key) for key in ("tiers", "recipes", "models"))
     _require(
@@ -291,11 +311,21 @@ def checked_declaration(document, *, root=ROOT):
         isinstance(recipes, dict)
         and recipes
         and all(
-            isinstance(path, str) and (Path(root) / path).is_file() for path in recipes.values()
+            isinstance(path, str) and (not check_recipe_files or (Path(root) / path).is_file())
+            for path in recipes.values()
         ),
         "Cada receta declarada debe existir en el repositorio",
     )
-    _require(isinstance(models, dict) and models, "La declaración necesita modelos")
+    _require(
+        isinstance(models, dict)
+        and 1 <= len(models) <= MAX_MODELS
+        and all(isinstance(name, str) and _MODEL_NAME.fullmatch(name) for name in models),
+        "La declaración necesita modelos con identificadores válidos y dentro del límite",
+    )
+    if "analysis" in document:
+        from mars_titan.evaluation.comparison_protocol import checked
+
+        checked(document["analysis"], models)
     for name, model in models.items():
         runner = model.get("runner") if isinstance(model, dict) else None
         _require(runner in RUNNERS, f"El modelo {name} no declara un ejecutor admitido")
@@ -365,11 +395,7 @@ def plan(declaration, machine):
             origin for origin in declaration["origins"] if (origin["role"] == HISTORY) is history
         ]
         for tier in tiers:
-            names = [
-                name
-                for name, model in models.items()
-                if model["machine"] == machine and model["tier"] == tier
-            ]
+            names = [name for name, model in models.items() if model["tier"] == tier]
             # Dentro de un nivel, un padre va antes que sus lectores.
             names.sort(key=lambda name: models[name]["runner"] == "reader")
             for position, seed in enumerate(declaration["seeds"]):
@@ -377,6 +403,12 @@ def plan(declaration, machine):
                     for name in names:
                         runner = models[name]["runner"]
                         if runner in ORIGIN_RUNNERS and position > 0:
+                            continue
+                        owner = models[name]["machine"]
+                        blocks = declaration["execution"].get("neural_blocks")
+                        if blocks is not None and runner in GPU_RUNNERS:
+                            owner = blocks[f"{origin['year']}/seed-{seed}"]
+                        if owner != machine:
                             continue
                         needs = None
                         if runner == "reader":
@@ -632,6 +664,8 @@ def run_job(declaration, layout, job, *, device="cuda:0", root=ROOT, preflight=F
     Devuelve el estado final. Un informe pausado conserva el trabajo como pausado, para que
     la siguiente orden lo continúe desde su último checkpoint.
     """
+    from .comparison_telemetry import AttemptMetrics
+
     record = read_record(layout, job.key)
     attempt = dict(started_at_utc=datetime.now(UTC).isoformat(), pid=os.getpid())
     if preflight:
@@ -639,7 +673,8 @@ def run_job(declaration, layout, job, *, device="cuda:0", root=ROOT, preflight=F
     record.update(status=RUNNING, model=job.model, year=job.year, seed=job.seed, tier=job.tier)
     record.setdefault("attempts", []).append(attempt)
     _write_record(layout, job.key, record)
-    started = time.perf_counter()
+    measurement = AttemptMetrics()
+    started = measurement.started
     try:
         report = execute_job(
             declaration, layout, job, device=device, root=root, preflight=preflight
@@ -657,6 +692,10 @@ def run_job(declaration, layout, job, *, device="cuda:0", root=ROOT, preflight=F
             traceback=traceback.format_exc()[-6000:],
         )
     attempt.update(seconds=time.perf_counter() - started, finished_at_utc=_now())
+    try:
+        attempt["resources"] = measurement.finish(device if job.runner in CUDA_RUNNERS else "cpu")
+    except (OSError, RuntimeError, ValueError) as error:
+        attempt["resources_error"] = f"{type(error).__name__}: {str(error)[:300]}"
     failures = sum(item.get("status") == "failed" for item in record["attempts"])
     if status == FAILED and failures < MAX_ATTEMPTS:
         # Vuelve a la cola. Los ejecutores continúan desde su último checkpoint coherente.
@@ -938,6 +977,14 @@ class Queue:
                 started_at=started_at,
                 seconds=time.perf_counter() - started,
             )
+        record = read_record(self.layout, job.key)
+        if len(record["attempts"]) > previous_attempts:
+            # Incluye arranque del intérprete, importaciones y cierre del proceso hijo.
+            record["attempts"][-1].update(
+                process_wall_seconds=time.perf_counter() - started,
+                process_exit_code=code,
+            )
+            _write_record(self.layout, job.key, record)
         return code
 
     def preflight(self):
@@ -1269,7 +1316,7 @@ def _print_summary(result):
         print(f"  fallido: {key}: {error or 'sin mensaje'}")
 
 
-_MACHINE_COMMANDS = ("plan", "doctor", "run", "status", "results", "retry", "job")
+_MACHINE_COMMANDS = ("plan", "doctor", "run", "status", "results", "retry", "job", "export-results")
 
 
 def _export(declaration, digest, layout, args):
@@ -1328,6 +1375,7 @@ def main(argv=None):
             "run",
             "status",
             "results",
+            "export-results",
             "retry",
             "job",
         ),
@@ -1341,7 +1389,9 @@ def main(argv=None):
     parser.add_argument("--key", help="Trabajo que ejecuta la orden interna job")
     parser.add_argument("--note", help="Nota del permiso expreso, obligatoria en authorize")
     parser.add_argument("--device", choices=("cpu", "cuda:0"), default="cuda:0")
-    parser.add_argument("--destination", type=Path, help="Carpeta vacía donde escribe export")
+    parser.add_argument(
+        "--destination", type=Path, help="Carpeta para export o ZIP nuevo para export-results"
+    )
     parser.add_argument("--source", type=Path, help="Carpeta del paquete que lee import")
     parser.add_argument("--part-gib", type=float, help="Tamaño máximo de cada parte de export")
     parser.add_argument("--preflight", action="store_true", help="Uso interno de la orden job")
@@ -1370,6 +1420,18 @@ def main(argv=None):
         return _export(declaration, digest, layout, args)
     if args.command == "import":
         return _import(layout, args)
+    if args.command == "export-results":
+        from mars_titan.evaluation.comparison_bundle import export_results
+
+        _require(args.destination is not None, "export-results necesita --destination")
+        _require(args.part_gib is None, "export-results crea un único ZIP, sin --part-gib")
+        exported = export_results(declaration, digest, layout, args.machine, args.destination)
+        print(
+            f"Resultados guardados en {args.destination}: {exported['completed_jobs']} "
+            f"de {len(exported['jobs'])} trabajos terminados, sin modelos"
+        )
+        print(f"  {args.destination.stat().st_size / 2**30:.2f} GiB de archivo ZIP")
+        return 0
     if args.command == "doctor":
         checks = doctor(declaration, layout, args.machine, digest=digest, workers=args.workers)
         labels = {True: "bien ", False: "FALTA", None: "aviso"}
