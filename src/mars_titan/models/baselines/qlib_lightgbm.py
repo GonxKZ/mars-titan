@@ -126,6 +126,20 @@ def session_labels(panel):
     return labels, kept
 
 
+def execution_parameters(config, seed=None):
+    """Parámetros efectivos, incluidos el dispositivo y el modo de validación declarado."""
+    _checked_training(config)
+    parameters = dict(config["parameters"])
+    if seed is not None:
+        parameters["seed"] = seed
+    execution = config.get("execution") or {}
+    if execution:
+        parameters.update(gpu_parameters(execution))
+        if execution.get("validation") == "native_dataset":
+            parameters["metric"] = "None"
+    return parameters
+
+
 def fit(train, validation, config, seed, *, min_assets, check_stop=None):
     """Ajustar con una semilla y puntuar la validación en cada punto de control.
 
@@ -142,12 +156,11 @@ def fit(train, validation, config, seed, *, min_assets, check_stop=None):
         check_stop()
     import lightgbm
 
-    parameters = dict(config["parameters"], seed=seed)
+    parameters = execution_parameters(config, seed)
     execution = config.get("execution") or {}
     if execution:
         if execution["backend"] == "opencl_float64":
             check_gpu_backend(execution)
-        parameters.update(gpu_parameters(execution))
     labels, kept = session_labels(train.panel)
     _require(kept.any(), "Ninguna sesión del ajuste tiene una sección cruzada con desviación")
     dataset = lightgbm.Dataset(train.features[kept], label=labels[kept], free_raw_data=True)
@@ -190,6 +203,7 @@ def _fit_with_native_validation(
     El objetivo es MSE y su enlace es la identidad, de modo que feval recibe el mismo punto
     que predict. Las máscaras y el IC se calculan con el panel canónico original.
     """
+    require_learning_allowed("la validación nativa del control LightGBM")
     valid = library.Dataset(
         validation.features, label=validation.panel.target, reference=dataset, free_raw_data=True
     )

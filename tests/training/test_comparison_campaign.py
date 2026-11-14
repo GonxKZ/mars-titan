@@ -118,9 +118,18 @@ def test_declared_campaign_of_the_repository_is_valid_and_splits_the_two_machine
         "dlinear",
         "ridge",
         "momentum_reversal",
-        "lightgbm",
+        "lightgbm_gpu",
     }
     assert len(document["models"]) == 28
+    gpu = document["models"]["lightgbm_gpu"]["config"]
+    assert gpu["identity"] == "same_inputs_lightgbm_opencl_float64_v1"
+    assert gpu["execution"] == dict(
+        backend="opencl_float64", platform_id=0, device_id=0, validation="native_dataset"
+    )
+    previous, _ = campaign.load_declaration(
+        campaign.ROOT / "configs/experiments/comparison-campaign-v1.json"
+    )
+    assert "lightgbm" in previous["models"] and "lightgbm_gpu" not in previous["models"]
     assert {machine: len(campaign.plan(document, machine)) for machine in campaign.MACHINES} == {
         "references": 349,
         "mars_titan": 275,
