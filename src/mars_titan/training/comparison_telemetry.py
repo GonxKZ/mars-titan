@@ -1,9 +1,12 @@
 """Coste observado de un intento de la campaña, sin muestreo en el recorrido de cálculo."""
 
 import importlib.metadata
+import os
 import platform
 import resource
+import subprocess
 import sys
+import threading
 import time
 
 
@@ -26,6 +29,9 @@ def _cuda(device):
         cuda_reason="El intento no utiliza CUDA",
     )
     if device == "cpu":
+        return result
+    if device.startswith("opencl:"):
+        result["cuda_reason"] = "OpenCL no utiliza el asignador CUDA de PyTorch"
         return result
     torch = sys.modules.get("torch")
     result["cuda_reason"] = "CUDA no se inició en este proceso"
@@ -61,8 +67,8 @@ class AttemptMetrics:
 
     def finish(self, device):
         """Recoger los contadores sin iniciar CUDA ni sincronizar kernels adicionales."""
-        if device not in ("cpu", "cuda:0"):
-            raise ValueError("El dispositivo debe ser cpu o cuda:0 explícitos")
+        if device not in ("cpu", "cuda:0", "opencl:0"):
+            raise ValueError("El dispositivo debe ser cpu, cuda:0 u opencl:0 explícitos")
         wall = time.perf_counter() - self.started
         usage = resource.getrusage(resource.RUSAGE_SELF)
         # Linux expresa ru_maxrss en KiB. El motor usa Linux, también dentro de WSL2.
@@ -77,4 +83,72 @@ class AttemptMetrics:
             energy_joules=None,
             energy_reason="No se dispone de una medida integrada de energía",
             **_cuda(device),
+        )
+
+
+def _process_gpu_bytes(pid):
+    result = subprocess.run(
+        [
+            "nvidia-smi",
+            "--id=0",
+            "--query-compute-apps=pid,used_memory",
+            "--format=csv,noheader,nounits",
+        ],
+        capture_output=True,
+        text=True,
+        timeout=2,
+        check=True,
+    )
+    if len(result.stdout) > 65536:
+        raise ValueError("La lista de procesos GPU supera el límite")
+    for line in result.stdout.splitlines():
+        process, value = (part.strip() for part in line.split(","))
+        if process == str(pid) and value.isdecimal():
+            return int(value) * 1024**2
+    return None
+
+
+class ProcessGpuMemory:
+    """Máximo muestreado del proceso en la GPU 0, con espacio constante y fuera del cálculo.
+
+    El contador incluye OpenCL y el contexto del controlador. No es una medida continua ni
+    sustituye el contador de asignaciones de PyTorch. La energía sigue sin medirse.
+    """
+
+    def __init__(self):
+        self.pid, self.peak, self.samples = os.getpid(), None, 0
+        self.error, self.thread = None, None
+        self.stop = threading.Event()
+
+    def _sample(self):
+        try:
+            value = _process_gpu_bytes(self.pid)
+            if value is not None:
+                self.peak = value if self.peak is None else max(value, self.peak)
+                self.samples += 1
+        except (OSError, ValueError, subprocess.SubprocessError) as error:
+            self.error = f"{type(error).__name__}: {str(error)[:200]}"
+
+    def _work(self):
+        while not self.stop.is_set():
+            self._sample()
+            self.stop.wait(1)
+
+    def start(self):
+        self.thread = threading.Thread(target=self._work, daemon=True)
+        self.thread.start()
+        return self
+
+    def finish(self):
+        self.stop.set()
+        if self.thread is not None:
+            self.thread.join(3)
+        return dict(
+            gpu_memory_peak_sampled_bytes=self.peak,
+            gpu_memory_samples=self.samples,
+            gpu_memory_period_seconds=1,
+            gpu_memory_scope="nvidia_smi_process_sampled",
+            gpu_memory_reason=None
+            if self.samples
+            else self.error or "No hubo muestras disponibles",
         )

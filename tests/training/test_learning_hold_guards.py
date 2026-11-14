@@ -242,7 +242,18 @@ def _signal_ceiling_script(tmp_path, monkeypatch):
     return lambda: main([*arguments, "--output", str(tmp_path / "out")]), double
 
 
+def _qlib_native_validation(tmp_path, monkeypatch):
+    module = importlib.import_module("mars_titan.models.baselines.qlib_lightgbm")
+    double = Double()
+    library = SimpleNamespace(Dataset=double)
+    validation = SimpleNamespace(features=None, panel=SimpleNamespace(target=None))
+    return lambda: module._fit_with_native_validation(
+        library, None, validation, {}, {}, 3, None
+    ), double
+
+
 ENTRY_POINTS = {
+    "qlib_native_validation": _qlib_native_validation,
     "reference_run": _simple(
         "mars_titan.training.reference_run",
         "_options",

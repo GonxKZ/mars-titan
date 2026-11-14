@@ -372,6 +372,8 @@ def run_tabular_window(
         min_assets=min_assets,
         code=_code(),
     )
+    if "execution" in config:
+        request["execution_parameters"] = qlib_lightgbm.execution_parameters(config)
     report = _start(output, request, TABULAR_KIND)
     if report["status"] == "completed":
         # Un corte justo después de confirmar deja los ajustes guardados, que ya sobran.

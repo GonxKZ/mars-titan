@@ -4,6 +4,8 @@ Este documento registra el diseño de la campaña de comparación de [#836](http
 
 Al fijar esta declaración todavía no se había ejecutado ningún ajuste de la campaña. Las únicas medidas con pasos de optimizador son las del piloto acotado que se describe más abajo, hecho con la ventana de origen 2018, que no forma parte de la campaña. El test de 2024 sigue cerrado y la protección local del aprendizaje no se ha modificado: la campaña usa un permiso propio que registra quien la lanza.
 
+La revisión operativa con GPU se declara en [comparison-campaign-gpu-v1.json](../../configs/experiments/comparison-campaign-gpu-v1.json). Conserva esta población, presupuestos y contrastes, y sustituye el control CPU de LightGBM por `lightgbm_gpu` con identidad propia. La [medición y la continuidad de resultados](../../reports/engineering/comparison-gpu-20261114/README.md) documentan el cambio. Este documento conserva el diseño original y sus medidas.
+
 ## Pregunta
 
 La campaña responde al objetivo general de la memoria: si MARS-TITAN y la red de áreas con grupos de activos reducen el MAE residual por sesión frente a sus controles y frente a la predicción cero. Para poder responderla vuelve a ajustar, con la misma población, las mismas filas y el mismo presupuesto, las referencias de la memoria, el núcleo Titans-MAC, MARS-TITAN con sus políticas de escritura y las variantes que se prueban por separado.

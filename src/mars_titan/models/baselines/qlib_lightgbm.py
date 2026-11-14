@@ -29,6 +29,9 @@ import numpy as np
 from mars_titan.evaluation import scale_diagnostics as sd
 from mars_titan.training.learning_hold import require_learning_allowed
 
+from .lightgbm_backend import check_gpu_backend, checked_execution
+from .lightgbm_backend import parameters as gpu_parameters
+
 QLIB_SOURCE = dict(
     repository="microsoft/qlib",
     commit="54355232463878d2eebb91fe0ee5fa7fa1f5976c",
@@ -66,7 +69,8 @@ def _declares_training(config):
     """Los campos que usa el ajuste: fuente, parámetros con sus tipos, rondas y puntos."""
     return (
         isinstance(config, dict)
-        and set(config) == KEYS
+        and set(config) in (KEYS, KEYS | {"execution"})
+        and ("execution" not in config or checked_execution(config["execution"]))
         and config["source"] == QLIB_SOURCE
         and config["parameters"] == PARAMETERS
         and all(type(config["parameters"][key]) is type(value) for key, value in PARAMETERS.items())
@@ -122,6 +126,20 @@ def session_labels(panel):
     return labels, kept
 
 
+def execution_parameters(config, seed=None):
+    """Parámetros efectivos, incluidos el dispositivo y el modo de validación declarado."""
+    _checked_training(config)
+    parameters = dict(config["parameters"])
+    if seed is not None:
+        parameters["seed"] = seed
+    execution = config.get("execution") or {}
+    if execution:
+        parameters.update(gpu_parameters(execution))
+        if execution.get("validation") == "native_dataset":
+            parameters["metric"] = "None"
+    return parameters
+
+
 def fit(train, validation, config, seed, *, min_assets, check_stop=None):
     """Ajustar con una semilla y puntuar la validación en cada punto de control.
 
@@ -138,10 +156,20 @@ def fit(train, validation, config, seed, *, min_assets, check_stop=None):
         check_stop()
     import lightgbm
 
+    parameters = execution_parameters(config, seed)
+    execution = config.get("execution") or {}
+    if execution:
+        if execution["backend"] == "opencl_float64":
+            check_gpu_backend(execution)
     labels, kept = session_labels(train.panel)
     _require(kept.any(), "Ninguna sesión del ajuste tiene una sección cruzada con desviación")
     dataset = lightgbm.Dataset(train.features[kept], label=labels[kept], free_raw_data=True)
     step, series = config["checkpoint_rounds"], []
+
+    if execution.get("validation") == "native_dataset":
+        return _fit_with_native_validation(
+            lightgbm, dataset, validation, parameters, config, min_assets, check_stop
+        )
 
     def score(environment):
         if check_stop is not None:
@@ -154,7 +182,7 @@ def fit(train, validation, config, seed, *, min_assets, check_stop=None):
             )
 
     booster = lightgbm.train(
-        dict(config["parameters"], seed=seed),
+        parameters,
         dataset,
         num_boost_round=config["max_rounds"],
         callbacks=[score],
@@ -162,6 +190,55 @@ def fit(train, validation, config, seed, *, min_assets, check_stop=None):
     _require(
         len(series) == config["max_rounds"] // step,
         "El ajuste no puntuó todos sus puntos de control",
+    )
+    return booster, series
+
+
+def _fit_with_native_validation(
+    library, dataset, validation, parameters, config, min_assets, check_stop
+):
+    """Puntuar la predicción acumulada por LightGBM, sin repetir todos los árboles.
+
+    La validación reutiliza los bins del ajuste. Sus etiquetas no intervienen en el ajuste.
+    El objetivo es MSE y su enlace es la identidad, de modo que feval recibe el mismo punto
+    que predict. Las máscaras y el IC se calculan con el panel canónico original.
+    """
+    require_learning_allowed("la validación nativa del control LightGBM")
+    valid = library.Dataset(
+        validation.features, label=validation.panel.target, reference=dataset, free_raw_data=True
+    )
+    rounds, series = 0, []
+
+    def evaluate(prediction, _):
+        nonlocal rounds
+        rounds += 1
+        if rounds % config["checkpoint_rounds"] == 0:
+            prediction = np.asarray(prediction, dtype=np.float64)
+            _require(
+                prediction.shape == (validation.panel.rows,) and np.isfinite(prediction).all(),
+                "La validación nativa no conserva una predicción finita por fila",
+            )
+            series.append(
+                sd.session_correlations(validation.panel, prediction, min_assets=min_assets)
+            )
+        return []
+
+    def guard(_):
+        if check_stop is not None:
+            check_stop()
+
+    booster = library.train(
+        dict(parameters, metric="None"),
+        dataset,
+        num_boost_round=config["max_rounds"],
+        valid_sets=[valid],
+        valid_names=["validation"],
+        feval=evaluate,
+        callbacks=[guard],
+    )
+    _require(
+        rounds == config["max_rounds"] and len(series) == rounds // config["checkpoint_rounds"],
+        "La validación nativa no puntuó todos sus puntos de control",
     )
     return booster, series
 
