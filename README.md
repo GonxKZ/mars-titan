@@ -34,6 +34,8 @@ La pregunta principal es: **¿mejora una memoria adaptativa de eventos la predic
 
 La [campaña de comparación](docs/experiments/comparison-campaign-v1.md) ([#836](https://github.com/GonxKZ/mars-titan/issues/836)) vuelve a ajustar las referencias y la familia de Titans-MAC y MARS-TITAN. Los modelos neuronales comparten receta. Compara el MAE residual por sesión con la predicción cero sobre las mismas filas. Los controles que predicen un orden se comparan por IC y MAE calibrado. El trabajo se reparte en dos colas para dos equipos con 8 GB de VRAM. La campaña está declarada y su motor se ha comprobado con un piloto acotado sobre el origen 2018, que no forma parte de ella. Este apartado describe el protocolo fijado antes del arranque, sin anticipar resultados de la campaña.
 
+La cola de la RTX 4070 arrancó el 14 de noviembre de 2026 a las 08:12 de Madrid desde la etiqueta fija `comparison-campaign-20261114`, en una copia separada de desarrollo. La [issue #836](https://github.com/GonxKZ/mars-titan/issues/836) conserva el seguimiento. El segundo equipo todavía debe completar su comprobación y lanzar su cola.
+
 | Cola | Equipo | Modelos | Trabajos |
 | --- | --- | --- | --- |
 | `references` | Portátil con RTX 4070 | Los 25 modelos neuronales en 13 bloques de año y semilla, más Ridge, LightGBM y momentum/reversión en los ocho orígenes | 349 |
