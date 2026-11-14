@@ -14,6 +14,7 @@ from . import qlib_lightgbm
 from .inputs import MODALITIES
 
 IDENTITY = "same_inputs_lightgbm_v1"
+GPU_IDENTITY = "same_inputs_lightgbm_opencl_float64_v1"
 FEATURES = "price_window_modalities_and_presence_v1"
 LABEL = "session_zscore_of_the_residual"
 VECTORS = MODALITIES[1:]
@@ -26,7 +27,12 @@ def _require(condition, message):
 
 def checked_config(config):
     """Declaración del control con los parámetros de Qlib, sus puntos de control y sus entradas."""
-    return qlib_lightgbm.checked_config(config, identity=IDENTITY, features=FEATURES, label=LABEL)
+    gpu = isinstance(config, dict) and config.get("identity") == GPU_IDENTITY
+    if isinstance(config, dict):
+        _require(("execution" in config) == gpu, "El perfil GPU necesita una identidad propia")
+    return qlib_lightgbm.checked_config(
+        config, identity=GPU_IDENTITY if gpu else IDENTITY, features=FEATURES, label=LABEL
+    )
 
 
 def features(inputs, presence):

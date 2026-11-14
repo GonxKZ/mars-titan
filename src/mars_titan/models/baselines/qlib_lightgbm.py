@@ -29,6 +29,9 @@ import numpy as np
 from mars_titan.evaluation import scale_diagnostics as sd
 from mars_titan.training.learning_hold import require_learning_allowed
 
+from .lightgbm_backend import check_gpu_backend, checked_execution
+from .lightgbm_backend import parameters as gpu_parameters
+
 QLIB_SOURCE = dict(
     repository="microsoft/qlib",
     commit="54355232463878d2eebb91fe0ee5fa7fa1f5976c",
@@ -66,7 +69,8 @@ def _declares_training(config):
     """Los campos que usa el ajuste: fuente, parámetros con sus tipos, rondas y puntos."""
     return (
         isinstance(config, dict)
-        and set(config) == KEYS
+        and set(config) in (KEYS, KEYS | {"execution"})
+        and ("execution" not in config or checked_execution(config["execution"]))
         and config["source"] == QLIB_SOURCE
         and config["parameters"] == PARAMETERS
         and all(type(config["parameters"][key]) is type(value) for key, value in PARAMETERS.items())
@@ -138,6 +142,10 @@ def fit(train, validation, config, seed, *, min_assets, check_stop=None):
         check_stop()
     import lightgbm
 
+    parameters = dict(config["parameters"], seed=seed)
+    if "execution" in config:
+        check_gpu_backend(config["execution"])
+        parameters.update(gpu_parameters(config["execution"]))
     labels, kept = session_labels(train.panel)
     _require(kept.any(), "Ninguna sesión del ajuste tiene una sección cruzada con desviación")
     dataset = lightgbm.Dataset(train.features[kept], label=labels[kept], free_raw_data=True)
@@ -154,7 +162,7 @@ def fit(train, validation, config, seed, *, min_assets, check_stop=None):
             )
 
     booster = lightgbm.train(
-        dict(config["parameters"], seed=seed),
+        parameters,
         dataset,
         num_boost_round=config["max_rounds"],
         callbacks=[score],
