@@ -1,0 +1,195 @@
+{
+  "schema_version": 1,
+  "kind": "comparison_training_budget_review",
+  "status": "declared_not_executed",
+  "calculated_at": "2026-11-14T06:36:48.575883+00:00",
+  "new_optimizer_steps": 0,
+  "new_scientific_runs": 0,
+  "sources": {
+    "reports/engineering/comparison-campaign-20261113/pilot.json": "7b7dc068149ca8aa10dc2c3c273ca02d3a0262cbfb6fe50e88d3c947681bdb53",
+    "reports/engineering/comparison-campaign-20261113/budget.json": "a6bd1e490d5cdddb9771d1313145114e3af6a923442fa99c03e1b002a708ca69",
+    "configs/experiments/comparison-campaign-v1.json": "fd6c12ab4112859a58bc41135ec1c38b96147a5bb5e931f750aa1b72288ce841"
+  },
+  "train_labels": {
+    "2019": 2819756,
+    "2020": 2837753,
+    "2021": 2892903,
+    "2022": 3021675,
+    "2023": 3274785,
+    "2017": 2625627,
+    "2016": 2564272,
+    "2015": 2436887
+  },
+  "coefficients": {
+    "core_seconds_per_epoch": 354.68047420700316,
+    "evaluation_seconds_per_call": 34.555696390368716,
+    "fixed_seconds": 55.46098958613584
+  },
+  "formulas": {
+    "fit_seconds": "E * core_seconds_per_epoch * (train_labels + 64459) / 2791261 + (E + 4) * evaluation_seconds_per_call + fixed_seconds",
+    "reader_observations_scale": "(train_labels + 64459) / 492518",
+    "reader_labels_scale": "train_labels / 249320",
+    "reader_seconds": "R * pilot_train_seconds * scale + (R + 4) * pilot_validation_seconds / 5 + pilot_total_seconds - pilot_train_seconds - pilot_validation_seconds",
+    "ridge_seconds": "812.4131569250021 * (train_labels + 64459) / 2791261",
+    "rule_seconds": 50.57635799399577,
+    "tabular_seconds": 2110.8959183909883,
+    "index_seconds_per_origin_per_machine": 300,
+    "k4_multiplier": 1.2
+  },
+  "reader_proxies": {
+    "mars_titan_m0": "r0-m0-1024",
+    "mars_titan_m1": "r2-m1-1024",
+    "mars_titan_m2": "r2-m1-1024",
+    "mars_titan_m3": "r3-m3-1024",
+    "mars_titan_m3_k2": "r4-m3-k2-1024",
+    "mars_titan_m3_k4": "r3-m3-1024",
+    "mars_titan_m3_bridge_self": "r6-m3-ring-1024-work256m",
+    "mars_titan_m3_bridge_ring": "r6-m3-ring-1024-work256m",
+    "mars_titan_m3_bridge_complete": "r6-m3-ring-1024-work256m"
+  },
+  "selected_epochs": {
+    "fit": 10,
+    "reader": 5
+  },
+  "operational_reserve_hours": 24,
+  "source": "pilot_2018_and_training_row_counts_only",
+  "measured_second_gpu": false,
+  "second_gpu_time_factor_scenario": 1.2,
+  "candidates_considered": 30,
+  "two_first_gpu_seeds_years": [
+    2015,
+    2017,
+    2019,
+    2021,
+    2023
+  ],
+  "first_gpu_seed_counts": {
+    "42": 4,
+    "43": 4,
+    "44": 5
+  },
+  "neural_blocks": {
+    "2019/seed-42": "references",
+    "2019/seed-43": "references",
+    "2019/seed-44": "mars_titan",
+    "2020/seed-42": "mars_titan",
+    "2020/seed-43": "mars_titan",
+    "2020/seed-44": "references",
+    "2021/seed-42": "references",
+    "2021/seed-43": "mars_titan",
+    "2021/seed-44": "references",
+    "2022/seed-42": "mars_titan",
+    "2022/seed-43": "references",
+    "2022/seed-44": "mars_titan",
+    "2023/seed-42": "mars_titan",
+    "2023/seed-43": "references",
+    "2023/seed-44": "references",
+    "2017/seed-42": "references",
+    "2017/seed-43": "mars_titan",
+    "2017/seed-44": "references",
+    "2016/seed-42": "references",
+    "2016/seed-43": "mars_titan",
+    "2016/seed-44": "mars_titan",
+    "2015/seed-42": "mars_titan",
+    "2015/seed-43": "references",
+    "2015/seed-44": "references"
+  },
+  "estimates_at_measured_gpu_speed": {
+    "8/4": {
+      "observations": {
+        "references": 288.4234134558943,
+        "mars_titan": 238.4707180642128
+      },
+      "labels": {
+        "references": 349.42423193866074,
+        "mars_titan": 290.07441164956293
+      }
+    },
+    "10/5": {
+      "observations": {
+        "references": 353.1270467289503,
+        "mars_titan": 293.2085946699715
+      },
+      "labels": {
+        "references": 429.37806983240745,
+        "mars_titan": 357.71321165165966
+      }
+    },
+    "12/6": {
+      "observations": {
+        "references": 417.8306800020072,
+        "mars_titan": 347.94647127573097
+      },
+      "labels": {
+        "references": 509.3319077261559,
+        "mars_titan": 425.352011653756
+      }
+    }
+  },
+  "selected_stage_hours_at_measured_gpu_speed": {
+    "observations": {
+      "references": {
+        "primary": 228.0918535347493,
+        "history": 125.03519319420138
+      },
+      "mars_titan": {
+        "primary": 194.7666453505298,
+        "history": 98.44194931944233
+      }
+    },
+    "labels": {
+      "references": {
+        "primary": 277.9194948414547,
+        "history": 151.45857499095254
+      },
+      "mars_titan": {
+        "primary": 238.04785338348302,
+        "history": 119.66535826817729
+      }
+    }
+  },
+  "retained_pilot_sizes": {
+    "b-scaled-full": {
+      "total_bytes": 28226291,
+      "predictions_bytes": 23435177,
+      "files": 10
+    },
+    "h1-19-1024": {
+      "total_bytes": 21704323,
+      "predictions_bytes": 14622989,
+      "files": 11
+    },
+    "h14-areas-groups-1024": {
+      "total_bytes": 29611615,
+      "predictions_bytes": 23130676,
+      "files": 10
+    },
+    "r3-m3-1024": {
+      "total_bytes": 24129948,
+      "predictions_bytes": 23379904,
+      "files": 11
+    },
+    "r6-m3-ring-1024-work256m": {
+      "total_bytes": 25013171,
+      "predictions_bytes": 23362921,
+      "files": 11
+    },
+    "ridge-1024": {
+      "total_bytes": 11178184,
+      "predictions_bytes": 10871781,
+      "files": 16
+    },
+    "lgbm-1024-streamed": {
+      "total_bytes": 31829661,
+      "predictions_bytes": 27472729,
+      "files": 14
+    }
+  },
+  "limitations": [
+    "Todos los tiempos se extrapolan de la RTX 4070, no de la RTX 5060.",
+    "El coste de los ajustes usa un coeficiente común, no una medida larga de cada arquitectura.",
+    "M2 se aproxima con M1 y las topologías de puente con ring.",
+    "No incluye búsqueda nueva de hiperparámetros ni RL. Se reserva un día adicional por equipo para incidencias, fuera de los tiempos de ejecución proyectados.",
+    "Los dos escenarios del lector no son un intervalo de confianza ni una cota superior."
+  ]
+}

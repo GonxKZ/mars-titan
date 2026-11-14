@@ -2,7 +2,7 @@
 
 Este documento registra el diseño de la campaña de comparación de [#836](https://github.com/GonxKZ/mars-titan/issues/836). Se fija antes de ejecutar ningún trabajo de la campaña. La [declaración](../../configs/experiments/comparison-campaign-v1.json) contiene todos los valores y el [motor](../../src/mars_titan/training/comparison_campaign.py) la lee sin añadir decisiones. Las órdenes de cada equipo están en la [guía de uso](../engineering/comparison-campaign-two-machines.md).
 
-Nada de la campaña se ha ejecutado. Las únicas medidas con pasos de optimizador son las del piloto acotado que se describe más abajo, hecho con la ventana de origen 2018, que no forma parte de la campaña. El test de 2024 sigue cerrado y la protección local del aprendizaje no se ha modificado: la campaña usa un permiso propio que registra quien la lanza.
+Al fijar esta declaración todavía no se había ejecutado ningún ajuste de la campaña. Las únicas medidas con pasos de optimizador son las del piloto acotado que se describe más abajo, hecho con la ventana de origen 2018, que no forma parte de la campaña. El test de 2024 sigue cerrado y la protección local del aprendizaje no se ha modificado: la campaña usa un permiso propio que registra quien la lanza.
 
 ## Pregunta
 
@@ -12,12 +12,14 @@ Un resultado negativo también es un resultado. La segunda entrega de la memoria
 
 ## Reparto entre los dos equipos
 
-| Cola | Modelos | Trabajos |
-| --- | --- | --- |
-| `references` | Transformer compacto, GRU, LSTM, RNN, DLinear, Ridge, regla de momentum y reversión, LightGBM | 144 |
-| `mars_titan` | Titans-MAC, MARS-TITAN M0 a M3, controles de memoria, red de áreas, grupos de activos, atención entre activos, refinamientos y puente de evidencia | 480 |
+El reparto se fija por bloques de origen y semilla. Todos los 25 modelos neuronales de un bloque se ejecutan en la misma GPU. Así, las diferencias entre arquitecturas, controles y ablaciones se emparejan también por hardware. Los tres controles por origen se quedan en la RTX 4070 porque LightGBM requiere más RAM.
 
-El primer equipo ajusta los modelos que la memoria ya presentaba como referencias. El segundo ajusta solo Titans-MAC, MARS-TITAN y sus variantes. Los lectores episódicos necesitan en su mismo equipo el Titans-MAC de su origen y su semilla, así que el núcleo y todo lo que depende de él van juntos.
+| Cola | Equipo | Bloques neuronales | Controles por origen | Trabajos |
+| --- | --- | ---: | ---: | ---: |
+| `references` | RTX 4070 | 13 | 24 | 349 |
+| `mars_titan` | RTX 5060 | 11 | 0 | 275 |
+
+Cada arquitectura neuronal se ejecuta en ambos equipos, pero cada ajuste concreto tiene un único propietario. `execution.neural_blocks` fija sus 24 asignaciones. Todos los lectores de un bloque comparten el Titans-MAC ajustado allí. No se transfieren ni duplican padres. La distribución usa recuentos de ajuste y costes del piloto, sin consultar los errores de evaluación de la campaña.
 
 ## Población y orígenes
 
@@ -66,8 +68,8 @@ GRU, LSTM, RNN y DLinear se ajustan dentro del mismo predictor que el Transforme
 
 | Ejecutor | Épocas | Estado inicial | Regla |
 | --- | --- | --- | --- |
-| Ajuste desde cero | 8 | Medido y no emitido | Época con menor MAE por sesión de validación |
-| Lector episódico | 4 | El del padre, que puede emitirse | Época con menor MAE por sesión de validación, o el padre si ninguna lo mejora |
+| Ajuste desde cero | 10 | Medido y no emitido | Época con menor MAE por sesión de validación |
+| Lector episódico | 5 | El del padre, que puede emitirse | Época con menor MAE por sesión de validación, o el padre si ninguna lo mejora |
 
 Todos los ajustes recorren su presupuesto completo, de modo que los controles emparejados conservan el mismo número de actualizaciones. Cada época hace una actualización cada 8 sesiones, 528 por época en el origen 2018 del piloto. El número depende de las sesiones de cada origen.
 
@@ -77,7 +79,7 @@ Un lector continúa a un padre ya ajustado. Su estado inicial es ese padre y sig
 
 ## Modelos
 
-### Cola `references`
+### Referencias
 
 | Modelo | Ejecutor | Qué es |
 | --- | --- | --- |
@@ -87,7 +89,7 @@ Un lector continúa a un padre ya ajustado. Su estado inicial es ese padre y sig
 | `momentum_reversal` | Regla | Regla sin aprendizaje sobre la ventana de precios |
 | `lightgbm` | Tabular | LightGBM con los parámetros de Qlib sobre las mismas entradas, 12 meses de ajuste y el residuo normalizado por sesión como etiqueta |
 
-### Cola `mars_titan`
+### Núcleo, lectores y ampliaciones
 
 | Nivel | Modelo | Qué es |
 | --- | --- | --- |
@@ -111,13 +113,15 @@ Un lector continúa a un padre ya ajustado. Su estado inicial es ese padre y sig
 
 Los modelos de un mismo ejecutor comparten receta, presupuesto y regla. Ninguno recibe más épocas que su control.
 
+Esta receta común permite una comparación controlada. No demuestra que sea la mejor receta de cada arquitectura. La [revisión del aprendizaje](../research/comparison-training-review-20261114.md) distingue ese objetivo del ajuste competitivo por familias y explica la elección de 10/5 épocas y la incertidumbre que queda sin curvas largas ni medición de la segunda GPU.
+
 ## Contrastes declarados
 
 | Familia | Variante | Control |
 | --- | --- | --- |
 | Referencias | `ridge`, `rnn`, `lstm`, `gru`, `dlinear`, `transformer` | Predicción cero |
 | Memoria neuronal | `titans_mac` | `transformer`, `titans_mac_disabled` y `titans_mac_frozen` |
-| Guardar episodios | `mars_titan_m1` | `mars_titan_m0` |
+| Guardar episodios | `mars_titan_m1`, `mars_titan_m2` y `mars_titan_m3` | `mars_titan_m0` |
 | Elegir episodios | `mars_titan_m2` y `mars_titan_m3` | `mars_titan_m1` y, para M3, `mars_titan_m2` |
 | MARS-TITAN | `mars_titan_m3` | `titans_mac`, `transformer` y la predicción cero |
 | Refinamientos | `mars_titan_m3_k2`, `mars_titan_m3_k4` | `mars_titan_m3` |
@@ -133,20 +137,20 @@ Los contrastes principales son los que nombra el objetivo general: `mars_titan_m
 
 - **Métrica principal.** MAE residual por sesión en el año de evaluación de cada origen. Primero se promedian los errores absolutos de cada sesión y después las sesiones. La predicción cero se calcula con las mismas filas.
 - **Emparejamiento.** Cada contraste se calcula sesión a sesión, con la media de las tres semillas de cada modelo, y se resume por origen y en conjunto.
-- **Incertidumbre.** Bootstrap circular por bloques de 16 días, con 8 y 32 días como sensibilidad, 2.000 réplicas y confianza del 95 %. Cada familia se corrige con Romano-Wolf y se informa además Holm.
+- **Incertidumbre.** Bootstrap circular por bloques de 16 días, con 8 y 32 días como sensibilidad, 2.000 réplicas y confianza del 95 %. Cada familia se corrige con Romano-Wolf y se informa además Holm. La semilla del remuestreo es 20261114. Los bloques se sortean dentro de cada origen, sin unir años disjuntos. La familia principal agrupa sus cuatro contrastes. Las restantes familias y métricas son secundarias y no reciben una garantía conjunta entre familias.
 - **Papeles.** Los orígenes 2019 a 2022 describen y, si hay que elegir entre variantes, eligen. En esta campaña, 2023 se evalúa con los contrastes ya declarados. Su reutilización anterior impide tratarlo como un test independiente. Los años añadidos se informan aparte como evidencia adicional.
 - **Medidas secundarias.** IC por sesión, cobertura de los intervalos de la cabeza de cuantiles y MAE tras calibrar la escala de la predicción con la partición de calibración. La regla y LightGBM predicen un orden y no una magnitud, así que solo se comparan por IC y por ese MAE calibrado.
-- **Sensibilidad.** La regla del protocolo, con el estado inicial elegible, se reconstruye con la historia de validación de cada ajuste y se informa junto a la regla de la campaña.
+- **Sensibilidad.** El historial conserva la puntuación inicial y las épocas para revisar la selección. El ZIP permite evaluar cero y el estado finalmente emitido. Si otra regla elige una época intermedia distinta, no se inventa su error de evaluación a partir de la validación. Evaluarla requiere conservar su checkpoint y emitir de nuevo.
 
 La lectura calibrada aplica λ·predicción, con λ en [0, 1] elegido exclusivamente en la calibración anterior. Se obtiene mediante la mediana ponderada que minimiza el MAE por sesión, implementada en [`scale_diagnostics.market_shrinkage`](../../src/mars_titan/evaluation/scale_diagnostics.py). Se informa junto al error bruto y conserva el mismo emparejamiento, los intervalos por bloques y la corrección de comparaciones. El IC de Pearson y el IC de rangos (Spearman) son medidas distintas y se identifican por su nombre.
 
-La orden `results` resume esas medidas de los trabajos terminados. Cada trabajo terminado pesa lo mismo, de modo que una tabla parcial puede contener cantidades distintas de semillas y orígenes entre modelos. El análisis con bootstrap se ejecuta al cerrar la campaña sobre las predicciones guardadas de los dos equipos.
+La orden `results` resume esas medidas de los trabajos terminados. Cada trabajo terminado pesa lo mismo, de modo que una tabla parcial puede contener cantidades distintas de semillas y orígenes entre modelos. El [analizador de los ZIP](../../src/mars_titan/evaluation/comparison_campaign_analysis.py) exige la matriz completa de la etapa seleccionada. Promedia las pérdidas de las semillas, no sus predicciones. Rechaza diferencias de código, declaración, cohortes, filas, objetivos o linaje. El modo parcial solo produce descripciones, sin contrastes inferenciales. Conserva métricas por sesión, curvas, recursos y procedencia, y genera JSON, CSV, Parquet, PNG y SVG sin cargar modelos ni el dataset original. Las órdenes están en la [guía de uso](../engineering/comparison-campaign-two-machines.md#reunir-los-resultados).
 
 ## Piloto acotado
 
 El piloto utiliza el origen 2018, 1.024 activos de EE. UU. y la semilla 42. El ajuste contiene 2.726.802 etiquetas y recorre 2.791.261 observaciones por época. La validación tiene 125 sesiones, la calibración 62 y la evaluación 250, con 255.750 etiquetas evaluadas. El MAE de cero en evaluación es 0,01193174797. Son medidas de desarrollo de una ventana y una semilla, no resultados de la campaña.
 
-La regla fijada antes de comparar recetas elige el menor MAE de validación de la mejor época. Una diferencia menor de 0,000001 favorece AdamW constante con tasa 0,001. La receta elegida fue esa misma. Su mejor puntuación llegó en la quinta época, por lo que se fija un presupuesto de ocho épocas para la campaña. Los lectores conservan cuatro.
+La regla fijada antes de comparar recetas elige el menor MAE de validación de la mejor época. Una diferencia menor de 0,000001 favorece AdamW constante con tasa 0,001. La receta elegida fue esa misma. Su mejor puntuación llegó en la quinta época. La propuesta inicial de ocho épocas y cuatro por lector se amplía el 14 de noviembre a diez y cinco, tras equilibrar los bloques de ambos equipos. Es una decisión de presupuesto que permite observar más aprendizaje, no evidencia de que esos límites alcancen la convergencia.
 
 | Receta | Épocas | Mejor época | MAE de validación | MAE bruto frente a cero en evaluación | MAE calibrado frente a cero | IC Pearson | IC Spearman |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
@@ -189,20 +193,20 @@ El lector M3 con puente `ring` tardó 518,3 s, con 89,3 s de ajuste y 327,3 s de
 
 ## Dimensionado
 
-Las proyecciones se calculan con las medidas de este portátil y los recuentos de cada origen. La [evidencia de dimensionado](../../reports/engineering/comparison-campaign-20261113/budget.json) conserva sus coeficientes. No se ha medido la velocidad de la RTX 5060 Laptop del segundo equipo.
+Las proyecciones se calculan con las medidas de este portátil y los recuentos de cada origen. La [evidencia original](../../reports/engineering/comparison-campaign-20261113/budget.json) conserva sus coeficientes y el reparto anterior. La [revisión del presupuesto](../../reports/engineering/comparison-budget-review-20261114/scenarios.json) conserva el nuevo reparto y los escenarios de ampliación. No se ha medido la velocidad de la RTX 5060 Laptop del segundo equipo.
 
-| Cola | Primera etapa, 2019 a 2023 | Años añadidos, 2015 a 2017 | Total proyectado |
+| Cola | Primera etapa, 2019 a 2023 | Años añadidos, 2015 a 2017 | Total a velocidad medida de la RTX 4070 |
 | --- | ---: | ---: | ---: |
-| Referencias | 78 h | 41 h | Unas 120 h |
-| MARS-TITAN, escala por observaciones | 265 h | 141 h | Unas 406 h |
-| MARS-TITAN, escala por etiquetas | 340 h | 179 h | Unas 519 h |
+| RTX 4070 | 228–278 h | 125–151 h | 353–429 h |
+| RTX 5060, antes de aplicar una diferencia de velocidad | 195–238 h | 98–120 h | 293–358 h |
 
-Los dos escenarios de MARS-TITAN reflejan la incertidumbre al extrapolar el lector desde doce meses a toda la historia. El primero escala su coste de ajuste por observaciones y el segundo por etiquetas. No son intervalos de confianza ni cotas garantizadas. M2 se aproxima con M1, K = 4 con un factor de 1,2 sobre M3 y las tres topologías de puente con la medida de `ring`. El coste de los ajustes neuronales se aproxima con la mediana de las recetas de cinco épocas, ampliada a ocho y a las filas de cada origen. Cada índice de ajuste se construye una sola vez, con unos cinco minutos adicionales por origen en el piloto.
+Para planificar se supone que la RTX 5060 tarda un 20 % más. En ese escenario su total es 352–429 horas, próximo al del primer equipo. El factor 1,2 no es una medida de esa GPU. Los extremos proceden de escalar el coste del lector por observaciones o por etiquetas. No son intervalos de confianza ni cotas garantizadas. M2 se aproxima con M1, K = 4 con un factor 1,2 sobre M3 y las tres topologías de puente con `ring`. Los ajustes usan un coeficiente común de las recetas de cinco épocas, ampliado a diez y a las filas de cada origen.
 
-Entre el 13 de noviembre a las 17:00 y el comienzo del 5 de diciembre hay 511 horas. Si se comienza a las 21:00 hay 507. La primera etapa tiene prioridad sobre los años añadidos. En el escenario más lento no cabe la segunda etapa completa en ese plazo. La cola pide una parada al llegar a `2026-12-04T23:00:00+00:00`, equivalente a las 00:00 del 5 de diciembre en Madrid, y conserva los trabajos incompletos en su siguiente barrera. No se incluyen como terminados ni se rellenan sus resultados.
+Las proyecciones incluyen cinco minutos por índice anual y equipo y las validaciones y emisiones de cada trabajo. No incluyen RL ni una nueva búsqueda de hiperparámetros. Se reserva un día adicional por equipo para incidencias. Para conservar ese día con el escenario de mayor coste, ambos equipos deben empezar antes de aproximadamente las 02:40 del 16 de noviembre, hora de Madrid. Un comienzo posterior, una GPU más lenta o fallos prolongados reducen ese margen.
 
-El paquete de datos ocupa unos 20,1 GiB. Las salidas se presupuestan en 5 GiB para `references` y 14 GiB para `mars_titan`, con un margen mínimo libre de 1 GiB durante la ejecución. El diagnóstico comprueba que haya al menos 12 GiB de memoria disponible por trabajo de referencias y 6 GiB por trabajo de MARS-TITAN. La cola usa un solo trabajador por equipo. Si el segundo equipo va más lento, la guía permite ceder niveles completos al portátil una vez terminadas sus referencias y siempre que disponga de espacio.
+La cola solicita una parada al llegar a `2026-12-04T23:00:00+00:00`, las 00:00 del 5 de diciembre en Madrid. Conserva los trabajos incompletos en la siguiente barrera. No los presenta como terminados. La primera etapa tiene prioridad sobre los años añadidos. Diez y cinco épocas aumentan un 25 % los recorridos respecto a ocho y cuatro, con selección del mejor estado y sin acreditar un aumento proporcional de calidad.
 
+El paquete de datos ocupa unos 20,1 GiB. Las salidas se presupuestan en 14 GiB para `references` y 10 GiB para `mars_titan`, con un margen mínimo libre de 1 GiB durante la ejecución. Los ejemplos medidos con 1.024 activos retienen entre 21 y 30 MB por trabajo neuronal. Son una referencia de espacio, no un máximo de todos los trabajos futuros. Exportar el ZIP requiere espacio adicional para otra copia de las predicciones. El diagnóstico exige 12 GiB de RAM disponible para el primer equipo y 6 GiB para el segundo. Hay un solo trabajador por equipo.
 
 ## Posentrenamiento y refuerzo
 
@@ -215,7 +219,7 @@ La campaña no incluye posentrenamiento ni aprendizaje por refuerzo. La pregunta
 - **Capacidad del banco.** El banco episódico guarda como mucho 1.024 episodios, un límite del enlace nativo compilado. Con 1.024 activos por sesión equivale a los episodios de una sesión. Ampliarlo exige recompilar el enlace y repetir su verificación, y queda fuera de esta campaña.
 - **Un mercado.** Solo EE. UU. China no entra por presupuesto.
 - **Tres semillas.** Son las del protocolo. La incertidumbre se apoya sobre todo en las sesiones.
-- **Dos GPU distintas.** Cada modelo se ajusta entero en un equipo. No se afirma reproducibilidad bit a bit entre equipos.
+- **Dos GPU distintas.** Cada ajuste de año y semilla se ejecuta entero en un equipo, junto a sus controles neuronales. No se afirma reproducibilidad bit a bit entre equipos. El coste se separa por GPU y no se atribuye una ventaja de velocidad a una arquitectura por comparar dispositivos distintos.
 - **Pausas térmicas.** El portátil congela los trabajos por encima de 92 °C. Alargan la campaña sin alterar sus resultados.
 
 ## Motor y comprobaciones
