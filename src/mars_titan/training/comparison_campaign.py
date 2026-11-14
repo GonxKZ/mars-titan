@@ -49,7 +49,7 @@ from .selection import CHRONOLOGICAL_MODES, validate_selection
 from .window_indices import SHARED_INDICES_ENV
 
 ROOT = Path(__file__).resolve().parents[3]
-DECLARATION = "configs/experiments/comparison-campaign-v1.json"
+DECLARATION = "configs/experiments/comparison-campaign-gpu-v1.json"
 KIND = "comparison_campaign_v1"
 MACHINES = ("references", "mars_titan")
 # Los orígenes `history` son años anteriores que amplían la evidencia. Forman una segunda
@@ -69,7 +69,7 @@ MAGNITUDE_RUNNERS = ("fit", "reader", "ridge")
 CODE_PATHS = ("src", "configs", "native", "pyproject.toml", "uv.lock", ".python-version")
 STATE_ENV = "MARS_TITAN_COMPARISON_STATE"
 VIEWS_ENV = "MARS_TITAN_COMPARISON_VIEWS"
-DEFAULT_STATE = Path.home() / ".local/state/mars-titan/comparison-campaign-v1"
+DEFAULT_STATE = Path.home() / ".local/state/mars-titan/comparison-campaign-gpu-v1"
 DEFAULT_VIEWS = Path.home() / ".local/state/mars-titan/campaign-a-v2-views-v31-20261013/views/US"
 NATIVE_ENV = "MARS_TITAN_EPISODIC_NATIVE"
 # Enlace episódico compilado que usan M1, M2 y M3. El paquete de datos lo lleva a esta ruta.
@@ -483,6 +483,21 @@ def authorize(layout, declaration_sha256, *, note, commit=None, changes=None):
     sus cambios sin confirmar tal como están en ese momento.
     """
     _require(isinstance(note, str) and note.strip(), "El permiso necesita una nota de quien lo da")
+    inherited = layout.state / "inheritance.json"
+    inheritance_status = layout.state / "inheritance-status.json"
+    if inherited.exists() or inheritance_status.exists():
+        _require(
+            inherited.is_file() and inheritance_status.is_file(), "La herencia no está completa"
+        )
+        status = json.loads(inheritance_status.read_text(encoding="utf-8"))
+        receipt = json.loads(inherited.read_text(encoding="utf-8"))
+        _require(status.get("status") == "completed", "La herencia no está completa")
+        _require(
+            receipt.get("declaration_sha256") == declaration_sha256
+            and receipt.get("code_commit") == commit
+            and changes is None,
+            "La identidad no corresponde a la herencia verificada",
+        )
     layout.state.mkdir(parents=True, exist_ok=True)
     document = dict(
         schema_version=1,
@@ -664,10 +679,16 @@ def run_job(declaration, layout, job, *, device="cuda:0", root=ROOT, preflight=F
     Devuelve el estado final. Un informe pausado conserva el trabajo como pausado, para que
     la siguiente orden lo continúe desde su último checkpoint.
     """
-    from .comparison_telemetry import AttemptMetrics
+    from .comparison_telemetry import AttemptMetrics, ProcessGpuMemory
 
     record = read_record(layout, job.key)
     attempt = dict(started_at_utc=datetime.now(UTC).isoformat(), pid=os.getpid())
+    if layout.authorization.is_file():
+        permission = json.loads(layout.authorization.read_text(encoding="utf-8"))
+        attempt["execution"] = {
+            name: permission.get(name)
+            for name in ("code_commit", "declaration_sha256", "code_changes_sha256")
+        }
     if preflight:
         attempt["preflight"] = True
     record.update(status=RUNNING, model=job.model, year=job.year, seed=job.seed, tier=job.tier)
@@ -675,7 +696,19 @@ def run_job(declaration, layout, job, *, device="cuda:0", root=ROOT, preflight=F
     _write_record(layout, job.key, record)
     measurement = AttemptMetrics()
     started = measurement.started
+    gpu_sampler, accelerator = None, None
+    model = declaration["models"][job.model]
+    opencl = (
+        job.runner == "tabular"
+        and model["config"].get("execution", {}).get("backend") == "opencl_float64"
+    )
     try:
+        if opencl:
+            from mars_titan.models.baselines.lightgbm_backend import check_gpu_backend
+
+            _require(device == "cuda:0", "El perfil OpenCL necesita la GPU explícita del equipo")
+            accelerator = check_gpu_backend(model["config"]["execution"])
+            gpu_sampler = ProcessGpuMemory().start()
         report = execute_job(
             declaration, layout, job, device=device, root=root, preflight=preflight
         )
@@ -693,9 +726,17 @@ def run_job(declaration, layout, job, *, device="cuda:0", root=ROOT, preflight=F
         )
     attempt.update(seconds=time.perf_counter() - started, finished_at_utc=_now())
     try:
-        attempt["resources"] = measurement.finish(device if job.runner in CUDA_RUNNERS else "cpu")
+        measured_device = "opencl:0" if opencl else device if job.runner in CUDA_RUNNERS else "cpu"
+        attempt["resources"] = measurement.finish(measured_device)
+        if accelerator:
+            attempt["resources"].update(gpu_name=accelerator["name"], accelerator=accelerator)
     except (OSError, RuntimeError, ValueError) as error:
         attempt["resources_error"] = f"{type(error).__name__}: {str(error)[:300]}"
+    finally:
+        if gpu_sampler is not None:
+            sampled = gpu_sampler.finish()
+            if "resources" in attempt:
+                attempt["resources"].update(sampled)
     failures = sum(item.get("status") == "failed" for item in record["attempts"])
     if status == FAILED and failures < MAX_ATTEMPTS:
         # Vuelve a la cola. Los ejecutores continúan desde su último checkpoint coherente.
@@ -1267,6 +1308,20 @@ def doctor(declaration, layout, machine, *, digest=None, workers=None):
     checks = _data_checks(declaration, layout) + _bundle_check(declaration, layout, digest)
     checks.append(_code_check(digest))
     jobs = plan(declaration, machine)
+    profiles = [
+        declaration["models"][job.model]["config"].get("execution")
+        for job in jobs
+        if job.runner == "tabular"
+    ]
+    if any(profile and profile["backend"] == "opencl_float64" for profile in profiles):
+        from mars_titan.models.baselines.lightgbm_backend import check_gpu_backend
+
+        try:
+            profile = next(p for p in profiles if p and p["backend"] == "opencl_float64")
+            details = check_gpu_backend(profile)
+            checks.append(("LightGBM OpenCL float64", True, details["name"]))
+        except (OSError, RuntimeError, ValueError) as error:
+            checks.append(("LightGBM OpenCL float64", False, str(error)))
     if any(job.runner in CUDA_RUNNERS for job in jobs):
         checks.append(("cuda:0", *_gpu_check()))
     if any(
@@ -1370,6 +1425,7 @@ def main(argv=None):
             "prepare",
             "export",
             "import",
+            "inherit",
             "doctor",
             "authorize",
             "run",
@@ -1393,6 +1449,11 @@ def main(argv=None):
         "--destination", type=Path, help="Carpeta para export o ZIP nuevo para export-results"
     )
     parser.add_argument("--source", type=Path, help="Carpeta del paquete que lee import")
+    parser.add_argument(
+        "--previous-declaration",
+        type=Path,
+        help="Declaración de origen para heredar trabajos en un estado nuevo",
+    )
     parser.add_argument("--part-gib", type=float, help="Tamaño máximo de cada parte de export")
     parser.add_argument("--preflight", action="store_true", help="Uso interno de la orden job")
     parser.add_argument(
@@ -1420,6 +1481,28 @@ def main(argv=None):
         return _export(declaration, digest, layout, args)
     if args.command == "import":
         return _import(layout, args)
+    if args.command == "inherit":
+        from .comparison_inheritance import inherit
+
+        _require(
+            args.source is not None and args.previous_declaration is not None,
+            "inherit necesita --source y --previous-declaration",
+        )
+        previous, previous_digest = load_declaration(args.previous_declaration)
+        receipt = inherit(
+            previous,
+            declaration,
+            previous_digest,
+            digest,
+            Layout(args.source, args.views),
+            layout,
+            commit=code_commit(),
+            root=ROOT,
+        )
+        print(
+            f"Heredados {len(receipt['inherited'])} trabajos. Origen conservado y permiso cerrado"
+        )
+        return 0
     if args.command == "export-results":
         from mars_titan.evaluation.comparison_bundle import export_results
 

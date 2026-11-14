@@ -14,6 +14,8 @@ from . import qlib_lightgbm
 from .inputs import MODALITIES
 
 IDENTITY = "same_inputs_lightgbm_v1"
+GPU_IDENTITY = "same_inputs_lightgbm_opencl_float64_v1"
+NATIVE_VALIDATION_IDENTITY = "same_inputs_lightgbm_native_validation_v1"
 FEATURES = "price_window_modalities_and_presence_v1"
 LABEL = "session_zscore_of_the_residual"
 VECTORS = MODALITIES[1:]
@@ -26,7 +28,22 @@ def _require(condition, message):
 
 def checked_config(config):
     """Declaración del control con los parámetros de Qlib, sus puntos de control y sus entradas."""
-    return qlib_lightgbm.checked_config(config, identity=IDENTITY, features=FEATURES, label=LABEL)
+    identity = config.get("identity") if isinstance(config, dict) else None
+    backend = {GPU_IDENTITY: "opencl_float64", NATIVE_VALIDATION_IDENTITY: "cpu"}.get(identity)
+    if isinstance(config, dict):
+        _require(
+            ("execution" in config) == (backend is not None),
+            "El perfil de ejecución necesita una identidad propia",
+        )
+        if backend is not None:
+            _require(
+                isinstance(config["execution"], dict)
+                and config["execution"].get("backend") == backend,
+                "El dispositivo no corresponde a la identidad declarada",
+            )
+    return qlib_lightgbm.checked_config(
+        config, identity=identity if backend else IDENTITY, features=FEATURES, label=LABEL
+    )
 
 
 def features(inputs, presence):

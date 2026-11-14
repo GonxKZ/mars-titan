@@ -1,0 +1,169 @@
+{
+  "schema_version": 1,
+  "checks": {
+    "targeted_passed": 387,
+    "coverage_tests_passed": 172,
+    "full_passed": 14443,
+    "full_skipped": 401,
+    "full_warnings": 16,
+    "full_seconds": 608.92,
+    "real_source_reports_compatible": 23,
+    "cuda_passed": 32
+  },
+  "coverage": {
+    "tools": {
+      "coverage": "7.16.1",
+      "radon": "6.0.1",
+      "branch_coverage": true,
+      "python": "3.12.14",
+      "summarizer_sha256": "75cc60c88037e0bb17aff6e8ab666ce78b35d600d6c7ad217bf68b1afb4c4ec6"
+    },
+    "totals": {
+      "statements": 1234,
+      "covered_statements": 1115,
+      "branches": 400,
+      "covered_branches": 339
+    },
+    "functions_measured": 106,
+    "convention": "Sentencias ejecutadas entre sentencias de la región según coverage.py.",
+    "crap_convention": "C² × (1 − cobertura de sentencias)³ + C.",
+    "highest_crap": [
+      {
+        "path": "src/mars_titan/models/baselines/lightgbm_backend.py",
+        "function": "check_gpu_backend",
+        "start_line": 41,
+        "end_line": 107,
+        "cyclomatic_complexity": 9,
+        "statements": 33,
+        "covered_statements": 0,
+        "coverage_fraction": 0.0,
+        "branches": 10,
+        "covered_branches": 0,
+        "crap": 90.0
+      },
+      {
+        "path": "src/mars_titan/training/comparison_campaign.py",
+        "function": "checked_declaration",
+        "start_line": 241,
+        "end_line": 356,
+        "cyclomatic_complexity": 64,
+        "statements": 38,
+        "covered_statements": 38,
+        "coverage_fraction": 1.0,
+        "branches": 14,
+        "covered_branches": 14,
+        "crap": 64.0
+      },
+      {
+        "path": "src/mars_titan/training/comparison_telemetry.py",
+        "function": "_process_gpu_bytes",
+        "start_line": 89,
+        "end_line": 108,
+        "cyclomatic_complexity": 6,
+        "statements": 8,
+        "covered_statements": 0,
+        "coverage_fraction": 0.0,
+        "branches": 6,
+        "covered_branches": 0,
+        "crap": 42.0
+      },
+      {
+        "path": "src/mars_titan/training/comparison_campaign.py",
+        "function": "main",
+        "start_line": 1419,
+        "end_line": 1564,
+        "cyclomatic_complexity": 27,
+        "statements": 85,
+        "covered_statements": 68,
+        "coverage_fraction": 0.8,
+        "branches": 32,
+        "covered_branches": 27,
+        "crap": 32.831999999999994
+      },
+      {
+        "path": "src/mars_titan/training/comparison_campaign.py",
+        "function": "doctor",
+        "start_line": 1302,
+        "end_line": 1357,
+        "cyclomatic_complexity": 22,
+        "statements": 29,
+        "covered_statements": 22,
+        "coverage_fraction": 0.7586206896551724,
+        "branches": 10,
+        "covered_branches": 8,
+        "crap": 28.80683914879659
+      },
+      {
+        "path": "src/mars_titan/training/comparison_inheritance.py",
+        "function": "inherit",
+        "start_line": 98,
+        "end_line": 236,
+        "cyclomatic_complexity": 21,
+        "statements": 74,
+        "covered_statements": 61,
+        "coverage_fraction": 0.8243243243243243,
+        "branches": 24,
+        "covered_branches": 19,
+        "crap": 23.39096647779993
+      }
+    ]
+  },
+  "mutations": {
+    "checked_at": "2026-11-14T20:47:50.768312+00:00",
+    "cases": [
+      {
+        "name": "before",
+        "returncode": 0,
+        "expected": true
+      },
+      {
+        "name": "precision",
+        "returncode": 1,
+        "expected": true
+      },
+      {
+        "name": "missing_gpu",
+        "returncode": 1,
+        "expected": true
+      },
+      {
+        "name": "repeated_validation",
+        "returncode": 1,
+        "expected": true
+      },
+      {
+        "name": "source_code",
+        "returncode": 1,
+        "expected": true
+      },
+      {
+        "name": "budget",
+        "returncode": 1,
+        "expected": true
+      },
+      {
+        "name": "source_permission",
+        "returncode": 1,
+        "expected": true
+      },
+      {
+        "name": "after",
+        "returncode": 0,
+        "expected": true
+      }
+    ]
+  },
+  "gpu_sampler": {
+    "gpu_memory_peak_sampled_bytes": 136314880,
+    "gpu_memory_samples": 3,
+    "gpu_memory_period_seconds": 1,
+    "gpu_memory_scope": "nvidia_smi_process_sampled",
+    "gpu_memory_reason": null,
+    "gpu_name": "NVIDIA GeForce RTX 4070 Laptop GPU"
+  },
+  "limits": [
+    "Los recuentos de pruebas se solapan.",
+    "Las medidas CPU/GPU corresponden a un origen y una semilla, no a una garantía de velocidad para toda la campaña.",
+    "El segundo ordenador todavía debe comprobar su GPU y sus bibliotecas."
+  ]
+}
