@@ -348,6 +348,16 @@ def test_the_tabular_window_emits_every_seed_with_their_common_rounds(view, tmp_
         assert sha256(output / member["path"]) == member["sha256"]
         record = json.loads((folder / "run.json").read_text())
         assert record["status"] == "completed" and record["rounds"] == report["selection"]["rounds"]
+        assert record["validation_metric"] == "pearson_ic_per_session"
+        assert len(record["validation_history"]) == 100
+        for point, (values, defined) in zip(
+            record["validation_history"], series[seed - 42], strict=True
+        ):
+            assert point["values"] == values.tolist()
+            assert point["defined"] == defined.tolist()
+        assert record["validation_history"][-1]["rounds"] == 1000
+        assert len(record["validation_sessions"]) == doubled_fit[0]["validation"].panel.sessions
+        assert record["training_loss_history"] is None and record["training_loss_reason"]
         for name, table in predictions(folder, record).items():
             rows = windows.partition_rows(data, name, with_features=True)
             expected = Booster(seed, rows.features.shape[1]).predict(

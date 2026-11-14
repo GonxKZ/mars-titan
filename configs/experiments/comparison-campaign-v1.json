@@ -3,8 +3,8 @@
   "kind": "comparison_campaign_v1",
   "issue": 836,
   "status": "declared_not_executed",
-  "registered": "2026-11-13",
-  "description": "Campaña de comparación en dos equipos. El equipo references ajusta las referencias de la memoria y el equipo mars_titan ajusta Titans-MAC, MARS-TITAN y sus variantes, con las mismas cohortes, ventanas, semillas, receta y regla de parada.",
+  "registered": "2026-11-14",
+  "description": "Campaña de comparación en dos equipos. Los modelos neuronales de cada año y semilla se ejecutan juntos, con sus checkpoints y continuaciones en el mismo equipo. Los controles por origen permanecen en references. Se comparten cohortes, ventanas y semillas.",
   "final_test_access": false,
   "market": "US",
   "cohort": {
@@ -64,14 +64,14 @@
       "patience": 5,
       "min_delta": 0.0,
       "initial_state": "reported",
-      "max_epochs": 8
+      "max_epochs": 10
     },
     "reader": {
       "metric": "session_mae",
       "stopping": "fixed_budget",
       "patience": 5,
       "min_delta": 0.0,
-      "max_epochs": 4
+      "max_epochs": 5
     }
   },
   "execution": {
@@ -83,12 +83,38 @@
     "workers": {
       "references": 1,
       "mars_titan": 1
+    },
+    "neural_blocks": {
+      "2019/seed-42": "references",
+      "2019/seed-43": "references",
+      "2019/seed-44": "mars_titan",
+      "2020/seed-42": "mars_titan",
+      "2020/seed-43": "mars_titan",
+      "2020/seed-44": "references",
+      "2021/seed-42": "references",
+      "2021/seed-43": "mars_titan",
+      "2021/seed-44": "references",
+      "2022/seed-42": "mars_titan",
+      "2022/seed-43": "references",
+      "2022/seed-44": "mars_titan",
+      "2023/seed-42": "mars_titan",
+      "2023/seed-43": "references",
+      "2023/seed-44": "references",
+      "2017/seed-42": "references",
+      "2017/seed-43": "mars_titan",
+      "2017/seed-44": "references",
+      "2016/seed-42": "references",
+      "2016/seed-43": "mars_titan",
+      "2016/seed-44": "mars_titan",
+      "2015/seed-42": "mars_titan",
+      "2015/seed-43": "references",
+      "2015/seed-44": "references"
     }
   },
   "budget": {
     "disk_gib": {
-      "references": 5,
-      "mars_titan": 14
+      "references": 14,
+      "mars_titan": 10
     },
     "min_free_gib": 1.0,
     "deadline_utc": "2026-12-04T23:00:00+00:00",
@@ -533,6 +559,209 @@
         }
       },
       "search_case": "lr1e-3"
+    }
+  },
+  "analysis": {
+    "schema_version": 1,
+    "kind": "comparison_campaign_analysis_v1",
+    "metrics": [
+      "mae_raw",
+      "mae_calibrated",
+      "pearson_ic",
+      "rank_ic"
+    ],
+    "primary_metric": "mae_raw",
+    "primary_family": "primary",
+    "seed_aggregation": "mean_of_session_metrics",
+    "session_weighting": "equal",
+    "bootstrap": {
+      "block_days": 16,
+      "sensitivity_block_days": [
+        8,
+        32
+      ],
+      "replicates": 2000,
+      "seed": 20261114,
+      "confidence": 0.95,
+      "stratification": "origin"
+    },
+    "families": {
+      "primary": [
+        [
+          "mars_titan_m3",
+          "titans_mac"
+        ],
+        [
+          "mars_titan_m3",
+          "zero"
+        ],
+        [
+          "area_network_asset_groups",
+          "titans_mac"
+        ],
+        [
+          "area_network_asset_groups",
+          "zero"
+        ]
+      ],
+      "references": [
+        [
+          "ridge",
+          "zero"
+        ],
+        [
+          "rnn",
+          "zero"
+        ],
+        [
+          "lstm",
+          "zero"
+        ],
+        [
+          "gru",
+          "zero"
+        ],
+        [
+          "dlinear",
+          "zero"
+        ],
+        [
+          "transformer",
+          "zero"
+        ]
+      ],
+      "neural_memory": [
+        [
+          "titans_mac",
+          "transformer"
+        ],
+        [
+          "titans_mac",
+          "titans_mac_disabled"
+        ],
+        [
+          "titans_mac",
+          "titans_mac_frozen"
+        ]
+      ],
+      "episodic_memory": [
+        [
+          "mars_titan_m1",
+          "mars_titan_m0"
+        ],
+        [
+          "mars_titan_m2",
+          "mars_titan_m0"
+        ],
+        [
+          "mars_titan_m3",
+          "mars_titan_m0"
+        ]
+      ],
+      "admission": [
+        [
+          "mars_titan_m2",
+          "mars_titan_m1"
+        ],
+        [
+          "mars_titan_m3",
+          "mars_titan_m1"
+        ],
+        [
+          "mars_titan_m3",
+          "mars_titan_m2"
+        ]
+      ],
+      "mars_titan": [
+        [
+          "mars_titan_m3",
+          "titans_mac"
+        ],
+        [
+          "mars_titan_m3",
+          "transformer"
+        ],
+        [
+          "mars_titan_m3",
+          "zero"
+        ]
+      ],
+      "refinements": [
+        [
+          "mars_titan_m3_k2",
+          "mars_titan_m3"
+        ],
+        [
+          "mars_titan_m3_k4",
+          "mars_titan_m3"
+        ]
+      ],
+      "evidence_bridge": [
+        [
+          "mars_titan_m3_bridge_ring",
+          "mars_titan_m3_bridge_self"
+        ],
+        [
+          "mars_titan_m3_bridge_ring",
+          "mars_titan_m3"
+        ],
+        [
+          "mars_titan_m3_bridge_complete",
+          "mars_titan_m3_bridge_self"
+        ],
+        [
+          "mars_titan_m3_bridge_complete",
+          "mars_titan_m3"
+        ]
+      ],
+      "areas": [
+        [
+          "area_network",
+          "titans_mac"
+        ],
+        [
+          "area_network",
+          "area_network_membership_only"
+        ],
+        [
+          "area_network",
+          "area_network_hidden_only"
+        ]
+      ],
+      "asset_groups": [
+        [
+          "asset_groups",
+          "asset_groups_shuffled"
+        ],
+        [
+          "asset_groups_shuffled",
+          "titans_mac"
+        ]
+      ],
+      "combined_network": [
+        [
+          "area_network_asset_groups",
+          "titans_mac"
+        ],
+        [
+          "area_network_asset_groups",
+          "area_network"
+        ],
+        [
+          "area_network_asset_groups",
+          "asset_groups"
+        ]
+      ],
+      "cross_asset": [
+        [
+          "cross_asset_attention",
+          "cross_asset_attention_self"
+        ],
+        [
+          "cross_asset_attention_self",
+          "titans_mac"
+        ]
+      ]
     }
   }
 }

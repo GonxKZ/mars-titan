@@ -1,0 +1,17 @@
+# Reparto emparejado y resultados portables
+
+Comprobación técnica del 14 de noviembre de 2026 para [#836](https://github.com/GonxKZ/mars-titan/issues/836). El [diseño](../../../docs/experiments/comparison-campaign-v1.md) fija 28 modelos, ocho orígenes y tres semillas. La [revisión de fuentes y aprendizaje](../../../docs/research/comparison-training-review-20261114.md) explica por qué se conservan los años y se amplía el presupuesto a diez épocas de ajuste y cinco de lector.
+
+[scenarios.json](scenarios.json) conserva los coeficientes, fórmulas, recuentos y aproximaciones del presupuesto. Las medidas proceden del piloto de 2018 en la RTX 4070. La duración de la RTX 5060 se trata como un escenario, no como una medida. Los 25 modelos neuronales de cada año y semilla comparten GPU, con 13 bloques en el primer equipo y 11 en el segundo. Los controles por origen permanecen en el primero.
+
+El [recibo de verificación](verification.json) registra 197 pruebas dirigidas, 32 comprobaciones CUDA y 14 pruebas del enlace nativo. `make check TEST_WORKERS=2` terminó con 14.419 pruebas superadas, 401 omisiones y 16 avisos en 517,08 segundos. Esa batería excluye pruebas lentas, nativas y CUDA. Los recuentos se solapan y no se suman. Las omisiones conservan sus motivos, incluidos el bloqueo de aprendizaje, artefactos opcionales y datos no configurados.
+
+Se detectaron nueve mutaciones de reparto, dependencia, huellas, semilla, calibración, estratos temporales y exigencia de una matriz completa. Otras cuatro mutaciones comprueban las unidades de memoria, el tiempo de CPU, la ausencia de energía medida y la distinción entre memoria asignada y reservada. Ambas pasadas tuvieron controles correctos antes y después. Las fuentes no se modificaron durante esas pruebas.
+
+La cobertura usa coverage.py 7.16.1 con ramas y Radon 6.0.1. Combina las pruebas dirigidas con el análisis instrumentado de resultados guardados. Alcanza 1.919 de 1.968 sentencias y 524 de 560 ramas en los nueve módulos examinados. CRAP se calcula por función como `C² × (1 − cobertura de sentencias)³ + C`. El mayor valor es 64 en el validador de declaración, con todas sus sentencias recorridas. El recibo conserva las funciones con mayor valor y la convención exacta. Estos diagnósticos no demuestran ausencia de errores.
+
+La prueba de portabilidad exportó dos ZIP del ensayo anterior de 28 modelos, 64 activos y una semilla. El análisis reconstruyó métricas, curvas disponibles, recursos y 66 archivos gráficos sin cargar pesos ni el dataset original. Su tiempo interno fue de 47,82 segundos, incluidos lectura, verificación y gráficos. Es una ejecución, no un percentil ni una comparación de velocidad. Las gráficas de MAE y contrastes se inspeccionaron visualmente. La prueba automatizada también retira las fuentes originales antes de analizar los ZIP.
+
+No se ejecutaron nuevos pasos de optimizador ni nuevas predicciones científicas para esta verificación. El ensayo de portabilidad no convierte las diferencias del piloto en resultados independientes. La segunda GPU y WSL siguen pendientes de comprobación en destino. Las nuevas series de validación de LightGBM se comprueban con dobles del ejecutor, porque sus informes antiguos no las conservaban separadas del modelo.
+
+[validation-curves.png](validation-curves.png) y [validation-curves.svg](validation-curves.svg) muestran exclusivamente las cinco épocas guardadas de las cuatro recetas con escala del piloto. No extrapolan aprendizaje futuro.

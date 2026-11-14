@@ -106,10 +106,7 @@ def test_declared_campaign_of_the_repository_is_valid_and_splits_the_two_machine
     assert len(digest) == 64 and document["final_test_access"] is False
     machines = {model["machine"] for model in document["models"].values()}
     assert machines == set(campaign.MACHINES)
-    for name, model in document["models"].items():
-        mars = name.startswith(("titans_", "mars_titan", "area_", "asset_", "cross_asset"))
-        assert (model["machine"] == "mars_titan") is mars, name
-    # El segundo equipo solo ajusta Titans-MAC, MARS-TITAN y sus variantes.
+    # Los controles por origen permanecen en el equipo con más RAM.
     references = {
         name for name, model in document["models"].items() if model["machine"] == "references"
     }
@@ -123,6 +120,20 @@ def test_declared_campaign_of_the_repository_is_valid_and_splits_the_two_machine
         "momentum_reversal",
         "lightgbm",
     }
+    assert len(document["models"]) == 28
+    assert {machine: len(campaign.plan(document, machine)) for machine in campaign.MACHINES} == {
+        "references": 349,
+        "mars_titan": 275,
+    }
+    blocks = document["execution"]["neural_blocks"]
+    assert len(blocks) == 24
+    assert list(blocks.values()).count("references") == 13
+    for origin in document["origins"]:
+        assert {blocks[f"{origin['year']}/seed-{seed}"] for seed in document["seeds"]} == set(
+            campaign.MACHINES
+        )
+    assert document["stopping"]["fit"]["max_epochs"] == 10
+    assert document["stopping"]["reader"]["max_epochs"] == 5
     for machine in campaign.MACHINES:
         jobs = campaign.plan(document, machine)
         keys = [job.key for job in jobs]
@@ -146,6 +157,71 @@ def test_declared_campaign_of_the_repository_is_valid_and_splits_the_two_machine
         2015: "history",
     }
     assert document["seeds"] == [42, 43, 44] and document["cohort"] == dict(size=1024)
+
+
+@pytest.mark.parametrize(
+    "reader",
+    [
+        "mars_titan_m0",
+        "mars_titan_m1",
+        "mars_titan_m2",
+        "mars_titan_m3",
+        "mars_titan_m3_k2",
+        "mars_titan_m3_k4",
+        "mars_titan_m3_bridge_self",
+        "mars_titan_m3_bridge_ring",
+        "mars_titan_m3_bridge_complete",
+    ],
+)
+def test_campaign_rejects_a_reader_separated_from_its_checkpoint_parent(reader):
+    document, _ = campaign.load_declaration()
+    model = document["models"][reader]
+    parent_machine = document["models"][model["parent"]]["machine"]
+    model["machine"] = next(machine for machine in campaign.MACHINES if machine != parent_machine)
+
+    with pytest.raises(ValueError, match="necesita un padre mac_online de su equipo"):
+        campaign.checked_declaration(document)
+
+
+def test_complete_checkpoint_family_can_move_without_cross_machine_dependencies():
+    document, _ = campaign.load_declaration()
+    document["execution"].pop("neural_blocks", None)
+    readers = {name for name, model in document["models"].items() if model["runner"] == "reader"}
+    parents = {document["models"][name]["parent"] for name in readers}
+    family = readers | parents
+    destination = next(
+        machine
+        for machine in campaign.MACHINES
+        if machine != document["models"]["titans_mac"]["machine"]
+    )
+    for name in family:
+        document["models"][name]["machine"] = destination
+    campaign.checked_declaration(document)
+
+    jobs = campaign.plan(document, destination)
+    positions = {job.key: position for position, job in enumerate(jobs)}
+    for job in jobs:
+        if job.model in readers:
+            expected = f"{document['models'][job.model]['parent']}/{job.year}/seed-{job.seed}"
+            assert job.needs == expected
+            assert positions[expected] < positions[job.key]
+    for machine in campaign.MACHINES:
+        if machine != destination:
+            assert not any(job.model in family for job in campaign.plan(document, machine))
+
+
+def test_network_variants_can_move_as_independent_fits():
+    document, _ = campaign.load_declaration()
+    document["execution"].pop("neural_blocks", None)
+    networks = {name for name, model in document["models"].items() if model["tier"] == "networks"}
+    assert len(networks) == 8
+    for name in networks:
+        document["models"][name]["machine"] = "references"
+    campaign.checked_declaration(document)
+
+    jobs = [job for job in campaign.plan(document, "references") if job.model in networks]
+    assert len(jobs) == len(networks) * len(document["origins"]) * len(document["seeds"])
+    assert all(job.runner == "fit" and job.needs is None for job in jobs)
 
 
 def test_every_declared_model_passes_the_checks_of_its_runner():
@@ -268,6 +344,55 @@ def test_plan_orders_by_tier_seed_origin_and_model_with_parents_before_readers()
     ]
     with pytest.raises(ValueError, match="equipo"):
         campaign.plan(document, "laptop")
+
+
+def test_year_seed_blocks_keep_paired_neural_models_and_parents_on_one_machine():
+    document = declaration()
+    document["execution"]["neural_blocks"] = {
+        "2019/seed-42": "references",
+        "2023/seed-42": "mars_titan",
+        "2019/seed-43": "mars_titan",
+        "2023/seed-43": "references",
+    }
+    campaign.checked_declaration(document)
+    observed = {}
+    for machine in campaign.MACHINES:
+        jobs = campaign.plan(document, machine)
+        positions = {job.key: index for index, job in enumerate(jobs)}
+        for job in jobs:
+            if job.runner in campaign.GPU_RUNNERS:
+                block = f"{job.year}/seed-{job.seed}"
+                assert document["execution"]["neural_blocks"][block] == machine
+                observed.setdefault(block, set()).add(job.model)
+            else:
+                assert machine == "references"
+            if job.needs is not None:
+                assert positions[job.needs] < positions[job.key]
+    expected = {
+        name
+        for name, model in document["models"].items()
+        if model["runner"] in campaign.GPU_RUNNERS
+    }
+    assert all(models == expected for models in observed.values())
+
+
+@pytest.mark.parametrize("problem", ["missing", "unknown_machine", "extra"])
+def test_neural_block_routing_must_cover_exactly_the_declared_years_and_seeds(problem):
+    document = declaration()
+    blocks = {
+        f"{origin['year']}/seed-{seed}": "references"
+        for origin in document["origins"]
+        for seed in document["seeds"]
+    }
+    document["execution"]["neural_blocks"] = blocks
+    if problem == "missing":
+        blocks.pop("2019/seed-42")
+    elif problem == "unknown_machine":
+        blocks["2019/seed-42"] = "another_machine"
+    else:
+        blocks["2024/seed-42"] = "references"
+    with pytest.raises(ValueError, match="bloques"):
+        campaign.checked_declaration(document)
 
 
 def test_history_origins_form_a_second_stage_after_every_tier_of_the_first(tmp_path):
@@ -533,6 +658,70 @@ def test_finished_jobs_record_scores_from_their_prediction_tables(
     assert measured["scale"] == pytest.approx(0.5)
     assert (measured["raw"] is not None) is magnitude
     assert measured["rank_ic"] == pytest.approx(0.75)
+
+
+@pytest.mark.parametrize("model,device", [("transformer", "cuda:0"), ("rule", "cpu")])
+def test_job_records_resources_for_the_device_that_its_runner_uses(
+    tmp_path, monkeypatch, model, device
+):
+    from mars_titan.training import comparison_telemetry
+
+    document, place = declaration(), layout(tmp_path)
+    job = next(job for job in campaign.plan(document, "references") if job.model == model)
+    measured = []
+
+    class Metrics:
+        def __init__(self):
+            self.started = campaign.time.perf_counter()
+
+        def finish(self, actual_device):
+            measured.append(actual_device)
+            return {"peak_rss_bytes": 4096, "energy_joules": None}
+
+    monkeypatch.setattr(comparison_telemetry, "AttemptMetrics", Metrics)
+    monkeypatch.setattr(campaign, "execute_job", lambda *_, **__: dict(status=DONE))
+
+    assert campaign.run_job(document, place, job) == DONE
+    assert measured == [device]
+    attempt = campaign.read_record(place, job.key)["attempts"][-1]
+    assert attempt["resources"] == {"peak_rss_bytes": 4096, "energy_joules": None}
+
+
+def test_resource_failure_does_not_replace_the_workload_outcome(tmp_path, monkeypatch):
+    from mars_titan.training import comparison_telemetry
+
+    document, place = declaration(), layout(tmp_path)
+    job = campaign.plan(document, "references")[0]
+
+    def failed(*_):
+        raise OSError("contador no disponible")
+
+    monkeypatch.setattr(comparison_telemetry.AttemptMetrics, "finish", failed)
+    monkeypatch.setattr(campaign, "execute_job", lambda *_, **__: dict(status=DONE))
+
+    assert campaign.run_job(document, place, job) == DONE
+    attempt = campaign.read_record(place, job.key)["attempts"][-1]
+    assert "contador no disponible" in attempt["resources_error"]
+
+
+def test_full_process_time_is_kept_when_startup_fails_before_the_job(tmp_path, monkeypatch):
+    document, place = declaration(), layout(tmp_path)
+    queue = campaign.Queue(document, place, "references")
+    clocks = iter((20.0, 25.0, 26.0))
+    monkeypatch.setattr(campaign.time, "perf_counter", lambda: next(clocks))
+
+    class Child:
+        def wait(self):
+            return 1
+
+    monkeypatch.setattr(campaign.subprocess, "Popen", lambda *_, **__: Child())
+    job = queue.jobs[0]
+
+    assert queue._launch(job) == 1
+    attempt = campaign.read_record(place, job.key)["attempts"][-1]
+    assert attempt["seconds"] == 5
+    assert attempt["process_wall_seconds"] == 6
+    assert attempt["process_exit_code"] == 1
 
 
 def test_a_job_fails_for_good_after_the_declared_attempts_and_retry_returns_it(

@@ -32,16 +32,18 @@ La pregunta principal es: **¿mejora una memoria adaptativa de eventos la predic
 
 ## Campaña de comparación en dos equipos
 
-La [campaña de comparación](docs/experiments/comparison-campaign-v1.md) ([#836](https://github.com/GonxKZ/mars-titan/issues/836)) vuelve a ajustar las referencias y la familia de Titans-MAC y MARS-TITAN. Los modelos neuronales comparten receta. Mide a todos los modelos con el MAE residual por sesión y lo compara con la predicción cero sobre las mismas filas. El trabajo se reparte en dos colas para dos equipos con 8 GB de VRAM. La campaña está declarada y su motor se ha comprobado con un piloto acotado sobre el origen 2018, que no forma parte de ella. Sus ajustes no se han ejecutado y este apartado no contiene resultados.
+La [campaña de comparación](docs/experiments/comparison-campaign-v1.md) ([#836](https://github.com/GonxKZ/mars-titan/issues/836)) vuelve a ajustar las referencias y la familia de Titans-MAC y MARS-TITAN. Los modelos neuronales comparten receta. Compara el MAE residual por sesión con la predicción cero sobre las mismas filas. Los controles que predicen un orden se comparan por IC y MAE calibrado. El trabajo se reparte en dos colas para dos equipos con 8 GB de VRAM. La campaña está declarada y su motor se ha comprobado con un piloto acotado sobre el origen 2018, que no forma parte de ella. Este apartado describe el protocolo fijado antes del arranque, sin anticipar resultados de la campaña.
 
 | Cola | Equipo | Modelos | Trabajos |
 | --- | --- | --- | --- |
-| `references` | El portátil que tiene la edición de datos | Transformer compacto, GRU, LSTM, RNN, DLinear, Ridge, la regla de momentum y reversión y LightGBM | 144 |
-| `mars_titan` | El segundo equipo | Titans-MAC y sus dos controles de memoria, MARS-TITAN con las políticas M0 a M3, la red de áreas, los grupos de activos, la atención entre activos, los refinamientos K = 2 y K = 4 y el puente de evidencia | 480 |
+| `references` | Portátil con RTX 4070 | Los 25 modelos neuronales en 13 bloques de año y semilla, más Ridge, LightGBM y momentum/reversión en los ocho orígenes | 349 |
+| `mars_titan` | Segundo equipo con RTX 5060 | Los mismos 25 modelos neuronales en los 11 bloques restantes | 275 |
 
 Las dos colas comparten cohortes de 1.024 activos por origen, ventanas y semillas. Los ajustes neuronales comparten escala de aprendizaje, receta y regla de parada. Los lectores comparten su propio presupuesto, incluido M0, que permite separar el efecto de continuar el ajuste del efecto del banco. Ridge y LightGBM conservan las diferencias de preparación y presupuesto descritas en el diseño. Los orígenes 2019 a 2022 son de desarrollo y 2023 sirve de comprobación posterior. Como 2023 ya se utilizó en estudios anteriores, no es una confirmación independiente. Los años 2015 a 2017 forman una segunda etapa que amplía la evidencia. El test de 2024 permanece cerrado.
 
-En el equipo de las referencias, desde la raíz del repositorio:
+El reparto del 14 de noviembre mantiene en la misma GPU todos los modelos neuronales de cada año y semilla, incluidos el padre y sus lectores. Son 10 épocas por ajuste y 5 por lector, con ocho años de evaluación y toda la historia utilizable desde 2000 hasta el corte de cada origen. La [revisión del aprendizaje y del presupuesto](docs/research/comparison-training-review-20261114.md) estima unas 353–429 horas para la primera cola y 352–429 para la segunda si esta tarda un 20 % más por trabajo. Ese factor es un supuesto pendiente de medir. Se reserva además un día por equipo para incidencias. Las proyecciones no acreditan convergencia ni garantizan el plazo.
+
+En el equipo con RTX 4070, desde una copia fija del repositorio:
 
 ```bash
 uv run python -m mars_titan.training.comparison_campaign prepare
@@ -74,6 +76,12 @@ uv run python -m mars_titan.training.comparison_campaign retry --machine mars_ti
 ```
 
 `status` cuenta los trabajos por nivel, estima las horas restantes e identifica fallos e intentos abiertos. `results` muestra el error frente a cero, el error tras calibrar y el IC por sesión con lo ya terminado. `plan` lista la cola en su orden y `retry` devuelve a la cola los trabajos fallidos.
+
+Con la cola pausada, `export-results` crea un ZIP con las predicciones, sus objetivos, informes, curvas y registros de los intentos. Excluye pesos, checkpoints y datos de entrada. Los recursos no medidos conservan su motivo en lugar de un valor inventado.
+
+```bash
+uv run python -m mars_titan.training.comparison_campaign export-results --machine references --destination "$HOME/mars-titan-resultados-references.zip"
+```
 
 La campaña no modifica la protección local del aprendizaje. Cada equipo registra su propio permiso con `authorize`, ligado a la declaración, el commit y los cambios locales del código. `doctor` muestra esas identidades para compararlas entre equipos. Otra identidad necesita otro estado si ya hay trabajos iniciados. El paquete de datos viaja en un disco, solo contiene derivados locales de la edición y no se publica. La [guía de uso](docs/engineering/comparison-campaign-two-machines.md) detalla la preparación de Windows 11 con WSL2, el seguimiento, la recogida de resultados y qué comprobar si algo falla.
 

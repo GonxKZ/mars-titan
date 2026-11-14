@@ -1,0 +1,268 @@
+{
+  "schema_version": 1,
+  "checked_at": "2026-11-14T06:55:28.172633+00:00",
+  "implementation_commit": "0e1b9e919",
+  "technical_checks_only": true,
+  "new_optimizer_steps": 0,
+  "tests": {
+    "targeted_passed": 197,
+    "cuda_passed": 32,
+    "native_binding_passed": 14,
+    "make_check": {
+      "passed": 14419,
+      "skipped": 401,
+      "warnings": 16,
+      "seconds": 517.08,
+      "workers": 2,
+      "scope": "not slow and not native and not cuda"
+    }
+  },
+  "mutations": {
+    "portable": {
+      "checked_at": "2026-11-14T06:46:47.953132+00:00",
+      "source_sha256": {
+        "src/mars_titan/training/comparison_campaign.py": "40d8aea6929cffed1894669d8d71949249284e796684f3f2ccee9d54842e19b0",
+        "src/mars_titan/evaluation/comparison_bundle.py": "2eec67dc4a183d322b8794bdc4703558052b39725055bb12d04c9db88e7d6549",
+        "src/mars_titan/evaluation/comparison_metrics.py": "b054a3a5df3d267d249f994855df72e286b0ea8cebf16bb801f75da85f1d1d6f",
+        "src/mars_titan/evaluation/comparison_inference.py": "ded7ae69f49d282036a037901dd3af08b5da0f1cde5eab99a53fa3714608e0f7",
+        "src/mars_titan/evaluation/comparison_campaign_analysis.py": "d45f14834e191d053b5483ae4171eae1efa4d89834de48fab67d9f88be353a10"
+      },
+      "source_unchanged": true,
+      "cases": [
+        {
+          "case": "control_before",
+          "exit_code": 0,
+          "expected_outcome": true
+        },
+        {
+          "case": "routing",
+          "exit_code": 1,
+          "expected_outcome": true
+        },
+        {
+          "case": "family",
+          "exit_code": 1,
+          "expected_outcome": true
+        },
+        {
+          "case": "parent_status",
+          "exit_code": 1,
+          "expected_outcome": true
+        },
+        {
+          "case": "file_hash",
+          "exit_code": 1,
+          "expected_outcome": true
+        },
+        {
+          "case": "parent_checkpoint",
+          "exit_code": 1,
+          "expected_outcome": true
+        },
+        {
+          "case": "seed",
+          "exit_code": 1,
+          "expected_outcome": true
+        },
+        {
+          "case": "calibration",
+          "exit_code": 1,
+          "expected_outcome": true
+        },
+        {
+          "case": "strata",
+          "exit_code": 1,
+          "expected_outcome": true
+        },
+        {
+          "case": "incomplete",
+          "exit_code": 1,
+          "expected_outcome": true
+        },
+        {
+          "case": "control_after",
+          "exit_code": 0,
+          "expected_outcome": true
+        }
+      ]
+    },
+    "telemetry": {
+      "checked_at": "2026-11-14T04:34:53.217730+00:00",
+      "source_sha256": "a52cfbb8188c62fd0da9aa65b20a2676c17671bbc192e3cdc36dd760211e36ff",
+      "source_unchanged": true,
+      "cases": [
+        {
+          "case": "control_before",
+          "exit_code": 0
+        },
+        {
+          "case": "rss_units",
+          "exit_code": 1
+        },
+        {
+          "case": "cpu_delta",
+          "exit_code": 1
+        },
+        {
+          "case": "energy_unknown",
+          "exit_code": 1
+        },
+        {
+          "case": "cuda_peaks",
+          "exit_code": 1
+        },
+        {
+          "case": "control_after",
+          "exit_code": 0
+        }
+      ]
+    }
+  },
+  "coverage": {
+    "tools": {
+      "coverage": "7.16.1",
+      "radon": "6.0.1",
+      "branch_coverage": true,
+      "python": "3.12.14",
+      "summarizer_sha256": "75cc60c88037e0bb17aff6e8ab666ce78b35d600d6c7ad217bf68b1afb4c4ec6"
+    },
+    "totals": {
+      "statements": 1968,
+      "covered_statements": 1919,
+      "branches": 560,
+      "covered_branches": 524
+    },
+    "functions_measured": 145,
+    "coverage_convention": "Sentencias ejecutadas entre sentencias de la región según coverage.py.",
+    "complexity_convention": "ComplexityVisitor de Radon sobre la región de coverage.py: if, elif, expresión condicional, for y while con su else, except, else de try, assert, cada operando booleano después del primero y cada cláusula de comprensión suman uno. Las funciones anidadas son regiones propias.",
+    "crap_convention": "C² × (1 − cobertura de sentencias)³ + C.",
+    "highest_crap": [
+      {
+        "path": "src/mars_titan/training/comparison_campaign.py",
+        "function": "checked_declaration",
+        "start_line": 241,
+        "end_line": 356,
+        "cyclomatic_complexity": 64,
+        "statements": 38,
+        "covered_statements": 38,
+        "coverage_fraction": 1.0,
+        "branches": 14,
+        "covered_branches": 14,
+        "crap": 64.0
+      },
+      {
+        "path": "src/mars_titan/evaluation/comparison_plots.py",
+        "function": "write_plots",
+        "start_line": 8,
+        "end_line": 180,
+        "cyclomatic_complexity": 55,
+        "statements": 95,
+        "covered_statements": 94,
+        "coverage_fraction": 0.9894736842105263,
+        "branches": 38,
+        "covered_branches": 36,
+        "crap": 55.00352821110949
+      },
+      {
+        "path": "src/mars_titan/evaluation/comparison_bundle.py",
+        "function": "ResultsBundle._validate",
+        "start_line": 419,
+        "end_line": 587,
+        "cyclomatic_complexity": 50,
+        "statements": 76,
+        "covered_statements": 76,
+        "coverage_fraction": 1.0,
+        "branches": 30,
+        "covered_branches": 30,
+        "crap": 50.0
+      },
+      {
+        "path": "src/mars_titan/evaluation/comparison_protocol.py",
+        "function": "checked",
+        "start_line": 87,
+        "end_line": 151,
+        "cyclomatic_complexity": 35,
+        "statements": 16,
+        "covered_statements": 16,
+        "coverage_fraction": 1.0,
+        "branches": 2,
+        "covered_branches": 2,
+        "crap": 35.0
+      },
+      {
+        "path": "src/mars_titan/evaluation/comparison_bundle.py",
+        "function": "_job",
+        "start_line": 194,
+        "end_line": 280,
+        "cyclomatic_complexity": 17,
+        "statements": 58,
+        "covered_statements": 40,
+        "coverage_fraction": 0.6896551724137931,
+        "branches": 22,
+        "covered_branches": 13,
+        "crap": 25.638361556439374
+      },
+      {
+        "path": "src/mars_titan/training/comparison_campaign.py",
+        "function": "main",
+        "start_line": 1364,
+        "end_line": 1481,
+        "cyclomatic_complexity": 25,
+        "statements": 77,
+        "covered_statements": 73,
+        "coverage_fraction": 0.948051948051948,
+        "branches": 30,
+        "covered_branches": 27,
+        "crap": 25.087616886402518
+      },
+      {
+        "path": "src/mars_titan/evaluation/comparison_campaign_analysis.py",
+        "function": "_model_metrics",
+        "start_line": 306,
+        "end_line": 367,
+        "cyclomatic_complexity": 25,
+        "statements": 33,
+        "covered_statements": 33,
+        "coverage_fraction": 1.0,
+        "branches": 16,
+        "covered_branches": 15,
+        "crap": 25.0
+      },
+      {
+        "path": "src/mars_titan/training/common_control_windows.py",
+        "function": "run_tabular_window",
+        "start_line": 335,
+        "end_line": 490,
+        "cyclomatic_complexity": 21,
+        "statements": 64,
+        "covered_statements": 64,
+        "coverage_fraction": 1.0,
+        "branches": 18,
+        "covered_branches": 18,
+        "crap": 21.0
+      }
+    ],
+    "coverage_sha256": "344b75a9a3e01f8c5a268769f6e558b1d4a741273176ea241111ef9e0e51137b"
+  },
+  "portability": {
+    "source": "Resultados guardados del ensayo de 2018, 64 activos y una semilla",
+    "jobs": 28,
+    "archives": 2,
+    "plots": 66,
+    "analysis_internal_seconds": 47.81831114599481,
+    "new_inference": false,
+    "models_loaded": false,
+    "source_dataset_loaded": false,
+    "plots_visually_checked": [
+      "mae",
+      "contrasts-origin_2018"
+    ]
+  },
+  "limitations": [
+    "La segunda GPU y WSL no se han ejecutado en esta comprobación.",
+    "La cobertura combina 197 pruebas con el análisis instrumentado de los ZIP del ensayo. No es cobertura de todas las cargas científicas.",
+    "Los tiempos instrumentados no se usan para dimensionar la campaña.",
+    "Las curvas LightGBM nuevas se comprueban con dobles del ejecutor. Los resultados antiguos no contenían esa serie separada.",
+    "No se ha medido energía ni latencia por predicción en este ensayo de portabilidad."
+  ]
+}
