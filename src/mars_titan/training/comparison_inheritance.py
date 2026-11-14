@@ -98,7 +98,7 @@ def _check_versions(record):
 def inherit(old, new, old_digest, new_digest, source, target, *, commit, root):
     """Copiar los estados pausados y enlazar los terminados, con el origen cerrado para aprender.
 
-    El destino conserva una referencia local a los resultados completados y a los índices.
+    El destino conserva una referencia local a los resultados completados y copia los índices.
     El directorio de origen debe mantenerse. No se transportan modelos entre ordenadores.
     La autorización del destino se registra después con la orden habitual `authorize`.
     """
@@ -190,7 +190,7 @@ def inherit(old, new, old_digest, new_digest, source, target, *, commit, root):
         try:
             shutil.copytree(source.state / "cohorts", target.state / "cohorts")
             if source.indices.is_dir():
-                target.indices.symlink_to(source.indices.resolve(), target_is_directory=True)
+                shutil.copytree(source.indices, target.indices)
             for key, record in selected.items():
                 destination = target.output(key)
                 destination.parent.mkdir(parents=True, exist_ok=True)
