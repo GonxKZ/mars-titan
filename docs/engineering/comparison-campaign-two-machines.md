@@ -86,6 +86,29 @@ El destino debe ser nuevo. La operación conserva las carpetas de origen y regis
 
 El segundo equipo que todavía no ha entrenado sigue directamente la preparación que viene a continuación.
 
+## Kit ZIP del segundo equipo
+
+El kit ampliado lleva el repositorio Git en `codigo/mars-titan.bundle`, el paquete principal de la comparación y suplementos con la edición codificada v3.1, los datos preparados y las vistas de EE. UU., China y ambos mercados. El contenido de datos ronda 82,9 GiB. Las configuraciones de las campañas están en el repositorio. Los suplementos amplían los archivos disponibles, pero no cambian la cohorte de 1.024 activos ni el reparto de esta comparación.
+
+El pendrive utiliza exFAT para que Windows pueda leer un ZIP mayor de 4 GiB. No es necesario extraer todo el archivo en Windows. `PREPARAR-PC2.sh`, situado junto al ZIP, lo lee por partes y restaura los datos con sus huellas. Conserva los archivos que ya tienen el contenido correcto y rechaza diferencias sin sobrescribirlas. El código se obtiene de la etiqueta fija `comparison-campaign-gpu-20261114`.
+
+Después de preparar WSL2, Ubuntu 26.04, el controlador NVIDIA de Windows y las herramientas indicadas abajo, ejecutar dentro de Ubuntu:
+
+```bash
+read -r -p "Ruta del ZIP dentro de WSL: " kit_zip
+bash "$(dirname "$kit_zip")/PREPARAR-PC2.sh" "$kit_zip"
+```
+
+El preparador instala las dependencias fijadas mediante uv, importa los datos, prepara las cohortes, comprueba CUDA y el enlace nativo, registra el permiso de esta cola y la inicia en tmux. La instalación de paquetes necesita conexión a Internet. La carpeta personal de Linux debe coincidir con la declarada en `bundle.json`, y el repositorio se instala en `~/Escritorio/TFM TITANS`. El preparador informa de la ruta requerida por los datos y las bibliotecas del paquete.
+
+Para todos los datos conviene disponer de al menos 120 GiB libres en el disco de WSL. El preparador calcula el espacio antes de restaurar. Si solo se van a ejecutar los 275 trabajos de esta cola, puede importar el paquete principal de unos 20,1 GiB y dejar los suplementos en el ZIP:
+
+```bash
+bash "$(dirname "$kit_zip")/PREPARAR-PC2.sh" "$kit_zip" --solo-campana
+```
+
+El estado de los entrenamientos y los pesos del primer equipo no se utilizan para completar la cola del segundo. Cada bloque de año y semilla construye y conserva allí sus padres y lectores. Al terminar, se exporta automáticamente `MARS-TITAN-resultados-mars_titan-gpu.zip` con las predicciones y métricas, sin pesos. El archivo de checksum que acompaña al kit permite comprobar su transferencia.
+
 ## Segundo equipo con Windows 11
 
 El segundo equipo ejecuta la campaña dentro de WSL2 con Ubuntu 26.04, la misma distribución que el portátil. El enlace episódico compilado que usan M1, M2 y M3 viaja en el paquete de datos y busca sus bibliotecas en rutas absolutas, así que el usuario de Linux y la ruta del repositorio deben coincidir con los del portátil.
