@@ -87,6 +87,8 @@ Con la cola pausada, `export-results` crea un ZIP con las predicciones, sus obje
 uv run python -m mars_titan.training.comparison_campaign export-results --machine references --destination "$HOME/mars-titan-resultados-references.zip"
 ```
 
+El [kit ZIP ampliado del segundo equipo](docs/engineering/comparison-campaign-two-machines.md#kit-zip-del-segundo-equipo) incluye código, datos codificados y vistas de los dos mercados. Su preparador permite importar todos los datos o solo el paquete necesario para esta cola, comprueba el entorno y arranca los 275 trabajos del segundo equipo.
+
 La campaña no modifica la protección local del aprendizaje. Cada equipo registra su propio permiso con `authorize`, ligado a la declaración, el commit y los cambios locales del código. `doctor` muestra esas identidades para compararlas entre equipos. Otra identidad necesita otro estado si ya hay trabajos iniciados. El paquete de datos viaja en un disco, solo contiene derivados locales de la edición y no se publica. La [guía de uso](docs/engineering/comparison-campaign-two-machines.md) detalla la preparación de Windows 11 con WSL2, el seguimiento, la recogida de resultados y qué comprobar si algo falla.
 
 ## Campaña sobre la edición desde 2000
