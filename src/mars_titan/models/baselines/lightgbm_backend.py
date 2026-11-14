@@ -6,10 +6,15 @@ import ctypes.util
 
 def checked_execution(execution):
     """Un perfil acotado. No permite sustituir una GPU ausente por CPU."""
+    if execution == {"backend": "cpu", "validation": "native_dataset"}:
+        return execution
     if not (
         isinstance(execution, dict)
-        and set(execution) == {"backend", "platform_id", "device_id"}
+        and {"backend", "platform_id", "device_id"}
+        <= set(execution)
+        <= {"backend", "platform_id", "device_id", "validation"}
         and execution["backend"] == "opencl_float64"
+        and ("validation" not in execution or execution["validation"] == "native_dataset")
         and all(
             type(execution[k]) is int and 0 <= execution[k] <= 15
             for k in ("platform_id", "device_id")
@@ -22,6 +27,8 @@ def checked_execution(execution):
 def parameters(execution):
     """Cambios del ejecutor sobre los parámetros científicos del control."""
     checked_execution(execution)
+    if execution["backend"] == "cpu":
+        return {}
     return dict(
         device_type="gpu",
         gpu_use_dp=True,
@@ -34,6 +41,8 @@ def parameters(execution):
 def check_gpu_backend(execution):
     """Consultar el dispositivo del controlador sin construir datos ni ajustar árboles."""
     checked_execution(execution)
+    if execution["backend"] != "opencl_float64":
+        raise ValueError("La consulta GPU necesita el perfil OpenCL")
     try:
         library = ct.CDLL(ctypes.util.find_library("OpenCL") or "libOpenCL.so.1")
     except OSError as error:
