@@ -82,7 +82,7 @@ uv run --no-sync python -m mars_titan.training.comparison_campaign authorize --n
 uv run --no-sync python -m mars_titan.training.comparison_campaign run --machine references
 ```
 
-El destino debe ser nuevo. La operación conserva las carpetas de origen y registra qué trabajos hereda y cuáles quedan fuera por cambiar de identidad. Copia los estados pausados, incluidos los alphas ya completados de Ridge. Los resultados completos y sus padres se consultan mediante referencias locales al origen. **No borrar el estado anterior**, porque contiene esos padres y los índices compartidos. El resultado CPU anterior de LightGBM no se sobrescribe ni se presenta como una ejecución GPU.
+El destino debe ser nuevo. La operación conserva las carpetas de origen y registra qué trabajos hereda y cuáles quedan fuera por cambiar de identidad. Copia los estados pausados, incluidos los alphas ya completados de Ridge. Los resultados completos y sus padres se consultan mediante referencias locales al origen. **No borrar el estado anterior**, porque contiene esos padres. La versión corregida de la herencia copia los índices a un directorio normal, como exige el lector, y conserva intactos los del origen. El resultado CPU anterior de LightGBM no se sobrescribe ni se presenta como una ejecución GPU.
 
 El segundo equipo que todavía no ha entrenado sigue directamente la preparación que viene a continuación.
 
