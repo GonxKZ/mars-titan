@@ -1,5 +1,6 @@
 """Análisis de dos ZIP sin conservar los pesos ni los datos originales."""
 
+import csv
 import json
 import shutil
 from types import SimpleNamespace
@@ -160,6 +161,40 @@ def test_missing_seeds_prevent_a_complete_comparison(tmp_path):
     assert "titans_mac/2019/seed-43" in report["missing_jobs"]
     assert report["comparisons"] == {}
     assert report["inference_reason"]
+
+
+@pytest.mark.parametrize("size", [4096, 8193])
+def test_resource_csv_carries_last_readout_warmup_and_leaves_legacy_cells_empty(tmp_path, size):
+    declaration, digest, layout = campaign_state(tmp_path / "source", reader=True)
+    key = "mars_titan_m3/2019/seed-42"
+    root = layout.output(key)
+    fit = root / "fit/run.json"
+    data = json.loads(fit.read_text())
+    data["validation_warmup"] = dict(
+        hits=3, events=4, tensor_bytes=size, limit_bytes=8192, allocation_fallbacks=1
+    )
+    fit.write_text(json.dumps(data))
+    run = root / "run.json"
+    descriptor = json.loads(run.read_text())
+    descriptor["fit"]["sha256"] = sha256(fit)
+    run.write_text(json.dumps(descriptor))
+    paths = []
+    for machine in ("references", "mars_titan"):
+        paths.append(tmp_path / (machine + ".zip"))
+        export_results(declaration, digest, layout, machine, paths[-1])
+    output = tmp_path / "analysis"
+    if size > 8192:
+        with pytest.raises(ValueError, match="recibo de calentamiento"):
+            analysis.analyze(paths, output, plots=False)
+        return
+    analysis.analyze(paths, output, plots=False)
+    with (output / "resources.csv").open() as stream:
+        rows = {r["job"]: r for r in csv.DictReader(stream)}
+    assert rows[key]["last_fit_warmup_hits"] == "3"
+    assert rows[key]["last_fit_warmup_tensor_bytes"] == "4096"
+    assert rows[key]["last_fit_warmup_allocation_fallbacks"] == "1"
+    assert rows[key]["bundle_training_commit"] == "a" * 40
+    assert rows["titans_mac/2019/seed-42"]["last_fit_warmup_hits"] == ""
 
 
 def test_different_targets_are_rejected_even_with_valid_file_hashes(tmp_path):

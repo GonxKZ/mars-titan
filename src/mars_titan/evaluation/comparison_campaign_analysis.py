@@ -27,6 +27,7 @@ from .forecast_panel import DAY_MICROSECONDS, SessionSeries
 
 WARMUP_COMMITS = frozenset({GPU_RELEASE, "e23a44034c8584682397d3d5f7ac76dbc7bd8e12"})
 PACKED_DECLARATION = "9d81bb4f5477df2b26dc9bd2346b3a5bdb5c23115fc86c110a07bdb6d29539ca"
+WARMUP_FIELDS = ("hits", "events", "tensor_bytes", "limit_bytes", "allocation_fallbacks")
 
 
 def _require(condition, message):
@@ -91,7 +92,7 @@ def _scope(declaration, stage):
     return origins, expected
 
 
-def _resource_row(bundle, key, descriptor):
+def _resource_row(bundle, key, descriptor, fit):
     record = bundle.read_json(descriptor["record"])
     attempts = record.get("attempts", [])
 
@@ -112,12 +113,21 @@ def _resource_row(bundle, key, descriptor):
 
     whole = total("process_wall_seconds")
     cpu = [row.get("cpu_seconds") for row in resource]
+    warmup = (fit or {}).get("validation_warmup")
+    if warmup is not None:
+        _require(
+            isinstance(warmup, dict)
+            and all(type(warmup.get(k)) is int and warmup[k] >= 0 for k in WARMUP_FIELDS)
+            and warmup["tensor_bytes"] <= warmup["limit_bytes"],
+            "El recibo de calentamiento del lector no tiene contadores válidos",
+        )
     return dict(
         job=key,
         model=descriptor["model"],
         origin=descriptor["year"],
         seed=descriptor["seed"],
         machine=bundle.manifest["machine"],
+        bundle_training_commit=bundle.manifest["provenance"]["training_commit"],
         status=descriptor["status"],
         attempts=len(attempts),
         wall_seconds=whole if whole is not None else total("seconds"),
@@ -142,14 +152,14 @@ def _resource_row(bundle, key, descriptor):
         ],
         log=descriptor.get("log"),
         parent_job=descriptor["needs"],
+        **{f"last_fit_warmup_{k}": (warmup or {}).get(k) for k in WARMUP_FIELDS},
     )
 
 
-def _curves(bundle, key, job):
+def _curves(bundle, key, job, fit):
     base = dict(job=key, model=job["model"], origin=job["year"])
     rows = []
-    if job["fit_report"] is not None:
-        fit = bundle.read_json(job["fit_report"])
+    if fit is not None:
         previous = -1
         for point in fit.get("history", []):
             epoch = point["epoch"]
@@ -257,8 +267,9 @@ def _measure_jobs(jobs, selected, output):
         if key not in jobs:
             continue
         bundle, job = jobs[key]
-        resources.append(_resource_row(bundle, key, job))
-        curves.extend(_curves(bundle, key, job))
+        fit = bundle.read_json(job["fit_report"]) if job["fit_report"] is not None else None
+        resources.append(_resource_row(bundle, key, job, fit))
+        curves.extend(_curves(bundle, key, job, fit))
         if job["status"] != DONE:
             continue
         year, model = job["year"], job["model"]
@@ -473,6 +484,7 @@ def _write_outputs(output, report, summary_rows, curves, plots):
             "origin",
             "seed",
             "machine",
+            "bundle_training_commit",
             "status",
             "attempts",
             "wall_seconds",
@@ -485,6 +497,7 @@ def _write_outputs(output, report, summary_rows, curves, plots):
             "cuda_allocated_peak_bytes",
             "cuda_reserved_peak_bytes",
             "gpu_memory_peak_sampled_bytes",
+            *(f"last_fit_warmup_{k}" for k in WARMUP_FIELDS),
             "measured_attempts",
             "energy_joules",
             "energy_reason",
