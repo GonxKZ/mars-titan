@@ -1,0 +1,92 @@
+{
+  "coverage_tool": "coverage.py 7.16.1",
+  "complexity_tool": "Radon 6.0.1",
+  "crap_convention": "C^2 * (1 - statement_coverage_fraction)^3 + C",
+  "coverage": {
+    "covered_lines": 158,
+    "num_statements": 184,
+    "percent_covered": 84.14634146341463,
+    "percent_covered_display": "84",
+    "missing_lines": 26,
+    "excluded_lines": 0,
+    "percent_statements_covered": 85.8695652173913,
+    "percent_statements_covered_display": "86",
+    "num_branches": 62,
+    "num_partial_branches": 11,
+    "covered_branches": 49,
+    "missing_branches": 13,
+    "percent_branches_covered": 79.03225806451613,
+    "percent_branches_covered_display": "79"
+  },
+  "functions": [
+    {
+      "name": "run_worker",
+      "complexity": 24,
+      "statement_coverage": 0.8541666666666666,
+      "crap": 25.786458333333336
+    },
+    {
+      "name": "main",
+      "complexity": 14,
+      "statement_coverage": 0.6938775510204082,
+      "crap": 19.62265722615577
+    },
+    {
+      "name": "available_memory",
+      "complexity": 6,
+      "statement_coverage": 0.875,
+      "crap": 6.0703125
+    },
+    {
+      "name": "running_pid",
+      "complexity": 6,
+      "statement_coverage": 1.0,
+      "crap": 6.0
+    },
+    {
+      "name": "memory_ready",
+      "complexity": 4,
+      "statement_coverage": 1.0,
+      "crap": 4.0
+    },
+    {
+      "name": "Status.__init__",
+      "complexity": 1,
+      "statement_coverage": 1.0,
+      "crap": 1.0
+    },
+    {
+      "name": "Status.save",
+      "complexity": 4,
+      "statement_coverage": 0.9333333333333333,
+      "crap": 4.004740740740741
+    },
+    {
+      "name": "memory_limit",
+      "complexity": 3,
+      "statement_coverage": 1.0,
+      "crap": 3.0
+    },
+    {
+      "name": "runtime_path",
+      "complexity": 2,
+      "statement_coverage": 1.0,
+      "crap": 2.0
+    },
+    {
+      "name": "load_campaign",
+      "complexity": 2,
+      "statement_coverage": 0.8571428571428571,
+      "crap": 2.011661807580175
+    },
+    {
+      "name": "make_queue",
+      "complexity": 2,
+      "statement_coverage": 1.0,
+      "crap": 2.0
+    }
+  ],
+  "limitations": [
+    "La cobertura instrumentada corresponde a pruebas CPU. La recuperación real CUDA se comprueba por separado."
+  ]
+}

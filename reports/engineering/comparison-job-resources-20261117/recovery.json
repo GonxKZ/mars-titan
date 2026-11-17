@@ -1,0 +1,17 @@
+{
+  "observed_at_utc": "2026-11-17T19:57:53.677695+00:00",
+  "job": "titans_mac/2023/seed-43",
+  "recovery_step": 685,
+  "confirmed_step": 1197,
+  "completed_epochs": 1,
+  "worker_memory": {
+    "MemoryCurrent": 7041556480,
+    "MemoryPeak": 7154814976,
+    "MemoryMax": 8589934592
+  },
+  "available_ram_bytes": 12266508288,
+  "scientific_commit": "eb01b883e8e6ec912e2cda85f738fd2525584d19",
+  "launcher_commit": "c4d6a09aa3bdd7ba504fd7b65eb7e80e9d8a5a21",
+  "launcher_sha256": "905117dce6c468b95b8447b369c0a62d5b861768bdfd3da942e34e341564a229",
+  "numerical_code_changed": false
+}

@@ -54,6 +54,26 @@ def test_admission_keeps_four_gib_for_the_system(engine):
     assert engine.memory_ready(12, 16 * 1024**3)
 
 
+@pytest.mark.parametrize("limit,available", [(0, 10), (8, -1), (8, 1.5)])
+def test_invalid_admission_values_fail_closed(engine, limit, available):
+    with pytest.raises(ValueError):
+        engine.memory_ready(limit, available)
+
+
+def test_running_status_requires_an_owned_process(engine, tmp_path):
+    path = tmp_path / "record.json"
+    assert engine.running_pid(path, {}) is None
+    path.write_text(json.dumps(dict(status="running", attempts=[dict(pid=123)])))
+    assert engine.running_pid(path, {123: 1}) == 123
+    assert engine.running_pid(path, {124: 1}) is None
+    path.write_text(json.dumps(dict(status="completed", attempts=[dict(pid=123)])))
+    assert engine.running_pid(path, {123: 1}) is None
+    with path.open("wb") as stream:
+        stream.truncate(16 * 1024**2 + 1)
+    with pytest.raises(ValueError, match="límite"):
+        engine.running_pid(path, {})
+
+
 @pytest.fixture
 def launcher(tmp_path):
     path = tmp_path / "resources"
@@ -228,6 +248,28 @@ def test_missing_runtime_fails_before_importing_training_code(engine, tmp_path):
         engine.load_campaign(tmp_path)
 
 
+def test_non_executable_resource_launcher_is_rejected_before_the_queue(
+    engine, tmp_path, monkeypatch
+):
+    launcher = tmp_path / "not-executable"
+    launcher.write_text("contenido")
+    monkeypatch.setattr(engine, "load_campaign", lambda runtime: SimpleNamespace())
+    monkeypatch.setattr(
+        engine, "make_queue", lambda *args: pytest.fail("Se construyó la cola sin ejecutable")
+    )
+    with pytest.raises(ValueError, match="ejecutable"):
+        engine.main(
+            [
+                "--runtime",
+                str(tmp_path),
+                "--resource-launcher",
+                str(launcher),
+                "--machine",
+                "references",
+            ]
+        )
+
+
 def test_imported_controller_must_belong_to_the_requested_runtime(engine, tmp_path, monkeypatch):
     path = tmp_path / "src/mars_titan/training/comparison_campaign.py"
     path.parent.mkdir(parents=True)
@@ -249,3 +291,50 @@ def test_cli_help_does_not_import_a_scientific_runtime():
     )
     assert result.returncode == 0
     assert "--runtime" in result.stdout
+
+
+@pytest.mark.parametrize("completed", [True, False])
+def test_cli_only_exports_a_complete_queue_and_resolves_the_destination(
+    engine, tmp_path, launcher, monkeypatch, completed
+):
+    exports = []
+    queue = SimpleNamespace(
+        run=lambda: {},
+        request_stop=lambda *args: None,
+        layout=SimpleNamespace(state=tmp_path / "state"),
+        jobs=["job"],
+    )
+    campaign = SimpleNamespace(
+        _print_summary=lambda result: None,
+        job_state=lambda layout, job: "completed" if completed else "paused",
+        DONE="completed",
+    )
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setattr(engine, "load_campaign", lambda runtime: campaign)
+    monkeypatch.setattr(engine, "make_queue", lambda campaign, args: queue)
+    monkeypatch.setattr(engine.signal, "signal", lambda *args: None)
+
+    def export(command, **kwargs):
+        exports.append((command, kwargs))
+        return SimpleNamespace(returncode=0)
+
+    monkeypatch.setattr(engine.subprocess, "run", export)
+    result = engine.main(
+        [
+            "--runtime",
+            "runtime",
+            "--resource-launcher",
+            str(launcher),
+            "--machine",
+            "references",
+            "--results",
+            "result.zip",
+        ]
+    )
+    assert result == (0 if completed else 3)
+    assert len(exports) == int(completed)
+    if completed:
+        command, kwargs = exports[0]
+        assert command[command.index("--destination") + 1] == str(tmp_path / "result.zip")
+        assert command[command.index("--state") + 1] == str(tmp_path / "state")
+        assert kwargs["cwd"] == tmp_path / "runtime"

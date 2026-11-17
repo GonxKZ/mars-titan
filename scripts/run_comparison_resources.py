@@ -118,7 +118,7 @@ def run_worker(
 ):
     from mars_titan.training import gpu_supervisor as processes
 
-    if not command or not Path(launcher).is_file():
+    if not command or not Path(launcher).is_file() or not os.access(launcher, os.X_OK):
         raise ValueError("Falta el comando o el lanzador de recursos")
     state = Status(status, job, limit_gib)
     child, owned, generation = None, {}, None
@@ -244,6 +244,8 @@ def main(argv=None):
     args = parser.parse_args(values)
     args.runtime = args.runtime.resolve()
     args.resource_launcher = args.resource_launcher.resolve(strict=True)
+    if not args.resource_launcher.is_file() or not os.access(args.resource_launcher, os.X_OK):
+        raise ValueError("El lanzador de recursos debe ser un archivo ejecutable")
     for field in ("state", "views", "declaration", "results"):
         value = getattr(args, field)
         if value is not None:
