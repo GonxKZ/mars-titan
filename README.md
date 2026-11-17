@@ -36,6 +36,8 @@ La [campaña de comparación](docs/experiments/comparison-campaign-v1.md) ([#836
 
 La cola original de la RTX 4070 arrancó el 14 de noviembre de 2026 a las 08:12 de Madrid. La revisión GPU conserva sus resultados y continúa en otro estado, desde la etiqueta fija `comparison-campaign-gpu-20261114`. La [issue #836](https://github.com/GonxKZ/mars-titan/issues/836) conserva el seguimiento. El segundo equipo todavía debe completar su comprobación y lanzar su cola.
 
+La [admisión de RAM por trabajo en PC1](docs/engineering/comparison-campaign-two-machines.md#admisión-de-memoria-por-trabajo-en-pc1) utiliza límites de 8 GiB para los trabajos neuronales y controles pequeños, y 12 GiB para LightGBM, con 4 GiB adicionales disponibles antes de arrancar. El lanzador operativo conserva la copia científica fija y permite consultar si está esperando memoria o ejecutando un trabajo.
+
 | Cola | Equipo | Modelos | Trabajos |
 | --- | --- | --- | --- |
 | `references` | Portátil con RTX 4070 | Los 25 modelos neuronales en 13 bloques de año y semilla, más Ridge, LightGBM y momentum/reversión en los ocho orígenes | 349 |
