@@ -178,6 +178,27 @@ Conviene dejar abierta una ventana de terminal de WSL. WSL puede apagar la distr
 
 Los modelos `mars_titan_m1`, `m2`, `m3` y sus variantes necesitan el enlace. Si `doctor` informa de que no carga, hay que comprobar las versiones de Python y PyTorch y las rutas del paquete antes de lanzar. No basta con intercambiar las colas: `references` necesita 12 GiB de RAM disponibles y contiene LightGBM, por lo que el segundo equipo puede no admitirla. Cualquier cambio de reparto requiere volver a comprobar memoria, disco, tiempo y dependencias.
 
+## Admisión de memoria por trabajo en PC1
+
+El lanzador operativo [`run_comparison_resources.py`](../../scripts/run_comparison_resources.py) ejecuta la cola `references` desde una copia científica fija. Reserva un límite de 8 GiB para los trabajos neuronales, Ridge y la regla, y 12 GiB para LightGBM. Antes de arrancar exige otros 4 GiB disponibles para el sistema. Es una condición de admisión, no una reserva física que impida a otra aplicación consumir RAM después.
+
+El mayor pico RSS registrado en los intentos examinados fue de 6,12 GiB para los trabajos no tabulares y 10,26 GiB para LightGBM. No son cotas de todas las variantes pendientes. Aplicar 12 GiB y la reserva a toda la cola dejó los trabajos neuronales esperando con unos 15 GiB disponibles. El nuevo lanzador aplica el límite al trabajo y conserva el controlador fuera de ese grupo de recursos.
+
+Esta ruta está preparada para PC1 con Linux y su lanzador `memslot` instalado. No sustituye las instrucciones WSL de PC2. Primero se detiene la cola anterior en su barrera confirmada. Desde la copia actualizada del repositorio, con el mismo entorno virtual que usa el runtime científico:
+
+```bash
+read -r -p "Ruta de la copia científica fija: " runtime
+read -r -p "Ruta del ejecutable memslot: " resource_launcher
+uv run --no-sync python scripts/run_comparison_resources.py \
+  --runtime "$runtime" --resource-launcher "$resource_launcher" \
+  --machine references \
+  --results "$HOME/MARS-TITAN-resultados-references-gpu.zip"
+```
+
+La orden se puede ejecutar dentro de tmux como las anteriores. Comprueba el permiso contra el código y la declaración del runtime. Reutiliza sus trabajos, cerrojos, orden y recuperación, con un único trabajador. No cambia la receta ni los módulos numéricos. El mismo lanzador de recursos conserva el cerrojo de GPU y comprueba de nuevo la RAM antes de iniciar cada proceso.
+
+`resource-status.json`, dentro del estado de la campaña, distingue la espera de memoria, la espera de recursos y el trabajo en marcha. Una parada se propaga a los procesos del trabajo y espera su cierre. Los fallos se devuelven al controlador original para conservar sus registros y reintentos acotados. El ZIP final se exporta únicamente cuando todos los trabajos están completos.
+
 ## Seguir, parar y reanudar
 
 ```bash

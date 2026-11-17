@@ -1,0 +1,46 @@
+{
+  "issue": 836,
+  "date": "2026-11-17",
+  "tests": {
+    "own_passed": 26,
+    "supervisor_passed": 39,
+    "total_passed": 65,
+    "skipped": 0,
+    "seconds": 3.78
+  },
+  "initial_baseline": {
+    "passed": 39,
+    "seconds": 3.47
+  },
+  "mutation_checks": {
+    "detected": 6,
+    "total": 6,
+    "initial_survivor": "stop_ignored_before_launch",
+    "resolution": "La prueba comprueba que no nace un proceso tras la solicitud de parada, además de comprobar que no escribe el archivo del trabajo."
+  },
+  "checks": [
+    "ruff check",
+    "ruff format --check",
+    "check_repository",
+    "git diff --check"
+  ],
+  "cuda_verification": "CUDA disponible, checkpoint del paso 685 cargado y entrenamiento real reanudado hasta el paso 1197",
+  "previous_peak_rss_bytes": {
+    "non_tabular": 6569566208,
+    "lightgbm": 11019530240
+  },
+  "limits": {
+    "worker_non_tabular_gib": 8,
+    "worker_tabular_gib": 12,
+    "controller_gib": 2,
+    "admission_reserve_gib": 4
+  },
+  "limitations": [
+    "Las medidas de memoria no son cotas de todas las variantes pendientes.",
+    "La recuperación real no se incluye en la cobertura instrumentada de pruebas CPU.",
+    "No se ha repetido una campaña para medir aceleración numérica ni calidad predictiva.",
+    "No se ha medido energía.",
+    "La reserva se comprueba al admitir el proceso y no reserva RAM físicamente."
+  ],
+  "cli_review": "Rechaza un lanzador no ejecutable antes de construir la cola. Regresión roja y verde comprobadas."
+}

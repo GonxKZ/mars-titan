@@ -1,0 +1,32 @@
+[
+  {
+    "mutation": "lightgbm_too_small",
+    "exit_code": 1,
+    "detected": true
+  },
+  {
+    "mutation": "missing_system_reserve",
+    "exit_code": 1,
+    "detected": true
+  },
+  {
+    "mutation": "permission_ignored",
+    "exit_code": 1,
+    "detected": true
+  },
+  {
+    "mutation": "failure_hidden",
+    "exit_code": 1,
+    "detected": true
+  },
+  {
+    "mutation": "stop_ignored_before_launch",
+    "exit_code": 1,
+    "detected": true
+  },
+  {
+    "mutation": "every_job_uses_twelve",
+    "exit_code": 1,
+    "detected": true
+  }
+]
