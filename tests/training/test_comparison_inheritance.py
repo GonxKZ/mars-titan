@@ -181,6 +181,24 @@ def test_incomplete_inheritance_cannot_be_authorized(tmp_path):
     assert not target.authorization.exists()
 
 
+@pytest.mark.parametrize("matches", [True, False])
+def test_imported_data_receipt_follows_the_verified_cohorts(tmp_path, matches):
+    old, digest, original = source(tmp_path)
+    receipt = dict(
+        cohorts=campaign.cohort_identity(old, original) if matches else {},
+        declaration_sha256=digest,
+        code_commit="a" * 40,
+    )
+    atomic_json(original.bundle, receipt)
+    if matches:
+        _, target = perform(tmp_path, old, digest, original)
+        assert target.bundle.read_bytes() == original.bundle.read_bytes()
+    else:
+        with pytest.raises(ValueError, match="cohortes"):
+            perform(tmp_path, old, digest, original)
+        assert json.loads(original.authorization.read_text())["training_allowed"] is True
+
+
 def test_inherited_state_cannot_be_authorized_with_another_configuration(tmp_path):
     old, digest, original = source(tmp_path)
     _, target = perform(tmp_path, old, digest, original)

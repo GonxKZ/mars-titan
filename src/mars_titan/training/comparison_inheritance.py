@@ -18,6 +18,7 @@ from .comparison_campaign import (
     PAUSED,
     RUNNING,
     checked_declaration,
+    cohort_identity,
     plan,
     read_record,
 )
@@ -198,6 +199,12 @@ def inherit(old, new, old_digest, new_digest, source, target, *, commit, root):
                     parent in selected and selected[parent]["status"] == DONE,
                     "Un lector necesita heredar su padre terminado",
                 )
+        bundle = _document(source.bundle) if source.bundle.exists() else None
+        if bundle is not None:
+            _require(
+                bundle.get("cohorts") == cohort_identity(old, source),
+                "Las cohortes no coinciden con el paquete importado",
+            )
         target.state.mkdir(parents=True, exist_ok=False)
         status_path = target.state / "inheritance-status.json"
         atomic_json(status_path, dict(status="running"))
@@ -216,6 +223,8 @@ def inherit(old, new, old_digest, new_digest, source, target, *, commit, root):
         )
         try:
             shutil.copytree(source.state / "cohorts", target.state / "cohorts")
+            if bundle is not None:
+                atomic_json(target.bundle, bundle)
             if source.indices.is_dir():
                 shutil.copytree(source.indices, target.indices)
             for key, record in selected.items():
