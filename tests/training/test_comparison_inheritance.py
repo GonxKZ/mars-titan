@@ -58,6 +58,9 @@ def perform(tmp_path, old, digest, original, new=None):
 def test_completed_parents_keep_their_resolved_paths_and_paused_readers_are_copied(tmp_path):
     old, digest, original = source(tmp_path, paused=True)
     reader = "mars_titan_m3/2019/seed-42"
+    previous = {"code_commit": "d" * 40, "source_record_sha256": "e" * 64}
+    record = campaign.read_record(original, reader)
+    atomic_json(original.record(reader), dict(record, source_execution=previous))
     before = (original.output(reader) / "run.json").read_bytes()
     receipt, target = perform(tmp_path, old, digest, original)
     assert len(receipt["inherited"]) == 6
@@ -71,6 +74,7 @@ def test_completed_parents_keep_their_resolved_paths_and_paused_readers_are_copi
     record = campaign.read_record(target, reader)
     assert record["source_execution"]["code_commit"] == "a" * 40
     assert record["source_execution"]["source_record_sha256"] == sha256(original.record(reader))
+    assert record["source_execution"]["previous"] == previous
     assert json.loads(original.authorization.read_text())["training_allowed"] is False
     assert not target.authorization.exists()
 
@@ -103,6 +107,44 @@ def test_modified_recipe_or_numerical_code_is_not_accepted(tmp_path):
     atomic_json(path, report)
     with pytest.raises(ValueError, match="código"):
         perform(tmp_path, old, digest, original)
+
+
+@pytest.mark.parametrize(
+    ("scope", "status", "module_hash", "allowed"),
+    [
+        (True, "completed", "original", True),
+        (True, "paused", "original", False),
+        (False, "completed", "original", False),
+        (True, "completed", "other", False),
+    ],
+)
+def test_only_a_completed_pinned_readout_can_cross_the_warmup_revision(
+    tmp_path, scope, status, module_hash, allowed
+):
+    from mars_titan.training import comparison_inheritance as migration
+
+    declaration, digest, layout = source(tmp_path)
+    job = next(j for j in campaign.plan(declaration, "mars_titan") if j.runner == "reader")
+    folder = layout.output(job.key)
+    report = json.loads((folder / "run.json").read_text())
+    report.update(status=status, kind="mars_titan_walk_forward_window")
+    report["request"]["code"][migration.READOUT_MODULE] = (
+        migration.PREVIOUS_READOUT if module_hash == "original" else "0" * 64
+    )
+    args = (
+        folder,
+        report,
+        job,
+        declaration["models"][job.model],
+        declaration,
+        campaign.ROOT,
+        sha256(layout.cohort(job.year) / "manifest.json"),
+    )
+    if allowed:
+        migration._compatible_report(*args, warmup_release=scope)
+    else:
+        with pytest.raises(ValueError, match="código"):
+            migration._compatible_report(*args, warmup_release=scope)
 
 
 def test_an_existing_destination_is_preserved(tmp_path):

@@ -23,6 +23,12 @@ from .comparison_campaign import (
 )
 
 _MODULE = re.compile(r"mars_titan(?:\.[A-Za-z_][A-Za-z_0-9]*)+")
+GPU_RELEASE = "eb01b883e8e6ec912e2cda85f738fd2525584d19"
+GPU_DECLARATION = "585594e40886506fe2a4cf011d1e1cc350cc49a8c801d7c049eda5e8685c27d6"
+READOUT_MODULE = "mars_titan.training.mars_titan_run"
+PREVIOUS_READOUT = "fd4ac414e2798161035e1d6aabf785f436cc7e185895bfd341bad980f1ace218"
+RESIDENT_READOUT = "94008c121f34cf897f389f5389a59e5dcce1073bc0988d44d2a38fea955e6457"
+RESIDENT_WARMUP = "70997d22c1e0d228cd066fbfc69fc97f3bb476d26540ea6cc5507418291e10a7"
 
 
 def _require(condition, message):
@@ -49,7 +55,9 @@ def _verify_file(folder, item):
     _require(sha256(path) == item["sha256"], "Ha cambiado la huella de un resultado")
 
 
-def _compatible_report(folder, report, job, model, declaration, root, cohort_sha):
+def _compatible_report(
+    folder, report, job, model, declaration, root, cohort_sha, *, warmup_release=False
+):
     _require(report.get("final_test_opened") is False, "El test final debe seguir cerrado")
     request = report.get("request", {})
     _require(request.get("view_sha256") == cohort_sha, "El resultado pertenece a otra cohorte")
@@ -67,8 +75,23 @@ def _compatible_report(folder, report, job, model, declaration, root, cohort_sha
             path = Path(root) / "src" / (module.replace(".", "/") + ".py")
             if not path.is_file():
                 path = Path(root) / "src" / module.replace(".", "/") / "__init__.py"
+            current = sha256(path) if path.is_file() else None
+            if current == digest and current is not None:
+                continue
+            # Un ajuste interrumpido conserva su identidad exacta. La excepción solo enlaza
+            # predicciones ya emitidas por un lector terminado de la versión comprobada.
+            helper = path.with_name("validation_warmup.py")
             _require(
-                path.is_file() and sha256(path) == digest, f"Ha cambiado el código de {module}"
+                warmup_release
+                and job.runner == "reader"
+                and report.get("status") == DONE
+                and report.get("kind") == "mars_titan_walk_forward_window"
+                and module == READOUT_MODULE
+                and digest == PREVIOUS_READOUT
+                and current == RESIDENT_READOUT
+                and helper.is_file()
+                and sha256(helper) == RESIDENT_WARMUP,
+                f"Ha cambiado el código de {module}",
             )
     for item in report.get("predictions", {}).values():
         _verify_file(folder, item)
@@ -123,6 +146,9 @@ def inherit(old, new, old_digest, new_digest, source, target, *, commit, root):
         permission.get("declaration_sha256") == old_digest, "La declaración de origen no coincide"
     )
     _require(permission.get("code_changes_sha256") is None, "El origen necesita una versión fija")
+    warmup_release = (
+        old_digest == new_digest == GPU_DECLARATION and permission.get("code_commit") == GPU_RELEASE
+    )
     jobs = {job.key: job for machine in MACHINES for job in plan(old, machine)}
     candidates = {job.key: job for machine in MACHINES for job in plan(new, machine)}
     _require(len(jobs) <= 4096, "La herencia supera el límite de trabajos")
@@ -162,6 +188,7 @@ def inherit(old, new, old_digest, new_digest, source, target, *, commit, root):
                 new,
                 root,
                 sha256(source.cohort(job.year) / "manifest.json"),
+                warmup_release=warmup_release,
             )
             selected[key] = record
         for key in selected:
@@ -205,6 +232,8 @@ def inherit(old, new, old_digest, new_digest, source, target, *, commit, root):
                     source_state=str(source.state.resolve()),
                     source_record_sha256=sha256(source.record(key)),
                 )
+                if record.get("source_execution"):
+                    copied["source_execution"]["previous"] = record["source_execution"]
                 target.record(key).parent.mkdir(parents=True, exist_ok=True)
                 atomic_json(target.record(key), copied)
                 if source.log(key).is_file():
