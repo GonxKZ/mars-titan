@@ -17,12 +17,16 @@ from threadpoolctl import threadpool_limits
 
 from mars_titan.data.storage import atomic_json, sha256
 from mars_titan.training.comparison_campaign import DONE, HISTORY, MACHINES, MAGNITUDE_RUNNERS, plan
+from mars_titan.training.comparison_inheritance import GPU_DECLARATION, GPU_RELEASE
 
 from . import comparison_metrics as metrics
 from . import comparison_protocol as protocol
 from .comparison_bundle import ResultsBundle
 from .comparison_inference import compare_family
 from .forecast_panel import DAY_MICROSECONDS, SessionSeries
+
+WARMUP_COMMITS = frozenset({GPU_RELEASE, "e23a44034c8584682397d3d5f7ac76dbc7bd8e12"})
+PACKED_DECLARATION = "9d81bb4f5477df2b26dc9bd2346b3a5bdb5c23115fc86c110a07bdb6d29539ca"
 
 
 def _require(condition, message):
@@ -37,17 +41,27 @@ def _csv(path, rows, fields):
         writer.writerows(rows)
 
 
-def _merge(bundles):
+def _merge(bundles, *, verified_warmup=False):
     first = bundles[0].manifest
     jobs = {}
     for bundle in bundles:
         current = bundle.manifest
+        base, other = first["provenance"], current["provenance"]
+        pair = {base["training_commit"], other["training_commit"]}
+        warmup = (
+            verified_warmup
+            and pair == WARMUP_COMMITS
+            and "code_changes_sha256" in base
+            and base["code_changes_sha256"] is None
+            and base["authorized_declaration_sha256"] == GPU_DECLARATION
+            and base["declaration_sha256"] == PACKED_DECLARATION
+        )
         _require(
-            current["provenance"]["training_commit"] == first["provenance"]["training_commit"],
+            len(pair) == 1 or warmup,
             "Los paquetes proceden de distinto código o commit",
         )
         _require(
-            current["provenance"] == first["provenance"],
+            dict(base, training_commit=other["training_commit"]) == other,
             "Los paquetes no comparten declaración y cambios del código",
         )
         _require(
@@ -530,7 +544,7 @@ def _write_outputs(output, report, summary_rows, curves, plots):
     )
 
 
-def analyze(paths, output, *, stage="all", allow_partial=False, plots=True):
+def analyze(paths, output, *, stage="all", allow_partial=False, plots=True, verified_warmup=False):
     """Reunir uno o dos paquetes. La inferencia requiere todos los trabajos de su alcance."""
     _require(1 <= len(paths) <= 2, "Se necesitan uno o dos paquetes de resultados")
     output = Path(output)
@@ -538,7 +552,8 @@ def analyze(paths, output, *, stage="all", allow_partial=False, plots=True):
     started = time.perf_counter()
     with ExitStack() as stack, threadpool_limits(limits=2):
         bundles = [stack.enter_context(ResultsBundle(path)) for path in sorted(paths, key=str)]
-        jobs = _merge(bundles)
+        jobs = _merge(bundles, verified_warmup=verified_warmup)
+        commits = {b.manifest["provenance"]["training_commit"] for b in bundles}
         declaration = bundles[0].declaration
         origins, expected = _scope(declaration, stage)
         missing = {
@@ -576,8 +591,15 @@ def analyze(paths, output, *, stage="all", allow_partial=False, plots=True):
                 ),
                 provenance=dict(
                     bundles[0].manifest["provenance"],
+                    training_commit=next(iter(commits)) if len(commits) == 1 else None,
+                    verified_warmup=len(commits) > 1,
                     archives=[
-                        dict(name=b.path.name, sha256=sha256(b.path), machine=b.manifest["machine"])
+                        dict(
+                            name=b.path.name,
+                            sha256=sha256(b.path),
+                            machine=b.manifest["machine"],
+                            training_commit=b.manifest["provenance"]["training_commit"],
+                        )
                         for b in bundles
                     ],
                 ),
@@ -650,6 +672,11 @@ def main(argv=None):
         help="Solo descripción si faltan trabajos, sin inferencia",
     )
     parser.add_argument("--no-plots", action="store_true")
+    parser.add_argument(
+        "--verified-warmup",
+        action="store_true",
+        help="Admitir el par de versiones comprobado para el calentamiento CUDA",
+    )
     args = parser.parse_args(argv)
     report = analyze(
         args.bundle,
@@ -657,6 +684,7 @@ def main(argv=None):
         stage=args.stage,
         allow_partial=args.allow_partial,
         plots=not args.no_plots,
+        verified_warmup=args.verified_warmup,
     )
     print(f"Análisis escrito en {args.output}. Matriz completa: {report['complete']}")
     return 0

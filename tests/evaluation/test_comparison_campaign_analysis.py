@@ -2,6 +2,7 @@
 
 import json
 import shutil
+from types import SimpleNamespace
 
 import pyarrow as pa
 import pyarrow.parquet as pq
@@ -91,6 +92,61 @@ def test_different_training_commits_are_not_mixed(tmp_path):
     first, second = packages(tmp_path, changed_commit=True)
     with pytest.raises(ValueError, match="código|commit"):
         analysis.analyze([first, second], tmp_path / "analysis", plots=False)
+
+
+def test_mixed_zip_report_names_each_runtime(tmp_path, monkeypatch):
+    from mars_titan.evaluation.comparison_bundle import ResultsBundle
+
+    first, second = packages(tmp_path, changed_commit=True)
+    with ResultsBundle(first) as bundle:
+        provenance = bundle.manifest["provenance"]
+    monkeypatch.setattr(analysis, "WARMUP_COMMITS", {"a" * 40, "b" * 40})
+    monkeypatch.setattr(analysis, "GPU_DECLARATION", provenance["authorized_declaration_sha256"])
+    monkeypatch.setattr(analysis, "PACKED_DECLARATION", provenance["declaration_sha256"])
+    report = analysis.analyze(
+        [first, second], tmp_path / "mixed", plots=False, verified_warmup=True
+    )
+    origin = report["provenance"]
+    assert origin["training_commit"] is None
+    assert {row["training_commit"] for row in origin["archives"]} == analysis.WARMUP_COMMITS
+    assert origin["verified_warmup"] is True
+    assert report["complete"] and report["comparisons"]
+
+
+@pytest.mark.parametrize(
+    "change", ["commit", "dirty", "declaration", "packed", "cohorts", "missing"]
+)
+def test_warmup_option_still_rejects_unverified_pairs(change):
+    older, newer = sorted(analysis.WARMUP_COMMITS)
+    first = dict(
+        training_commit=older,
+        code_changes_sha256=None,
+        authorized_declaration_sha256=analysis.GPU_DECLARATION,
+        declaration_sha256=analysis.PACKED_DECLARATION,
+    )
+    second = dict(first, training_commit=newer)
+    cohorts = {"2019": "misma cohorte"}
+    if change == "commit":
+        second["training_commit"] = "c" * 40
+    if change == "missing":
+        del first["code_changes_sha256"], second["code_changes_sha256"]
+    if change in {"dirty", "declaration", "packed"}:
+        key = {
+            "dirty": "code_changes_sha256",
+            "declaration": "authorized_declaration_sha256",
+            "packed": "declaration_sha256",
+        }[change]
+        first[key] = second[key] = "c" * 64
+    bundles = [
+        SimpleNamespace(manifest=dict(provenance=first, cohorts=cohorts, jobs={})),
+        SimpleNamespace(
+            manifest=dict(
+                provenance=second, cohorts={} if change == "cohorts" else cohorts, jobs={}
+            )
+        ),
+    ]
+    with pytest.raises(ValueError, match="código|cohortes|declaración"):
+        analysis._merge(bundles, verified_warmup=True)
 
 
 def test_missing_seeds_prevent_a_complete_comparison(tmp_path):
