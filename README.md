@@ -34,7 +34,7 @@ La pregunta principal es: **¿mejora una memoria adaptativa de eventos la predic
 
 La [campaña de comparación](docs/experiments/comparison-campaign-v1.md) ([#836](https://github.com/GonxKZ/mars-titan/issues/836)) vuelve a ajustar las referencias y la familia de Titans-MAC y MARS-TITAN. Los modelos neuronales comparten receta. Compara el MAE residual por sesión con la predicción cero sobre las mismas filas. Los controles que predicen un orden se comparan por IC y MAE calibrado. El trabajo se reparte en dos colas para dos equipos con 8 GB de VRAM. El motor se comprobó con un piloto acotado de 2018, que no forma parte de la comparación. Este apartado describe el protocolo fijado antes del arranque, sin anticipar resultados de la campaña.
 
-La cola original de la RTX 4070 arrancó el 14 de noviembre de 2026 a las 08:12 de Madrid. La revisión GPU conserva sus resultados y continúa en otro estado, desde la etiqueta fija `comparison-campaign-gpu-20261114`. La [issue #836](https://github.com/GonxKZ/mars-titan/issues/836) conserva el seguimiento. El segundo equipo todavía debe completar su comprobación y lanzar su cola.
+La cola de la RTX 4070 arrancó el 14 de noviembre de 2026 a las 08:12 de Madrid. La revisión `comparison-campaign-warmup-20261118` permite reutilizar en GPU el historial de validación del padre congelado. El segundo equipo puede terminar con `comparison-campaign-gpu-20261114`. El análisis conserva la versión de cada ZIP. La [guía de los dos equipos](docs/engineering/comparison-campaign-two-machines.md#calentamiento-de-validación-en-gpu) explica cómo continuar y reunir los resultados.
 
 La [admisión de RAM por trabajo en PC1](docs/engineering/comparison-campaign-two-machines.md#admisión-de-memoria-por-trabajo-en-pc1) utiliza límites de 8 GiB para los trabajos neuronales y controles pequeños, y 12 GiB para LightGBM, con 4 GiB adicionales disponibles antes de arrancar. El lanzador operativo conserva la copia científica fija y permite consultar si está esperando memoria o ejecutando un trabajo.
 
@@ -60,7 +60,7 @@ uv run python -m mars_titan.training.comparison_campaign authorize --note "Campa
 uv run python -m mars_titan.training.comparison_campaign run --machine references
 ```
 
-En el segundo equipo, con el repositorio clonado en el mismo commit y el disco del paquete conectado:
+Para preparar el segundo equipo se usa la versión fija del kit original con el disco del paquete conectado.
 
 ```bash
 uv sync --locked --all-extras

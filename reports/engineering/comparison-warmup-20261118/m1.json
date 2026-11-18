@@ -1,0 +1,81 @@
+{
+  "model": "mars_titan_m1",
+  "year": 2022,
+  "seed": 43,
+  "gpu": "NVIDIA GeForce RTX 4070 Laptop GPU",
+  "torch": "2.14.0+cu130",
+  "validation_rows": 128118,
+  "validation_sha256": "f292ed1191fa0a0baffe230826d6cb3d89fc1d773a202ec1176ffa94142b682e",
+  "optimizer_steps": 0,
+  "passes": [
+    {
+      "pass_index": 0,
+      "resident": false,
+      "seconds": 53.69203017116524,
+      "allocated_bytes": 323773440,
+      "reserved_bytes": 413138944,
+      "peak_rss_kib": 3226832,
+      "cache": null
+    },
+    {
+      "pass_index": 1,
+      "resident": true,
+      "seconds": 47.90098526608199,
+      "allocated_bytes": 390874112,
+      "reserved_bytes": 492830720,
+      "peak_rss_kib": 3277976,
+      "cache": {
+        "hits": 0,
+        "events": 252,
+        "tensor_bytes": 67059696,
+        "limit_bytes": 268435456
+      }
+    },
+    {
+      "pass_index": 2,
+      "resident": true,
+      "seconds": 28.667985468171537,
+      "allocated_bytes": 391513088,
+      "reserved_bytes": 492830720,
+      "peak_rss_kib": 3292348,
+      "cache": {
+        "hits": 1,
+        "events": 252,
+        "tensor_bytes": 67059696,
+        "limit_bytes": 268435456
+      }
+    },
+    {
+      "pass_index": 3,
+      "resident": false,
+      "seconds": 47.319071093108505,
+      "allocated_bytes": 391070720,
+      "reserved_bytes": 492830720,
+      "peak_rss_kib": 3292348,
+      "cache": null
+    },
+    {
+      "pass_index": 4,
+      "resident": true,
+      "seconds": 28.19458630401641,
+      "allocated_bytes": 391513088,
+      "reserved_bytes": 492830720,
+      "peak_rss_kib": 3295396,
+      "cache": {
+        "hits": 2,
+        "events": 252,
+        "tensor_bytes": 67059696,
+        "limit_bytes": 268435456
+      }
+    },
+    {
+      "pass_index": 5,
+      "resident": false,
+      "seconds": 46.50816122395918,
+      "allocated_bytes": 391070720,
+      "reserved_bytes": 492830720,
+      "peak_rss_kib": 3295396,
+      "cache": null
+    }
+  ]
+}

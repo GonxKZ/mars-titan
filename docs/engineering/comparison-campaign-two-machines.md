@@ -32,14 +32,14 @@ El reparto conserva el modelo padre y todos sus lectores en un mismo equipo. Las
 
 ## Reglas que conviene tener presentes
 
-- Los dos equipos ejecutan el mismo commit. El permiso guarda también la huella de la declaración y de los cambios locales en el código, incluidos los archivos nuevos. La cola se niega a continuar si cambia esa identidad. Durante la campaña se trabaja en el código desde otra copia. Un estado que ya tiene trabajos no admite autorizar otra identidad, para no mezclar resultados. Una ejecución distinta necesita otra carpeta con `--state`.
+- Cada equipo ejecuta un commit fijo. El permiso guarda la declaración y la huella de los cambios locales en el código. Cambiar de versión exige otro estado. El análisis exige el mismo commit en ambos ZIP por defecto. La única pareja adicional admitida se describe en [Calentamiento de validación en GPU](#calentamiento-de-validación-en-gpu).
 - La protección local del aprendizaje (`training-hold-2000.json`) no se toca. La campaña tiene su propio permiso, que registra quien la lanza con la orden `authorize`.
 - El test final de 2024 permanece cerrado. La declaración no admite orígenes posteriores a 2023.
 - Nada de esto sube datos al repositorio. El paquete de datos viaja en un disco y solo contiene derivados locales de la edición.
 
 ## Equipo de las referencias
 
-Todas las órdenes se ejecutan desde una copia fija del repositorio, con el entorno ya creado (`make setup`). La campaña usa la etiqueta `comparison-campaign-gpu-20261114`. Después del arranque no se actualiza esa copia con `git pull`. El desarrollo continúa en otra copia.
+El kit original usa la etiqueta `comparison-campaign-gpu-20261114`. Las órdenes de arranque se ejecutan desde esa copia fija, con el entorno ya creado (`make setup`). El desarrollo continúa en otra copia.
 
 ```bash
 # 1. Cohortes de cada origen. Solo lee y escribe manifiestos.
@@ -67,7 +67,7 @@ El diagnóstico comprueba 12 GiB de RAM disponible para las referencias y 6 GiB 
 
 El paquete ocupa unos 20,1 GiB. `export` crea la carpeta de destino si falta. Con `--part-gib 3.5`, cada tar ocupa como máximo 3,5 GiB, incluidas sus cabeceras, y cabe en un disco FAT32. Si un archivo individual no cabe, la exportación informa del motivo. Las salidas tienen una reserva declarada de 14 GiB para `references` y 10 GiB para `mars_titan`. La orden `doctor` comprueba ese espacio, y la cola se detiene sin perder trabajos cuando queda menos de 1 GiB.
 
-Se puede exportar antes del commit final si los datos y las cohortes ya están fijados. Al importar aparece un aviso si el paquete declara otro commit o declaración. Las cohortes deben coincidir y los dos equipos deben ejecutar la misma versión final del código.
+Se puede exportar antes del commit final si los datos y las cohortes ya están fijados. Al importar aparece un aviso si el paquete declara otro commit o declaración. Las cohortes deben coincidir y el estado de cada equipo debe corresponder a su permiso.
 
 ## Continuar un estado anterior
 
@@ -148,7 +148,7 @@ nvidia-smi
 
 El entorno fijado usa Python 3.12 y PyTorch 2.14.0 con CUDA 13.0. El wheel incluye `sm_120`, correspondiente a la familia RTX 5060 en [la tabla de NVIDIA](https://developer.nvidia.com/cuda/gpus). Esto no sustituye una comprobación en el equipo de destino.
 
-La copia de ejecución debe estar en la etiqueta `comparison-campaign-gpu-20261114` y en el mismo commit que la copia de ejecución del portátil (`git rev-parse HEAD` en los dos). `main` puede avanzar después con documentación, sin cambiar esa versión científica. Con el disco externo conectado, Windows lo monta dentro de WSL en `/mnt/d`, `/mnt/e` o la letra que tenga:
+El kit de Windows instala `comparison-campaign-gpu-20261114`. Se puede consultar su commit con `git rev-parse HEAD`. Un equipo que ya está entrenando con esta versión puede terminar su cola. Windows monta el disco externo dentro de WSL en `/mnt/d`, `/mnt/e` o la letra asignada.
 
 ```bash
 # 1. Restaurar el paquete en las mismas rutas, con cada huella comprobada al escribir.
@@ -166,7 +166,7 @@ tmux new-session -d -s mars-titan "uv run --no-sync python -m mars_titan.trainin
 tmux attach -t mars-titan
 ```
 
-La orden `doctor` debe terminar sin ninguna línea `FALTA`. Comprueba las cohortes del paquete, que `cuda:0` responde, que el enlace episódico carga y que hay memoria y disco. La línea «código y declaración» debe mostrar el mismo commit y la misma huella en las copias de ejecución de los dos equipos, sin cambios locales. El aviso del permiso desaparece al ejecutar `authorize`.
+La orden `doctor` debe terminar sin ninguna línea `FALTA`. Comprueba las cohortes del paquete, que `cuda:0` responde, que el enlace episódico carga y que hay memoria y disco. La línea «código y declaración» identifica la revisión fijada en ese equipo y la huella de la declaración compartida. El aviso del permiso desaparece al ejecutar `authorize`.
 
 La comprobación CUDA de esas órdenes verifica emisión, gradientes y recuperación sin pasos de optimizador.
 
@@ -198,6 +198,51 @@ uv run --no-sync python scripts/run_comparison_resources.py \
 La orden se puede ejecutar dentro de tmux como las anteriores. Comprueba el permiso contra el código y la declaración del runtime. Reutiliza sus trabajos, cerrojos, orden y recuperación, con un único trabajador. No cambia la receta ni los módulos numéricos. El mismo lanzador de recursos conserva el cerrojo de GPU y comprueba de nuevo la RAM antes de iniciar cada proceso.
 
 `resource-status.json`, dentro del estado de la campaña, distingue la espera de memoria, la espera de recursos y el trabajo en marcha. Una parada se propaga a los procesos del trabajo y espera su cierre. Los fallos se devuelven al controlador original para conservar sus registros y reintentos acotados. El ZIP final se exporta únicamente cuando todos los trabajos están completos.
+
+## Calentamiento de validación en GPU
+
+La versión `comparison-campaign-warmup-20261118` guarda en la GPU el estado de Titans-MAC justo antes de la primera decisión de validación de sus lectores. En cada época, el banco empieza vacío y el lector vuelve a emitir todas las predicciones con sus pesos actuales. El ajuste del propio Titans-MAC sigue recorriendo el historial con los pesos de cada época. Los lectores con contexto de sesión también conservan su recorrido original. La caché tiene un límite de 256 MiB y comprueba que queda al menos 1 GiB libre además del espacio para las copias. Si la copia opcional se queda sin memoria, la validación recorre el historial original.
+
+En M1 se comprobaron las 128.118 filas del origen 2022. Las repeticiones pasaron de 46,9 a 28,4 segundos de media en la RTX 4070. El tiempo de la RTX 5060 se obtiene de sus propios registros. [Medición y límites](../../reports/engineering/comparison-warmup-20261118/README.md)
+
+Un PC2 que ya está entrenando con la etiqueta del kit puede completar su cola y exportar el ZIP desde esa misma versión. Para adoptar el calentamiento en un equipo, conviene que el lector activo termine en su versión de origen. La migración acepta lectores terminados y checkpoints de ajustes cuyo código numérico coincide. Hay que conservar la copia y el directorio de estado de origen, donde siguen los padres y sus resultados.
+
+Desde el repositorio original, con la cola detenida y el entorno de ese equipo ya instalado, estas órdenes preparan una copia de ejecución y otra con las herramientas de administración. La herramienta de `main` verifica y copia los padres terminados como archivos regulares. Esto permite que el lector abra sus checkpoints. El permiso se vincula al commit de la copia científica. El ejemplo corresponde a la cola `mars_titan` de PC2.
+
+```bash
+set -e
+export UV_PROJECT_ENVIRONMENT="$(uv run --no-sync python -c 'import sys; print(sys.prefix)')"
+git fetch origin refs/heads/main:refs/remotes/origin/main refs/tags/comparison-campaign-warmup-20261118:refs/tags/comparison-campaign-warmup-20261118
+admin_dir="$PWD/../mars-titan-admin-20261118"
+git worktree add --detach "$admin_dir" origin/main
+git worktree add --detach ../mars-titan-warmup-20261118 comparison-campaign-warmup-20261118
+cd ../mars-titan-warmup-20261118
+runtime="$PWD"
+export PYTHONPATH="$PWD/src"
+old_state="$HOME/.local/state/mars-titan/comparison-campaign-gpu-v1"
+export MARS_TITAN_COMPARISON_STATE="$HOME/.local/state/mars-titan/comparison-campaign-warmup-20261118"
+export MARS_TITAN_RESIDENT_VALIDATION_WARMUP=1
+campaign=(uv run --no-sync python -m mars_titan.training.comparison_campaign)
+"${campaign[@]}" doctor --state "$old_state" --machine mars_titan
+(
+  cd "$admin_dir"
+  export PYTHONPATH="$PWD/src"
+  "${campaign[@]}" inherit --runtime "$runtime" --source "$old_state" \
+    --previous-declaration configs/experiments/comparison-campaign-gpu-v1.json
+)
+"${campaign[@]}" authorize --note "Continuación de la cola con calentamiento residente"
+"${campaign[@]}" doctor --machine mars_titan
+"${campaign[@]}" run --machine mars_titan
+```
+
+Para reanudar o exportar desde la nueva copia se usan el mismo entorno, `PYTHONPATH`, `MARS_TITAN_COMPARISON_STATE` y `MARS_TITAN_RESIDENT_VALIDATION_WARMUP=1`. La herencia y el permiso se registran una sola vez. El recibo del ajuste incluye `validation_warmup`, con el número de reutilizaciones, los bytes de tensores y las ocasiones en que faltó memoria para la copia.
+
+En PC1, el lanzador de recursos recibe ese mismo directorio mediante `--state`. Se puede consultar el avance desde otra terminal indicando la ruta del estado.
+
+```bash
+uv run --no-sync python -m mars_titan.training.comparison_campaign status --machine references \
+  --state "$HOME/.local/state/mars-titan/comparison-campaign-warmup-20261118"
+```
 
 ## Seguir, parar y reanudar
 
@@ -242,16 +287,19 @@ uv run python -m mars_titan.training.comparison_campaign export-results --machin
 
 El ZIP del segundo equipo se copia al primero sin mezclar las carpetas de entrenamiento. Cada archivo lleva su huella. Un paquete parcial conserva los fallos y los trabajos pendientes, y no se presenta como campaña terminada. La exportación rechaza archivos alterados y no sobrescribe un ZIP existente. Los informes conservan las huellas de los modelos, pero sus pesos no viajan: el paquete sirve para analizar predicciones guardadas, no para volver a ejecutar la inferencia ni continuar el entrenamiento.
 
-Para analizar en el primer equipo, con los dos archivos en la carpeta personal y un directorio de salida nuevo:
+El análisis se ejecuta desde la versión actual de `main` o `develop`, con los dos archivos en la carpeta personal y un directorio de salida nuevo. La opción `--verified-warmup` admite las dos etiquetas anteriores con la declaración original, cohortes iguales y copias limpias. Un tercer commit requiere su propia comprobación. El informe conserva el commit de cada archivo y los intentos de cada trabajo.
 
 ```bash
 uv run --no-sync python -m mars_titan.evaluation.comparison_campaign_analysis \
+  --verified-warmup \
   --bundle "$HOME/mars-titan-resultados-references.zip" \
   --bundle "$HOME/mars-titan-resultados-mars_titan.zip" \
   --output "$HOME/mars-titan-analisis"
 ```
 
 El análisis no necesita los modelos ni el dataset original. Escribe métricas por semilla y por sesión, MAE/MSE/RMSE, dirección, IC de Pearson y Spearman, calibración, pérdidas de cuantiles, cobertura, anchura y puntuaciones de intervalos cuando existen. También conserva curvas, costes e intervalos por bloques con corrección de comparaciones. Las gráficas se guardan en PNG y SVG. `report.json` identifica los archivos fuente, el código del análisis, sus versiones y cada magnitud no disponible.
+
+En `resources.csv`, `bundle_training_commit` identifica la versión del paquete. Los trabajos heredados conservan la procedencia de sus intentos en `report.json`. Las columnas `last_fit_warmup_*` recogen reutilizaciones, instantes, bytes de tensores, límite y fallos de asignación del último intento de ajuste registrado. Los lectores de la edición anterior dejan esas celdas vacías.
 
 Por defecto exige todos los modelos, orígenes y semillas. `--stage primary` permite analizar la primera etapa completa y `--stage history` la histórica. `--allow-partial` sirve para seguimiento: conserva faltantes y fallos y desactiva la inferencia estadística de comparación. No se eligen semillas favorables ni se mezclan objetivos o cohortes distintos.
 
