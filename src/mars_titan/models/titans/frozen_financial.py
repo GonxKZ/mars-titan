@@ -30,6 +30,7 @@ from .session_ic_objective import SessionScale
 _TRANSFORMER_ACTIVATION = torch.nn.functional.gelu
 
 _TITANS_MODULES = (
+    "cuda_kernels",
     "config",
     "state",
     "causal_convolution",

@@ -1303,10 +1303,26 @@ class FinancialPredictor(nn.Module):
         return module
 
     def _parameter_digest(self):
-        fingerprints = {
-            name: _tensor_digest(value)
-            for name, value in (*self.named_parameters(), *self.named_buffers())
-        }
+        named = (*self.named_parameters(), *self.named_buffers())
+        groups = {}
+        for name, value in named:
+            groups.setdefault((value.device, value.dtype), []).append((name, value))
+        fingerprints = {}
+        for (device, _), tensors in groups.items():
+            size = sum(v.numel() * v.element_size() for _, v in tensors)
+            if device.type == "cuda" and len(tensors) > 1 and size <= 8 * 1024**2:
+                # Una transferencia por tipo. En CPU se conservan nombre, forma y bytes originales.
+                try:
+                    packed = torch.cat([v.detach().reshape(-1) for _, v in tensors]).cpu()
+                except torch.OutOfMemoryError:
+                    pass
+                else:
+                    pieces = packed.split([v.numel() for _, v in tensors])
+                    for (name, original), piece in zip(tensors, pieces, strict=True):
+                        fingerprints[name] = _tensor_digest(piece.view(original.shape))
+                    continue
+            for name, value in tensors:
+                fingerprints[name] = _tensor_digest(value)
         return hashlib.sha256(canonical(fingerprints).encode()).hexdigest()
 
     def _regional_execution_component(self):
@@ -1867,7 +1883,12 @@ class FinancialPredictor(nn.Module):
             raise ValueError("C3 necesita todas las filas de la sesión y no se calcula fila a fila")
         if self.learning_scaler is not None:
             inputs = self.learning_scaler(inputs, presence)
-        price, checks = self.price_encoder.encode_last(gate_price_window(inputs["prices"]))
+        prices = (
+            inputs["prices"]
+            if self.learning_scaler is not None
+            else gate_price_window(inputs["prices"])
+        )
+        price, checks = self.price_encoder.encode_last(prices)
         for value, message in checks:
             require_finite(value, message)
         token = self._fuse(price, inputs, presence)
@@ -1938,8 +1959,10 @@ class FinancialPredictor(nn.Module):
             for now, previous in zip(batch.prediction_at, state.last_prediction_at, strict=True)
         ):
             raise ValueError("El token está repetido o no es posterior al cursor del flujo")
-        if (state.observed_steps == torch.iinfo(torch.int64).max).any():
-            raise ValueError("El contador de observaciones desbordaría int64")
+        require_true(
+            (state.observed_steps != torch.iinfo(torch.int64).max).all(),
+            "El contador de observaciones desbordaría int64",
+        )
         self._state_size(batch.flow_ids, batch.sample_ids, batch.prediction_at)
         for value in (*batch.inputs.values(), batch.presence):
             if value.device != self.head.weight.device:
@@ -1996,9 +2019,11 @@ class FinancialPredictor(nn.Module):
             # El relleno de una sesión ausente en todo el mercado no llega al codificador. Sus
             # dos comprobaciones de finitud se difieren con las demás, en el mismo orden, en
             # lugar de esperar a la GPU antes de lanzar el resto de la emisión.
-            price, encoder_checks = self.price_encoder.encode_last(
-                gate_price_window(batch.inputs["prices"])
-            )
+            prices = batch.inputs["prices"]
+            # LearningScaler ya dejó los canales ausentes en +0.0.
+            if self.learning_scaler is None:
+                prices = gate_price_window(prices)
+            price, encoder_checks = self.price_encoder.encode_last(prices)
             for value, message in encoder_checks:
                 require_finite(value, message)
             next_regions = None

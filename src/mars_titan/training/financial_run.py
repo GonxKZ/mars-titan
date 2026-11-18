@@ -91,6 +91,7 @@ from .weight_averaging import ShadowWeights, WeightAverage, applied
 
 RECIPE = "titans_financial_chronological_v1"
 _OWN_MODULES = (
+    "mars_titan.models.titans.cuda_kernels",
     "mars_titan.training.financial_run",
     "mars_titan.memory.financial_observations",
     "mars_titan.training.checkpoints",

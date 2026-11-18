@@ -19,6 +19,7 @@ from torch import nn
 
 from ..quantile_head import LEVELS, QuantileHead, median
 from .config import MAX_BLOCK_ROWS, MAX_STATE_BYTES, bounded_integer, require_identity
+from .cuda_kernels import stable_neighbors
 from .episodic_snapshot import EpisodeSnapshot, _device, _digest_id
 from .financial import PreparedDecisions
 from .state import check_differentiable, check_finite, deferred_checks, require_true
@@ -440,7 +441,7 @@ class EpisodicReadout(nn.Module):
         if positions is None:
             with torch.no_grad():
                 scores = query.double() @ keys.T
-                indices = torch.argsort(scores, dim=-1, descending=True, stable=True)[:, :count]
+                indices = stable_neighbors(scores, count)
         elif (
             not isinstance(positions, torch.Tensor)
             or positions.dtype != torch.int64
