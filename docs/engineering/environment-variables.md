@@ -8,13 +8,14 @@ Una variable vacía equivale a no declararla. Una ruta declarada que no existe n
 
 | Variable | La lee | Significado | Sin declarar |
 | --- | --- | --- | --- |
+| `MARS_TITAN_BENCHMARK_WORK` | `benchmarks/comparison_efficiency_20261118/configuracion.py` | Directorio absoluto existente fuera del repositorio para los archivos temporales y las medidas de caudal | El ensayo técnico exige indicar la ruta |
 | `MARS_TITAN_TRAINING_HOLD` | `training/learning_hold.py` y `native/src/learning_hold.cpp` | Ruta de la protección del aprendizaje. Bloquea los ajustes mientras no declare `training_allowed: true` ([protección del aprendizaje](../../tests/README.md#protección-del-aprendizaje)) | `~/.local/state/mars-titan/training-hold-2000.json`. Si el archivo no existe, no bloquea |
 | `MARS_TITAN_INPUT_CACHE_MIB` | `training/reference_run.py` | Presupuesto en MiB de la caché de tablas del corpus, entre 1 y 4096 | Caché por defecto de `CorpusDataset` |
 | `MARS_TITAN_DECODE_WORKERS` | `training/input_pipeline.py` | Hilos de decodificación del lector cronológico, de 0 a 16 | 0, la ruta secuencial |
 | `MARS_TITAN_PREFETCH_BATCHES` | `training/input_pipeline.py` | Lotes adelantados por el lector, de 0 a 64 | 0 |
 | `MARS_TITAN_GROUP_CACHE_MIB` | `training/input_pipeline.py` | Límite en MiB de la caché de grupos decodificados, hasta 8192 | 4096 |
 | `MARS_TITAN_RESIDENT_VALIDATION_WARMUP` | `training/validation_warmup.py` | Con `1`, el lector CUDA reutiliza el estado del padre congelado anterior a la primera decisión de validación. El límite es de 256 MiB y la selección se registra en la identidad del ajuste | `0` |
-| `MARS_TITAN_DIGEST_CACHE` | `training/corpus_inputs.py` | Ruta absoluta de un archivo de huellas compartido entre procesos de una campaña | Cada proceso calcula sus huellas |
+| `MARS_TITAN_DIGEST_CACHE` | `training/corpus_inputs.py` | Ruta absoluta de un archivo de huellas compartido entre procesos de una campaña | El lanzador de recursos de PC1 usa `file-digests.json` en el directorio de estado. Fuera de ese lanzador, cada proceso calcula sus huellas. Un valor vacío desactiva el archivo compartido |
 | `MARS_TITAN_SHARED_INDICES` | `training/window_indices.py` | Ruta absoluta de la raíz donde los trabajos de una campaña comparten por vista sus índices de observaciones. La fijan la campaña y el recorrido por ventanas, que la borran por vista al cerrar cada ventana | Cada trabajo construye sus índices en `indices` de su carpeta |
 | `MARS_TITAN_COMPARISON_STATE` | `training/comparison_campaign.py` | Carpeta absoluta del estado de la [campaña de comparación en dos equipos](comparison-campaign-two-machines.md): cohortes, cola, registros, salidas y permiso. La opción `--state` tiene prioridad | `~/.local/state/mars-titan/comparison-campaign-v1` |
 | `MARS_TITAN_COMPARISON_VIEWS` | `training/comparison_campaign.py` | Carpeta absoluta de las vistas por ventana de EE. UU. que lee esa campaña. La opción `--views` tiene prioridad | Las vistas de la edición v3.1 en el estado local |

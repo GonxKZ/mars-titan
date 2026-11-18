@@ -105,6 +105,26 @@ def test_child_failure_is_not_reported_as_success(engine, tmp_path, launcher):
     assert status["phase"] == "failed" and status["returncode"] == 7
 
 
+@pytest.mark.parametrize("choice", ["default", "custom", "disabled"])
+def test_worker_shares_file_digests_within_the_state(
+    engine, tmp_path, launcher, monkeypatch, choice
+):
+    name = "MARS_TITAN_DIGEST_CACHE"
+    if choice == "default":
+        monkeypatch.delenv(name, raising=False)
+        expected = str(tmp_path / "file-digests.json")
+    else:
+        expected = "" if choice == "disabled" else str(tmp_path / "custom.json")
+        monkeypatch.setenv(name, expected)
+    output = tmp_path / "child-environment.json"
+    code = (
+        "import json, os, pathlib\n"
+        f"pathlib.Path({str(output)!r}).write_text(json.dumps(os.environ.get({name!r})))"
+    )
+    assert run_worker(engine, tmp_path, launcher, code) == 0
+    assert json.loads(output.read_text()) == expected
+
+
 def test_worker_runs_after_memory_becomes_available(engine, tmp_path, launcher):
     readings = iter([11 * 1024**3, 12 * 1024**3])
     output = tmp_path / "executed"

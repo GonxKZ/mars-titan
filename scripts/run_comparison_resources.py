@@ -133,10 +133,15 @@ def run_worker(
         if stop.requested or os.getppid() != parent:
             state.save("paused")
             return 3
+        environment = os.environ.copy()
+        environment.setdefault(
+            "MARS_TITAN_DIGEST_CACHE", str(state.path.absolute().parent / "file-digests.json")
+        )
         # memslot vuelve a comprobar la memoria después de adquirir el cerrojo de GPU.
         child = subprocess.Popen(
             [str(launcher), "gpu", "--max", f"{limit_gib}G", "--", *command],
             start_new_session=True,
+            env=environment,
         )
         root = processes._process_info(child.pid)
         if root is None:
