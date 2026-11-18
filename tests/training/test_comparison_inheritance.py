@@ -381,3 +381,26 @@ def test_packed_release_requires_a_qualified_origin_and_preserves_failed_attempt
         inherit(old, old, digest, digest, original, target, **kwargs)
     assert not target.state.exists()
     assert json.loads(original.authorization.read_text())["training_allowed"]
+
+
+def test_a_second_migration_cannot_wait_while_holding_other_job_locks(tmp_path):
+    import fcntl
+
+    old, digest, original = source(tmp_path)
+    target = campaign.Layout(tmp_path / "second", original.views)
+    with (original.state / "inheritance.lock").open("a") as first:
+        fcntl.flock(first, fcntl.LOCK_EX)
+        with pytest.raises(ValueError, match="otro traslado"):
+            inherit(
+                old,
+                old,
+                digest,
+                digest,
+                original,
+                target,
+                commit="c" * 40,
+                root=campaign.ROOT,
+                finish_active=True,
+            )
+    assert not target.state.exists()
+    assert json.loads(original.authorization.read_text())["training_allowed"]

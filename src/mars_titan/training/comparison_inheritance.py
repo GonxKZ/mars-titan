@@ -222,6 +222,12 @@ def inherit(old, new, old_digest, new_digest, source, target, *, commit, root, f
     candidates = {job.key: job for machine in MACHINES for job in plan(new, machine)}
     _require(len(jobs) <= 4096, "La herencia supera el límite de trabajos")
     with ExitStack() as stack:
+        coordination = stack.enter_context((source.state / "inheritance.lock").open("a"))
+        try:
+            fcntl.flock(coordination, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        except BlockingIOError:
+            raise ValueError("Ya hay otro traslado en curso desde este estado") from None
+        _require(sha256(source.authorization) == permission_sha, "El permiso de origen ha cambiado")
         _hold_jobs(stack, source, jobs.values(), finish_active=finish_active)
         selected, omitted = {}, {}
         for key, job in jobs.items():
