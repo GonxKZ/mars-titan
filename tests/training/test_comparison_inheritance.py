@@ -58,6 +58,9 @@ def perform(tmp_path, old, digest, original, new=None):
 def test_completed_parents_keep_their_resolved_paths_and_paused_readers_are_copied(tmp_path):
     old, digest, original = source(tmp_path, paused=True)
     reader = "mars_titan_m3/2019/seed-42"
+    previous = {"code_commit": "d" * 40, "source_record_sha256": "e" * 64}
+    record = campaign.read_record(original, reader)
+    atomic_json(original.record(reader), dict(record, source_execution=previous))
     before = (original.output(reader) / "run.json").read_bytes()
     receipt, target = perform(tmp_path, old, digest, original)
     assert len(receipt["inherited"]) == 6
@@ -71,6 +74,7 @@ def test_completed_parents_keep_their_resolved_paths_and_paused_readers_are_copi
     record = campaign.read_record(target, reader)
     assert record["source_execution"]["code_commit"] == "a" * 40
     assert record["source_execution"]["source_record_sha256"] == sha256(original.record(reader))
+    assert record["source_execution"]["previous"] == previous
     assert json.loads(original.authorization.read_text())["training_allowed"] is False
     assert not target.authorization.exists()
 
@@ -105,6 +109,44 @@ def test_modified_recipe_or_numerical_code_is_not_accepted(tmp_path):
         perform(tmp_path, old, digest, original)
 
 
+@pytest.mark.parametrize(
+    ("scope", "status", "module_hash", "allowed"),
+    [
+        (True, "completed", "original", True),
+        (True, "paused", "original", False),
+        (False, "completed", "original", False),
+        (True, "completed", "other", False),
+    ],
+)
+def test_only_a_completed_pinned_readout_can_cross_the_warmup_revision(
+    tmp_path, scope, status, module_hash, allowed
+):
+    from mars_titan.training import comparison_inheritance as migration
+
+    declaration, digest, layout = source(tmp_path)
+    job = next(j for j in campaign.plan(declaration, "mars_titan") if j.runner == "reader")
+    folder = layout.output(job.key)
+    report = json.loads((folder / "run.json").read_text())
+    report.update(status=status, kind="mars_titan_walk_forward_window")
+    report["request"]["code"][migration.READOUT_MODULE] = (
+        migration.PREVIOUS_READOUT if module_hash == "original" else "0" * 64
+    )
+    args = (
+        folder,
+        report,
+        job,
+        declaration["models"][job.model],
+        declaration,
+        campaign.ROOT,
+        sha256(layout.cohort(job.year) / "manifest.json"),
+    )
+    if allowed:
+        migration._compatible_report(*args, warmup_release=scope)
+    else:
+        with pytest.raises(ValueError, match="código"):
+            migration._compatible_report(*args, warmup_release=scope)
+
+
 def test_an_existing_destination_is_preserved(tmp_path):
     old, digest, original = source(tmp_path)
     (tmp_path / "continued").mkdir()
@@ -112,6 +154,70 @@ def test_an_existing_destination_is_preserved(tmp_path):
     with pytest.raises(ValueError, match="existe"):
         perform(tmp_path, old, digest, original)
     assert (tmp_path / "continued/keep.txt").read_text() == "conservar"
+
+
+def test_warmup_migration_gives_new_readers_regular_verified_parents(tmp_path, monkeypatch):
+    from mars_titan.data.cohort_files import safe_destination
+    from mars_titan.training import comparison_inheritance as migration
+
+    old, digest, original = source(tmp_path)
+    monkeypatch.setattr(migration, "GPU_DECLARATION", digest)
+    monkeypatch.setattr(migration, "GPU_RELEASE", "a" * 40)
+    monkeypatch.setattr(migration, "WARMUP_RELEASE", "c" * 40)
+    target = campaign.Layout(tmp_path / "continued", original.views)
+    receipt = inherit(
+        old, old, digest, digest, original, target, commit="c" * 40, root=campaign.ROOT
+    )
+    key = "titans_mac/2019/seed-42"
+    path = target.output(key) / "fit/run.json"
+    safe_destination(path)
+    assert receipt["inherited"][key]["storage"] == "verified_parent_copy"
+    assert sha256(path) == sha256(original.output(key) / "fit/run.json")
+    assert target.output("mars_titan_m3/2019/seed-42").is_symlink()
+
+
+def test_admin_inheritance_identifies_the_target_runtime_and_rejects_dirty_code(
+    tmp_path, monkeypatch
+):
+    from mars_titan.training import comparison_inheritance as migration
+
+    root = tmp_path / "fixed"
+    root.mkdir()
+    config = campaign.DECLARATION
+    monkeypatch.setattr(campaign, "_git", lambda runtime, *args: str(runtime).encode())
+    monkeypatch.setattr(
+        campaign, "code_commit", lambda runtime=None: "c" * 40 if runtime == root else None
+    )
+    monkeypatch.setattr(campaign, "code_changes", lambda runtime: "0" * 64)
+    args = [
+        "inherit",
+        "--runtime",
+        str(root),
+        "--source",
+        str(tmp_path / "original"),
+        "--state",
+        str(tmp_path / "target"),
+        "--previous-declaration",
+        config,
+    ]
+    with pytest.raises(ValueError, match="limpi"):
+        campaign.main(args)
+    monkeypatch.setattr(campaign, "code_changes", lambda runtime: None)
+    observed = {}
+
+    def declaration(path, *, root):
+        assert root == tmp_path / "fixed"
+        assert path in (None, root / config)
+        return {}, "b" * 64
+
+    def capture(*args, **kwargs):
+        observed.update(kwargs)
+        return {"inherited": {}}
+
+    monkeypatch.setattr(migration, "inherit", capture)
+    monkeypatch.setattr(campaign, "load_declaration", declaration)
+    assert campaign.main(args) == 0
+    assert observed == {"root": root, "commit": "c" * 40}
 
 
 def test_inherited_indices_are_accepted_by_the_real_reader_and_do_not_alias_the_source(
@@ -137,6 +243,24 @@ def test_incomplete_inheritance_cannot_be_authorized(tmp_path):
     with pytest.raises(ValueError, match="herencia"):
         campaign.authorize(target, "b" * 64, commit="c" * 40, note="Continuación de prueba")
     assert not target.authorization.exists()
+
+
+@pytest.mark.parametrize("matches", [True, False])
+def test_imported_data_receipt_follows_the_verified_cohorts(tmp_path, matches):
+    old, digest, original = source(tmp_path)
+    receipt = dict(
+        cohorts=campaign.cohort_identity(old, original) if matches else {},
+        declaration_sha256=digest,
+        code_commit="a" * 40,
+    )
+    atomic_json(original.bundle, receipt)
+    if matches:
+        _, target = perform(tmp_path, old, digest, original)
+        assert target.bundle.read_bytes() == original.bundle.read_bytes()
+    else:
+        with pytest.raises(ValueError, match="cohortes"):
+            perform(tmp_path, old, digest, original)
+        assert json.loads(original.authorization.read_text())["training_allowed"] is True
 
 
 def test_inherited_state_cannot_be_authorized_with_another_configuration(tmp_path):

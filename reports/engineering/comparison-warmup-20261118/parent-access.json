@@ -1,0 +1,11 @@
+{
+  "training_commit": "e23a44034c8584682397d3d5f7ac76dbc7bd8e12",
+  "model": "titans_mac",
+  "year": 2023,
+  "seed": 43,
+  "regular_parent": true,
+  "run_sha256": "59904154ae3374eda8ca938f16e77d806a537dac996dfa38079b9fb1a0505487",
+  "checkpoint_sha256": "f4e9929327e8a0573da8b4f925aedab36b3aa26d463db9f08a0858134b9bdcee",
+  "optimizer_steps": 0,
+  "final_test_opened": false
+}
