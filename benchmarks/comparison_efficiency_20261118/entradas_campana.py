@@ -34,7 +34,7 @@ def sources(year, model, seed):
     }
 
 
-def check_model(model, year, seed):
+def check_model(model, year, seed, *, long_slice=False):
     raw = sources(year, model, seed)
     train = raw["train"]
     packed = dict(
@@ -44,18 +44,36 @@ def check_model(model, year, seed):
     interval = int(0.9 * len(train.metadata["groups"])), 144
     trials = []
     cases = [(False, True), (True, True)]
-    if model in ("titans_mac", "mars_titan_m2"):
+    segments = 16
+    if long_slice:
+        segments = 68
+        interval = int(0.8 * len(train.metadata["groups"])), 576
+        order = (True, False) if model == "titans_mac" else (False, True)
+        cases = [(option, False) for option in order]
+    elif model in ("titans_mac", "mars_titan_m2"):
         cases += [(True, False), (False, False), (False, False), (True, False)]
     for archive, audit in cases:
         selected = packed if archive else raw
+        case_start = time.perf_counter()
         with host_finite.on_host() if archive and model == "titans_mac" else nullcontext():
             engine, report, folder = recorrido.build(model, selected, spec, seed, year=year)
             before = recorrido.parameter_digest(engine)
             cache.reset_usage()
             case = recorrido.profile_slice(
-                engine, spec, "original", audit, source_range=interval, rng_seed=seed
+                engine,
+                spec,
+                "original",
+                audit,
+                source_range=interval,
+                rng_seed=seed,
+                until=segments,
             )
-            case.update(packed=archive, usage=cache.receipt(), weights=before)
+            case.update(
+                packed=archive,
+                usage=cache.receipt(),
+                weights=before,
+                build_and_pass_seconds=time.perf_counter() - case_start,
+            )
             if recorrido.parameter_digest(engine) != before or (
                 trials and trials[0]["weights"] != before
             ):
@@ -94,6 +112,12 @@ def check_model(model, year, seed):
             del engine
         gc.collect()
         torch.cuda.empty_cache()
+    if any(
+        case[field] != trials[0][field]
+        for case in trials
+        for field in ("samples", "events", "labels")
+    ):
+        raise ValueError("Los dos lectores midieron distintos eventos, observaciones o etiquetas")
     return trials
 
 
@@ -103,8 +127,13 @@ def main():
         "--year", type=int, default=2023, help="Año del origen con los cuatro trabajos completos"
     )
     parser.add_argument("--seed", type=int, default=43, help="Semilla de los trabajos guardados")
+    parser.add_argument(
+        "--long-slice",
+        action="store_true",
+        help="Medir también la apertura en un tramo de 68 segmentos de Titans-MAC y M2",
+    )
     args = parser.parse_args()
-    output = recorrido.OUT / "qualification.json"
+    output = recorrido.OUT / ("long-slices.json" if args.long_slice else "qualification.json")
     if output.exists():
         raise ValueError("El directorio ya contiene una medición")
     recorrido.rw._cuda("cuda:0")
@@ -121,8 +150,13 @@ def main():
                 real_optimizer_steps=0,
                 cases={},
             )
-            for model in ("mars_titan_m2", "titans_mac", "mars_titan_m1", "mars_titan_m3"):
-                result["cases"][model] = check_model(model, args.year, args.seed)
+            models = ("mars_titan_m2", "titans_mac")
+            if not args.long_slice:
+                models += ("mars_titan_m1", "mars_titan_m3")
+            for model in models:
+                result["cases"][model] = check_model(
+                    model, args.year, args.seed, long_slice=args.long_slice
+                )
                 atomic_json(output, result)
     finally:
         guard.remove()
