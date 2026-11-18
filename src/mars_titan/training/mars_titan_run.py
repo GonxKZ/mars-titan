@@ -781,10 +781,11 @@ class MarsTitanInference:
             **counters,
         )
 
-    def _pass(self, phase, events, *, stop=None, rows=None):
+    def _pass(self, phase, events, *, stop=None, rows=None, run=None):
         """Recorrer una fase sin ajustar, con banco vacío y memoria rápida inicial."""
         self.readout.eval()
-        run = self._new_pass(phase.partition)
+        if run is None:
+            run = self._new_pass(phase.partition)
         with torch.no_grad():
             for event in events:
                 if stop is not None and stop.requested:
@@ -805,6 +806,13 @@ class MarsTitanInference:
             self.predictor.config.inputs, source.specification()
         ):
             raise ValueError("El tramo no pertenece a la entrada del padre")
+        if (
+            type(self) is ReadoutTrainer
+            and source is self.validation
+            and self.validation_warmup is not None
+            and not self.uses_context
+        ):
+            return self.validation_warmup.evaluate(self, source, stop=stop, rows=rows)
         events = source.batched_events(block_rows=self.recipe.block_rows)
         return self._pass(source.phase, events, stop=stop, rows=rows)
 
@@ -839,6 +847,7 @@ class ReadoutTrainer(MarsTitanInference):
     # de cada validación completa y no debe cambiar el cálculo ni el RNG. Si vale None, el
     # recorrido no llama a nada y es el mismo de antes bit a bit.
     trace = None
+    validation_warmup = None
     # Trazas por paso con el contrato común (`learning_traces.hooks.TrainingTraces`). Con
     # None, `traced_update` y `observing` son bloques vacíos.
     traces = None
@@ -901,6 +910,9 @@ class ReadoutTrainer(MarsTitanInference):
         for protected in (*train.dataset.roots.values(), train.path.parent, validation.path.parent):
             outside_source(protected, self.output)
             outside_source(self.output, protected)
+        from .validation_warmup import configured
+
+        self.validation_warmup = configured(self.device) if type(self) is ReadoutTrainer else None
         self.roles, self.inert, named = self._parameter_groups(readout, admission)
         groups = [
             dict(params=[named[name] for name in names], role=role)
@@ -973,6 +985,9 @@ class ReadoutTrainer(MarsTitanInference):
 
     def _code(self):
         own = {name: sha256(Path(importlib.import_module(name).__file__)) for name in _OWN_MODULES}
+        if self.validation_warmup is not None:
+            name = "mars_titan.training.validation_warmup"
+            own[name] = sha256(Path(importlib.import_module(name).__file__))
         # El determinismo de #794 añade su módulo solo si la receta lo declara.
         if self.recipe.determinism is not None:
             name = "mars_titan.training.determinism"
@@ -1507,5 +1522,7 @@ class ReadoutTrainer(MarsTitanInference):
             report.update(status="failed", error_type=type(error).__name__, error=str(error))
             raise
         finally:
+            if self.validation_warmup is not None:
+                report["validation_warmup"] = self.validation_warmup.receipt()
             report["attempts"].append(dict(seconds=time.perf_counter() - started))
             atomic_json(report_path, report)

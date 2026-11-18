@@ -1439,6 +1439,9 @@ def main(argv=None):
     parser.add_argument("--machine", choices=MACHINES)
     parser.add_argument("--declaration", type=Path)
     parser.add_argument("--state", type=Path, help=f"Estado de la campaña (o {STATE_ENV})")
+    parser.add_argument(
+        "--runtime", type=Path, help="Copia científica fija cuyo estado prepara la orden inherit"
+    )
     parser.add_argument("--views", type=Path, help=f"Vistas por ventana (o {VIEWS_ENV})")
     parser.add_argument("--workers", type=int, help="Por defecto, los de la declaración")
     parser.add_argument("--tier", action="append", help="Limitar a estos niveles de prioridad")
@@ -1464,7 +1467,20 @@ def main(argv=None):
         args.machine is not None or args.command not in _MACHINE_COMMANDS,
         f"La orden {args.command} necesita --machine",
     )
-    declaration, digest = load_declaration(args.declaration)
+    runtime = ROOT
+    if args.runtime is not None:
+        _require(args.command == "inherit", "--runtime solo corresponde a la herencia")
+        runtime = args.runtime.resolve(strict=True)
+        top = _git(runtime, "rev-parse", "--show-toplevel")
+        _require(
+            top and Path(os.fsdecode(top).strip()) == runtime and code_changes(runtime) is None,
+            "La herencia necesita la raíz de una copia científica limpia",
+        )
+        if args.declaration is not None:
+            args.declaration = runtime / args.declaration
+        if args.previous_declaration is not None:
+            args.previous_declaration = runtime / args.previous_declaration
+    declaration, digest = load_declaration(args.declaration, root=runtime)
     layout = Layout(args.state, args.views)
     if args.command == "plan":
         jobs = plan(declaration, args.machine)
@@ -1488,7 +1504,7 @@ def main(argv=None):
             args.source is not None and args.previous_declaration is not None,
             "inherit necesita --source y --previous-declaration",
         )
-        previous, previous_digest = load_declaration(args.previous_declaration)
+        previous, previous_digest = load_declaration(args.previous_declaration, root=runtime)
         receipt = inherit(
             previous,
             declaration,
@@ -1496,8 +1512,8 @@ def main(argv=None):
             digest,
             Layout(args.source, args.views),
             layout,
-            commit=code_commit(),
-            root=ROOT,
+            commit=code_commit(runtime),
+            root=runtime,
         )
         print(
             f"Heredados {len(receipt['inherited'])} trabajos. Origen conservado y permiso cerrado"

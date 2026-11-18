@@ -1,0 +1,93 @@
+{
+  "model": "mars_titan_m2",
+  "year": 2022,
+  "seed": 43,
+  "gpu": "NVIDIA GeForce RTX 4070 Laptop GPU",
+  "torch": "2.14.0+cu130",
+  "validation_rows": 128118,
+  "validation_sha256": "e57472ea2726fd4adbea0f9d159a7db7f5ca011ecaa686f1ff570a24535a5531",
+  "optimizer_steps": 0,
+  "blocks": 512,
+  "preparation_seconds": 32.47230899287388,
+  "passes": [
+    {
+      "pass_index": 0,
+      "resident": false,
+      "seconds": 54.8972134180367,
+      "scored_rows_per_second": 2333.779658803343,
+      "allocated_bytes": 323769856,
+      "reserved_bytes": 413138944,
+      "peak_rss_kib": 3216600,
+      "cache": null
+    },
+    {
+      "pass_index": 1,
+      "resident": true,
+      "seconds": 50.696063434006646,
+      "scored_rows_per_second": 2527.1784695231213,
+      "allocated_bytes": 390870528,
+      "reserved_bytes": 492830720,
+      "peak_rss_kib": 3244152,
+      "cache": {
+        "hits": 0,
+        "events": 252,
+        "tensor_bytes": 67059696,
+        "limit_bytes": 268435456,
+        "allocation_fallbacks": 0
+      }
+    },
+    {
+      "pass_index": 2,
+      "resident": true,
+      "seconds": 31.702360335970297,
+      "scored_rows_per_second": 4041.2763794951284,
+      "allocated_bytes": 391509504,
+      "reserved_bytes": 492830720,
+      "peak_rss_kib": 3244152,
+      "cache": {
+        "hits": 1,
+        "events": 252,
+        "tensor_bytes": 67059696,
+        "limit_bytes": 268435456,
+        "allocation_fallbacks": 0
+      }
+    },
+    {
+      "pass_index": 3,
+      "resident": false,
+      "seconds": 50.95937690814026,
+      "scored_rows_per_second": 2514.1202222889506,
+      "allocated_bytes": 391067136,
+      "reserved_bytes": 492830720,
+      "peak_rss_kib": 3244152,
+      "cache": null
+    },
+    {
+      "pass_index": 4,
+      "resident": true,
+      "seconds": 31.703345522983,
+      "scored_rows_per_second": 4041.1507961240945,
+      "allocated_bytes": 391509504,
+      "reserved_bytes": 492830720,
+      "peak_rss_kib": 3254104,
+      "cache": {
+        "hits": 2,
+        "events": 252,
+        "tensor_bytes": 67059696,
+        "limit_bytes": 268435456,
+        "allocation_fallbacks": 0
+      }
+    },
+    {
+      "pass_index": 5,
+      "resident": false,
+      "seconds": 49.861853370210156,
+      "scored_rows_per_second": 2569.459242695214,
+      "allocated_bytes": 391067136,
+      "reserved_bytes": 492830720,
+      "peak_rss_kib": 3254104,
+      "cache": null
+    }
+  ],
+  "elapsed_seconds": 302.90488579985686
+}

@@ -1,0 +1,155 @@
+{
+  "coverage": "7.16.1",
+  "radon": "6.0.1",
+  "convention": "C² × (1 − fracción de sentencias cubiertas)³ + C. La cobertura de ramas se informa por separado.",
+  "files": {
+    "src/mars_titan/training/validation_warmup.py": {
+      "covered_statements": 78,
+      "statements": 82,
+      "covered_branches": 21,
+      "branches": 26,
+      "functions": {
+        "configured": {
+          "complexity": 4,
+          "covered_statements": 4,
+          "statements": 4,
+          "crap": 4.0
+        },
+        "ValidationWarmup.__init__": {
+          "complexity": 3,
+          "covered_statements": 5,
+          "statements": 6,
+          "crap": 3.04
+        },
+        "ValidationWarmup.clear": {
+          "complexity": 1,
+          "covered_statements": 3,
+          "statements": 3,
+          "crap": 1.0
+        },
+        "ValidationWarmup.receipt": {
+          "complexity": 1,
+          "covered_statements": 1,
+          "statements": 1,
+          "crap": 1.0
+        },
+        "ValidationWarmup._room": {
+          "complexity": 3,
+          "covered_statements": 1,
+          "statements": 1,
+          "crap": 3.0
+        },
+        "ValidationWarmup._capture": {
+          "complexity": 5,
+          "covered_statements": 11,
+          "statements": 11,
+          "crap": 5.0
+        },
+        "ValidationWarmup._restore": {
+          "complexity": 4,
+          "covered_statements": 11,
+          "statements": 11,
+          "crap": 4.0
+        },
+        "ValidationWarmup.evaluate": {
+          "complexity": 14,
+          "covered_statements": 25,
+          "statements": 28,
+          "crap": 14.24
+        }
+      }
+    },
+    "src/mars_titan/training/comparison_inheritance.py": {
+      "covered_statements": 146,
+      "statements": 164,
+      "covered_branches": 55,
+      "branches": 68,
+      "functions": {
+        "_compatible_report": {
+          "complexity": 24,
+          "covered_statements": 26,
+          "statements": 31,
+          "crap": 26.42
+        },
+        "inherit": {
+          "complexity": 33,
+          "covered_statements": 76,
+          "statements": 88,
+          "crap": 35.76
+        }
+      }
+    },
+    "src/mars_titan/evaluation/comparison_campaign_analysis.py": {
+      "covered_statements": 271,
+      "statements": 283,
+      "covered_branches": 67,
+      "branches": 74,
+      "functions": {
+        "_merge": {
+          "complexity": 9,
+          "covered_statements": 14,
+          "statements": 14,
+          "crap": 9.0
+        },
+        "analyze": {
+          "complexity": 19,
+          "covered_statements": 29,
+          "statements": 29,
+          "crap": 19.0
+        }
+      }
+    }
+  },
+  "directed_mutations": [
+    {
+      "mutation": "limite_memoria",
+      "killed": true,
+      "exit": 1
+    },
+    {
+      "mutation": "reserva_gpu",
+      "killed": true,
+      "exit": 1
+    },
+    {
+      "mutation": "cursor_recuperado",
+      "killed": true,
+      "exit": 1
+    },
+    {
+      "mutation": "contador_recuperado",
+      "killed": true,
+      "exit": 1
+    },
+    {
+      "mutation": "lector_pausado",
+      "killed": true,
+      "exit": 1
+    },
+    {
+      "mutation": "origen_importado",
+      "killed": true,
+      "exit": 1
+    },
+    {
+      "mutation": "codigo_modificado",
+      "killed": true,
+      "exit": 1
+    },
+    {
+      "mutation": "declaracion_exportada",
+      "killed": true,
+      "exit": 1
+    },
+    {
+      "mutation": "padre_enlazado",
+      "killed": true,
+      "exit": 1
+    },
+    {
+      "mutation": "commit_administrativo",
+      "killed": true,
+      "exit": 1
+    }
+  ]
+}

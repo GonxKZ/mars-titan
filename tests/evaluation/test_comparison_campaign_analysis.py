@@ -1,7 +1,9 @@
 """Análisis de dos ZIP sin conservar los pesos ni los datos originales."""
 
+import csv
 import json
 import shutil
+from types import SimpleNamespace
 
 import pyarrow as pa
 import pyarrow.parquet as pq
@@ -93,6 +95,61 @@ def test_different_training_commits_are_not_mixed(tmp_path):
         analysis.analyze([first, second], tmp_path / "analysis", plots=False)
 
 
+def test_mixed_zip_report_names_each_runtime(tmp_path, monkeypatch):
+    from mars_titan.evaluation.comparison_bundle import ResultsBundle
+
+    first, second = packages(tmp_path, changed_commit=True)
+    with ResultsBundle(first) as bundle:
+        provenance = bundle.manifest["provenance"]
+    monkeypatch.setattr(analysis, "WARMUP_COMMITS", {"a" * 40, "b" * 40})
+    monkeypatch.setattr(analysis, "GPU_DECLARATION", provenance["authorized_declaration_sha256"])
+    monkeypatch.setattr(analysis, "PACKED_DECLARATION", provenance["declaration_sha256"])
+    report = analysis.analyze(
+        [first, second], tmp_path / "mixed", plots=False, verified_warmup=True
+    )
+    origin = report["provenance"]
+    assert origin["training_commit"] is None
+    assert {row["training_commit"] for row in origin["archives"]} == analysis.WARMUP_COMMITS
+    assert origin["verified_warmup"] is True
+    assert report["complete"] and report["comparisons"]
+
+
+@pytest.mark.parametrize(
+    "change", ["commit", "dirty", "declaration", "packed", "cohorts", "missing"]
+)
+def test_warmup_option_still_rejects_unverified_pairs(change):
+    older, newer = sorted(analysis.WARMUP_COMMITS)
+    first = dict(
+        training_commit=older,
+        code_changes_sha256=None,
+        authorized_declaration_sha256=analysis.GPU_DECLARATION,
+        declaration_sha256=analysis.PACKED_DECLARATION,
+    )
+    second = dict(first, training_commit=newer)
+    cohorts = {"2019": "misma cohorte"}
+    if change == "commit":
+        second["training_commit"] = "c" * 40
+    if change == "missing":
+        del first["code_changes_sha256"], second["code_changes_sha256"]
+    if change in {"dirty", "declaration", "packed"}:
+        key = {
+            "dirty": "code_changes_sha256",
+            "declaration": "authorized_declaration_sha256",
+            "packed": "declaration_sha256",
+        }[change]
+        first[key] = second[key] = "c" * 64
+    bundles = [
+        SimpleNamespace(manifest=dict(provenance=first, cohorts=cohorts, jobs={})),
+        SimpleNamespace(
+            manifest=dict(
+                provenance=second, cohorts={} if change == "cohorts" else cohorts, jobs={}
+            )
+        ),
+    ]
+    with pytest.raises(ValueError, match="código|cohortes|declaración"):
+        analysis._merge(bundles, verified_warmup=True)
+
+
 def test_missing_seeds_prevent_a_complete_comparison(tmp_path):
     first, second = packages(tmp_path, failed=True)
     with pytest.raises(ValueError, match="trabajos|incomplet"):
@@ -104,6 +161,40 @@ def test_missing_seeds_prevent_a_complete_comparison(tmp_path):
     assert "titans_mac/2019/seed-43" in report["missing_jobs"]
     assert report["comparisons"] == {}
     assert report["inference_reason"]
+
+
+@pytest.mark.parametrize("size", [4096, 8193])
+def test_resource_csv_carries_last_readout_warmup_and_leaves_legacy_cells_empty(tmp_path, size):
+    declaration, digest, layout = campaign_state(tmp_path / "source", reader=True)
+    key = "mars_titan_m3/2019/seed-42"
+    root = layout.output(key)
+    fit = root / "fit/run.json"
+    data = json.loads(fit.read_text())
+    data["validation_warmup"] = dict(
+        hits=3, events=4, tensor_bytes=size, limit_bytes=8192, allocation_fallbacks=1
+    )
+    fit.write_text(json.dumps(data))
+    run = root / "run.json"
+    descriptor = json.loads(run.read_text())
+    descriptor["fit"]["sha256"] = sha256(fit)
+    run.write_text(json.dumps(descriptor))
+    paths = []
+    for machine in ("references", "mars_titan"):
+        paths.append(tmp_path / (machine + ".zip"))
+        export_results(declaration, digest, layout, machine, paths[-1])
+    output = tmp_path / "analysis"
+    if size > 8192:
+        with pytest.raises(ValueError, match="recibo de calentamiento"):
+            analysis.analyze(paths, output, plots=False)
+        return
+    analysis.analyze(paths, output, plots=False)
+    with (output / "resources.csv").open() as stream:
+        rows = {r["job"]: r for r in csv.DictReader(stream)}
+    assert rows[key]["last_fit_warmup_hits"] == "3"
+    assert rows[key]["last_fit_warmup_tensor_bytes"] == "4096"
+    assert rows[key]["last_fit_warmup_allocation_fallbacks"] == "1"
+    assert rows[key]["bundle_training_commit"] == "a" * 40
+    assert rows["titans_mac/2019/seed-42"]["last_fit_warmup_hits"] == ""
 
 
 def test_different_targets_are_rejected_even_with_valid_file_hashes(tmp_path):
