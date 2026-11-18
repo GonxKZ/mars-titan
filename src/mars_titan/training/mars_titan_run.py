@@ -34,7 +34,7 @@ from mars_titan import nvtx_ranges
 from mars_titan.data.storage import atomic_json, outside_source, sha256
 from mars_titan.evaluation.session_metrics import SessionErrors
 from mars_titan.learning_traces.hooks import observing, traced_update
-from mars_titan.memory import write_scores
+from mars_titan.memory import training_event_cache, write_scores
 from mars_titan.memory.episodic_codec import FrozenEpisodeCodec
 from mars_titan.memory.financial_consumers import (
     THREE_INDEX,
@@ -802,7 +802,7 @@ class MarsTitanInference:
 
     def evaluate(self, source, *, stop=None, rows=None):
         """Recorrido con parámetros congelados. Con `rows`, una fila por etiqueta resuelta."""
-        if type(source) is not FinancialObservationSource or not _compatible(
+        if not training_event_cache.supported(source) or not _compatible(
             self.predictor.config.inputs, source.specification()
         ):
             raise ValueError("El tramo no pertenece a la entrada del padre")
@@ -890,7 +890,7 @@ class ReadoutTrainer(MarsTitanInference):
             audit=audit,
         )
         if (
-            type(train) is not FinancialObservationSource
+            not training_event_cache.supported(train)
             or type(validation) is not FinancialObservationSource
             or train.phase.partition != "train"
             or validation.phase.partition != "validation"
@@ -985,6 +985,7 @@ class ReadoutTrainer(MarsTitanInference):
 
     def _code(self):
         own = {name: sha256(Path(importlib.import_module(name).__file__)) for name in _OWN_MODULES}
+        own.update(training_event_cache.source_implementation(getattr(self, "train", None)))
         if self.validation_warmup is not None:
             name = "mars_titan.training.validation_warmup"
             own[name] = sha256(Path(importlib.import_module(name).__file__))

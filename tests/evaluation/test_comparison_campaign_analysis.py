@@ -15,8 +15,16 @@ from mars_titan.evaluation.comparison_bundle import export_results
 from tests.evaluation.comparison_results_fixtures import campaign_state
 
 
-def packages(tmp_path, *, failed=False, changed_target=False, changed_commit=False):
+def packages(tmp_path, *, failed=False, changed_target=False, changed_commit=False, commits=None):
     declaration, digest, layout = campaign_state(tmp_path / "source")
+
+    def set_commit(commit):
+        permission = json.loads(layout.authorization.read_text())
+        permission["code_commit"] = commit
+        layout.authorization.write_text(json.dumps(permission))
+
+    if commits:
+        set_commit(commits[0])
     first = tmp_path / "references.zip"
     export_results(declaration, digest, layout, "references", first)
     key = "titans_mac/2019/seed-43"
@@ -37,10 +45,8 @@ def packages(tmp_path, *, failed=False, changed_target=False, changed_commit=Fal
         report = json.loads((directory / "run.json").read_text())
         report["predictions"]["evaluation"].update(sha256=sha256(path), bytes=path.stat().st_size)
         (directory / "run.json").write_text(json.dumps(report))
-    if changed_commit:
-        permission = json.loads(layout.authorization.read_text())
-        permission["code_commit"] = "b" * 40
-        layout.authorization.write_text(json.dumps(permission))
+    if changed_commit or commits:
+        set_commit(commits[1] if commits else "b" * 40)
     second = tmp_path / "mars-titan.zip"
     export_results(declaration, digest, layout, "mars_titan", second)
     return first, second
@@ -95,6 +101,40 @@ def test_different_training_commits_are_not_mixed(tmp_path):
         analysis.analyze([first, second], tmp_path / "analysis", plots=False)
 
 
+@pytest.mark.parametrize("older", sorted(analysis.WARMUP_COMMITS))
+def test_packed_inputs_require_the_exact_release_and_declared_option(older):
+    from mars_titan.training.comparison_input_migration import PACKED_RELEASE
+
+    base = dict(
+        training_commit=older,
+        code_changes_sha256=None,
+        authorized_declaration_sha256=analysis.GPU_DECLARATION,
+        declaration_sha256=analysis.PACKED_DECLARATION,
+    )
+    other = dict(base, training_commit=PACKED_RELEASE)
+
+    def bundle(p):
+        return SimpleNamespace(manifest=dict(provenance=p, cohorts={"a": "b"}, jobs={}))
+
+    with pytest.raises(ValueError, match="código|commit"):
+        analysis._merge([bundle(base), bundle(other)], verified_warmup=True)
+    assert analysis._merge([bundle(base), bundle(other)], verified_packed_inputs=True) == {}
+    with pytest.raises(ValueError, match="código|commit"):
+        analysis._merge(
+            [bundle(dict(base, training_commit="2" * 40)), bundle(other)],
+            verified_packed_inputs=True,
+        )
+    for key, val in (
+        ("training_commit", "2" * 40),
+        ("code_changes_sha256", "1" * 64),
+        ("declaration_sha256", "4" * 64),
+    ):
+        with pytest.raises(ValueError, match="código|declaración"):
+            analysis._merge(
+                [bundle(base), bundle(dict(other, **{key: val}))], verified_packed_inputs=True
+            )
+
+
 def test_mixed_zip_report_names_each_runtime(tmp_path, monkeypatch):
     from mars_titan.evaluation.comparison_bundle import ResultsBundle
 
@@ -112,6 +152,29 @@ def test_mixed_zip_report_names_each_runtime(tmp_path, monkeypatch):
     assert {row["training_commit"] for row in origin["archives"]} == analysis.WARMUP_COMMITS
     assert origin["verified_warmup"] is True
     assert report["complete"] and report["comparisons"]
+
+
+@pytest.mark.parametrize("previous", sorted(analysis.WARMUP_COMMITS))
+def test_packed_release_keeps_each_zip_origin_and_its_metrics(tmp_path, monkeypatch, previous):
+    from mars_titan.evaluation.comparison_bundle import ResultsBundle
+
+    raw, packed = packages(tmp_path, commits=(previous, analysis.PACKED_RELEASE))
+    with ResultsBundle(raw) as bundle:
+        provenance = bundle.manifest["provenance"]
+    monkeypatch.setattr(analysis, "GPU_DECLARATION", provenance["authorized_declaration_sha256"])
+    monkeypatch.setattr(analysis, "PACKED_DECLARATION", provenance["declaration_sha256"])
+    report = analysis.analyze(
+        [raw, packed], tmp_path / "mixed", plots=False, verified_packed_inputs=True
+    )
+    origin = report["provenance"]
+    assert origin["training_commit"] is None and origin["verified_packed_inputs"]
+    assert not origin["verified_warmup"]
+    assert {row["training_commit"] for row in origin["archives"]} == {
+        previous,
+        analysis.PACKED_RELEASE,
+    }
+    assert report["complete"] and report["comparisons"]
+    assert report["models"]["transformer"]["pooled"]["mae_raw"] > 0
 
 
 @pytest.mark.parametrize(
@@ -178,6 +241,19 @@ def test_resource_csv_carries_last_readout_warmup_and_leaves_legacy_cells_empty(
     descriptor = json.loads(run.read_text())
     descriptor["fit"]["sha256"] = sha256(fit)
     run.write_text(json.dumps(descriptor))
+    record_path = layout.record(key)
+    record = json.loads(record_path.read_text())
+    record["attempts"][-1]["training_input_archive"] = dict(
+        packed_passes=5,
+        builds=1,
+        build_seconds=4.5,
+        built_bytes=1234,
+        verified_rows=91,
+        input_sha256="a" * 64,
+        archive_sha256="b" * 64,
+        index_sha256="d" * 64,
+    )
+    record_path.write_text(json.dumps(record))
     paths = []
     for machine in ("references", "mars_titan"):
         paths.append(tmp_path / (machine + ".zip"))
@@ -191,6 +267,8 @@ def test_resource_csv_carries_last_readout_warmup_and_leaves_legacy_cells_empty(
     with (output / "resources.csv").open() as stream:
         rows = {r["job"]: r for r in csv.DictReader(stream)}
     assert rows[key]["last_fit_warmup_hits"] == "3"
+    assert rows[key]["archive_packed_passes"] == "5" and rows[key]["archive_build_seconds"] == "4.5"
+    assert rows["titans_mac/2019/seed-42"]["archive_packed_passes"] == ""
     assert rows[key]["last_fit_warmup_tensor_bytes"] == "4096"
     assert rows[key]["last_fit_warmup_allocation_fallbacks"] == "1"
     assert rows[key]["bundle_training_commit"] == "a" * 40

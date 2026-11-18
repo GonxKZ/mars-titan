@@ -246,7 +246,7 @@ def _check_view(dataset, protocol, fold):
 
 def _sources(dataset, phases, root):
     """Preparar o reutilizar un índice por fase (`window_indices.phase_sources`)."""
-    return phase_sources(dataset, phases, root)
+    return phase_sources(dataset, phases, root, train_cache=True)
 
 
 # Cambios del predictor de un modelo sobre la receta, en la petición y en el caso de la campaña.

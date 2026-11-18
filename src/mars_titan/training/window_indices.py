@@ -68,7 +68,7 @@ def locked(path):
         yield
 
 
-def phase_sources(dataset, phases, root):
+def phase_sources(dataset, phases, root, *, train_cache=False):
     """Preparar o reutilizar un índice por fase, con la huella de su identidad en el nombre.
 
     La identidad incluye la vista, la fase y el código y las bibliotecas que construyen el
@@ -86,7 +86,12 @@ def phase_sources(dataset, phases, root):
             manifest = prepare_observation_index(
                 dataset, folder, phase=phase, resume=folder.exists()
             )
-        sources[name] = FinancialObservationSource(dataset, manifest)
+        if train_cache and phase.partition == "train":
+            from mars_titan.memory.training_event_cache import source_for_phase
+
+            sources[name] = source_for_phase(dataset, manifest, phase)
+        else:
+            sources[name] = FinancialObservationSource(dataset, manifest)
     return sources
 
 
