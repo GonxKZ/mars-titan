@@ -55,3 +55,37 @@ uv run --no-sync python "$ensayo/paralelos.py"
 ```
 
 La variable de shell `runtime` identifica la copia científica fija y `repo` la copia que contiene los programas del ensayo. `MARS_TITAN_COMPARISON_STATE` apunta al estado que contiene los checkpoints y `MARS_TITAN_BENCHMARK_WORK` al directorio de trabajo. El informe diferencia tiempos con auditoría de paridad, tiempos de cálculo tras el calentamiento, preparación y tiempo del par completo. La energía no se midió.
+
+## Comprobación del lector instalado en la campaña
+
+El 19 de noviembre de 2026 se repitieron tramos del origen de 2023 con la revisión de entrenamiento `f52cc3c332ba358e7afc1772e2038f05505c2285`. En cada uno de los cuatro modelos (Titans-MAC, M1, M2 y M3) coincidieron las 127.894 emisiones comprobadas, los 16 conjuntos de gradientes y los contadores. En Titans-MAC y M2 se reprodujeron también las 127.875 filas de validación de cada modelo, incluidos sus cuantiles cuando se emiten. El ejecutor reconoció la nueva identidad de diez preparaciones en el paso cero y cargó en CUDA sus pesos y el estado del optimizador.
+
+La tabla recoge el tiempo desde la entrada hasta la salida del recorrido de ajuste. Incluye comprobar y abrir la fuente. En el tramo corto se indica la media de dos repeticiones por lector. En el largo se midió una repetición por lector y modelo.
+
+| Modelo | 16 segmentos, origen | 16 segmentos, copia | 68 segmentos, origen | 68 segmentos, copia |
+| --- | ---: | ---: | ---: | ---: |
+| Titans-MAC | 23,30 s | 30,90 s | 66,66 s | 52,37 s |
+| M2 | 30,96 s | 37,38 s | 99,49 s | 84,67 s |
+
+En los tramos cortos, verificar el archivo completo cuesta más tiempo del que se ahorra después al decodificar. El tramo largo midió 468.708 observaciones por modelo después del calentamiento. La cohorte de ajuste completa tiene 3.339.253 observaciones y 3.274.785 etiquetas. Crear y verificar una copia de ese origen costó 779,12 s para bloques de 1.024 y 831,77 s para bloques de 512. Ambas preparaciones se hicieron durante el trabajo anterior de la cola. El tiempo de una campaña entera incluye también la validación, los checkpoints y la emisión de resultados.
+
+El ensayo utiliza los pesos seleccionados del origen de 2023 con semilla 43. Repite el tramo tardío con la misma semilla de PyTorch y sin pasos de optimizador. Compara cada emisión, los contadores y los gradientes de los 16 segmentos. Las dos primeras pasadas comprueban la paridad. Para cronometrar Titans-MAC y M2 se alternan después dos repeticiones por lector. La medición estable empieza tras cuatro segmentos de calentamiento. `pass_seconds` incluye también la apertura de la fuente y el calentamiento. La lectura preparada verifica la huella del archivo completo al abrirlo, incluso en este tramo corto. La segunda medición empieza al 80 % del índice y recorre 68 segmentos, incluidos cuatro de calentamiento. Se ejecutó una pareja por modelo con orden inverso entre Titans-MAC y M2. El tiempo con preparación del modelo empieza antes de construir el ejecutor y cargar los pesos en cada repetición.
+
+Para reproducirlo hacen falta los cuatro trabajos terminados, el enlace nativo y las dos copias de ajuste del mismo origen, con bloques de 512 y 1.024 filas. Desde el repositorio que contiene el ensayo, `runtime` es la copia científica en la etiqueta `comparison-campaign-packed-inputs-v1`. El entorno virtual es el utilizado por esa copia. `MARS_TITAN_COMPARISON_STATE` señala el estado con los checkpoints, `MARS_TITAN_TRAIN_ARCHIVE` el directorio de las copias y `MARS_TITAN_BENCHMARK_WORK` un directorio nuevo en disco.
+
+```bash
+repo="$(git rev-parse --show-toplevel)"
+test "$(git -C "$runtime" rev-parse HEAD)" = f52cc3c332ba358e7afc1772e2038f05505c2285 || exit 1
+export PYTHONPATH="$runtime/src:$repo"
+export CUDA_VISIBLE_DEVICES=0 CUBLAS_WORKSPACE_CONFIG=:4096:8
+export OMP_NUM_THREADS=2 MKL_NUM_THREADS=2 OPENBLAS_NUM_THREADS=2
+export MARS_TITAN_DECODE_WORKERS=2 MARS_TITAN_PREFETCH_BATCHES=2 MARS_TITAN_GROUP_CACHE_MIB=1536
+export MARS_TITAN_RESIDENT_VALIDATION_WARMUP=1
+cd "$runtime"
+uv run --no-sync python "$repo/benchmarks/comparison_efficiency_20261118/entradas_campana.py" \
+  --year 2023 --seed 43
+uv run --no-sync python "$repo/benchmarks/comparison_efficiency_20261118/entradas_campana.py" \
+  --year 2023 --seed 43 --long-slice
+```
+
+Los intentos que construyen la copia en la propia cola incorporan ese tiempo al ZIP. En este ensayo se prepararon los dos archivos en CPU mientras seguía el trabajo anterior de PC1. Sus costes se recogen una vez en `inputs` del registro. Las repeticiones con datos ya preparados se comparan por separado. [Tiempos por pasada, memoria y huellas de las comprobaciones](packed-release.json)
