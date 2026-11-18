@@ -199,6 +199,14 @@ La orden se puede ejecutar dentro de tmux como las anteriores. Comprueba el perm
 
 `resource-status.json`, dentro del estado de la campaña, distingue la espera de memoria, la espera de recursos y el trabajo en marcha. Una parada se propaga a los procesos del trabajo y espera su cierre. Los fallos se devuelven al controlador original para conservar sus registros y reintentos acotados. El ZIP final se exporta únicamente cuando todos los trabajos están completos.
 
+El lanzador de recursos guarda las huellas SHA-256 del corpus en `file-digests.json` dentro del estado. Un proceso reutiliza la huella si la ruta, el dispositivo, el inodo, el tamaño y las marcas de modificación y cambio coinciden con el registro. El lector coteja esa huella con el manifiesto. Un cambio en el archivo obliga a calcularla de nuevo. Esta caché pertenece al sistema de archivos de cada equipo.
+
+PC2 puede activar la misma opción antes de ejecutar su cola desde una terminal de WSL. La ruta predeterminada del ejemplo corresponde al kit original. Si se ha seleccionado otro estado mediante `MARS_TITAN_COMPARISON_STATE`, usa ese directorio.
+
+```bash
+export MARS_TITAN_DIGEST_CACHE="${MARS_TITAN_COMPARISON_STATE:-$HOME/.local/state/mars-titan/comparison-campaign-gpu-v1}/file-digests.json"
+```
+
 ## Calentamiento de validación en GPU
 
 La versión `comparison-campaign-warmup-20261118` guarda en la GPU el estado de Titans-MAC justo antes de la primera decisión de validación de sus lectores. En cada época, el banco empieza vacío y el lector vuelve a emitir todas las predicciones con sus pesos actuales. El ajuste del propio Titans-MAC sigue recorriendo el historial con los pesos de cada época. Los lectores con contexto de sesión también conservan su recorrido original. La caché tiene un límite de 256 MiB y comprueba que queda al menos 1 GiB libre además del espacio para las copias. Si la copia opcional se queda sin memoria, la validación recorre el historial original.
