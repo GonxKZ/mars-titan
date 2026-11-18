@@ -283,11 +283,10 @@ def fit_write_scalers(source, *, block_rows=128, capacity=SAMPLE_CAPACITY, seed=
     de su intervalo de decisión y etiquetas maduras de ese tramo. La escala del error es el
     error mediano del pronóstico nulo, que no depende de ningún modelo.
     """
+    from mars_titan.memory.training_event_cache import supported
     from mars_titan.models.titans.financial_inputs import validated_cpu_batch
 
-    from .financial_observations import FinancialObservationSource
-
-    if type(source) is not FinancialObservationSource or source.phase.partition != "train":
+    if not supported(source) or source.phase.partition != "train":
         raise ValueError("Las escalas M3 se estiman solo con el tramo de entrenamiento")
     phase, specification = source.phase, source.specification()
     if specification.input_policy != "historical_masked_2000_v1":

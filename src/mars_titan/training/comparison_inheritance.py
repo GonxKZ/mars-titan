@@ -4,6 +4,7 @@ import copy
 import fcntl
 import importlib.metadata
 import json
+import os
 import re
 import shutil
 from contextlib import ExitStack
@@ -12,6 +13,7 @@ from pathlib import Path
 
 from mars_titan.data.storage import atomic_json, sha256
 
+from . import comparison_input_migration as packed
 from .comparison_campaign import (
     DONE,
     MACHINES,
@@ -24,8 +26,8 @@ from .comparison_campaign import (
 )
 
 _MODULE = re.compile(r"mars_titan(?:\.[A-Za-z_][A-Za-z_0-9]*)+")
-GPU_RELEASE = "eb01b883e8e6ec912e2cda85f738fd2525584d19"
-WARMUP_RELEASE = "e23a44034c8584682397d3d5f7ac76dbc7bd8e12"
+GPU_RELEASE = packed.GPU_RELEASE
+WARMUP_RELEASE = packed.WARMUP_RELEASE
 GPU_DECLARATION = "585594e40886506fe2a4cf011d1e1cc350cc49a8c801d7c049eda5e8685c27d6"
 READOUT_MODULE = "mars_titan.training.mars_titan_run"
 PREVIOUS_READOUT = "fd4ac414e2798161035e1d6aabf785f436cc7e185895bfd341bad980f1ace218"
@@ -58,7 +60,16 @@ def _verify_file(folder, item):
 
 
 def _compatible_report(
-    folder, report, job, model, declaration, root, cohort_sha, *, warmup_release=False
+    folder,
+    report,
+    job,
+    model,
+    declaration,
+    root,
+    cohort_sha,
+    *,
+    warmup_release=False,
+    packed_release=False,
 ):
     _require(report.get("final_test_opened") is False, "El test final debe seguir cerrado")
     request = report.get("request", {})
@@ -79,6 +90,15 @@ def _compatible_report(
                 path = Path(root) / "src" / module.replace(".", "/") / "__init__.py"
             current = sha256(path) if path.is_file() else None
             if current == digest and current is not None:
+                continue
+            if (
+                packed_release
+                and packed.equivalent(root, module, digest, current)
+                and (
+                    report.get("status") == DONE
+                    or (job.runner == "fit" and report.get("status") == PAUSED)
+                )
+            ):
                 continue
             # Un ajuste interrumpido conserva su identidad exacta. La excepción solo enlaza
             # predicciones ya emitidas por un lector terminado de la versión comprobada.
@@ -133,7 +153,25 @@ def _copy_completed_parent(source, destination):
             )
 
 
-def inherit(old, new, old_digest, new_digest, source, target, *, commit, root):
+def _hold_jobs(stack, source, jobs, *, finish_active):
+    waiting = []
+    for job in jobs:
+        path = source.lock(job.key)
+        path.parent.mkdir(parents=True, exist_ok=True)
+        handle = stack.enter_context(path.open("a"))
+        try:
+            fcntl.flock(handle, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        except BlockingIOError:
+            if not finish_active:
+                raise ValueError("La cola de origen sigue activa. Debe pausarse antes") from None
+            waiting.append((job.key, handle))
+    # Los trabajos disponibles ya están reservados. Cada proceso activo acaba con su versión.
+    for key, handle in waiting:
+        print(f"Esperando a que termine {key}", flush=True)
+        fcntl.flock(handle, fcntl.LOCK_EX)
+
+
+def inherit(old, new, old_digest, new_digest, source, target, *, commit, root, finish_active=False):
     """Copiar los estados pausados y enlazar los terminados, con el origen cerrado para aprender.
 
     El destino conserva una referencia local a los resultados completados y copia los índices.
@@ -166,24 +204,42 @@ def inherit(old, new, old_digest, new_digest, source, target, *, commit, root):
         and permission.get("code_commit") == GPU_RELEASE
         and commit == WARMUP_RELEASE
     )
+    packed_release = (
+        old_digest == new_digest == GPU_DECLARATION
+        and permission.get("code_commit") in (GPU_RELEASE, WARMUP_RELEASE)
+        and commit == packed.PACKED_RELEASE
+    )
+    if packed_release:
+        _require(
+            permission.get("status") != "continued_in_another_state",
+            "El origen ya tiene una continuación registrada",
+        )
+    if commit == packed.PACKED_RELEASE and permission.get("code_commit") != commit:
+        _require(
+            packed_release, "El origen no corresponde a una versión comprobada para estas entradas"
+        )
     jobs = {job.key: job for machine in MACHINES for job in plan(old, machine)}
     candidates = {job.key: job for machine in MACHINES for job in plan(new, machine)}
     _require(len(jobs) <= 4096, "La herencia supera el límite de trabajos")
     with ExitStack() as stack:
-        for job in jobs.values():
-            path = source.lock(job.key)
-            path.parent.mkdir(parents=True, exist_ok=True)
-            handle = stack.enter_context(path.open("a"))
-            try:
-                fcntl.flock(handle, fcntl.LOCK_EX | fcntl.LOCK_NB)
-            except OSError as error:
-                raise ValueError("La cola de origen sigue activa. Debe pausarse antes") from error
+        coordination = stack.enter_context((source.state / "inheritance.lock").open("a"))
+        try:
+            fcntl.flock(coordination, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        except BlockingIOError:
+            raise ValueError("Ya hay otro traslado en curso desde este estado") from None
+        _require(sha256(source.authorization) == permission_sha, "El permiso de origen ha cambiado")
+        _hold_jobs(stack, source, jobs.values(), finish_active=finish_active)
         selected, omitted = {}, {}
         for key, job in jobs.items():
             record = read_record(source, key)
             _require(record["status"] != RUNNING, "Hay un trabajo activo. Pausa antes la cola")
             if not record.get("attempts"):
                 continue
+            if packed_release:
+                _require(
+                    record["status"] in (DONE, PAUSED),
+                    "Hay un intento sin resolver en el origen. Debe conservarse su resultado",
+                )
             if key not in candidates or old["models"][job.model] != new["models"][job.model]:
                 omitted[key] = "El modelo no forma parte del mismo contrato en el destino"
                 continue
@@ -197,6 +253,12 @@ def inherit(old, new, old_digest, new_digest, source, target, *, commit, root):
             _require(
                 report.get("status") == record["status"], "El registro no coincide con su informe"
             )
+            if packed_release and record["status"] == PAUSED:
+                _require(
+                    job.runner == "fit"
+                    and _document(source.output(key) / "fit/run.json").get("global_step") == 0,
+                    "Solo se traslada el paso cero. El ajuste iniciado termina con su versión",
+                )
             _compatible_report(
                 source.output(key),
                 report,
@@ -206,6 +268,7 @@ def inherit(old, new, old_digest, new_digest, source, target, *, commit, root):
                 root,
                 sha256(source.cohort(job.year) / "manifest.json"),
                 warmup_release=warmup_release,
+                packed_release=packed_release,
             )
             selected[key] = record
         for key in selected:
@@ -247,11 +310,25 @@ def inherit(old, new, old_digest, new_digest, source, target, *, commit, root):
             for key, record in selected.items():
                 destination = target.output(key)
                 destination.parent.mkdir(parents=True, exist_ok=True)
-                regular_parent = warmup_release and key in parents and record["status"] == DONE
+                regular_parent = (
+                    (warmup_release or packed_release)
+                    and key in parents
+                    and record["status"] == DONE
+                )
+                initial = None
                 if regular_parent:
                     _copy_completed_parent(source.output(key).resolve(strict=True), destination)
                 elif record["status"] == DONE:
                     destination.symlink_to(source.output(key).resolve(), target_is_directory=True)
+                elif packed_release:
+                    initial = packed.transfer_initial(
+                        source.output(key),
+                        destination,
+                        root,
+                        host_flags=job.model == "titans_mac"
+                        and os.environ.get("MARS_TITAN_CUDA_HOST_FINITE", "1") == "1",
+                        archived=os.environ.get("MARS_TITAN_TRAIN_ARCHIVE", "default") != "",
+                    )
                 else:
                     shutil.copytree(source.output(key), destination)
                 copied = copy.deepcopy(record)
@@ -273,6 +350,8 @@ def inherit(old, new, old_digest, new_digest, source, target, *, commit, root):
                 )
                 if regular_parent:
                     receipt["inherited"][key]["storage"] = "verified_parent_copy"
+                if initial:
+                    receipt["inherited"][key]["initial_checkpoint"] = initial
             _require(
                 sha256(source.authorization) == permission_sha, "El permiso de origen ha cambiado"
             )

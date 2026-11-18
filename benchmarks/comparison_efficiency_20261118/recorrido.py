@@ -72,8 +72,8 @@ class Predictions:
             self.count += 1
 
 
-def build(model, src, spec, seed=SEED):
-    anchor = STATE / "runs" / model / str(YEAR) / f"seed-{seed}"
+def build(model, src, spec, seed=SEED, *, year=YEAR):
+    anchor = STATE / "runs" / model / str(year) / f"seed-{seed}"
     report = read(anchor / "run.json")
     req, identity = report["request"], report["identity"]
     assert report["status"] == "completed" and report["final_test_opened"] is False
@@ -95,7 +95,7 @@ def build(model, src, spec, seed=SEED):
     )
     if model.startswith("mars_titan_"):
         parent = Path(req["parent"]["path"])
-        pr, ph = rw._parent(parent, STATE / "cohorts" / str(YEAR) / "manifest.json", seed)
+        pr, ph = rw._parent(parent, STATE / "cohorts" / str(year) / "manifest.json", seed)
         assert (
             ph == req["parent"]["run_sha256"]
             and pr["checkpoint"]["sha256"] == req["parent"]["checkpoint_sha256"]
@@ -143,14 +143,31 @@ def build(model, src, spec, seed=SEED):
     return engine, report, anchor
 
 
-def profile_slice(engine, spec, mode, capture, *, warm=4, until=16, gate=None, trace=None):
+def profile_slice(
+    engine,
+    spec,
+    mode,
+    capture,
+    *,
+    warm=4,
+    until=16,
+    gate=None,
+    trace=None,
+    source_range=None,
+    rng_seed=SEED,
+):
     is_reader = isinstance(engine, readers.ReadoutTrainer)
     mod = readers if is_reader else core
     source = engine.train
     block = engine.recipe.block_rows
     file = OUT / "train-late-1024.arrow"
-    meta = read(file.with_suffix(".json"))
-    start, count = meta["start"], meta["events"]
+    if source_range is None:
+        meta = read(file.with_suffix(".json"))
+        start, count = meta["start"], meta["events"]
+    else:
+        if mode != "original":
+            raise ValueError("El intervalo directo solo admite el lector de la fuente")
+        start, count = source_range
     first = source.metadata["groups"][start][0]
     original = source.batched_events
     current = engine._new_pass("train") if is_reader else core._Pass()
@@ -160,7 +177,7 @@ def profile_slice(engine, spec, mode, capture, *, warm=4, until=16, gate=None, t
     optimizer.capture = capture
     engine.global_step = 0
     engine.audit = Predictions() if capture else None
-    torch.manual_seed(SEED)
+    torch.manual_seed(rng_seed)
     wait = 0.0
     calls = 0
 

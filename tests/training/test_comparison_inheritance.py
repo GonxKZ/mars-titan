@@ -2,6 +2,7 @@
 
 import copy
 import json
+import subprocess
 from pathlib import Path
 
 import pytest
@@ -131,13 +132,30 @@ def test_only_a_completed_pinned_readout_can_cross_the_warmup_revision(
     report["request"]["code"][migration.READOUT_MODULE] = (
         migration.PREVIOUS_READOUT if module_hash == "original" else "0" * 64
     )
+    # El destino de esta migración histórica es la revisión del calentamiento.
+    target = tmp_path / "warmup-runtime"
+    (target / "configs").parent.mkdir()
+    (target / "configs").symlink_to(campaign.ROOT / "configs", target_is_directory=True)
+    for module in (*report["request"]["code"], "mars_titan.training.validation_warmup"):
+        file = Path("src") / Path(*module.split(".")).with_suffix(".py")
+        (target / file).parent.mkdir(parents=True, exist_ok=True)
+        payload = subprocess.check_output(
+            [
+                "git",
+                "-C",
+                str(campaign.ROOT),
+                "show",
+                f"{migration.WARMUP_RELEASE}:{file.as_posix()}",
+            ]
+        )
+        (target / file).write_bytes(payload)
     args = (
         folder,
         report,
         job,
         declaration["models"][job.model],
         declaration,
-        campaign.ROOT,
+        target,
         sha256(layout.cohort(job.year) / "manifest.json"),
     )
     if allowed:
@@ -217,7 +235,9 @@ def test_admin_inheritance_identifies_the_target_runtime_and_rejects_dirty_code(
     monkeypatch.setattr(migration, "inherit", capture)
     monkeypatch.setattr(campaign, "load_declaration", declaration)
     assert campaign.main(args) == 0
-    assert observed == {"root": root, "commit": "c" * 40}
+    assert observed == {"root": root, "commit": "c" * 40, "finish_active": False}
+    assert campaign.main([*args, "--finish-active"]) == 0
+    assert observed["finish_active"] is True
 
 
 def test_inherited_indices_are_accepted_by_the_real_reader_and_do_not_alias_the_source(
@@ -297,3 +317,90 @@ def test_inherited_and_fresh_records_can_be_analyzed_without_losing_execution_or
     assert first["execution_lineage"][0]["code_commit"] == "a" * 40
     assert second["execution_lineage"] == []
     assert second["attempt_executions"][0]["code_commit"] == "c" * 40
+
+
+def test_finish_active_holds_other_jobs_until_the_worker_finishes(tmp_path):
+    import fcntl
+    import threading
+    from concurrent.futures import ThreadPoolExecutor
+    from contextlib import ExitStack
+
+    from mars_titan.training import comparison_inheritance as migration
+
+    doc, _, layout = source(tmp_path)
+    jobs = campaign.plan(doc, "references")[:2]
+    starting, released = threading.Event(), threading.Event()
+    with layout.lock(jobs[0].key).open("a") as worker, ThreadPoolExecutor(1) as pool:
+        fcntl.flock(worker, fcntl.LOCK_EX)
+
+        def drain():
+            with ExitStack() as held:
+                starting.set()
+                migration._hold_jobs(held, layout, jobs, finish_active=True)
+                assert released.is_set()
+
+        result = pool.submit(drain)
+        assert starting.wait(3)
+        other = layout.lock(jobs[1].key)
+        import time
+
+        until = time.monotonic() + 5
+        while time.monotonic() < until:
+            with other.open("a") as candidate:
+                try:
+                    fcntl.flock(candidate, fcntl.LOCK_EX | fcntl.LOCK_NB)
+                except BlockingIOError:
+                    break
+            time.sleep(0.01)
+        else:
+            released.set()
+            fcntl.flock(worker, fcntl.LOCK_UN)
+            result.result(timeout=3)
+            pytest.fail("El trabajo siguiente seguía disponible")
+        released.set()
+        fcntl.flock(worker, fcntl.LOCK_UN)
+        result.result(timeout=3)
+
+
+def test_packed_release_requires_a_qualified_origin_and_preserves_failed_attempts(
+    tmp_path, monkeypatch
+):
+    from mars_titan.training import comparison_inheritance as migration
+
+    old, digest, original = source(tmp_path)
+    target = campaign.Layout(tmp_path / "continued", original.views)
+    kwargs = dict(commit=migration.packed.PACKED_RELEASE, root=campaign.ROOT)
+    with pytest.raises(ValueError, match="versión comprobada"):
+        inherit(old, old, digest, digest, original, target, **kwargs)
+    monkeypatch.setattr(migration, "GPU_RELEASE", "a" * 40)
+    monkeypatch.setattr(migration, "GPU_DECLARATION", digest)
+    key = "transformer/2019/seed-42"
+    rec = campaign.read_record(original, key)
+    atomic_json(original.record(key), dict(rec, status=campaign.FAILED))
+    with pytest.raises(ValueError, match="sin resolver"):
+        inherit(old, old, digest, digest, original, target, **kwargs)
+    assert not target.state.exists()
+    assert json.loads(original.authorization.read_text())["training_allowed"]
+
+
+def test_a_second_migration_cannot_wait_while_holding_other_job_locks(tmp_path):
+    import fcntl
+
+    old, digest, original = source(tmp_path)
+    target = campaign.Layout(tmp_path / "second", original.views)
+    with (original.state / "inheritance.lock").open("a") as first:
+        fcntl.flock(first, fcntl.LOCK_EX)
+        with pytest.raises(ValueError, match="otro traslado"):
+            inherit(
+                old,
+                old,
+                digest,
+                digest,
+                original,
+                target,
+                commit="c" * 40,
+                root=campaign.ROOT,
+                finish_active=True,
+            )
+    assert not target.state.exists()
+    assert json.loads(original.authorization.read_text())["training_allowed"]
