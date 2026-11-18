@@ -199,7 +199,7 @@ La orden se puede ejecutar dentro de tmux como las anteriores. Comprueba el perm
 
 `resource-status.json`, dentro del estado de la campaña, distingue la espera de memoria, la espera de recursos y el trabajo en marcha. Una parada se propaga a los procesos del trabajo y espera su cierre. Los fallos se devuelven al controlador original para conservar sus registros y reintentos acotados. El ZIP final se exporta únicamente cuando todos los trabajos están completos.
 
-El lanzador de recursos guarda las huellas SHA-256 del corpus en `file-digests.json` dentro del estado. Un proceso reutiliza la huella si la ruta, el dispositivo, el inodo, el tamaño y las marcas de modificación y cambio coinciden con el registro. El lector coteja esa huella con el manifiesto. Un cambio en el archivo obliga a calcularla de nuevo. Esta caché pertenece al sistema de archivos de cada equipo.
+El lanzador de recursos guarda las huellas SHA-256 del corpus en `file-digests.json` dentro del estado. Un proceso reutiliza la huella si la ruta, el dispositivo, el inodo, el tamaño y las marcas de modificación y cambio coinciden con el registro. El lector coteja esa huella con el manifiesto. Un cambio en el archivo obliga a calcularla de nuevo. Esta caché pertenece al sistema de archivos de cada equipo. [Medición de apertura, lectura y paralelismo en PC1](../../reports/engineering/comparison-efficiency-20261118/README.md)
 
 PC2 puede activar la misma opción antes de ejecutar su cola desde una terminal de WSL. La ruta predeterminada del ejemplo corresponde al kit original. Si se ha seleccionado otro estado mediante `MARS_TITAN_COMPARISON_STATE`, usa ese directorio.
 
