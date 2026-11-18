@@ -1,6 +1,6 @@
 # Campaña de comparación en dos equipos: guía de uso
 
-Estado: guía operativa de la campaña declarada en `configs/experiments/comparison-campaign-gpu-v1.json` (#836). Describe órdenes y comprobaciones. No contiene resultados. El diseño experimental, las medidas del piloto y el dimensionado están en [la declaración de la campaña](../experiments/comparison-campaign-v1.md). Fecha: 14 de noviembre de 2026.
+Las órdenes de esta guía ejecutan la campaña declarada en `configs/experiments/comparison-campaign-gpu-v1.json` (#836), iniciada el 14 de noviembre de 2026. El diseño experimental, las medidas del piloto y los presupuestos se recogen en [la declaración de la campaña](../experiments/comparison-campaign-v1.md).
 
 ## Qué hace cada equipo
 
@@ -252,6 +252,51 @@ uv run --no-sync python -m mars_titan.training.comparison_campaign status --mach
   --state "$HOME/.local/state/mars-titan/comparison-campaign-warmup-20261118"
 ```
 
+## Actualizar PC2 durante un entrenamiento
+
+La etiqueta `comparison-campaign-packed-inputs-v1` identifica el código de entrenamiento `f52cc3c332ba358e7afc1772e2038f05505c2285`. Prepara en el disco local las entradas cronológicas de ajuste y coteja su lectura completa con el origen. Conserva filas, etiquetas, máscaras y orden. El clasificador de indicadores FP32 de Titans-MAC agrupa comprobaciones y reduce lanzamientos CUDA. M1, M2 y M3 aprovechan el lector de entradas y el calentamiento de validación del padre congelado. Cada intento registra las pasadas que usaron la copia, el coste de construirla y las veces que tuvo que leer del origen.
+
+En una copia **de administración** que ya esté en la rama `main` y apunte al GitHub del proyecto, se puede ejecutar `git pull --ff-only origin main` mientras entrena el otro directorio. El kit puede estar en una etiqueta fija y PC2 puede tener cambios propios. En esos casos se pueden descargar y preparar ambas copias aparte siguiendo las órdenes de abajo. El proceso activo termina con el código y el checkpoint con los que arrancó.
+
+Para pasar una cola del kit o del calentamiento a las entradas verificadas, abrir otra sesión de WSL con `tmux new-session -s mars-titan-entradas`. Ejecutar el bloque desde el repositorio de PC2, dentro de esa sesión. Si el estado activo difiere del original del kit, asignar previamente su ruta absoluta a `MARS_TITAN_COMPARISON_STATE`. La autorización de ese estado identifica el commit y los cambios locales con los que se entrenó. Una revisión propia con cambios numéricos necesita comprobarse por separado. Se puede conservar íntegro su ZIP.
+
+```bash
+set -e
+export UV_PROJECT_ENVIRONMENT="$(uv run --no-sync python -c 'import sys; print(sys.prefix)')"
+repo="$(git rev-parse --show-toplevel)"
+old_state="${MARS_TITAN_COMPARISON_STATE:-$HOME/.local/state/mars-titan/comparison-campaign-gpu-v1}"
+state="$HOME/.local/state/mars-titan/comparison-campaign-packed-v1"
+admin_dir="$(dirname "$repo")/mars-titan-admin-entradas"
+runtime="$(dirname "$repo")/mars-titan-entradas"
+tag=comparison-campaign-packed-inputs-v1
+git -C "$repo" fetch https://github.com/GonxKZ/mars-titan.git \
+  refs/heads/main:refs/remotes/mars-titan-public/main "refs/tags/$tag:refs/tags/$tag"
+test "$(git -C "$repo" rev-parse "$tag^{commit}")" = f52cc3c332ba358e7afc1772e2038f05505c2285
+git -C "$repo" worktree add --detach "$admin_dir" refs/remotes/mars-titan-public/main
+git -C "$repo" worktree add --detach "$runtime" "$tag"
+
+export MARS_TITAN_RESIDENT_VALIDATION_WARMUP=1 MARS_TITAN_CUDA_HOST_FINITE=1
+export MARS_TITAN_TRAIN_ARCHIVE="$state/packed-inputs"
+export MARS_TITAN_DIGEST_CACHE="$state/file-digests.json"
+export MARS_TITAN_COMPARISON_STATE="$state"
+campaign=(uv run --no-sync python -m mars_titan.training.comparison_campaign)
+cd "$admin_dir"
+export PYTHONPATH="$PWD/src"
+"${campaign[@]}" inherit --finish-active --runtime "$runtime" --source "$old_state" \
+  --state "$state" --previous-declaration configs/experiments/comparison-campaign-gpu-v1.json
+cd "$runtime"
+export PYTHONPATH="$PWD/src"
+"${campaign[@]}" doctor --machine mars_titan
+"${campaign[@]}" authorize --note "Continuación de la comparación en PC2 con entradas verificadas"
+"${campaign[@]}" run --machine mars_titan
+"${campaign[@]}" export-results --machine mars_titan \
+  --destination "$HOME/MARS-TITAN-resultados-mars_titan-entradas.zip"
+```
+
+La herencia reserva los trabajos que siguen disponibles y espera el cierre de los que estén ejecutándose. Copia los padres completos y comprueba sus huellas. Una preparación en el paso cero conserva pesos, optimizador, cursor y generadores aleatorios. Si ya existía un ajuste pausado con actualizaciones, hay que terminarlo en la copia que lo creó. Los resultados anteriores quedan identificados con sus intentos originales. Hay que conservar las carpetas de origen porque el estado nuevo enlaza los resultados ya guardados.
+
+El directorio de entradas pertenece al usuario de WSL y reside en su disco Linux. Admite dos archivos de hasta 16 GiB cada uno y un archivo temporal durante una sustitución. La escritura reserva 4 GiB libres. Si el presupuesto de la copia es insuficiente se usa el lector canónico. En una reanudación se conservan el mismo directorio de entradas, las opciones y el estado. Desde el directorio de ejecución se repiten únicamente `run` y después `export-results`.
+
 ## Seguir, parar y reanudar
 
 ```bash
@@ -295,11 +340,11 @@ uv run python -m mars_titan.training.comparison_campaign export-results --machin
 
 El ZIP del segundo equipo se copia al primero sin mezclar las carpetas de entrenamiento. Cada archivo lleva su huella. Un paquete parcial conserva los fallos y los trabajos pendientes, y no se presenta como campaña terminada. La exportación rechaza archivos alterados y no sobrescribe un ZIP existente. Los informes conservan las huellas de los modelos, pero sus pesos no viajan: el paquete sirve para analizar predicciones guardadas, no para volver a ejecutar la inferencia ni continuar el entrenamiento.
 
-El análisis se ejecuta desde la versión actual de `main` o `develop`, con los dos archivos en la carpeta personal y un directorio de salida nuevo. La opción `--verified-warmup` admite las dos etiquetas anteriores con la declaración original, cohortes iguales y copias limpias. Un tercer commit requiere su propia comprobación. El informe conserva el commit de cada archivo y los intentos de cada trabajo.
+El análisis se ejecuta desde la versión actual de `main` o `develop`, con los dos archivos en la carpeta personal y un directorio de salida nuevo. Con un ZIP de la versión de entradas verificadas y otro del kit o del calentamiento se usa `--verified-packed-inputs`. Para combinar solo el kit y el calentamiento se usa `--verified-warmup`. El análisis comprueba los commits, la declaración, la ausencia de cambios locales y la identidad de las cohortes. Un mismo trabajo en dos ZIP se rechaza. El informe conserva el commit de cada archivo y los intentos de cada trabajo.
 
 ```bash
 uv run --no-sync python -m mars_titan.evaluation.comparison_campaign_analysis \
-  --verified-warmup \
+  --verified-packed-inputs \
   --bundle "$HOME/mars-titan-resultados-references.zip" \
   --bundle "$HOME/mars-titan-resultados-mars_titan.zip" \
   --output "$HOME/mars-titan-analisis"
