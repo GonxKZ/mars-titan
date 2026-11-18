@@ -8,6 +8,7 @@ Una variable vacía equivale a no declararla. Una ruta declarada que no existe n
 
 | Variable | La lee | Significado | Sin declarar |
 | --- | --- | --- | --- |
+| `MARS_TITAN_BENCHMARK_WORK` | `benchmarks/comparison_efficiency_20261118/configuracion.py` | Directorio absoluto existente fuera del repositorio para los archivos temporales y las medidas de caudal | El ensayo técnico exige indicar la ruta |
 | `MARS_TITAN_TRAINING_HOLD` | `training/learning_hold.py` y `native/src/learning_hold.cpp` | Ruta de la protección del aprendizaje. Bloquea los ajustes mientras no declare `training_allowed: true` ([protección del aprendizaje](../../tests/README.md#protección-del-aprendizaje)) | `~/.local/state/mars-titan/training-hold-2000.json`. Si el archivo no existe, no bloquea |
 | `MARS_TITAN_INPUT_CACHE_MIB` | `training/reference_run.py` | Presupuesto en MiB de la caché de tablas del corpus, entre 1 y 4096 | Caché por defecto de `CorpusDataset` |
 | `MARS_TITAN_DECODE_WORKERS` | `training/input_pipeline.py` | Hilos de decodificación del lector cronológico, de 0 a 16 | 0, la ruta secuencial |
