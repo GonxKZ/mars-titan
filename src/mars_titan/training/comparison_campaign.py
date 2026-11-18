@@ -1479,6 +1479,11 @@ def main(argv=None):
         type=Path,
         help="Declaración de origen para heredar trabajos en un estado nuevo",
     )
+    parser.add_argument(
+        "--finish-active",
+        action="store_true",
+        help="Esperar en inherit a que terminen los trabajos activos en su versión",
+    )
     parser.add_argument("--part-gib", type=float, help="Tamaño máximo de cada parte de export")
     parser.add_argument("--preflight", action="store_true", help="Uso interno de la orden job")
     parser.add_argument(
@@ -1488,6 +1493,10 @@ def main(argv=None):
     _require(
         args.machine is not None or args.command not in _MACHINE_COMMANDS,
         f"La orden {args.command} necesita --machine",
+    )
+    _require(
+        not args.finish_active or args.command == "inherit",
+        "--finish-active solo corresponde a la herencia",
     )
     runtime = ROOT
     if args.runtime is not None:
@@ -1536,6 +1545,7 @@ def main(argv=None):
             layout,
             commit=code_commit(runtime),
             root=runtime,
+            finish_active=args.finish_active,
         )
         print(
             f"Heredados {len(receipt['inherited'])} trabajos. Origen conservado y permiso cerrado"
