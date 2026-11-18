@@ -17,7 +17,7 @@ from threadpoolctl import threadpool_limits
 
 from mars_titan.data.storage import atomic_json, sha256
 from mars_titan.training.comparison_campaign import DONE, HISTORY, MACHINES, MAGNITUDE_RUNNERS, plan
-from mars_titan.training.comparison_inheritance import GPU_DECLARATION, GPU_RELEASE
+from mars_titan.training.comparison_inheritance import GPU_DECLARATION, GPU_RELEASE, WARMUP_RELEASE
 
 from . import comparison_metrics as metrics
 from . import comparison_protocol as protocol
@@ -25,7 +25,7 @@ from .comparison_bundle import ResultsBundle
 from .comparison_inference import compare_family
 from .forecast_panel import DAY_MICROSECONDS, SessionSeries
 
-WARMUP_COMMITS = frozenset({GPU_RELEASE, "e23a44034c8584682397d3d5f7ac76dbc7bd8e12"})
+WARMUP_COMMITS = frozenset({GPU_RELEASE, WARMUP_RELEASE})
 PACKED_DECLARATION = "9d81bb4f5477df2b26dc9bd2346b3a5bdb5c23115fc86c110a07bdb6d29539ca"
 WARMUP_FIELDS = ("hits", "events", "tensor_bytes", "limit_bytes", "allocation_fallbacks")
 

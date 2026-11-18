@@ -25,6 +25,7 @@ from .comparison_campaign import (
 
 _MODULE = re.compile(r"mars_titan(?:\.[A-Za-z_][A-Za-z_0-9]*)+")
 GPU_RELEASE = "eb01b883e8e6ec912e2cda85f738fd2525584d19"
+WARMUP_RELEASE = "e23a44034c8584682397d3d5f7ac76dbc7bd8e12"
 GPU_DECLARATION = "585594e40886506fe2a4cf011d1e1cc350cc49a8c801d7c049eda5e8685c27d6"
 READOUT_MODULE = "mars_titan.training.mars_titan_run"
 PREVIOUS_READOUT = "fd4ac414e2798161035e1d6aabf785f436cc7e185895bfd341bad980f1ace218"
@@ -119,6 +120,19 @@ def _check_versions(record):
                 )
 
 
+def _copy_completed_parent(source, destination):
+    # El lector exige rutas regulares hasta el checkpoint. Una copia independiente
+    # permite validar esos archivos y conserva el padre histórico en su directorio.
+    shutil.copytree(source, destination, symlinks=True)
+    for path in destination.rglob("*"):
+        _require(not path.is_symlink(), "El padre contiene un enlace intermedio")
+        if path.is_file():
+            _require(
+                sha256(path) == sha256(source / path.relative_to(destination)),
+                "La copia del padre ha cambiado de contenido",
+            )
+
+
 def inherit(old, new, old_digest, new_digest, source, target, *, commit, root):
     """Copiar los estados pausados y enlazar los terminados, con el origen cerrado para aprender.
 
@@ -148,7 +162,9 @@ def inherit(old, new, old_digest, new_digest, source, target, *, commit, root):
     )
     _require(permission.get("code_changes_sha256") is None, "El origen necesita una versión fija")
     warmup_release = (
-        old_digest == new_digest == GPU_DECLARATION and permission.get("code_commit") == GPU_RELEASE
+        old_digest == new_digest == GPU_DECLARATION
+        and permission.get("code_commit") == GPU_RELEASE
+        and commit == WARMUP_RELEASE
     )
     jobs = {job.key: job for machine in MACHINES for job in plan(old, machine)}
     candidates = {job.key: job for machine in MACHINES for job in plan(new, machine)}
@@ -227,10 +243,14 @@ def inherit(old, new, old_digest, new_digest, source, target, *, commit, root):
                 atomic_json(target.bundle, bundle)
             if source.indices.is_dir():
                 shutil.copytree(source.indices, target.indices)
+            parents = {job.needs for job in candidates.values() if job.needs}
             for key, record in selected.items():
                 destination = target.output(key)
                 destination.parent.mkdir(parents=True, exist_ok=True)
-                if record["status"] == DONE:
+                regular_parent = warmup_release and key in parents and record["status"] == DONE
+                if regular_parent:
+                    _copy_completed_parent(source.output(key).resolve(strict=True), destination)
+                elif record["status"] == DONE:
                     destination.symlink_to(source.output(key).resolve(), target_is_directory=True)
                 else:
                     shutil.copytree(source.output(key), destination)
@@ -251,6 +271,8 @@ def inherit(old, new, old_digest, new_digest, source, target, *, commit, root):
                 receipt["inherited"][key] = dict(
                     status=record["status"], **copied["source_execution"]
                 )
+                if regular_parent:
+                    receipt["inherited"][key]["storage"] = "verified_parent_copy"
             _require(
                 sha256(source.authorization) == permission_sha, "El permiso de origen ha cambiado"
             )

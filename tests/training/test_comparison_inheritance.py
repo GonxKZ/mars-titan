@@ -156,6 +156,70 @@ def test_an_existing_destination_is_preserved(tmp_path):
     assert (tmp_path / "continued/keep.txt").read_text() == "conservar"
 
 
+def test_warmup_migration_gives_new_readers_regular_verified_parents(tmp_path, monkeypatch):
+    from mars_titan.data.cohort_files import safe_destination
+    from mars_titan.training import comparison_inheritance as migration
+
+    old, digest, original = source(tmp_path)
+    monkeypatch.setattr(migration, "GPU_DECLARATION", digest)
+    monkeypatch.setattr(migration, "GPU_RELEASE", "a" * 40)
+    monkeypatch.setattr(migration, "WARMUP_RELEASE", "c" * 40)
+    target = campaign.Layout(tmp_path / "continued", original.views)
+    receipt = inherit(
+        old, old, digest, digest, original, target, commit="c" * 40, root=campaign.ROOT
+    )
+    key = "titans_mac/2019/seed-42"
+    path = target.output(key) / "fit/run.json"
+    safe_destination(path)
+    assert receipt["inherited"][key]["storage"] == "verified_parent_copy"
+    assert sha256(path) == sha256(original.output(key) / "fit/run.json")
+    assert target.output("mars_titan_m3/2019/seed-42").is_symlink()
+
+
+def test_admin_inheritance_identifies_the_target_runtime_and_rejects_dirty_code(
+    tmp_path, monkeypatch
+):
+    from mars_titan.training import comparison_inheritance as migration
+
+    root = tmp_path / "fixed"
+    root.mkdir()
+    config = campaign.DECLARATION
+    monkeypatch.setattr(campaign, "_git", lambda runtime, *args: str(runtime).encode())
+    monkeypatch.setattr(
+        campaign, "code_commit", lambda runtime=None: "c" * 40 if runtime == root else None
+    )
+    monkeypatch.setattr(campaign, "code_changes", lambda runtime: "0" * 64)
+    args = [
+        "inherit",
+        "--runtime",
+        str(root),
+        "--source",
+        str(tmp_path / "original"),
+        "--state",
+        str(tmp_path / "target"),
+        "--previous-declaration",
+        config,
+    ]
+    with pytest.raises(ValueError, match="limpi"):
+        campaign.main(args)
+    monkeypatch.setattr(campaign, "code_changes", lambda runtime: None)
+    observed = {}
+
+    def declaration(path, *, root):
+        assert root == tmp_path / "fixed"
+        assert path in (None, root / config)
+        return {}, "b" * 64
+
+    def capture(*args, **kwargs):
+        observed.update(kwargs)
+        return {"inherited": {}}
+
+    monkeypatch.setattr(migration, "inherit", capture)
+    monkeypatch.setattr(campaign, "load_declaration", declaration)
+    assert campaign.main(args) == 0
+    assert observed == {"root": root, "commit": "c" * 40}
+
+
 def test_inherited_indices_are_accepted_by_the_real_reader_and_do_not_alias_the_source(
     tmp_path, monkeypatch
 ):
