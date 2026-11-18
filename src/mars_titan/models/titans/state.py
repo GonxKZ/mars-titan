@@ -9,6 +9,8 @@ from dataclasses import dataclass, replace
 import torch
 from torch import Tensor
 
+from . import host_finite
+
 
 @dataclass(frozen=True)
 class NeuralMemoryState:
@@ -70,6 +72,13 @@ class _PendingChecks:
         groups: dict[torch.dtype, list[int]] = {}
         for index, flag in enumerate(self.flags):
             groups.setdefault(flag.dtype, []).append(index)
+        if (
+            host_finite.enabled()
+            and self.flags[0].is_cuda
+            and torch.float32 in groups
+            and groups.keys() <= {torch.float32, torch.bool}
+        ):
+            return host_finite.first_failure(self.flags, self.messages, groups)
         parts, order = [], []
         for dtype, indices in groups.items():
             stacked = torch.stack([self.flags[index] for index in indices])

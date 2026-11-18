@@ -31,6 +31,7 @@ from mars_titan.data.input_policy import MODALITIES
 from mars_titan.data.storage import atomic_json, outside_source, sha256
 from mars_titan.evaluation.session_metrics import SessionErrors
 from mars_titan.learning_traces.hooks import observing, traced_update
+from mars_titan.memory import training_event_cache
 from mars_titan.memory.financial_observations import FinancialObservationSource
 from mars_titan.memory.mature_reliability import ReliabilitySignal
 from mars_titan.models.predictive_adaptation import is_adapter_name
@@ -869,7 +870,7 @@ class ChronologicalInference:
         sin etiquetas y avanza en orden. Las etiquetas solo se comparan con lo emitido.
         """
         if (
-            type(source) is not FinancialObservationSource
+            not training_event_cache.supported(source)
             or source.phase.partition not in ("validation", "calibration", "evaluation")
             or not _compatible(self.predictor.config.inputs, source.specification())
         ):
@@ -919,7 +920,7 @@ class ChronologicalTrainer(ChronologicalInference):
     ):
         super().__init__(predictor, recipe, audit=audit)
         if (
-            type(train) is not FinancialObservationSource
+            not training_event_cache.supported(train)
             or type(validation) is not FinancialObservationSource
             or train.phase.partition != "train"
             or validation.phase.partition != "validation"
@@ -1079,6 +1080,11 @@ class ChronologicalTrainer(ChronologicalInference):
 
     def _code(self):
         own = {name: sha256(Path(importlib.import_module(name).__file__)) for name in _OWN_MODULES}
+        own.update(training_event_cache.source_implementation(self.train))
+        from mars_titan.models.titans import host_finite
+
+        if host_finite.enabled():
+            own[host_finite.__name__] = sha256(Path(host_finite.__file__))
         for option, name in _PREDICTOR_MODULES.items():
             if getattr(self.predictor.config, option) is not None:
                 own[name] = sha256(Path(importlib.import_module(name).__file__))
@@ -1380,7 +1386,7 @@ class ChronologicalTrainer(ChronologicalInference):
     def predict_partition(self, source, rows, *, stop=None):
         """Predecir un tramo posterior al ajuste del mismo corpus con `predict`."""
         if (
-            type(source) is not FinancialObservationSource
+            not training_event_cache.supported(source)
             or source.dataset.identity != self.train.dataset.identity
             or source.phase.decision_start < self.train.phase.decision_end
         ):

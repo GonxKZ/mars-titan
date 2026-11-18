@@ -679,6 +679,8 @@ def run_job(declaration, layout, job, *, device="cuda:0", root=ROOT, preflight=F
     Devuelve el estado final. Un informe pausado conserva el trabajo como pausado, para que
     la siguiente orden lo continúe desde su último checkpoint.
     """
+    from contextlib import nullcontext
+
     from .comparison_telemetry import AttemptMetrics, ProcessGpuMemory
 
     record = read_record(layout, job.key)
@@ -689,6 +691,11 @@ def run_job(declaration, layout, job, *, device="cuda:0", root=ROOT, preflight=F
             name: permission.get(name)
             for name in ("code_commit", "declaration_sha256", "code_changes_sha256")
         }
+    read_cache = None
+    if job.runner in GPU_RUNNERS and os.environ.get("MARS_TITAN_TRAIN_ARCHIVE"):
+        from mars_titan.memory import training_event_cache as read_cache
+
+        read_cache.reset_usage()
     if preflight:
         attempt["preflight"] = True
     record.update(status=RUNNING, model=job.model, year=job.year, seed=job.seed, tier=job.tier)
@@ -709,9 +716,18 @@ def run_job(declaration, layout, job, *, device="cuda:0", root=ROOT, preflight=F
             _require(device == "cuda:0", "El perfil OpenCL necesita la GPU explícita del equipo")
             accelerator = check_gpu_backend(model["config"]["execution"])
             gpu_sampler = ProcessGpuMemory().start()
-        report = execute_job(
-            declaration, layout, job, device=device, root=root, preflight=preflight
-        )
+        flags = nullcontext()
+        scalar_policy = os.environ.get("MARS_TITAN_CUDA_HOST_FINITE", "0")
+        _require(scalar_policy in {"0", "1"}, "MARS_TITAN_CUDA_HOST_FINITE solo admite 0 o 1")
+        if job.model == "titans_mac" and scalar_policy == "1" and device == "cuda:0":
+            from mars_titan.models.titans.host_finite import on_host
+
+            flags = on_host()
+            attempt["finite_flags"] = "cuda_fp32_indicators_on_host"
+        with flags:
+            report = execute_job(
+                declaration, layout, job, device=device, root=root, preflight=preflight
+            )
         status = DONE if report["status"] == "completed" else PAUSED
         attempt.update(status=report["status"])
         if status == DONE:
@@ -725,6 +741,10 @@ def run_job(declaration, layout, job, *, device="cuda:0", root=ROOT, preflight=F
             traceback=traceback.format_exc()[-6000:],
         )
     attempt.update(seconds=time.perf_counter() - started, finished_at_utc=_now())
+    if read_cache is not None:
+        attempt["training_input_archive"] = dict(
+            implementation=read_cache.implementation(), **read_cache.receipt()
+        )
     try:
         measured_device = "opencl:0" if opencl else device if job.runner in CUDA_RUNNERS else "cpu"
         attempt["resources"] = measurement.finish(measured_device)
@@ -939,6 +959,8 @@ def _environment(layout, declaration):
     environment[HOLD_ENV] = str(layout.authorization)
     environment[SHARED_INDICES_ENV] = str(layout.indices)
     environment[STATE_ENV], environment[VIEWS_ENV] = str(layout.state), str(layout.views)
+    environment.setdefault("MARS_TITAN_TRAIN_ARCHIVE", str(layout.state / "packed-inputs"))
+    environment.setdefault("MARS_TITAN_CUDA_HOST_FINITE", "1")
     environment[NATIVE_ENV] = str(layout.native)
     # cuBLAS determinista, como exige el recorrido cronológico en cuda:0.
     environment.setdefault("CUBLAS_WORKSPACE_CONFIG", ":4096:8")
