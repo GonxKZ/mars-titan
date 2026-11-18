@@ -1080,7 +1080,7 @@ class ChronologicalTrainer(ChronologicalInference):
 
     def _code(self):
         own = {name: sha256(Path(importlib.import_module(name).__file__)) for name in _OWN_MODULES}
-        own.update(training_event_cache.source_implementation(self.train))
+        own.update(training_event_cache.source_implementation(getattr(self, "train", None)))
         from mars_titan.models.titans import host_finite
 
         if host_finite.enabled():
