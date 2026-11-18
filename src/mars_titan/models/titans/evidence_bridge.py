@@ -21,6 +21,7 @@ from .bridge_recurrence import (
     nonlinear_mix,
 )
 from .config import MAX_BLOCK_ROWS, MAX_STATE_BYTES, bounded_integer, require_identity
+from .cuda_kernels import stable_neighbors
 from .episodic_readout import _normalize
 from .episodic_snapshot import EpisodeSnapshot, _device, _digest_id
 from .state import check_finite, deferred_checks
@@ -483,9 +484,7 @@ class SharedEvidenceBridge(nn.Module):
             keys, values, labels, ids = snapshot._values[:4]
             if positions is None:
                 with torch.no_grad():
-                    positions = torch.argsort(
-                        common.double() @ keys.T, dim=-1, descending=True, stable=True
-                    )[:, :count]
+                    positions = stable_neighbors(common.double() @ keys.T, count)
             flat = positions.flatten()
             selected_keys = keys.index_select(0, flat).reshape(b, count, 64).to(state.dtype)
             selected = torch.cat(
