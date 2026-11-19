@@ -863,5 +863,21 @@
     "host_low_mib": 433.0,
     "required_gib_for_two": 12,
     "checkpoint_parity": true
+  },
+  "other_scaling_experiment": {
+    "dlinear_window": {
+      "original_seconds": [
+        22.01188063400332,
+        20.060006558021996
+      ],
+      "fused_seconds": [
+        20.645486206980422,
+        20.397823658015113
+      ],
+      "speedup": 1.0250607792210984
+    },
+    "micro_speedup_batch_1024": 4.901927018200224,
+    "transformer_dlinear_with_fused_scaling_vs_ordinary_serial": 1.770882892145791,
+    "disposition": "Prototipo experimental. La campaña conserva el escalado publicado."
   }
 }

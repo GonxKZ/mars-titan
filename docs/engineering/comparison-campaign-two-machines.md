@@ -297,6 +297,8 @@ La herencia reserva los trabajos que siguen disponibles y espera el cierre de lo
 
 El directorio de entradas pertenece al usuario de WSL y reside en su disco Linux. Admite dos archivos de hasta 16 GiB cada uno y un archivo temporal durante una sustitución. La escritura reserva 4 GiB libres. Si el presupuesto de la copia es insuficiente se usa el lector canónico. En una reanudación se conservan el mismo directorio de entradas, las opciones y el estado. Desde el directorio de ejecución se repiten únicamente `run` y después `export-results`.
 
+Para adelantar la preparación en CPU mientras termina el trabajo anterior, puede usarse un directorio de caché de WSL independiente del estado de destino. La herencia requiere que el directorio del estado nuevo aún no exista. Una vez registrada, se mantiene la ruta de caché elegida en `MARS_TITAN_TRAIN_ARCHIVE`. El preparador contrasta todas las filas y etiquetas antes de publicar el archivo. La [medición en la RTX 5050 de PC2](../../reports/engineering/titans-cuda-pc2-20261119/README.md) distingue los costes de la lectura, los kernels y el ajuste cronológico.
+
 ## Seguir, parar y reanudar
 
 ```bash
