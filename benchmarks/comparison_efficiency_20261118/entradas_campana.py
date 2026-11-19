@@ -13,9 +13,7 @@ import torch
 
 from mars_titan.data.input_policy import HISTORICAL_MASKED
 from mars_titan.data.storage import atomic_json, sha256
-from mars_titan.memory import training_event_cache as cache
 from mars_titan.memory.financial_observations import FinancialObservationSource
-from mars_titan.models.titans import host_finite
 from mars_titan.training.corpus_inputs import CorpusDataset
 
 
@@ -35,6 +33,9 @@ def sources(year, model, seed):
 
 
 def check_model(model, year, seed, *, long_slice=False):
+    from mars_titan.memory import training_event_cache as cache
+    from mars_titan.models.titans import host_finite
+
     raw = sources(year, model, seed)
     train = raw["train"]
     packed = dict(
