@@ -24,7 +24,7 @@ def assert_bits(left, right):
     assert torch.equal(left.contiguous().view(torch.uint8), right.contiguous().view(torch.uint8))
 
 
-cuda = pytest.mark.skipif(
+requires_sm120 = pytest.mark.skipif(
     not torch.cuda.is_available() or not kernels._supported_device(torch.device("cuda:0")),
     reason="Se necesita una GPU NVIDIA con Triton",
 )
@@ -38,7 +38,8 @@ def test_cpu_keeps_reference_behavior():
     assert torch.equal(kernels.stable_neighbors(x, 3), torch.tensor([[3, 4, 0]]))
 
 
-@cuda
+@pytest.mark.cuda
+@requires_sm120
 @pytest.mark.parametrize("columns", [1, 31, 32, 33, 127, 255, 511, 512, 1003, 1024, 1025])
 def test_stable_neighbors_keeps_exact_ids(columns):
     generator = torch.Generator().manual_seed(42)
@@ -58,7 +59,8 @@ def test_stable_neighbors_keeps_exact_ids(columns):
             assert torch.equal(kernels.stable_neighbors(scores, count), expected)
 
 
-@cuda
+@pytest.mark.cuda
+@requires_sm120
 @pytest.mark.parametrize("batch", [1, 7, 128])
 @pytest.mark.parametrize("outputs", [(0,), (1,), (0, 1)])
 def test_write_preserves_values_and_two_derivatives(batch, outputs):
@@ -89,7 +91,8 @@ def test_write_preserves_values_and_two_derivatives(batch, outputs):
             assert_bits(actual, expected)
 
 
-@cuda
+@pytest.mark.cuda
+@requires_sm120
 def test_write_respects_signed_zeros_and_range():
     z = torch.zeros(3, 64, 64, device="cuda")
     z[0, ::2] = -0.0
@@ -104,7 +107,8 @@ def test_write_respects_signed_zeros_and_range():
         assert_bits(result, reference)
 
 
-@cuda
+@pytest.mark.cuda
+@requires_sm120
 def test_memory_layers_validate_before_launch_and_support_transposed_gradient(monkeypatch):
     matrix = torch.randn(3, 64, 64, device="cuda")
     grad = matrix.transpose(1, 2)
@@ -127,7 +131,8 @@ def test_memory_layers_validate_before_launch_and_support_transposed_gradient(mo
     assert invalid is None
 
 
-@cuda
+@pytest.mark.cuda
+@requires_sm120
 @pytest.mark.parametrize("out_of_memory", [False, True])
 def test_parameter_seal_matches_individual_transfers(monkeypatch, out_of_memory):
     import hashlib
@@ -157,7 +162,8 @@ def test_parameter_seal_matches_individual_transfers(monkeypatch, out_of_memory)
             m.weight[0, 0] += 1
 
 
-@cuda
+@pytest.mark.cuda
+@requires_sm120
 def test_missing_scaling_statistics_are_checked_at_the_original_call():
     from mars_titan.models.learning_scale import LearningScale, LearningScaler
     from mars_titan.models.titans.state import deferred_checks

@@ -9,8 +9,11 @@ import argparse
 import json
 import statistics
 import time
+from contextlib import nullcontext
 from importlib.metadata import version
+from importlib.util import find_spec
 from pathlib import Path
+from unittest.mock import patch
 
 import torch
 
@@ -80,16 +83,38 @@ def write_case(rows, iterations, generator):
     return compare(reference, candidate, iterations)
 
 
+def benchmark_dispatch(device, probe):
+    """La excepción opcional vive solo durante el microbenchmark y se limita a una GPU."""
+    if device.type != "cuda" or torch.version.cuda is None or find_spec("triton") is None:
+        raise ValueError("La comparación requiere CUDA de NVIDIA y Triton")
+    if cuda_kernels._supported_device(device):
+        return nullcontext()
+    if not probe:
+        raise ValueError("Esta GPU solo admite el ensayo exploratorio con --probe-device")
+    return patch.object(cuda_kernels, "_supported_device", lambda current: current == device)
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("output", type=Path)
     parser.add_argument("--bank", type=Path)
     parser.add_argument("--iterations", type=int, default=32)
+    parser.add_argument(
+        "--probe-device",
+        action="store_true",
+        help="Medir solo en este proceso otra GPU NVIDIA que disponga de Triton",
+    )
     args = parser.parse_args()
     if args.iterations < 1:
         parser.error("--iterations debe ser positivo")
-    if not torch.cuda.is_available() or not cuda_kernels._supported_device(torch.device("cuda:0")):
-        parser.error("El ensayo necesita la ruta CUDA de Titans admitida en este dispositivo")
+    if not torch.cuda.is_available():
+        parser.error("El ensayo necesita una GPU CUDA disponible")
+    device = torch.device("cuda:0")
+    supported = cuda_kernels._supported_device(device)
+    try:
+        dispatch = benchmark_dispatch(device, args.probe_device)
+    except ValueError as exc:
+        parser.error(str(exc))
     if args.output.exists():
         parser.error("Elige una salida nueva para conservar cada medida")
     torch.cuda.set_device(0)
@@ -102,26 +127,28 @@ def main():
             parser.error("Se espera una matriz de entre 32 y 1.024 claves de 64 coordenadas")
     else:
         keys = torch.randn((1024, 64), dtype=torch.float64, device="cuda", generator=generator)
-    scores = {}
-    for rows in (1, 32, 128, 512):
-        query = torch.randn((rows, 64), dtype=torch.float64, device="cuda", generator=generator)
-        full = query @ keys.T
-        for columns in sorted({min(keys.shape[0], n) for n in (32, 128, 512, 1024)}):
-            scores[f"{rows}x{columns}"] = neighbor_case(
-                full[:, :columns].contiguous(), args.iterations
-            )
-    result = {
-        "device": torch.cuda.get_device_name(0),
-        "compute_capability": torch.cuda.get_device_capability(0),
-        "torch": str(torch.__version__),
-        "triton": version("triton"),
-        "iterations_per_measurement": args.iterations,
-        "stable_neighbors": scores,
-        "memory_write": {
-            rows: write_case(rows, args.iterations, generator)
-            for rows in (1, 8, 64, 128, 512, 1024)
-        },
-    }
+    with dispatch:
+        scores = {}
+        for rows in (1, 32, 128, 512):
+            query = torch.randn((rows, 64), dtype=torch.float64, device="cuda", generator=generator)
+            full = query @ keys.T
+            for columns in sorted({min(keys.shape[0], n) for n in (32, 128, 512, 1024)}):
+                scores[f"{rows}x{columns}"] = neighbor_case(
+                    full[:, :columns].contiguous(), args.iterations
+                )
+        result = {
+            "device": torch.cuda.get_device_name(0),
+            "compute_capability": torch.cuda.get_device_capability(0),
+            "torch": str(torch.__version__),
+            "triton": version("triton"),
+            "iterations_per_measurement": args.iterations,
+            "production_supported": supported,
+            "stable_neighbors": scores,
+            "memory_write": {
+                rows: write_case(rows, args.iterations, generator)
+                for rows in (1, 8, 64, 128, 512, 1024)
+            },
+        }
     with args.output.open("x", encoding="utf-8") as stream:
         json.dump(result, stream, indent=2)
         stream.write("\n")
