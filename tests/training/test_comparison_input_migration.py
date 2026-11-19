@@ -1,6 +1,7 @@
 """Traspaso explícito de una preparación sin actualizaciones a la revisión de entradas."""
 
 import json
+import subprocess
 from pathlib import Path
 
 import pytest
@@ -9,6 +10,26 @@ import torch
 from mars_titan.data.storage import atomic_json, sha256
 from mars_titan.training import comparison_campaign as campaign
 from mars_titan.training.checkpoints import load_training_state, save_training_state
+
+
+def checkout_release(root, commit):
+    """Ejercitar una revisión publicada aun cuando el checkout de desarrollo haya avanzado."""
+    subprocess.run(
+        ["git", "clone", "--quiet", "--shared", "--no-checkout", campaign.ROOT, root], check=True
+    )
+    subprocess.run(
+        ["git", "-C", root, "sparse-checkout", "set", "src/mars_titan", "data/catalogs"],
+        check=True,
+    )
+    subprocess.run(["git", "-C", root, "checkout", "--quiet", "--detach", commit], check=True)
+    return root
+
+
+@pytest.fixture
+def packed_runtime(tmp_path):
+    from mars_titan.training.comparison_input_migration import PACKED_RELEASE
+
+    return checkout_release(tmp_path / "packed-runtime", PACKED_RELEASE)
 
 
 def fixture(folder, step=0):
@@ -58,12 +79,12 @@ def fixture(folder, step=0):
     return state, fit, outer
 
 
-def test_zero_step_keeps_the_exact_optimizer_rng_and_weights(tmp_path):
+def test_zero_step_keeps_the_exact_optimizer_rng_and_weights(tmp_path, packed_runtime):
     from mars_titan.training import comparison_input_migration as migration
 
     old, new = tmp_path / "original", tmp_path / "target"
     state, fit, report = fixture(old)
-    receipt = migration.transfer_initial(old, new, Path(campaign.ROOT), host_flags=False)
+    receipt = migration.transfer_initial(old, new, packed_runtime, host_flags=False)
     migrated = json.loads((new / "fit/run.json").read_text())
     outer = json.loads((new / "run.json").read_text())
     restored = load_training_state(
@@ -101,10 +122,10 @@ def test_positive_step_or_unqualified_digest_is_rejected(tmp_path):
     )
 
 
-def test_catalog_identity_and_explicit_canonical_mode(tmp_path):
+def test_catalog_identity_and_explicit_canonical_mode(tmp_path, packed_runtime):
     from mars_titan.training import comparison_input_migration as migration
 
-    root = Path(campaign.ROOT)
+    root = packed_runtime
     catalog = "data/catalogs/macro-indicators.csv"
     fingerprint = sha256(root / catalog)
     assert migration._translate(root, {catalog: fingerprint}) == {catalog: fingerprint}
@@ -119,3 +140,15 @@ def test_catalog_identity_and_explicit_canonical_mode(tmp_path):
     assert not result["archived_inputs"]
     assert "mars_titan.memory.event_archive" not in ident["implementation"]
     assert "mars_titan.models.titans.host_finite" in ident["implementation"]
+
+
+def test_modified_destination_code_rejects_a_real_step_zero(tmp_path, packed_runtime):
+    from mars_titan.training import comparison_input_migration as migration
+
+    original, target = tmp_path / "original", tmp_path / "target"
+    fixture(original)
+    numerical = packed_runtime / "src/mars_titan/training/financial_run.py"
+    numerical.write_bytes(numerical.read_bytes() + b"\n")
+    with pytest.raises(ValueError, match="no está cualificado"):
+        migration.transfer_initial(original, target, packed_runtime, host_flags=False)
+    assert not target.exists()
