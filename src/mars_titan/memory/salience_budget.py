@@ -209,8 +209,12 @@ class MatureWriteBudget:
         """
         return self._select(self._cohort(cohort, cutoff), cutoff)
 
-    def _select(self, cohort, cutoff):
-        """Puntuación común tras validar el consumidor su orden y sus candidatos."""
+    def _select(self, cohort, cutoff, spent=None):
+        """Puntuación común tras validar el consumidor su orden y sus candidatos.
+
+        `spent` descuenta del cupo de cada mercado las escrituras que otras generaciones
+        confirmaron en el mismo instante. Las ventanas no lo usan.
+        """
         if not cohort:
             return WriteSelection((), (), ()), self
         grouped, scores, scales = {}, [], []
@@ -231,11 +235,14 @@ class MatureWriteBudget:
             count += 1
             rms = math.hypot(rms * math.sqrt((count - 1) / count), error / math.sqrt(count))
             records[item.flow_id] = (count, rms, item.prediction_at, item.available_at)
+        spent = spent or {}
         selected = tuple(
             sorted(
                 key
-                for group in grouped.values()
-                for _, key in heapq.nsmallest(self.config.writes_per_market, group)
+                for market, group in grouped.items()
+                for _, key in heapq.nsmallest(
+                    self.config.writes_per_market - spent.get(market, 0), group
+                )
             )
         )
         updated = MatureWriteBudget(
@@ -295,15 +302,15 @@ class MatureWriteBudget:
 
 
 class CommittedWriteBudget:
-    """Cupos por generación nativa, con estadísticas compartidas con el selector E3.
+    """Cupo por mercado e instante de publicación, con las estadísticas del selector E3.
 
     El ejecutor debe acreditar que cada resultado pertenece a una predicción pendiente
     emitida y se aplica una sola vez. Esta estadística no conserva todos sus IDs ni puede
-    sustituir ese registro. Admite etiquetas tardías y dos publicaciones con el mismo
-    corte. El cupo es por publicación, no por sesión del calendario.
+    sustituir ese registro. Admite etiquetas tardías y varias generaciones con el mismo
+    corte, que comparten el cupo de ese instante como una sola publicación de las ventanas.
     """
 
-    KIND = "salience_committed_publication_v1"
+    KIND = "salience_committed_publication_v2"
 
     def __init__(
         self,
@@ -314,6 +321,7 @@ class CommittedWriteBudget:
         cutoff=None,
         last_observed=0,
         last_selected=(),
+        instant_writes=None,
     ):
         if type(config) is not SalienceBudgetConfig:
             raise ValueError("La publicación E3 necesita una configuración identificada")
@@ -322,6 +330,11 @@ class CommittedWriteBudget:
             raise ValueError("Las estadísticas E3 pertenecen a otra configuración")
         _integer(generation, 0, MAX_COUNT, "La generación E3")
         _integer(last_observed, 0, MAX_ROWS, "Los candidatos de la publicación")
+        instant_writes = {} if instant_writes is None else instant_writes
+        if type(instant_writes) is not dict or not set(instant_writes) <= {"US", "CN"}:
+            raise ValueError("Las escrituras del instante necesitan mercados US o CN")
+        for count in instant_writes.values():
+            _integer(count, 1, config.writes_per_market, "Las escrituras del instante")
         if cutoff is not None:
             _integer(cutoff, 0, MAX_TIME, "El corte E3")
         if (
@@ -331,6 +344,7 @@ class CommittedWriteBudget:
             or (statistics.cursor is not None and statistics.cursor > cutoff)
             or not isinstance(last_selected, (list, tuple))
             or len(last_selected) > min(last_observed, statistics.selected)
+            or sum(instant_writes.values()) > statistics.selected
         ):
             raise ValueError("La publicación y sus cuentas E3 no concilian")
         keys, counts = [], {}
@@ -345,26 +359,33 @@ class CommittedWriteBudget:
             market = flow.split("/", 1)[0]
             counts[market] = counts.get(market, 0) + 1
         if keys != sorted(set(keys)) or any(
-            count > config.writes_per_market for count in counts.values()
+            count > instant_writes.get(market, 0) for market, count in counts.items()
         ):
-            raise ValueError("La selección E3 repite identidades o supera el cupo")
+            raise ValueError("La selección E3 repite identidades o supera el cupo del instante")
         self.config, self.statistics = config, statistics
         self.generation, self.cutoff = generation, cutoff
         self.last_observed, self.last_selected = last_observed, tuple(keys)
+        self.instant_writes = MappingProxyType(dict(instant_writes))
 
     def select(self, cohort, *, cutoff, generation):
         """Proponer una publicación siguiente sin modificar el estado confirmado.
 
         Los candidatos son exactamente los resultados únicos admitidos por el ejecutor.
         Todos avanzan el RMS. Solo los elegidos escriben la corrección. La generación
-        avanza también sin resultados y evita que un reintento renueve el cupo.
+        avanza también sin resultados y evita que un reintento renueve el cupo. Con el mismo
+        corte solo queda el cupo que no gastaron las generaciones anteriores de ese instante.
         """
         _integer(generation, 1, MAX_COUNT, "La generación E3")
         _integer(cutoff, 0, MAX_TIME, "El corte E3")
         if generation != self.generation + 1 or (self.cutoff is not None and cutoff < self.cutoff):
             raise ValueError("La publicación E3 repite, salta o retrocede una generación")
         rows = self.statistics._cohort(cohort, cutoff, ordered=False)
-        selection, statistics = self.statistics._select(rows, cutoff)
+        spent = self.instant_writes if cutoff == self.cutoff else {}
+        selection, statistics = self.statistics._select(rows, cutoff, spent)
+        instant = dict(spent)
+        for flow, _ in selection.selected:
+            market = flow.split("/", 1)[0]
+            instant[market] = instant.get(market, 0) + 1
         return selection, CommittedWriteBudget(
             self.config,
             statistics=statistics,
@@ -372,6 +393,7 @@ class CommittedWriteBudget:
             cutoff=cutoff,
             last_observed=len(rows),
             last_selected=selection.selected,
+            instant_writes=instant,
         )
 
     def export(self):
@@ -385,6 +407,7 @@ class CommittedWriteBudget:
             last=dict(
                 observed=self.last_observed, selected=[list(key) for key in self.last_selected]
             ),
+            instant_writes=dict(sorted(self.instant_writes.items())),
         )
         return dict(payload, sha256=_digest(payload))
 
@@ -398,6 +421,7 @@ class CommittedWriteBudget:
             "cutoff",
             "statistics",
             "last",
+            "instant_writes",
             "sha256",
         }
         if (
@@ -420,4 +444,5 @@ class CommittedWriteBudget:
             cutoff=payload["cutoff"],
             last_observed=payload["last"]["observed"],
             last_selected=payload["last"]["selected"],
+            instant_writes=payload["instant_writes"],
         )

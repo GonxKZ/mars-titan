@@ -28,7 +28,7 @@ def contract(config):
         statistics="all_outcomes_after_scoring_with_the_prior",
         write_value="target_minus_core_prediction",
         priority_error="target_minus_final_issued_prediction",
-        calendar_session_quota=False,
+        quota="per_market_and_publication_instant_shared_by_the_generations_of_that_cutoff",
     )
 
 
