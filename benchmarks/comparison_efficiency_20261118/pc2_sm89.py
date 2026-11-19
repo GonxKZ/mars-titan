@@ -25,7 +25,7 @@ REFERENCE = "f52cc3c332ba358e7afc1772e2038f05505c2285"
 PC2 = "559bfa0f849b6f07241b5296e4c44d1f47c4b2c4"
 
 
-def source_tree(runtime, mode):
+def source_tree(runtime, mode, *, original_preparation=False):
     """Cotejar los módulos Python del ensayo con los blobs de la referencia o su combinación."""
     repo = Path(__file__).resolve().parents[2]
     git = ["git", "-C", str(repo)]
@@ -42,6 +42,18 @@ def source_tree(runtime, mode):
         if row.endswith(b".py"):
             header, name = row.split(b"\t", 1)
             expected[os.fsdecode(name)] = header.split()[2].decode()
+    restored = []
+    if original_preparation:
+        if mode in ("reference", "portable"):
+            raise ValueError("El control con preparación original necesita un kernel en prueba")
+        restored = [
+            "src/mars_titan/models/learning_scale.py",
+            "src/mars_titan/models/titans/financial.py",
+        ]
+        for name in restored:
+            expected[name] = subprocess.check_output(
+                [*git, "rev-parse", f"{REFERENCE}:{name}"], text=True
+            ).strip()
     for name, blob in expected.items():
         content = (runtime / name).read_bytes()
         # Git identifica cada blob por su cabecera, su tamaño decimal y sus bytes.
@@ -53,7 +65,13 @@ def source_tree(runtime, mode):
     kernel = "src/mars_titan/models/titans/cuda_kernels.py"
     if not expected or (runtime / kernel).is_file() != (kernel in expected):
         raise ValueError("La copia numérica no corresponde al modo solicitado")
-    return dict(tree=tree, python_modules=len(expected), reference=REFERENCE, pc2=PC2)
+    return dict(
+        tree=tree,
+        python_modules=len(expected),
+        reference=REFERENCE,
+        pc2=PC2,
+        restored_from_reference=restored,
+    )
 
 
 class LaunchCounts:
@@ -142,7 +160,7 @@ def compare(args):
 
     if not Path(financial.__file__).resolve().is_relative_to(args.runtime.resolve() / "src"):
         raise ValueError("El módulo financiero no procede del directorio solicitado")
-    checked = source_tree(args.runtime, args.mode)
+    checked = source_tree(args.runtime, args.mode, original_preparation=args.original_preparation)
     if not torch.cuda.is_available() or torch.cuda.get_device_capability(0) != (8, 9):
         raise RuntimeError("Esta medición necesita cuda:0 con SM 8.9")
     if args.output.exists():
@@ -271,6 +289,11 @@ def main():
         "--validation",
         action="store_true",
         help="Cotejar también la validación guardada de desarrollo",
+    )
+    parser.add_argument(
+        "--original-preparation",
+        action="store_true",
+        help="Usar los kernels con el escalador y el predictor originales",
     )
     compare(parser.parse_args())
 
