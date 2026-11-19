@@ -9,6 +9,7 @@ from torch.nn import functional as F
 from .bank_readout import BankReadout
 from .causal_convolution import CausalDepthwiseConvolution
 from .config import LAYER_NORM_EPS, MemoryConfig, bounded_integer, require_identity
+from .cuda_kernels import try_memory_write
 from .huber_memory import huber_elements, huber_threshold
 from .key_competition import competitive_normalize
 from .plasticity import _advance_validated as advance_plasticity
@@ -474,6 +475,15 @@ class NeuralMemory(nn.Module):
             gradients = tuple(
                 clip_rows(gradient, stability.gradient_clip) for gradient in gradients
             )
+        if self.config.multiscale is None and self.config.plasticity is None and weights[0].is_cuda:
+            fused = try_memory_write(
+                weights, momentum, gradients, gates, differentiable=differentiable
+            )
+            if fused is not None:
+                following, velocities = fused
+                for value in (*following, *velocities):
+                    check_finite(value, "La actualización de memoria")
+                return following, velocities, levels, modulation
         capture_gains = None
         if self.config.plasticity is None:
             momentum = tuple(

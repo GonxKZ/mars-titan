@@ -306,7 +306,14 @@ class LearningScaler(nn.Module):
         después de escalar: una sesión sin mercado, un bloque denso sin dato y un valor
         numérico no observado.
         """
-        if not bool(self.fitted):
+        if self.fitted.is_cuda:
+            from .titans.state import require_true
+
+            # La copia conserva el valor de esta llamada si el tramo CUDA difiere la lectura.
+            require_true(
+                self.fitted.clone(), "Faltan las estadísticas del tramo de ajuste de learning_scale"
+            )
+        elif not bool(self.fitted):
             raise ValueError("Faltan las estadísticas del tramo de ajuste de learning_scale")
         result = {}
         window = inputs["prices"]

@@ -111,6 +111,7 @@ CASE_FIELDS = {"recipe", "recipe_sha256", "components", "seed", "search_case", "
 # La regla de parada solo aparece si la campaña declara una parada temprana.
 STOPPING_FIELD = "stopping_rule"
 _CODE = (
+    "mars_titan.models.titans.cuda_kernels",
     "mars_titan.training.search_cases",
     "mars_titan.training.mars_titan_walk_forward",
     "mars_titan.training.mars_titan_run",
