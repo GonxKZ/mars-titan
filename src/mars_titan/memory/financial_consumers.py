@@ -199,7 +199,18 @@ class TitansBinding:
             device=self.device,
         )
 
-    def prepare_event(self, session, rows, fast, snapshot, *, context_id, warmup, batch_rows):
+    def prepare_event(
+        self,
+        session,
+        rows,
+        fast,
+        snapshot,
+        *,
+        context_id,
+        warmup,
+        batch_rows,
+        neuromodulation_snapshot=None,
+    ):
         model = self.consumer.predictor
         trace = None
         if regional_episode_trace.enabled(self.consumer.readout) and not warmup:
@@ -228,6 +239,11 @@ class TitansBinding:
             unknown = tuple(flow for flow in batch.flow_ids if flow not in fast["references"])
             initial = model.initial_state(unknown) if unknown else None
             previous = session._fast_store.gather(fast, batch.flow_ids, initial_state=initial)
+            options = (
+                {}
+                if neuromodulation_snapshot is None
+                else dict(neuromodulation_snapshot=neuromodulation_snapshot.select(batch.flow_ids))
+            )
             result = self.prepare_block(
                 session,
                 batch,
@@ -236,6 +252,7 @@ class TitansBinding:
                 snapshot=snapshot,
                 warmup=warmup,
                 selection=selection,
+                **options,
             )
             self.record_block(session, batch, result, warmup=warmup)
             fast = session._fast_store.replace(fast, previous, result.next_state)
@@ -271,6 +288,8 @@ class TitansBinding:
             group_estimated_bytes=selection.estimated_bytes if selection else 0,
         )
         control.update(model.operation_counts(len(rows)))
+        if neuromodulation_snapshot is not None:
+            control["neuromodulation_snapshot"] = neuromodulation_snapshot.record()
         if trace is not None:
             control["regional_reads"] = trace
             reader = self.consumer.readout

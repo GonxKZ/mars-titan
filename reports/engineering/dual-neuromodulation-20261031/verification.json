@@ -1,0 +1,242 @@
+{
+ "schema_version": 1,
+ "date": "2026-10-31",
+ "issue": 785,
+ "status": "numeric_core_and_predictor_verified_mature_source_pending",
+ "implementation_commit": "0f94b9a03a25fcdd2d1d738b8d9ccf9bff551a40",
+ "base_commit": "5d7f554067a91a42e1f94a5c578b6116fd109e25",
+ "device": "cpu",
+ "training_runs": 0,
+ "scientific_experiments": 0,
+ "real_optimizer_steps": 0,
+ "final_test_opened": false,
+ "distinct_test_case_identifiers": 423,
+ "scope": "N1 stateless con dos señales normalizadas explícitas, coeficientes fijos y desplazamientos de logits de theta/alpha por gate_shift. Eta, pérdida y actualizador de Titans se reutilizan.",
+ "limits": [
+  "Las 457 ejecuciones de las selecciones se solapan y corresponden a 423 identificadores distintos. No se repitió toda la batería.",
+  "La generación de incertidumbre financiera madura, normalización, CUSUM, control causal barajado, publicación nativa y procedencia de señales siguen pendientes.",
+  "El núcleo valida números, forma, rango, dispositivo, precisión y ausencia de autograd de las señales. No demuestra su disponibilidad temporal.",
+  "Los consumidores sin fuente madura registrada rechazan N1. Los tests numéricos no habilitan una campaña o evaluación científica.",
+  "N1 y mature_reliability son variantes independientes. N1 con C requiere el diagnóstico del operador modulado y se rechaza.",
+  "El módulo nuevo cubre sus 38 sentencias y 12 ramas. Las clases existentes conservan cobertura parcial. El CRAP máximo de las funciones modificadas es 212,82 en el constructor de mecanismos, no una garantía de calidad.",
+  "El caso CUDA FP32 del conversor está preparado y no se ejecuta por GPU ocupada. La integración financiera CUDA continúa pendiente.",
+  "No se han medido latencia integral, RAM/VRAM, energía o mejora predictiva de N1.",
+  "La fuente Yu/Dayan distingue incertidumbres, pero no demuestra los signos financieros elegidos. No se reproduce su modelo biológico ni se afirma novedad universal o superioridadSOTA.",
+  "No se ejecutó Lean, entrenamiento ni ajuste de señales. Los gradientes de la actualización existente se comprueban sin optimizador."
+ ],
+ "static_checks": [
+  {
+   "command": "uv --no-cache run --no-sync ruff check .",
+   "exit_code": 0,
+   "log_sha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18"
+  },
+  {
+   "command": "uv --no-cache run --no-sync ruff format --check .",
+   "exit_code": 0,
+   "log_sha256": "b88309c30f310296d844f23206fdde02bca0248d590e8c1e29e29b4611b32f55"
+  },
+  {
+   "command": "uv --no-cache run --no-sync python scripts/check_repository.py",
+   "exit_code": 0,
+   "log_sha256": "194a6a02bdbc5a33f09bf01ffd5483e59102792526ea0b9924b843e60cce3ab2"
+  }
+ ],
+ "suites": [
+  {
+   "name": "core_and_existing_financial_regression",
+   "tests": 415,
+   "failures": 0,
+   "errors": 0,
+   "skipped": 0,
+   "xml_sha256": "9f10fe045aa0c0ab48ec315c7c2e0d246f3265b05ae346807c41c9f06010dd1c",
+   "note": "415 CPU correctos sin omisiones. Excluye 61 CUDA, incluido el nuevo caso del conversor."
+  },
+  {
+   "name": "validation_extension",
+   "tests": 41,
+   "failures": 0,
+   "errors": 0,
+   "skipped": 0,
+   "xml_sha256": "7447bfa12d7f72bf0db0d2d14d2df4d9df12df3cc1992186828214d8ec15326c",
+   "note": "41 CPU correctos y un CUDA excluido, con solapamiento. Refuerza límites, tipos y señales negativas."
+  },
+  {
+   "name": "fp32_integration",
+   "tests": 1,
+   "failures": 0,
+   "errors": 0,
+   "skipped": 0,
+   "xml_sha256": "4c1fccd405f4723f0732185324d83dea501428db2952b16ec560d603d2aad456",
+   "note": "Un caso CPU adicional de paridad neutral exacta y aplicación del control en FP32."
+  }
+ ],
+ "quality": {
+  "tools": {
+   "coverage": "7.16.1",
+   "radon": "6.0.1",
+   "branch_coverage": true,
+   "python": "3.12.14",
+   "summarizer_sha256": "75cc60c88037e0bb17aff6e8ab666ce78b35d600d6c7ad217bf68b1afb4c4ec6"
+  },
+  "totals": {
+   "statements": 1597,
+   "covered_statements": 1282,
+   "branches": 804,
+   "covered_branches": 556
+  },
+  "files": [
+   {
+    "path": "src/mars_titan/models/titans/dual_neuromodulation.py",
+    "source_sha256": "5047c62f4cf36baa4a5c8bc76751e359743f792922e8f67deb9cdd627d2a847e",
+    "statements": 38,
+    "covered_statements": 38,
+    "branches": 12,
+    "covered_branches": 12
+   },
+   {
+    "path": "src/mars_titan/models/titans/financial.py",
+    "source_sha256": "1c1e23f38c75bae4d5d91106d879610a6a3fbb9ee0ce05171ea6fdf13eddb1e7",
+    "statements": 993,
+    "covered_statements": 779,
+    "branches": 496,
+    "covered_branches": 339
+   },
+   {
+    "path": "src/mars_titan/models/titans/frozen_financial.py",
+    "source_sha256": "af35712ea75b46e4f01e928313022daaa9acad0f3c60895638e808e2b34c4420",
+    "statements": 223,
+    "covered_statements": 179,
+    "branches": 124,
+    "covered_branches": 86
+   },
+   {
+    "path": "src/mars_titan/models/titans/mechanism_consumer.py",
+    "source_sha256": "8352173075da61d7a32e11f5dc64a85fcbd310028e3535bd76dbfc2219e16f1d",
+    "statements": 343,
+    "covered_statements": 286,
+    "branches": 172,
+    "covered_branches": 119
+   }
+  ],
+  "max_crap": 212.82286047528797,
+  "quality_sha256": "ccb67f74e2e348a0a8d913c2e7ebb6ea60c5742bb73517295be4901950a3856a",
+  "limits": "CRAP y cobertura localizan complejidad poco comprobada. No demuestran ausencia de errores."
+ },
+ "changed": {
+  "base": "5d7f554067a91a42e1f94a5c578b6116fd109e25",
+  "head": "0f94b9a03a25fcdd2d1d738b8d9ccf9bff551a40",
+  "functions": 14,
+  "max_crap": 212.82286047528797,
+  "changed_executable_lines": 57,
+  "changed_covered_lines": 56,
+  "highest": [
+   {
+    "path": "src/mars_titan/models/titans/mechanism_consumer.py",
+    "function": "FrozenMechanismConsumer.__init__",
+    "cyclomatic_complexity": 56,
+    "crap": 212.82286047528797,
+    "changed_executable_lines": 2,
+    "changed_covered_lines": 2,
+    "changed_missing_lines": [],
+    "changed_missing_branches": []
+   },
+   {
+    "path": "src/mars_titan/models/titans/financial.py",
+    "function": "FinancialPredictor._prepare",
+    "cyclomatic_complexity": 62,
+    "crap": 114.17037147430676,
+    "changed_executable_lines": 8,
+    "changed_covered_lines": 8,
+    "changed_missing_lines": [],
+    "changed_missing_branches": []
+   },
+   {
+    "path": "src/mars_titan/models/titans/financial.py",
+    "function": "FinancialPredictor.__init__",
+    "cyclomatic_complexity": 40,
+    "crap": 58.016318832260446,
+    "changed_executable_lines": 3,
+    "changed_covered_lines": 3,
+    "changed_missing_lines": [],
+    "changed_missing_branches": []
+   },
+   {
+    "path": "src/mars_titan/models/titans/financial.py",
+    "function": "FinancialConfig.identity",
+    "cyclomatic_complexity": 34,
+    "crap": 42.44429667213055,
+    "changed_executable_lines": 2,
+    "changed_covered_lines": 2,
+    "changed_missing_lines": [],
+    "changed_missing_branches": []
+   },
+   {
+    "path": "src/mars_titan/models/titans/frozen_financial.py",
+    "function": "FrozenFinancialConsumer.__init__",
+    "cyclomatic_complexity": 21,
+    "crap": 29.179549155302254,
+    "changed_executable_lines": 2,
+    "changed_covered_lines": 2,
+    "changed_missing_lines": [],
+    "changed_missing_branches": []
+   }
+  ],
+  "uncovered": [
+   {
+    "path": "src/mars_titan/models/titans/financial.py",
+    "function": "FinancialPredictor._check_parameters",
+    "cyclomatic_complexity": 9,
+    "crap": 10.265625,
+    "changed_executable_lines": 5,
+    "changed_covered_lines": 4,
+    "changed_missing_lines": [
+     1301
+    ],
+    "changed_missing_branches": [
+     [
+      1300,
+      1301
+     ]
+    ]
+   }
+  ],
+  "unmeasured": [],
+  "note": "Catorce funciones modificadas medidas y ninguna sin medir. El núcleo N1 tiene cobertura completa de sentencias y ramas, no los archivos existentes.",
+  "changed_sha256": "e31c86b2d4e4bf1f8f0619aadc4cf32be6ba351c155f997280a6c661a91fb924"
+ },
+ "mutations": {
+  "tree_commit": "0f94b9a03a25fcdd2d1d738b8d9ccf9bff551a40",
+  "planned": 18,
+  "killed": 18,
+  "optimizer_attempts": 0,
+  "hold_sha256_unchanged": true,
+  "recipes_sha256": "11c6193c9e118e8a03f3dc5f4e929690d250b0b55891dfb28ddd6cbc5eebf702",
+  "executor_sha256": "585770bd22aefb97276410ac73dcc669a4990224d3c0f857968679fdb87715a2",
+  "source_sha256": {
+   "src/mars_titan/models/titans/dual_neuromodulation.py": "5047c62f4cf36baa4a5c8bc76751e359743f792922e8f67deb9cdd627d2a847e",
+   "src/mars_titan/models/titans/financial.py": "1c1e23f38c75bae4d5d91106d879610a6a3fbb9ee0ce05171ea6fdf13eddb1e7"
+  },
+  "cases": [
+   "negative_expected_gain_is_accepted",
+   "zero_bound_is_accepted",
+   "expected_noise_increases_writing",
+   "forgetting_reads_the_wrong_channel",
+   "the_configured_bound_is_ignored",
+   "write_shift_is_not_saturated",
+   "signals_below_zero_are_accepted",
+   "signals_above_one_are_accepted",
+   "signal_gradient_is_accepted",
+   "row_budget_is_not_enforced",
+   "the_runtime_gate_configuration_is_not_checked",
+   "partial_configuration_is_silently_completed",
+   "n1_is_enabled_on_frozen_memory",
+   "two_write_policies_are_enabled_together",
+   "uncontrolled_operator_is_reported_as_c",
+   "the_financial_signal_is_not_forwarded",
+   "the_new_gate_is_not_applied",
+   "n1_identity_is_lost"
+  ],
+  "summary_sha256": "2115e7203420db7046a63c8e832b4085c37d93149b5a3a1a595bcbde6a4bc4d3",
+  "scope": "Dieciocho defectos de signos, cota, rango, gradiente, presupuesto, identidad, configuración, variantes incompatibles y conexión real con las puertas detectados con G1/G2 verdes y M1 rojo. Cero intentos de optimizador."
+ }
+}

@@ -1,0 +1,345 @@
+{
+ "schema_version": 1,
+ "date": "2026-11-01",
+ "issue": 785,
+ "status": "native_session_cpu_verified_gpu_and_compositions_pending",
+ "implementation_commit": "6262f69ac0fd91b3cf30a8abefcf589a959fab25",
+ "base_commit": "75271df58328a1e0331384c9eaa4aa5fda31df13",
+ "device": "cpu",
+ "precision": "float64",
+ "training_runs": 0,
+ "scientific_experiments": 0,
+ "real_optimizer_steps": 0,
+ "final_test_opened": false,
+ "distinct_test_case_identifiers": 317,
+ "static_checks": [
+  {
+   "command": "uv --no-cache run --no-sync ruff check .",
+   "exit_code": 0,
+   "log_sha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18"
+  },
+  {
+   "command": "uv --no-cache run --no-sync ruff format --check .",
+   "exit_code": 0,
+   "log_sha256": "2c0b4858d3852be94d71242972da052f0edfeef12dd7c8868ef9f9360cb1ccb0"
+  },
+  {
+   "command": "uv --no-cache run --no-sync python scripts/check_repository.py",
+   "exit_code": 0,
+   "log_sha256": "da40fb62422a79af2a0e03e8b245cd99c82c5cc0c1c13c07e99843f1b9659429"
+  }
+ ],
+ "development_failures_preserved": [
+  {
+   "artifact": "native-first.xml",
+   "sha256": "83a2ed152dc397ac0cd8c64d58396f0afc6704b9756ae2b329351bf2c5074a0a",
+   "failures": 2,
+   "errors": 0
+  },
+  {
+   "artifact": "native-registration.xml",
+   "sha256": "6a94fb5fcb5584c4f1387e4e3063e5957be8f094c86db358889253f92c57dec2",
+   "failures": 1,
+   "errors": 0
+  },
+  {
+   "artifact": "native-directed.xml",
+   "sha256": "9f033e907c789da8a49f198978807d781c60e72dbbe77aca278211c30a7a5611",
+   "failures": 3,
+   "errors": 0
+  },
+  {
+   "artifact": "native-expanded.xml",
+   "sha256": "7e70db26232da61b59a44346d237f28c84af090b1dd095fddc8fcf6dc83c0e48",
+   "failures": 1,
+   "errors": 0
+  },
+  {
+   "artifact": "native-adversarial.xml",
+   "sha256": "43d0f515384b32ba51191d7a9a2a414e41723cefd712b255912512c4e48f5320",
+   "failures": 1,
+   "errors": 0
+  }
+ ],
+ "source_sha256": {
+  "src/mars_titan/memory/neuromodulation_source.py": "a29343f76aa266b01bee632a571a1e434d042bf84008e0b3a387af1aa3272979",
+  "src/mars_titan/memory/neuromodulation_session.py": "4e4671f683042419d01ffbe003b0c5e5bb1973f5426a8ecbec901b07d50178de",
+  "src/mars_titan/memory/financial_consumers.py": "ca8da8833255c5c20e1632aea777e28b647e396e1b6958a61ca34b6a5dbe98e0",
+  "src/mars_titan/memory/financial_session.py": "f68a72669095d5de2c958fc525a49cc693fb6bdbb21a4c61b423c38a6d54d9ed",
+  "src/mars_titan/models/titans/frozen_financial.py": "8dacc8c219da18ba4b05544afa657b128d44130eaaf3d62cf90f42daa242574f"
+ },
+ "scope": "Fuente N1 registrada en FrozenFinancialConsumer y FinancialSession con snapshot previo común, avance tras emisión, contador y resultados nativos, dos referencias recuperables y poda.",
+ "limits": [
+  "Las tres selecciones suman 338 ejecuciones y 317 identificadores distintos. No son 338 casos nuevos ni una batería completa del repositorio.",
+  "Fixtures de cuatro activos ficticios, objetivos manuales y escalas manuales de M3. No se estiman señales ni se ajustan parámetros compartidos.",
+  "Se comprueban M0–M3, control observado y de prefijo pasado, bloques de una y cuatro filas, orden, recuperación, calentamiento, liquidación y fallo antes de confirmar. No se da por probado cada cruce con otras variantes.",
+  "La señal no nula modifica pesos rápidos, no parámetros compartidos. Coeficientes nulos preservan predicciones y estado rápido exactos frente al modelo sin N1.",
+  "El checksum no autentica una falsificación coordinada de todos los artefactos del ejecutor. El contrato contrasta la fuente con el registro nativo confirmado.",
+  "La primera pasada de mutaciones detectó 13/14. Un defecto de generación quedó inconcluso porque otra validación lo rechazaba. La repetición construye también una traza coherente y aísla el control. Se conservan ambas pasadas y se cuenta el defecto una sola vez.",
+  "Se añaden tres defectos distintos de registro y configuración. El total final es 18, con G1/G2 verdes y M1 rojo, cero intentos de optimizador y protección intacta.",
+  "No se recompiló ni modificó el backend nativo. Se ejercitó el binario existente con la huella declarada.",
+  "E2 y el enlace de mecanismos con N1 continúan rechazados sin un registro propio. No se ha probado su composición con N2.",
+  "La GPU estaba ocupada con 771 MiB libres. No hay verificación CUDA de esta integración ni medidas de latencia integral, RAM/VRAM, energía o mejora predictiva.",
+  "Revisión propia de los cambios y contratos. No se presenta como revisión independiente. No se ejecutó Lean, entrenamiento ni evaluación científica."
+ ],
+ "suites": [
+  {
+   "name": "native_and_existing_consumers",
+   "tests": 309,
+   "failures": 0,
+   "errors": 0,
+   "skipped": 0,
+   "xml_sha256": "f9b62d5774ebff80386e4f8dad063eec0f605e75dd0efcde4d638649e495f68b",
+   "note": "309 casos CPU aprobados sin omisiones, 54 CUDA excluidos. Pasada principal del 31 de octubre, anterior a ocho casos adicionales."
+  },
+  {
+   "name": "native_contract_extension",
+   "tests": 28,
+   "failures": 0,
+   "errors": 0,
+   "skipped": 0,
+   "xml_sha256": "194fdeef2ac9cced4fc0c0fa2e4f6df3bc4fc9a870bd81381761cca33b77b0ce",
+   "note": "28 casos CPU aprobados sin omisiones. Incluye siete casos adicionales y veintiún casos ya recogidos en la selección principal."
+  },
+  {
+   "name": "uninitialized_source_inspection",
+   "tests": 1,
+   "failures": 0,
+   "errors": 0,
+   "skipped": 0,
+   "xml_sha256": "b4ce1fe81d4e29e61dbfc34df624ec1581e08f752c8ae586717cf4836c78c376",
+   "note": "Un caso adicional de inspección antes de la primera decisión."
+  }
+ ],
+ "quality": {
+  "tools": {
+   "coverage": "7.16.1",
+   "radon": "6.0.1",
+   "branch_coverage": true,
+   "python": "3.12.14",
+   "summarizer_sha256": "75cc60c88037e0bb17aff6e8ab666ce78b35d600d6c7ad217bf68b1afb4c4ec6"
+  },
+  "totals": {
+   "statements": 1555,
+   "covered_statements": 1216,
+   "branches": 724,
+   "covered_branches": 476
+  },
+  "files": [
+   {
+    "path": "src/mars_titan/memory/financial_consumers.py",
+    "source_sha256": "ca8da8833255c5c20e1632aea777e28b647e396e1b6958a61ca34b6a5dbe98e0",
+    "statements": 250,
+    "covered_statements": 203,
+    "branches": 94,
+    "covered_branches": 61
+   },
+   {
+    "path": "src/mars_titan/memory/financial_session.py",
+    "source_sha256": "f68a72669095d5de2c958fc525a49cc693fb6bdbb21a4c61b423c38a6d54d9ed",
+    "statements": 798,
+    "covered_statements": 563,
+    "branches": 406,
+    "covered_branches": 240
+   },
+   {
+    "path": "src/mars_titan/memory/neuromodulation_session.py",
+    "source_sha256": "4e4671f683042419d01ffbe003b0c5e5bb1973f5426a8ecbec901b07d50178de",
+    "statements": 42,
+    "covered_statements": 42,
+    "branches": 10,
+    "covered_branches": 10
+   },
+   {
+    "path": "src/mars_titan/memory/neuromodulation_source.py",
+    "source_sha256": "a29343f76aa266b01bee632a571a1e434d042bf84008e0b3a387af1aa3272979",
+    "statements": 215,
+    "covered_statements": 203,
+    "branches": 70,
+    "covered_branches": 59
+   },
+   {
+    "path": "src/mars_titan/models/titans/frozen_financial.py",
+    "source_sha256": "8dacc8c219da18ba4b05544afa657b128d44130eaaf3d62cf90f42daa242574f",
+    "statements": 250,
+    "covered_statements": 205,
+    "branches": 144,
+    "covered_branches": 106
+   }
+  ],
+  "max_crap": 462.0,
+  "quality_sha256": "d1d3d7e985b847add885ef1613050d0d1710651042a6ca7c497680f37376b8b5",
+  "limits": "CRAP y cobertura localizan complejidad poco comprobada. No demuestran ausencia de errores."
+ },
+ "changed": {
+  "base": "75271df58328a1e0331384c9eaa4aa5fda31df13",
+  "head": "6262f69ac0fd91b3cf30a8abefcf589a959fab25",
+  "functions": 29,
+  "max_crap": 376.96719432222386,
+  "changed_executable_lines": 115,
+  "changed_covered_lines": 114,
+  "highest": [
+   {
+    "path": "src/mars_titan/memory/financial_session.py",
+    "function": "FinancialSession._prepare_event",
+    "cyclomatic_complexity": 67,
+    "crap": 376.96719432222386,
+    "changed_executable_lines": 4,
+    "changed_covered_lines": 4,
+    "changed_missing_lines": [],
+    "changed_missing_branches": []
+   },
+   {
+    "path": "src/mars_titan/memory/financial_session.py",
+    "function": "FinancialSession.__init__",
+    "cyclomatic_complexity": 57,
+    "crap": 135.47385263442993,
+    "changed_executable_lines": 7,
+    "changed_covered_lines": 7,
+    "changed_missing_lines": [],
+    "changed_missing_branches": []
+   },
+   {
+    "path": "src/mars_titan/memory/financial_session.py",
+    "function": "FinancialSession._verify_bundle",
+    "cyclomatic_complexity": 44,
+    "crap": 89.1545189504373,
+    "changed_executable_lines": 2,
+    "changed_covered_lines": 2,
+    "changed_missing_lines": [],
+    "changed_missing_branches": []
+   },
+   {
+    "path": "src/mars_titan/memory/financial_session.py",
+    "function": "FinancialSession._resolve",
+    "cyclomatic_complexity": 49,
+    "crap": 64.24792968551543,
+    "changed_executable_lines": 2,
+    "changed_covered_lines": 2,
+    "changed_missing_lines": [],
+    "changed_missing_branches": []
+   },
+   {
+    "path": "src/mars_titan/memory/financial_consumers.py",
+    "function": "TitansBinding.prepare_event",
+    "cyclomatic_complexity": 35,
+    "crap": 54.140625,
+    "changed_executable_lines": 4,
+    "changed_covered_lines": 4,
+    "changed_missing_lines": [],
+    "changed_missing_branches": []
+   }
+  ],
+  "uncovered": [
+   {
+    "path": "src/mars_titan/models/titans/frozen_financial.py",
+    "function": "FrozenFinancialConsumer.prepare",
+    "cyclomatic_complexity": 14,
+    "crap": 14.907407407407407,
+    "changed_executable_lines": 7,
+    "changed_covered_lines": 6,
+    "changed_missing_lines": [
+     522
+    ],
+    "changed_missing_branches": [
+     [
+      521,
+      522
+     ]
+    ]
+   }
+  ],
+  "unmeasured": [],
+  "note": "Funciones modificadas frente al último recibo de fuente. Cobertura y CRAP calculados con coverage.py y Radon. Las clases existentes conservan cobertura parcial.",
+  "changed_sha256": "27ad7d5c5fb67860a0c845c521b576339cc6b464f8f70f448d849fd108b866c2"
+ },
+ "mutations": {
+  "tree_commit": "6262f69ac0fd91b3cf30a8abefcf589a959fab25",
+  "planned": 14,
+  "killed": 14,
+  "optimizer_attempts": 0,
+  "hold_sha256_unchanged": true,
+  "recipes_sha256": "47b1d77eecf0c42f36f4dcafb95060455564d472534f3aeb5721dce299ec9148",
+  "executor_sha256": "585770bd22aefb97276410ac73dcc669a4990224d3c0f857968679fdb87715a2",
+  "source_sha256": {
+   "src/mars_titan/models/titans/frozen_financial.py": "8dacc8c219da18ba4b05544afa657b128d44130eaaf3d62cf90f42daa242574f",
+   "src/mars_titan/memory/financial_session.py": "f68a72669095d5de2c958fc525a49cc693fb6bdbb21a4c61b423c38a6d54d9ed",
+   "src/mars_titan/memory/neuromodulation_source.py": "a29343f76aa266b01bee632a571a1e434d042bf84008e0b3a387af1aa3272979",
+   "src/mars_titan/memory/neuromodulation_session.py": "4e4671f683042419d01ffbe003b0c5e5bb1973f5426a8ecbec901b07d50178de"
+  },
+  "cases": [
+   "foreign_context_accepted",
+   "foreign_configuration_accepted",
+   "foreign_state_identifier_accepted",
+   "foreign_time_accepted",
+   "market_views_use_first_rows",
+   "mature_signal_silently_zeroed",
+   "native_issued_point_replaced_by_zero",
+   "native_target_replaced_by_zero",
+   "confirmed_state_comparison_removed",
+   "native_applied_counter_ignored",
+   "decision_trace_not_verified",
+   "source_generation_not_verified",
+   "source_before_replaced_by_current",
+   "source_blobs_not_retained"
+  ],
+  "summary_sha256": "17cdd1b95d5251a63aefaef91304ab1fb9b261ef78825e236206dac3f881a50d",
+  "scope": "Catorce defectos de vistas, señales, filas nativas, contador, traza, generación, fuentes anterior/posterior y poda.",
+  "first_pass_killed": 13,
+  "reruns": [
+   {
+    "tree_commit": "6262f69ac0fd91b3cf30a8abefcf589a959fab25",
+    "cases": [
+     "source_generation_not_verified"
+    ],
+    "killed": 1,
+    "recipes_sha256": "a0366e78e6c700f9fc41b1d0fb43bc346956e67f8c105410b217d773c08c7f0d",
+    "source_sha256": {
+     "src/mars_titan/memory/neuromodulation_session.py": "4e4671f683042419d01ffbe003b0c5e5bb1973f5426a8ecbec901b07d50178de"
+    },
+    "summary_sha256": "437034de19aff3aeea61d2120ba21a986a4dfad704b85d6677f42869e1bf7d87",
+    "reason": "Aislar el control de generación alterando también la traza. El rechazo anterior por otra validación no bastaba para atribuirlo a ese control."
+   }
+  ],
+  "additional": [
+   {
+    "tree_commit": "6262f69ac0fd91b3cf30a8abefcf589a959fab25",
+    "planned": 3,
+    "killed": 3,
+    "recipes_sha256": "f780a9bd2e3e81225152e9009b7dbe01bf0940e456ecc6a945733451f8b51baa",
+    "executor_sha256": "585770bd22aefb97276410ac73dcc669a4990224d3c0f857968679fdb87715a2",
+    "source_sha256": {
+     "src/mars_titan/models/titans/frozen_financial.py": "8dacc8c219da18ba4b05544afa657b128d44130eaaf3d62cf90f42daa242574f",
+     "src/mars_titan/memory/neuromodulation_session.py": "4e4671f683042419d01ffbe003b0c5e5bb1973f5426a8ecbec901b07d50178de"
+    },
+    "cases": [
+     "source_identity_can_change",
+     "source_without_n1_is_accepted",
+     "unregistered_binding_is_accepted"
+    ],
+    "summary_sha256": "7de75ff3bbb71c8d35d1d6b4d083dde4e23dd978804e97b7d3d7c6834dc956e3",
+    "scope": "Tres defectos distintos: fuente sin N1, enlace no registrado e identidad de configuración mutable."
+   },
+   {
+    "tree_commit": "6262f69ac0fd91b3cf30a8abefcf589a959fab25",
+    "planned": 1,
+    "killed": 1,
+    "recipes_sha256": "eb9b6f2566ac70cde9ae7f0753743e66a2055fbd22857ebd11b4b749363f66fb",
+    "executor_sha256": "585770bd22aefb97276410ac73dcc669a4990224d3c0f857968679fdb87715a2",
+    "source_sha256": {
+     "src/mars_titan/memory/neuromodulation_session.py": "4e4671f683042419d01ffbe003b0c5e5bb1973f5426a8ecbec901b07d50178de"
+    },
+    "cases": [
+     "uninitialized_source_is_missing"
+    ],
+    "summary_sha256": "51796a47b22b979aa5c306d7eac321aaf692152573956deaef2cbbdad7cb3562",
+    "scope": "Un defecto adicional de inspección del estado antes de la primera predicción."
+   }
+  ]
+ },
+ "native_link": {
+  "artifact": "_episodic_native.cpython-312-x86_64-linux-gnu.so",
+  "status": "existing_prebuilt_binary_exercised_without_recompilation",
+  "sha256": "9fda744aa9c6672f9fb47c0896a5e9b19fc8795cdbfff42b944ed751953b1046"
+ }
+}
