@@ -30,6 +30,7 @@ if TYPE_CHECKING:
     from .kernel_memory import KernelMemoryConfig
     from .multiscale_mixture import MultiscaleMixtureConfig
     from .role_binding import RoleBindingConfig
+    from .role_sources import RowRoleRule
 
 RULES = ("delta", "proximal", "kalman")
 # Las claves vienen normalizadas por el codec en FP32. Este margen admite su redondeo.
@@ -578,7 +579,7 @@ class MatureCorrection:
 
     memory: "AssociativeMemoryConfig | KernelMemoryConfig"
     key: str = "codec"
-    routing: RegimeRule | None = None
+    routing: "RegimeRule | RowRoleRule | None" = None
     areas: "AreaLayout | None" = None
     query_bridge: "AreaQueryBridgeConfig | None" = None
     role_binding: "RoleBindingConfig | None" = None
@@ -590,6 +591,7 @@ class MatureCorrection:
         from .kernel_memory import KernelMemoryConfig
         from .multiscale_mixture import MultiscaleMixtureConfig
         from .role_binding import SOURCES, RoleBindingConfig
+        from .role_sources import ROW_RULES, RowRoleRule
 
         kernel = type(self.memory) is KernelMemoryConfig
         if self.multiscale is not None and (
@@ -652,11 +654,12 @@ class MatureCorrection:
             if self.role_binding is None
             else SOURCES[self.role_binding.source]
         )
+        kind = RowRoleRule if rule in ROW_RULES else RegimeRule
         if rule is not None and self.routing is None:
-            object.__setattr__(self, "routing", RegimeRule(rule))
+            object.__setattr__(self, "routing", kind(rule))
         if (self.routing is None) != (rule is None) or (
             self.routing is not None
-            and (type(self.routing) is not RegimeRule or self.routing.name != rule)
+            and (type(self.routing) is not kind or self.routing.name != rule)
         ):
             raise ValueError("Solo una clave enrutada declara regla y debe ser la de su clave")
 
@@ -746,11 +749,15 @@ class MatureCorrection:
             return KernelMemory.restore(self.memory, payload)
         return AssociativeMemory.restore(self.memory, payload)
 
-    def routes(self, prices, flow_ids, at):
-        """Rutas de las filas de un evento y estado de cada mercado, o None sin enrutar."""
+    def routes(self, prices, flow_ids, at, presence=None):
+        """Rutas de las filas de un evento y estado de cada mercado, o None sin enrutar.
+
+        `presence` son los cinco bits de modalidad de cada fila, que lee la fuente de B3 por
+        modalidades.
+        """
         if self.routing is None:
             return None, []
-        return self.routing.routes(prices, flow_ids, at)
+        return self.routing.routes(prices, flow_ids, at, presence)
 
     def keys(self, key_inputs, routes=None):
         """Claves FP64 [filas, d] desde las entradas FP32 del codec, en el mismo orden.

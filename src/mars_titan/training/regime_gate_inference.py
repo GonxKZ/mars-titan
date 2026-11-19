@@ -14,26 +14,21 @@ import json
 from dataclasses import replace
 from pathlib import Path
 
-import torch
-
 from mars_titan.memory import regime_evidence_gate
-from mars_titan.memory.associative_memory import AssociativeMemory, MatureCorrection
-from mars_titan.memory.regime_evidence_gate import MAX_ROWS, RegimeEvidenceGate, RegimeGateConfig
+from mars_titan.memory.regime_evidence_gate import (
+    MAX_ROWS,
+    RegimeEvidenceGate,
+    RegimeGateConfig,
+    check_correction,
+    gated_write,
+)
 
 from .mars_titan_correction import CorrectionInference
 
 
 def checked_configuration(config, correction):
-    """E4 pondera escrituras proximales sin mezcla de escalas, áreas ni regla kalman."""
-    if (
-        type(config) is not RegimeGateConfig
-        or type(correction) is not MatureCorrection
-        or correction.memory.rule != "proximal"
-        or correction.multiscale is not None
-        or correction.areas is not None
-    ):
-        raise ValueError("La puerta E4 necesita su configuración y un corrector proximal simple")
-    return config
+    """E4 pondera escrituras proximales sin escalas, áreas, roles ni regla kalman."""
+    return check_correction(config, correction)
 
 
 def source_hashes():
@@ -127,24 +122,9 @@ class RegimeGateCorrectionInference(CorrectionInference):
     def _write_memory(self, memory, feedback, staged, at):
         if self._gates is None:
             return super()._write_memory(memory, feedback, staged, at)
+        # A conserva su configuración. Solo esta escritura usa la tasa η·g de cada fila.
         gates = [self._gates[flow.split("/", 1)[0]] for _, flow, *_ in staged]
-        if len(set(gates)) == 1:
-            scale, gated = gates[0], feedback
-        else:
-            weights = feedback.weights * torch.tensor(gates, dtype=feedback.weights.dtype)
-            scale = float(weights.sum())
-            gated = replace(feedback, weights=weights / scale)
-        # A conserva su configuración. Solo esta escritura usa la tasa η·g.
-        config = memory.config
-        written = AssociativeMemory(
-            replace(config, rate=config.rate * scale),
-            memory.matrix,
-            writes=memory.writes,
-            cursor=memory.cursor,
-        ).write(gated, cutoff=at)
-        return AssociativeMemory(
-            config, written.matrix, writes=written.writes, cursor=written.cursor
-        )
+        return gated_write(memory, feedback, gates, cutoff=at)
 
     def _pass(self, source, events, *, stop=None, rows=None):
         self._reset_regime_gate()

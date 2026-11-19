@@ -111,4 +111,4 @@ Coverage.py 7.16.1 midió 246 de 260 sentencias y 65 de 78 ramas en los dos mód
 - Ejecutar B1 y sus controles en la criba ([#746](https://github.com/GonxKZ/mars-titan/issues/746)) cuando se levante el bloqueo de aprendizaje. La validación elige η o τ, así que la ventana comprueba el bloqueo antes de leer ninguna fuente.
 - Comprobar la interoperabilidad del padre en `cuda:0` con el estado CPU cuando la GPU quede libre.
 - El [puente B2](area-query-bridge-v1.md) está conectado con sus controles y comprobado en CPU. Su interoperabilidad CUDA y evaluación predictiva siguen pendientes.
-- [B3](role-bound-keys-v1.md) añade ligadura de claves con régimen observable y su control de calendario. Sus roles sectoriales, de mercado y de modalidad y la comparación predictiva siguen pendientes. B4 (estudio de lesiones) también sigue pendiente. La máscara técnica de áreas no completa B4.
+- [B3](role-bound-keys-v1.md) añade ligadura de claves con régimen observable, mercado, modalidades presentes o sector estadístico, con sus controles. La comparación predictiva sigue pendiente. B4 (estudio de lesiones) también sigue pendiente. La máscara técnica de áreas no completa B4.

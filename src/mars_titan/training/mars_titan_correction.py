@@ -165,6 +165,8 @@ _CODE = (
     "mars_titan.memory.role_binding",
     "mars_titan.memory.multiscale_mixture",
     "mars_titan.memory.regimes",
+    "mars_titan.memory.role_sources",
+    "mars_titan.data.correlation_regions",
     "mars_titan.memory.kernel_memory",
     "mars_titan.memory.cohort_noise",
     "mars_titan.memory.episodic_codec",
@@ -404,21 +406,25 @@ class CorrectionInference(ChronologicalInference):
         if event.at < source.phase.decision_start:
             return
         specification = self.predictor.config.inputs
-        decisions, keys, prices = [], [], []
+        decisions, keys, prices, presence = [], [], [], []
         for raw in event.inputs:
             cpu = validated_cpu_batch(raw, specification)
             decisions.extend(zip(cpu.flow_ids, cpu.prediction_at, strict=True))
             keys.append(self.codec.encode(cpu).key_inputs)
             prices.append(cpu.inputs["prices"])
+            presence.append(cpu.presence)
         inputs = np.concatenate(keys)
-        # El régimen se calcula una vez con todas las filas del evento, antes de leer A, así que
+        flows = [flow for flow, _ in decisions]
+        routed = self.correction.routing is not None
+        # La ruta se calcula una vez con todas las filas del evento, antes de leer A, así que
         # no depende de cómo se reparta el evento en bloques.
         routes, states = self.correction.routes(
-            np.concatenate(prices) if self.correction.routing is not None else None,
-            [flow for flow, _ in decisions],
+            np.concatenate(prices) if routed else None,
+            flows,
             decisions[0][1],
+            np.concatenate(presence) if routed else None,
         )
-        self._routing.event(decisions[0][1], states, routes, self.correction.routing)
+        self._routing.event(decisions[0][1], states, routes, self.correction.routing, flows)
         # Todas las lecturas del evento usan la A confirmada antes de él, como FinancialSession.
         # Lo que se escriba en este evento solo puede afectar a los siguientes.
         keys = self.correction.keys(inputs, routes)
@@ -746,25 +752,35 @@ def prediction_rows(inference):
 
 
 class _RoutingLog:
-    """Ocupación, cambios y asignaciones del régimen en un recorrido.
+    """Ocupación, cambios y asignaciones de las rutas en un recorrido.
 
     Cada evento emitido deja el estado de cada mercado con su corte, así que el informe
     registra cuándo y con qué datos se asignó cada ruta. Las lecturas cuentan predicciones
-    emitidas por compartimento y las escrituras, etiquetas maduras por compartimento.
+    emitidas por compartimento y las escrituras, etiquetas maduras por compartimento. Los
+    cambios de cada mercado cuentan los de su ruta o, con una fuente por fila de B3, los de
+    la ruta de cada activo entre dos decisiones suyas.
     """
 
     def __init__(self):
         self.assignments, self.reads, self.written = [], [0] * SLOTS, [0] * SLOTS
-        self._last, self.transitions = {}, dict.fromkeys(("US", "CN"), 0)
+        self._last, self._markets = {}, set()
+        self.transitions = dict.fromkeys(("US", "CN"), 0)
 
-    def event(self, at, states, routes, rule):
+    def event(self, at, states, routes, rule, flows):
         if rule is None:
             return
+        units = (
+            zip(flows, routes.tolist(), strict=True)
+            if rule.per_row
+            else ((state.market, state.route) for state in states)
+        )
+        for unit, route in units:
+            previous = self._last.get(unit)
+            if previous is not None and previous != route:
+                self.transitions[unit.split("/", 1)[0]] += 1
+            self._last[unit] = route
         for state in states:
-            previous = self._last.get(state.market)
-            if previous is not None and previous != state.route:
-                self.transitions[state.market] += 1
-            self._last[state.market] = state.route
+            self._markets.add(state.market)
             self.assignments.append(state.record(at, rule.labels))
         for route in routes.tolist():
             self.reads[route] += 1
@@ -779,7 +795,7 @@ class _RoutingLog:
             labels=list(rule.labels),
             reads_by_route=list(self.reads),
             writes_by_route=list(self.written),
-            transitions_by_market={m: n for m, n in self.transitions.items() if m in self._last},
+            transitions_by_market={m: n for m, n in self.transitions.items() if m in self._markets},
             assignments=self.assignments,
         )
 

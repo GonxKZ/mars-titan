@@ -1,7 +1,7 @@
 """Regiones por correlación de series observadas en fecha, comunes a C3 y C4 de #751.
 
-C4 agrupa los residuos ya maduros de cada activo y C3 los rendimientos diarios de su ventana
-de precios. Las dos usan la misma regla:
+C4 agrupa los residuos ya maduros de cada activo. C3 y el sector estadístico de B3 (#750)
+agrupan los rendimientos diarios de su ventana de precios. Todas usan la misma regla:
 
     serie estandarizada con la media y la desviación de sus propias observaciones
     ρ_ab  correlación del par sobre sus observaciones comunes
@@ -17,7 +17,26 @@ import numpy as np
 from scipy.cluster.hierarchy import fcluster, linkage
 from scipy.spatial.distance import squareform
 
+from .price_windows import PRICE_FEATURES, PRICE_WINDOW_CHANNELS
+
 NO_HISTORY = "0"
+CLOSE = PRICE_FEATURES.index("log_close_to_anchor_close")
+
+
+def window_returns(window):
+    """Rendimientos diarios del cierre de ventanas [activos, sesiones, canales] y su máscara.
+
+    Con el canal de presencia solo cuenta el rendimiento entre dos sesiones presentes. Las
+    ventanas de cinco canales no tienen huecos. La ventana se lee en FP64.
+    """
+    window = np.asarray(window, dtype=np.float64)
+    observed = (
+        window[..., -1] > 0
+        if window.shape[-1] == len(PRICE_WINDOW_CHANNELS)
+        else np.ones(window.shape[:2], dtype=bool)
+    )
+    returns = np.diff(window[..., CLOSE], axis=1)
+    return returns, observed[:, 1:] & observed[:, :-1]
 
 
 def correlation(series, mask, *, min_observations):

@@ -50,12 +50,15 @@ import hashlib
 import math
 from dataclasses import dataclass
 
-import numpy as np
 import torch
 from torch import nn
 from torch.nn import functional as F
 
-from mars_titan.data.correlation_regions import correlation_regions, permuted_regions
+from mars_titan.data.correlation_regions import (
+    correlation_regions,
+    permuted_regions,
+    window_returns,
+)
 from mars_titan.data.price_windows import PRICE_FEATURES, PRICE_WINDOW_CHANNELS
 
 from ..baselines.multimodal import MODALITIES
@@ -73,7 +76,6 @@ LORA_KINDS = (SHARED_LORA, RANDOM_PARTITION, DENSE_BLOCK)
 LEVELS = ("market", "sector", "asset")
 HEADS = (1, 2, 4, 8)
 LEAVES = len(MODALITIES)
-CLOSE = PRICE_FEATURES.index("log_close_to_anchor_close")
 # Consulta, clave, valor y salida, en este orden en la primera dimensión de los pesos.
 PROJECTIONS = 4
 
@@ -265,13 +267,7 @@ class FractalSharedOperator(nn.Module):
         if self.config.kind == DENSE_BLOCK:
             return [(rows, None) for rows in groups.values()]
         window = prices.detach().to(device="cpu", dtype=torch.float64).numpy()
-        observed = (
-            window[..., -1] > 0
-            if window.shape[-1] == len(PRICE_WINDOW_CHANNELS)
-            else np.ones(window.shape[:2], dtype=bool)
-        )
-        returns = np.diff(window[..., CLOSE], axis=1)
-        valid = observed[:, 1:] & observed[:, :-1]
+        returns, valid = window_returns(window)
         result = []
         for (market, at), rows in groups.items():
             ordered = sorted(rows, key=flow_ids.__getitem__)

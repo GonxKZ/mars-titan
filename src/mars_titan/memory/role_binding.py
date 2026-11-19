@@ -3,6 +3,8 @@
 El producto por signos y su inversa corresponden al caso bipolar descrito por Kanerva
 (2009), páginas 147 y 156. Su uso sobre el codec financiero es una adaptación propia.
 La inversa recupera la clave ligada, nunca una asociación perdida en DPFP o en la memoria.
+El rol procede del régimen o del calendario de `regimes.py`, o de las fuentes por fila de
+`role_sources.py`: mercado, modalidades presentes, sector estadístico y su control permutado.
 """
 
 import hashlib
@@ -15,9 +17,17 @@ import torch
 
 from .associative_memory import MAX_COHORT
 from .regimes import CALENDAR_RULE, REGIME_RULE, SLOTS
+from .role_sources import MARKET_RULE, MODALITY_RULE, PERMUTED_SECTOR_RULE, SECTOR_RULE
 
 WIDTH = 64
-SOURCES = {"regime": REGIME_RULE, "calendar": CALENDAR_RULE}
+SOURCES = {
+    "regime": REGIME_RULE,
+    "calendar": CALENDAR_RULE,
+    "market": MARKET_RULE,
+    "modality": MODALITY_RULE,
+    "sector": SECTOR_RULE,
+    "permuted_sector": PERMUTED_SECTOR_RULE,
+}
 MODES = ("bipolar", "constant_role", "projected_concat")
 
 

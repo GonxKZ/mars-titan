@@ -122,22 +122,25 @@ def run(parent, correction, sequence=None):
     return inference, metrics
 
 
-def oracle(parent, correction, inference, routes):
-    """Emisiones y A esperadas con la ruta de cada decisión guardada hasta su etiqueta."""
+def oracle(parent, correction, inference, routes, sequence=None):
+    """Emisiones y A esperadas con la ruta de cada decisión guardada hasta su etiqueta.
+
+    `routes` da para cada evento una ruta común o la de cada flujo.
+    """
     _, codec = parent
     core = {(f, at): value for kind, _, f, at, value in inference.audit if kind == "prediction"}
     memory, expected, pending, written = AssociativeMemory(correction.memory), {}, {}, 0
-    for event, route in zip(events(), routes, strict=True):
+    for event, route in zip(sequence or events(), routes, strict=True):
         staged = sorted(
             (at, flow, value - core[flow, at], *pending.pop((flow, at)))
             for flow, at, value in event.labels
         )
         inputs = np.array(codec.encode(validated_cpu_batch(event.inputs[0], SPEC)).key_inputs)
-        rows = np.full(len(FLOWS), route, dtype=np.int64)
+        rows = np.array(np.broadcast_to(np.asarray(route, dtype=np.int64), len(FLOWS)))
         reads = memory.read(correction.keys(inputs, rows))[:, 0].tolist()
-        for flow, key, read in zip(FLOWS, inputs, reads, strict=True):
+        for flow, key, read, own in zip(FLOWS, inputs, reads, rows.tolist(), strict=True):
             expected[flow, event.at] = core[flow, event.at] + read
-            pending[flow, event.at] = (key, route)
+            pending[flow, event.at] = (key, own)
         if staged:
             memory = memory.write(
                 correction.feedback(
@@ -238,7 +241,7 @@ def test_an_unrouted_correction_keeps_its_metrics(parent):
 # Sesión frente a ventana con la ruta sustituida.
 
 
-def daily_routes(self, prices, flow_ids, at):
+def daily_routes(self, prices, flow_ids, at, presence=None):
     """Ruta por flujo y día: la etiqueta madura siempre en otro compartimento."""
     assert prices.shape == (len(flow_ids), 64, 5)
     day = at // 86_400_000_000
@@ -278,6 +281,25 @@ def test_the_session_emits_what_the_window_emits_with_routes_and_recovery(
     plain = MatureCorrection(AssociativeMemoryConfig("proximal", rate=0.25, forgetting=0.01))
     unrouted, _ = corrected_pass(four_flow_source, plain)
     assert emitted(unrouted)[8:] != expected[8:]
+
+
+@pytest.mark.native_binding
+def test_the_session_pins_the_regime_rule_of_a_routed_key(
+    shared_native, four_flow_source, frozen_consumer, tmp_path, monkeypatch
+):
+    from mars_titan.memory import regimes
+    from mars_titan.memory.financial_session import FinancialSession
+
+    settings = options(
+        shared_native, four_flow_source, frozen_consumer, associative=routed("codec_by_regime")
+    )
+    with FinancialSession(tmp_path / "first", **settings) as session:
+        before = session.model_id
+    changed = tmp_path / "other.py"
+    changed.write_text("# Regla diferente.\n")
+    monkeypatch.setattr(regimes, "__file__", str(changed))
+    with FinancialSession(tmp_path / "second", **settings) as session:
+        assert session.model_id != before
 
 
 @pytest.mark.native_binding

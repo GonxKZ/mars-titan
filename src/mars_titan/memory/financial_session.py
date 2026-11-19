@@ -11,6 +11,7 @@ from pathlib import Path
 import numpy as np
 import torch
 
+from mars_titan.data import correlation_regions
 from mars_titan.data.input_policy import MODALITIES
 from mars_titan.models.titans.config import bounded_integer
 from mars_titan.models.titans.financial_inputs import (
@@ -32,10 +33,12 @@ from . import (
     lesion_session,
     multiscale_mixture,
     paired_proximal,
+    regime_gate_session,
     regimes,
     regional_session_work,
     regional_work,
     role_binding,
+    role_sources,
     salience_session,
     spaced_session,
     write_scores,
@@ -53,6 +56,7 @@ from .financial_consumers import ADMISSION_ERROR, SOURCE_ERROR, THREE_INDEX, bin
 from .financial_mechanisms import MechanismBinding
 from .mechanism_history import HistoryCapacityError
 from .native_mechanism_collection import MechanismCollectionConfig, NativeMechanismCollections
+from .regime_evidence_gate import gated_write
 from .regimes import SLOTS
 from .session_artifacts import SessionArtifacts
 
@@ -139,6 +143,8 @@ def _check_callbacks(instance):
         current += (lesion_session.signature(instance._lesion_plan),)
     if instance._salience_config is not None:
         current += (_canonical(salience_session.contract(instance._salience_config)),)
+    if instance._regime_gate_config is not None:
+        current += (_canonical(regime_gate_session.contract(instance._regime_gate_config)),)
     if current != instance._runtime_contract:
         raise ValueError("La configuración efectiva cambió durante la sesión")
 
@@ -212,6 +218,7 @@ class FinancialSession(EpisodicSession):
         regional_max_attempts=2,
         lesions=None,
         salience=None,
+        regime_gate=None,
     ):
         if (
             type(self) is not FinancialSession
@@ -249,6 +256,11 @@ class FinancialSession(EpisodicSession):
             )
         self.associative = associative
         self._salience_config = salience_session.configure(salience, associative)
+        self._regime_gate_config = regime_gate_session.configure(regime_gate, associative)
+        if self._salience_config is not None and self._regime_gate_config is not None:
+            raise ValueError(
+                "E3 y E4 no se combinan, porque no tienen identidad ni control conjuntos"
+            )
         self._lesion_plan = lesion_session.configure(lesions, associative)
         if type(binding) is spaced_session.SpacedTitansBinding and (
             associative is not None or lesions is not None or self._regional_config is not None
@@ -297,7 +309,9 @@ class FinancialSession(EpisodicSession):
                 (area_query_bridge, associative.query_bridge is not None),
                 (role_binding, associative.role_binding is not None),
                 (multiscale_mixture, associative.multiscale is not None),
-                (regimes, associative.role_binding is not None),
+                (regimes, associative.routing is not None),
+                (role_sources, associative.role_binding is not None),
+                (correlation_regions, associative.role_binding is not None),
                 (kernel_memory, associative.memory.rule == kernel_memory.KERNEL_RULE),
                 (
                     paired_proximal,
@@ -312,6 +326,8 @@ class FinancialSession(EpisodicSession):
             code.update(lesion_session.code())
         if self._salience_config is not None:
             code.update(salience_session.code())
+        if self._regime_gate_config is not None:
+            code.update(regime_gate_session.code())
         self.model_id = _digest(dict(consumer=consumer.identity(), integration=code))
         contract = dict(
             schema_version=2,
@@ -369,6 +385,8 @@ class FinancialSession(EpisodicSession):
             contract["lesions"] = self._lesion_plan.identity()
         if self._salience_config is not None:
             contract["salience"] = salience_session.contract(self._salience_config)
+        if self._regime_gate_config is not None:
+            contract["regime_gate"] = regime_gate_session.contract(self._regime_gate_config)
         if spaced_session.enabled(self):
             contract.update(
                 schema_version=3,
@@ -404,6 +422,10 @@ class FinancialSession(EpisodicSession):
         if self._salience_config is not None:
             self._runtime_contract += (
                 _canonical(salience_session.contract(self._salience_config)),
+            )
+        if self._regime_gate_config is not None:
+            self._runtime_contract += (
+                _canonical(regime_gate_session.contract(self._regime_gate_config)),
             )
         self._prototype = binding.bank(
             native,
@@ -498,6 +520,8 @@ class FinancialSession(EpisodicSession):
             fields.add("lesions")
         if self._salience_config is not None:
             fields.add("salience")
+        if self._regime_gate_config is not None:
+            fields.add("regime_gate")
         if spaced_session.enabled(self):
             fields.add("spaced")
         if type(self._binding) is MechanismBinding:
@@ -667,6 +691,13 @@ class FinancialSession(EpisodicSession):
         if self._salience_config is None:
             return None
         return salience_session.restore(self, self._bundle(self.snapshot()["state"])).export()
+
+    def regime_gate_state(self):
+        """Copia del estado E4 confirmado. Sin E4 no existe ese estado."""
+        _check_callbacks(self)
+        if self._regime_gate_config is None:
+            return None
+        return regime_gate_session.restore(self, self._bundle(self.snapshot()["state"])).export()
 
     def spaced_event(self):
         return spaced_session.inspect_state(self, event=True)
@@ -961,7 +992,7 @@ class FinancialSession(EpisodicSession):
                 else None
             )
             if not warmup:
-                # El régimen se calcula una vez con todas las filas del evento, como en la
+                # La ruta se calcula una vez con todas las filas del evento, como en la
                 # ventana. A de la generación anterior para todo el evento. Se emite núcleo más
                 # corrección.
                 routed = self.associative.routing is not None
@@ -969,6 +1000,7 @@ class FinancialSession(EpisodicSession):
                     np.stack([r.inputs["prices"] for r in rows]) if routed else None,
                     [r.flow_id for r in rows],
                     cutoff,
+                    np.stack([r.presence for r in rows]) if routed else None,
                 )
                 keys = self.associative.keys(np.stack([r.key_inputs for r in rows]), event_routes)
                 if self.associative.multiscale is not None:
@@ -1005,6 +1037,8 @@ class FinancialSession(EpisodicSession):
         extra = {}
         if self._salience_config is not None:
             extra["salience"] = bundle["salience"] if bundle else None
+        if self._regime_gate_config is not None:
+            extra["regime_gate"] = bundle["regime_gate"] if bundle else None
         if spaced_session.enabled(self):
             extra["spaced"] = bundle["spaced"] if bundle else None
         if lesion_ledger is not None:
@@ -1088,6 +1122,8 @@ class FinancialSession(EpisodicSession):
         extra = {}
         if self._salience_config is not None:
             extra["salience"] = bundle["salience"] if bundle else None
+        if self._regime_gate_config is not None:
+            extra["regime_gate"] = bundle["regime_gate"] if bundle else None
         if spaced_session.enabled(self):
             bank, _ = self._bank(bundle["bank"] if bundle else None)
             spaced_session.begin(self, bank, bundle, self._inflight["cutoff"], feedback_only=True)
@@ -1206,6 +1242,10 @@ class FinancialSession(EpisodicSession):
         if self._salience_config is not None:
             salience_ref, chosen_indices = salience_session.resolve(self, proposed, outcomes)
             chosen_outcomes = [outcomes[index] for index in chosen_indices]
+        regime_gate_ref, gates = None, None
+        if self._regime_gate_config is not None:
+            # La puerta usa todos los resultados de la generación y regula sus escrituras.
+            regime_gate_ref, gates = regime_gate_session.resolve(self, proposed, outcomes)
         if self.associative is not None:
             memory, core, routes, parts = self._associative_state(
                 proposed["associative"], with_parts=True
@@ -1233,15 +1273,23 @@ class FinancialSession(EpisodicSession):
                         for item, index in zip(chosen_outcomes, indices, strict=True)
                     ],
                 )
-                memory = memory.write(
-                    feedback,
-                    cutoff=proposed["cutoff"],
-                    **(
-                        dict(issued_predictions=parts.index_select(0, selected))
-                        if parts is not None
-                        else {}
-                    ),
-                )
+                if gates is not None:
+                    memory = gated_write(
+                        memory,
+                        feedback,
+                        [gates[item.prediction.asset.split("/", 1)[0]] for item in chosen_outcomes],
+                        cutoff=proposed["cutoff"],
+                    )
+                else:
+                    memory = memory.write(
+                        feedback,
+                        cutoff=proposed["cutoff"],
+                        **(
+                            dict(issued_predictions=parts.index_select(0, selected))
+                            if parts is not None
+                            else {}
+                        ),
+                    )
         selected = {r.id for r in bank.records()}
         bank_ref = self._stage(
             dict(snapshot=bank.snapshot(), episodes={i: episodes[i] for i in sorted(selected)}),
@@ -1263,6 +1311,8 @@ class FinancialSession(EpisodicSession):
         )
         if self._salience_config is not None:
             bundle["salience"] = salience_ref
+        if self._regime_gate_config is not None:
+            bundle["regime_gate"] = regime_gate_ref
         if spaced_session.enabled(self):
             bundle["spaced"] = spaced_ref
         if self.associative is not None:
@@ -1351,6 +1401,8 @@ class FinancialSession(EpisodicSession):
                 raise ValueError("El núcleo pendiente no corresponde a la cola confirmada")
             if self._salience_config is not None:
                 salience_session.verify(self, bundle, memory)
+            if self._regime_gate_config is not None:
+                regime_gate_session.verify(self, bundle)
         if not isinstance(bundle["current_inputs"], list) or len(bundle["current_inputs"]) > 32:
             raise ValueError("Las observaciones de la generación superan su presupuesto")
         observed, input_bytes = [], 0
@@ -1431,6 +1483,8 @@ class FinancialSession(EpisodicSession):
             spaced_session.verify_confirmed(self, bundle, record)
         if self._salience_config is not None:
             salience_session.verify_confirmed(self, bundle, snapshot, record)
+        if self._regime_gate_config is not None:
+            regime_gate_session.verify_confirmed(self, bundle, snapshot)
         self._check_observed(bundle, snapshot["observed"])
         if type(self._binding) is MechanismBinding:
             event = self._binding.history.read_event(
@@ -1504,6 +1558,8 @@ class FinancialSession(EpisodicSession):
                 names += ("lesions",)
             if self._salience_config is not None:
                 names += ("salience",)
+            if self._regime_gate_config is not None:
+                names += ("regime_gate",)
             if spaced_session.enabled(self):
                 names += ("spaced",)
             if type(self._binding) is MechanismBinding:
