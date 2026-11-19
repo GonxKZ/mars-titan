@@ -56,6 +56,58 @@ def neighbor_case(scores, iterations):
     return compare(reference, candidate, iterations)
 
 
+def reference_write(weight, previous, gradient, alpha, eta, theta):
+    velocity = eta * previous - theta * gradient
+    return (1 - alpha) * weight + velocity, velocity
+
+
+def check_probe(device):
+    """Cotejar los empates y el backward antes de cronometrar otra arquitectura."""
+    values = [float("nan"), -0.0, 0.0, float("-inf"), float("inf"), 1.0, 1.0]
+    scores = torch.tensor((values * 5)[:33], device=device, dtype=torch.float64).repeat(3, 1)
+    scores[1].fill_(float("-inf"))
+    scores[2].fill_(1.0)
+    scores[2, -1] = torch.nextafter(scores[2, -1], scores.new_tensor(2.0))
+    order = torch.argsort(scores, dim=1, descending=True, stable=True)
+    for count in (1, 8):
+        if not torch.equal(cuda_kernels.stable_neighbors(scores, count), order[:, :count]):
+            raise ValueError("El orden de los vecinos empatados o casi iguales ha cambiado")
+
+    generator = torch.Generator(device=device).manual_seed(120)
+    dims = [(3, 64, 64)] * 3 + [(3, 64, 1), (3, 1, 1), (3, 1, 1)]
+
+    def sample(shape):
+        return torch.randn(shape, dtype=torch.float32, device=device, generator=generator)
+
+    inputs = [sample(shape) for shape in dims]
+    upstream = [sample(dims[0]), sample(dims[0])]
+    directions = [sample(shape) for shape in dims]
+
+    def derivatives(fused):
+        args = [x.detach().clone().requires_grad_() for x in inputs]
+        if fused:
+            result = cuda_kernels.try_memory_write(
+                (args[0],), (args[1],), (args[2],), args[3:], differentiable=True
+            )
+            if result is None:
+                raise RuntimeError("La sonda no ejecutó la escritura CUDA")
+            outputs = result[0][0], result[1][0]
+        else:
+            outputs = reference_write(*args)
+        first = torch.autograd.grad(outputs, args, upstream, create_graph=True)
+        loss = sum((g * v).sum() for g, v in zip(first, directions, strict=True))
+        second = torch.autograd.grad(loss, args)
+        return (*outputs, *first, *second)
+
+    expected, actual = derivatives(False), derivatives(True)
+    for index, (a, b) in enumerate(zip(expected, actual, strict=True)):
+        if not torch.equal(a.contiguous().view(torch.int32), b.contiguous().view(torch.int32)):
+            raise ValueError(
+                f"Cambian los bits de la escritura o sus derivadas en la salida {index}"
+            )
+    return dict(stable_index_cases=2, fp32_outputs=2, first_derivatives=6, second_derivatives=6)
+
+
 def write_case(rows, iterations, generator):
     def normal(*shape):
         return torch.randn(shape, device="cuda", generator=generator)
@@ -64,8 +116,7 @@ def write_case(rows, iterations, generator):
     alpha, eta, theta = normal(rows, 64, 1), normal(rows, 1, 1), normal(rows, 1, 1)
 
     def reference():
-        velocity = eta * previous - theta * gradient
-        return (1 - alpha) * weight + velocity, velocity
+        return reference_write(weight, previous, gradient, alpha, eta, theta)
 
     def candidate():
         result = cuda_kernels.try_memory_write(
@@ -128,6 +179,7 @@ def main():
     else:
         keys = torch.randn((1024, 64), dtype=torch.float64, device="cuda", generator=generator)
     with dispatch:
+        probe_checks = check_probe(device)
         scores = {}
         for rows in (1, 32, 128, 512):
             query = torch.randn((rows, 64), dtype=torch.float64, device="cuda", generator=generator)
@@ -143,6 +195,7 @@ def main():
             "triton": version("triton"),
             "iterations_per_measurement": args.iterations,
             "production_supported": supported,
+            "probe_checks": probe_checks,
             "stable_neighbors": scores,
             "memory_write": {
                 rows: write_case(rows, args.iterations, generator)
