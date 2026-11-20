@@ -46,7 +46,7 @@ from .comparison_cohorts import write_cohort
 from .corpus_inputs import DIGEST_CACHE_ENV
 from .input_pipeline import PipelineOptions
 from .learning_hold import HOLD_ENV
-from .selection import CHRONOLOGICAL_MODES, validate_selection
+from .selection import CHRONOLOGICAL_MODES, METRICS, validate_selection
 from .window_indices import SHARED_INDICES_ENV
 
 ROOT = Path(__file__).resolve().parents[3]
@@ -112,8 +112,8 @@ CONTINUATION = "previous_origin"
 TIER_SEED, SEED_TIER = "tier_seed", "seed_tier"
 ORDERS = (TIER_SEED, SEED_TIER)
 _OPTIONAL = {
-    "fit": {"predictor_changes", "epochs", "continuation"},
-    "reader": {"epochs"},
+    "fit": {"predictor_changes", "epochs", "continuation", "stopping"},
+    "reader": {"epochs", "stopping"},
     "rule": set(),
     "tabular": set(),
     "ridge": set(),
@@ -133,10 +133,10 @@ def _checked_rule(rule, runner):
     sin emitirlo: el lector conserva a su padre como candidato."""
     _require(
         isinstance(rule, dict)
-        and rule.get("metric") == "session_mae"
+        and rule.get("metric") in METRICS
         and type(rule.get("max_epochs")) is int
         and 1 <= rule["max_epochs"] <= 1000,
-        "Cada regla de parada declara MAE por sesión y su máximo de épocas",
+        "Cada regla de parada declara su métrica de selección y su máximo de épocas",
     )
     validate_selection(
         {key: value for key, value in rule.items() if key != "max_epochs"},
@@ -148,8 +148,15 @@ def _checked_rule(rule, runner):
 
 
 def job_rule(declaration, model):
-    """Regla de parada de un modelo: la de su ejecutor con sus épocas propias si las declara."""
-    rule = dict(declaration["stopping"][model["runner"]])
+    """Regla de parada de un modelo: la de su ejecutor con sus épocas propias si las declara.
+
+    Un modelo puede declarar su propia regla (`stopping`) en lugar de la de su ejecutor. Sirve
+    para contrastar la regla misma: el mismo núcleo elegido por el MAE del protocolo y por el IC
+    de rangos, con el resto de su declaración idéntico.
+    """
+    rule = dict(
+        model["stopping"] if "stopping" in model else declaration["stopping"][model["runner"]]
+    )
     if "epochs" in model:
         rule["max_epochs"] = model["epochs"]
     return _checked_rule(rule, model["runner"])
@@ -315,7 +322,7 @@ def checked_declaration(document, *, root=ROOT, check_recipe_files=True):
         isinstance(execution, dict)
         and {"pipeline", "workers"}
         <= set(execution)
-        <= {"pipeline", "workers", "neural_blocks", "learning_traces", "order"}
+        <= {"pipeline", "workers", "neural_blocks", "learning_traces", "order", "threads"}
         and isinstance(execution["workers"], dict)
         and set(execution["workers"]) == set(MACHINES)
         and all(type(count) is int and 1 <= count <= 8 for count in execution["workers"].values()),
@@ -327,6 +334,7 @@ def checked_declaration(document, *, root=ROOT, check_recipe_files=True):
         f"El orden del plan es uno de {', '.join(ORDERS)}",
     )
     _checked_traces(execution.get("learning_traces"))
+    _checked_threads(execution.get("threads"))
     _checked_blocks(execution, origins, seeds)
     _checked_budget(document.get("budget", {}))
     tiers, recipes, models = (document.get(key) for key in ("tiers", "recipes", "models"))
@@ -1072,9 +1080,49 @@ def _claim(layout, jobs, taken):
     return None, None
 
 
+def _checked_threads(threads):
+    """Hilos de cálculo que declara la campaña para cada trabajo, o None si no los declara.
+
+    Sin declararlos, PyTorch y OpenBLAS cuentan los núcleos de la máscara de afinidad con la que
+    arranca cada proceso. `cpu_threads` e `interop_threads` forman parte de la identidad numérica
+    de cada ajuste, así que fijar la afinidad de un trabajo cambiaba su identidad y el reparto de
+    las reducciones en CPU. Con los hilos declarados, la identidad no depende de dónde se ejecute.
+    """
+    _require(
+        threads is None
+        or (
+            isinstance(threads, dict)
+            and set(threads) == {"intra", "interop"}
+            and all(type(count) is int and 1 <= count <= 256 for count in threads.values())
+        ),
+        "Los hilos declaran intra e interop, entre 1 y 256",
+    )
+    return threads
+
+
+def apply_threads(threads):
+    """Fijar en el proceso de un trabajo los hilos declarados, antes de cualquier cálculo."""
+    if _checked_threads(threads) is None:
+        return None
+    import torch
+
+    torch.set_num_threads(threads["intra"])
+    # PyTorch rechaza cambiar los hilos entre operaciones cuando ya ha lanzado alguna.
+    if torch.get_num_interop_threads() != threads["interop"]:
+        torch.set_num_interop_threads(threads["interop"])
+    applied = dict(intra=torch.get_num_threads(), interop=torch.get_num_interop_threads())
+    _require(applied == threads, f"PyTorch no aplicó los hilos declarados: {applied}")
+    return applied
+
+
 def job_environment(layout, declaration, job=None):
     """Entorno de un trabajo de la campaña, que también usan sus análisis por trabajo."""
     environment = dict(os.environ)
+    threads = declaration["execution"].get("threads")
+    if threads is not None:
+        # OpenMP y OpenBLAS leen su número de hilos al cargarse: se fija antes de arrancar.
+        for name in ("OMP_NUM_THREADS", "OPENBLAS_NUM_THREADS"):
+            environment[name] = str(threads["intra"])
     # La tubería de lectura solo cambia el caudal: el conjunto y el orden de las filas no.
     environment.update(PipelineOptions(**declaration["execution"]["pipeline"]).environment())
     environment[HOLD_ENV] = str(layout.authorization)
@@ -1101,13 +1149,32 @@ class Queue:
     """Cola de un equipo: reparte los trabajos entre trabajadores y propaga la parada."""
 
     def __init__(
-        self, declaration, layout, machine, *, workers=1, tiers=None, declaration_path=None
+        self,
+        declaration,
+        layout,
+        machine,
+        *,
+        workers=1,
+        tiers=None,
+        origins=None,
+        declaration_path=None,
     ):
         _require(type(workers) is int and 1 <= workers <= 8, "Entre 1 y 8 trabajadores")
         jobs = plan(declaration, machine)
         if tiers is not None:
             _require(set(tiers) <= set(declaration["tiers"]), "Nivel de prioridad desconocido")
             jobs = [job for job in jobs if job.tier in tiers]
+        if origins is not None:
+            # Un bloque de orígenes conserva su orden y sus dependencias: cada lector depende
+            # del ajuste de su mismo origen y semilla, y una continuación exige a su padre.
+            declared = {origin["year"] for origin in declaration["origins"]}
+            _require(bool(origins) and set(origins) <= declared, "Origen desconocido en la campaña")
+            jobs = [job for job in jobs if job.year in set(origins)]
+            kept = {job.key for job in jobs}
+            _require(
+                all(job.needs is None or job.needs in kept for job in jobs),
+                "El bloque de orígenes deja fuera al padre de alguno de sus trabajos",
+            )
         self.declaration, self.layout, self.machine = declaration, layout, machine
         self.jobs, self.workers, self.declaration_path = jobs, workers, declaration_path
         self.stop = threading.Event()
@@ -1596,6 +1663,9 @@ def main(argv=None):
     parser.add_argument("--views", type=Path, help=f"Vistas por ventana (o {VIEWS_ENV})")
     parser.add_argument("--workers", type=int, help="Por defecto, los de la declaración")
     parser.add_argument("--tier", action="append", help="Limitar a estos niveles de prioridad")
+    parser.add_argument(
+        "--origin", action="append", type=int, help="Limitar la cola a estos orígenes (año)"
+    )
     parser.add_argument("--key", help="Trabajo que ejecuta la orden interna job")
     parser.add_argument("--note", help="Nota del permiso expreso, obligatoria en authorize")
     parser.add_argument("--device", choices=("cpu", "cuda:0"), default="cuda:0")
@@ -1725,6 +1795,7 @@ def main(argv=None):
         f"{layout.authorization}. Se registra con la orden authorize",
     )
     if args.command == "job":
+        apply_threads(declaration["execution"].get("threads"))
         jobs = {job.key: job for job in plan(declaration, args.machine)}
         _require(args.key in jobs, "El trabajo no pertenece a la cola de este equipo")
         status = run_job(
@@ -1742,6 +1813,7 @@ def main(argv=None):
         args.machine,
         workers=args.workers or declaration["execution"]["workers"][args.machine],
         tiers=args.tier,
+        origins=args.origin,
         declaration_path=args.declaration,
     )
     for name in (signal.SIGINT, signal.SIGTERM):
