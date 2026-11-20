@@ -401,6 +401,97 @@ cuando hay datos, la entrada no limita.
   está limitado por Python: la GPU está al 17 %, `backward` ocupa el 11 % y la norma del
   recorte el 5 %, junto con las comprobaciones de finitud. Queda pendiente medirlo con nsys.
 
+## Campaña v2: selección por IC de rangos y numérica declarada (20 de noviembre de 2026)
+
+`configs/experiments/dgx-us-campaign-v2.json` sustituye a la v1, que se detuvo con 41 trabajos
+completados. La v1 queda como registro del brazo «selección por MAE»; su estado no se borra.
+
+### Por qué se detuvo la v1
+
+- **Los lectores se emitían sin entrenar.** La regla de la v1 exige una mejora de 10⁻⁵ en el MAE por
+  sesión de validación. Las épocas de un lector mejoran entre 10⁻⁶ y 10⁻⁵, así que casi ninguna
+  cuenta y se emite el estado inicial, que el lector conserva como candidato. MAE de validación de
+  `mars_titan_m1`, semilla 42:
+
+  | Origen | Época 0 | Época 1 | Época 2 | Época 3 | Elegida |
+  | --- | ---: | ---: | ---: | ---: | --- |
+  | 2006 | 0,0124111 | 0,0124128 | 0,0124122 | 0,0124118 | 0 |
+  | 2008 | 0,0126519 | 0,0126432 | 0,0126423 | 0,0126417 | 3 de 6, con el MAE aún bajando |
+  | 2010 | 0,0198602 | 0,0198531 | 0,0198536 | 0,0198535 | 0, aunque la época 1 mejora 7,1·10⁻⁶ |
+
+  Por eso `m1`, `m2` y `m3` coinciden hasta el cuarto decimal en los seis orígenes medidos (IC de
+  rangos 0,0436 y MAE un 0,204 % mejor que la predicción cero en evaluación). La mitad del cómputo
+  de la campaña comparaba lectores sin ajustar.
+- **El MAE no ve el IC.** Con errores gaussianos, predecir con correlación ρ reduce el MAE frente a
+  la predicción cero en un factor √(1 − ρ²) ≈ 1 − ρ²/2. Medido con la semilla 42 en los orígenes
+  2005–2012: el MAE por sesión de evaluación mejora un 0,18 % (Titans-MAC) y un 0,20 % (lectores)
+  sobre la predicción cero, con un IC de rangos diario de 0,041 a 0,044 (t ≈ 8,5). Un IC de 0,040 y
+  uno de 0,055 difieren en 7·10⁻⁴ de MAE relativo, menos que el margen del 0,5 % de la búsqueda.
+- **La búsqueda miró donde no había datos.** Entre 2000 y 2008 ninguna fila tiene noticias ni
+  fundamentales; en 2012 las tienen el 13,2 % y el 55,9 %. La búsqueda de la v1 (orígenes
+  2005–2007) no podía medir nada multimodal.
+- **La identidad numérica dependía de la afinidad del proceso.** PyTorch cuenta los núcleos de la
+  máscara de afinidad al arrancar, y `cpu_threads` e `interop_threads` forman parte de la identidad
+  numérica de cada ajuste. El 20 de noviembre se fijó el hilo principal de cada trabajo en los diez
+  núcleos X925 con un temporizador externo: los trabajos que arrancaron ya fijados registraron 10
+  hilos en lugar de 20 y, al reanudar, fallaron con «El código o la configuración numérica cambiaron
+  durante el recorrido». El temporizador se retiró. Quedan fuera de cualquier comparación los
+  trabajos de la v1 con 10 hilos: `titans_mac/2013`, `titans_mac_disabled/2006`,
+  `titans_mac_frozen/2006` y `titans_mac_frozen/2007` (completados) y los cuatro en curso o
+  pausados de ese intervalo. Son válidos los 37 completados con 20 hilos: `titans_mac` y
+  `mars_titan_m0` de 2005 a 2012 y `m1`, `m2` y `m3` de 2005 a 2011.
+
+### Reglas de la v2
+
+- **Selección y parada por IC de rangos** (`session_rank_ic`), una enmienda declarada del
+  protocolo: cada ajuste y cada lector minimizan la pérdida (1 − IC) / 2 del IC de rangos medio por
+  sesión de su validación, con al menos 30 activos por sesión, paciencia 3 y sin mejora mínima. La
+  validación se puntúa también en el estado inicial, el MAE se sigue midiendo en cada época y la
+  serie por sesión del IC queda en el informe del ajuste. La ventana vuelve a calcular la
+  puntuación del estado elegido con las tablas que confirma. Un modelo puede declarar su propia
+  regla: `titans_mac_mae` es el mismo núcleo elegido por el MAE del protocolo.
+- **Numérica.** `fp32_ieee_attention_v1` deja activo solo el núcleo matemático de la atención de
+  PyTorch. Con tensores FP32 en CUDA, `scaled_dot_product_attention` elegía el núcleo de memoria
+  eficiente de CUTLASS (`fmha_cutlassF_f32`), que no pasa por cuBLAS: medido en la GB10, su error
+  máximo frente a FP64 es de 5·10⁻⁷, el doble que el del núcleo matemático (2,5·10⁻⁷).
+  `torch_deterministic_algorithms_v2` activa el determinismo obligatorio de PyTorch sin el relleno
+  de la memoria sin inicializar. La identidad de cada trabajo registra las dos políticas.
+- **Hilos declarados** (`execution.threads`: 20 intra y 20 interop). Cada trabajo los fija al
+  arrancar y los exporta a OpenMP y OpenBLAS, así que su identidad no depende de dónde se ejecute.
+- **Bloques de orígenes.** Las copias empaquetadas de los 19 orígenes suman unos 570 GiB y no
+  caben a la vez en el disco. La cola se ejecuta por bloques (`--origin`), empezando por
+  2013–2016, y las copias de un bloque se borran cuando termina. `budget.min_free_gib` sube a 60.
+- **Variantes de una sola variable.** Además de los 22 modelos de la v1, 26 variantes del núcleo
+  `titans_mac`, cada una en su propio nivel. Una prueba
+  (`tests/training/test_dgx_campaign_v2.py`) exige que cada variante difiera de su control en una
+  única variable declarada.
+
+  | Familia | Variantes | Control |
+  | --- | --- | --- |
+  | Regla de selección | `mae` | `titans_mac` |
+  | Gradiente interno | `autograd` | `titans_mac` |
+  | Memoria | `cascade` (PT5), `huber`, `eta015` | `autograd` |
+  | Memoria | `stability` (PT1) | `eta015` |
+  | Memoria | `timescales` | `titans_mac` |
+  | Fusión | `film` (PT6), `wide` | `titans_mac` |
+  | Fusión y memoria | `cascade_film` | `cascade` |
+  | Atención | `diffattn` | `titans_mac` |
+  | Capacidad | `l2`, `p16` | `titans_mac` |
+  | Entradas y objetivo | `nols`, `aux` | `titans_mac` |
+  | Entradas y objetivo | `rank`, `scalar` | `nols` |
+  | Entradas y objetivo | `ic` | `scalar` |
+  | Entradas y objetivo | `ic_rank` | `ic` |
+  | Regularización | `mdrop`, `fdrop`, `wd` | `titans_mac` |
+  | Optimizador | `ema`, `sf`, `lr3e-4`, `lr3e-3` | `titans_mac` |
+
+- **Criba fijada antes de ver resultados.** Las variantes se ajustan primero con la semilla 42 en
+  los orígenes 2013–2016 (`--seed 42`). Una variante se promueve al resto de orígenes y semillas
+  si la media de su IC de rangos de validación supera a la de su control en al menos 0,003. Solo se
+  usa validación.
+- **La comprobación inicial detectó tres declaraciones inválidas** antes de gastar cómputo: el
+  objetivo de IC solo sustituye a la cabeza escalar (de ahí `scalar` como su control) y la caja de
+  PT1 exige una puerta de momento inicial menor que su techo de 0,3 (de ahí `eta015`).
+
 ## Agente cognitivo con herramientas
 
 `src/mars_titan/evaluation/cognitive_agent.py` lleva a la evaluación la cadena de Karpathy
