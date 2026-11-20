@@ -15,7 +15,7 @@ from mars_titan.evaluation.comparison_bundle import export_results
 from tests.evaluation.comparison_results_fixtures import campaign_state
 
 
-def packages(tmp_path, *, failed=False, changed_target=False, changed_commit=False, commits=None):
+def packages(tmp_path, *, failed=False, changed_column=None, changed_commit=False, commits=None):
     declaration, digest, layout = campaign_state(tmp_path / "source")
 
     def set_commit(commit):
@@ -34,13 +34,18 @@ def packages(tmp_path, *, failed=False, changed_target=False, changed_commit=Fal
         record["status"] = "failed"
         record["attempts"].append(dict(status="failed", error="fallo de prueba", seconds=2))
         path.write_text(json.dumps(record))
-    if changed_target:
+    if changed_column:
         directory = layout.output(key)
         path = directory / "evaluation-predictions.parquet"
         table = pq.read_table(path)
-        target = table["target"].to_numpy().copy()
-        target[0] += 0.01
-        table = table.set_column(table.schema.get_field_index("target"), "target", pa.array(target))
+        values = table[changed_column].to_pylist()
+        if changed_column == "asset_id":
+            values[0], values[1] = values[1], values[0]
+        else:
+            values[0] += 0.01
+        table = table.set_column(
+            table.schema.get_field_index(changed_column), changed_column, pa.array(values)
+        )
         pq.write_table(table, path)
         report = json.loads((directory / "run.json").read_text())
         report["predictions"]["evaluation"].update(sha256=sha256(path), bytes=path.stat().st_size)
@@ -276,8 +281,14 @@ def test_resource_csv_carries_last_readout_warmup_and_leaves_legacy_cells_empty(
 
 
 def test_different_targets_are_rejected_even_with_valid_file_hashes(tmp_path):
-    first, second = packages(tmp_path, changed_target=True)
+    first, second = packages(tmp_path, changed_column="target")
     with pytest.raises(ValueError, match="filas|objetivos|población"):
+        analysis.analyze([first, second], tmp_path / "analysis", plots=False)
+
+
+def test_swapped_assets_in_one_archived_model_are_rejected(tmp_path):
+    first, second = packages(tmp_path, changed_column="asset_id")
+    with pytest.raises(ValueError, match="activo"):
         analysis.analyze([first, second], tmp_path / "analysis", plots=False)
 
 

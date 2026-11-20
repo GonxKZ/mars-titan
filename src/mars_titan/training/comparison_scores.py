@@ -64,9 +64,11 @@ def prediction_tables(output, report):
 def _panel(path):
     import pyarrow.parquet as pq
 
-    from mars_titan.evaluation.forecast_panel import ForecastPanel
+    from mars_titan.evaluation.comparison_metrics import panel_from_table
 
-    return ForecastPanel.from_arrow(pq.read_table(path, columns=_COLUMNS), markets=MARKETS)
+    with pq.ParquetFile(path) as file:
+        columns = [*_COLUMNS, "asset_id"] if "asset_id" in file.schema_arrow.names else _COLUMNS
+        return panel_from_table(file.read(columns=columns, use_threads=False))
 
 
 def _mean(values):
@@ -93,6 +95,7 @@ def table_scores(tables, *, magnitude):
         sessions=int(evaluation.sessions),
         rows=int(evaluation.rows),
         cohort_sha256=evaluation.cohort_sha256,
+        calibration_cohort_sha256=calibration.cohort_sha256,
         zero=float(np.mean(series["zero"])),
         raw=float(np.mean(series["raw"])) if magnitude else None,
         calibrated=float(np.mean(series["shrunk"])),
@@ -113,14 +116,19 @@ def job_scores(output, report, *, magnitude):
     ]
     first = scores[0]
     _require(
-        all(item["cohort_sha256"] == first["cohort_sha256"] for item in scores),
-        "Las semillas del trabajo no predicen las mismas filas",
+        all(
+            item[key] == first[key]
+            for item in scores
+            for key in ("cohort_sha256", "calibration_cohort_sha256")
+        ),
+        "Las semillas del trabajo no predicen las mismas filas en calibración o evaluación",
     )
     result = dict(
         seeds=len(scores),
         sessions=first["sessions"],
         rows=first["rows"],
         cohort_sha256=first["cohort_sha256"],
+        calibration_cohort_sha256=first["calibration_cohort_sha256"],
         zero=first["zero"],
     )
     for name in ("raw", "calibrated", "scale", "pearson_ic", "rank_ic"):

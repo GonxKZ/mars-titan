@@ -5,6 +5,8 @@ resultado se calcula aparte.
 """
 
 import numpy as np
+import pyarrow as pa
+import pyarrow.parquet as pq
 import pytest
 
 from mars_titan.training import comparison_scores as scores
@@ -37,6 +39,44 @@ def test_table_scores_compare_the_model_and_its_calibrated_prediction_with_zero(
     # segunda coinciden.
     assert measured["rank_ic"] == pytest.approx((0.5 + 1.0) / 2)
     assert len(measured["cohort_sha256"]) == 64
+
+
+@pytest.mark.parametrize("part", ["calibration", "evaluation"])
+def test_job_summary_rejects_assets_swapped_within_one_session(tmp_path, part):
+    paths = tables(tmp_path)
+    table = pq.read_table(paths[part])
+    assets = table["asset_id"].to_pylist()
+    assets[0], assets[1] = assets[1], assets[0]
+    changed = table.set_column(
+        table.schema.get_field_index("asset_id"), "asset_id", pa.array(assets)
+    )
+    pq.write_table(changed, paths[part])
+    with pytest.raises(ValueError, match="activo"):
+        scores.job_scores(tmp_path, dict(predictions=declared()), magnitude=True)
+
+
+def test_legacy_summary_uses_the_flow_in_the_sample_id(tmp_path):
+    paths = tables(tmp_path)
+    original = scores.table_scores(paths, magnitude=True)
+    for part in ("calibration", "evaluation"):
+        pq.write_table(pq.read_table(paths[part]).drop(["asset_id"]), paths[part])
+    assert scores.table_scores(paths, magnitude=True) == original
+
+
+def test_job_summary_rejects_a_different_calibration_population_across_seeds(tmp_path):
+    tables(tmp_path / "seed-42")
+    path = tables(tmp_path / "seed-43")["calibration"]
+    table = pq.read_table(path)
+    assets = table["asset_id"].to_pylist()
+    ids = table["sample_id"].to_pylist()
+    assets[0] = "US/OTHER"
+    ids[0] = f"{assets[0]}/{ids[0].rsplit('/', 1)[1]}"
+    for name, values in (("asset_id", assets), ("sample_id", ids)):
+        table = table.set_column(table.schema.get_field_index(name), name, pa.array(values))
+    pq.write_table(table, path)
+    report = dict(seeds={seed: dict(path=f"seed-{seed}/run.json") for seed in ("42", "43")})
+    with pytest.raises(ValueError, match="filas"):
+        scores.job_scores(tmp_path, report, magnitude=False)
 
 
 def test_a_model_that_predicts_an_order_has_no_raw_error_but_keeps_the_rest(tmp_path):
