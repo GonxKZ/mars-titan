@@ -9,7 +9,8 @@ nombres y presupuesto, y resume cada ejecución con reglas fijas declaradas aqu�
   mediana de la norma del gradiente y de la razón de actualización. Un grupo cuya razón
   de actualización es siempre cero no se ha movido en ningún paso registrado.
 - Memoria de Titans: por memoria, la media de α, η y θ en el último paso registrado, las
-  fracciones medias de puertas saturadas y la pérdida asociativa al principio y al final.
+  fracciones de puertas saturadas promediadas con igual peso por paso registrado y la
+  pérdida asociativa al principio y al final.
 - Adaptadores: en la última validación, la norma de ΔW y su norma relativa por tensor.
 - Corrección B6 y políticas: el último valor de cada métrica propia. Las políticas RL no
   usan `validation.score`, porque su criterio (crecimiento logarítmico) se maximiza.
@@ -152,7 +153,10 @@ def _titans(run):
         if name in (f"{gate}.mean" for gate in GATES):
             entry[f"{prefix}{name.split('.')[0]}_last_mean"] = _finite(values[-1])
         elif name.endswith((".low_fraction", ".high_fraction")):
-            entry[f"{prefix}{name.replace('.', '_')}_mean"] = _median(values)
+            finite = [value for value in values if math.isfinite(value)]
+            entry[f"{prefix}{name.replace('.', '_')}_mean"] = (
+                math.fsum(finite) / len(finite) if finite else None
+            )
         elif name == "associative_loss.mean":
             entry[f"{prefix}associative_loss_first"] = _finite(values[0])
             entry[f"{prefix}associative_loss_last"] = _finite(values[-1])

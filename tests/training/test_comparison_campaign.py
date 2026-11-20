@@ -1764,12 +1764,16 @@ def test_execute_job_gives_each_runner_its_window_rule_and_parent(tmp_path, monk
     }
     view = place.cohort(2019) / "manifest.json"
 
-    assert campaign.execute_job(document, place, jobs["area_network/2019/seed-43"], device="cpu")
+    traces = dict(every=16, max_bytes=1024**2)
+    assert campaign.execute_job(
+        document, place, jobs["area_network/2019/seed-43"], device="cpu", traces=traces
+    )
     name, arguments, options, stopped = calls.pop()
     assert name == "fit" and not stopped
     assert arguments == (view, dict(view=str(view)), "fold-014", campaign.ROOT / RECIPE)
     assert options["variant"] == "mac_online" and options["seed"] == 43
     assert options["device"] == "cpu"
+    assert options["traces"] == traces and options["trace_family"] == "area_network"
     assert options["output"] == place.output("area_network/2019/seed-43")
     assert options["stopping"] == dict(RULE, initial_state="reported", max_epochs=5)
     assert options["predictor_changes"] == dict(holographic_network=dict(areas=19))
@@ -1779,11 +1783,12 @@ def test_execute_job_gives_each_runner_its_window_rule_and_parent(tmp_path, monk
     assert arguments[2] == "fold-018" and options["predictor_changes"] is None
     assert options["stopping"] == dict(RULE, initial_state="reported")
 
-    campaign.execute_job(document, place, jobs["mars_titan_m1/2019/seed-42"])
+    campaign.execute_job(document, place, jobs["mars_titan_m1/2019/seed-42"], traces=traces)
     name, arguments, options, stopped = calls.pop()
     assert name == "reader" and not stopped
     assert arguments == (view, place.output("titans_mac/2019/seed-42"), campaign.ROOT / READER)
     assert options["components"] == dict(episodic_bank="m1") and options["search_case"] == "lr1e-3"
+    assert options["traces"] == traces
     assert options["stopping"] == dict(RULE) and options["seed"] == 42
 
     campaign.execute_job(document, place, jobs["rule/2019/all-seeds"])

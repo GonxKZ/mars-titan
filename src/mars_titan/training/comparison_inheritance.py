@@ -14,12 +14,15 @@ from pathlib import Path
 from mars_titan.data.storage import atomic_json, sha256
 
 from . import comparison_input_migration as packed
+from . import comparison_trace_inheritance as traced
 from .comparison_campaign import (
     DONE,
     MACHINES,
     PAUSED,
     RUNNING,
     checked_declaration,
+    code_changes,
+    code_commit,
     cohort_identity,
     plan,
     read_record,
@@ -28,6 +31,7 @@ from .comparison_campaign import (
 _MODULE = re.compile(r"mars_titan(?:\.[A-Za-z_][A-Za-z_0-9]*)+")
 GPU_RELEASE = packed.GPU_RELEASE
 WARMUP_RELEASE = packed.WARMUP_RELEASE
+TRACE_RELEASE = traced.TRACE_RELEASE
 GPU_DECLARATION = "585594e40886506fe2a4cf011d1e1cc350cc49a8c801d7c049eda5e8685c27d6"
 READOUT_MODULE = "mars_titan.training.mars_titan_run"
 PREVIOUS_READOUT = "fd4ac414e2798161035e1d6aabf785f436cc7e185895bfd341bad980f1ace218"
@@ -70,6 +74,7 @@ def _compatible_report(
     *,
     warmup_release=False,
     packed_release=False,
+    writer=None,
 ):
     _require(report.get("final_test_opened") is False, "El test final debe seguir cerrado")
     request = report.get("request", {})
@@ -89,6 +94,8 @@ def _compatible_report(
             if not path.is_file():
                 path = Path(root) / "src" / module.replace(".", "/") / "__init__.py"
             current = sha256(path) if path.is_file() else None
+            if module == traced.BATCHES_MODULE and writer == (digest, current):
+                continue
             if current == digest and current is not None:
                 continue
             if (
@@ -144,13 +151,52 @@ def _copy_completed_parent(source, destination):
     # El lector exige rutas regulares hasta el checkpoint. Una copia independiente
     # permite validar esos archivos y conserva el padre histórico en su directorio.
     shutil.copytree(source, destination, symlinks=True)
-    for path in destination.rglob("*"):
-        _require(not path.is_symlink(), "El padre contiene un enlace intermedio")
-        if path.is_file():
-            _require(
-                sha256(path) == sha256(source / path.relative_to(destination)),
-                "La copia del padre ha cambiado de contenido",
-            )
+    traced.verify_tree(source, destination)
+
+
+def _close_source(source, target, permission):
+    atomic_json(
+        source.authorization,
+        dict(
+            permission,
+            training_allowed=False,
+            status="continued_in_another_state",
+            continuation_state=str(target.state.resolve()),
+            closed_at_utc=datetime.now(UTC).isoformat(),
+        ),
+    )
+
+
+def _finish_trace_transfer(source, target, permission, receipt, status):
+    _require(
+        status.get("status") in ("verified", "completed")
+        and status.get("receipt_sha256") == sha256(target.state / "inheritance.json")
+        and receipt.get("kind") == "comparison_campaign_inheritance_v1"
+        and receipt.get("schema_version") == 1
+        and receipt.get("final_test_opened") is False
+        and receipt.get("source_state") == str(source.state.resolve())
+        and receipt.get("code_commit") == TRACE_RELEASE
+        and receipt.get("source_declaration_sha256")
+        == receipt.get("declaration_sha256")
+        == GPU_DECLARATION,
+        "El destino ya existe y no corresponde al traslado verificado",
+    )
+    if permission.get("status") == "continued_in_another_state":
+        _require(
+            permission.get("training_allowed") is False
+            and permission.get("continuation_state") == str(target.state.resolve()),
+            "El origen ya se continuó en otro destino",
+        )
+    else:
+        _require(
+            status["status"] == "verified"
+            and sha256(source.authorization) == receipt["source_authorization_sha256"],
+            "El permiso cambió desde que se comprobó la copia",
+        )
+        _close_source(source, target, permission)
+    if status["status"] != "completed":
+        atomic_json(target.state / "inheritance-status.json", dict(status, status="completed"))
+    return receipt
 
 
 def _hold_jobs(stack, source, jobs, *, finish_active):
@@ -180,7 +226,8 @@ def inherit(old, new, old_digest, new_digest, source, target, *, commit, root, f
     """
     checked_declaration(old, root=root)
     checked_declaration(new, root=root)
-    _require(not target.state.exists(), "El destino ya existe")
+    trace_release = commit == TRACE_RELEASE
+    _require(trace_release or not target.state.exists(), "El destino ya existe")
     _require(
         not target.state.resolve().is_relative_to(source.state.resolve()),
         "El destino no puede estar dentro del origen",
@@ -199,6 +246,22 @@ def inherit(old, new, old_digest, new_digest, source, target, *, commit, root, f
         permission.get("declaration_sha256") == old_digest, "La declaración de origen no coincide"
     )
     _require(permission.get("code_changes_sha256") is None, "El origen necesita una versión fija")
+    if (
+        trace_release
+        or permission.get("code_commit") == packed.PACKED_RELEASE
+        and commit != packed.PACKED_RELEASE
+    ):
+        _require(
+            trace_release
+            and old_digest == new_digest == GPU_DECLARATION
+            and permission.get("code_commit") == packed.PACKED_RELEASE
+            and permission.get("final_test_access") is False,
+            "El traslado de trazas exige las revisiones y la declaración comprobadas",
+        )
+        _require(
+            old == new and code_commit(root) == commit and code_changes(root) is None,
+            "La herencia de trazas exige la misma declaración y una copia científica limpia",
+        )
     warmup_release = (
         old_digest == new_digest == GPU_DECLARATION
         and permission.get("code_commit") == GPU_RELEASE
@@ -219,6 +282,7 @@ def inherit(old, new, old_digest, new_digest, source, target, *, commit, root, f
             packed_release, "El origen no corresponde a una versión comprobada para estas entradas"
         )
     jobs = {job.key: job for machine in MACHINES for job in plan(old, machine)}
+    pc1 = {job.key for job in plan(old, "references")} if trace_release else set()
     candidates = {job.key: job for machine in MACHINES for job in plan(new, machine)}
     _require(len(jobs) <= 4096, "La herencia supera el límite de trabajos")
     with ExitStack() as stack:
@@ -229,18 +293,43 @@ def inherit(old, new, old_digest, new_digest, source, target, *, commit, root, f
             raise ValueError("Ya hay otro traslado en curso desde este estado") from None
         _require(sha256(source.authorization) == permission_sha, "El permiso de origen ha cambiado")
         _hold_jobs(stack, source, jobs.values(), finish_active=finish_active)
-        selected, omitted = {}, {}
+        if trace_release and target.state.exists():
+            receipt = _document(target.state / "inheritance.json")
+            status = _document(target.state / "inheritance-status.json")
+            if status.get("status") == "verified":
+                traced.recheck_copy(source, target, jobs, receipt)
+            return _finish_trace_transfer(source, target, permission, receipt, status)
+        if trace_release:
+            _require(
+                permission.get("training_allowed") is True, "El permiso de origen ya está cerrado"
+            )
+        history = traced.packed_history(source, old_digest) if trace_release else {}
+        selected, omitted, writers = {}, {}, {}
         for key, job in jobs.items():
             record = read_record(source, key)
             _require(record["status"] != RUNNING, "Hay un trabajo activo. Pausa antes la cola")
             if not record.get("attempts"):
                 continue
-            if packed_release:
+            if trace_release:
+                _require(
+                    key in pc1, "La herencia de trazas de PC1 contiene un trabajo de la cola de PC2"
+                )
+                if record["status"] == PAUSED:
+                    _require(
+                        job.runner != "reader",
+                        "El lector pausado debe terminar con su padre en el estado de origen",
+                    )
+                    _require(
+                        job.runner == "fit",
+                        "La herencia de trazas solo reanuda ajustes neuronales pausados",
+                    )
+            if packed_release or trace_release:
                 _require(
                     record["status"] in (DONE, PAUSED),
                     "Hay un intento sin resolver en el origen. Debe conservarse su resultado",
                 )
             if key not in candidates or old["models"][job.model] != new["models"][job.model]:
+                _require(not trace_release, "El destino de trazas perdería un trabajo de origen")
                 omitted[key] = "El modelo no forma parte del mismo contrato en el destino"
                 continue
             if record["status"] not in (DONE, PAUSED):
@@ -259,6 +348,24 @@ def inherit(old, new, old_digest, new_digest, source, target, *, commit, root, f
                     and _document(source.output(key) / "fit/run.json").get("global_step") == 0,
                     "Solo se traslada el paso cero. El ajuste iniciado termina con su versión",
                 )
+            historical = trace_release and traced.completed_before_packing(
+                source, key, record, history, old_digest
+            )
+            writer = traced.completed_writer(root, job, report, commit) if trace_release else None
+            if writer:
+                writers[key] = writer
+            if trace_release and not historical:
+                traced.same_implementation(
+                    root, report.get("request", {}).get("code", {}), writer=writer
+                )
+            if trace_release:
+                for item in report.get("seeds", {}).values():
+                    folder = source.output(key)
+                    _verify_file(folder, item)
+                    seed = folder / item["path"]
+                    child = _document(seed)
+                    for artifact in (*child["predictions"].values(), child["model"]):
+                        _verify_file(seed.parent, artifact)
             _compatible_report(
                 source.output(key),
                 report,
@@ -268,7 +375,8 @@ def inherit(old, new, old_digest, new_digest, source, target, *, commit, root, f
                 root,
                 sha256(source.cohort(job.year) / "manifest.json"),
                 warmup_release=warmup_release,
-                packed_release=packed_release,
+                packed_release=packed_release or historical,
+                writer=writer,
             )
             selected[key] = record
         for key in selected:
@@ -284,6 +392,10 @@ def inherit(old, new, old_digest, new_digest, source, target, *, commit, root, f
                 bundle.get("cohorts") == cohort_identity(old, source),
                 "Las cohortes no coinciden con el paquete importado",
             )
+        final_target = target
+        if trace_release:
+            stage = stack.enter_context(traced.staging(source, target, commit))
+            target = type(target)(stage, target.views)
         target.state.mkdir(parents=True, exist_ok=False)
         status_path = target.state / "inheritance-status.json"
         atomic_json(status_path, dict(status="running"))
@@ -300,22 +412,29 @@ def inherit(old, new, old_digest, new_digest, source, target, *, commit, root, f
             created_at_utc=datetime.now(UTC).isoformat(),
             final_test_opened=False,
         )
+        if trace_release:
+            receipt["source_code_commit"] = packed.PACKED_RELEASE
+            receipt["source_inheritance_sha256"] = (
+                sha256(source.state / "inheritance.json") if history else None
+            )
         try:
-            shutil.copytree(source.state / "cohorts", target.state / "cohorts")
+            copy_data = _copy_completed_parent if trace_release else shutil.copytree
+            copy_data(source.state / "cohorts", target.state / "cohorts")
             if bundle is not None:
                 atomic_json(target.bundle, bundle)
             if source.indices.is_dir():
-                shutil.copytree(source.indices, target.indices)
+                copy_data(source.indices, target.indices)
             parents = {job.needs for job in candidates.values() if job.needs}
             for key, record in selected.items():
                 destination = target.output(key)
                 destination.parent.mkdir(parents=True, exist_ok=True)
                 regular_parent = (
-                    (warmup_release or packed_release)
+                    (warmup_release or packed_release or trace_release)
                     and key in parents
                     and record["status"] == DONE
                 )
                 initial = None
+                recovery = None
                 if regular_parent:
                     _copy_completed_parent(source.output(key).resolve(strict=True), destination)
                 elif record["status"] == DONE:
@@ -329,6 +448,9 @@ def inherit(old, new, old_digest, new_digest, source, target, *, commit, root, f
                         and os.environ.get("MARS_TITAN_CUDA_HOST_FINITE", "1") == "1",
                         archived=os.environ.get("MARS_TITAN_TRAIN_ARCHIVE", "default") != "",
                     )
+                elif trace_release:
+                    _copy_completed_parent(source.output(key), destination)
+                    recovery = traced.recovery_checkpoint(destination, target.indices, root)
                 else:
                     shutil.copytree(source.output(key), destination)
                 copied = copy.deepcopy(record)
@@ -345,6 +467,11 @@ def inherit(old, new, old_digest, new_digest, source, target, *, commit, root, f
                 if source.log(key).is_file():
                     target.log(key).parent.mkdir(parents=True, exist_ok=True)
                     shutil.copyfile(source.log(key), target.log(key))
+                    if trace_release:
+                        _require(
+                            sha256(source.log(key)) == sha256(target.log(key)),
+                            "El registro de salida ha cambiado",
+                        )
                 receipt["inherited"][key] = dict(
                     status=record["status"], **copied["source_execution"]
                 )
@@ -352,24 +479,30 @@ def inherit(old, new, old_digest, new_digest, source, target, *, commit, root, f
                     receipt["inherited"][key]["storage"] = "verified_parent_copy"
                 if initial:
                     receipt["inherited"][key]["initial_checkpoint"] = initial
+                if recovery:
+                    receipt["inherited"][key]["recovery_checkpoint"] = recovery
+                if key in writers:
+                    previous, current = writers[key]
+                    receipt["inherited"][key]["prediction_writer"] = dict(
+                        module=traced.BATCHES_MODULE, source_sha256=previous, runtime_sha256=current
+                    )
             _require(
                 sha256(source.authorization) == permission_sha, "El permiso de origen ha cambiado"
             )
             atomic_json(target.state / "inheritance.json", receipt)
-            atomic_json(
-                source.authorization,
-                dict(
-                    permission,
-                    training_allowed=False,
-                    status="continued_in_another_state",
-                    continuation_state=str(target.state.resolve()),
-                    closed_at_utc=datetime.now(UTC).isoformat(),
-                ),
-            )
+            if trace_release:
+                status = dict(
+                    status="verified", receipt_sha256=sha256(target.state / "inheritance.json")
+                )
+                atomic_json(status_path, status)
+                traced.publish(target.state, final_target.state)
+                return _finish_trace_transfer(source, final_target, permission, receipt, status)
+            _close_source(source, target, permission)
             atomic_json(status_path, dict(status="completed"))
         except BaseException as error:
-            atomic_json(
-                status_path, dict(status="failed", error=f"{type(error).__name__}: {error}")
-            )
+            if not trace_release:
+                atomic_json(
+                    status_path, dict(status="failed", error=f"{type(error).__name__}: {error}")
+                )
             raise
     return receipt
