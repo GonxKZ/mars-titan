@@ -154,6 +154,28 @@
     "alcance": "Emisión del padre congelado de M2 sobre tres sesiones de ajuste con estado móvil. Las filas parciales se emiten por la ruta ordinaria.",
     "recibo": "grafo-m2-cuda.json",
     "recibo_sha256": "999c206ed16f941984ca003267535461e63412420bed3471398593385c2a8c41",
+    "programa": {
+      "fichero_distribuido": "benchmarks/comparison_efficiency_20261118/estado_grafo_m2.py",
+      "sha256_ejecutado_en_cuda": "eb64347b53b8eeb6c4121dbb76a635aac6ff20bd155dc914c6bd13fd549ed711",
+      "sha256_distribuido": "3e9d264267ae4fff8314c35fefc911d26048869b5d18fc1126ed6b6e2ddd9582",
+      "python_que_compara_los_ast": "3.12.14",
+      "criterio_ast": "ast.dump con include_attributes=False de un ast.Module que contiene en orden plano, Bloque, control y validar_error",
+      "sha256_ast_comun": "295bad184adca35d1b50ea58ea9e87fe9a9bbd9ef79fe970bba4f667c786be95",
+      "lectura_que_produjo_el_recibo_cuda": "Contratos de origen y checkpoint, tamaño declarado del archivo y huellas de los seis bloques frente al recibo CPU",
+      "lectura_distribuida": "Añade verified_signature antes del mapeo, con SHA-256 completo, y comprueba la firma del archivo tras extraer los bloques",
+      "otras_diferencias_del_fuente": "El CLI rechaza Python con -O. Se formateó el fuente, se ordenaron las importaciones y se quitaron dos importaciones sin uso.",
+      "repeticion_cpu_r2": {
+        "recibo": "grafo-m2-cpu.json",
+        "recibo_sha256": "91f17a336a9a5ed407d7ef20aaf744abb690d638d0b98429964e319437b0ef79",
+        "sha256_completo_verificado": "452fe75e5129ecc324018303a25f9bef6a4f0f88b4213e7c8ee7ab9a85994c5e",
+        "sesiones": 3,
+        "bloques": 6,
+        "filas": 2509,
+        "campos_identicos_salvo_control_total_s": true,
+        "recibo_cpu_anterior_sha256": "140dd3b8efc21ad98634c5e9aa4ba5dd55f03bd161b2ce4c2f551f41f7392b6e"
+      },
+      "argumento_de_referencia_de_la_edicion_publica": "--referencia-cpu"
+    },
     "registro_turno_sha256": "8c606e9ae75b6580f3d220a1425bae5c9dc64f1814dd67baeca027611bb3be9f",
     "dispositivo": "cuda:0",
     "retorno": 0,

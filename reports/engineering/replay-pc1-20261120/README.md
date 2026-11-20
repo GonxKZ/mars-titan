@@ -47,7 +47,18 @@ El reproductor usa una cohorte preparada, el índice de ajuste, el archivo de ev
 
 Los resultados principales proceden del ensayo que llamó a `recorrido.build` y `recorrido.profile_slice`. El reproductor reutiliza ambas funciones y coteja el estado en memoria. Las tres variantes se comprobaron en CPU con ocho filas y cuatro instantes. La invocación CUDA de máscara se verificó después, con una sola pareja y el mismo checkpoint. Coincidieron las 25.495 predicciones, cuatro conjuntos de gradientes, el estado y los generadores aleatorios. Esta pareja queda fuera de las medianas principales. El SHA-256 de su recibo es `d4715faa6f6e6c814475a58b791509222c3648acca68e14ad88de0ffc2a6443a`. [Comprobación del reproductor](mascara-cli-cuda.json)
 
+Las primeras parejas utilizaron el núcleo de `f52cc3c3`. Las órdenes siguientes seleccionan la copia R2, que conserva los mismos módulos de cálculo, y obtienen los programas del ensayo del clon actual. La etiqueta `comparison-campaign-traces-storage-v1` permite recrear la copia científica documentada en la [guía de la campaña](https://github.com/GonxKZ/mars-titan/blob/comparison-campaign-traces-storage-v1/docs/engineering/comparison-campaign-two-machines.md#registrar-los-pasos-de-ajuste-de-pc1).
+
 ```bash
+set -e
+repo="$(git rev-parse --show-toplevel)"
+runtime="$HOME/.local/share/mars-titan/worktrees/comparison-traces-storage-pc1-v1"
+test "$(git -C "$runtime" rev-parse HEAD)" = d5f27f50073d12706c08130a155ea958d822b28b
+export PYTHONPATH="$repo:$runtime/src"
+export MARS_TITAN_COMPARISON_STATE="$HOME/.local/state/mars-titan/comparison-campaign-packed-v1"
+export MARS_TITAN_TRAIN_ARCHIVE="$HOME/.local/state/mars-titan/chronological-inputs-20261118"
+export MARS_TITAN_BENCHMARK_WORK="$HOME/.local/state/mars-titan/mediciones-replay-20261120"
+mkdir -p "$MARS_TITAN_BENCHMARK_WORK"
 CUDA_VISIBLE_DEVICES=0 CUBLAS_WORKSPACE_CONFIG=:4096:8 OMP_NUM_THREADS=2 MKL_NUM_THREADS=2 OPENBLAS_NUM_THREADS=1 \
   uv run --no-sync python benchmarks/comparison_efficiency_20261118/replay_pc1.py \
   mascara "$MARS_TITAN_BENCHMARK_WORK/mascara.json"
@@ -65,3 +76,23 @@ CUDA_VISIBLE_DEVICES='' OMP_NUM_THREADS=1 MKL_NUM_THREADS=1 OPENBLAS_NUM_THREADS
 uv run --no-sync python benchmarks/comparison_efficiency_20261118/formas_emision.py \
   "$MARS_TITAN_COMPARISON_STATE" "$MARS_TITAN_BENCHMARK_WORK/formas-emision.json"
 ```
+
+### Repetir las seis emisiones del padre de M2
+
+El recuento de formas lee los índices de ajuste. El control de emisión carga el checkpoint del padre que utilizó M2 en 2023 con la semilla 43 y lee tres sesiones de `small.arrow`. La primera orden reproduce el control en CPU. La segunda verifica en CUDA que recibe el mismo checkpoint y los mismos bloques, compara la ruta ordinaria con el grafo y comprueba el desbordamiento del contador. Ambas escriben un recibo nuevo. [Reproductor de M2](../../../benchmarks/comparison_efficiency_20261118/estado_grafo_m2.py)
+
+```bash
+CUDA_VISIBLE_DEVICES='' OMP_NUM_THREADS=1 MKL_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 \
+  uv run --no-sync python benchmarks/comparison_efficiency_20261118/estado_grafo_m2.py \
+  --estado "$MARS_TITAN_COMPARISON_STATE" --archivo "$MARS_TITAN_TRAIN_ARCHIVE" \
+  --dispositivo cpu --salida "$MARS_TITAN_BENCHMARK_WORK/estado-m2-cpu.json"
+CUDA_VISIBLE_DEVICES=0 CUBLAS_WORKSPACE_CONFIG=:4096:8 OMP_NUM_THREADS=2 MKL_NUM_THREADS=2 OPENBLAS_NUM_THREADS=1 \
+  uv run --no-sync python benchmarks/comparison_efficiency_20261118/estado_grafo_m2.py \
+  --estado "$MARS_TITAN_COMPARISON_STATE" --archivo "$MARS_TITAN_TRAIN_ARCHIVE" \
+  --dispositivo cuda:0 --referencia-cpu "$MARS_TITAN_BENCHMARK_WORK/estado-m2-cpu.json" \
+  --salida "$MARS_TITAN_BENCHMARK_WORK/estado-m2-cuda.json"
+```
+
+La ejecución que produjo el recibo CUDA verificó el checkpoint, los identificadores de origen y las huellas de los seis bloques frente al recibo CPU. El programa distribuido comprueba además el SHA-256 de todo `small.arrow` antes de mapearlo y verifica al terminar que el archivo conserva su firma de sistema. La lectura y su comprobación quedan fuera del tiempo atribuido a la captura. El CLI exige ejecutar Python sin `-O` para que estén activas las comprobaciones de identidad y del control negativo. Los árboles de sintaxis de la clase que realiza la captura y de las funciones que comparan emisiones, estado y excepciones coinciden con los del programa que produjo el recibo CUDA. [Huellas y alcance de la verificación](viabilidad-grafos.json)
+
+La repetición en CPU con el SHA-256 completo de los 12.333.852.338 bytes de `small.arrow` reprodujo las seis emisiones en R2. Coincidieron todos los campos del recibo CPU anterior salvo la duración del control. [Recibo con la lectura verificada](grafo-m2-cpu.json)
