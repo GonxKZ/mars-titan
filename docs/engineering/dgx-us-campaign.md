@@ -247,6 +247,31 @@ ventana con la ausencia real) antes de corregirlo: un corpus con variante de lec
 siempre Parquet. El archivo corregido no entra en la identidad de los índices ni de las copias,
 así que lo ya preparado sigue siendo válido.
 
+## Análisis tras la campaña
+
+Las tres órdenes leen el estado de la campaña sin escribir en sus trabajos y no abren 2024.
+
+1. **Métricas de error de todos los modelos.** Con la cola pausada (la exportación comprueba
+   las huellas de lo que copia), `comparison_campaign export-results --machine mars_titan
+   --declaration configs/experiments/dgx-us-campaign-v1.json --state <estado> --views <vistas>
+   --destination <zip>` y después `python -m mars_titan.evaluation.comparison_campaign_analysis
+   --bundle <zip> --output <carpeta>`; con `--allow-partial` solo describe lo terminado, sin
+   inferencia. Cada predicción se puntúa por sesión con `forecast_scores.score_sessions`, en
+   lectura bruta y con la escala calibrada en la calibración común: MAE y MSE, acierto de
+   dirección y precisión al alza y a la baja, IC de rangos y de Pearson por sesión, pérdida
+   pinball de los cinco cuantiles, cobertura y anchura de los intervalos del 80 y el 95 %,
+   interval score, Brier del signo implícito y riesgo selectivo, con las curvas de aprendizaje
+   de cada ajuste, los recursos de cada trabajo y las familias de contrastes declaradas.
+2. **Ablaciones de modalidades.** `python -m mars_titan.training.campaign_ablation --declaration
+   configs/experiments/dgx-us-campaign-v1.json --machine mars_titan --state <estado> --views
+   <vistas> --models titans_mac mars_titan_m3 mars_titan_cognitive area_network --workers 3
+   --cuda-gib 8`: 4 modelos × 3 variantes × 19 orígenes × 3 semillas = 684 evaluaciones con el
+   estado elegido de cada trabajo, sin reentrenar.
+3. **Agente cognitivo.** `python -m mars_titan.evaluation.cognitive_agent --declaration
+   configs/experiments/dgx-us-cognitive-agent-v1.json --state <estado> --views <vistas> --output
+   <carpeta> --processes <n>`: el informe con todas las familias, la serie por sesión de cada
+   variante y la telemetría por origen y semilla.
+
 ## Pendiente de medir
 
 El reparto de tiempo de un paso completo en la GPU con nsys, las épocas hasta la meseta con y

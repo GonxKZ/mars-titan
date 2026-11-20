@@ -351,3 +351,39 @@ def test_failed_analysis_leaves_a_status_without_a_success_report(tmp_path, monk
     status = json.loads((output / "analysis-status.json").read_text())
     assert status["status"] == "failed" and "ilegible" in status["error"]
     assert not (output / "report.json").exists()
+
+
+def test_every_scalar_metric_of_each_job_partition_and_view_is_in_one_table(tmp_path):
+    first, second = packages(tmp_path)
+    report = analysis.analyze([first, second], tmp_path / "analysis", plots=False)
+    with (tmp_path / "analysis/metrics-full.csv").open(encoding="utf-8") as stream:
+        rows = list(csv.DictReader(stream))
+    expected = {
+        (item["job"], partition, view)
+        for item in report["per_seed"]
+        for partition, entry in item["partitions"].items()
+        for view in ("raw", "calibrated")
+        if view in entry
+    }
+    assert {(row["job"], row["partition"], row["view"]) for row in rows} == expected
+    columns = set(rows[0])
+    for name in (
+        "point.mae",
+        "point.rmse",
+        "point.direction_accuracy",
+        "point.up_precision",
+        "point.rank_ic",
+        "pearson_ic.mean",
+        "row_weighted.mae",
+    ):
+        assert name in columns, name
+    first_job = report["per_seed"][0]
+    raw = next(
+        row
+        for row in rows
+        if row["job"] == first_job["job"]
+        and row["partition"] == "evaluation"
+        and row["view"] == "raw"
+    )
+    assert float(raw["point.mae"]) == first_job["partitions"]["evaluation"]["raw"]["point"]["mae"]
+    assert not {"schema_version", "kind"} & columns

@@ -497,6 +497,65 @@ def _comparisons(options, origins, averaged, times):
     return result
 
 
+# Listas de resúmenes que se aplanan por su clave: intervalos por nominal y la curva selectiva
+# por cobertura. Las demás listas (niveles, tablas de fiabilidad) quedan en report.json.
+_KEYED_LISTS = ("nominal", "coverage")
+_CONSTANT_FIELDS = {"schema_version", "kind"}
+_JOB_FIELDS = ("job", "model", "origin", "seed", "partition", "view", "zero_mae")
+
+
+def _flat(value, prefix=""):
+    """Escalares de un resumen anidado con su ruta separada por puntos."""
+    if isinstance(value, dict):
+        items = {}
+        for key, child in value.items():
+            if not prefix and key in _CONSTANT_FIELDS:
+                continue
+            items.update(_flat(child, f"{prefix}{key}."))
+        return items
+    if isinstance(value, list):
+        for key in _KEYED_LISTS:
+            if value and all(isinstance(item, dict) and key in item for item in value):
+                items = {}
+                for item in value:
+                    rest = {name: child for name, child in item.items() if name != key}
+                    items.update(_flat(rest, f"{prefix}{item[key]}."))
+                return items
+        return {}
+    return {prefix[:-1]: value}
+
+
+def full_metrics(per_seed):
+    """Una fila por trabajo, partición y lectura con todas las métricas escalares medidas."""
+    rows = []
+    for item in per_seed:
+        for partition, entry in item["partitions"].items():
+            for view in ("raw", "calibrated"):
+                if view not in entry:
+                    continue
+                metrics = _flat(entry[view])
+                # El resumen repite su lectura: tiene que ser la de la fila.
+                _require(metrics.pop("view", view) == view, "El resumen no es de su lectura")
+                _require(
+                    not set(metrics) & set(_JOB_FIELDS),
+                    "Una métrica del resumen coincide con una columna del trabajo",
+                )
+                rows.append(
+                    dict(
+                        job=item["job"],
+                        model=item["model"],
+                        origin=item["origin"],
+                        seed=item["seed"],
+                        partition=partition,
+                        view=view,
+                        zero_mae=entry.get("zero_mae"),
+                        **metrics,
+                    )
+                )
+    metrics = sorted({key for row in rows for key in row} - set(_JOB_FIELDS))
+    return rows, [*_JOB_FIELDS, *metrics]
+
+
 def _write_outputs(output, report, summary_rows, curves, plots):
     _csv(
         output / "metrics.csv",
@@ -511,6 +570,8 @@ def _write_outputs(output, report, summary_rows, curves, plots):
             "mae_calibrated_relative_percent",
         ],
     )
+    rows, fields = full_metrics(report["per_seed"])
+    _csv(output / "metrics-full.csv", rows, fields)
     _csv(
         output / "resources.csv",
         report["resources"],
@@ -577,7 +638,10 @@ def _write_outputs(output, report, summary_rows, curves, plots):
         "# Resultados de la campaña de comparación\n\n" + incomplete + "\n\n"
         "`report.json` contiene las métricas por semilla, partición y modelo, "
         "los contrastes y la procedencia. `metrics.csv` resume las medias por sesión "
-        "de cada origen. `sessions/` conserva los estadísticos por sesión. "
+        "de cada origen. `metrics-full.csv` tiene una fila por trabajo, partición y lectura "
+        "(bruta o calibrada) con todas las métricas escalares: error puntual, dirección, "
+        "IC, cuantiles, intervalos, probabilidad del signo y curva selectiva. "
+        "`sessions/` conserva los estadísticos por sesión. "
         "`learning-curves.csv` y `learning-curves.json` conservan las curvas registradas. "
         "`resources.csv` describe los intentos y sus costes.\n\n"
         "Los valores vacíos no se sustituyen por cero. Los MAE brutos de controles "
@@ -686,9 +750,17 @@ def analyze(
                         for path in (Path(__file__).with_name(name + ".py"),)
                     },
                     python=platform.python_version(),
+                    # Versiones de lo que el análisis usa: matplotlib solo con figuras, porque
+                    # pertenece al extra research y sin él se analiza igual con --no-plots.
                     packages={
                         name: version(name)
-                        for name in ("numpy", "pyarrow", "scipy", "statsmodels", "matplotlib")
+                        for name in (
+                            "numpy",
+                            "pyarrow",
+                            "scipy",
+                            "statsmodels",
+                            *(("matplotlib",) if plots else ()),
+                        )
                     },
                 ),
                 analysis_specification_source="archive"
