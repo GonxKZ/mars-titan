@@ -16,6 +16,10 @@
 # pide a la fase en curso que pare en su siguiente barrera y espera. Al retirarse la pausa repite
 # la fase, que continúa desde sus checkpoints. Con SIGTERM para igual y termina.
 #
+# Una línea «limpia|<estado>/packed-inputs/<año>» retira las copias empaquetadas de ese origen
+# cuando sus fases han terminado: las de todos los orígenes no caben a la vez en el disco y un
+# trabajo que las necesite después las vuelve a construir. Solo acepta esa forma de ruta.
+#
 # Una fase que falla nada más arrancar (antes de MARS_TITAN_RELAY_MIN_SECONDS, 60 s) detiene el
 # relevo sin anotarla: un permiso que falta o una copia rota no deben consumir el plan.
 set -u
@@ -44,6 +48,21 @@ while [ "$parar" = 0 ]; do
   terminadas=$(cat "$hecho" 2>/dev/null || echo 0)
   linea=$(grep -v -E '^[[:space:]]*(#|$)' "$plan" | sed -n "$((terminadas + 1))p")
   if [ -z "$linea" ]; then nota "plan terminado tras $terminadas fases"; exit 0; fi
+  if [[ "$linea" == limpia\|* ]]; then
+    copias="${linea#limpia|}"
+    if ! [[ "$copias" =~ ^/.+/packed-inputs/[0-9]{4}$ ]] || [ -L "$copias" ]; then
+      nota "fase $((terminadas + 1)) mal escrita: $linea"
+      exit 2
+    fi
+    if [ -d "$copias" ]; then
+      rm -rf -- "$copias"
+      nota "fase $((terminadas + 1)): copias retiradas de $copias"
+    else
+      nota "fase $((terminadas + 1)): no hay copias en $copias"
+    fi
+    echo $((terminadas + 1)) > "$hecho.tmp" && mv "$hecho.tmp" "$hecho"
+    continue
+  fi
   IFS='|' read -r copia estado vistas declaracion fase <<< "$linea"
   trabajadores="${fase%% *}"; argumentos="${fase#* }"
   if ! [[ "$trabajadores" =~ ^[1-8]$ ]] || [ ! -x "$copia/scripts/dgx_campaign.sh" ] ||

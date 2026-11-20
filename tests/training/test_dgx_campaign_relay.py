@@ -194,3 +194,53 @@ def test_the_relay_needs_its_plan(tmp_path):
     assert missing.returncode == 2 and "Falta el plan" in missing.stderr
     usage = subprocess.run(["bash", str(RELAY)], capture_output=True, text=True, timeout=30)
     assert usage.returncode == 2 and "Uso:" in usage.stderr
+
+
+def test_a_cleaning_line_removes_only_the_packed_copies_of_one_origin(tmp_path):
+    folder = copy(tmp_path, "us")
+    copies = tmp_path / "estado/packed-inputs"
+    for year in ("2013", "2014"):
+        (copies / year / "bloques").mkdir(parents=True)
+        (copies / year / "bloques/a.bin").write_bytes(b"copia")
+    (tmp_path / "estado/runs").mkdir()
+    plan = tmp_path / "plan.txt"
+    plan.write_text(
+        line(folder, "4 --origin 2013")
+        + f"\nlimpia|{copies}/2013\nlimpia|{copies}/2013\n"
+        + line(folder, "4 --origin 2014")
+        + "\n"
+    )
+    done = run(tmp_path, plan)
+    assert done.returncode == 0 and "copias retiradas" in done.stdout
+    # La segunda vez no hay nada que retirar y el plan sigue.
+    assert "no hay copias" in done.stdout and len(calls(folder)) == 2
+    assert not (copies / "2013").exists() and (copies / "2014/bloques/a.bin").exists()
+    assert (tmp_path / "estado/runs").is_dir()
+    assert Path(f"{plan}.hecho").read_text().strip() == "4"
+
+
+@pytest.mark.parametrize(
+    "target",
+    [
+        "{root}/estado/packed-inputs",
+        "{root}/estado/runs",
+        "{root}/estado/packed-inputs/2013/bloques",
+        "{root}/estado/packed-inputs/../runs",
+        "estado/packed-inputs/2013",
+        "{root}/enlace",
+        "",
+    ],
+)
+def test_a_cleaning_line_refuses_any_other_folder(tmp_path, target):
+    kept = tmp_path / "estado/packed-inputs/2013"
+    kept.mkdir(parents=True)
+    (kept / "a.bin").write_bytes(b"copia")
+    (tmp_path / "estado/runs").mkdir()
+    (tmp_path / "estado/runs/resultado.json").write_text("{}")
+    (tmp_path / "enlace").symlink_to(kept, target_is_directory=True)
+    plan = tmp_path / "plan.txt"
+    plan.write_text("limpia|" + target.format(root=tmp_path) + "\n")
+    done = run(tmp_path, plan)
+    assert done.returncode == 2 and "mal escrita" in done.stdout
+    assert (kept / "a.bin").exists() and (tmp_path / "estado/runs/resultado.json").exists()
+    assert not Path(f"{plan}.hecho").exists()
