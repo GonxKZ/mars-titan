@@ -211,7 +211,41 @@ ninguna decisión anterior a su madurez), el control uniforme, el placebo, la ab
 eficiencia y la simetría de Shapley y un mundo con dos regímenes en el que solo el enrutado
 acierta la herramienta de cada régimen. La prueba de humo con las emisiones reales de 2005 de
 la búsqueda (las «herramientas» son allí variantes de optimizador, solo para probar la
-tubería) tarda 58 s por origen y semilla con 4 herramientas y 16 subconjuntos.
+tubería) tardaba 58 s por origen y semilla con 4 herramientas y 16 subconjuntos. Tipificar
+cada opción y medir su IC por sesión una sola vez por origen y semilla (`Options`), y leer la
+vista una sola vez para la madurez, la deja en 22,6 s con los mismos resultados: pesos y
+abstenciones idénticos bit a bit a `online_mixture` y la predicción combinada con una
+diferencia de redondeo de BLAS por debajo de 10⁻¹⁴.
+
+### Multimodalidad: juego de modalidades
+
+Las modalidades que pueden faltar en la edición con máscaras son noticias y fundamentales;
+precios, gráficos y macro están en todas las filas, así que retirarlos mediría entradas fuera
+de distribución. Para cada modelo declarado en `modalities` (núcleo, recuperación episódica,
+núcleo cognitivo y áreas holográficas), cada coalición de modalidades leídas es la evaluación
+del mismo estado elegido con las demás leídas como una ausencia real (`data.modality_ablation`:
+bit de presencia falso, relleno de ausencia, disponibilidad nula, cero noticias admitidas),
+también en el calentamiento, de modo que la memoria rápida y el banco episódico ven la misma
+ausencia. El informe da el valor de Shapley exacto de cada modalidad, el efecto total (que es
+su suma, sesión a sesión) y la interacción de Möbius de la coalición completa, positiva si
+noticias y fundamentales se complementan y negativa si son redundantes, en una familia propia
+con bootstrap por bloques y Romano y Wolf, y la proporción de filas que cambia cada ablación.
+
+Las ablaciones las ejecuta `python -m mars_titan.training.campaign_ablation` sobre el estado
+de la campaña (`--declaration --machine --state --views --models --variants --workers
+--cuda-gib`), con el traslado de cada familia (`carry_titans`, `carry_mars_titan_arm`), sin
+escribir en los trabajos: cada ablación queda en
+`<estado>/ablations/<variante>/<modelo>/<origen>/seed-<semilla>/` con su recibo, que el agente
+comprueba contra el informe del trabajo antes de leerla.
+
+Al preparar esta orden apareció un fallo latente en la unión de dos piezas: con la caché de
+entradas de la campaña declarada (`MARS_TITAN_TRAIN_ARCHIVE`), `window_indices.phase_sources`
+entregaba también a una ablación la copia empaquetada de la lectura canónica, cuya clave no
+distingue variantes de lectura, y la ablación reproducía las entradas sin ablacionar sin
+avisar. Una prueba de regresión lo demostró (diferencia relativa máxima de 1,7·10⁻³ frente a la
+ventana con la ausencia real) antes de corregirlo: un corpus con variante de lectura lee
+siempre Parquet. El archivo corregido no entra en la identidad de los índices ni de las copias,
+así que lo ya preparado sigue siendo válido.
 
 ## Pendiente de medir
 

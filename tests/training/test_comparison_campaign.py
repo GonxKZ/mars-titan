@@ -550,7 +550,7 @@ def test_authorization_is_a_campaign_file_that_the_learning_hold_reader_accepts(
     # Una declaración distinta necesita su propio permiso.
     assert not campaign.authorized(place, "b" * 64)
     assert learning_blocked(place.authorization) is False
-    environment = campaign._environment(place, campaign.checked_declaration(declaration()))
+    environment = campaign.job_environment(place, campaign.checked_declaration(declaration()))
     assert environment[HOLD_ENV] == str(place.authorization)
     assert environment[SHARED_INDICES_ENV] == str(place.indices)
     assert environment["MARS_TITAN_DECODE_WORKERS"] == "2"
@@ -1412,7 +1412,7 @@ def test_native_and_gpu_probes_report_their_failure_without_raising(tmp_path, mo
     assert passed is False and "FileNotFoundError" in detail
     monkeypatch.delenv(campaign.NATIVE_ENV)
     assert layout(tmp_path).native == campaign.DEFAULT_NATIVE
-    assert campaign._environment(place, campaign.checked_declaration(declaration()))[
+    assert campaign.job_environment(place, campaign.checked_declaration(declaration()))[
         campaign.NATIVE_ENV
     ] == str(tmp_path / "missing.so")
     import torch

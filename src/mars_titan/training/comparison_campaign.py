@@ -1046,7 +1046,8 @@ def _claim(layout, jobs, taken):
     return None, None
 
 
-def _environment(layout, declaration, job=None):
+def job_environment(layout, declaration, job=None):
+    """Entorno de un trabajo de la campaña, que también usan sus análisis por trabajo."""
     environment = dict(os.environ)
     # La tubería de lectura solo cambia el caudal: el conjunto y el orden de las filas no.
     environment.update(PipelineOptions(**declaration["execution"]["pipeline"]).environment())
@@ -1121,7 +1122,7 @@ class Queue:
                 self._command(job, preflight=preflight),
                 stdout=stream,
                 stderr=subprocess.STDOUT,
-                env=_environment(self.layout, self.declaration, job),
+                env=job_environment(self.layout, self.declaration, job),
                 cwd=str(ROOT),
             )
             with self.guard:
