@@ -1,0 +1,98 @@
+{
+ "issue": 880,
+ "date": "2026-11-20",
+ "base_commit": "b85134aecff4ddd349c8d3984fa81e99fb9c8b94",
+ "runtime_commit": "d5f27f50073d12706c08130a155ea958d822b28b",
+ "launcher_sha256": "c6882d582ef4a0234dd38d64c79f69c6bffd8c8002b5c99de13440d845f2d455",
+ "tests": {
+  "launcher_passed": 101,
+  "measurement_tool_passed": 30,
+  "total_passed": 131
+ },
+ "changed_lines": {
+  "executable": 460,
+  "covered": 460,
+  "head": "6d67791e0a8f1bdbb98de174f88b73baadacdb8d"
+ },
+ "mutation_checks": {
+  "launcher": {
+   "detected": 99,
+   "total": 99
+  },
+  "measurement_tool": {
+   "detected": 58,
+   "total": 58
+  },
+  "initial_survivors": [
+   "pid_del_primer_intento",
+   "plaza_no_liberada",
+   "espera_con_el_limite",
+   "pico_de_vram_ultimo",
+   "preparar_sobre_existente",
+   "parada_sin_senal"
+  ],
+  "resolution": "Las pruebas se ampliaron hasta fallar con cada una. Tres de ellas dejaban antes la ejecución sin terminar, que no cuenta como detección."
+ },
+ "checks": [
+  "ruff check .",
+  "ruff format --check .",
+  "pytest tests/tooling/test_comparison_resources.py tests/benchmarks/test_comparison_gpu_sharing.py",
+  "python scripts/check_repository.py"
+ ],
+ "identity": {
+  "trial_runs_compared": 8,
+  "trace_rows_compared": 9734,
+  "trace_rows_different": 0,
+  "history_differences": 0,
+  "longest_comparison_until_step": 1118,
+  "complete_runs_compared": 0
+ },
+ "production": {
+  "queue_restarted_at_utc": "2026-11-20T15:08:04+00:00",
+  "workers": 4,
+  "first_pair": [
+   "cross_asset_attention/2019/seed-43",
+   "cross_asset_attention_self/2019/seed-43"
+  ],
+  "throughput_factor": 1.283,
+  "keep_threshold": 1.1,
+  "process_vram_peak_mib": 2856,
+  "vram_cap_mib": 3100,
+  "device_vram_peak_mib": 6324.0,
+  "failed_attempts_caused": 1,
+  "failed_attempt": "cross_asset_attention/2019/seed-43 con un tope de 3.050 MiB y el asignador habitual. Se reintentó desde el paso 512 y terminó con el tope actual."
+ },
+ "criteria": [
+  {
+   "criterion": "Trazas, métricas por época y checkpoint idénticos al original",
+   "status": "partial",
+   "evidence": "9.734 filas de trazas y las métricas de las épocas comparadas coinciden bit a bit en 8 pruebas. No se ha repetido un ajuste completo ni comparado un checkpoint final."
+  },
+  {
+   "criterion": "El caudal agregado con dos trabajos supera al de uno",
+   "status": "met",
+   "evidence": "Factor de 1,28 en la primera pareja de la cola, con cada trabajo comparado consigo mismo."
+  },
+  {
+   "criterion": "Ningún trabajo supera su tope y la suma cabe en la tarjeta",
+   "status": "met",
+   "evidence": "Cada proceso ocupó 2.856 MiB de un tope de 3.100 y la tarjeta llegó a 6.324 MiB. El tope anterior, más bajo, hizo fallar un intento."
+  },
+  {
+   "criterion": "La cola continúa desde sus checkpoints y el runtime no cambia",
+   "status": "met",
+   "evidence": "cross_asset_attention/2019/seed-43 se reanudó en el paso 2236 y terminó. El runtime es el mismo commit."
+  },
+  {
+   "criterion": "Pruebas, mutación dirigida y CRAP del código nuevo",
+   "status": "met",
+   "evidence": "131 pruebas, 157 mutaciones detectadas y quality.json."
+  }
+ ],
+ "limitations": [
+  "Los ensayos de identidad cubren una o dos épocas de trabajos de diez.",
+  "Solo se han medido parejas de redes medianas y de una red de áreas con una mediana.",
+  "Los tiempos con solape no son el coste en solitario de cada modelo.",
+  "No se ha medido el consumo del procesador ni la energía."
+ ]
+}

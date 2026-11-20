@@ -207,6 +207,31 @@ PC2 puede activar la misma opción antes de ejecutar su cola desde una terminal 
 export MARS_TITAN_DIGEST_CACHE="${MARS_TITAN_COMPARISON_STATE:-$HOME/.local/state/mars-titan/comparison-campaign-gpu-v1}/file-digests.json"
 ```
 
+## Dos trabajos a la vez en la GPU de PC1
+
+El mismo lanzador admite varios trabajadores cuando recibe los presupuestos medidos del equipo con `--packing`. Un trabajo nuevo solo empieza junto a otro si los dos pertenecen a un ejecutor que comparte la GPU, sus topes de VRAM caben en el presupuesto de la tarjeta, queda RAM para su memoria propia más la reserva de 4 GiB, ha pasado el tiempo de asentamiento desde el último arranque, la temperatura no supera el máximo declarado y ambos usan el mismo origen, porque cada archivo de entradas preparado guarda un solo origen por tamaño de bloque. La admisión decide cuándo empieza cada trabajo. No cambia sus datos, su receta ni ninguna operación numérica.
+
+Los procesos comparten el contexto de GPU con el demonio MPS de NVIDIA, que debe estar en marcha en la carpeta de `CUDA_MPS_PIPE_DIRECTORY`. Sin él la cola no lanza nada, porque un trabajo con esa carpeta exportada fallaría al iniciar CUDA y gastaría un intento. Cada modelo con tope propio se lanza con ese límite (`CUDA_MPS_PINNED_DEVICE_MEM_LIMIT`) y con la configuración del asignador de PyTorch con la que se midió (`PYTORCH_CUDA_ALLOC_CONF`). Los modelos sin entrada usan el valor por defecto de su ejecutor, sin tope y con el asignador habitual.
+
+[`comparison-campaign-packing-rtx4070-laptop.json`](../../configs/experiments/comparison-campaign-packing-rtx4070-laptop.json) recoge los presupuestos de PC1. Solo tienen entrada las cuatro redes medianas de la tanda de comparación. La identidad de las salidas se comprobó en una de cada tipo y la ganancia en la primera pareja que formó la cola. El resto se ejecuta de uno en uno, igual que antes. El archivo se vuelve a leer en cada decisión, así que una medida nueva se aplica al siguiente trabajo sin parar los que están en curso.
+
+```bash
+read -r -p "Ruta de la copia científica fija: " runtime
+read -r -p "Ruta del lanzador de recursos de la cola compartida: " resource_launcher
+read -r -p "Carpeta del demonio MPS: " mps
+export CUDA_MPS_PIPE_DIRECTORY="$mps/pipe" CUDA_MPS_LOG_DIRECTORY="$mps/log"
+uv run --no-sync python scripts/run_comparison_resources.py \
+  --runtime "$runtime" --resource-launcher "$resource_launcher" \
+  --machine references --workers 2 \
+  --packing configs/experiments/comparison-campaign-packing-rtx4070-laptop.json \
+  --thermal-zone /sys/class/thermal/thermal_zone0/temp \
+  --results "$HOME/MARS-TITAN-resultados-references-gpu.zip"
+```
+
+`--workers` es el máximo de trabajos a la vez y `max_jobs` puede dejarlo por debajo. PC1 usa cuatro trabajadores con `max_jobs` en 2, para poder ampliar ese valor sin reiniciar la cola. El lanzador de recursos de esta ruta acota la RAM de cada trabajo en su propio grupo, pero no toma el cerrojo de GPU ni espera memoria, porque esa decisión ya la ha tomado la cola. `packing-log.jsonl`, dentro del estado, anota con qué trabajos coincide cada arranque, su tope y su asignador. El tiempo de un trabajo con solape no es su coste en solitario y no se compara con el de otro que se ejecutó solo.
+
+La ganancia depende del equipo. En PC1 la primera pareja de la cola alcanzó 1,28 veces el caudal de un trabajo. Con dos trabajos los núcleos más rápidos bajan de unos 2,35 a 1,62 GHz, y cada paso depende sobre todo de un hilo de CPU. Las redes de áreas no se emparejan todavía, porque su reserva habitual no cabe junto a una red mediana y sus picos con segmentos ampliables están sin medir. Un tope por debajo de la reserva habitual de PyTorch hizo fallar un intento por fragmentación, y los topes actuales se midieron con segmentos ampliables. [Medidas, comprobaciones de identidad y límites](../../reports/engineering/comparison-gpu-sharing-pc1-20261120/README.md)
+
 ## Calentamiento de validación en GPU
 
 La versión `comparison-campaign-warmup-20261118` guarda en la GPU el estado de Titans-MAC justo antes de la primera decisión de validación de sus lectores. En cada época, el banco empieza vacío y el lector vuelve a emitir todas las predicciones con sus pesos actuales. El ajuste del propio Titans-MAC sigue recorriendo el historial con los pesos de cada época. Los lectores con contexto de sesión también conservan su recorrido original. La caché tiene un límite de 256 MiB y comprueba que queda al menos 1 GiB libre además del espacio para las copias. Si la copia opcional se queda sin memoria, la validación recorre el historial original.

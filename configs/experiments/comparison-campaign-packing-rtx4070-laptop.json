@@ -1,0 +1,26 @@
+{
+  "schema_version": 1,
+  "kind": "comparison_campaign_packing",
+  "hardware": "rtx4070-laptop",
+  "notes": "Presupuestos de PC1 para que dos trabajos de la campaña de comparación compartan la GPU con MPS. De los 8.188 MiB de la tarjeta, el controlador reserva 384 y el escritorio con el servidor MPS ocupaba 610 al medir, así que quedan 7.195 MiB para los trabajos. Los topes de esta tabla se midieron con el asignador de segmentos ampliables de PyTorch, que evita la fragmentación de la reserva: 2.856 MiB de pico por proceso en los ajustes de cross_asset_attention y cross_asset_attention_self de 2019, más margen. Solo figuran las cuatro redes medianas. La identidad de las salidas se comprobó en asset_groups_shuffled y cross_asset_attention, y la ganancia en la primera pareja de la cola. Los demás usan el valor por defecto de su ejecutor, que los deja sin tope, con el asignador habitual y solos.",
+  "device_budget_mib": 7075,
+  "max_jobs": 2,
+  "reserve_mib": 100,
+  "settle_seconds": 150,
+  "max_celsius": 84,
+  "cuda_alloc_conf": "expandable_segments:True",
+  "admit_gib": {
+    "fit": 3,
+    "reader": 3
+  },
+  "vram_default_mib": {
+    "fit": 4400,
+    "reader": 4000
+  },
+  "vram_mib": {
+    "asset_groups": 3100,
+    "asset_groups_shuffled": 3100,
+    "cross_asset_attention": 3100,
+    "cross_asset_attention_self": 3100
+  }
+}
