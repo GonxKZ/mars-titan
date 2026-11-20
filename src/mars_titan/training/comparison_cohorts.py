@@ -9,6 +9,10 @@ posterior al ajuste intervienen. La sal es propia de esta campaña, así que sus
 dependen de las de la criba.
 
 La proyección solo lee y escribe manifiestos. No abre muestras, etiquetas ni modelos.
+
+Una campaña con todos los activos no elige ninguno: su cohorte es la vista completa del origen,
+byte a byte (`write_full_view`). Vale para la vista de un mercado y para la conjunta de US y
+CN, donde cada mercado conserva su calendario y los dos comparten ventana.
 """
 
 import copy
@@ -29,6 +33,8 @@ COHORT_SALT = "mars-titan-comparison-campaign-v1"
 RULE = "sha256_among_origin_train_positive"
 MAX_SIZE = 4096
 KIND = "comparison_campaign_cohort_v1"
+FULL_VIEW_RULE = "entire_source_view"
+FULL_VIEW_KIND = "comparison_campaign_full_view_v1"
 _SYMBOL = re.compile(r"[A-Z0-9.^_=\-]{1,64}")
 
 
@@ -174,5 +180,135 @@ def write_cohort(source_path, output, *, size):
     output.mkdir(parents=True, exist_ok=True)
     atomic_json(manifest, view)
     receipt["manifest_sha256"] = sha256(manifest)
+    atomic_json(receipt_path, receipt)
+    return manifest, receipt
+
+
+def _asset_counts(asset):
+    counts = asset.get("counts", {})
+    _require(
+        isinstance(counts, dict)
+        and set(counts) == set(PARTITIONS)
+        and all(type(count) is int and count >= 0 for count in counts.values()),
+        "Los recuentos por activo deben ser enteros no negativos",
+    )
+    return counts
+
+
+def full_view(source):
+    """Mercados, ventana común y activos de una vista histórica completa, sin elegir ninguno."""
+    _require(
+        isinstance(source, dict)
+        and source.get("kind") == "corpus_supervision"
+        and source.get("scope") == "full_corpus"
+        and source.get("cohort_complete") is True
+        and source.get("failed_assets") == 0
+        and source.get("final_test_opened") is False
+        and "data_subset" not in source,
+        "El origen necesita la vista histórica completa, sin filtros adicionales",
+    )
+    cohort_identity(source, input_policy=HISTORICAL_MASKED)
+    contracts = temporal_contracts(source, input_policy=HISTORICAL_MASKED)
+    markets = sorted(contracts)
+    declared = source.get("markets")
+    _require(
+        bool(markets) and isinstance(declared, list) and sorted(declared) == markets,
+        "Los mercados de la vista no corresponden a sus calendarios",
+    )
+    folds = [contracts[market]["fold"] for market in markets]
+    _require(all(fold == folds[0] for fold in folds), "Los mercados no comparten la ventana")
+    roots = source.get("roots", {})
+    _require(
+        isinstance(roots, dict)
+        and set(roots) == {"prepared", "samples", "labels"}
+        and all(isinstance(path, str) and Path(path).is_absolute() for path in roots.values()),
+        "Las raíces de los datos deben ser rutas absolutas",
+    )
+    assets = source.get("assets")
+    _require(isinstance(assets, list) and assets, "La vista no tiene activos")
+    identities = []
+    for asset in assets:
+        symbol = asset.get("symbol") if isinstance(asset, dict) else None
+        _require(
+            isinstance(asset, dict)
+            and asset.get("market") in markets
+            and isinstance(symbol, str)
+            and symbol not in {".", ".."}
+            and _SYMBOL.fullmatch(symbol) is not None,
+            "Un activo no tiene una identidad válida de su mercado",
+        )
+        _asset_counts(asset)
+        identities.append([asset["market"], symbol])
+    _require(
+        len({tuple(identity) for identity in identities}) == len(identities),
+        "La vista repite un activo",
+    )
+    _require(
+        {market for market, _ in identities} == set(markets),
+        "Algún mercado de la vista no tiene activos",
+    )
+    _require(
+        source.get("counts")
+        == {name: sum(asset["counts"][name] for asset in assets) for name in PARTITIONS},
+        "Los recuentos del origen no concilian con sus activos",
+    )
+    return markets, folds[0], sorted(identities)
+
+
+def write_full_view(source_path, output, *, size):
+    """Escribir como cohorte la vista completa del origen, byte a byte, junto a su recibo.
+
+    `size` es el número de activos que la declaración espera: la vista debe tener exactamente
+    esos. No se elige ningún activo, así que ni los objetivos ni la cobertura intervienen. Si la
+    cohorte ya existe se comprueba que es la misma vista y se reutiliza. Devuelve la ruta del
+    manifiesto y el recibo.
+    """
+    source_path, output = Path(source_path), Path(output)
+    safe_destination(output)
+    source, digest = read_manifest(source_path, 64 * 1024**2)
+    raw = source_path.read_bytes()
+    _require(hashlib.sha256(raw).hexdigest() == digest, "La vista cambió mientras se leía")
+    markets, fold, identities = full_view(source)
+    _require(
+        type(size) is int and len(identities) == size,
+        f"La vista tiene {len(identities)} activos y la declaración espera {size}",
+    )
+    for root in source["roots"].values():
+        outside_source(Path(root), output)
+    manifest, receipt_path = output / "manifest.json", output / "cohort.json"
+    receipt = dict(
+        schema_version=1,
+        kind=FULL_VIEW_KIND,
+        source=dict(path=str(source_path.resolve()), sha256=digest),
+        manifest_sha256=digest,
+        selection=dict(
+            fold=fold["id"],
+            rule=FULL_VIEW_RULE,
+            markets=markets,
+            evaluation=list(fold["evaluation"]),
+            size=size,
+            assets_sha256=hashlib.sha256(
+                json.dumps(identities, separators=(",", ":")).encode()
+            ).hexdigest(),
+            counts=source["counts"],
+            targets_used=False,
+            future_coverage_used=False,
+        ),
+        verification_scope="manifests_only",
+        row_files_opened=False,
+        optimizer_steps=0,
+        final_test_opened=False,
+    )
+    if manifest.exists() or receipt_path.exists():
+        previous, _ = read_manifest(receipt_path, 1024**2)
+        _require(
+            previous == receipt and manifest.is_file() and sha256(manifest) == digest,
+            "La cohorte guardada no es esta vista completa",
+        )
+        return manifest, previous
+    output.mkdir(parents=True, exist_ok=True)
+    temporary = output / "manifest.json.tmp"
+    temporary.write_bytes(raw)
+    temporary.replace(manifest)
     atomic_json(receipt_path, receipt)
     return manifest, receipt

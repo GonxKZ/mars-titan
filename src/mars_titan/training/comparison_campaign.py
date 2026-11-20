@@ -42,7 +42,7 @@ from pathlib import Path
 from mars_titan.data.cohort_files import read_manifest, safe_destination
 from mars_titan.data.storage import atomic_json
 
-from .comparison_cohorts import write_cohort
+from .comparison_cohorts import FULL_VIEW_RULE, write_cohort, write_full_view
 from .corpus_inputs import DIGEST_CACHE_ENV
 from .input_pipeline import PipelineOptions
 from .learning_hold import HOLD_ENV
@@ -52,6 +52,8 @@ from .window_indices import SHARED_INDICES_ENV
 ROOT = Path(__file__).resolve().parents[3]
 DECLARATION = "configs/experiments/comparison-campaign-gpu-v1.json"
 KIND = "comparison_campaign_v1"
+# Una campaña es de EE. UU. o de la vista conjunta de EE. UU. y China.
+MARKETS = ("US", "US+CN")
 MACHINES = ("references", "mars_titan")
 # Los orígenes `history` son años anteriores que amplían la evidencia. Forman una segunda
 # etapa, que empieza cuando la primera ha recorrido todos sus niveles.
@@ -275,8 +277,8 @@ def checked_declaration(document, *, root=ROOT, check_recipe_files=True):
         and document.get("schema_version") == 1
         and document.get("kind") == KIND
         and document.get("final_test_access") is False
-        and document.get("market") == "US",
-        "La declaración no es la campaña de comparación de US con el test final cerrado",
+        and document.get("market") in MARKETS,
+        "La declaración no es la campaña de comparación de US o de US+CN con el test final cerrado",
     )
     origins = document.get("origins")
     _require(
@@ -307,8 +309,16 @@ def checked_declaration(document, *, root=ROOT, check_recipe_files=True):
     )
     cohort = document.get("cohort")
     _require(
-        isinstance(cohort, dict) and set(cohort) == {"size"} and type(cohort["size"]) is int,
-        "La cohorte declara su tamaño",
+        isinstance(cohort, dict)
+        and {"size"} <= set(cohort) <= {"size", "rule"}
+        and type(cohort["size"]) is int
+        and cohort.get("rule", FULL_VIEW_RULE) == FULL_VIEW_RULE,
+        "La cohorte declara su tamaño y, si usa la vista completa de cada origen, su regla",
+    )
+    # La cohorte por huella solo existe para US: la conjunta usa todos los activos de la vista.
+    _require(
+        document["market"] == "US" or cohort.get("rule") == FULL_VIEW_RULE,
+        "Una campaña conjunta usa la vista completa de cada origen",
     )
     stopping = document.get("stopping")
     _require(
@@ -615,9 +625,15 @@ def prepare(declaration, layout):
     for origin in declaration["origins"]:
         source = layout.source(origin["fold"])
         _require(source.is_file(), f"Falta la vista del origen {origin['year']} en {source}")
-        _, receipt = write_cohort(
-            source, layout.cohort(origin["year"]), size=declaration["cohort"]["size"]
-        )
+        cohort = declaration["cohort"]
+        if cohort.get("rule") == FULL_VIEW_RULE:
+            _, receipt = write_full_view(source, layout.cohort(origin["year"]), size=cohort["size"])
+            _require(
+                receipt["selection"]["markets"] == sorted(declaration["market"].split("+")),
+                f"La vista de {origin['year']} no es la de {declaration['market']}",
+            )
+        else:
+            _, receipt = write_cohort(source, layout.cohort(origin["year"]), size=cohort["size"])
         selection = receipt["selection"]
         # La carpeta, la ventana y el año declarado deben ser el mismo origen.
         _require(

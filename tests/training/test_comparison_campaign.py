@@ -2166,3 +2166,70 @@ def test_declared_threads_survive_a_later_change_of_affinity_even_when_they_equa
     )
     assert done.returncode == 0, done.stderr[-2000:]
     assert done.stdout.strip() == "ok El proceso ya fijó otros hilos de cálculo"
+
+
+def test_a_joint_campaign_declares_both_markets_and_the_full_view_of_each_origin():
+    full = dict(size=341, rule="entire_source_view")
+    document = campaign.checked_declaration(declaration(market="US+CN", cohort=full))
+    assert document["market"] == "US+CN" and document["cohort"] == full
+    # La cohorte por huella solo existe para US: la conjunta declara la vista completa.
+    with pytest.raises(ValueError, match="vista completa de cada origen"):
+        campaign.checked_declaration(declaration(market="US+CN"))
+    for market in ("CN", "CN+US", "US+CN+JP", "us", None):
+        with pytest.raises(ValueError, match=r"US o de US\+CN"):
+            campaign.checked_declaration(declaration(market=market, cohort=full))
+    for cohort in (
+        dict(size=16, rule="otra"),
+        dict(size=16, extra=1),
+        dict(rule="entire_source_view"),
+    ):
+        with pytest.raises(ValueError, match="su regla"):
+            campaign.checked_declaration(declaration(cohort=cohort))
+    # EE. UU. también puede declarar la vista completa de cada origen.
+    single = campaign.checked_declaration(
+        declaration(cohort=dict(size=301, rule="entire_source_view"))
+    )
+    assert single["market"] == "US"
+
+
+def test_prepare_writes_the_full_view_of_each_origin_and_checks_its_markets(tmp_path):
+    from tests.training.test_comparison_cohorts import joint_source
+    from tests.training.test_screening_cohorts import source
+
+    def views(place, build):
+        for fold, year in (("fold-014", 2019), ("fold-018", 2023)):
+            path = place.source(fold)
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_text(json.dumps(build(year)))
+
+    full = dict(size=341, rule="entire_source_view")
+    joint = campaign.checked_declaration(declaration(market="US+CN", cohort=full))
+    place = Layout(tmp_path / "joint", tmp_path / "joint-views")
+    views(place, joint_source)
+    receipts = campaign.prepare(joint, place)
+    assert set(receipts) == {"2019", "2023"}
+    for selection in receipts.values():
+        assert selection["markets"] == ["CN", "US"] and selection["size"] == 341
+        assert selection["rule"] == "entire_source_view"
+    for fold, year in (("fold-014", 2019), ("fold-018", 2023)):
+        cohort = place.cohort(year) / "manifest.json"
+        assert cohort.read_bytes() == place.source(fold).read_bytes()
+    assert campaign.prepare(joint, place) == receipts
+    assert set(campaign.cohort_identity(joint, place)) == {"2019", "2023"}
+    # Una vista de un solo mercado no sirve a la campaña conjunta, ni la conjunta a la de US.
+    only_us = Layout(tmp_path / "us", tmp_path / "us-views")
+    views(only_us, source)
+    wrong = campaign.checked_declaration(
+        declaration(market="US+CN", cohort=dict(size=301, rule="entire_source_view"))
+    )
+    with pytest.raises(ValueError, match=r"no es la de US\+CN"):
+        campaign.prepare(wrong, only_us)
+    single = campaign.checked_declaration(declaration(cohort=full))
+    with pytest.raises(ValueError, match="no es la de US"):
+        campaign.prepare(single, Layout(tmp_path / "other", tmp_path / "joint-views"))
+    # Con la vista completa de US, la campaña de US conserva todos sus activos.
+    whole = campaign.checked_declaration(
+        declaration(cohort=dict(size=301, rule="entire_source_view"))
+    )
+    kept = campaign.prepare(whole, Layout(tmp_path / "whole", tmp_path / "us-views"))
+    assert all(s["markets"] == ["US"] and s["size"] == 301 for s in kept.values())
