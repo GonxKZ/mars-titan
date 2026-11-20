@@ -150,6 +150,22 @@ def _memory_peaks(resources, attempts):
     return peaks
 
 
+def _training_observations(fit):
+    """Observaciones de épocas completas con contadores disponibles desde la primera."""
+    if not fit or fit.get("status") != DONE:
+        return None
+    epochs = [entry for entry in fit.get("history", []) if entry.get("epoch") != 0]
+    if not epochs:
+        return None
+    count = 0
+    for index, entry in enumerate(epochs, 1):
+        observations = (entry.get("train") or {}).get("observations")
+        if entry.get("epoch") != index or type(observations) is not int or observations < 0:
+            return None
+        count += observations
+    return count
+
+
 def _resource_row(bundle, key, descriptor, fit):
     record = bundle.read_json(descriptor["record"])
     attempts = record.get("attempts", [])
@@ -166,6 +182,8 @@ def _resource_row(bundle, key, descriptor, fit):
     resource = [row["resources"] for row in attempts if isinstance(row.get("resources"), dict)]
 
     whole = total("process_wall_seconds")
+    wall = whole if whole is not None else total("seconds")
+    observations = _training_observations(fit) if descriptor["status"] == DONE else None
     cpu = [row.get("cpu_seconds") for row in resource]
     warmup = (fit or {}).get("validation_warmup")
     archives = [a["training_input_archive"] for a in attempts if "training_input_archive" in a]
@@ -196,8 +214,14 @@ def _resource_row(bundle, key, descriptor, fit):
         bundle_training_commit=bundle.manifest["provenance"]["training_commit"],
         status=descriptor["status"],
         attempts=len(attempts),
-        wall_seconds=whole if whole is not None else total("seconds"),
+        wall_seconds=wall,
         wall_scope="full_process" if whole is not None else "reported_attempts_legacy",
+        training_observations=observations,
+        training_observations_per_wall_second=(
+            observations / wall
+            if observations is not None and wall is not None and wall > 0
+            else None
+        ),
         cpu_seconds=math.fsum(cpu)
         if len(resource) == len(attempts) and cpu and all(v is not None for v in cpu)
         else None,
@@ -558,6 +582,8 @@ def _write_outputs(output, report, summary_rows, curves, plots):
             "attempts",
             "wall_seconds",
             "wall_scope",
+            "training_observations",
+            "training_observations_per_wall_second",
             "parent_job",
             "pipeline_wall_seconds",
             "pipeline_cost_reason",
@@ -613,7 +639,10 @@ def _write_outputs(output, report, summary_rows, curves, plots):
         "`learning-curves.csv` y `learning-curves.json` conservan las curvas registradas. "
         "`resources.csv` describe los intentos y sus costes. Un pico de memoria vacío "
         "indica que falta cobertura. El prefijo `observed_` muestra el mayor valor "
-        "registrado y el sufijo `_attempts` cuenta los intentos que lo midieron.\n\n"
+        "registrado y el sufijo `_attempts` cuenta los intentos que lo midieron. "
+        "`training_observations_per_wall_second` divide las observaciones de ajuste "
+        "de las épocas completas entre los segundos registrados de todos los intentos, "
+        "incluidas validaciones y recuperaciones.\n\n"
         "Los valores vacíos no se sustituyen por cero. Los MAE brutos de controles "
         "de orden no son comparables. El cambio porcentual del MAE es una variación "
         "del error, no una rentabilidad. Las correlaciones indefinidas mantienen su máscara. "
