@@ -45,10 +45,48 @@ def test_results_zip_does_not_overwrite_an_existing_file(tmp_path):
     assert archive.read_bytes() == b"archivo anterior"
 
 
+def test_zip_accepts_an_asset_with_the_longest_symbol_in_its_cohort(tmp_path):
+    from mars_titan.evaluation.comparison_metrics import panel_from_table
+
+    declaration, digest, layout = campaign_state(tmp_path / "source", symbol_width=64)
+    archive = tmp_path / "results.zip"
+    bundle.export_results(declaration, digest, layout, "references", archive)
+    with bundle.ResultsBundle(archive) as opened:
+        job = opened.manifest["jobs"]["transformer/2019/seed-42"]
+        table = opened.read_table(job["tables"]["42"]["evaluation"])
+        assert len(table["asset_id"][0].as_py()) == len("US/") + 64
+        assert panel_from_table(table).rows == table.num_rows
+
+
 def test_results_cannot_be_written_inside_the_training_state(tmp_path):
     declaration, digest, layout = campaign_state(tmp_path / "source")
     with pytest.raises(ValueError, match="origen|proteg|estado"):
         bundle.export_results(declaration, digest, layout, "references", layout.state / "out.zip")
+
+
+def test_historical_zip_can_recover_the_asset_from_its_sample_id(tmp_path):
+    import pyarrow.parquet as pq
+
+    from mars_titan.data.storage import sha256
+    from mars_titan.evaluation.comparison_metrics import panel_from_table
+
+    declaration, digest, layout = campaign_state(tmp_path / "source")
+    key = "transformer/2019/seed-42"
+    root = layout.output(key)
+    report = json.loads((root / "run.json").read_text())
+    entry = report["predictions"]["evaluation"]
+    path = root / entry["path"]
+    pq.write_table(pq.read_table(path).drop(["asset_id"]), path)
+    entry.update(sha256=sha256(path), bytes=path.stat().st_size)
+    (root / "run.json").write_text(json.dumps(report))
+    archive = tmp_path / "historical.zip"
+    bundle.export_results(declaration, digest, layout, "references", archive)
+    with bundle.ResultsBundle(archive) as opened:
+        name = opened.manifest["jobs"][key]["tables"]["42"]["evaluation"]
+        table = opened.read_table(name)
+        assert (
+            "asset_id" not in table.column_names and panel_from_table(table).rows == table.num_rows
+        )
     assert not (layout.state / "out.zip").exists()
 
 

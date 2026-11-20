@@ -27,10 +27,12 @@ def prediction_table(path, symbols, year, partition, scale):
     rows = []
     for day in range(days):
         at = starts[partition] + timedelta(days=day)
+        micros = int(at.timestamp()) * 1_000_000
         for position, symbol in enumerate(symbols):
             value = (position - 1.2) * 0.02 + (day % 5) * 0.001
             target = value * (0.25 if partition == "evaluation" else 0.5)
-            rows.append((f"{symbol}/{at.isoformat()}", symbol, at, target, scale * value))
+            flow = f"US/{symbol}"
+            rows.append((f"{flow}/{micros}", flow, at, target, scale * value))
     columns = dict(
         sample_id=[r[0] for r in rows],
         asset_id=[r[1] for r in rows],
@@ -53,7 +55,9 @@ def prediction_table(path, symbols, year, partition, scale):
     return dict(path=path.name, sha256=sha256(path), rows=len(rows), bytes=path.stat().st_size)
 
 
-def campaign_state(tmp_path, *, years=(2019,), seeds=(42, 43), reader=False, blocks=False):
+def campaign_state(
+    tmp_path, *, years=(2019,), seeds=(42, 43), reader=False, blocks=False, symbol_width=0
+):
     document, _ = campaign.load_declaration()
     document = copy.deepcopy(document)
     document["execution"].pop("neural_blocks", None)
@@ -79,6 +83,9 @@ def campaign_state(tmp_path, *, years=(2019,), seeds=(42, 43), reader=False, blo
     layout = campaign.Layout(tmp_path / "state", tmp_path / "views")
     for origin in document["origins"]:
         view = source(origin["year"])
+        if symbol_width:
+            for row in view["assets"] + view["coverage"]:
+                row["symbol"] = row["symbol"].ljust(symbol_width, "X")
         for asset in view["assets"]:
             asset["counts"].update(validation=2, calibration=3, evaluation=40)
         atomic_json(layout.source(origin["fold"]), reconcile(view))

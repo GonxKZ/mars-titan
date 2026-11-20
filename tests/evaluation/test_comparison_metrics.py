@@ -3,6 +3,7 @@
 from dataclasses import replace
 
 import numpy as np
+import pyarrow as pa
 import pytest
 
 from mars_titan.evaluation import comparison_metrics as metrics
@@ -16,6 +17,67 @@ def panel(tmp_path, partition="evaluation", scale=1):
     path = tmp_path / f"{partition}.parquet"
     prediction_table(path, ["A", "B", "C"], 2019, partition, scale)
     return metrics.panel_from_table(pq.read_table(path))
+
+
+def identified_rows():
+    return pa.table(
+        dict(
+            sample_id=["US/A/1", "US/B/1", "US/A/2"],
+            asset_id=["US/A", "US/B", "US/A"],
+            market=["US"] * 3,
+            prediction_at=pa.array([1, 1, 2], type=pa.timestamp("us", tz="UTC")),
+            target=[0.01, -0.03, 0.04],
+            prediction=[0.0] * 3,
+        )
+    )
+
+
+@pytest.mark.parametrize(
+    ("name", "values"),
+    [
+        ("asset_id", ["US/A", "US/A", "US/A"]),
+        ("asset_id", ["US/B", "US/A", "US/A"]),
+        ("asset_id", ["US/A", None, "US/A"]),
+        ("sample_id", ["US/A/1", "US/B/1", "US/A/3"]),
+    ],
+)
+def test_samples_keep_their_asset_and_decision_time(name, values):
+    table = identified_rows()
+    changed = table.set_column(table.schema.get_field_index(name), name, pa.array(values))
+    with pytest.raises(ValueError, match="activo"):
+        metrics.panel_from_table(changed)
+
+
+def test_legacy_rows_recover_the_asset_only_from_an_unambiguous_key():
+    table = identified_rows().drop(["asset_id"])
+    index = table.schema.get_field_index("sample_id")
+    for invalid in ("opaca", "US//1", "US/A/01", "CN/A/1", "US/A/B/1", "US/A/3"):
+        changed = table.set_column(index, "sample_id", pa.array([invalid, "US/B/1", "US/A/2"]))
+        with pytest.raises(ValueError, match="activo"):
+            metrics.panel_from_table(changed)
+
+
+@pytest.mark.parametrize(
+    "invalid", ["CN/A", "A", "US/", "US/A/B", "US/.", "US/..", "US/" + "A" * 65]
+)
+@pytest.mark.parametrize("explicit", [True, False])
+def test_an_invalid_flow_is_rejected_even_if_the_sample_id_repeats_it(invalid, explicit):
+    table = identified_rows()
+    table = table.set_column(0, "sample_id", pa.array([f"{invalid}/1", "US/B/1", "US/A/2"]))
+    table = table.set_column(1, "asset_id", pa.array([invalid, "US/B", "US/A"]))
+    if not explicit:
+        table = table.drop(["asset_id"])
+    with pytest.raises(ValueError, match="activo"):
+        metrics.panel_from_table(table)
+
+
+def test_reordered_chunks_and_legacy_rows_keep_the_existing_population_digest():
+    table = identified_rows()
+    previous = ForecastPanel.from_arrow(table, markets=("US",)).cohort_sha256
+    reordered = pa.concat_tables([table.slice(2), table.slice(0, 2)])
+    for stored in (table, reordered, reordered.drop(["asset_id"])):
+        panel = metrics.panel_from_table(stored)
+        assert panel.rows == 3 and panel.cohort_sha256 == previous
 
 
 def test_saved_quantiles_produce_point_interval_and_probability_metrics(tmp_path):

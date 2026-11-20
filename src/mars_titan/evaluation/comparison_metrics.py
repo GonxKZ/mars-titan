@@ -6,6 +6,9 @@ from dataclasses import dataclass, replace
 
 import numpy as np
 import pyarrow as pa
+import pyarrow.compute as pc
+
+from mars_titan.data.asset_symbols import RESERVED_SYMBOLS, SYMBOL
 
 from . import scale_diagnostics as scale
 from .forecast_panel import ForecastPanel, SessionSeries
@@ -19,6 +22,42 @@ def _require(condition, message):
         raise ValueError(message)
 
 
+def _check_asset_keys(table):
+    """Comprobar el activo y el instante codificados en cada sample_id de la campaña."""
+    has_asset = "asset_id" in table.column_names
+    fields = (
+        ["sample_id", "prediction_at", "asset_id"] if has_asset else ["sample_id", "prediction_at"]
+    )
+    separator = pa.scalar("/", type=pa.large_string())
+    excluded = pa.array([f"US/{symbol}" for symbol in RESERVED_SYMBOLS], type=pa.large_string())
+    for batch in table.select(fields).to_reader(max_chunksize=8192):
+        samples = batch["sample_id"].cast(pa.large_string())
+        times = batch["prediction_at"].cast(pa.int64()).cast(pa.large_string())
+        if not has_asset:
+            # Las tablas sin asset_id solo identifican el activo a través de sample_id.
+            keys = pc.extract_regex(samples, r"^(?P<asset>[^/]+/[^/]+)/[0-9]+$")
+            _require(keys.null_count == 0, "La muestra no identifica su activo y su instante")
+            assets = keys.field("asset")
+        else:
+            values = batch["asset_id"]
+            kind = values.type.value_type if pa.types.is_dictionary(values.type) else values.type
+            _require(
+                pa.types.is_string(kind) or pa.types.is_large_string(kind),
+                "El activo debe ser texto",
+            )
+            assets = values.cast(pa.large_string())
+        expected = pc.binary_join_element_wise(assets, times, separator)
+        unique = pc.unique(assets)
+        valid = (
+            samples.equals(expected)
+            and pc.all(
+                pc.match_substring_regex(unique, rf"^US/{SYMBOL.pattern}$"), min_count=0
+            ).as_py()
+            and not pc.any(pc.is_in(unique, value_set=excluded), min_count=0).as_py()
+        )
+        _require(valid, "La muestra debe identificar su activo y el instante exacto de la decisión")
+
+
 def panel_from_table(table):
     """Leer puntos y cuantiles sin construir ningún modelo."""
     names = table.column_names
@@ -30,12 +69,14 @@ def panel_from_table(table):
             _require(match is not None, "Un nivel de cuantil no tiene el formato declarado")
             quantiles.append((int(match.group(1)) / 1000, name))
     quantiles.sort()
-    return ForecastPanel.from_arrow(
+    panel = ForecastPanel.from_arrow(
         table,
         quantile_columns=[name for _, name in quantiles] if quantiles else None,
         levels=[level for level, _ in quantiles] if quantiles else None,
         markets=("US",),
     )
+    _check_asset_keys(table)
+    return panel
 
 
 def check_partition(panel, cohort, partition):
