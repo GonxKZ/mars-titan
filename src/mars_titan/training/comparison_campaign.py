@@ -695,6 +695,8 @@ def run_job(declaration, layout, job, *, device="cuda:0", root=ROOT, preflight=F
     """
     from contextlib import nullcontext
 
+    from mars_titan.data import comparison_prediction_storage as storage
+
     from .comparison_telemetry import AttemptMetrics, ProcessGpuMemory
 
     record = read_record(layout, job.key)
@@ -747,12 +749,24 @@ def run_job(declaration, layout, job, *, device="cuda:0", root=ROOT, preflight=F
 
             flags = on_host()
             attempt["finite_flags"] = "cuda_fp32_indicators_on_host"
-        with flags:
-            options = dict(device=device, root=root, preflight=preflight)
-            if observed is not None:
-                options["traces"] = {k: observed[k] for k in ("every", "max_bytes")}
+        profile = os.environ.get(storage.ENV, "default")
+        _require(
+            profile in ("default", storage.COMPACT),
+            f"{storage.ENV} solo admite default o {storage.COMPACT}",
+        )
+        writer = nullcontext()
+        if profile == storage.COMPACT and job in plan(declaration, "references"):
+            writer = storage.compact_predictions(
+                layout.output(job.key), rank_rule=job.runner == "rule"
+            )
+            attempt["prediction_storage"] = profile
+            _write_record(layout, job.key, record)
+        options = dict(device=device, root=root, preflight=preflight)
+        if observed is not None:
+            options["traces"] = {k: observed[k] for k in ("every", "max_bytes")}
+        with flags, writer:
             report = execute_job(declaration, layout, job, **options)
-        if observed:
+        if observed is not None:
             attempt["trace_checkpoint_confirmed"] = comparison_traces.confirm(
                 layout.output(job.key), observed, paused=report["status"] == PAUSED
             )
