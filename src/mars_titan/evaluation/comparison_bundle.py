@@ -1,7 +1,7 @@
 """ZIP verificable de resultados de comparación, sin pesos ni datos de entrada.
 
-Solo se copian registros, informes JSON y tablas de predicciones que sus productores
-declaran. La lectura del ZIP comprueba cada huella y no extrae rutas arbitrarias.
+Se copian registros, informes, predicciones y las partes de traza confirmadas por un
+checkpoint. La lectura del ZIP comprueba cada huella y no extrae rutas arbitrarias.
 """
 
 import hashlib
@@ -17,7 +17,9 @@ import zipfile
 from datetime import UTC, datetime
 from pathlib import Path, PurePosixPath
 
-from mars_titan.data.storage import outside_source
+from mars_titan.data.storage import outside_source, sha256
+
+from . import comparison_trace_bundle as traces
 
 KIND = "comparison_campaign_results_v1"
 PARTITIONS = ("validation", "calibration", "evaluation")
@@ -191,6 +193,57 @@ def _tables(payloads, job, root, report, seed):
     return result
 
 
+def _trace_parts(key, count):
+    return [f"traces/{key}/parts/part-{i:08d}.parquet" for i in range(1, count + 1)]
+
+
+def _check_window(report, job, cohort):
+    request = report.get("request", {})
+    _require(
+        request.get("view_sha256") == cohort["manifest_sha256"],
+        "El trabajo pertenece a otra cohorte",
+    )
+    _require(request.get("window", job.fold) == job.fold, "El trabajo pertenece a otra ventana")
+    if job.seed is not None:
+        _require(request.get("seed") == job.seed, "El trabajo pertenece a otra semilla")
+
+
+def _trace_files(payloads, job, root, report, fit, declared):
+    directory = f"traces/{job.key}"
+    entry = dict(
+        status="confirmed",
+        receipt=f"{directory}/receipt.json",
+        manifest=f"{directory}/manifest.json",
+    )
+    receipt = _report(payloads, root, "trace-receipt.json", entry["receipt"])
+    manifest = _report(payloads, root, "traces/manifest.json", entry["manifest"])
+    traces.check_header(job, report, fit, declared, receipt, manifest, max_parts=MAX_FILES)
+    cursor = receipt["cursor"]
+    entry["parts"] = _trace_parts(job.key, cursor["sequence"])
+    sources = []
+    total = 0
+    for name in entry["parts"]:
+        path = _source(root, f"traces/parts/{PurePosixPath(name).name}")
+        size = path.stat().st_size
+        total += size
+        _require(
+            size <= MAX_FILE_BYTES and total <= cursor["bytes"],
+            "Una parte de traza supera el límite",
+        )
+        payloads.file(name, path, sha256(path))
+        sources.append(path)
+    _require(
+        total == cursor["bytes"],
+        "Los bytes de las partes no coinciden con el cursor de trazas",
+    )
+    entry.update(
+        traces.check_parts(
+            sources, receipt, declared["every"], max_rows=MAX_TABLE_ROWS, max_bytes=MAX_FILE_BYTES
+        )
+    )
+    return entry
+
+
 def _job(declaration, layout, job, cohort, payloads):
     from mars_titan.training.comparison_campaign import DONE, read_record
 
@@ -218,6 +271,10 @@ def _job(declaration, layout, job, cohort, payloads):
         needs=job.needs,
         log=None,
     )
+    declared = traces.policy(record, job.runner)
+    has_cursor = declared is not None and traces.confirmed(record)
+    if declared is not None:
+        entry["learning_traces"] = dict(status="unconfirmed")
     log = layout.log(job.key)
     if log.is_file():
         _require(not log.is_symlink(), "El registro de salida no es un archivo regular")
@@ -226,29 +283,27 @@ def _job(declaration, layout, job, cohort, payloads):
     root = layout.output(job.key)
     if not (root / "run.json").exists():
         _require(record["status"] != DONE, "El trabajo terminado no tiene informe")
+        _require(not has_cursor, "Falta el informe de las trazas confirmadas")
         return entry
     entry["report"] = f"reports/{job.key}/run.json"
     report = _report(payloads, root, "run.json", entry["report"])
     fit = report.get("fit")
+    fit_report = None
     if isinstance(fit, dict):
         entry["fit_report"] = f"reports/{job.key}/fit.json"
-        _report(payloads, root, fit["path"], entry["fit_report"], fit["sha256"])
+        fit_report = _report(payloads, root, fit["path"], entry["fit_report"], fit["sha256"])
     elif (root / "fit/run.json").is_file():
         entry["fit_report"] = f"reports/{job.key}/fit.json"
-        _report(payloads, root, "fit/run.json", entry["fit_report"])
+        fit_report = _report(payloads, root, "fit/run.json", entry["fit_report"])
+    if has_cursor or record["status"] == DONE:
+        _check_window(report, job, cohort)
+    if has_cursor:
+        entry["learning_traces"] = _trace_files(payloads, job, root, report, fit_report, declared)
     if record["status"] != DONE:
         return entry
     _require(report.get("status") == DONE, "El informe del trabajo no está terminado")
     if job.runner in ("fit", "reader"):
         _require(entry["fit_report"] is not None, "Falta el historial del ajuste terminado")
-    request = report.get("request", {})
-    _require(
-        request.get("view_sha256") == cohort["manifest_sha256"],
-        "El trabajo pertenece a otra cohorte",
-    )
-    _require(request.get("window", job.fold) == job.fold, "El trabajo pertenece a otra ventana")
-    if job.seed is not None:
-        _require(request.get("seed") == job.seed, "El trabajo pertenece a otra semilla")
     expected_id = record.get("result", {}).get("run_id")
     _require(
         expected_id is None or expected_id == report.get("run_id"), "El registro nombra otro ajuste"
@@ -541,6 +596,7 @@ class ResultsBundle:
                         row["fit_report"] is not None, "Falta el historial del ajuste terminado"
                     )
             used.add(row["record"])
+            used.update(self._trace_files(job, row, record))
             if row["log"] is not None:
                 _require(
                     row["log"] == f"logs/{key}.log", "La ruta del registro de salida no es válida"
@@ -586,6 +642,55 @@ class ResultsBundle:
             "El recuento de trabajos terminados no coincide",
         )
 
+    def _trace_files(self, job, row, record):
+        declared = traces.policy(record, job.runner)
+        entry = row.get("learning_traces")
+        if declared is None:
+            _require(entry is None, "Hay trazas de un trabajo que no las declaró")
+            return ()
+        if not traces.confirmed(record):
+            _require(
+                entry == {"status": "unconfirmed"},
+                "Un intento sin cursor no tiene trazas confirmadas",
+            )
+            return ()
+        prefix = f"traces/{job.key}"
+        _require(
+            row["status"] in ("completed", "paused")
+            and isinstance(entry, dict)
+            and entry.get("status") == "confirmed"
+            and entry.get("receipt") == f"{prefix}/receipt.json"
+            and entry.get("manifest") == f"{prefix}/manifest.json",
+            "La ruta o el estado de las trazas no corresponden al trabajo",
+        )
+        receipt, manifest = self.read_json(entry["receipt"]), self.read_json(entry["manifest"])
+        window = self.read_json(row["report"])
+        fit = self.read_json(row["fit_report"])
+        traces.check_header(job, window, fit, declared, receipt, manifest, max_parts=MAX_FILES)
+        cursor = receipt["cursor"]
+        names = _trace_parts(job.key, cursor["sequence"])
+        files = self.manifest["files"]
+        _require(
+            entry.get("parts") == names
+            and sum(files[n]["bytes"] for n in names) == cursor["bytes"],
+            "Las partes de trazas no coinciden con el cursor confirmado",
+        )
+        coverage = traces.check_parts(
+            (io.BytesIO(self.archive.read(n)) for n in names),
+            receipt,
+            declared["every"],
+            max_rows=MAX_TABLE_ROWS,
+            max_bytes=MAX_FILE_BYTES,
+        )
+        _require(
+            all(
+                k in entry and type(entry[k]) is type(v) and entry[k] == v
+                for k, v in coverage.items()
+            ),
+            "La cobertura de pasos no coincide con las trazas",
+        )
+        return [entry["receipt"], entry["manifest"], *names]
+
     def _validate_reports(self, job, row):
         from mars_titan.training.comparison_campaign import DONE
 
@@ -593,18 +698,12 @@ class ResultsBundle:
             return
         report = self.read_json(row["report"])
         _require(report.get("final_test_opened") is not True, "El informe ha abierto el test final")
+        if row["status"] == DONE or row.get("learning_traces", {}).get("status") == "confirmed":
+            _check_window(report, job, self.manifest["cohorts"][str(job.year)])
         if row["status"] != DONE:
             return
         request = report.get("request", {})
         _require(report.get("status") == DONE, "El informe no está terminado")
-        _require(
-            request.get("view_sha256")
-            == self.manifest["cohorts"][str(job.year)]["manifest_sha256"],
-            "El informe corresponde a otra cohorte",
-        )
-        _require(request.get("window", job.fold) == job.fold, "El informe tiene otra ventana")
-        if job.seed is not None:
-            _require(request.get("seed") == job.seed, "El informe tiene otra semilla")
         if row["fit_report"] is not None:
             _require(
                 report["fit"]["sha256"] == self.manifest["files"][row["fit_report"]]["sha256"],
@@ -639,8 +738,12 @@ class ResultsBundle:
             "La tabla no está declarada",
         )
         data = self.archive.read(name)
+        metadata = pq.read_metadata(pa.BufferReader(data))
+        dictionaries = [
+            n for n in ("sample_id", "asset_id", "market") if n in metadata.schema.names
+        ]
         parquet = pq.ParquetFile(
-            pa.BufferReader(data), read_dictionary=["sample_id", "asset_id", "market"]
+            pa.BufferReader(data), metadata=metadata, read_dictionary=dictionaries
         )
         _require(
             parquet.metadata.num_rows <= MAX_TABLE_ROWS and parquet.metadata.num_columns <= 64,
