@@ -152,7 +152,11 @@ def checked_declaration(document):
         and _integer(feedback["min_assets"], 2)
         and (
             feedback["margin"] is None
-            or (type(feedback["margin"]) is float and math.isfinite(feedback["margin"]))
+            or (
+                isinstance(feedback["margin"], (int, float))
+                and not isinstance(feedback["margin"], bool)
+                and math.isfinite(feedback["margin"])
+            )
         )
         and _integer(feedback["shuffled_seed"], 0),
         "La realimentación declara ventana, mínimo de activos, margen y semilla del desorden",
@@ -207,6 +211,8 @@ def checked_declaration(document):
         and len(set(seeds)) == len(seeds),
         "Las semillas son enteros sin repetir",
     )
+    if feedback["margin"] is not None:
+        document = dict(document, feedback=dict(feedback, margin=float(feedback["margin"])))
     return document
 
 

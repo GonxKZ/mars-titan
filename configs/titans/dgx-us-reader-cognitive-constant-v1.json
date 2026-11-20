@@ -1,0 +1,53 @@
+{
+  "schema_version": 1,
+  "recipe_name": "mars_titan_episodic_readout_chronological_v1",
+  "status": "declared_not_executed",
+  "recipe": {
+    "update_instants": 8,
+    "loss": "pinball",
+    "weight_decay": 0,
+    "max_grad_norm": 1,
+    "epochs": 30,
+    "selection": {
+      "metric": "session_mae",
+      "patience": 5,
+      "min_delta": 0.00001,
+      "stopping": "fixed_budget"
+    },
+    "block_rows": 3584,
+    "neighbors": 8,
+    "temperature": 1,
+    "bank_capacity": 1024,
+    "bank_seed": 73,
+    "max_working_bytes": 1073741824,
+    "checkpoint_updates": 256,
+    "checkpoint_seconds": 900,
+    "precision": "fp32_strict",
+    "familiarity_gate": "constant",
+    "supervised_refinements": [
+      1,
+      2,
+      3,
+      4
+    ],
+    "refinement_initialization": "zero_refinement"
+  },
+  "walk_forward": {
+    "search_cases": {
+      "lr3e-4": {
+        "learning_rate": 0.0003
+      },
+      "lr1e-3": {
+        "learning_rate": 0.001
+      },
+      "lr3e-3": {
+        "learning_rate": 0.003
+      }
+    }
+  },
+  "pending": [
+    "Control del núcleo cognitivo para la DGX de EE. UU.: la misma receta que dgx-us-reader-cognitive-v1 (banco episódico m3, cuatro refinamientos supervisados que parten de la identidad) con la puerta de familiaridad sustituida por una constante. La diferencia con el núcleo cognitivo aísla la puerta metacognitiva, que reduce el peso de la recuperación cuando la situación no se parece a los episodios del banco.",
+    "Misma receta que dgx-us-reader-v1 en bloques, presupuesto y casos de búsqueda: solo cambian la puerta, la supervisión de refinamientos y su inicialización.",
+    "Sin resultados publicados. El test final de 2024 permanece cerrado."
+  ]
+}

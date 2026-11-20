@@ -1,0 +1,79 @@
+{
+  "schema_version": 1,
+  "kind": "cognitive_agent_v1",
+  "final_test_access": false,
+  "description": "Agente cognitivo con herramientas sobre la campaña DGX completa (idea de Karpathy: núcleo cognitivo pequeño, herramientas, bucle de realimentación y agente que funciona). Núcleo: Titans-MAC. Herramientas por capacidad: recuperación episódica (lector m3), bucle de refinamiento (k2 y k4), núcleo cognitivo (refinamientos supervisados con puerta constante y con puerta de familiaridad), puente de evidencias entre vistas (completo y en anillo), pares entre activos (grupos de activos y atención entre activos) y áreas holográficas (red de áreas sola y con grupos). Los controles de la campaña (memoria desactivada o congelada, lector sin banco, grupos desordenados, atención propia, áreas parciales y puente propio) no son herramientas, y los diseños de banco alternativos m1 y m2 se comparan dentro de la escalera de recuperación del modelo, no en el agente, para que el valor de Shapley sea exacto con seis herramientas. Bucle: AdaNormalHedge.TV con etiquetas maduras, ventana de 63 sesiones, abstención si ninguna opción tiene IC maduro positivo y enrutado por régimen con 21 sesiones maduras. Medida: contribución marginal y aislada de cada herramienta, valor de Shapley exacto, media uniforme, realimentación desordenada, placebo y abstención, con bootstrap circular por bloques de 21 días, 4.000 réplicas, Romano y Wolf y Holm. Criterio fijado antes de ver resultados: una herramienta mejora al agente si su contribución marginal de IC de rangos es positiva con valor p de Romano y Wolf ≤ 0,05 en su familia.",
+  "campaign": "configs/experiments/dgx-us-campaign-v1.json",
+  "core": "titans_mac",
+  "tools": {
+    "episodic_retrieval": [
+      "mars_titan_m3"
+    ],
+    "refinement_loop": [
+      "mars_titan_m3_k2",
+      "mars_titan_m3_k4"
+    ],
+    "cognitive_core": [
+      "mars_titan_cognitive_constant_gate",
+      "mars_titan_cognitive"
+    ],
+    "evidence_bridge": [
+      "mars_titan_m3_bridge_complete",
+      "mars_titan_m3_bridge_ring"
+    ],
+    "cross_asset_peers": [
+      "asset_groups",
+      "cross_asset_attention"
+    ],
+    "holographic_areas": [
+      "area_network",
+      "area_network_asset_groups"
+    ]
+  },
+  "feedback": {
+    "window": 63,
+    "min_assets": 30,
+    "margin": 0,
+    "shuffled_seed": 20261120
+  },
+  "placebo": {
+    "seed": 7
+  },
+  "context": {
+    "window": 21
+  },
+  "shapley": true,
+  "metric": "session_rank_ic",
+  "inference": {
+    "block_days": 21,
+    "replicates": 4000,
+    "seed": 2026,
+    "confidence": 0.95
+  },
+  "origins": [
+    2005,
+    2006,
+    2007,
+    2008,
+    2009,
+    2010,
+    2011,
+    2012,
+    2013,
+    2014,
+    2015,
+    2016,
+    2017,
+    2018,
+    2019,
+    2020,
+    2021,
+    2022,
+    2023
+  ],
+  "seeds": [
+    42,
+    43,
+    44
+  ]
+}

@@ -1,0 +1,513 @@
+{
+  "budget": {
+    "min_free_gib": 50,
+    "memory_gib": {
+      "mars_titan": 16
+    },
+    "cuda_gib": {
+      "mars_titan": 8
+    },
+    "deadline_utc": "2026-12-02T18:00:00+00:00"
+  },
+  "cohort": {
+    "size": 4198
+  },
+  "description": "Campaña completa de la DGX (GB10) en EE. UU.: 4.198 activos, orígenes 2005–2023, semillas 42, 43 y 44, con la receta elegida en la búsqueda declarada (dgx-us-lr-search-v1) y parada por meseta de validación. Núcleo: Titans-MAC con memoria en tiempo de prueba y escritura fusionada fused_v1. Escalera de recuperación: lectores m0 (sin banco), m1, m2 y m3. Núcleo cognitivo con herramientas (idea de Karpathy) como escalera causal: m3 (recuperación), m3_k4 (bucle de cuatro refinamientos), núcleo cognitivo con puerta constante (refinamientos supervisados que parten de la identidad) y núcleo cognitivo con la puerta de familiaridad R3 (metacognición: cuándo fiarse de la recuperación). Controles de memoria (desactivada y congelada), redes de áreas holográficas, grupos de activos y atención entre activos con sus controles, refinamientos k2 y puentes de evidencias. Los ajustes mac_online continúan el estado elegido del origen anterior. Solo validación decide; calibración y evaluación se emiten para el agente cognitivo y la comparación walk-forward. El test final de 2024 permanece cerrado.",
+  "execution": {
+    "pipeline": {
+      "decode_workers": 4,
+      "prefetch_batches": 6,
+      "group_cache_mib": 2048,
+      "prepare_workers": 3
+    },
+    "workers": {
+      "mars_titan": 3,
+      "references": 1
+    }
+  },
+  "final_test_access": false,
+  "kind": "comparison_campaign_v1",
+  "market": "US",
+  "models": {
+    "titans_mac": {
+      "machine": "mars_titan",
+      "recipe": "core",
+      "runner": "fit",
+      "tier": "core",
+      "variant": "mac_online",
+      "continuation": "previous_origin"
+    },
+    "mars_titan_m0": {
+      "components": {
+        "episodic_bank": "m0_no_bank"
+      },
+      "machine": "mars_titan",
+      "parent": "titans_mac",
+      "recipe": "reader",
+      "runner": "reader",
+      "search_case": "lr1e-3",
+      "tier": "core"
+    },
+    "mars_titan_m1": {
+      "components": {
+        "episodic_bank": "m1"
+      },
+      "machine": "mars_titan",
+      "parent": "titans_mac",
+      "recipe": "reader",
+      "runner": "reader",
+      "search_case": "lr1e-3",
+      "tier": "core"
+    },
+    "mars_titan_m2": {
+      "components": {
+        "episodic_bank": "m2"
+      },
+      "machine": "mars_titan",
+      "parent": "titans_mac",
+      "recipe": "reader",
+      "runner": "reader",
+      "search_case": "lr1e-3",
+      "tier": "core"
+    },
+    "mars_titan_m3": {
+      "components": {
+        "episodic_bank": "m3"
+      },
+      "machine": "mars_titan",
+      "parent": "titans_mac",
+      "recipe": "reader",
+      "runner": "reader",
+      "search_case": "lr1e-3",
+      "tier": "core"
+    },
+    "mars_titan_m3_k4": {
+      "components": {
+        "episodic_bank": "m3",
+        "refinements": 4
+      },
+      "machine": "mars_titan",
+      "parent": "titans_mac",
+      "recipe": "reader",
+      "runner": "reader",
+      "search_case": "lr1e-3",
+      "tier": "cognitive"
+    },
+    "mars_titan_cognitive_constant_gate": {
+      "machine": "mars_titan",
+      "runner": "reader",
+      "parent": "titans_mac",
+      "search_case": "lr1e-3",
+      "components": {
+        "episodic_bank": "m3",
+        "refinements": 4
+      },
+      "recipe": "reader_cognitive_constant",
+      "tier": "cognitive"
+    },
+    "mars_titan_cognitive": {
+      "machine": "mars_titan",
+      "runner": "reader",
+      "parent": "titans_mac",
+      "search_case": "lr1e-3",
+      "components": {
+        "episodic_bank": "m3",
+        "refinements": 4
+      },
+      "recipe": "reader_cognitive",
+      "tier": "cognitive"
+    },
+    "titans_mac_disabled": {
+      "machine": "mars_titan",
+      "recipe": "core",
+      "runner": "fit",
+      "tier": "controls",
+      "variant": "mac_disabled"
+    },
+    "titans_mac_frozen": {
+      "machine": "mars_titan",
+      "recipe": "core",
+      "runner": "fit",
+      "tier": "controls",
+      "variant": "mac_frozen"
+    },
+    "area_network": {
+      "machine": "mars_titan",
+      "predictor_changes": {
+        "holographic_network": {
+          "areas": 19,
+          "cycles": 2,
+          "hidden_groups": 4,
+          "kind": "holographic_network_v1",
+          "leakage": 0.1,
+          "levels": 1,
+          "local_gain": 0.25,
+          "local_steps": 1,
+          "rank": 4,
+          "summary": true,
+          "summary_gain": 0.25,
+          "topology": "ring"
+        }
+      },
+      "recipe": "core",
+      "runner": "fit",
+      "tier": "networks",
+      "variant": "mac_online",
+      "continuation": "previous_origin"
+    },
+    "area_network_asset_groups": {
+      "machine": "mars_titan",
+      "predictor_changes": {
+        "asset_groups": {
+          "buckets": 5,
+          "clusters": 8,
+          "iterations": 32,
+          "min_observations": 36,
+          "mode": "past_window"
+        },
+        "holographic_network": {
+          "areas": 19,
+          "cycles": 2,
+          "hidden_groups": 4,
+          "kind": "holographic_network_v1",
+          "leakage": 0.1,
+          "levels": 1,
+          "local_gain": 0.25,
+          "local_steps": 1,
+          "rank": 4,
+          "summary": true,
+          "summary_gain": 0.25,
+          "topology": "ring"
+        }
+      },
+      "recipe": "core",
+      "runner": "fit",
+      "tier": "networks",
+      "variant": "mac_online",
+      "continuation": "previous_origin"
+    },
+    "area_network_hidden_only": {
+      "machine": "mars_titan",
+      "predictor_changes": {
+        "holographic_network": {
+          "areas": 19,
+          "cycles": 2,
+          "hidden_groups": 23,
+          "kind": "hidden_groups_only_v1",
+          "leakage": null,
+          "levels": 1,
+          "local_gain": 0.25,
+          "local_steps": 1,
+          "rank": null,
+          "summary": true,
+          "summary_gain": 0.25,
+          "topology": "complete"
+        }
+      },
+      "recipe": "core",
+      "runner": "fit",
+      "tier": "networks",
+      "variant": "mac_online",
+      "continuation": "previous_origin"
+    },
+    "area_network_membership_only": {
+      "machine": "mars_titan",
+      "predictor_changes": {
+        "holographic_network": {
+          "areas": 19,
+          "cycles": 2,
+          "hidden_groups": 4,
+          "kind": "catalog_membership_only_v1",
+          "leakage": 0.1,
+          "levels": 1,
+          "local_gain": 0.25,
+          "local_steps": 1,
+          "rank": 4,
+          "summary": true,
+          "summary_gain": 0.25,
+          "topology": "ring"
+        }
+      },
+      "recipe": "core",
+      "runner": "fit",
+      "tier": "networks",
+      "variant": "mac_online",
+      "continuation": "previous_origin"
+    },
+    "asset_groups": {
+      "machine": "mars_titan",
+      "predictor_changes": {
+        "asset_groups": {
+          "buckets": 5,
+          "clusters": 8,
+          "iterations": 32,
+          "min_observations": 36,
+          "mode": "past_window"
+        }
+      },
+      "recipe": "core",
+      "runner": "fit",
+      "tier": "networks",
+      "variant": "mac_online",
+      "continuation": "previous_origin"
+    },
+    "asset_groups_shuffled": {
+      "machine": "mars_titan",
+      "predictor_changes": {
+        "asset_groups": {
+          "buckets": 5,
+          "clusters": 8,
+          "iterations": 32,
+          "min_observations": 36,
+          "mode": "shuffled_rows"
+        }
+      },
+      "recipe": "core",
+      "runner": "fit",
+      "tier": "networks",
+      "variant": "mac_online",
+      "continuation": "previous_origin"
+    },
+    "cross_asset_attention": {
+      "machine": "mars_titan",
+      "predictor_changes": {
+        "cross_asset_attention": {
+          "heads": 4,
+          "mode": "same_session"
+        }
+      },
+      "recipe": "core",
+      "runner": "fit",
+      "tier": "networks",
+      "variant": "mac_online",
+      "continuation": "previous_origin"
+    },
+    "cross_asset_attention_self": {
+      "machine": "mars_titan",
+      "predictor_changes": {
+        "cross_asset_attention": {
+          "heads": 4,
+          "mode": "self_only"
+        }
+      },
+      "recipe": "core",
+      "runner": "fit",
+      "tier": "networks",
+      "variant": "mac_online",
+      "continuation": "previous_origin"
+    },
+    "mars_titan_m3_k2": {
+      "components": {
+        "episodic_bank": "m3",
+        "refinements": 2
+      },
+      "machine": "mars_titan",
+      "parent": "titans_mac",
+      "recipe": "reader",
+      "runner": "reader",
+      "search_case": "lr1e-3",
+      "tier": "refinements"
+    },
+    "mars_titan_m3_bridge_complete": {
+      "components": {
+        "episodic_bank": "m3",
+        "evidence_bridge": {
+          "bridge_gain": 0.25,
+          "cycles": 1,
+          "regions": [
+            "view_1",
+            "view_2",
+            "view_3"
+          ],
+          "seed": 42,
+          "topology": "complete"
+        }
+      },
+      "machine": "mars_titan",
+      "parent": "titans_mac",
+      "recipe": "reader",
+      "runner": "reader",
+      "search_case": "lr1e-3",
+      "tier": "bridge"
+    },
+    "mars_titan_m3_bridge_ring": {
+      "components": {
+        "episodic_bank": "m3",
+        "evidence_bridge": {
+          "bridge_gain": 0.25,
+          "cycles": 1,
+          "regions": [
+            "view_1",
+            "view_2",
+            "view_3"
+          ],
+          "seed": 42,
+          "topology": "ring"
+        }
+      },
+      "machine": "mars_titan",
+      "parent": "titans_mac",
+      "recipe": "reader",
+      "runner": "reader",
+      "search_case": "lr1e-3",
+      "tier": "bridge"
+    },
+    "mars_titan_m3_bridge_self": {
+      "components": {
+        "episodic_bank": "m3",
+        "evidence_bridge": {
+          "bridge_gain": 0.25,
+          "cycles": 1,
+          "regions": [
+            "view_1",
+            "view_2",
+            "view_3"
+          ],
+          "seed": 42,
+          "topology": "self"
+        }
+      },
+      "machine": "mars_titan",
+      "parent": "titans_mac",
+      "recipe": "reader",
+      "runner": "reader",
+      "search_case": "lr1e-3",
+      "tier": "bridge"
+    }
+  },
+  "origins": [
+    {
+      "fold": "fold-000",
+      "role": "development",
+      "year": 2005
+    },
+    {
+      "fold": "fold-001",
+      "role": "development",
+      "year": 2006
+    },
+    {
+      "fold": "fold-002",
+      "role": "development",
+      "year": 2007
+    },
+    {
+      "fold": "fold-003",
+      "role": "development",
+      "year": 2008
+    },
+    {
+      "fold": "fold-004",
+      "role": "development",
+      "year": 2009
+    },
+    {
+      "fold": "fold-005",
+      "role": "development",
+      "year": 2010
+    },
+    {
+      "fold": "fold-006",
+      "role": "development",
+      "year": 2011
+    },
+    {
+      "fold": "fold-007",
+      "role": "development",
+      "year": 2012
+    },
+    {
+      "fold": "fold-008",
+      "role": "development",
+      "year": 2013
+    },
+    {
+      "fold": "fold-009",
+      "role": "development",
+      "year": 2014
+    },
+    {
+      "fold": "fold-010",
+      "role": "development",
+      "year": 2015
+    },
+    {
+      "fold": "fold-011",
+      "role": "development",
+      "year": 2016
+    },
+    {
+      "fold": "fold-012",
+      "role": "development",
+      "year": 2017
+    },
+    {
+      "fold": "fold-013",
+      "role": "development",
+      "year": 2018
+    },
+    {
+      "fold": "fold-014",
+      "role": "development",
+      "year": 2019
+    },
+    {
+      "fold": "fold-015",
+      "role": "development",
+      "year": 2020
+    },
+    {
+      "fold": "fold-016",
+      "role": "development",
+      "year": 2021
+    },
+    {
+      "fold": "fold-017",
+      "role": "development",
+      "year": 2022
+    },
+    {
+      "fold": "fold-018",
+      "role": "confirmation",
+      "year": 2023
+    }
+  ],
+  "recipes": {
+    "core": "configs/titans/dgx-us-core-v1.json",
+    "reader": "configs/titans/dgx-us-reader-v1.json",
+    "reader_cognitive": "configs/titans/dgx-us-reader-cognitive-v1.json",
+    "reader_cognitive_constant": "configs/titans/dgx-us-reader-cognitive-constant-v1.json"
+  },
+  "schema_version": 1,
+  "seeds": [
+    42,
+    43,
+    44
+  ],
+  "source_declaration_sha256": "dd8292f06e6346662c679c17559fc3ac41334001dec4e65e0ae762647b2b0e22",
+  "stopping": {
+    "fit": {
+      "metric": "session_mae",
+      "stopping": "validation_plateau",
+      "patience": 3,
+      "min_delta": 1e-05,
+      "max_epochs": 16,
+      "initial_state": "reported"
+    },
+    "reader": {
+      "metric": "session_mae",
+      "stopping": "validation_plateau",
+      "patience": 3,
+      "min_delta": 1e-05,
+      "max_epochs": 12
+    }
+  },
+  "tiers": [
+    "core",
+    "cognitive",
+    "controls",
+    "networks",
+    "refinements",
+    "bridge"
+  ]
+}
