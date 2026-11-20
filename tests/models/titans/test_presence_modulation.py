@@ -14,10 +14,14 @@ import torch
 
 from mars_titan.models.baselines.multimodal import MODALITIES
 from mars_titan.models.titans.presence_modulation import (
+    ASSET_BLOCKS,
     FILM,
+    MACRO_FILM,
     WIDE_FUSION,
+    MacroFiLM,
     PresenceFiLM,
     film_parameters,
+    macro_film_parameters,
     wide_parameters_per_unit,
     wide_units,
 )
@@ -72,7 +76,7 @@ def fusion_input(model, batch):
     return observed["value"], prepared
 
 
-@pytest.mark.parametrize("modulation", [FILM, WIDE_FUSION])
+@pytest.mark.parametrize("modulation", [FILM, WIDE_FUSION, MACRO_FILM])
 @pytest.mark.parametrize("complete", [True, False])
 def test_both_options_start_exactly_at_the_control_with_the_same_seed(modulation, complete):
     control, option = build(), build(modulation)
@@ -218,6 +222,102 @@ def test_identity_records_the_option_and_its_parameters_only_when_declared():
     assert added == {"fusion_branch.expand", "fusion_branch.project"}
     with pytest.raises(ValueError, match="mismo contrato|identidad|contrato"):
         film.load_state_dict(wide.state_dict())
+
+
+def test_macro_film_rescales_the_asset_blocks_by_the_macro_block_of_their_row():
+    macro = build(MACRO_FILM)
+    fill(macro, "presence_modulation")
+    batch = decisions()
+    observed, _ = fusion_input(macro, batch)
+    reference, _ = fusion_input(build(), batch)
+    hidden, presence, module = 32, batch.presence, macro.presence_modulation
+    assert presence[0].all() and not presence[1].all()
+    for row in range(len(presence)):
+        blocks = reference[row, :-5].reshape(len(MODALITIES), hidden)
+        state = blocks[ASSET_BLOCKS]
+        # Fórmula escrita a mano: z' = p ((1 + tanh(Γ z_macro)) z + Β z_macro).
+        scale = torch.tanh(module.scale.detach() @ state)
+        shift = module.shift.detach() @ state
+        present = presence[row, :ASSET_BLOCKS].double()[:, None]
+        assets = present * (blocks[:ASSET_BLOCKS] + scale * blocks[:ASSET_BLOCKS] + shift)
+        expected = torch.cat((assets, blocks[ASSET_BLOCKS:]))
+        torch.testing.assert_close(observed[row, :-5], expected.flatten(), rtol=1e-12, atol=1e-12)
+        # El bloque macro pasa sin cambios y una modalidad ausente sigue anulada.
+        assert torch.equal(observed[row, ASSET_BLOCKS * hidden : -5], state)
+        for index in range(ASSET_BLOCKS):
+            if not presence[row, index]:
+                assert (
+                    torch.count_nonzero(observed[row, index * hidden : (index + 1) * hidden]) == 0
+                )
+    torch.testing.assert_close(observed[:, -5:], presence.double(), rtol=0, atol=0)
+    # La fila completa también cambia: el macro modula siempre, no solo cuando falta algo.
+    assert not torch.equal(observed[0, :-5], reference[0, :-5])
+
+
+def test_macro_film_gives_the_rows_of_a_session_the_same_bounded_scale():
+    module = MacroFiLM(6).double()
+    generator = torch.Generator().manual_seed(11)
+    with torch.no_grad():
+        module.scale.copy_(50 * torch.randn(module.scale.shape, generator=generator))
+    blocks = torch.randn(7, 5, 6, generator=generator, dtype=torch.float64).abs() + 0.5
+    blocks[:, ASSET_BLOCKS] = blocks[0, ASSET_BLOCKS]
+    presence = torch.ones(7, 5, dtype=torch.bool)
+    result = module(blocks, presence)
+    ratio = result[:, :ASSET_BLOCKS] / blocks[:, :ASSET_BLOCKS]
+    # Mismo macro en todas las filas: misma escala por bloque y coordenada, entre 0 y 2.
+    torch.testing.assert_close(ratio, ratio[:1].expand_as(ratio), rtol=1e-12, atol=1e-12)
+    assert ratio.min() >= 0 and ratio.max() <= 2
+    assert ratio.min() < 0.01 and ratio.max() > 1.99
+    # Sin estado macro no hay modulación, y los pesos nulos tampoco la producen.
+    silent = blocks.clone()
+    silent[:, ASSET_BLOCKS] = 0
+    assert torch.equal(module(silent, presence), silent)
+    assert torch.equal(MacroFiLM(6).double()(blocks, presence), blocks)
+
+
+def test_macro_film_keeps_an_absent_modality_at_zero_whatever_its_weights():
+    module = MacroFiLM(4).double()
+    generator = torch.Generator().manual_seed(13)
+    with torch.no_grad():
+        module.scale.copy_(torch.randn(module.scale.shape, generator=generator))
+        module.shift.copy_(torch.randn(module.shift.shape, generator=generator))
+    blocks = torch.randn(3, 5, 4, generator=generator, dtype=torch.float64)
+    presence = torch.tensor(
+        [[True] * 5, [True, False, True, False, True], [True, True, True, False, True]]
+    )
+    blocks = blocks * presence[:, :, None]
+    result = module(blocks, presence)
+    assert torch.count_nonzero(result[~presence]) == 0
+    assert (result[presence] != 0).all()
+    assert torch.equal(result[:, ASSET_BLOCKS], blocks[:, ASSET_BLOCKS])
+
+
+def test_macro_film_learns_from_complete_rows_at_its_zero_start():
+    model = build(MACRO_FILM)
+    batch = decisions(complete=True)
+    assert batch.presence.all()
+    prepare(model, batch, differentiable=True).point_predictions.sum().backward()
+    for parameter in model.presence_modulation.parameters():
+        assert parameter.grad is not None and parameter.grad.abs().sum() > 0
+
+
+@pytest.mark.parametrize("hidden", [32, 64])
+def test_macro_film_records_its_parameters_and_its_own_state(hidden):
+    assert macro_film_parameters(hidden) == 2 * 4 * hidden * hidden
+    module = MacroFiLM(hidden)
+    assert sum(p.numel() for p in module.parameters()) == macro_film_parameters(hidden)
+    if hidden == 32:
+        control, macro = build(), build(MACRO_FILM)
+        assert macro.config.identity()["presence_modulation"] == dict(
+            name=MACRO_FILM,
+            parameters=8192,
+            initial="zero",
+            scale="one_plus_tanh_of_linear_macro_block",
+        )
+        added = set(macro.state_dict()) - set(control.state_dict())
+        assert added == {"presence_modulation.scale", "presence_modulation.shift"}
+        with pytest.raises(ValueError, match="mismo contrato|identidad|contrato"):
+            macro.load_state_dict(build(FILM).state_dict())
 
 
 @pytest.mark.parametrize("value", ["film", "wide", 1, True])

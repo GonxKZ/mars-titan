@@ -102,11 +102,14 @@ from .opponent_heads import OpponentHeads
 from .output_objectives import build_objective, check_objectives, objective_identity
 from .presence_modulation import (
     FILM,
+    MACRO_FILM,
     PRESENCE_MODULATIONS,
     WIDE_FUSION,
+    MacroFiLM,
     PresenceFiLM,
     WideFusionBranch,
     film_parameters,
+    macro_film_parameters,
     wide_parameters_per_unit,
     wide_units,
 )
@@ -162,6 +165,8 @@ FUSION_DROPOUTS = (0.1, 0.2)
 # Nombre de la transformación de ModDrop en la huella del lote derivado y propósitos de las
 # claves de las máscaras.
 MODALITY_DROPOUT = "modality_dropout_v1"
+# Transformación de una modalidad retirada del predictor, en el ajuste y al emitir.
+REMOVED_MODALITIES = "removed_modalities_v1"
 FUSION_DROPOUT = "fusion_dropout_v1"
 # Las máscaras dependen de la semilla del predictor, de la época del ajuste y de la huella del
 # lote, no del flujo del generador global: la pasada sin grafo, su repetición con grafo de la
@@ -280,10 +285,16 @@ class FinancialConfig:
     # validar ni al emitir. Sin declararlas, la identidad y el cálculo no cambian.
     fusion_dropout: float | None = None
     modality_dropout: float | None = None
+    # Modalidades que el predictor no recibe nunca, ni en el ajuste ni al emitir, por la misma
+    # ruta que una ausencia real: bit de presencia falso y entradas a cero en todas las filas.
+    # Contrasta si una modalidad aporta algo que las demás no den ya, como el vector del gráfico,
+    # que se calcula con la misma ventana de precios. Se declara como {"names": [...]}.
+    removed_modalities: tuple[str, ...] | None = None
 
     def __post_init__(self):
         if self.memory_inner_gradient not in INNER_GRADIENTS:
             raise ValueError("memory_inner_gradient debe ser autograd_v1, analytic_v1 o fused_v1")
+        self._check_removed_modalities()
         # La fusión comparte el diseño experimental de las referencias: 0,1 o 0,2.
         if self.fusion_dropout is not None and (
             isinstance(self.fusion_dropout, bool)
@@ -450,6 +461,33 @@ class FinancialConfig:
         ):
             raise ValueError("H4 necesita la ventana de precios de la v3.1 con el bit de presencia")
 
+    def _check_removed_modalities(self):
+        """Modalidades retiradas: nombres distintos del precio, en el orden de la fusión."""
+        declared = self.removed_modalities
+        if declared is None:
+            return
+        names = declared.get("names") if isinstance(declared, dict) else declared
+        removable = MODALITIES[1:]
+        if (
+            (isinstance(declared, dict) and set(declared) != {"names"})
+            or not isinstance(names, (list, tuple))
+            or not names
+            or any(type(name) is not str or name not in removable for name in names)
+            or len(set(names)) != len(names)
+            or not masked_inputs(self.inputs.input_policy)
+        ):
+            raise ValueError(
+                "removed_modalities declara en names modalidades distintas del precio, sin "
+                "repetir, con la política con máscaras"
+            )
+        if len(names) == len(removable):
+            raise ValueError("removed_modalities no puede retirar todas las modalidades")
+        if self.auxiliary_horizons is not None:
+            # F5 vuelve a calcular el token fila a fila con las entradas que recibió.
+            raise ValueError("removed_modalities con horizontes auxiliares necesita otro contraste")
+        ordered = tuple(name for name in removable if name in names)
+        object.__setattr__(self, "removed_modalities", ordered)
+
     def _check_presence_modulation(self):
         """Modulación de presencia con la política de máscaras."""
         if self.presence_modulation is not None and (
@@ -458,7 +496,8 @@ class FinancialConfig:
             or not masked_inputs(self.inputs.input_policy)
         ):
             raise ValueError(
-                "presence_modulation admite film_v1 o wide_fusion_v1 con la política con máscaras"
+                "presence_modulation admite film_v1, wide_fusion_v1 o macro_film_v1 con la "
+                "política con máscaras"
             )
 
     def _check_regional_fusion(self):
@@ -809,6 +848,15 @@ class FinancialConfig:
                     phase="fit_only",
                 )
             )
+        if self.removed_modalities is not None:
+            result.update(
+                removed_modalities=dict(
+                    name=REMOVED_MODALITIES,
+                    names=list(self.removed_modalities),
+                    route="presence_bit_false_and_zero_inputs",
+                    phase="fit_and_emission",
+                )
+            )
         if self.memory_projections != "linear_v1":
             result.update(memory_projections=self.memory_projections)
         if self.attention_layout != "batch_first_v1":
@@ -884,6 +932,15 @@ class FinancialConfig:
                     parameters=units * wide_parameters_per_unit(self.hidden_size),
                     film_parameters=film_parameters(self.hidden_size),
                     initial="zero_output",
+                )
+            )
+        elif self.presence_modulation == MACRO_FILM:
+            result.update(
+                presence_modulation=dict(
+                    name=MACRO_FILM,
+                    parameters=macro_film_parameters(self.hidden_size),
+                    initial="zero",
+                    scale="one_plus_tanh_of_linear_macro_block",
                 )
             )
         # #836: solo aparecen si se declaran, así que las identidades anteriores no cambian.
@@ -1071,7 +1128,11 @@ class FinancialPredictor(nn.Module):
         # PT6 se construye después del tronco y sin el generador global, así que el resto de
         # pesos coincide con el control de la misma semilla.
         self.presence_modulation = (
-            PresenceFiLM(config.hidden_size) if config.presence_modulation == FILM else None
+            PresenceFiLM(config.hidden_size)
+            if config.presence_modulation == FILM
+            else MacroFiLM(config.hidden_size)
+            if config.presence_modulation == MACRO_FILM
+            else None
         )
         self.fusion_branch = (
             WideFusionBranch(config.hidden_size, seed=config.seed)
@@ -1956,6 +2017,11 @@ class FinancialPredictor(nn.Module):
             raise ValueError("C2 necesita el historial de cada flujo y no se calcula fila a fila")
         if self.fractal_shared_operator is not None:
             raise ValueError("C3 necesita todas las filas de la sesión y no se calcula fila a fila")
+        if self.config.removed_modalities is not None:
+            # F5 guarda las entradas recibidas: recalcular su token exige repetir la retirada.
+            raise ValueError(
+                "Los horizontes auxiliares con modalidades retiradas necesitan otro contraste"
+            )
         if self.learning_scaler is not None:
             inputs = self.learning_scaler(inputs, presence)
         price, checks = self.price_encoder.encode_last(gate_price_window(inputs["prices"]))
@@ -2040,6 +2106,12 @@ class FinancialPredictor(nn.Module):
         if self.session_level and session_complete is not True:
             raise ValueError("Las operaciones por sesión necesitan la sesión completa en un bloque")
         markets = tuple(flow.split("/", 1)[0] for flow in batch.flow_ids)
+        if self.config.removed_modalities is not None:
+            # Antes de cualquier otra transformación: el predictor no ve nunca la modalidad.
+            keep = torch.ones_like(batch.presence)
+            for name in self.config.removed_modalities:
+                keep[:, MODALITIES.index(name)] = False
+            batch = batch.with_absences(keep, REMOVED_MODALITIES)
         if self.training and self.config.modality_dropout is not None:
             # Antes de los rangos y de la escala: la ausencia añadida es idéntica a una real.
             with self._dropout_masks(batch, MODALITY_DROPOUT):
