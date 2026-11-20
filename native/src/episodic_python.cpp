@@ -283,20 +283,20 @@ struct PendingRanges {
 // pool persiste entre llamadas, así que no se crean hilos en cada una.
 void project(std::span<const double> source, std::size_t rows, std::size_t width,
              std::span<const double> weights, std::size_t outputs, std::span<double> target,
-             std::size_t threads) {
+             std::size_t threads, mars_titan::episodic::ProjectionArithmetic arithmetic) {
     namespace episodic = mars_titan::episodic;
     const auto isa = episodic::default_projection_isa();
     const std::size_t groups = episodic::projection_groups(outputs);
     const std::size_t parts = std::min(threads, groups);
     if (parts <= 1) {
-        episodic::project_block(source, rows, width, weights, outputs, target, isa);
+        episodic::project_block(source, rows, width, weights, outputs, target, isa, arithmetic);
         return;
     }
     const std::size_t chunk = (groups + parts - 1) / parts;
     const auto range = [&](std::size_t first) noexcept -> std::exception_ptr {
         try {
             episodic::project_block_groups(source, rows, width, weights, outputs, target, isa,
-                                           first, std::min(groups, first + chunk));
+                                           arithmetic, first, std::min(groups, first + chunk));
             return nullptr;
         } catch (...) {
             return std::current_exception();
@@ -336,29 +336,43 @@ void project(std::span<const double> source, std::size_t rows, std::size_t width
     }
 }
 
-// Proyección del codec episódico. Solo acepta float64 contiguo, sin conversiones implícitas,
-// y calcula sin el GIL porque la salida es nueva y las entradas son inmutables en el codec.
+// Proyección del codec episódico con la aritmética pedida. Solo acepta float64 contiguo, sin
+// conversiones implícitas, y calcula sin el GIL porque la salida es nueva y las entradas son
+// inmutables en el codec.
+Matrix project_codec(const Matrix& block, const Matrix& transposed,
+                     mars_titan::episodic::ProjectionArithmetic arithmetic) {
+    if (block.ndim() != 2 || transposed.ndim() != 2 || block.shape(1) != transposed.shape(0)) {
+        throw std::invalid_argument("Las formas de la proyección del codec no coinciden");
+    }
+    const auto rows = static_cast<std::size_t>(block.shape(0));
+    const auto width = static_cast<std::size_t>(block.shape(1));
+    const auto outputs = static_cast<std::size_t>(transposed.shape(1));
+    Matrix out({block.shape(0), transposed.shape(1)});
+    const std::span<const double> source(block.data(), rows * width);
+    const std::span<const double> weights(transposed.data(), width * outputs);
+    const std::span<double> target(out.mutable_data(), rows * outputs);
+    const std::size_t threads = projection_threads(rows, width, outputs);
+    {
+        const py::gil_scoped_release released;
+        project(source, rows, width, weights, outputs, target, threads, arithmetic);
+    }
+    return out;
+}
+
 void bind_projection(py::module_& module) {
+    using mars_titan::episodic::ProjectionArithmetic;
+    // Multiplica y después suma: el einsum de la línea base x86-64 de NumPy 2.5.
     module.def(
         "project_codec_block",
         [](const Matrix& block, const Matrix& transposed) {
-            if (block.ndim() != 2 || transposed.ndim() != 2 ||
-                block.shape(1) != transposed.shape(0)) {
-                throw std::invalid_argument("Las formas de la proyección del codec no coinciden");
-            }
-            const auto rows = static_cast<std::size_t>(block.shape(0));
-            const auto width = static_cast<std::size_t>(block.shape(1));
-            const auto outputs = static_cast<std::size_t>(transposed.shape(1));
-            Matrix out({block.shape(0), transposed.shape(1)});
-            const std::span<const double> source(block.data(), rows * width);
-            const std::span<const double> weights(transposed.data(), width * outputs);
-            const std::span<double> target(out.mutable_data(), rows * outputs);
-            const std::size_t threads = projection_threads(rows, width, outputs);
-            {
-                const py::gil_scoped_release released;
-                project(source, rows, width, weights, outputs, target, threads);
-            }
-            return out;
+            return project_codec(block, transposed, ProjectionArithmetic::separate);
+        },
+        py::arg("block").noconvert(), py::arg("transposed").noconvert());
+    // Cada paso con una FMA: el einsum de NumPy 2.5 en aarch64.
+    module.def(
+        "project_codec_block_fused",
+        [](const Matrix& block, const Matrix& transposed) {
+            return project_codec(block, transposed, ProjectionArithmetic::fused);
         },
         py::arg("block").noconvert(), py::arg("transposed").noconvert());
     // Hilos que usaría project_codec_block con esas formas, para registrarlos en las medidas.

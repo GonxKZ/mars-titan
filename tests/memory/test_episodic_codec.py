@@ -1,6 +1,7 @@
 """Representación fija de las entradas verificadas, sin ejecutar un predictor."""
 
 import copy
+import math
 import os
 import subprocess
 import sys
@@ -399,6 +400,10 @@ def native():
     module = load_native(path)
     if not hasattr(module, "project_codec_block"):
         pytest.skip("El enlace nativo es anterior a la proyección del codec")
+    arithmetic = codec_module._einsum_arithmetic()
+    backend = codec_module.ARITHMETIC_BACKENDS.get(arithmetic)
+    if backend is not None and not hasattr(module, codec_module.BACKEND_KERNELS[backend]):
+        pytest.skip("El enlace nativo no tiene el núcleo de la aritmética de este einsum")
     return module
 
 
@@ -411,6 +416,10 @@ class Counted:
     def project_codec_block(self, block, transposed):
         self.calls += 1
         return self.module.project_codec_block(block, transposed)
+
+    def project_codec_block_fused(self, block, transposed):
+        self.calls += 1
+        return self.module.project_codec_block_fused(block, transposed)
 
 
 def encoded_arrays(result):
@@ -429,17 +438,41 @@ def assert_same_bits(left, right):
     assert left.tobytes() == right.tobytes()
 
 
-def test_einsum_of_this_installation_follows_the_declared_order():
-    # La referencia del orden debe describir el einsum real. Si falla en otra plataforma, el
+def test_einsum_of_this_installation_follows_one_declared_arithmetic():
+    # La referencia del orden debe describir el einsum real con una de sus dos aritméticas: por
+    # separado en la línea base x86-64 y con FMA en aarch64. Si falla en otra plataforma, el
     # codec no usa el núcleo nativo allí y esta prueba lo señala.
+    arithmetic = codec_module._einsum_arithmetic()
+    assert arithmetic in codec_module.ARITHMETIC_BACKENDS
     random = np.random.default_rng(91)
     for width in (1, 5, 8, 13, 64, 320, 513):
         block = random.normal(size=(7, width)) * np.ldexp(1.0, random.integers(-80, 80, (7, 1)))
+        block[random.random(block.shape) < 0.05] = -0.0
         weights = random.normal(size=(127, width))
         expected = np.einsum("bi,oi->bo", block, weights, optimize=False)
-        actual = codec_module._declared_order(block, np.ascontiguousarray(weights.T))
+        transposed = np.ascontiguousarray(weights.T)
+        actual = codec_module._declared_order(block, transposed, fused=arithmetic == "fused")
         assert_same_bits(actual, expected)
-    assert codec_module._einsum_follows_declared_order()
+
+
+def test_exact_fused_step_rounds_once_and_keeps_the_ieee_zero_signs():
+    above, below = 1.0 + 2.0**-27, 1.0 - 2.0**-27
+    # x · y vale 1 - 2^-54 exacto: por separado se redondea a 1 y la suma con -1 da +0.
+    assert above * below + -1.0 == 0.0
+    assert codec_module._fused(above, below, -1.0) == -(2.0**-54)
+    tiny = 2.0**-600
+    # Un producto exacto negativo que se redondea a cero deja -0, con o sin sumando +0.
+    assert math.copysign(1.0, codec_module._fused(-tiny, tiny, 0.0)) < 0
+    assert math.copysign(1.0, codec_module._fused(-0.0, 1.0, -0.0)) < 0
+    assert math.copysign(1.0, codec_module._fused(-0.0, 1.0, 0.0)) > 0
+    assert math.copysign(1.0, codec_module._fused(2.0, 3.0, -6.0)) > 0
+    # Una sola entrada no reduce: la salida es fma(x, w, +0), que conserva ese -0.
+    single = codec_module._declared_order(np.array([[-tiny]]), np.array([[tiny]]), fused=True)
+    assert math.copysign(1.0, single[0, 0]) < 0
+    paired = codec_module._declared_order(
+        np.array([[-tiny, 0.0]]), np.array([[tiny], [1.0]]), fused=True
+    )
+    assert math.copysign(1.0, paired[0, 0]) > 0
 
 
 def test_native_kernel_matches_the_declared_order_on_any_platform(native):
@@ -451,6 +484,9 @@ def test_native_kernel_matches_the_declared_order_on_any_platform(native):
         transposed = random.normal(size=(width, outputs))
         actual = native.project_codec_block(block, transposed)
         assert_same_bits(actual, codec_module._declared_order(block, transposed))
+        if hasattr(native, "project_codec_block_fused"):
+            fused = native.project_codec_block_fused(block, transposed)
+            assert_same_bits(fused, codec_module._declared_order(block, transposed, fused=True))
 
 
 def test_native_projection_bits_do_not_depend_on_the_threads(native):
@@ -473,11 +509,18 @@ def test_native_projection_bits_do_not_depend_on_the_threads(native):
             block = random.normal(size=(rows, width)) * np.ldexp(1.0, random.integers(-60, 60))
             transposed = random.normal(size=(width, 127))
             expected = codec_module._declared_order(block, transposed)
+            fused = None
             for threads in (1, 2, 3, 4):
                 torch.set_num_threads(threads)
                 used = native.codec_projection_threads(rows, width, 127)
                 assert used == (threads if parallel else 1)
                 assert_same_bits(native.project_codec_block(block, transposed), expected)
+                if hasattr(native, "project_codec_block_fused"):
+                    # La referencia fusionada exacta es lenta con estas formas: basta con que los
+                    # bits no cambien con los hilos; la referencia se compara en otra prueba.
+                    result = native.project_codec_block_fused(block, transposed)
+                    fused = result if fused is None else fused
+                    assert_same_bits(result, fused)
     finally:
         torch.set_num_threads(previous)
 
@@ -563,7 +606,7 @@ def test_native_projection_keeps_every_encoded_bit(native, size, absent, scale):
     raw["inputs"]["prices"] *= np.float32(scale)
     codec = FrozenEpisodeCodec(spec, modality_weights=(1, 2, 3, 4, 5), presence_weight=2)
     view = validated_cpu_batch(raw, spec)
-    assert projection_backend(native) == "native"
+    assert projection_backend(native) in ("native", "native_fused")
     expected = codec.encode(view)
     counted = Counted(native)
     actual = codec.encode(view, native=counted)
@@ -582,13 +625,16 @@ def test_projection_falls_back_to_einsum_only_with_the_same_bits(monkeypatch):
         def project_codec_block(self, block, transposed):
             raise AssertionError("El núcleo no debe usarse si einsum suma en otro orden")
 
+        def project_codec_block_fused(self, block, transposed):
+            raise AssertionError("El núcleo no debe usarse si einsum suma en otro orden")
+
     assert projection_backend(None) == "numpy_einsum"
     assert projection_backend(Without()) == "numpy_einsum"
     spec = specification()
     view = validated_cpu_batch(raw_batch(), spec)
     codec = FrozenEpisodeCodec(spec)
     expected = codec.encode(view)
-    monkeypatch.setattr(codec_module, "_einsum_follows_declared_order", lambda: False)
+    monkeypatch.setattr(codec_module, "_einsum_arithmetic", lambda: None)
     assert projection_backend(Refused()) == "numpy_einsum"
     actual = codec.encode(view, native=Refused())
     for left, right in zip(encoded_arrays(actual), encoded_arrays(expected), strict=True):

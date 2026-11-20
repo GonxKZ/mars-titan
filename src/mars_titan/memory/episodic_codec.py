@@ -6,6 +6,7 @@ import json
 import math
 import sys
 from dataclasses import dataclass
+from fractions import Fraction
 from numbers import Real
 
 import numpy as np
@@ -40,60 +41,110 @@ def _norm(values):
     return np.sqrt(np.einsum("bi,bi->b", values, values, optimize=False))
 
 
-def _declared_order(block, transposed):
+def _fused(left, right, total):
+    """left · right + total con un solo redondeo al más cercano (FMA de IEEE 754), exacto.
+
+    La suma se hace con fracciones y `float` la redondea una vez, también por debajo de los
+    subnormales, donde conserva el signo del valor exacto. Una suma exacta nula vale -0 solo si
+    el producto es -0 y el sumando también, como manda IEEE 754 para la suma.
+    """
+    exact = Fraction(left) * Fraction(right) + Fraction(total)
+    if exact:
+        return float(exact)
+    negative_zero_product = (left == 0 or right == 0) and math.copysign(1.0, left) * math.copysign(
+        1.0, right
+    ) < 0
+    return -0.0 if negative_zero_product and math.copysign(1.0, total) < 0 else 0.0
+
+
+_FUSED = np.frompyfunc(_fused, 3, 1)
+
+
+def _declared_order(block, transposed, *, fused=False):
     """Proyección con el orden de sumas que reproduce `project_codec_block`, en NumPy.
 
     Dos acumuladores por salida, para las entradas pares e impares. Cada bloque de ocho
     entradas se recorre del par 6-7 al 0-1, el resto por pares en orden creciente, y al final
-    se suman los dos acumuladores. Es el orden de `einsum("bi,oi->bo", optimize=False)` en la
-    línea base x86-64 de NumPy 2.5. Multiplicar y sumar por separado con NumPy no fusiona las
-    operaciones, así que esta función sirve de referencia en cualquier plataforma.
+    se suman los dos acumuladores. Es el orden de `einsum("bi,oi->bo", optimize=False)` en
+    NumPy 2.5. En la línea base x86-64 cada paso multiplica y después suma; multiplicar y sumar
+    por separado con NumPy no fusiona las operaciones, así que esta función sirve de referencia
+    en cualquier plataforma. Con `fused`, cada paso es una FMA exacta, como el einsum de NumPy
+    2.5 en aarch64 (`project_codec_block_fused`). Allí un acumulador puede valer -0 y einsum le
+    suma 0 · 0 en el carril impar y escribe 0 + total, que equivalen a sumar +0 al final. Con una
+    sola entrada einsum no reduce: la salida es fma(x, w, +0).
     """
     rows, width = block.shape
+    if fused and width == 1:
+        return _FUSED(block[:, :1], transposed[:1], 0.0).astype(np.float64)
+
+    def step(values, weights, total):
+        if fused:
+            return _FUSED(values, weights, total).astype(np.float64)
+        return values * weights + total
+
     even = np.zeros((rows, transposed.shape[1]))
     odd = np.zeros_like(even)
     index = 0
     while width - index >= 8:
         for offset in (6, 4, 2, 0):
-            even = block[:, index + offset, None] * transposed[index + offset] + even
-            odd = block[:, index + offset + 1, None] * transposed[index + offset + 1] + odd
+            even = step(block[:, index + offset, None], transposed[index + offset], even)
+            odd = step(block[:, index + offset + 1, None], transposed[index + offset + 1], odd)
         index += 8
     while index < width:
-        even = block[:, index, None] * transposed[index] + even
+        even = step(block[:, index, None], transposed[index], even)
         if index + 1 < width:
-            odd = block[:, index + 1, None] * transposed[index + 1] + odd
+            odd = step(block[:, index + 1, None], transposed[index + 1], odd)
         index += 2
-    return even + odd
+    return even + odd + 0.0 if fused else even + odd
+
+
+# Implementación que devuelve `projection_backend` para cada aritmética del einsum instalado y
+# núcleo del enlace nativo de cada implementación.
+ARITHMETIC_BACKENDS = {"separate": "native", "fused": "native_fused"}
+BACKEND_KERNELS = {"native": "project_codec_block", "native_fused": "project_codec_block_fused"}
 
 
 @functools.cache
-def _einsum_follows_declared_order():
-    """Comprobar una vez por proceso que el einsum instalado suma en el orden del núcleo.
+def _einsum_arithmetic():
+    """Aritmética con la que suma el einsum instalado, comprobada una vez por proceso.
 
-    Si NumPy cambiara su núcleo (otra línea base, FMA o más carriles), el enlace nativo y
-    einsum darían bits distintos. En ese caso el codec sigue usando einsum.
+    "separate" si multiplica y después suma en el orden declarado (línea base x86-64 de NumPy
+    2.5), "fused" si hace cada paso con una FMA en ese mismo orden (NumPy 2.5 en aarch64, que
+    usa FMLA de NEON) y None si no sigue ninguno de los dos: entonces el codec sigue con einsum.
     """
     generator = np.random.Generator(np.random.PCG64(20261010))
+    cases = []
     for width in (1, 2, 3, 7, 8, 9, 15, 16, 17, 33):
         scale = np.ldexp(1.0, generator.integers(-40, 40, size=(5, width)))
         block = generator.standard_normal((5, width)) * scale
         weights = generator.standard_normal((11, width))
-        expected = _declared_order(block, np.ascontiguousarray(weights.T))
         actual = np.einsum("bi,oi->bo", block, weights, optimize=False)
-        if not np.array_equal(actual.view(np.uint64), expected.view(np.uint64)):
-            return False
-    return True
+        cases.append((block, np.ascontiguousarray(weights.T), actual.view(np.uint64)))
+    for arithmetic in ARITHMETIC_BACKENDS:
+        fused = arithmetic == "fused"
+        if all(
+            np.array_equal(actual, _declared_order(block, transposed, fused=fused).view(np.uint64))
+            for block, transposed, actual in cases
+        ):
+            return arithmetic
+    return None
 
 
 def projection_backend(native):
     """Implementación de la proyección que usará `encode` con este enlace nativo.
 
-    El núcleo nativo solo sustituye a einsum si el enlace lo incluye y el einsum de esta
-    instalación sigue el orden declarado, es decir, cuando los dos dan los mismos bits.
+    El núcleo nativo solo sustituye a einsum si el enlace incluye el de la aritmética que sigue
+    el einsum de esta instalación, es decir, cuando los dos dan los mismos bits: "native"
+    multiplica y después suma, "native_fused" hace cada paso con una FMA y "numpy_einsum" es
+    einsum.
     """
-    if native is None or not hasattr(native, "project_codec_block"):
+    if native is None:
         return "numpy_einsum"
-    return "native" if _einsum_follows_declared_order() else "numpy_einsum"
+    arithmetic = _einsum_arithmetic()
+    if arithmetic is None:
+        return "numpy_einsum"
+    backend = ARITHMETIC_BACKENDS[arithmetic]
+    return backend if hasattr(native, BACKEND_KERNELS[backend]) else "numpy_einsum"
 
 
 @dataclass(frozen=True)
@@ -316,8 +367,9 @@ class FrozenEpisodeCodec:
     def encode(self, batch, *, native=None):
         """Consumir la vista CPU verificada antes de cualquier traslado al predictor.
 
-        Con el enlace episódico nativo, la proyección de cada bloque usa su núcleo con el orden
-        de einsum cuando `projection_backend` lo permite. El resultado es el mismo bit a bit.
+        Con el enlace episódico nativo, la proyección de cada bloque usa el núcleo con el orden y
+        la aritmética de einsum cuando `projection_backend` lo permite. El resultado es el mismo
+        bit a bit.
         """
         if (
             not isinstance(batch, CPUDecisionBatch)
@@ -326,7 +378,8 @@ class FrozenEpisodeCodec:
             raise ValueError("La vista CPU pertenece a otro contrato")
         batch.verify()
         self._verify_projection()
-        native_projection = projection_backend(native) == "native"
+        backend = projection_backend(native)
+        kernel = None if backend == "numpy_einsum" else getattr(native, BACKEND_KERNELS[backend])
         size = len(batch.flow_ids)
         temporary = 3 * size * max(self._input_widths) * 8
         peak = (
@@ -356,8 +409,8 @@ class FrozenEpisodeCodec:
                 block *= self._modality_weights[index]
                 normalized_l2[:, index] = _norm(block)
             end = start + block.shape[1]
-            if native_projection:
-                contribution = native.project_codec_block(block, self._transposed[start:end])
+            if kernel is not None:
+                contribution = kernel(block, self._transposed[start:end])
             else:
                 contribution = np.einsum(
                     "bi,oi->bo", block, self._projection[:, start:end], optimize=False
