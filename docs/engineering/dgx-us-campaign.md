@@ -597,6 +597,13 @@ conjunta y el mismo modelo, origen y semilla de EE. UU. es el mercado añadido. 
 propia: se ajustan los niveles principales y después las variantes que promueva la criba de
 EE. UU.
 
+Antes de encolar la campaña se validó el recorrido completo con el motor y una vista reducida (45
+activos de cada mercado del origen 2013, dos épocas como máximo): la comprobación inicial, el
+ajuste de `titans_mac` y el lector `mars_titan_m1` terminaron y los tres tramos se emitieron con
+filas de los dos mercados (evaluación: 11.295 de EE. UU. y 10.665 de China). Es una prueba de
+funcionamiento, no un resultado. La validación a tamaño completo como quinto trabajo se detuvo:
+con cuatro trabajos de EE. UU. en marcha provocaba intercambio a disco.
+
 ### Relevo de campañas
 
 `scripts/dgx_campaign_relay.sh` recorre un plan cuyas fases pertenecen a varias campañas, cada
