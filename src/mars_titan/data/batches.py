@@ -9,6 +9,8 @@ import pyarrow as pa
 import pyarrow.compute as pc
 import pyarrow.parquet as pq
 
+from .comparison_prediction_storage import writer_options
+
 
 def read_bounded_table(path: Path, *, max_rows: int = 100_000, max_bytes: int = 64 * 1024**2):
     if min(max_rows, max_bytes) < 1:
@@ -39,7 +41,8 @@ def atomic_parquet_batches(path: Path, tables) -> int:
     try:
         for table in tables:
             if writer is None:
-                writer = pq.ParquetWriter(temporary, table.schema, compression="zstd")
+                options = writer_options(path, table.schema)
+                writer = pq.ParquetWriter(temporary, table.schema, compression="zstd", **options)
             writer.write_table(table)
             count += table.num_rows
         if writer is None:

@@ -1,0 +1,17 @@
+# Coste de las trazas de comparación en la RTX 4070 Laptop
+
+Se midieron 14 combinaciones de modelo y cadencia en 11 familias de la cola de PC1. Cada comparación usó el mismo checkpoint y tramo de ajuste con y sin registro. El criterio fijado exigía igualdad de emisiones, gradientes, parámetros, estado cronológico, cursor y generadores aleatorios, escritura efectiva de las métricas esperadas y un sobrecoste mediano de hasta el 5 %. La tabla completa guarda las 44 parejas, incluidos los ensayos que superaron el límite. [Mediciones](measurements.json)
+
+| Cadencia admitida (pasos del optimizador) | Modelos medidos |
+| ---: | --- |
+| 16 | Titans-MAC, GRU y `area_network_membership_only` |
+| 32 | M2, `area_network_hidden_only`, `asset_groups`, `asset_groups_shuffled`, `area_network_asset_groups`, `cross_asset_attention` y `cross_asset_attention_self` |
+| 64 | `area_network` |
+
+El ejecutor utilizó PyTorch 2.14.0+cu130 en `cuda:0`, FP32 estricto y 1.024 activos en la cohorte. La comprobación funcional calculó el gradiente exterior sin actualizar pesos. Después se cronometraron pasadas separadas, alternando el orden de las ejecuciones con y sin trazas. Hubo dos segmentos de calentamiento y una observación interna de gradientes por pasada con registro. Las puertas se exigieron en las familias que escriben memoria. Se usaron tres parejas por cadencia, salvo en `area_network` a 64 pasos, que tuvo cinco. El coste relativo de cada pareja se calcula dividiendo el tiempo del recorrido con trazas, incluido el volcado Parquet, entre el tiempo de referencia y restando uno. El JSON conserva también los tiempos estables, la latencia por segmento y los picos del asignador de PyTorch. [Recorrido de referencia](../../../benchmarks/comparison_efficiency_20261118/recorrido.py)
+
+M2 conservó la paridad a 16 pasos y el sobrecoste mediano fue del 6,31 %. A 32 quedó en el −4,32 %. La primera medición identificó la traza con el nombre del modelo. La segunda usó `mars_titan_readout`, que corresponde al ejecutor del lector. En `area_network`, la mediana fue del +6,13 % a 16 con el lector original, del +14,94 % a 32 con un tramo empaquetado y del −2,41 % a 64 con el mismo prefijo de eventos ampliado. El rango de las cinco parejas a 64 fue de −17,08 % a +11,17 %. Esta dispersión y el cambio de transporte limitan las comparaciones entre cadencias. Los valores negativos se conservan como observaciones de tiempo.
+
+La revisión `d5f27f50073d12706c08130a155ea958d822b28b` pasó además una comparación cruzada con `f52cc3c332ba358e7afc1772e2038f05505c2285`. En el corte de Titans-MAC de 2021 con semilla 44 coincidieron 115.489 emisiones, 18 conjuntos de gradientes y el estado final. El registro produjo 55 filas. Estas medidas caracterizan los tramos y el equipo indicados. La utilidad predictiva y la comparación entre modelos dependen de las evaluaciones temporales de la campaña. [Uso y recuperación de las trazas](../../../docs/engineering/comparison-campaign-two-machines.md#registrar-los-pasos-de-ajuste-de-pc1)
+
+En el ajuste real de `area_network` de 2021 con semilla 42, la activación partió del paso 2.438. El checkpoint del paso 2.744 confirmó dos partes con 252 filas entre ambas. La validación quedó registrada en el paso 2.488 y los cuatro muestreos de ajuste en 2.496, 2.560, 2.624 y 2.688. Se comprobaron 24 filas de normas de gradiente y cuatro de saturación alta de la puerta de olvido. El número de partes y sus bytes coincidieron con el cursor guardado en el checkpoint. La verificación registró por separado el SHA-256 de cada parte.

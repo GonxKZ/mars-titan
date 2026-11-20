@@ -297,6 +297,29 @@ La herencia reserva los trabajos que siguen disponibles y espera el cierre de lo
 
 El directorio de entradas pertenece al usuario de WSL y reside en su disco Linux. Admite dos archivos de hasta 16 GiB cada uno y un archivo temporal durante una sustitución. La escritura reserva 4 GiB libres. Si el presupuesto de la copia es insuficiente se usa el lector canónico. En una reanudación se conservan el mismo directorio de entradas, las opciones y el estado. Desde el directorio de ejecución se repiten únicamente `run` y después `export-results`.
 
+## Registrar los pasos de ajuste de PC1
+
+La cola puede observar las normas de gradientes por grupo de parámetros y, en los modelos que escriben memoria neuronal, las puertas y la pérdida de asociación. La referencia temporal es el paso del optimizador. Ridge, LightGBM y la regla de momentum conservan sus métricas propias.
+
+La activación utiliza dos archivos en el directorio del estado. `trace-qualification.json` conserva por modelo la huella del ensayo, la cadencia medida en `cuda:0`, la paridad de emisiones y gradientes y el coste temporal frente al mismo recorrido sin registro. `learning-traces.json` identifica la revisión del ejecutor, la declaración y la huella de esa comprobación. Incluye los modelos habilitados, `every` como cadencia general y `max_bytes` como presupuesto por trabajo. `every_by_model` permite usar la cadencia medida de un modelo concreto. El límite de archivo de cada trabajo es de 64 MiB. Una vez preparado el estado, `authorize` vincula el permiso a los bytes de la política.
+
+El primer intento observado registra en `start_step` el paso del checkpoint del que partió. Cada reanudación conserva ese inicio y registra además su propio `resume_step`. Los intervalos previos siguen sin observaciones. El registrador vuelca los datos en las validaciones y los checkpoints. Al alcanzar el presupuesto, su cursor conserva el primer paso que quedó fuera. La selección del mejor modelo y el presupuesto de aprendizaje proceden de la receta habitual.
+
+La etiqueta `comparison-campaign-traces-storage-v1` fija el ejecutor de PC1. Para trasladar un estado de `comparison-campaign-packed-inputs-v1`, se utiliza la orden `inherit` desde el repositorio de administración actualizado, con la cola anterior pausada y la copia científica limpia. El destino debe estar fuera del origen. Se verifican los modelos heredados, se copian los padres necesarios para los lectores y se comprueban el cursor, los índices y los archivos de recuperación del ajuste pausado. Se conserva el origen. Un lector que ya haya empezado debe terminar con su padre original antes de este traslado. [Mediciones en la RTX 4070](../../reports/engineering/comparison-traces-20261120/README.md)
+
+```bash
+previous="$HOME/.local/state/mars-titan/comparison-campaign-packed-v1"
+state="$HOME/.local/state/mars-titan/comparison-campaign-traces-storage-pc1-v1"
+runtime="$HOME/.local/share/mars-titan/worktrees/comparison-traces-storage-pc1-v1"
+declaration=configs/experiments/comparison-campaign-gpu-v1.json
+git worktree add --detach "$runtime" comparison-campaign-traces-storage-v1
+uv run --no-sync python -m mars_titan.training.comparison_campaign inherit \
+  --runtime "$runtime" --source "$previous" --state "$state" \
+  --declaration "$declaration" --previous-declaration "$declaration"
+```
+
+Tras comprobar la herencia y colocar los dos archivos de cualificación en el destino, se ejecutan `authorize` y la cola de recursos con ese estado desde el ejecutor etiquetado. Para reunir su ZIP con un ZIP anterior verificado de PC2, se añade `--verified-learning-traces` al analizador de resultados de la copia administrativa. Esa opción comprueba la revisión de cada equipo y las huellas de la declaración y las cohortes.
+
 ## Seguir, parar y reanudar
 
 ```bash
@@ -328,6 +351,12 @@ El reparto mantiene juntas las comparaciones neuronales de cada año y semilla. 
 
 ## Reunir los resultados
 
+PC1 puede activar `MARS_TITAN_COMPARISON_PREDICTION_STORAGE=compact_v1` al arrancar la cola. La opción predeterminada es `default`. El perfil compacto se aplica a los Parquet de predicciones de validación, calibración y evaluación que escriba cada trabajo asignado a `references`. El intento registra `prediction_storage` cuando se activa. Una reanudación puede conservar particiones emitidas con el formato anterior.
+
+El escritor usa Zstandard de nivel 9 y `BYTE_STREAM_SPLIT` en las columnas flotantes. En la regla de reversión, que repite muchas puntuaciones de rango, solo aplica esa codificación al objetivo y conserva el diccionario de las puntuaciones. Las columnas, los grupos de filas y el orden de las predicciones se mantienen en ambos formatos.
+
+Las seis tablas de validación de Titans, GRU, M2, la regla de reversión, LightGBM y Ridge ocuparon 27.626.501 bytes con la escritura predeterminada y 18.240.069 con el perfil compacto. El contenido Arrow descomprimido coincidió bit a bit y el panel pudo leer las seis tablas. En tres escrituras por perfil con un hilo de CPU, la mediana en Ridge pasó de 151 a 212 ms y la de GRU de 150 a 112 ms. Son tiempos del escritor con los lotes ya en memoria e incluyen la sincronización en disco.
+
 Al terminar, o con la cola pausada, las salidas de cada equipo se guardan en un ZIP. La exportación incluye las predicciones de validación, calibración y evaluación con sus objetivos, la declaración, la identidad de las cohortes, los informes de ajuste, las curvas disponibles y los estados de todos los trabajos. Excluye pesos, checkpoints, estados de optimizador y datos de entrada.
 
 ```bash
@@ -339,6 +368,8 @@ uv run python -m mars_titan.training.comparison_campaign export-results --machin
 ```
 
 El ZIP del segundo equipo se copia al primero sin mezclar las carpetas de entrenamiento. Cada archivo lleva su huella. Un paquete parcial conserva los fallos y los trabajos pendientes, y no se presenta como campaña terminada. La exportación rechaza archivos alterados y no sobrescribe un ZIP existente. Los informes conservan las huellas de los modelos, pero sus pesos no viajan: el paquete sirve para analizar predicciones guardadas, no para volver a ejecutar la inferencia ni continuar el entrenamiento.
+
+Si un intento terminó o quedó pausado con un cursor de trazas confirmado, su entrada `learning_traces` enumera el recibo, el manifiesto y las partes Parquet por orden. `start_step` indica cuándo se activó el registro. `first_observed_step` y `last_observed_step` delimitan los pasos que tienen observaciones y quedan vacíos cuando no hay filas. El recibo conserva el paso del checkpoint y las huellas de la política y de su comprobación técnica. La lectura verifica las huellas de los archivos, el número de partes y sus bytes. Un intento abierto o que siguió usando un checkpoint anterior sin cursor figura como `unconfirmed`. Los paquetes históricos se leen con sus campos originales.
 
 El análisis se ejecuta desde la versión actual de `main` o `develop`, con los dos archivos en la carpeta personal y un directorio de salida nuevo. Con un ZIP de la versión de entradas verificadas y otro del kit o del calentamiento se usa `--verified-packed-inputs`. Para combinar solo el kit y el calentamiento se usa `--verified-warmup`. El análisis comprueba los commits, la declaración, la ausencia de cambios locales y la identidad de las cohortes. Un mismo trabajo en dos ZIP se rechaza. El informe conserva el commit de cada archivo y los intentos de cada trabajo.
 
