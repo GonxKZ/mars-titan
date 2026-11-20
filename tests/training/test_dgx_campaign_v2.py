@@ -32,6 +32,13 @@ CONTROLS = dict(
     titans_mac_rank=("titans_mac_nols", "predictor.session_rank_inputs"),
     titans_mac_ic_rank=("titans_mac_ic", "predictor.session_rank_inputs"),
     titans_mac_aux=("titans_mac", "predictor.auxiliary_horizons"),
+    titans_mac_ema=("titans_mac", "recipe.weight_average"),
+    titans_mac_sf=("titans_mac", "recipe.schedule_free"),
+    titans_mac_mdrop=("titans_mac", "predictor.modality_dropout"),
+    titans_mac_fdrop=("titans_mac", "predictor.fusion_dropout"),
+    titans_mac_wd=("titans_mac", "recipe.weight_decay"),
+    **{"titans_mac_lr3e-4": ("titans_mac", "recipe.learning_rate")},
+    **{"titans_mac_lr3e-3": ("titans_mac", "recipe.learning_rate")},
 )
 
 
@@ -65,7 +72,7 @@ def test_the_campaign_keeps_every_previous_model_and_adds_one_tier_per_variant(d
     for name in added:
         tier = "v_" + name.removeprefix("titans_mac_")
         assert document["models"][name]["tier"] == tier and tier in document["tiers"]
-    assert len(campaign.plan(document, "mars_titan")) == 39 * 19 * 3
+    assert len(campaign.plan(document, "mars_titan")) == 46 * 19 * 3
 
 
 def test_every_runner_selects_by_the_session_rank_ic_and_the_control_by_the_protocol(document):

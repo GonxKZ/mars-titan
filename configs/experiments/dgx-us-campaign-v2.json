@@ -3,7 +3,7 @@
   "kind": "comparison_campaign_v1",
   "market": "US",
   "final_test_access": false,
-  "description": "Campaña DGX v2 en EE. UU. (GB10): los 4.198 activos, orígenes 2005–2023 y semillas 42, 43 y 44. Sustituye a dgx-us-campaign-v1, que se detuvo el 20 de noviembre de 2026 por dos defectos medidos: su mejora mínima de 1e-5 en MAE descartaba las épocas de los lectores (ganancias de 1e-6 a 1e-5 por época), que se emitían con su estado inicial e idénticos entre sí, y la mejora del MAE frente a la predicción cero crece con el cuadrado del IC, así que el MAE no distingue un IC de 0,040 de uno de 0,055. Enmienda declarada del protocolo: cada ajuste y cada lector eligen su estado y paran por la meseta del IC de rangos por sesión de su validación (pérdida (1 − IC) / 2, al menos 30 activos por sesión, paciencia 3, sin mejora mínima); el MAE se sigue midiendo en cada época. Numérica: FP32 con la atención en el núcleo matemático de PyTorch (fp32_ieee_attention_v1), determinismo obligatorio (torch_deterministic_algorithms_v2) y 20 hilos intra e interop declarados, para que la identidad numérica no dependa de la afinidad del proceso. Modelos: los 22 de la v1 con sus niveles, y un nivel por variante de una sola variable sobre el núcleo titans_mac: la regla de selección (titans_mac_mae, el mismo núcleo elegido por el MAE del protocolo), el gradiente interno por autograd (titans_mac_autograd, control de las variantes que la escritura fusionada no cubre), la cascada multiescala de memoria PT5, la modulación por presencia PT6 (FiLM) y las dos juntas, la rama ancha de fusión, la pérdida de Huber de la memoria, las escalas de tiempo geométricas, la atención diferencial, la caja de estabilidad PT1, dos capas, dieciséis tokens persistentes, y el factorial del objetivo de IC por sesión y las entradas en rangos gaussianos con su control sin escalas de aprendizaje, además de los horizontes auxiliares. Criba fijada antes de ver resultados: las variantes se ajustan primero con la semilla 42 en los orígenes 2013–2016, los primeros con noticias y fundamentales en más del 13 % y el 56 % de las filas; una variante se promueve al resto de orígenes y semillas si la media de su IC de rangos de validación supera a la de su control en al menos 0,003, el efecto mínimo detectable estimado. Solo se usa validación. El orden seed_tier recorre cada semilla por todos los niveles; la ejecución va por bloques de orígenes (--origin) porque las copias empaquetadas de los 19 orígenes no caben a la vez en el disco. El test final de 2024 permanece cerrado.",
+  "description": "Campaña DGX v2 en EE. UU. (GB10): los 4.198 activos, orígenes 2005–2023 y semillas 42, 43 y 44. Sustituye a dgx-us-campaign-v1, que se detuvo el 20 de noviembre de 2026 por dos defectos medidos: su mejora mínima de 1e-5 en MAE descartaba las épocas de los lectores (ganancias de 1e-6 a 1e-5 por época), que se emitían con su estado inicial e idénticos entre sí, y la mejora del MAE frente a la predicción cero crece con el cuadrado del IC, así que el MAE no distingue un IC de 0,040 de uno de 0,055. Enmienda declarada del protocolo: cada ajuste y cada lector eligen su estado y paran por la meseta del IC de rangos por sesión de su validación (pérdida (1 − IC) / 2, al menos 30 activos por sesión, paciencia 3, sin mejora mínima); el MAE se sigue midiendo en cada época. Numérica: FP32 con la atención en el núcleo matemático de PyTorch (fp32_ieee_attention_v1), determinismo obligatorio (torch_deterministic_algorithms_v2) y 20 hilos intra e interop declarados, para que la identidad numérica no dependa de la afinidad del proceso. Modelos: los 22 de la v1 con sus niveles, y un nivel por variante de una sola variable sobre el núcleo titans_mac: la regla de selección (titans_mac_mae, el mismo núcleo elegido por el MAE del protocolo), el gradiente interno por autograd (titans_mac_autograd, control de las variantes que la escritura fusionada no cubre), la cascada multiescala de memoria PT5, la modulación por presencia PT6 (FiLM) y las dos juntas, la rama ancha de fusión, la pérdida de Huber de la memoria, las escalas de tiempo geométricas, la atención diferencial, la caja de estabilidad PT1, dos capas, dieciséis tokens persistentes, y el factorial del objetivo de IC por sesión y las entradas en rangos gaussianos con su control sin escalas de aprendizaje, además de los horizontes auxiliares, y la regularización y el optimizador que la búsqueda de la v1 juzgó por MAE en 2005–2007, donde no hay noticias ni fundamentales: media exponencial de pesos, AdamW sin calendario, retirada de modalidades, dropout de fusión, decaimiento de pesos y las tasas de aprendizaje 3e-4 y 3e-3. Criba fijada antes de ver resultados: las variantes se ajustan primero con la semilla 42 en los orígenes 2013–2016, los primeros con noticias y fundamentales en más del 13 % y el 56 % de las filas; una variante se promueve al resto de orígenes y semillas si la media de su IC de rangos de validación supera a la de su control en al menos 0,003, el efecto mínimo detectable estimado. Solo se usa validación. El orden seed_tier recorre cada semilla por todos los niveles; la ejecución va por bloques de orígenes (--origin) porque las copias empaquetadas de los 19 orígenes no caben a la vez en el disco. El test final de 2024 permanece cerrado.",
   "source_declaration_sha256": "dd8292f06e6346662c679c17559fc3ac41334001dec4e65e0ae762647b2b0e22",
   "cohort": {
     "size": 4198
@@ -133,7 +133,14 @@
     "v_ic",
     "v_rank",
     "v_ic_rank",
-    "v_aux"
+    "v_aux",
+    "v_ema",
+    "v_sf",
+    "v_mdrop",
+    "v_fdrop",
+    "v_wd",
+    "v_lr3e-4",
+    "v_lr3e-3"
   ],
   "recipes": {
     "core": "configs/titans/dgx-us-core-v2.json",
@@ -141,6 +148,13 @@
     "core_nols": "configs/titans/dgx-us-core-nols-v2.json",
     "core_l2": "configs/titans/dgx-us-core-l2-v2.json",
     "core_p16": "configs/titans/dgx-us-core-p16-v2.json",
+    "core_ema": "configs/titans/dgx-us-core-ema-v2.json",
+    "core_sf": "configs/titans/dgx-us-core-sf-v2.json",
+    "core_mdrop": "configs/titans/dgx-us-core-mdrop-v2.json",
+    "core_fdrop": "configs/titans/dgx-us-core-fdrop-v2.json",
+    "core_wd": "configs/titans/dgx-us-core-wd-v2.json",
+    "core_lr3e-4": "configs/titans/dgx-us-core-lr3e-4-v2.json",
+    "core_lr3e-3": "configs/titans/dgx-us-core-lr3e-3-v2.json",
     "reader": "configs/titans/dgx-us-reader-v2.json",
     "reader_cognitive": "configs/titans/dgx-us-reader-cognitive-v2.json",
     "reader_cognitive_constant": "configs/titans/dgx-us-reader-cognitive-constant-v2.json"
@@ -726,6 +740,55 @@
         }
       },
       "tier": "v_aux"
+    },
+    "titans_mac_ema": {
+      "machine": "mars_titan",
+      "runner": "fit",
+      "variant": "mac_online",
+      "recipe": "core_ema",
+      "tier": "v_ema"
+    },
+    "titans_mac_sf": {
+      "machine": "mars_titan",
+      "runner": "fit",
+      "variant": "mac_online",
+      "recipe": "core_sf",
+      "tier": "v_sf"
+    },
+    "titans_mac_mdrop": {
+      "machine": "mars_titan",
+      "runner": "fit",
+      "variant": "mac_online",
+      "recipe": "core_mdrop",
+      "tier": "v_mdrop"
+    },
+    "titans_mac_fdrop": {
+      "machine": "mars_titan",
+      "runner": "fit",
+      "variant": "mac_online",
+      "recipe": "core_fdrop",
+      "tier": "v_fdrop"
+    },
+    "titans_mac_wd": {
+      "machine": "mars_titan",
+      "runner": "fit",
+      "variant": "mac_online",
+      "recipe": "core_wd",
+      "tier": "v_wd"
+    },
+    "titans_mac_lr3e-4": {
+      "machine": "mars_titan",
+      "runner": "fit",
+      "variant": "mac_online",
+      "recipe": "core_lr3e-4",
+      "tier": "v_lr3e-4"
+    },
+    "titans_mac_lr3e-3": {
+      "machine": "mars_titan",
+      "runner": "fit",
+      "variant": "mac_online",
+      "recipe": "core_lr3e-3",
+      "tier": "v_lr3e-3"
     }
   }
 }
