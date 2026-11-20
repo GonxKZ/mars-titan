@@ -844,6 +844,49 @@ def origin_series(declaration, campaign, state, views, year, input_policy=HISTOR
     )
 
 
+def tool_costs(declaration, state, means=None):
+    """Cómputo registrado del núcleo y de cada herramienta en los orígenes y semillas declarados.
+
+    Suma los segundos de pared de todos los intentos de cada trabajo en el registro de la cola
+    de la campaña. Un lector cuenta solo su propio ajuste: el de su padre ya es el del núcleo.
+    Con `means` (medias por sesión del informe) y Shapley declarado, añade la mejora de IC de
+    cada herramienta por hora de cómputo propia.
+    """
+    from mars_titan.training.comparison_campaign import DONE
+
+    def seconds(model):
+        total = 0.0
+        for year in declaration["origins"]:
+            for seed in declaration["seeds"]:
+                path = Path(state) / "queue" / f"{model}--{year}--seed-{seed}.json"
+                _require(path.is_file(), f"Falta el registro del trabajo {path.name}")
+                record = json.loads(path.read_text(encoding="utf-8"))
+                _require(record.get("status") == DONE, f"El trabajo {path.name} no ha terminado")
+                values = [attempt.get("seconds") for attempt in record.get("attempts", [])]
+                _require(
+                    values and all(isinstance(v, (int, float)) and v >= 0 for v in values),
+                    f"El registro {path.name} no declara la duración de cada intento",
+                )
+                total += math.fsum(values)
+        return total
+
+    core = declaration["core"]
+    result = {CORE: dict(models={core: seconds(core)})}
+    for tool, models in declaration["tools"].items():
+        result[tool] = dict(models={model: seconds(model) for model in models})
+    for entry in result.values():
+        entry["seconds"] = math.fsum(entry["models"].values())
+        entry["hours"] = entry["seconds"] / 3600
+    if means is not None and declaration["shapley"]:
+        for tool in declaration["tools"]:
+            value = means[f"shapley({tool})"]["mean"]
+            hours = result[tool]["hours"]
+            result[tool]["shapley_per_hour"] = (
+                None if value is None or hours == 0 else value / hours
+            )
+    return result
+
+
 def families(declaration, series, day):
     """Familias de contrastes declaradas por diseño, cada una con su propia corrección."""
     inference = declaration["inference"]
@@ -945,6 +988,7 @@ def analyze(declaration, campaign, state, views, *, processes=1):
         metric=declaration["metric"],
         means=means,
         families=families(declaration, series, days),
+        costs=tool_costs(declaration, state, means),
         origins={
             str(item["year"]): dict(
                 telemetry=item["telemetry"], modalities=item["modalities"], inputs=item["inputs"]
