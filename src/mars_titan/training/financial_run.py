@@ -1407,6 +1407,7 @@ class ChronologicalTrainer(ChronologicalInference):
     def _train_pass(self, run, cursor, stop, save):
         predictor, source = self.predictor, self.train
         predictor.train()
+        predictor.set_fit_epoch(cursor["epoch"])
         specification = predictor.config.inputs
         # Con prefetch, el hilo productor lee el evento siguiente y valida sus bloques mientras
         # este hilo calcula el actual. La validación no depende del estado del ajuste.
@@ -1647,6 +1648,7 @@ class ChronologicalTrainer(ChronologicalInference):
                 self.traces.restore(state.get("traces"))
             if state["run"] is not None:
                 self.predictor.train()
+                self.predictor.set_fit_epoch(cursor["epoch"])
                 run = self._restore(state["run"])
             # Una ejecución ya conjunta solo continúa o se confirma con su misma época común.
             bind_joint_epoch(report, joint_epoch, self.recipe.selection, self.recipe.epochs)
