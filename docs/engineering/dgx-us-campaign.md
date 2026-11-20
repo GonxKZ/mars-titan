@@ -457,7 +457,8 @@ completados. La v1 queda como registro del brazo «selección por MAE»; su esta
   `torch_deterministic_algorithms_v2` activa el determinismo obligatorio de PyTorch sin el relleno
   de la memoria sin inicializar. La identidad de cada trabajo registra las dos políticas.
 - **Hilos declarados** (`execution.threads`: 20 intra y 20 interop). Cada trabajo los fija al
-  arrancar y los exporta a OpenMP y OpenBLAS, así que su identidad no depende de dónde se ejecute.
+  arrancar, siempre de forma explícita, y los exporta a OpenMP y OpenBLAS, así que su identidad
+  no depende de dónde se ejecute (véase el relanzamiento del 20 de noviembre).
 - **Presupuesto de GPU real.** Las ventanas de ajuste y de lector llamaban a `require_cuda()` con
   su valor por defecto, los 6 GiB del portátil de 8 GB, que rebajaba en silencio el tope de la
   campaña: con 8 GiB declarados, cada trabajo de la v1 tuvo 6. Con la atención en el núcleo
@@ -467,7 +468,7 @@ completados. La v1 queda como registro del brazo «selección por MAE»; su esta
 - **Bloques de orígenes.** Las copias empaquetadas de los 19 orígenes suman unos 570 GiB y no
   caben a la vez en el disco. La cola se ejecuta por bloques (`--origin`), empezando por
   2013–2016, y las copias de un bloque se borran cuando termina. `budget.min_free_gib` sube a 60.
-- **Variantes de una sola variable.** Además de los 22 modelos de la v1, 26 variantes del núcleo
+- **Variantes de una sola variable.** Además de los 22 modelos de la v1, 31 variantes del núcleo
   `titans_mac`, cada una en su propio nivel. Una prueba
   (`tests/training/test_dgx_campaign_v2.py`) exige que cada variante difiera de su control en una
   única variable declarada.
@@ -489,11 +490,24 @@ completados. La v1 queda como registro del brazo «selección por MAE»; su esta
   | Entradas y objetivo | `ic_rank` | `ic` |
   | Regularización | `mdrop`, `fdrop`, `wd` | `titans_mac` |
   | Optimizador | `ema`, `sf`, `lr3e-4`, `lr3e-3` | `titans_mac` |
+  | Modalidades | `macro` (macro como condicionante) | `titans_mac` |
+  | Modalidades | `no_charts`, `no_macro`, `no_news`, `no_fundamentals` | `titans_mac` |
+
+  `macro` (`presence_modulation: macro_film_v1`) usa los 140 indicadores de la cesta (70 series y
+  70 fórmulas) como condicionante: el bloque macro es el mismo para todos los activos de una
+  sesión, así que sumado a la fusión desplaza todas las filas a la vez y no puede cambiar su
+  orden. La modulación reescala cada coordenada de los cuatro bloques propios del activo con
+  1 + tanh de una proyección lineal del bloque macro, más un desplazamiento; empieza en cero y
+  una modalidad ausente sigue anulada. Las cuatro retiradas (`removed_modalities`) quitan una
+  modalidad del predictor en el ajuste y al emitir, por la ruta de una ausencia real: miden qué
+  aporta cada una cuando el modelo puede adaptarse a no tenerla. El vector del gráfico es un
+  ResNet18 de la misma ventana de precios y ocupa el 85 % de las muestras.
 
 - **Criba fijada antes de ver resultados.** Las variantes se ajustan primero con la semilla 42 en
   los orígenes 2013–2016 (`--seed 42`). Una variante se promueve al resto de orígenes y semillas
-  si la media de su IC de rangos de validación supera a la de su control en al menos 0,003. Solo se
-  usa validación.
+  si la media de su IC de rangos de validación supera a la de su control en al menos 0,003. Una
+  modalidad aporta si retirarla baja esa media en al menos 0,003 y es prescindible si la
+  diferencia queda dentro de ±0,003. Solo se usa validación.
 - **Un origen cada vez.** `scripts/dgx_campaign_phases.sh` recorre un archivo de fases
   (`configs/experiments/phases/`), cada una una orden `run` limitada con `--origin`, `--seed` y
   `--tier`. Con trabajadores repartidos entre varios orígenes, cada uno leía una copia distinta de
@@ -503,6 +517,112 @@ completados. La v1 queda como registro del brazo «selección por MAE»; su esta
 - **La comprobación inicial detectó tres declaraciones inválidas** antes de gastar cómputo: el
   objetivo de IC solo sustituye a la cabeza escalar (de ahí `scalar` como su control) y la caja de
   PT1 exige una puerta de momento inicial menor que su techo de 0,3 (de ahí `eta015`).
+
+### Relanzamiento del 20 de noviembre: hilos, ajustes sin informe y memoria del controlador
+
+La campaña v2 se relanzó en el commit `10cd0c47` tras tres hallazgos:
+
+- **Los hilos entre operaciones no estaban fijados.** Mientras no se fijan de forma explícita,
+  PyTorch responde a `get_num_interop_threads()` con los núcleos de la máscara de afinidad del
+  hilo que pregunta. Con 20 declarados en un equipo de 20 núcleos, `apply_threads` no fijaba
+  nada, y al sujetar después el hilo principal de un trabajo a los diez núcleos X925 su identidad
+  numérica pasaba a 10 hilos: todos los trabajos fallaban en su siguiente guardado («El código o
+  la configuración numérica cambiaron durante el recorrido») o en su siguiente intento («La
+  identidad de la ventana ha cambiado»). Ningún trabajo del lanzamiento anterior llegó a
+  completarse. `apply_threads` fija ahora siempre los dos valores y una prueba lo comprueba
+  cambiando la afinidad después. Con el arreglo, el hilo principal de cada trabajo vuelve a
+  sujetarse a los núcleos rápidos: sin sujetarlo pasaba el 36 % del tiempo en los A725, cuya
+  capacidad es el 72 % de la de un X925.
+- **Un ajuste que moría antes de su primer estado no podía reintentarse.** La carpeta del ajuste
+  existía y el informe no: ni podía empezar ni continuar («El informe de la ejecución no es
+  regular»). `resumable_run` retira esa carpeta y las tres ventanas que ajustan (Titans, lectores
+  y postentrenamiento) empiezan de nuevo.
+- **La memoria que libera la GPU no vuelve sola al sistema.** El controlador abierto de NVIDIA
+  (590.48.01) guarda las páginas de sistema que libera en reservas propias
+  (`NVreg_EnableSystemMemoryPools`, 0x211 por defecto: 4 KiB, 64 KiB y 2 MiB) y solo las devuelve
+  bajo presión de memoria, con sus reductores `nv-sysmem-alloc-node-*`. Esas páginas no cuentan
+  ni como libres ni como disponibles: tras parar seis trabajos quedaron 74 GiB ocupados sin
+  ningún proceso, que los trabajos siguientes reutilizaron. Consecuencias para este equipo de
+  memoria unificada: el pico de memoria de GPU alcanzado sigue pesando sobre producción hasta que
+  la presión lo recorta, así que la campaña no pasa de 4 trabajos a la vez; crear un contexto de
+  CUDA fuera de MPS puede fallar por memoria con poca memoria libre aunque haya mucha
+  disponible; y cualquier tarea de datos que escriba muchos gigas (restaurar, empaquetar, copiar)
+  se ejecuta en una unidad con `MemoryHigh` y ritmo limitado, porque su caché de página, sumada a
+  la memoria de GPU, llegó a detener a los contenedores de producción el 30 % del tiempo durante
+  unos minutos.
+
+Con cuatro trabajos en el mismo origen y el hilo principal sujeto, una época de `titans_mac` en el
+origen 2013 tarda unos 8 minutos. El IC de rangos de validación de su época 3 es 0,02154, el
+mismo valor que en el lanzamiento anterior con otro commit: el recorrido es reproducible.
+
+## Campaña conjunta de EE. UU. y China (20 de noviembre de 2026)
+
+### Datos
+
+La copia de datos para la DGX (`MARS-TITAN-DGX-US-CN-completo.zip`, 169,32 GB en Drive) se
+descargó truncada: el zip, generado al vuelo, se cortó a los 71,85 GB y no tiene directorio
+central. Sus 1.190 entradas completas se leyeron por su posición con un índice propio, sin
+ejecutar nada del paquete, y contienen todo lo que entrena:
+
+| Grupo | Contenido | Destino bajo `/home/gonzalo` |
+| --- | --- | --- |
+| `Datos multimodales US` | kit de EE. UU. ya restaurado (idéntico: mismo `DATOS-US.json`) | sin cambios |
+| `A00-macroeconomia` | series macro de EE. UU. y China | `history-2000-20261007/full-macro` |
+| `A01-preparados-v31` | precios y contextos preparados | `materialization/prepared-v3.1` |
+| `A02-etiquetas-v31` | etiquetas y catálogo de la edición | `materialization/targets-v3.1`, `edition-catalog-20261013` |
+| `A03-muestras-codificadas-v31` | muestras codificadas de China y cachés de vectores | `materialization/encoded-history-v3.1` |
+| `A04`–`A06` | vistas de EE. UU. (informe), China (13 cortes) y conjuntas (19 cortes) | `campaign-a-v2-views-v31-20261013/views` |
+
+Cada volumen se comprobó con la huella SHA-256 de su manifiesto antes de descomprimirlo y los
+157.846 archivos se incorporaron sin sobrescribir ninguno (no existía ninguno). Los originales
+`B01`–`B06` (series, noticias, imágenes, tablas, externos y embeddings) quedan comprimidos en
+`/home/gpic/TITANS-IA/MARS-TITAN-DGX-US-CN`, comprobados con el CRC-32 del zip y su SHA-256.
+Falta el resto de `B07-procesados` (intermedios y ediciones anteriores) y lo que venga detrás:
+no entrena nada de la edición v3.1. Del repositorio del paquete no se tomó código: su rama
+`main` no añade la campaña conjunta al motor.
+
+La edición histórica v3.1 tiene 4.198 activos y 15.874.289 muestras en EE. UU. y 810 activos y
+2.824.687 muestras en China. En el origen 2013 la vista conjunta tiene 6.080.386 filas de ajuste
+(5.353.824 de EE. UU.); en el de 2023, 16.204.399.
+
+### Motor y declaración
+
+`comparison_campaign` acepta el mercado `US+CN`. Su cohorte es la vista completa de cada origen,
+byte a byte (`cohort.rule: entire_source_view`, `write_full_view`): no se elige ningún activo, así
+que ni los objetivos ni la cobertura intervienen. La cohorte por huella sigue siendo solo de
+EE. UU. Cada mercado conserva su calendario, los dos comparten ventana y cada sesión de la
+selección es un mercado en un instante. `configs/experiments/dgx-us-cn-campaign-v1.json` declara
+los mismos modelos, recetas y reglas que la v2 de EE. UU.: la diferencia entre un modelo de la
+conjunta y el mismo modelo, origen y semilla de EE. UU. es el mercado añadido. No hay criba
+propia: se ajustan los niveles principales y después las variantes que promueva la criba de
+EE. UU.
+
+### Relevo de campañas
+
+`scripts/dgx_campaign_relay.sh` recorre un plan cuyas fases pertenecen a varias campañas, cada
+una con la copia fija de su commit autorizado: las dos campañas se alternan en lugar de competir
+por la GPU, la memoria unificada y la caché de página de sus orígenes. El avance se guarda junto
+al plan, que se puede ampliar por el final. Una línea `limpia|<estado>/packed-inputs/<año>`
+retira las copias empaquetadas de un origen cuando sus fases terminan. La guardia de producción
+ya no para el relevo: crea un archivo de pausa, los trabajos paran en su siguiente barrera y, con
+diez lecturas seguidas de memoria y disco recuperados, la pausa se retira y la fase se repite
+desde sus checkpoints. Una fase que falla nada más arrancar detiene el relevo sin consumir el
+plan. Tras un reinicio del equipo, `mars-titan-arranque.service` vuelve a crear MPS, la guardia,
+la afinidad y el relevo, que continúa por la fase que tocaba.
+
+El plan (`configs/experiments/phases/dgx-relay-plan-20261120.txt`), en orden de prioridad:
+
+| Bloque | Campaña | Orígenes | Semillas | Modelos |
+| --- | --- | --- | --- | --- |
+| A | EE. UU. | 2013–2016 | 42 | los 53 (criba) |
+| B | conjunta | 2013–2016 | 42 | los 22 principales |
+| C | las dos | 2023 → 2017 | 42 | los 22 principales |
+| D | las dos | 2021–2023 | 43 y 44 | núcleo, sus lectores y sus controles |
+
+A y B se alternan origen a origen. Las variantes que promueva la criba se añaden a C y D al
+analizar A y B. Son 692 trabajos; con unos 3 trabajos por hora en los orígenes pequeños y menos
+en los grandes, el plazo del 2 de diciembre puede cortar el final del plan, que por eso está
+ordenado por prioridad.
 
 ## Agente cognitivo con herramientas
 
