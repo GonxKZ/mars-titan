@@ -32,20 +32,9 @@ import torch
 
 from mars_titan.data.storage import atomic_json
 
-SCHEMA_VERSION = 1
-KIND = "learning_traces"
-STATS = ("mean", "std", "min", "max", "abs_max", "l2", "finite_fraction")
-SCHEMA = pa.schema(
-    [
-        ("step", pa.int64()),
-        ("phase", pa.string()),
-        ("metric", pa.string()),
-        ("group", pa.string()),
-        ("stat", pa.string()),
-        ("value", pa.float64()),
-    ]
-)
-_NAME = re.compile(r"[a-z][a-z0-9_.:/-]{0,95}")
+from .schema import KIND, NAME_PATTERN, SCHEMA, SCHEMA_VERSION, STATS
+
+_NAME = re.compile(NAME_PATTERN)
 STEP_UNITS = ("optimizer_step", "write_event", "boosting_round", "fit", "transition", "wave")
 
 

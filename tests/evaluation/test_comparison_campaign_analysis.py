@@ -340,6 +340,36 @@ def test_memory_peaks_without_attempts_remain_unknown():
     assert peaks["peak_rss_bytes_attempts"] == 0
 
 
+def test_effective_throughput_uses_completed_training_epochs_and_all_attempts():
+    bundle = SimpleNamespace(
+        manifest=dict(machine="references", provenance=dict(training_commit="a" * 40)),
+        read_json=lambda name: dict(
+            attempts=[dict(process_wall_seconds=2.0), dict(process_wall_seconds=5.0)]
+        ),
+    )
+    job = dict(
+        record="r", model="gru", runner="fit", year=2019, seed=42, status="completed", needs=None
+    )
+    fit = dict(
+        status="completed",
+        history=[
+            dict(epoch=0, train=None),
+            dict(epoch=1, train=dict(observations=20, labels=18)),
+            dict(epoch=2, train=dict(observations=15, labels=13)),
+        ],
+    )
+    row = analysis._resource_row(bundle, "gru/2019/seed-42", job, fit)
+    assert (
+        row["training_observations"] == 35 and row["training_observations_per_wall_second"] == 5.0
+    )
+    fit["history"][2]["train"].pop("observations")
+    row = analysis._resource_row(bundle, "gru/2019/seed-42", job, fit)
+    assert (
+        row["training_observations"] is None
+        and row["training_observations_per_wall_second"] is None
+    )
+
+
 def test_analysis_never_overwrites_previous_outputs(tmp_path):
     first, second = packages(tmp_path)
     destination = tmp_path / "analysis"

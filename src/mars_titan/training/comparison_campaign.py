@@ -42,6 +42,7 @@ from pathlib import Path
 from mars_titan.data.cohort_files import read_manifest, safe_destination
 from mars_titan.data.storage import atomic_json
 
+from . import comparison_traces
 from .comparison_cohorts import write_cohort
 from .input_pipeline import PipelineOptions
 from .learning_hold import HOLD_ENV
@@ -511,9 +512,17 @@ def authorize(layout, declaration_sha256, *, note, commit=None, changes=None):
         authorized_at_utc=datetime.now(UTC).isoformat(),
         final_test_access=False,
     )
+    _, trace_digest = comparison_traces.read_policy(layout.state, commit, declaration_sha256)
+    if trace_digest is not None:
+        document["learning_trace_policy_sha256"] = trace_digest
     if layout.authorization.is_file():
         previous = json.loads(layout.authorization.read_text(encoding="utf-8"))
-        identity = ("declaration_sha256", "code_commit", "code_changes_sha256")
+        identity = (
+            "declaration_sha256",
+            "code_commit",
+            "code_changes_sha256",
+            "learning_trace_policy_sha256",
+        )
         if any(previous.get(name) != document.get(name) for name in identity):
             started = any(
                 json.loads(path.read_text(encoding="utf-8")).get("attempts")
@@ -593,7 +602,9 @@ def job_state(layout, job, records=None):
     return PENDING if status == RUNNING else status
 
 
-def execute_job(declaration, layout, job, *, device="cuda:0", root=ROOT, preflight=False):
+def execute_job(
+    declaration, layout, job, *, device="cuda:0", root=ROOT, preflight=False, traces=None
+):
     """Ejecutar un trabajo en este proceso y devolver el informe de su ventana.
 
     Importa PyTorch y los ejecutores aquí, de modo que planificar y consultar el estado no
@@ -656,6 +667,8 @@ def execute_job(declaration, layout, job, *, device="cuda:0", root=ROOT, preflig
                 stop=stop,
                 stopping=rule,
                 predictor_changes=model.get("predictor_changes"),
+                traces=traces,
+                trace_family=job.model,
             )
         from .mars_titan_walk_forward import run_mars_titan_window
 
@@ -670,6 +683,7 @@ def execute_job(declaration, layout, job, *, device="cuda:0", root=ROOT, preflig
             device=device,
             stop=stop,
             stopping=rule,
+            traces=traces,
         )
 
 
@@ -686,6 +700,7 @@ def run_job(declaration, layout, job, *, device="cuda:0", root=ROOT, preflight=F
     from .comparison_telemetry import AttemptMetrics, ProcessGpuMemory
 
     record = read_record(layout, job.key)
+    permission = {}
     attempt = dict(started_at_utc=datetime.now(UTC).isoformat(), pid=os.getpid())
     if layout.authorization.is_file():
         permission = json.loads(layout.authorization.read_text(encoding="utf-8"))
@@ -712,6 +727,14 @@ def run_job(declaration, layout, job, *, device="cuda:0", root=ROOT, preflight=F
         and model["config"].get("execution", {}).get("backend") == "opencl_float64"
     )
     try:
+        observed = None
+        if job.runner in GPU_RUNNERS:
+            observed = comparison_traces.prepare(
+                layout, job, declaration["models"], record, permission
+            )
+            if observed is not None:
+                attempt["learning_traces"] = observed
+                _write_record(layout, job.key, record)
         if opencl:
             from mars_titan.models.baselines.lightgbm_backend import check_gpu_backend
 
@@ -738,9 +761,14 @@ def run_job(declaration, layout, job, *, device="cuda:0", root=ROOT, preflight=F
             )
             attempt["prediction_storage"] = profile
             _write_record(layout, job.key, record)
+        options = dict(device=device, root=root, preflight=preflight)
+        if observed is not None:
+            options["traces"] = {k: observed[k] for k in ("every", "max_bytes")}
         with flags, writer:
-            report = execute_job(
-                declaration, layout, job, device=device, root=root, preflight=preflight
+            report = execute_job(declaration, layout, job, **options)
+        if observed is not None:
+            attempt["trace_checkpoint_confirmed"] = comparison_traces.confirm(
+                layout.output(job.key), observed, paused=report["status"] == PAUSED
             )
         status = DONE if report["status"] == "completed" else PAUSED
         attempt.update(status=report["status"])

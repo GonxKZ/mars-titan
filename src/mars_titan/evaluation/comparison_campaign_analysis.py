@@ -17,7 +17,12 @@ from threadpoolctl import threadpool_limits
 
 from mars_titan.data.storage import atomic_json, sha256
 from mars_titan.training.comparison_campaign import DONE, HISTORY, MACHINES, MAGNITUDE_RUNNERS, plan
-from mars_titan.training.comparison_inheritance import GPU_DECLARATION, GPU_RELEASE, WARMUP_RELEASE
+from mars_titan.training.comparison_inheritance import (
+    GPU_DECLARATION,
+    GPU_RELEASE,
+    TRACE_RELEASE,
+    WARMUP_RELEASE,
+)
 from mars_titan.training.comparison_input_migration import PACKED_RELEASE
 
 from . import comparison_metrics as metrics
@@ -60,15 +65,28 @@ def _csv(path, rows, fields):
         writer.writerows(rows)
 
 
-def _merge(bundles, *, verified_warmup=False, verified_packed_inputs=False):
+def _merge(
+    bundles, *, verified_warmup=False, verified_packed_inputs=False, verified_learning_traces=False
+):
     first = bundles[0].manifest
     jobs = {}
     for bundle in bundles:
         current = bundle.manifest
         base, other = first["provenance"], current["provenance"]
         pair = {base["training_commit"], other["training_commit"]}
+        traces_pair = (
+            verified_learning_traces
+            and len(pair) == 2
+            and TRACE_RELEASE in pair
+            and pair <= WARMUP_COMMITS | {PACKED_RELEASE, TRACE_RELEASE}
+            and {
+                doc.get("machine"): doc["provenance"]["training_commit"] for doc in (first, current)
+            }
+            == {"references": TRACE_RELEASE, "mars_titan": next(iter(pair - {TRACE_RELEASE}))}
+        )
         qualified_pair = (
-            verified_warmup
+            traces_pair
+            or verified_warmup
             and pair == WARMUP_COMMITS
             or verified_packed_inputs
             and PACKED_RELEASE in pair
@@ -132,6 +150,22 @@ def _memory_peaks(resources, attempts):
     return peaks
 
 
+def _training_observations(fit):
+    """Observaciones de épocas completas con contadores disponibles desde la primera."""
+    if not fit or fit.get("status") != DONE:
+        return None
+    epochs = [entry for entry in fit.get("history", []) if entry.get("epoch") != 0]
+    if not epochs:
+        return None
+    count = 0
+    for index, entry in enumerate(epochs, 1):
+        observations = (entry.get("train") or {}).get("observations")
+        if entry.get("epoch") != index or type(observations) is not int or observations < 0:
+            return None
+        count += observations
+    return count
+
+
 def _resource_row(bundle, key, descriptor, fit):
     record = bundle.read_json(descriptor["record"])
     attempts = record.get("attempts", [])
@@ -148,6 +182,8 @@ def _resource_row(bundle, key, descriptor, fit):
     resource = [row["resources"] for row in attempts if isinstance(row.get("resources"), dict)]
 
     whole = total("process_wall_seconds")
+    wall = whole if whole is not None else total("seconds")
+    observations = _training_observations(fit) if descriptor["status"] == DONE else None
     cpu = [row.get("cpu_seconds") for row in resource]
     warmup = (fit or {}).get("validation_warmup")
     archives = [a["training_input_archive"] for a in attempts if "training_input_archive" in a]
@@ -178,8 +214,14 @@ def _resource_row(bundle, key, descriptor, fit):
         bundle_training_commit=bundle.manifest["provenance"]["training_commit"],
         status=descriptor["status"],
         attempts=len(attempts),
-        wall_seconds=whole if whole is not None else total("seconds"),
+        wall_seconds=wall,
         wall_scope="full_process" if whole is not None else "reported_attempts_legacy",
+        training_observations=observations,
+        training_observations_per_wall_second=(
+            observations / wall
+            if observations is not None and wall is not None and wall > 0
+            else None
+        ),
         cpu_seconds=math.fsum(cpu)
         if len(resource) == len(attempts) and cpu and all(v is not None for v in cpu)
         else None,
@@ -540,6 +582,8 @@ def _write_outputs(output, report, summary_rows, curves, plots):
             "attempts",
             "wall_seconds",
             "wall_scope",
+            "training_observations",
+            "training_observations_per_wall_second",
             "parent_job",
             "pipeline_wall_seconds",
             "pipeline_cost_reason",
@@ -595,7 +639,10 @@ def _write_outputs(output, report, summary_rows, curves, plots):
         "`learning-curves.csv` y `learning-curves.json` conservan las curvas registradas. "
         "`resources.csv` describe los intentos y sus costes. Un pico de memoria vacío "
         "indica que falta cobertura. El prefijo `observed_` muestra el mayor valor "
-        "registrado y el sufijo `_attempts` cuenta los intentos que lo midieron.\n\n"
+        "registrado y el sufijo `_attempts` cuenta los intentos que lo midieron. "
+        "`training_observations_per_wall_second` divide las observaciones de ajuste "
+        "de las épocas completas entre los segundos registrados de todos los intentos, "
+        "incluidas validaciones y recuperaciones.\n\n"
         "Los valores vacíos no se sustituyen por cero. Los MAE brutos de controles "
         "de orden no son comparables. El cambio porcentual del MAE es una variación "
         "del error, no una rentabilidad. Las correlaciones indefinidas mantienen su máscara. "
@@ -620,6 +667,7 @@ def analyze(
     plots=True,
     verified_warmup=False,
     verified_packed_inputs=False,
+    verified_learning_traces=False,
 ):
     """Reunir uno o dos paquetes. La inferencia requiere todos los trabajos de su alcance."""
     _require(1 <= len(paths) <= 2, "Se necesitan uno o dos paquetes de resultados")
@@ -629,7 +677,10 @@ def analyze(
     with ExitStack() as stack, threadpool_limits(limits=2):
         bundles = [stack.enter_context(ResultsBundle(path)) for path in sorted(paths, key=str)]
         jobs = _merge(
-            bundles, verified_warmup=verified_warmup, verified_packed_inputs=verified_packed_inputs
+            bundles,
+            verified_warmup=verified_warmup,
+            verified_packed_inputs=verified_packed_inputs,
+            verified_learning_traces=verified_learning_traces,
         )
         commits = {b.manifest["provenance"]["training_commit"] for b in bundles}
         declaration = bundles[0].declaration
@@ -671,7 +722,10 @@ def analyze(
                     bundles[0].manifest["provenance"],
                     training_commit=next(iter(commits)) if len(commits) == 1 else None,
                     verified_warmup=commits == WARMUP_COMMITS,
-                    verified_packed_inputs=len(commits) > 1 and PACKED_RELEASE in commits,
+                    verified_packed_inputs=len(commits) > 1
+                    and PACKED_RELEASE in commits
+                    and TRACE_RELEASE not in commits,
+                    verified_learning_traces=len(commits) > 1 and TRACE_RELEASE in commits,
                     archives=[
                         dict(
                             name=b.path.name,
@@ -689,6 +743,7 @@ def analyze(
                         for name in (
                             "comparison_campaign_analysis",
                             "comparison_bundle",
+                            "comparison_trace_bundle",
                             "comparison_inference",
                             "comparison_metrics",
                             "comparison_protocol",
@@ -761,6 +816,11 @@ def main(argv=None):
         action="store_true",
         help="Combinar entradas verificadas con una de las dos versiones comprobadas",
     )
+    parser.add_argument(
+        "--verified-learning-traces",
+        action="store_true",
+        help="Combinar las trazas de PC1 con una versión de PC2 comprobada para la misma campaña",
+    )
     args = parser.parse_args(argv)
     report = analyze(
         args.bundle,
@@ -770,6 +830,7 @@ def main(argv=None):
         plots=not args.no_plots,
         verified_warmup=args.verified_warmup,
         verified_packed_inputs=args.verified_packed_inputs,
+        verified_learning_traces=args.verified_learning_traces,
     )
     print(f"Análisis escrito en {args.output}. Matriz completa: {report['complete']}")
     return 0

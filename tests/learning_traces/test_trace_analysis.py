@@ -141,6 +141,17 @@ def test_shared_memory_and_plasticity_remain_visible_without_mixing_their_counts
     assert "shared_plasticity_write_gain_0_last_mean 0.4" in rendered
 
 
+def test_gate_saturation_averages_the_finite_fractions_of_the_recorded_steps(tmp_path):
+    group = "predictor.mac.memory"
+    rows = [
+        (step, "memory.alpha.high_fraction", group, value)
+        for step, value in zip((16, 32, 48, 64), (0.0, 0.0, 1.0, math.nan), strict=True)
+    ]
+    folder = write(tmp_path / "traces", "titans_mac", scores=[], losses=[], extra=rows)
+    memory = diagnose(Run(folder))["titans"][group]
+    assert memory["alpha_high_fraction_mean"] == pytest.approx(1 / 3)
+
+
 def test_curves_are_aligned_on_the_union_of_steps_without_interpolation(campaign):
     runs = {name: Run(campaign / f"jobs/{name}/traces") for name in ("a", "b")}
     curves = align(runs, "validation.score")
