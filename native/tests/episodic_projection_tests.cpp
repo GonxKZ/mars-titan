@@ -1,6 +1,7 @@
 #include "mars_titan/episodic_projection.hpp"
 
 #include <algorithm>
+#include <array>
 #include <bit>
 #include <cmath>
 #include <cstddef>
@@ -27,7 +28,10 @@ using mars_titan::episodic::projection_parallel_work;
 using mars_titan::episodic::projection_threads;
 using mars_titan::episodic::projection_isa_name;
 using mars_titan::episodic::projection_lanes;
+using mars_titan::episodic::ProjectionArithmetic;
+using mars_titan::episodic::projection_arithmetic_name;
 using mars_titan::episodic::ProjectionIsa;
+constexpr std::array arithmetics{ProjectionArithmetic::separate, ProjectionArithmetic::fused};
 
 // Orden de einsum: bloques de ocho entradas recorridos del par 6-7 al par 0-1.
 constexpr std::size_t chunk = 8;
@@ -64,31 +68,43 @@ template <class Function> void rejected(Function&& function, std::string_view me
 }
 
 // Referencia escalar escrita a partir del orden de einsum, independiente del núcleo. Incluye
-// las dos sumas de cero que el núcleo omite: 0 · 0 en el carril impar y 0 + total.
+// las dos sumas de cero que el núcleo omite o resume: 0 · 0 en el carril impar y 0 + total.
+// Con la aritmética fusionada cada paso es std::fma, que redondea una sola vez, y con una sola
+// entrada einsum no reduce: la salida es fma(x, w, +0), sin más sumas.
 std::vector<double> reference(const std::vector<double>& block,
-                              const std::vector<double>& transposed, Shape shape) {
+                              const std::vector<double>& transposed, Shape shape,
+                              ProjectionArithmetic arithmetic) {
+    const bool fused = arithmetic == ProjectionArithmetic::fused;
     std::vector<double> out(shape.rows * shape.outputs);
     for (std::size_t row = 0; row < shape.rows; ++row) {
         for (std::size_t output = 0; output < shape.outputs; ++output) {
-            const auto term = [&](std::size_t index) {
-                return block[row * shape.width + index] *
-                       transposed[index * shape.outputs + output];
+            const auto step = [fused](double left, double right, double total) {
+                return fused ? std::fma(left, right, total) : left * right + total;
             };
+            const auto entry = [&](std::size_t index) { return block[row * shape.width + index]; };
+            const auto weight = [&](std::size_t index) {
+                return transposed[index * shape.outputs + output];
+            };
+            if (fused && shape.width == 1) {
+                out[row * shape.outputs + output] = std::fma(entry(0), weight(0), 0.0);
+                continue;
+            }
             double even = 0.0;
             double odd = 0.0;
             std::size_t index = 0;
             for (; shape.width - index >= chunk; index += chunk) {
                 for (std::size_t offset = last_pair;; offset -= pair) {
-                    even = term(index + offset) + even;
-                    odd = term(index + offset + 1) + odd;
+                    even = step(entry(index + offset), weight(index + offset), even);
+                    odd = step(entry(index + offset + 1), weight(index + offset + 1), odd);
                     if (offset == 0) {
                         break;
                     }
                 }
             }
             for (; index < shape.width; index += pair) {
-                even = term(index) + even;
-                odd = (index + 1 < shape.width ? term(index + 1) : 0.0 * 0.0) + odd;
+                even = step(entry(index), weight(index), even);
+                odd = index + 1 < shape.width ? step(entry(index + 1), weight(index + 1), odd)
+                                              : step(0.0, 0.0, odd);
             }
             out[row * shape.outputs + output] = 0.0 + (even + odd);
         }
@@ -111,29 +127,31 @@ bool same_bits(std::span<const double> left, std::span<const double> right) {
 
 std::vector<double> projected(const std::vector<double>& block,
                               const std::vector<double>& transposed, Shape shape,
-                              ProjectionIsa isa) {
+                              ProjectionIsa isa, ProjectionArithmetic arithmetic) {
     std::vector<double> out(shape.rows * shape.outputs, std::numeric_limits<double>::quiet_NaN());
-    project_block(block, shape.rows, shape.width, transposed, shape.outputs, out, isa);
+    project_block(block, shape.rows, shape.width, transposed, shape.outputs, out, isa,
+                  arithmetic);
     return out;
 }
 
 // La misma proyección por tramos de grupos: [0, g/3), [g/3, g/3) vacío y [g/3, g).
 std::vector<double> projected_by_groups(const std::vector<double>& block,
                                         const std::vector<double>& transposed, Shape shape,
-                                        ProjectionIsa isa) {
+                                        ProjectionIsa isa, ProjectionArithmetic arithmetic) {
     std::vector<double> out(shape.rows * shape.outputs, std::numeric_limits<double>::quiet_NaN());
     const std::size_t groups = projection_groups(shape.outputs);
     for (const auto [first, last] : {std::pair{std::size_t{0}, groups / 3},
                                      std::pair{groups / 3, groups / 3},
                                      std::pair{groups / 3, groups}}) {
         project_block_groups(block, shape.rows, shape.width, transposed, shape.outputs, out, isa,
-                             first, last);
+                             arithmetic, first, last);
     }
     return out;
 }
 
-std::string failure(std::string_view message, ProjectionIsa isa) {
-    return std::string(message) + " (" + std::string(projection_isa_name(isa)) + ")";
+std::string failure(std::string_view message, ProjectionIsa isa, ProjectionArithmetic arithmetic) {
+    return std::string(message) + " (" + std::string(projection_isa_name(isa)) + ", " +
+           std::string(projection_arithmetic_name(arithmetic)) + ")";
 }
 
 // Valores con signos, escalas muy distintas, ceros con signo y subnormales, para que un
@@ -160,7 +178,8 @@ std::vector<double> values(std::mt19937_64& generator, std::size_t count, bool e
     return result;
 }
 
-void matches_the_declared_order_for_every_tile_and_remainder(ProjectionIsa isa) {
+void matches_the_declared_order_for_every_tile_and_remainder(ProjectionIsa isa,
+                                                             ProjectionArithmetic arithmetic) {
     std::mt19937_64 generator(order_seed);
     // Por debajo de projection_packed_rows, el recorrido directo con sus tres mosaicos. Desde
     // ahí, los paneles con mosaicos de cuatro, dos y una fila.
@@ -176,15 +195,18 @@ void matches_the_declared_order_for_every_tile_and_remainder(ProjectionIsa isa) 
                     const Shape shape{rows, width, outputs};
                     const auto block = values(generator, rows * width, extreme);
                     const auto transposed = values(generator, width * outputs, extreme);
-                    const auto expected = reference(block, transposed, shape);
-                    require(same_bits(projected(block, transposed, shape, isa), expected),
+                    const auto expected = reference(block, transposed, shape, arithmetic);
+                    require(same_bits(projected(block, transposed, shape, isa, arithmetic),
+                                      expected),
                             failure("La proyección nativa no conserva el orden declarado de "
                                     "las sumas",
-                                    isa));
+                                    isa, arithmetic));
                     // Los paneles por tramos, también con menos filas que el corte.
-                    require(same_bits(projected_by_groups(block, transposed, shape, isa),
+                    require(same_bits(projected_by_groups(block, transposed, shape, isa,
+                                                          arithmetic),
                                       expected),
-                            failure("Los tramos de grupos no conservan el orden declarado", isa));
+                            failure("Los tramos de grupos no conservan el orden declarado", isa,
+                                    arithmetic));
                 }
             }
         }
@@ -193,22 +215,23 @@ void matches_the_declared_order_for_every_tile_and_remainder(ProjectionIsa isa) 
 
 // Una fila sola usa el recorrido directo. Dentro de un bloque usa el directo o los paneles,
 // según sus filas, y debe dar los mismos bits en los dos casos.
-void every_row_is_independent_of_its_neighbours(ProjectionIsa isa) {
+void every_row_is_independent_of_its_neighbours(ProjectionIsa isa,
+                                                ProjectionArithmetic arithmetic) {
     std::mt19937_64 generator(row_seed);
     for (const std::size_t count : {independent_rows, projection_packed_rows + independent_rows}) {
         const Shape shape{count, independent_width, codec_outputs};
         const auto transposed = values(generator, shape.width * shape.outputs, false);
         const auto block = values(generator, shape.rows * shape.width, true);
-        const auto together = projected(block, transposed, shape, isa);
+        const auto together = projected(block, transposed, shape, isa, arithmetic);
         const std::span<const double> rows(block);
         const std::span<const double> results(together);
         for (std::size_t row = 0; row < shape.rows; ++row) {
             const auto single = rows.subspan(row * shape.width, shape.width);
             const auto alone =
                 projected(std::vector<double>(single.begin(), single.end()), transposed,
-                          Shape{1, shape.width, shape.outputs}, isa);
+                          Shape{1, shape.width, shape.outputs}, isa, arithmetic);
             require(same_bits(alone, results.subspan(row * shape.outputs, shape.outputs)),
-                    failure("Una fila depende del mosaico en que se calcula", isa));
+                    failure("Una fila depende del mosaico en que se calcula", isa, arithmetic));
         }
     }
 }
@@ -265,16 +288,17 @@ void inconsistent_shapes_are_rejected_before_writing() {
 // Con las formas del codec, tramos disjuntos de grupos calculados a la vez desde varios hilos,
 // sobre la misma salida, dan los bits de la proyección entera. Un tramo por grupo es el caso
 // con más hilos escribiendo en las mismas filas.
-void concurrent_groups_match_the_whole_block(ProjectionIsa isa) {
+void concurrent_groups_match_the_whole_block(ProjectionIsa isa, ProjectionArithmetic arithmetic) {
     std::mt19937_64 generator(order_seed + 1);
     for (const std::size_t rows : {projection_packed_rows - 1, projection_packed_rows + 5}) {
         for (const std::size_t width : {5UL, 78UL, 384UL, 512UL}) {
             const Shape shape{rows, width, codec_outputs};
             const auto block = values(generator, shape.rows * shape.width, true);
             const auto transposed = values(generator, shape.width * shape.outputs, true);
-            const auto whole = projected(block, transposed, shape, isa);
-            require(same_bits(whole, reference(block, transposed, shape)),
-                    failure("La proyección entera no conserva el orden declarado", isa));
+            const auto whole = projected(block, transposed, shape, isa, arithmetic);
+            require(same_bits(whole, reference(block, transposed, shape, arithmetic)),
+                    failure("La proyección entera no conserva el orden declarado", isa,
+                            arithmetic));
             const std::size_t groups = projection_groups(shape.outputs);
             for (const std::size_t parts : {2UL, 3UL, groups}) {
                 std::vector<double> out(shape.rows * shape.outputs,
@@ -285,13 +309,15 @@ void concurrent_groups_match_the_whole_block(ProjectionIsa isa) {
                     for (std::size_t part = 0; part < parts; ++part) {
                         threads.emplace_back([&, part] {
                             project_block_groups(block, shape.rows, shape.width, transposed,
-                                                 shape.outputs, out, isa, groups * part / parts,
+                                                 shape.outputs, out, isa, arithmetic,
+                                                 groups * part / parts,
                                                  groups * (part + 1) / parts);
                         });
                     }
                 }
                 require(same_bits(out, whole),
-                        failure("Los tramos calculados a la vez cambian la proyección", isa));
+                        failure("Los tramos calculados a la vez cambian la proyección", isa,
+                                arithmetic));
             }
         }
     }
@@ -299,19 +325,19 @@ void concurrent_groups_match_the_whole_block(ProjectionIsa isa) {
 
 // Un tramo escribe solo las columnas de sus grupos, con los dos recorridos: el primero, uno
 // intermedio y el último, que tiene siete salidas.
-void groups_write_only_their_columns(ProjectionIsa isa) {
+void groups_write_only_their_columns(ProjectionIsa isa, ProjectionArithmetic arithmetic) {
     std::mt19937_64 generator(order_seed + 2);
     constexpr double untouched = 12345.0;
     for (const std::size_t rows : {projection_packed_rows - 1, projection_packed_rows + 5}) {
         const Shape shape{rows, independent_width, codec_outputs};
         const auto block = values(generator, shape.rows * shape.width, false);
         const auto transposed = values(generator, shape.width * shape.outputs, false);
-        const auto whole = projected(block, transposed, shape, isa);
+        const auto whole = projected(block, transposed, shape, isa, arithmetic);
         const std::size_t groups = projection_groups(shape.outputs);
         for (const std::size_t group : {std::size_t{0}, groups / 2, groups - 1}) {
             std::vector<double> out(shape.rows * shape.outputs, untouched);
             project_block_groups(block, shape.rows, shape.width, transposed, shape.outputs, out,
-                                 isa, group, group + 1);
+                                 isa, arithmetic, group, group + 1);
             const std::size_t begin = group * projection_lanes;
             const std::size_t end = std::min(begin + projection_lanes, shape.outputs);
             for (std::size_t row = 0; row < shape.rows; ++row) {
@@ -321,7 +347,7 @@ void groups_write_only_their_columns(ProjectionIsa isa) {
                     require(inside ? same_bits(std::span(out).subspan(index, 1),
                                                std::span(whole).subspan(index, 1))
                                    : out[index] == untouched,
-                            failure("Un tramo escribe fuera de sus columnas", isa));
+                            failure("Un tramo escribe fuera de sus columnas", isa, arithmetic));
                 }
             }
         }
@@ -357,20 +383,49 @@ void default_dispatch_uses_the_widest_available_version() {
     const auto transposed = values(generator, shape.width * shape.outputs, true);
     std::vector<double> out(shape.rows * shape.outputs);
     project_block(block, shape.rows, shape.width, transposed, shape.outputs, out);
-    require(same_bits(out, projected(block, transposed, shape, isas.back())),
-            "La versión por defecto debe dar los mismos bits que la más ancha");
+    require(same_bits(out, projected(block, transposed, shape, isas.back(),
+                                     ProjectionArithmetic::separate)),
+            "La versión por defecto debe dar los mismos bits que la más ancha, sin fusionar");
+}
+
+// Un caso en que las dos aritméticas difieren: con x = 1 + 2^-27 e y = 1 - 2^-27, x · y vale
+// 1 - 2^-54 exacto, que se redondea a 1. Tras sumar -1 en el mismo carril, la versión separada da
+// +0 y la fusionada -2^-54. Así una versión fusionada que no fusionase no pasaría.
+void fused_arithmetic_rounds_once() {
+    constexpr int half_precision = 27;
+    const double above = 1.0 + std::ldexp(1.0, -half_precision);
+    const double below = 1.0 - std::ldexp(1.0, -half_precision);
+    // Anchura 3: las entradas 0 y 2 van al carril par, en ese orden.
+    const std::vector<double> block{-1.0, 0.0, above};
+    const std::vector<double> transposed{1.0, 0.0, below};
+    const Shape shape{1, 3, 1};
+    for (const ProjectionIsa isa : available_projection_isas()) {
+        const auto separate =
+            projected(block, transposed, shape, isa, ProjectionArithmetic::separate);
+        const auto fused = projected(block, transposed, shape, isa, ProjectionArithmetic::fused);
+        require(std::bit_cast<std::uint64_t>(separate[0]) == std::bit_cast<std::uint64_t>(0.0),
+                failure("La versión separada debe redondear el producto", isa,
+                        ProjectionArithmetic::separate));
+        require(fused[0] == -std::ldexp(1.0, -2 * half_precision),
+                failure("La versión fusionada debe redondear una sola vez", isa,
+                        ProjectionArithmetic::fused));
+    }
 }
 } // namespace
 
 int main() {
     try {
         for (const ProjectionIsa isa : available_projection_isas()) {
-            matches_the_declared_order_for_every_tile_and_remainder(isa);
-            every_row_is_independent_of_its_neighbours(isa);
-            concurrent_groups_match_the_whole_block(isa);
-            groups_write_only_their_columns(isa);
-            std::cout << "Versión " << projection_isa_name(isa) << " comprobada\n";
+            for (const ProjectionArithmetic arithmetic : arithmetics) {
+                matches_the_declared_order_for_every_tile_and_remainder(isa, arithmetic);
+                every_row_is_independent_of_its_neighbours(isa, arithmetic);
+                concurrent_groups_match_the_whole_block(isa, arithmetic);
+                groups_write_only_their_columns(isa, arithmetic);
+                std::cout << "Versión " << projection_isa_name(isa) << " con aritmética "
+                          << projection_arithmetic_name(arithmetic) << " comprobada\n";
+            }
         }
+        fused_arithmetic_rounds_once();
         inconsistent_shapes_are_rejected_before_writing();
         threads_need_enough_work();
         default_dispatch_uses_the_widest_available_version();

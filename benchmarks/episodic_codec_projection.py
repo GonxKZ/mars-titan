@@ -4,7 +4,8 @@ Mide `FrozenEpisodeCodec.encode` y, por separado, la proyección de sus seis blo
 anchuras de la vista de la campaña (precios 5 × 64, noticias 384, gráficos 512, fundamentales
 78 y macro 420) y entradas sintéticas normales con todas las modalidades presentes. Exige los
 mismos bits en las seis salidas, la misma huella del resultado y la misma memoria declarada.
-El enlace se carga desde `MARS_TITAN_EPISODIC_NATIVE` y debe incluir `project_codec_block`.
+El enlace se carga desde `MARS_TITAN_EPISODIC_NATIVE` y debe incluir el núcleo de la aritmética del
+einsum instalado: `project_codec_block` (por separado) o `project_codec_block_fused` (FMA).
 Sin banco, sin modelo y sin GPU.
 
 Uso: `MARS_TITAN_EPISODIC_NATIVE=... PYTHONPATH=src python benchmarks/episodic_codec_projection.py
@@ -119,15 +120,14 @@ def measure(codec, spec, native, rows):
         block = random.normal(size=(rows, width))
         parts.append((block, codec._projection[:, start:end], codec._transposed[start:end]))
         start = end
+    kernel = getattr(native, episodic_codec.BACKEND_KERNELS[projection_backend(native)])
     projection = alternated(
         dict(
             numpy_einsum=lambda: [
                 np.einsum("bi,oi->bo", block, weights, optimize=False)
                 for block, weights, _ in parts
             ],
-            native=lambda: [
-                native.project_codec_block(block, transposed) for block, _, transposed in parts
-            ],
+            native=lambda: [kernel(block, transposed) for block, _, transposed in parts],
         ),
         REPETITIONS,
     )
@@ -149,12 +149,13 @@ def measure(codec, spec, native, rows):
 
 def main(output):
     native = load_native()
-    if projection_backend(native) != "native":
-        raise SystemExit("El enlace no incluye la proyección o einsum suma en otro orden")
+    if projection_backend(native) == "numpy_einsum":
+        raise SystemExit("El enlace no incluye el núcleo de la aritmética de este einsum")
     spec = specification()
     codec = FrozenEpisodeCodec(spec)
     features = _multiarray_umath.__cpu_features__
     report = dict(
+        backend=projection_backend(native),
         widths=dict(zip(episodic_codec.BLOCKS, (*codec._input_widths, 5), strict=True)),
         repetitions=REPETITIONS,
         warmup_calls_per_variant=1,

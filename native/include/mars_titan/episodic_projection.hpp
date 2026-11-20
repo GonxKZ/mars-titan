@@ -31,6 +31,13 @@ std::vector<ProjectionIsa> available_projection_isas();
 ProjectionIsa default_projection_isa();
 std::string_view projection_isa_name(ProjectionIsa isa);
 
+// Aritmética de cada paso del acumulador, con el mismo orden de sumas en las dos. `separate`
+// multiplica y después suma, como el einsum de la línea base x86-64 de NumPy 2.5. `fused` hace
+// cada paso con una sola operación fusionada (FMA), como el einsum de NumPy 2.5 en aarch64, que
+// usa FMLA de NEON: en la GB10 con NumPy 2.5.3 da sus mismos bits.
+enum class ProjectionArithmetic : std::uint8_t { separate, fused };
+std::string_view projection_arithmetic_name(ProjectionArithmetic arithmetic);
+
 // Proyección congelada del codec episódico: out[r, o] = Σ_i block[r, i] · transposed[i, o].
 //
 // Reproduce el orden de sumas de `numpy.einsum("bi,oi->bo", optimize=False)` sobre float64 en
@@ -41,9 +48,12 @@ std::string_view projection_isa_name(ProjectionIsa isa);
 // suma, sin FMA, así que la compilación necesita -ffp-contract=off o /fp:strict.
 //
 // einsum suma además 0 · 0 al acumulador impar cuando la anchura es impar y escribe 0 + total.
-// Ninguna de las dos sumas cambia un valor finito: los acumuladores empiezan en +0 y, con
-// redondeo al más cercano, una suma solo da -0 si los dos sumandos son -0, así que nunca lo
-// valen. El núcleo las omite y la prueba compara con una referencia que sí las hace.
+// Con la aritmética separada ninguna de las dos sumas cambia un valor finito: los acumuladores
+// empiezan en +0 y, con redondeo al más cercano, una suma solo da -0 si los dos sumandos son -0,
+// así que nunca lo valen. El núcleo las omite y la prueba compara con una referencia que sí las
+// hace. Con la fusionada, un acumulador sí puede valer -0: la FMA redondea una sola vez y un
+// producto exacto negativo que se redondea a cero deja -0. Esa versión suma +0 al total, que da
+// los mismos bits que las dos sumas de einsum.
 //
 // block tiene rows × width valores contiguos, transposed width × outputs y out rows × outputs.
 // Lanza std::invalid_argument si las formas no encajan o si la versión pedida no está
@@ -59,6 +69,9 @@ void project_block(std::span<const double> block, std::size_t rows, std::size_t 
 void project_block(std::span<const double> block, std::size_t rows, std::size_t width,
                    std::span<const double> transposed, std::size_t outputs, std::span<double> out,
                    ProjectionIsa isa);
+void project_block(std::span<const double> block, std::size_t rows, std::size_t width,
+                   std::span<const double> transposed, std::size_t outputs, std::span<double> out,
+                   ProjectionIsa isa, ProjectionArithmetic arithmetic);
 
 // Grupos de ocho salidas de una proyección y dobles del panel de un grupo.
 [[nodiscard]] std::size_t projection_groups(std::size_t outputs);
@@ -74,6 +87,10 @@ void project_block_groups(std::span<const double> block, std::size_t rows, std::
                           std::span<const double> transposed, std::size_t outputs,
                           std::span<double> out, ProjectionIsa isa, std::size_t first,
                           std::size_t last);
+void project_block_groups(std::span<const double> block, std::size_t rows, std::size_t width,
+                          std::span<const double> transposed, std::size_t outputs,
+                          std::span<double> out, ProjectionIsa isa,
+                          ProjectionArithmetic arithmetic, std::size_t first, std::size_t last);
 
 // Hilos para una llamada: `available` (al menos uno) si tiene al menos
 // projection_parallel_work productos, uno si no. width · outputs es el tamaño de una
