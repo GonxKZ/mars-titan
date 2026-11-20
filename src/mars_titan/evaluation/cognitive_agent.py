@@ -295,15 +295,6 @@ def _checked_options(options):
     return calibration, evaluation
 
 
-def _stacked(options, positions):
-    return np.column_stack(
-        [
-            np.concatenate([option.calibration.prediction, option.prediction])[positions]
-            for option in options
-        ]
-    )
-
-
 def _emitted(panel, positions, output, calibration, evaluation):
     """Emisión de S de una salida del panel conjunto y la sesión conjunta de cada sesión de S."""
     source = np.empty(panel.rows)
@@ -331,40 +322,125 @@ def _emitted(panel, positions, output, calibration, evaluation):
     return emission, own
 
 
-def mixture(options, maturity, feedback, mode):
-    """Emisión de S de una mezcla, sus sesiones abstenidas y los pesos de cada sesión de S.
+class Options:
+    """Columnas del panel conjunto (calibración y después S) de cada opción, calculadas una vez.
+
+    Tipificar cada predicción por sesión y medir su IC en cada sesión es lo caro de una mezcla,
+    y todas las mezclas de un origen y una semilla comparten opciones. Aquí se hace una sola vez
+    por opción; cada mezcla solo recorre AdaNormalHedge sobre sus columnas, con las mismas
+    operaciones que `online_arbiters.online_mixture`.
+    """
+
+    def __init__(self, named, maturity, min_assets):
+        names = [name for name, _ in named]
+        _require(len(set(names)) == len(names), "Cada opción tiene un nombre distinto")
+        emissions = [emission for _, emission in named]
+        self.calibration, self.evaluation = _checked_options(emissions)
+        self.panel, self.positions = joined(self.calibration, self.evaluation)
+        predictions = np.column_stack(
+            [
+                np.concatenate([option.calibration.prediction, option.prediction])[self.positions]
+                for option in emissions
+            ]
+        )
+        _require(np.isfinite(predictions).all(), "Cada fila necesita predicciones finitas")
+        matures_at = np.concatenate([maturity["calibration"], maturity["evaluation"]])
+        matures_at = matures_at[self.positions]
+        _require(
+            matures_at.dtype.kind == "i" and (matures_at > self.panel.prediction_at).all(),
+            "Cada etiqueta madura después de su decisión",
+        )
+        self.names, self.emissions = names, dict(named)
+        self.index = {name: column for column, name in enumerate(names)}
+        self.tipified = np.column_stack(
+            [
+                arbiters.standardized(self.panel, predictions[:, column])
+                for column in range(len(names))
+            ]
+        )
+        self.losses, self.scored = arbiters.session_losses(
+            self.panel, predictions, min_assets=min_assets
+        )
+        self.ic = 1.0 - 2.0 * self.losses
+        self.session_matures = np.maximum.reduceat(matures_at, self.panel.session_starts)
+        self.markets = [
+            np.flatnonzero(self.panel.session_market == market)
+            for market in np.unique(self.panel.session_market)
+        ]
+        self._regimes = {}
+
+    def regime(self, window):
+        """Régimen de cada sesión del panel conjunto con esa ventana, calculado una vez."""
+        if window not in self._regimes:
+            self._regimes[window] = regimes(self.panel, self.session_matures, window)
+        return self._regimes[window]
+
+
+def _combined(panel, tipified, weights, abstained):
+    output = np.zeros(panel.rows)
+    for session in np.flatnonzero(~abstained):
+        start, count = panel.session_starts[session], panel.session_samples[session]
+        output[start : start + count] = tipified[start : start + count] @ weights[session]
+    return output
+
+
+def mixture(options, names, feedback, mode):
+    """Emisión de S de la mezcla de las opciones `names`, sus abstenciones y sus pesos en S.
 
     `mode` es `online` (el bucle con los resultados maduros en orden), `shuffled` (los mismos
-    resultados desordenados en el tiempo) o `uniform` (media de las opciones tipificadas). Con
-    una sola opción la emisión es esa opción, sin abstención: tipificar no cambia su IC.
+    resultados desordenados en el tiempo) o `uniform` (media de las opciones tipificadas).
+    Pesos y abstenciones son bit a bit los de `online_mixture` con las columnas de `options`; la
+    predicción combinada solo puede diferir en el redondeo del producto por sesión (del orden de
+    1e-16), que BLAS fija según la alineación de memoria de cada array.
+    Con una sola opción la emisión es esa opción, sin abstención: tipificar no cambia su IC.
     """
     _require(mode in ("online", "shuffled", "uniform"), f"Modo de mezcla desconocido: {mode}")
-    calibration, evaluation = _checked_options(options)
-    if len(options) == 1:
+    columns = [options.index[name] for name in names]
+    _require(1 <= len(columns) <= arbiters.MAX_OPTIONS, "Entre una y 128 opciones por mezcla")
+    calibration, evaluation, panel = options.calibration, options.evaluation, options.panel
+    if len(columns) == 1:
+        own = options.emissions[names[0]]
         return (
-            analysis.Emission(evaluation, options[0].prediction, calibration),
+            analysis.Emission(evaluation, own.prediction, calibration),
             np.zeros(evaluation.sessions, dtype=bool),
             np.ones((evaluation.sessions, 1)),
         )
-    panel, positions = joined(calibration, evaluation)
-    predictions = _stacked(options, positions)
+    tipified = options.tipified[:, columns]
     if mode == "uniform":
-        output = arbiters.uniform_mixture(panel, predictions)
+        output = np.mean([tipified[:, column] for column in range(len(columns))], axis=0)
         abstained = np.zeros(panel.sessions, dtype=bool)
-        weights = np.full((panel.sessions, len(options)), 1.0 / len(options))
+        weights = np.full((panel.sessions, len(columns)), 1.0 / len(columns))
     else:
-        matures_at = np.concatenate([maturity["calibration"], maturity["evaluation"]])
-        result = arbiters.online_mixture(
-            panel,
-            predictions,
-            matures_at[positions],
-            window=feedback["window"],
-            min_assets=feedback["min_assets"],
-            margin=feedback["margin"],
-            seed=feedback["shuffled_seed"] if mode == "shuffled" else None,
+        losses, ic = options.losses[:, columns], options.ic[:, columns]
+        weights = np.full((panel.sessions, len(columns)), np.nan)
+        reliability = np.full((panel.sessions, len(columns)), np.nan)
+        keys = (
+            None
+            if mode == "online"
+            else np.random.default_rng(feedback["shuffled_seed"]).random(panel.sessions)
         )
-        output, abstained, weights = result["prediction"], result["abstained"], result["mixtures"]
-    emission, own = _emitted(panel, positions, output, calibration, evaluation)
+        for sessions in options.markets:
+            market = (
+                losses[sessions],
+                options.scored[sessions],
+                ic[sessions],
+                panel.session_time[sessions],
+                options.session_matures[sessions],
+                feedback["window"],
+            )
+            if keys is None:
+                weights[sessions], reliability[sessions] = arbiters._ordered(*market)
+            else:
+                weights[sessions], reliability[sessions] = arbiters._shuffled(
+                    *market, keys[sessions]
+                )
+        abstained = (
+            np.zeros(panel.sessions, dtype=bool)
+            if feedback["margin"] is None
+            else ~np.any(reliability > feedback["margin"], axis=1)
+        )
+        output = _combined(panel, tipified, weights, abstained)
+    emission, own = _emitted(panel, options.positions, output, calibration, evaluation)
     return emission, abstained[own], weights[own]
 
 
@@ -403,7 +479,7 @@ def regimes(panel, session_matures, window):
     return result
 
 
-def contextual_mixture(options, maturity, feedback, window):
+def contextual_mixture(options, names, feedback, window):
     """Mezcla con generalistas y especialistas por régimen: emisión de S, abstenciones, pesos de
     las opciones base y régimen de cada sesión de S.
 
@@ -413,34 +489,26 @@ def contextual_mixture(options, maturity, feedback, window):
     una sesión es la suma de los de sus copias despiertas. La fiabilidad y la abstención son
     las de `online_mixture` sobre las opciones base.
     """
-    calibration, evaluation = _checked_options(options)
-    _require(len(options) >= 2, "El enrutado por régimen necesita al menos dos opciones")
-    panel, positions = joined(calibration, evaluation)
-    predictions = _stacked(options, positions)
-    matures_at = np.concatenate([maturity["calibration"], maturity["evaluation"]])[positions]
+    columns = [options.index[name] for name in names]
+    groups = 1 + len(REGIMES)
     _require(
-        matures_at.dtype.kind == "i" and (matures_at > panel.prediction_at).all(),
-        "Cada etiqueta madura después de su decisión",
+        2 <= len(columns) and len(columns) * groups <= arbiters.MAX_OPTIONS,
+        "El enrutado por régimen necesita entre dos opciones y el máximo de copias",
     )
-    base, groups = len(options), 1 + len(REGIMES)
-    tipified = np.column_stack(
-        [arbiters.standardized(panel, predictions[:, option]) for option in range(base)]
-    )
-    losses, scored = arbiters.session_losses(panel, predictions, min_assets=feedback["min_assets"])
-    ic = 1.0 - 2.0 * losses
-    session_matures = np.maximum.reduceat(matures_at, panel.session_starts)
-    regime = regimes(panel, session_matures, window)
+    panel, base = options.panel, len(columns)
+    tipified = options.tipified[:, columns]
+    losses, ic, scored = options.losses[:, columns], options.ic[:, columns], options.scored
+    regime = options.regime(window)
     weights = np.full((panel.sessions, base), np.nan)
     reliability = np.full((panel.sessions, base), np.nan)
-    for market in np.unique(panel.session_market):
-        sessions = np.flatnonzero(panel.session_market == market)
+    for sessions in options.markets:
         awake = np.zeros((sessions.size, base * groups), dtype=bool)
         awake[:, :base] = True
         for index in range(len(REGIMES)):
             awake[regime[sessions] == index, base * (1 + index) : base * (2 + index)] = True
         mixtures, _ = arbiters.mature_mixture(
             panel.session_time[sessions],
-            session_matures[sessions],
+            options.session_matures[sessions],
             np.tile(losses[sessions], (1, groups)),
             awake,
             np.ones(base * groups),
@@ -454,20 +522,18 @@ def contextual_mixture(options, maturity, feedback, window):
             ic[sessions],
             scored[sessions],
             panel.session_time[sessions],
-            session_matures[sessions],
+            options.session_matures[sessions],
             feedback["window"],
         )
-    margin = feedback["margin"]
     abstained = (
         np.zeros(panel.sessions, dtype=bool)
-        if margin is None
-        else ~np.any(reliability > margin, axis=1)
+        if feedback["margin"] is None
+        else ~np.any(reliability > feedback["margin"], axis=1)
     )
-    output = np.zeros(panel.rows)
-    for session in np.flatnonzero(~abstained):
-        start, count = panel.session_starts[session], panel.session_samples[session]
-        output[start : start + count] = tipified[start : start + count] @ weights[session]
-    emission, own = _emitted(panel, positions, output, calibration, evaluation)
+    output = _combined(panel, tipified, weights, abstained)
+    emission, own = _emitted(
+        panel, options.positions, output, options.calibration, options.evaluation
+    )
     return emission, abstained[own], weights[own], regime[own]
 
 
@@ -481,60 +547,59 @@ def variants(declaration, emissions, maturity):
 
     Devuelve, por variante, la emisión de S, sus sesiones abstenidas, los pesos por sesión, el
     nombre de cada opción en el orden de esos pesos y, con enrutado, el régimen de cada sesión.
-    Dos variantes con las mismas opciones, modo y margen comparten un único cálculo.
+    Las columnas de cada opción se calculan una vez (`Options`) y dos variantes con las mismas
+    opciones, modo y margen comparten un único cálculo.
     """
-    core_name, tools, feedback = declaration["core"], declaration["tools"], declaration["feedback"]
-    core = emissions[core_name]
-    members = {
-        tool: [(model, emissions[model]) for model in models] for tool, models in tools.items()
-    }
+    core, tools, feedback = declaration["core"], declaration["tools"], declaration["feedback"]
+    named = [(core, emissions[core])]
+    named += [(model, emissions[model]) for models in tools.values() for model in models]
+    if declaration["placebo"] is not None:
+        named.append((PLACEBO_OPTION, permuted(emissions[core], declaration["placebo"]["seed"])))
+    options = Options(named, maturity, feedback["min_assets"])
     cache = {}
 
-    def options(selected, extra=()):
-        named = [(core_name, core)]
-        named += [pair for tool in tools if tool in selected for pair in members[tool]]
-        return named + list(extra)
+    def chosen(selected, extra=()):
+        return [core] + [m for tool in tools if tool in selected for m in tools[tool]] + list(extra)
 
-    def run(named, mode="online", margin=feedback["margin"]):
-        key = (tuple(name for name, _ in named), mode, margin)
+    def run(names, mode="online", margin=feedback["margin"]):
+        key = (tuple(names), mode, margin)
         if key not in cache:
-            chosen, settings, regime = [e for _, e in named], dict(feedback, margin=margin), None
+            settings, regime = dict(feedback, margin=margin), None
             if mode == "contextual":
                 emission, abstained, weights, regime = contextual_mixture(
-                    chosen, maturity, settings, declaration["context"]["window"]
+                    options, names, settings, declaration["context"]["window"]
                 )
             else:
-                emission, abstained, weights = mixture(chosen, maturity, settings, mode)
+                emission, abstained, weights = mixture(options, names, settings, mode)
             cache[key] = dict(
                 emission=emission,
                 abstained=abstained,
                 weights=weights,
-                options=list(key[0]),
+                options=list(names),
                 regime=regime,
             )
         return cache[key]
 
     every = set(tools)
     result = {
-        CORE: run(options(set())),
-        AGENT: run(options(every)),
-        UNIFORM: run(options(every), "uniform"),
-        SHUFFLED: run(options(every), "shuffled"),
+        CORE: run(chosen(set())),
+        AGENT: run(chosen(every)),
+        UNIFORM: run(chosen(every), "uniform"),
+        SHUFFLED: run(chosen(every), "shuffled"),
     }
     for tool in tools:
-        result[WITHOUT + tool] = run(options(every - {tool}))
-        result[WITH + tool] = run(options({tool}))
+        result[WITHOUT + tool] = run(chosen(every - {tool}))
+        result[WITH + tool] = run(chosen({tool}))
     if declaration["placebo"] is not None:
-        placebo = permuted(core, declaration["placebo"]["seed"])
-        result[PLACEBO] = run(options(every, [(PLACEBO_OPTION, placebo)]))
+        result[PLACEBO] = run(chosen(every, [PLACEBO_OPTION]))
     if feedback["margin"] is not None:
-        result[NO_ABSTENTION] = run(options(every), margin=None)
+        result[NO_ABSTENTION] = run(chosen(every), margin=None)
     if declaration["context"] is not None:
-        result[CONTEXTUAL] = run(options(every), "contextual")
+        result[CONTEXTUAL] = run(chosen(every), "contextual")
     if declaration["shapley"]:
         for size in range(len(tools) + 1):
             for subset in combinations(tools, size):
-                result[subset_name(subset)] = run(options(set(subset)), margin=None)
+                result[subset_name(subset)] = run(chosen(set(subset)), margin=None)
     return result
 
 
@@ -607,8 +672,10 @@ def origin_series(declaration, campaign, state, views, year, input_policy=HISTOR
 
     fold = next(o["fold"] for o in campaign["origins"] if o["year"] == year)
     view = Path(views) / fold / "manifest.json"
-    identity = CorpusDataset(view, cache_bytes=0, input_policy=input_policy).identity
-    tables = view_maturity(view, input_policy, identity, partitions=PARTITIONS)
+    dataset = CorpusDataset(view, cache_bytes=0, input_policy=input_policy)
+    tables = view_maturity(
+        view, input_policy, dataset.identity, partitions=PARTITIONS, dataset=dataset
+    )
     markets = (campaign["market"],)
     models = [declaration["core"]] + [m for ms in declaration["tools"].values() for m in ms]
     metric, min_assets = declaration["metric"], declaration["feedback"]["min_assets"]
@@ -769,6 +836,11 @@ def main(argv=None):
         campaign_path = Path(__file__).resolve().parents[3] / campaign_path
     campaign = json.loads(campaign_path.read_text(encoding="utf-8"))
     _require(_integer(args.processes, 1, os.cpu_count() or 1), "Procesos entre 1 y las CPU")
+    from mars_titan.training.corpus_inputs import DIGEST_CACHE_ENV
+
+    # Como la campaña: las huellas de los archivos de las vistas se leen de la caché del estado
+    # y solo se vuelven a calcular si la firma de un archivo cambió.
+    os.environ.setdefault(DIGEST_CACHE_ENV, str(args.state / "file-digests.json"))
     args.output.mkdir(parents=True)
     report, sessions = analyze(
         declaration, campaign, args.state, args.views, processes=args.processes

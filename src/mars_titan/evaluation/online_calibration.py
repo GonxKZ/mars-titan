@@ -145,14 +145,21 @@ def declaration(section):
     return section
 
 
-def view_maturity(path, input_policy, expected_sha256, partitions=PARTITIONS):
+def view_maturity(path, input_policy, expected_sha256, partitions=PARTITIONS, dataset=None):
     """Filas de los tramos de una vista con su objetivo y su madurez.
 
     Devuelve, por tramo, una tabla con ``asset_id``, ``market``, ``prediction_at`` y
     ``target`` en el formato de las predicciones y ``matures_at`` en microsegundos UTC. Por
     defecto lee la calibración y la evaluación. La criba de #746 pide también la validación.
+    ``dataset`` es la misma vista ya abierta con esa política, para no verificar dos veces
+    sus archivos.
     """
-    dataset = CorpusDataset(Path(path), cache_bytes=0, input_policy=input_policy)
+    if dataset is None:
+        dataset = CorpusDataset(Path(path), cache_bytes=0, input_policy=input_policy)
+    _require(
+        Path(dataset.path).resolve() == Path(path).resolve(),
+        "El corpus abierto no es la vista pedida",
+    )
     _require(
         dataset.masked and dataset.temporals,
         "La madurez necesita una vista walk-forward con máscaras",
