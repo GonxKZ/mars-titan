@@ -10,7 +10,7 @@ from mars_titan.evaluation import cognitive_agent as agent
 from mars_titan.evaluation import variant_screening_analysis as analysis
 from mars_titan.evaluation.arbiter_analysis import joined, stage_metric
 from mars_titan.evaluation.forecast_panel import DAY_MICROSECONDS, ForecastPanel
-from mars_titan.evaluation.online_arbiters import standardized
+from mars_titan.evaluation.online_arbiters import online_mixture, standardized, uniform_mixture
 
 START = 1_104_786_300_000_000  # 2005-01-03 21:05 UTC
 
@@ -158,14 +158,21 @@ def test_each_session_decides_only_with_labels_that_already_matured():
     assert not np.array_equal(base["weights"][changed + 2 :], other["weights"][changed + 2 :])
 
 
+def _options(emissions, maturity, names=("core", "strong", "noise")):
+    return agent.Options([(name, emissions[name]) for name in names], maturity, 10)
+
+
 def test_uniform_control_is_the_mean_of_options_tipified_within_each_session():
     emissions, maturity = world()
-    options = [emissions["core"], emissions["strong"], emissions["noise"]]
+    options = _options(emissions, maturity)
     emission, abstained, weights = agent.mixture(
-        options, maturity, declaration()["feedback"], "uniform"
+        options, ["core", "strong", "noise"], declaration()["feedback"], "uniform"
     )
     panel = emissions["core"].panel
-    expected = np.mean([standardized(panel, option.prediction) for option in options], axis=0)
+    expected = np.mean(
+        [standardized(panel, emissions[name].prediction) for name in ("core", "strong", "noise")],
+        axis=0,
+    )
     np.testing.assert_allclose(emission.prediction, expected, rtol=0, atol=1e-12)
     assert not abstained.any() and np.allclose(weights, 1 / 3)
 
@@ -173,10 +180,46 @@ def test_uniform_control_is_the_mean_of_options_tipified_within_each_session():
 def test_a_single_option_is_emitted_unchanged_and_never_abstains():
     emissions, maturity = world()
     emission, abstained, weights = agent.mixture(
-        [emissions["core"]], maturity, declaration()["feedback"], "online"
+        _options(emissions, maturity), ["core"], declaration()["feedback"], "online"
     )
     np.testing.assert_array_equal(emission.prediction, emissions["core"].prediction)
     assert not abstained.any() and weights.shape == (emissions["core"].panel.sessions, 1)
+
+
+@pytest.mark.parametrize("margin", [None, 0.01])
+def test_precomputed_mixtures_reproduce_the_arbiter(margin):
+    emissions, maturity = world()
+    names = ["core", "strong", "noise"]
+    options = _options(emissions, maturity)
+    feedback = dict(window=20, min_assets=10, margin=margin, shuffled_seed=5)
+    core = emissions["core"]
+    panel, positions = joined(core.calibration, core.panel)
+    predictions = np.column_stack(
+        [
+            np.concatenate([emissions[n].calibration.prediction, emissions[n].prediction])[
+                positions
+            ]
+            for n in names
+        ]
+    )
+    matures = np.concatenate([maturity["calibration"], maturity["evaluation"]])[positions]
+    for mode, seed in (("online", None), ("shuffled", 5)):
+        expected = online_mixture(
+            panel, predictions, matures, window=20, min_assets=10, margin=margin, seed=seed
+        )
+        reference, own = agent._emitted(
+            panel, positions, expected["prediction"], core.calibration, core.panel
+        )
+        emission, abstained, weights = agent.mixture(options, names, feedback, mode)
+        np.testing.assert_array_equal(abstained, expected["abstained"][own])
+        np.testing.assert_array_equal(weights, expected["mixtures"][own])
+        # El producto por sesión es el mismo; BLAS puede redondear distinto según la alineación.
+        np.testing.assert_allclose(emission.prediction, reference.prediction, rtol=0, atol=1e-14)
+    uniform, _, _ = agent.mixture(options, names, feedback, "uniform")
+    reference, _ = agent._emitted(
+        panel, positions, uniform_mixture(panel, predictions), core.calibration, core.panel
+    )
+    np.testing.assert_allclose(uniform.prediction, reference.prediction, rtol=0, atol=1e-14)
 
 
 def test_placebo_keeps_each_session_distribution_and_destroys_its_order():
@@ -366,9 +409,9 @@ def test_shared_mixtures_are_computed_once_per_options_mode_and_margin(monkeypat
     calls = []
     original = agent.mixture
 
-    def counted(options, maturity, feedback, mode):
-        calls.append((len(options), mode, feedback["margin"]))
-        return original(options, maturity, feedback, mode)
+    def counted(options, names, feedback, mode):
+        calls.append((tuple(names), mode, feedback["margin"]))
+        return original(options, names, feedback, mode)
 
     monkeypatch.setattr(agent, "mixture", counted)
     agent.variants(declaration(shapley=True, placebo=None), emissions, maturity)
