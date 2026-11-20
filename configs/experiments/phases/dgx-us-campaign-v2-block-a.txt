@@ -1,0 +1,6 @@
+# Fases de la campaña DGX v2. Bloque A, semilla 42: los 22 modelos y la criba de variantes,
+# un origen cada vez.
+5 --seed 42 --origin 2013
+5 --seed 42 --origin 2014 --no-preflight
+5 --seed 42 --origin 2015 --no-preflight
+5 --seed 42 --origin 2016 --no-preflight

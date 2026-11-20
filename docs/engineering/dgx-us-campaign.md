@@ -488,6 +488,12 @@ completados. La v1 queda como registro del brazo «selección por MAE»; su esta
   los orígenes 2013–2016 (`--seed 42`). Una variante se promueve al resto de orígenes y semillas
   si la media de su IC de rangos de validación supera a la de su control en al menos 0,003. Solo se
   usa validación.
+- **Un origen cada vez.** `scripts/dgx_campaign_phases.sh` recorre un archivo de fases
+  (`configs/experiments/phases/`), cada una una orden `run` limitada con `--origin`, `--seed` y
+  `--tier`. Con trabajadores repartidos entre varios orígenes, cada uno leía una copia distinta de
+  17 a 21 GiB y la caché de página del grupo no las contenía: presión de E/S del 53 % y GPU al
+  16 %. Con los cinco trabajadores en el mismo origen, la GPU sube al 64–90 % y la presión de E/S
+  baja al 11 %. La comprobación inicial solo se hace en la primera fase.
 - **La comprobación inicial detectó tres declaraciones inválidas** antes de gastar cómputo: el
   objetivo de IC solo sustituye a la cabeza escalar (de ahí `scalar` como su control) y la caja de
   PT1 exige una puerta de momento inicial menor que su techo de 0,3 (de ahí `eta015`).
