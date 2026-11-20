@@ -21,6 +21,7 @@ from mars_titan.data.input_policy import HISTORICAL_MASKED, MODALITIES
 from mars_titan.data.modality_ablation import VARIANTS, ablation_identity
 from mars_titan.data.storage import sha256
 from mars_titan.memory.financial_observations import FinancialObservationSource
+from mars_titan.memory.training_event_cache import ENV as TRAIN_ARCHIVE_ENV
 from mars_titan.models.quantile_head import QUANTILE_COLUMNS
 from mars_titan.training import carried_predictions as carry
 from mars_titan.training import mars_titan_correction as mc
@@ -254,6 +255,34 @@ def test_titans_ablation_equals_the_window_with_a_real_absence(titans, tmp_path,
     for name in ("prediction", *QUANTILE_COLUMNS):
         np.testing.assert_array_equal(masked[name].to_numpy(), absent[name].to_numpy())
     assert (masked["prediction"].to_numpy() != original["prediction"].to_numpy()).any()
+
+
+def test_titans_ablation_never_replays_the_canonical_packed_copy(
+    titans, tmp_path, monkeypatch, permitted
+):
+    """La copia empaquetada guarda la lectura canónica y su clave no distingue variantes.
+
+    Con la caché de la campaña declarada, la regeneración canónica construye la copia de cada
+    tramo medido. La ablación posterior de la misma ventana tiene que seguir leyendo Parquet
+    con la variante aplicada, no reproducir esa copia sin ablacionar.
+    """
+    archive = tmp_path / "packed"
+    archive.mkdir(mode=0o700)
+    monkeypatch.setenv(TRAIN_ARCHIVE_ENV, str(archive))
+    run = titans.original
+    with unfused_attention():
+        wf.carry_titans(
+            run.output, run.view, run.view, tmp_path / "canonical", device="cpu", regenerate=True
+        )
+    assert list((archive / "evaluation").glob("*.arrow"))
+    receipt = titans_carry(run, tmp_path / "masked", "mask_news_and_fundamentals")
+    masked = predictions(tmp_path / "masked", receipt)
+    absent = pq.read_table(
+        titans.absent.output / titans.absent.report["predictions"]["evaluation"]["path"]
+    )
+    absent, masked = same_rows(absent, masked)
+    for name in ("prediction", *QUANTILE_COLUMNS):
+        np.testing.assert_array_equal(masked[name].to_numpy(), absent[name].to_numpy())
 
 
 def test_titans_warmup_and_evaluation_read_only_masked_inputs(

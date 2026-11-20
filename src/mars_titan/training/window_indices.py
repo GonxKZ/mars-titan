@@ -78,7 +78,10 @@ def phase_sources(dataset, phases, root, *, train_cache=False, predicted_cache=F
     Un índice que quedó a medias se completa, porque `prepare_observation_index` lo reanuda con
     la identidad ya escrita. `train_cache` y `predicted_cache` entregan el tramo de ajuste y los
     tramos medidos desde su copia empaquetada (`training_event_cache`) cuando la campaña la
-    declara: los eventos, las etiquetas y el cursor son los del índice.
+    declara: los eventos, las etiquetas y el cursor son los del índice. Esa copia guarda la
+    lectura canónica de la vista y su clave (vista, índice, especificación e implementación) no
+    distingue variantes de lectura, así que un corpus con una ablación o una perturbación
+    (`modality_ablation`) lee siempre Parquet, que aplica la variante fila a fila.
     """
     root, sources = Path(root), {}
     for name, phase in phases.items():
@@ -88,10 +91,12 @@ def phase_sources(dataset, phases, root, *, train_cache=False, predicted_cache=F
             manifest = prepare_observation_index(
                 dataset, folder, phase=phase, resume=folder.exists()
             )
-        # Con la caché declarada, cada tramo puede llegar de su copia empaquetada verificada.
-        if (train_cache and phase.partition == "train") or (
+        # Con la caché declarada, cada tramo puede llegar de su copia empaquetada verificada,
+        # salvo con una variante de lectura: la copia no la contiene.
+        cached = (train_cache and phase.partition == "train") or (
             predicted_cache and phase.partition != "train"
-        ):
+        )
+        if cached and dataset.modality_ablation is None:
             from mars_titan.memory.training_event_cache import source_for_phase
 
             sources[name] = source_for_phase(dataset, manifest, phase)
