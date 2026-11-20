@@ -143,7 +143,7 @@ Criterio de la descripción de `dgx-us-lr-search-v1.json`, aplicado por código
 (`decision.py`, sin intervención) sobre el MAE por sesión de validación de la época elegida de
 cada ajuste, semilla 42:
 
-| Brazo | 2005 | 2006 | 2007 | Media | Frente a AdamW 10⁻³ | Época elegida (de las recorridas) |
+| Variante | 2005 | 2006 | 2007 | Media | Frente a AdamW 10⁻³ | Época elegida (de las recorridas) |
 | --- | ---: | ---: | ---: | ---: | ---: | --- |
 | `titans_mac` | 0,014131 | 0,012411 | 0,012743 | 0,013095 | +0,000 % | 2/5, 4/7, 2/5 |
 | `titans_mac_lr3e-4` | 0,014154 | 0,012429 | 0,012753 | 0,013112 | -0,131 % | 5/8, 2/5, 5/8 |
@@ -157,7 +157,7 @@ cada ajuste, semilla 42:
 | `titans_mac_mdrop30` | 0,014142 | 0,012411 | 0,012765 | 0,013106 | -0,083 % | 2/5, 5/8, 3/6 |
 | `titans_mac_wd` | 0,014115 | 0,012426 | 0,012750 | 0,013097 | -0,017 % | 6/9, 1/4, 2/5 |
 
-Mejor brazo: `titans_mac` (+0,000 % frente a AdamW 10⁻³); receta elegida con el margen declarado de 0,5 %: `titans_mac`.
+Mejor variante: `titans_mac` (+0,000 % frente a AdamW 10⁻³); receta elegida con el margen declarado de 0,5 %: `titans_mac`.
 
 | Continuación | 2006 | 2007 | Media | Época elegida (de las recorridas) |
 | --- | ---: | ---: | ---: | --- |
@@ -168,7 +168,7 @@ Mejor brazo: `titans_mac` (+0,000 % frente a AdamW 10⁻³); receta elegida con 
 Mejor opción: `titans_mac` (+0,000 % frente al ajuste desde cero); elegida con el margen de 0,5 %: `titans_mac`.
 
 - **Receta de la campaña: AdamW 10⁻³** (`configs/titans/dgx-us-core-v1.json`), sin
-  continuación entre orígenes. Ningún brazo mejora la receta del protocolo; ModDrop 0,15 y el
+  continuación entre orígenes. Ninguna variante mejora la receta del protocolo; ModDrop 0,15 y el
   decaimiento de pesos quedan a menos de un 0,02 % y las demás variantes de optimizador por
   detrás.
 - **La continuación no ayuda en validación**: la cadena eligió en 2006 y 2007 su estado heredado
@@ -177,7 +177,7 @@ Mejor opción: `titans_mac` (+0,000 % frente al ajuste desde cero); elegida con 
 - `titans_mac_chain_sp` no pudo evaluarse: su receta con contracción y ruido se declaró también
   para el primer origen, que no tiene padre, y `run_titans_window` lo rechaza («La contracción de
   F3 solo se aplica a una continuación desde su padre»). Es un defecto de la declaración de la
-  búsqueda, no del código; el brazo queda excluido con su causa y sus orígenes 2006 y 2007
+  búsqueda, no del código; la variante queda excluida con su causa y sus orígenes 2006 y 2007
   bloqueados.
 - **Determinismo de extremo a extremo**: `titans_mac_chain/2005`, que no tiene padre, reproduce
   exactamente `titans_mac/2005` (0,014131074, época 2 de 5) en dos trabajos distintos.
