@@ -1,0 +1,981 @@
+{
+ "schema_version": 1,
+ "scope": "directed_mutations_of_the_shared_gpu_queue_and_its_measurement_tool",
+ "method": "Cada mutación cambia un fragmento del archivo en una copia mínima del árbol y ejecuta su archivo de pruebas. Se da por detectada solo si alguna prueba falla. Una ejecución que no termina en 120 segundos cuenta como no detectada. Las pruebas sin mutar se ejecutan antes y después como control.",
+ "targets": [
+  {
+   "path": "scripts/run_comparison_resources.py",
+   "test": "tests/tooling/test_comparison_resources.py",
+   "control_before": {
+    "exit_code": 0,
+    "summary": "101 passed in 1.57s"
+   },
+   "control_after": {
+    "exit_code": 0,
+    "summary": "101 passed in 1.67s"
+   },
+   "total": 99,
+   "detected": 99,
+   "mutations": [
+    {
+     "mutation": "admision_sin_minimo",
+     "exit_code": 1,
+     "detected": true,
+     "summary": "1 failed, 8 passed in 0.19s"
+    },
+    {
+     "mutation": "admision_sin_maximo",
+     "exit_code": 1,
+     "detected": true,
+     "summary": "1 failed, 9 passed in 0.15s"
+    },
+    {
+     "mutation": "presupuestos_sin_version",
+     "exit_code": 1,
+     "detected": true,
+     "summary": "1 failed, 45 passed in 0.88s"
+    },
+    {
+     "mutation": "max_jobs_cero",
+     "exit_code": 1,
+     "detected": true,
+     "summary": "1 failed, 48 passed in 0.91s"
+    },
+    {
+     "mutation": "presupuesto_gpu_cero",
+     "exit_code": 1,
+     "detected": true,
+     "summary": "1 failed, 46 passed in 0.89s"
+    },
+    {
+     "mutation": "reserva_negativa",
+     "exit_code": 1,
+     "detected": true,
+     "summary": "1 failed, 50 passed in 0.94s"
+    },
+    {
+     "mutation": "asentamiento_negativo",
+     "exit_code": 1,
+     "detected": true,
+     "summary": "1 failed, 51 passed in 0.89s"
+    },
+    {
+     "mutation": "asentamiento_texto",
+     "exit_code": 1,
+     "detected": true,
+     "summary": "1 failed, 52 passed in 0.90s"
+    },
+    {
+     "mutation": "temperatura_texto",
+     "exit_code": 1,
+     "detected": true,
+     "summary": "1 failed, 53 passed in 0.90s"
+    },
+    {
+     "mutation": "tabla_no_diccionario",
+     "exit_code": 1,
+     "detected": true,
+     "summary": "1 failed, 59 passed in 0.92s"
+    },
+    {
+     "mutation": "tope_cero",
+     "exit_code": 1,
+     "detected": true,
+     "summary": "1 failed, 56 passed in 0.90s"
+    },
+    {
+     "mutation": "entero_admite_booleano",
+     "exit_code": 1,
+     "detected": true,
+     "summary": "1 failed, 60 passed in 0.91s"
+    },
+    {
+     "mutation": "admision_vacia",
+     "exit_code": 1,
+     "detected": true,
+     "summary": "1 failed, 54 passed in 0.90s"
+    },
+    {
+     "mutation": "admision_sin_defecto",
+     "exit_code": 1,
+     "detected": true,
+     "summary": "1 failed, 57 passed in 0.95s"
+    },
+    {
+     "mutation": "admision_mayor_de_doce",
+     "exit_code": 1,
+     "detected": true,
+     "summary": "1 failed, 55 passed in 0.93s"
+    },
+    {
+     "mutation": "tope_de_quien_va_solo",
+     "exit_code": 1,
+     "detected": true,
+     "summary": "1 failed, 37 passed in 0.91s"
+    },
+    {
+     "mutation": "defecto_por_modelo_ignorado",
+     "exit_code": 1,
+     "detected": true,
+     "summary": "1 failed, 34 passed in 0.86s"
+    },
+    {
+     "mutation": "gpu_ocupada_admite_todo",
+     "exit_code": 1,
+     "detected": true,
+     "summary": "1 failed, 34 passed in 0.89s"
+    },
+    {
+     "mutation": "sin_limite_de_trabajos",
+     "exit_code": 1,
+     "detected": true,
+     "summary": "1 failed, 94 passed in 1.55s"
+    },
+    {
+     "mutation": "limite_de_trabajos_laxo",
+     "exit_code": 1,
+     "detected": true,
+     "summary": "1 failed, 94 passed in 1.57s"
+    },
+    {
+     "mutation": "ejecutor_solitario_compartido",
+     "exit_code": 1,
+     "detected": true,
+     "summary": "1 failed, 38 passed in 0.87s"
+    },
+    {
+     "mutation": "candidato_solitario_compartido",
+     "exit_code": 1,
+     "detected": true,
+     "summary": "1 failed, 38 passed in 1.00s"
+    },
+    {
+     "mutation": "sin_asentamiento",
+     "exit_code": 1,
+     "detected": true,
+     "summary": "1 failed, 41 passed in 0.83s"
+    },
+    {
+     "mutation": "asentamiento_estricto",
+     "exit_code": 1,
+     "detected": true,
+     "summary": "1 failed, 34 passed in 0.90s"
+    },
+    {
+     "mutation": "calor_ignorado",
+     "exit_code": 1,
+     "detected": true,
+     "summary": "1 failed, 42 passed in 1.04s"
+    },
+    {
+     "mutation": "calor_estricto",
+     "exit_code": 1,
+     "detected": true,
+     "summary": "1 failed, 34 passed in 0.98s"
+    },
+    {
+     "mutation": "calor_sin_umbral",
+     "exit_code": 1,
+     "detected": true,
+     "summary": "1 failed, 42 passed in 0.90s"
+    },
+    {
+     "mutation": "otro_origen_admitido",
+     "exit_code": 1,
+     "detected": true,
+     "summary": "1 failed, 43 passed in 0.86s"
+    },
+    {
+     "mutation": "ram_compartida_ignorada",
+     "exit_code": 1,
+     "detected": true,
+     "summary": "1 failed, 44 passed in 0.93s"
+    },
+    {
+     "mutation": "presupuesto_estatico_ignorado",
+     "exit_code": 1,
+     "detected": true,
+     "summary": "1 failed, 34 passed in 0.92s"
+    },
+    {
+     "mutation": "presupuesto_estatico_estricto",
+     "exit_code": 1,
+     "detected": true,
+     "summary": "1 failed, 34 passed in 0.90s"
+    },
+    {
+     "mutation": "presupuesto_sin_candidato",
+     "exit_code": 1,
+     "detected": true,
+     "summary": "1 failed, 34 passed in 0.91s"
+    },
+    {
+     "mutation": "pico_pendiente_ignorado",
+     "exit_code": 1,
+     "detected": true,
+     "summary": "1 failed, 35 passed in 0.92s"
+    },
+    {
+     "mutation": "exceso_devuelve_vram",
+     "exit_code": 1,
+     "detected": true,
+     "summary": "1 failed, 35 passed in 0.94s"
+    },
+    {
+     "mutation": "vram_ya_ocupada_ignorada",
+     "exit_code": 1,
+     "detected": true,
+     "summary": "1 failed, 34 passed in 0.91s"
+    },
+    {
+     "mutation": "vram_libre_sin_reserva",
+     "exit_code": 1,
+     "detected": true,
+     "summary": "1 failed, 34 passed in 0.92s"
+    },
+    {
+     "mutation": "vram_libre_estricta",
+     "exit_code": 1,
+     "detected": true,
+     "summary": "1 failed, 34 passed in 0.92s"
+    },
+    {
+     "mutation": "archivo_sin_limite",
+     "exit_code": 1,
+     "detected": true,
+     "summary": "1 failed, 72 passed in 0.98s"
+    },
+    {
+     "mutation": "relectura_nunca",
+     "exit_code": 1,
+     "detected": true,
+     "summary": "1 failed, 95 passed in 1.72s"
+    },
+    {
+     "mutation": "relectura_sin_sello",
+     "exit_code": 1,
+     "detected": true,
+     "summary": "1 failed, 95 passed in 1.61s"
+    },
+    {
+     "mutation": "relectura_invalida_propaga",
+     "exit_code": 1,
+     "detected": true,
+     "summary": "1 failed, 95 passed in 1.63s"
+    },
+    {
+     "mutation": "relectura_ausente_propaga",
+     "exit_code": 1,
+     "detected": true,
+     "summary": "1 failed, 95 passed in 1.66s"
+    },
+    {
+     "mutation": "vram_libre_ambigua",
+     "exit_code": 1,
+     "detected": true,
+     "summary": "1 failed, 75 passed in 0.97s"
+    },
+    {
+     "mutation": "procesos_sin_sumar",
+     "exit_code": 1,
+     "detected": true,
+     "summary": "1 failed, 73 passed in 0.95s"
+    },
+    {
+     "mutation": "nvidia_sin_comprobar",
+     "exit_code": 1,
+     "detected": true,
+     "summary": "1 failed, 73 passed in 0.95s"
+    },
+    {
+     "mutation": "temperatura_en_centesimas",
+     "exit_code": 1,
+     "detected": true,
+     "summary": "1 failed, 77 passed in 0.95s"
+    },
+    {
+     "mutation": "mps_sin_socket",
+     "exit_code": 1,
+     "detected": true,
+     "summary": "1 failed, 78 passed in 0.99s"
+    },
+    {
+     "mutation": "mps_sin_carpeta",
+     "exit_code": 1,
+     "detected": true,
+     "summary": "1 failed, 78 passed in 1.00s"
+    },
+    {
+     "mutation": "espera_con_el_limite",
+     "exit_code": 1,
+     "detected": true,
+     "summary": "1 failed, 79 passed in 41.26s"
+    },
+    {
+     "mutation": "tope_no_llega_al_proceso",
+     "exit_code": 1,
+     "detected": true,
+     "summary": "1 failed, 79 passed in 1.20s"
+    },
+    {
+     "mutation": "tope_en_gib",
+     "exit_code": 1,
+     "detected": true,
+     "summary": "1 failed, 79 passed in 1.15s"
+    },
+    {
+     "mutation": "varios_trabajadores_sin_presupuestos",
+     "exit_code": 1,
+     "detected": true,
+     "summary": "1 failed, 82 passed in 1.72s"
+    },
+    {
+     "mutation": "compartir_sin_mps",
+     "exit_code": 1,
+     "detected": true,
+     "summary": "1 failed, 82 passed in 2.15s"
+    },
+    {
+     "mutation": "orden_sin_admision_propia",
+     "exit_code": 1,
+     "detected": true,
+     "summary": "1 failed, 83 passed in 1.78s"
+    },
+    {
+     "mutation": "orden_sin_tope",
+     "exit_code": 1,
+     "detected": true,
+     "summary": "1 failed, 83 passed in 1.77s"
+    },
+    {
+     "mutation": "orden_solitaria_con_admision",
+     "exit_code": 1,
+     "detected": true,
+     "summary": "1 failed, 83 passed in 1.75s"
+    },
+    {
+     "mutation": "pid_de_un_registro_parado",
+     "exit_code": 1,
+     "detected": true,
+     "summary": "1 failed, 84 passed in 1.74s"
+    },
+    {
+     "mutation": "pid_del_primer_intento",
+     "exit_code": 1,
+     "detected": true,
+     "summary": "1 failed, 84 passed in 1.83s"
+    },
+    {
+     "mutation": "gpu_vacia_exige_medidas",
+     "exit_code": 1,
+     "detected": true,
+     "summary": "1 failed, 85 passed in 1.82s"
+    },
+    {
+     "mutation": "vram_de_procesos_ignorada",
+     "exit_code": 1,
+     "detected": true,
+     "summary": "1 failed, 84 passed in 1.85s"
+    },
+    {
+     "mutation": "medida_rota_admite",
+     "exit_code": 1,
+     "detected": true,
+     "summary": "1 failed, 85 passed in 1.78s"
+    },
+    {
+     "mutation": "arranque_sin_reloj",
+     "exit_code": 1,
+     "detected": true,
+     "summary": "1 failed, 98 passed in 1.90s"
+    },
+    {
+     "mutation": "plaza_no_liberada",
+     "exit_code": 1,
+     "detected": true,
+     "summary": "1 failed, 87 passed in 11.84s"
+    },
+    {
+     "mutation": "espera_sin_trabajo_termina",
+     "exit_code": 1,
+     "detected": true,
+     "summary": "1 failed, 87 passed in 1.92s"
+    },
+    {
+     "mutation": "plazo_ignorado",
+     "exit_code": 1,
+     "detected": true,
+     "summary": "1 failed, 99 passed in 1.85s"
+    },
+    {
+     "mutation": "disco_ignorado",
+     "exit_code": 1,
+     "detected": true,
+     "summary": "1 failed, 100 passed in 1.90s"
+    },
+    {
+     "mutation": "admision_sin_filtro",
+     "exit_code": 1,
+     "detected": true,
+     "summary": "1 failed, 87 passed in 1.89s"
+    },
+    {
+     "mutation": "solape_incluye_al_propio",
+     "exit_code": 1,
+     "detected": true,
+     "summary": "1 failed, 87 passed in 1.82s"
+    },
+    {
+     "mutation": "registro_sin_inicio",
+     "exit_code": 1,
+     "detected": true,
+     "summary": "1 failed, 87 passed in 1.86s"
+    },
+    {
+     "mutation": "registro_sin_fin",
+     "exit_code": 1,
+     "detected": true,
+     "summary": "1 failed, 87 passed in 1.79s"
+    },
+    {
+     "mutation": "registro_sin_presupuestos",
+     "exit_code": 1,
+     "detected": true,
+     "summary": "1 failed, 88 passed in 1.77s"
+    },
+    {
+     "mutation": "registro_sin_tope",
+     "exit_code": 1,
+     "detected": true,
+     "summary": "1 failed, 87 passed in 1.77s"
+    },
+    {
+     "mutation": "trabajadores_fijos",
+     "exit_code": 1,
+     "detected": true,
+     "summary": "1 failed, 82 passed in 2.01s"
+    },
+    {
+     "mutation": "cli_sin_admision_propia",
+     "exit_code": 1,
+     "detected": true,
+     "summary": "1 failed, 93 passed in 1.75s"
+    },
+    {
+     "mutation": "cli_sin_tope",
+     "exit_code": 1,
+     "detected": true,
+     "summary": "1 failed, 93 passed in 1.83s"
+    },
+    {
+     "mutation": "cli_presupuestos_sin_leer",
+     "exit_code": 1,
+     "detected": true,
+     "summary": "1 failed, 92 passed in 1.81s"
+    },
+    {
+     "mutation": "asignador_sin_validar",
+     "exit_code": 1,
+     "detected": true,
+     "summary": "1 failed, 62 passed in 1.07s"
+    },
+    {
+     "mutation": "asignador_acepta_no_texto",
+     "exit_code": 1,
+     "detected": true,
+     "summary": "1 failed, 70 passed in 1.13s"
+    },
+    {
+     "mutation": "asignador_coincidencia_parcial",
+     "exit_code": 1,
+     "detected": true,
+     "summary": "1 failed, 66 passed in 1.02s"
+    },
+    {
+     "mutation": "asignador_sin_nombre",
+     "exit_code": 1,
+     "detected": true,
+     "summary": "1 failed, 65 passed in 1.11s"
+    },
+    {
+     "mutation": "asignador_sin_valor",
+     "exit_code": 1,
+     "detected": true,
+     "summary": "1 failed, 64 passed in 1.15s"
+    },
+    {
+     "mutation": "asignador_no_guardado",
+     "exit_code": 1,
+     "detected": true,
+     "summary": "1 failed, 37 passed in 1.03s"
+    },
+    {
+     "mutation": "asignador_para_todos",
+     "exit_code": 1,
+     "detected": true,
+     "summary": "1 failed, 37 passed in 1.06s"
+    },
+    {
+     "mutation": "asignador_nunca",
+     "exit_code": 1,
+     "detected": true,
+     "summary": "1 failed, 37 passed in 1.12s"
+    },
+    {
+     "mutation": "asignador_no_llega_al_proceso",
+     "exit_code": 1,
+     "detected": true,
+     "summary": "1 failed, 79 passed in 1.98s"
+    },
+    {
+     "mutation": "asignador_en_otra_variable",
+     "exit_code": 1,
+     "detected": true,
+     "summary": "1 failed, 79 passed in 1.98s"
+    },
+    {
+     "mutation": "asignador_siempre_exportado",
+     "exit_code": 1,
+     "detected": true,
+     "summary": "1 failed, 15 passed in 0.38s"
+    },
+    {
+     "mutation": "orden_sin_asignador",
+     "exit_code": 1,
+     "detected": true,
+     "summary": "1 failed, 83 passed in 2.45s"
+    },
+    {
+     "mutation": "registro_sin_asignador",
+     "exit_code": 1,
+     "detected": true,
+     "summary": "1 failed, 90 passed in 2.52s"
+    },
+    {
+     "mutation": "cli_sin_asignador",
+     "exit_code": 1,
+     "detected": true,
+     "summary": "1 failed, 93 passed in 2.43s"
+    },
+    {
+     "mutation": "mps_sin_proceso",
+     "exit_code": 1,
+     "detected": true,
+     "summary": "1 failed, 78 passed in 1.05s"
+    },
+    {
+     "mutation": "mps_sin_archivo_de_pid",
+     "exit_code": 1,
+     "detected": true,
+     "summary": "1 failed, 78 passed in 1.48s"
+    },
+    {
+     "mutation": "mps_caido_con_gpu_vacia",
+     "exit_code": 1,
+     "detected": true,
+     "summary": "1 failed, 85 passed in 2.32s"
+    },
+    {
+     "mutation": "aviso_repetido",
+     "exit_code": 1,
+     "detected": true,
+     "summary": "1 failed, 85 passed in 1.88s"
+    },
+    {
+     "mutation": "aviso_sin_olvido",
+     "exit_code": 1,
+     "detected": true,
+     "summary": "1 failed, 85 passed in 1.58s"
+    },
+    {
+     "mutation": "aviso_gpu_vacia_sin_olvido",
+     "exit_code": 1,
+     "detected": true,
+     "summary": "1 failed, 85 passed in 1.58s"
+    },
+    {
+     "mutation": "aviso_medida_sin_olvido",
+     "exit_code": 1,
+     "detected": true,
+     "summary": "1 failed, 85 passed in 1.67s"
+    },
+    {
+     "mutation": "cola_espera_con_el_limite",
+     "exit_code": 1,
+     "detected": true,
+     "summary": "1 failed, 81 passed in 1.63s"
+    },
+    {
+     "mutation": "cola_sin_aviso_de_memoria",
+     "exit_code": 1,
+     "detected": true,
+     "summary": "1 failed, 81 passed in 1.57s"
+    }
+   ]
+  },
+  {
+   "path": "benchmarks/comparison_gpu_sharing_20261120/gemelos.py",
+   "test": "tests/benchmarks/test_comparison_gpu_sharing.py",
+   "control_before": {
+    "exit_code": 0,
+    "summary": "30 passed in 0.83s"
+   },
+   "control_after": {
+    "exit_code": 0,
+    "summary": "30 passed in 0.67s"
+   },
+   "total": 58,
+   "detected": 58,
+   "mutations": [
+    {
+     "mutation": "bits_con_redondeo",
+     "exit_code": 1,
+     "detected": true,
+     "summary": "1 failed in 0.28s"
+    },
+    {
+     "mutation": "bits_sin_ausente",
+     "exit_code": 1,
+     "detected": true,
+     "summary": "1 failed in 0.30s"
+    },
+    {
+     "mutation": "trazas_sin_limite",
+     "exit_code": 1,
+     "detected": true,
+     "summary": "1 failed, 1 passed in 0.50s"
+    },
+    {
+     "mutation": "trazas_limite_estricto",
+     "exit_code": 1,
+     "detected": true,
+     "summary": "1 failed, 1 passed in 0.60s"
+    },
+    {
+     "mutation": "trazas_clave_sin_grupo",
+     "exit_code": 1,
+     "detected": true,
+     "summary": "1 failed, 1 passed in 0.53s"
+    },
+    {
+     "mutation": "trazas_clave_sin_metrica",
+     "exit_code": 1,
+     "detected": true,
+     "summary": "1 failed, 1 passed in 0.55s"
+    },
+    {
+     "mutation": "trazas_ultimo_valor",
+     "exit_code": 1,
+     "detected": true,
+     "summary": "1 failed, 1 passed in 0.55s"
+    },
+    {
+     "mutation": "trazas_solo_primera_parte",
+     "exit_code": 1,
+     "detected": true,
+     "summary": "1 failed, 1 passed in 0.61s"
+    },
+    {
+     "mutation": "plano_sin_bits",
+     "exit_code": 1,
+     "detected": true,
+     "summary": "1 failed, 3 passed in 0.58s"
+    },
+    {
+     "mutation": "cotejo_ignora_diferencias",
+     "exit_code": 1,
+     "detected": true,
+     "summary": "1 failed, 5 passed in 0.58s"
+    },
+    {
+     "mutation": "cotejo_identidad_ignorada",
+     "exit_code": 1,
+     "detected": true,
+     "summary": "1 failed, 11 passed in 0.60s"
+    },
+    {
+     "mutation": "cotejo_run_id_ignorado",
+     "exit_code": 1,
+     "detected": true,
+     "summary": "1 failed, 12 passed in 0.65s"
+    },
+    {
+     "mutation": "cotejo_sin_filas_vale",
+     "exit_code": 1,
+     "detected": true,
+     "summary": "1 failed, 9 passed in 0.58s"
+    },
+    {
+     "mutation": "cotejo_diferencias_valen",
+     "exit_code": 1,
+     "detected": true,
+     "summary": "1 failed, 5 passed in 0.61s"
+    },
+    {
+     "mutation": "cotejo_filas_propias_valen",
+     "exit_code": 1,
+     "detected": true,
+     "summary": "1 failed, 7 passed in 0.62s"
+    },
+    {
+     "mutation": "cotejo_epoca_ausente_vale",
+     "exit_code": 1,
+     "detected": true,
+     "summary": "1 failed, 10 passed in 0.64s"
+    },
+    {
+     "mutation": "cotejo_historial_ignorado",
+     "exit_code": 1,
+     "detected": true,
+     "summary": "1 failed, 6 passed in 0.58s"
+    },
+    {
+     "mutation": "cotejo_checkpoint_ignorado",
+     "exit_code": 1,
+     "detected": true,
+     "summary": "1 failed, 13 passed in 0.70s"
+    },
+    {
+     "mutation": "cotejo_checkpoint_siempre",
+     "exit_code": 1,
+     "detected": true,
+     "summary": "1 failed, 4 passed in 0.76s"
+    },
+    {
+     "mutation": "cotejo_epoca_ausente_se_compara",
+     "exit_code": 1,
+     "detected": true,
+     "summary": "1 failed, 10 passed in 0.61s"
+    },
+    {
+     "mutation": "cotejo_sin_estado_sigue",
+     "exit_code": 1,
+     "detected": true,
+     "summary": "1 failed, 14 passed in 0.68s"
+    },
+    {
+     "mutation": "entorno_sin_exigir_mps",
+     "exit_code": 1,
+     "detected": true,
+     "summary": "1 failed, 17 passed in 0.71s"
+    },
+    {
+     "mutation": "entorno_basta_una_carpeta",
+     "exit_code": 1,
+     "detected": true,
+     "summary": "1 failed, 17 passed in 0.63s"
+    },
+    {
+     "mutation": "entorno_tope_sin_mps",
+     "exit_code": 1,
+     "detected": true,
+     "summary": "1 failed, 17 passed in 0.68s"
+    },
+    {
+     "mutation": "entorno_hereda_opciones",
+     "exit_code": 1,
+     "detected": true,
+     "summary": "1 failed, 16 passed in 0.62s"
+    },
+    {
+     "mutation": "entorno_tope_en_gib",
+     "exit_code": 1,
+     "detected": true,
+     "summary": "1 failed, 16 passed in 0.81s"
+    },
+    {
+     "mutation": "entorno_sin_asignador",
+     "exit_code": 1,
+     "detected": true,
+     "summary": "1 failed, 16 passed in 0.66s"
+    },
+    {
+     "mutation": "entorno_sin_cache_propia",
+     "exit_code": 1,
+     "detected": true,
+     "summary": "1 failed, 16 passed in 0.70s"
+    },
+    {
+     "mutation": "comparacion_siempre_bien",
+     "exit_code": 1,
+     "detected": true,
+     "summary": "1 failed, 15 passed in 0.71s"
+    },
+    {
+     "mutation": "comparacion_alguno_basta",
+     "exit_code": 1,
+     "detected": true,
+     "summary": "1 failed, 15 passed in 0.66s"
+    },
+    {
+     "mutation": "json_roto_propaga",
+     "exit_code": 1,
+     "detected": true,
+     "summary": "1 failed, 18 passed in 0.69s"
+    },
+    {
+     "mutation": "avance_sin_paso_cuenta",
+     "exit_code": 1,
+     "detected": true,
+     "summary": "1 failed, 21 passed in 0.70s"
+    },
+    {
+     "mutation": "avance_repite_barreras",
+     "exit_code": 1,
+     "detected": true,
+     "summary": "1 failed, 21 passed in 0.76s"
+    },
+    {
+     "mutation": "parada_antes_de_tiempo",
+     "exit_code": 1,
+     "detected": true,
+     "summary": "1 failed, 21 passed in 0.70s"
+    },
+    {
+     "mutation": "parada_estricta",
+     "exit_code": 1,
+     "detected": true,
+     "summary": "1 failed, 21 passed in 0.68s"
+    },
+    {
+     "mutation": "parada_repetida",
+     "exit_code": 1,
+     "detected": true,
+     "summary": "1 failed, 21 passed in 0.77s"
+    },
+    {
+     "mutation": "parada_sin_anotar",
+     "exit_code": 1,
+     "detected": true,
+     "summary": "1 failed, 21 passed in 0.69s"
+    },
+    {
+     "mutation": "parada_sin_senal",
+     "exit_code": 1,
+     "detected": true,
+     "summary": "1 failed, 24 passed in 0.74s"
+    },
+    {
+     "mutation": "pico_de_vram_ultimo",
+     "exit_code": 1,
+     "detected": true,
+     "summary": "1 failed, 24 passed in 0.71s"
+    },
+    {
+     "mutation": "pico_de_ram_ignorado",
+     "exit_code": 1,
+     "detected": true,
+     "summary": "1 failed, 24 passed in 0.72s"
+    },
+    {
+     "mutation": "entorno_sin_restaurar",
+     "exit_code": 1,
+     "detected": true,
+     "summary": "1 failed, 24 passed in 0.86s"
+    },
+    {
+     "mutation": "prueba_sin_limite_de_ram",
+     "exit_code": 1,
+     "detected": true,
+     "summary": "1 failed, 20 passed in 0.66s"
+    },
+    {
+     "mutation": "prueba_de_otro_trabajo",
+     "exit_code": 1,
+     "detected": true,
+     "summary": "1 failed, 20 passed in 0.72s"
+    },
+    {
+     "mutation": "resultado_del_primer_intento",
+     "exit_code": 1,
+     "detected": true,
+     "summary": "1 failed, 22 passed in 0.69s"
+    },
+    {
+     "mutation": "preparar_todos_los_anios",
+     "exit_code": 1,
+     "detected": true,
+     "summary": "1 failed, 27 passed in 0.69s"
+    },
+    {
+     "mutation": "preparar_sobre_existente",
+     "exit_code": 1,
+     "detected": true,
+     "summary": "1 failed, 27 passed in 0.79s"
+    },
+    {
+     "mutation": "preparar_sin_comprobar_permiso",
+     "exit_code": 1,
+     "detected": true,
+     "summary": "1 failed, 27 passed in 0.76s"
+    },
+    {
+     "mutation": "controlador_de_otro_runtime",
+     "exit_code": 1,
+     "detected": true,
+     "summary": "1 failed, 28 passed in 0.74s"
+    },
+    {
+     "mutation": "muestra_rota_propaga",
+     "exit_code": 1,
+     "detected": true,
+     "summary": "1 failed, 23 passed in 0.73s"
+    },
+    {
+     "mutation": "temperatura_en_milesimas",
+     "exit_code": 1,
+     "detected": true,
+     "summary": "1 failed, 23 passed in 0.73s"
+    },
+    {
+     "mutation": "consulta_sin_comprobar",
+     "exit_code": 1,
+     "detected": true,
+     "summary": "1 failed, 29 passed in 0.82s"
+    },
+    {
+     "mutation": "consulta_con_lineas_vacias",
+     "exit_code": 1,
+     "detected": true,
+     "summary": "1 failed, 29 passed in 0.71s"
+    },
+    {
+     "mutation": "consulta_de_otra_gpu",
+     "exit_code": 1,
+     "detected": true,
+     "summary": "1 failed, 29 passed in 0.79s"
+    },
+    {
+     "mutation": "grupo_sin_compartida",
+     "exit_code": 1,
+     "detected": true,
+     "summary": "1 failed, 19 passed in 0.79s"
+    },
+    {
+     "mutation": "grupo_con_barra_inicial",
+     "exit_code": 1,
+     "detected": true,
+     "summary": "1 failed, 19 passed in 0.70s"
+    },
+    {
+     "mutation": "escalonado_tras_el_ultimo",
+     "exit_code": 1,
+     "detected": true,
+     "summary": "1 failed, 25 passed in 0.74s"
+    },
+    {
+     "mutation": "sin_escalonado",
+     "exit_code": 1,
+     "detected": true,
+     "summary": "1 failed, 25 passed in 0.69s"
+    },
+    {
+     "mutation": "prueba_terminada_sin_saltar",
+     "exit_code": 1,
+     "detected": true,
+     "summary": "1 failed, 25 passed in 0.68s"
+    }
+   ]
+  }
+ ]
+}
