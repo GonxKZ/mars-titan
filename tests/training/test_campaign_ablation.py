@@ -6,6 +6,7 @@ un recibo incoherente detiene la orden, que un intento interrumpido se descarta 
 se registra sin detener las demás tareas.
 """
 
+import fcntl
 import json
 from concurrent.futures import ThreadPoolExecutor
 
@@ -194,3 +195,15 @@ def test_the_command_needs_the_authorized_declaration(tmp_path):
     atomic_json(where.authorization, dict(training_allowed=True, declaration_sha256="0" * 64))
     with pytest.raises(ValueError, match="autorizada"):
         ablation.main(arguments)
+
+
+def test_two_commands_never_walk_the_same_state_at_once(world):
+    where, _, calls, _ = world
+    root = where.state / ablation.FOLDER
+    root.mkdir(parents=True, exist_ok=True)
+    with (root / ".lock").open("a") as held:
+        fcntl.flock(held, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        with pytest.raises(ValueError, match="Otra orden"):
+            run(world)
+    assert not calls
+    assert run(world)["completed"]
