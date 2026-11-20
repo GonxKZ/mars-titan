@@ -2116,3 +2116,25 @@ def test_a_model_can_declare_its_own_stopping_rule(tmp_path):
     broken["models"]["rule"]["stopping"] = own
     with pytest.raises(ValueError, match="no declara sus campos"):
         campaign.checked_declaration(broken)
+
+
+def test_queue_can_be_limited_to_seeds_and_combines_with_origins_and_tiers(tmp_path):
+    document, place = campaign.checked_declaration(declaration()), layout(tmp_path)
+    full = campaign.Queue(document, place, "mars_titan")
+    first = campaign.Queue(document, place, "mars_titan", seeds=[42])
+    assert first.jobs == [job for job in full.jobs if job.seed == 42]
+    keys = {job.key for job in first.jobs}
+    assert all(job.needs is None or job.needs in keys for job in first.jobs)
+    narrow = campaign.Queue(
+        document, place, "mars_titan", seeds=[43], origins=[2019], tiers=["core"]
+    )
+    assert narrow.jobs and {(job.seed, job.year, job.tier) for job in narrow.jobs} == {
+        (43, 2019, "core")
+    }
+    # Un trabajo sin semilla, como una regla por origen, no depende del filtro.
+    references = campaign.Queue(document, place, "references", seeds=[43])
+    assert any(job.seed is None for job in references.jobs)
+    assert all(job.seed in (None, 43) for job in references.jobs)
+    for seeds in ([], [41], [42, 7]):
+        with pytest.raises(ValueError, match="Semilla desconocida"):
+            campaign.Queue(document, place, "mars_titan", seeds=seeds)

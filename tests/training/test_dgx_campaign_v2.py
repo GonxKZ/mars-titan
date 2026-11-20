@@ -20,7 +20,8 @@ CONTROLS = dict(
     titans_mac_cascade=("titans_mac_autograd", "predictor.memory_multiscale"),
     titans_mac_cascade_film=("titans_mac_cascade", "predictor.presence_modulation"),
     titans_mac_huber=("titans_mac_autograd", "predictor.memory_huber"),
-    titans_mac_stability=("titans_mac_autograd", "predictor.memory_stability"),
+    titans_mac_eta015=("titans_mac_autograd", "predictor.gate_bias"),
+    titans_mac_stability=("titans_mac_eta015", "predictor.memory_stability"),
     titans_mac_film=("titans_mac", "predictor.presence_modulation"),
     titans_mac_wide=("titans_mac", "predictor.presence_modulation"),
     titans_mac_timescales=("titans_mac", "predictor.memory_time_scales"),
@@ -28,7 +29,9 @@ CONTROLS = dict(
     titans_mac_l2=("titans_mac", "predictor.layers"),
     titans_mac_p16=("titans_mac", "predictor.persistent_tokens"),
     titans_mac_nols=("titans_mac", "predictor.learning_scale"),
-    titans_mac_ic=("titans_mac_nols", "predictor.session_ic_objective"),
+    # La cabeza escalar se ajusta con su propia pérdida: los dos campos son una sola variable.
+    titans_mac_scalar=("titans_mac_nols", ("predictor.head", "recipe.loss")),
+    titans_mac_ic=("titans_mac_scalar", "predictor.session_ic_objective"),
     titans_mac_rank=("titans_mac_nols", "predictor.session_rank_inputs"),
     titans_mac_ic_rank=("titans_mac_ic", "predictor.session_rank_inputs"),
     titans_mac_aux=("titans_mac", "predictor.auxiliary_horizons"),
@@ -72,7 +75,7 @@ def test_the_campaign_keeps_every_previous_model_and_adds_one_tier_per_variant(d
     for name in added:
         tier = "v_" + name.removeprefix("titans_mac_")
         assert document["models"][name]["tier"] == tier and tier in document["tiers"]
-    assert len(campaign.plan(document, "mars_titan")) == 46 * 19 * 3
+    assert len(campaign.plan(document, "mars_titan")) == 48 * 19 * 3
 
 
 def test_every_runner_selects_by_the_session_rank_ic_and_the_control_by_the_protocol(document):
@@ -105,11 +108,11 @@ def test_each_variant_differs_from_its_control_in_exactly_one_declared_field(doc
     different = {
         key for key in variant.keys() | reference.keys() if variant.get(key) != reference.get(key)
     }
-    assert different == {field}
+    assert different == ({field} if isinstance(field, str) else set(field))
 
 
 def test_the_memory_variants_the_fused_write_does_not_cover_use_autograd(document):
-    for name in ("cascade", "cascade_film", "huber", "stability", "autograd"):
+    for name in ("cascade", "cascade_film", "huber", "eta015", "stability", "autograd"):
         spec = specification(document, f"titans_mac_{name}")
         assert spec["predictor.memory_inner_gradient"] == "autograd_v1"
     for name in ("titans_mac", "titans_mac_film", "titans_mac_timescales", "titans_mac_l2"):
