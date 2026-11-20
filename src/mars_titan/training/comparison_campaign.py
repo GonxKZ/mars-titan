@@ -107,6 +107,10 @@ _MODEL_FIELDS = {
 # modelo y semilla en el origen anterior de su etapa, con run_titans_window(initial=...). El
 # ejecutor exige que la validación del padre acabe antes que la de la continuación.
 CONTINUATION = "previous_origin"
+# Orden del plan dentro de cada etapa: nivel antes que semilla (por defecto) o semilla antes que
+# nivel, para que un plazo agotado recorte semillas de todos los modelos y no niveles enteros.
+TIER_SEED, SEED_TIER = "tier_seed", "seed_tier"
+ORDERS = (TIER_SEED, SEED_TIER)
 _OPTIONAL = {
     "fit": {"predictor_changes", "epochs", "continuation"},
     "reader": {"epochs"},
@@ -311,13 +315,17 @@ def checked_declaration(document, *, root=ROOT, check_recipe_files=True):
         isinstance(execution, dict)
         and {"pipeline", "workers"}
         <= set(execution)
-        <= {"pipeline", "workers", "neural_blocks", "learning_traces"}
+        <= {"pipeline", "workers", "neural_blocks", "learning_traces", "order"}
         and isinstance(execution["workers"], dict)
         and set(execution["workers"]) == set(MACHINES)
         and all(type(count) is int and 1 <= count <= 8 for count in execution["workers"].values()),
         "La ejecución declara la tubería de lectura y los trabajadores de cada equipo",
     )
     PipelineOptions(**execution["pipeline"])
+    _require(
+        execution.get("order", TIER_SEED) in ORDERS,
+        f"El orden del plan es uno de {', '.join(ORDERS)}",
+    )
     _checked_traces(execution.get("learning_traces"))
     _checked_blocks(execution, origins, seeds)
     _checked_budget(document.get("budget", {}))
@@ -422,7 +430,10 @@ def plan(declaration, machine):
 
     La primera etapa recorre los orígenes de desarrollo y de confirmación. La segunda repite
     los mismos niveles con los orígenes `history`, de modo que un plazo que se agote recorta
-    primero los años añadidos y, dentro de ellos, los niveles menos prioritarios.
+    primero los años añadidos y, dentro de ellos, los niveles menos prioritarios. Con
+    `execution.order` igual a `seed_tier`, cada semilla recorre todos los niveles antes de la
+    siguiente: un plazo agotado recorta entonces las últimas semillas de todos los modelos en
+    lugar de dejar sin ninguna los niveles menos prioritarios.
     """
     _require(machine in MACHINES, f"El equipo debe ser uno de {', '.join(MACHINES)}")
     tiers, models = declaration["tiers"], declaration["models"]
@@ -431,41 +442,45 @@ def plan(declaration, machine):
         origins = [
             origin for origin in declaration["origins"] if (origin["role"] == HISTORY) is history
         ]
-        for tier in tiers:
+        seeds = list(enumerate(declaration["seeds"]))
+        if declaration["execution"].get("order", TIER_SEED) == SEED_TIER:
+            groups = [(tier, position, seed) for position, seed in seeds for tier in tiers]
+        else:
+            groups = [(tier, position, seed) for tier in tiers for position, seed in seeds]
+        for tier, position, seed in groups:
             names = [name for name, model in models.items() if model["tier"] == tier]
             # Dentro de un nivel, un padre va antes que sus lectores.
             names.sort(key=lambda name: models[name]["runner"] == "reader")
-            for position, seed in enumerate(declaration["seeds"]):
-                for origin in origins:
-                    for name in names:
-                        runner = models[name]["runner"]
-                        if runner in ORIGIN_RUNNERS and position > 0:
-                            continue
-                        owner = models[name]["machine"]
-                        blocks = declaration["execution"].get("neural_blocks")
-                        if blocks is not None and runner in GPU_RUNNERS:
-                            owner = blocks[f"{origin['year']}/seed-{seed}"]
-                        if owner != machine:
-                            continue
-                        needs = None
-                        if runner == "reader":
-                            needs = f"{models[name]['parent']}/{origin['year']}/seed-{seed}"
-                        elif models[name].get("continuation") == CONTINUATION:
-                            index = origins.index(origin)
-                            if index:
-                                needs = f"{name}/{origins[index - 1]['year']}/seed-{seed}"
-                        jobs.append(
-                            Job(
-                                name,
-                                origin["year"],
-                                origin["fold"],
-                                None if runner in ORIGIN_RUNNERS else seed,
-                                runner,
-                                tier,
-                                needs,
-                                history,
-                            )
+            for origin in origins:
+                for name in names:
+                    runner = models[name]["runner"]
+                    if runner in ORIGIN_RUNNERS and position > 0:
+                        continue
+                    owner = models[name]["machine"]
+                    blocks = declaration["execution"].get("neural_blocks")
+                    if blocks is not None and runner in GPU_RUNNERS:
+                        owner = blocks[f"{origin['year']}/seed-{seed}"]
+                    if owner != machine:
+                        continue
+                    needs = None
+                    if runner == "reader":
+                        needs = f"{models[name]['parent']}/{origin['year']}/seed-{seed}"
+                    elif models[name].get("continuation") == CONTINUATION:
+                        index = origins.index(origin)
+                        if index:
+                            needs = f"{name}/{origins[index - 1]['year']}/seed-{seed}"
+                    jobs.append(
+                        Job(
+                            name,
+                            origin["year"],
+                            origin["fold"],
+                            None if runner in ORIGIN_RUNNERS else seed,
+                            runner,
+                            tier,
+                            needs,
+                            history,
                         )
+                    )
     return jobs
 
 
