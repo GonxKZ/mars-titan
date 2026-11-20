@@ -137,6 +137,27 @@ Filas con etiqueta por tramo (suma sobre activos). El ajuste crece de 1,31 M fil
   con el banco lleno, dentro del máximo de 1 GiB; el gradiente del segmento es la media sobre
   etiquetas sea cual sea el bloque.
 
+## Planificación dentro del plazo
+
+Con 3 trabajos a la vez, un ajuste de Titans-MAC de 2005 tarda de media 10,3 min (22 ajustes de
+la búsqueda) y el coste crece con las filas de ajuste: los 19 orígenes suman 94,9 orígenes de
+2005. Solo Titans-MAC con 3 semillas son unas 49 h de un trabajador, unas 16 h de pared; los 11
+modelos con ajuste propio, más los 11 lectores, superan con holgura los días que quedan si los
+lectores y las redes cuestan como un ajuste. Por eso:
+
+- **La paciencia no se reduce.** Simulada sobre las 22 historias reales de la búsqueda con la regla
+  exacta de `selection.advance_selection`, una paciencia de 2 cambia la época elegida en 7 de
+  22 ajustes y empeora su MAE de validación entre un 0,09 % y un 0,23 %; con paciencia 1, en 10 de
+  22. La ganancia del ajuste sobre su estado inicial es del orden del 0,5 %, así que esas épocas
+  tardías importan.
+- **Semilla antes que nivel** (`execution.order: seed_tier`): cada semilla recorre todos los
+  niveles antes de la siguiente. Si el plazo (`budget.deadline_utc`) se agota, faltan las
+  últimas semillas de todos los modelos, no niveles enteros: el cerebro holográfico, los puentes
+  y los refinamientos tienen al menos una semilla completa en los 19 orígenes. Los trabajos, sus
+  dependencias y sus identidades son los mismos que con el orden por niveles.
+- El coste real de los lectores y de las redes se mide en la propia campaña (los lectores m0–m3
+  van en el primer nivel, detrás de su padre) y se reparte la memoria según lo medido.
+
 ## Regularización declarada
 
 `FinancialConfig.fusion_dropout` (0,1 o 0,2, la rejilla de las referencias) activa el dropout de

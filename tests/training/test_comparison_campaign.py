@@ -355,6 +355,37 @@ def test_plan_orders_by_tier_seed_origin_and_model_with_parents_before_readers()
         campaign.plan(document, "laptop")
 
 
+def test_seed_first_order_runs_every_tier_of_a_seed_before_the_next_seed():
+    document = declaration()
+    document["execution"] = dict(document["execution"], order="seed_tier")
+    jobs = campaign.plan(campaign.checked_declaration(document), "mars_titan")
+    assert [job.key for job in jobs] == [
+        "titans_mac/2019/seed-42",
+        "mars_titan_m1/2019/seed-42",
+        "titans_mac/2023/seed-42",
+        "mars_titan_m1/2023/seed-42",
+        "area_network/2019/seed-42",
+        "area_network/2023/seed-42",
+        "titans_mac/2019/seed-43",
+        "mars_titan_m1/2019/seed-43",
+        "titans_mac/2023/seed-43",
+        "mars_titan_m1/2023/seed-43",
+        "area_network/2019/seed-43",
+        "area_network/2023/seed-43",
+    ]
+    # Mismos trabajos y dependencias que el orden por niveles: solo cambia el orden.
+    default = campaign.plan(campaign.checked_declaration(declaration()), "mars_titan")
+    assert sorted(jobs, key=lambda job: job.key) == sorted(default, key=lambda job: job.key)
+    references = campaign.plan(campaign.checked_declaration(document), "references")
+    assert [job.key for job in references if job.model == "rule"] == [
+        "rule/2019/all-seeds",
+        "rule/2023/all-seeds",
+    ]
+    document["execution"] = dict(document["execution"], order="origin_first")
+    with pytest.raises(ValueError, match="orden del plan"):
+        campaign.checked_declaration(document)
+
+
 def test_year_seed_blocks_keep_paired_neural_models_and_parents_on_one_machine():
     document = declaration()
     document["execution"]["neural_blocks"] = {
