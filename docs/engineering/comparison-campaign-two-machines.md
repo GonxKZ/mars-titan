@@ -305,6 +305,21 @@ La activación utiliza dos archivos en el directorio del estado. `trace-qualific
 
 El primer intento observado registra en `start_step` el paso del checkpoint del que partió. Cada reanudación conserva ese inicio y registra además su propio `resume_step`. Los intervalos previos siguen sin observaciones. El registrador vuelca los datos en las validaciones y los checkpoints. Al alcanzar el presupuesto, su cursor conserva el primer paso que quedó fuera. La selección del mejor modelo y el presupuesto de aprendizaje proceden de la receta habitual.
 
+La etiqueta `comparison-campaign-traces-storage-v1` fija el ejecutor de PC1. Para trasladar un estado de `comparison-campaign-packed-inputs-v1`, se utiliza la orden `inherit` desde el repositorio de administración actualizado, con la cola anterior pausada y la copia científica limpia. El destino debe estar fuera del origen. Se verifican los modelos heredados, se copian los padres necesarios para los lectores y se comprueban el cursor, los índices y los archivos de recuperación del ajuste pausado. Se conserva el origen. Un lector que ya haya empezado debe terminar con su padre original antes de este traslado. [Mediciones en la RTX 4070](../../reports/engineering/comparison-traces-20261120/README.md)
+
+```bash
+previous="$HOME/.local/state/mars-titan/comparison-campaign-packed-v1"
+state="$HOME/.local/state/mars-titan/comparison-campaign-traces-storage-pc1-v1"
+runtime="$HOME/.local/share/mars-titan/worktrees/comparison-traces-storage-pc1-v1"
+declaration=configs/experiments/comparison-campaign-gpu-v1.json
+git worktree add --detach "$runtime" comparison-campaign-traces-storage-v1
+uv run --no-sync python -m mars_titan.training.comparison_campaign inherit \
+  --runtime "$runtime" --source "$previous" --state "$state" \
+  --declaration "$declaration" --previous-declaration "$declaration"
+```
+
+Tras comprobar la herencia y colocar los dos archivos de cualificación en el destino, se ejecutan `authorize` y la cola de recursos con ese estado desde el ejecutor etiquetado. Para reunir su ZIP con un ZIP anterior verificado de PC2, se añade `--verified-learning-traces` al analizador de resultados de la copia administrativa. Esa opción comprueba la revisión de cada equipo y las huellas de la declaración y las cohortes.
+
 ## Seguir, parar y reanudar
 
 ```bash
