@@ -1885,3 +1885,54 @@ def test_origin_controls_receive_a_cooperative_stop_signal(tmp_path, monkeypatch
     monkeypatch.setattr(comparison_ridge, "run_ridge_window", stopped)
     assert campaign.execute_job(document, place, job)["status"] == "paused"
     assert campaign.signal.getsignal(campaign.signal.SIGTERM) == previous
+
+
+@pytest.mark.parametrize(
+    "traces",
+    [
+        dict(every=0, max_bytes=2**20),
+        dict(every=8, max_bytes=512),
+        dict(every=8),
+        dict(every=8, max_bytes=2**20, cadence=4),
+        dict(every=8, max_bytes=2**20, every_by_unit=dict(transition=0)),
+        dict(every=True, max_bytes=2**20),
+    ],
+)
+def test_learning_traces_outside_their_contract_are_rejected(traces):
+    document = declaration()
+    document["execution"]["learning_traces"] = traces
+    with pytest.raises(ValueError, match="trazas"):
+        campaign.checked_declaration(document)
+
+
+def test_declared_learning_traces_reach_every_neural_runner(tmp_path, monkeypatch):
+    from mars_titan.training import mars_titan_walk_forward, titans_walk_forward
+
+    calls = []
+
+    def recorder(name):
+        def call(*arguments, **options):
+            calls.append((name, options.get("traces", "absent")))
+            return dict(status="completed")
+
+        return call
+
+    monkeypatch.setattr(titans_walk_forward, "view_protocol", lambda view: dict(view=str(view)))
+    monkeypatch.setattr(titans_walk_forward, "run_titans_window", recorder("fit"))
+    monkeypatch.setattr(mars_titan_walk_forward, "run_mars_titan_window", recorder("reader"))
+    traces = dict(every=8, max_bytes=2**26)
+    for wanted in (None, traces):
+        document = declaration()
+        if wanted is not None:
+            document["execution"]["learning_traces"] = wanted
+        document, place = (
+            campaign.checked_declaration(document),
+            layout(tmp_path / str(wanted is None)),
+        )
+        (place.cohort(2019)).mkdir(parents=True)
+        (place.cohort(2019) / "manifest.json").write_text("{}")
+        jobs = {job.key: job for job in campaign.plan(document, "mars_titan")}
+        campaign.execute_job(document, place, jobs["titans_mac/2019/seed-42"], device="cpu")
+        campaign.execute_job(document, place, jobs["mars_titan_m1/2019/seed-42"], device="cpu")
+        assert calls == [("fit", wanted), ("reader", wanted)]
+        calls.clear()

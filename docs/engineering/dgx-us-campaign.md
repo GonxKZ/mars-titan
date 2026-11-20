@@ -169,6 +169,12 @@ grafo del tramo y con la repetición por bloques.
   trabajo deja huecos en la GPU y varios trabajos a la vez escalan: con 2 trabajos cada época de
   2005 tarda 55–65 s y la GPU está al 72–84 %; con 3, 70–80 s, un 20 % más de caudal total y un
   84 % de SM ocupados.
+- **Trazas de aprendizaje.** `execution.learning_traces` lleva las trazas de #448 a todos los
+  ajustes y lectores de la campaña: cada 8 pasos del optimizador, la pérdida, las normas del
+  gradiente y de los pesos y la razón de actualización por grupo de parámetros, la norma total
+  frente al umbral de recorte y la tasa de aprendizaje; dentro de la memoria de Titans, las
+  puertas α, η y θ con su saturación, la pérdida asociativa y los pesos rápidos. Se acumulan en
+  el dispositivo sin sincronizar y no entran en la identidad del ajuste.
 - **MPS.** El servidor MPS funciona en la GB10 y no cambia el resultado (misma huella SHA-256 de
   gradientes con y sin MPS), pero con dos trabajos no mejoró el tiempo por época (60–65 s frente
   a 55–65 s): el límite está en el hilo de Python de cada trabajo, no en la concurrencia de

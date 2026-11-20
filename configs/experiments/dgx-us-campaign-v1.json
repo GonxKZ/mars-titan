@@ -23,6 +23,10 @@
     "workers": {
       "mars_titan": 3,
       "references": 1
+    },
+    "learning_traces": {
+      "every": 8,
+      "max_bytes": 67108864
     }
   },
   "final_test_access": false,

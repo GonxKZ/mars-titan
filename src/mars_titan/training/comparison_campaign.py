@@ -309,13 +309,16 @@ def checked_declaration(document, *, root=ROOT, check_recipe_files=True):
     execution = document.get("execution")
     _require(
         isinstance(execution, dict)
-        and {"pipeline", "workers"} <= set(execution) <= {"pipeline", "workers", "neural_blocks"}
+        and {"pipeline", "workers"}
+        <= set(execution)
+        <= {"pipeline", "workers", "neural_blocks", "learning_traces"}
         and isinstance(execution["workers"], dict)
         and set(execution["workers"]) == set(MACHINES)
         and all(type(count) is int and 1 <= count <= 8 for count in execution["workers"].values()),
         "La ejecución declara la tubería de lectura y los trabajadores de cada equipo",
     )
     PipelineOptions(**execution["pipeline"])
+    _checked_traces(execution.get("learning_traces"))
     _checked_blocks(execution, origins, seeds)
     _checked_budget(document.get("budget", {}))
     tiers, recipes, models = (document.get(key) for key in ("tiers", "recipes", "models"))
@@ -631,6 +634,37 @@ def job_state(layout, job, records=None):
     return PENDING if status == RUNNING else status
 
 
+def _checked_traces(traces):
+    """Trazas de aprendizaje de #448 para todos los ajustes y lectores, o ninguna.
+
+    Mismo contrato que `learning_traces.recorder.TraceConfig` (cadencia en pasos del
+    optimizador y presupuesto de bytes por ejecución, con cadencias opcionales por unidad),
+    comprobado aquí sin importar PyTorch, que planificar y consultar el estado no necesitan.
+    Las trazas observan el cálculo sin alterarlo y no entran en la identidad del ajuste.
+    """
+    if traces is None:
+        return
+    _require(
+        isinstance(traces, dict)
+        and {"every", "max_bytes"} <= set(traces) <= {"every", "max_bytes", "every_by_unit"}
+        and type(traces["every"]) is int
+        and traces["every"] >= 1
+        and type(traces["max_bytes"]) is int
+        and traces["max_bytes"] >= 1024
+        and (
+            "every_by_unit" not in traces
+            or (
+                isinstance(traces["every_by_unit"], dict)
+                and all(
+                    isinstance(unit, str) and type(every) is int and every >= 1
+                    for unit, every in traces["every_by_unit"].items()
+                )
+            )
+        ),
+        "Las trazas declaran una cadencia entera positiva y un presupuesto de al menos 1024 bytes",
+    )
+
+
 def execute_job(declaration, layout, job, *, device="cuda:0", root=ROOT, preflight=False):
     """Ejecutar un trabajo en este proceso y devolver el informe de su ventana.
 
@@ -678,6 +712,7 @@ def execute_job(declaration, layout, job, *, device="cuda:0", root=ROOT, preflig
 
     recipe = Path(root) / declaration["recipes"][model["recipe"]]
     rule = job_rule(declaration, model)
+    traces = declaration["execution"].get("learning_traces")
     with StopRequest() as stop, unfused_attention():
         if preflight:
             stop.request_stop()
@@ -702,6 +737,7 @@ def execute_job(declaration, layout, job, *, device="cuda:0", root=ROOT, preflig
                 stopping=rule,
                 predictor_changes=model.get("predictor_changes"),
                 initial=initial,
+                traces=traces,
             )
         from .mars_titan_walk_forward import run_mars_titan_window
 
@@ -716,6 +752,7 @@ def execute_job(declaration, layout, job, *, device="cuda:0", root=ROOT, preflig
             device=device,
             stop=stop,
             stopping=rule,
+            traces=traces,
         )
 
 
