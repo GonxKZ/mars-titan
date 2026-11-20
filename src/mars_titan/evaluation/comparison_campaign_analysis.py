@@ -17,7 +17,12 @@ from threadpoolctl import threadpool_limits
 
 from mars_titan.data.storage import atomic_json, sha256
 from mars_titan.training.comparison_campaign import DONE, HISTORY, MACHINES, MAGNITUDE_RUNNERS, plan
-from mars_titan.training.comparison_inheritance import GPU_DECLARATION, GPU_RELEASE, WARMUP_RELEASE
+from mars_titan.training.comparison_inheritance import (
+    GPU_DECLARATION,
+    GPU_RELEASE,
+    TRACE_RELEASE,
+    WARMUP_RELEASE,
+)
 from mars_titan.training.comparison_input_migration import PACKED_RELEASE
 
 from . import comparison_metrics as metrics
@@ -54,15 +59,28 @@ def _csv(path, rows, fields):
         writer.writerows(rows)
 
 
-def _merge(bundles, *, verified_warmup=False, verified_packed_inputs=False):
+def _merge(
+    bundles, *, verified_warmup=False, verified_packed_inputs=False, verified_learning_traces=False
+):
     first = bundles[0].manifest
     jobs = {}
     for bundle in bundles:
         current = bundle.manifest
         base, other = first["provenance"], current["provenance"]
         pair = {base["training_commit"], other["training_commit"]}
+        traces_pair = (
+            verified_learning_traces
+            and len(pair) == 2
+            and TRACE_RELEASE in pair
+            and pair <= WARMUP_COMMITS | {PACKED_RELEASE, TRACE_RELEASE}
+            and {
+                doc.get("machine"): doc["provenance"]["training_commit"] for doc in (first, current)
+            }
+            == {"references": TRACE_RELEASE, "mars_titan": next(iter(pair - {TRACE_RELEASE}))}
+        )
         qualified_pair = (
-            verified_warmup
+            traces_pair
+            or verified_warmup
             and pair == WARMUP_COMMITS
             or verified_packed_inputs
             and PACKED_RELEASE in pair
@@ -604,6 +622,7 @@ def analyze(
     plots=True,
     verified_warmup=False,
     verified_packed_inputs=False,
+    verified_learning_traces=False,
 ):
     """Reunir uno o dos paquetes. La inferencia requiere todos los trabajos de su alcance."""
     _require(1 <= len(paths) <= 2, "Se necesitan uno o dos paquetes de resultados")
@@ -613,7 +632,10 @@ def analyze(
     with ExitStack() as stack, threadpool_limits(limits=2):
         bundles = [stack.enter_context(ResultsBundle(path)) for path in sorted(paths, key=str)]
         jobs = _merge(
-            bundles, verified_warmup=verified_warmup, verified_packed_inputs=verified_packed_inputs
+            bundles,
+            verified_warmup=verified_warmup,
+            verified_packed_inputs=verified_packed_inputs,
+            verified_learning_traces=verified_learning_traces,
         )
         commits = {b.manifest["provenance"]["training_commit"] for b in bundles}
         declaration = bundles[0].declaration
@@ -655,7 +677,10 @@ def analyze(
                     bundles[0].manifest["provenance"],
                     training_commit=next(iter(commits)) if len(commits) == 1 else None,
                     verified_warmup=commits == WARMUP_COMMITS,
-                    verified_packed_inputs=len(commits) > 1 and PACKED_RELEASE in commits,
+                    verified_packed_inputs=len(commits) > 1
+                    and PACKED_RELEASE in commits
+                    and TRACE_RELEASE not in commits,
+                    verified_learning_traces=len(commits) > 1 and TRACE_RELEASE in commits,
                     archives=[
                         dict(
                             name=b.path.name,
@@ -673,6 +698,7 @@ def analyze(
                         for name in (
                             "comparison_campaign_analysis",
                             "comparison_bundle",
+                            "comparison_trace_bundle",
                             "comparison_inference",
                             "comparison_metrics",
                             "comparison_protocol",
@@ -745,6 +771,11 @@ def main(argv=None):
         action="store_true",
         help="Combinar entradas verificadas con una de las dos versiones comprobadas",
     )
+    parser.add_argument(
+        "--verified-learning-traces",
+        action="store_true",
+        help="Combinar las trazas de PC1 con una versión de PC2 comprobada para la misma campaña",
+    )
     args = parser.parse_args(argv)
     report = analyze(
         args.bundle,
@@ -754,6 +785,7 @@ def main(argv=None):
         plots=not args.no_plots,
         verified_warmup=args.verified_warmup,
         verified_packed_inputs=args.verified_packed_inputs,
+        verified_learning_traces=args.verified_learning_traces,
     )
     print(f"Análisis escrito en {args.output}. Matriz completa: {report['complete']}")
     return 0
