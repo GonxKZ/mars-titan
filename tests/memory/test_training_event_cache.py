@@ -5,7 +5,11 @@ import json
 import pytest
 
 from benchmarks.comparison_input_archive import fingerprint
-from mars_titan.memory.training_event_cache import PackedPhaseSource, source_implementation
+from mars_titan.memory.training_event_cache import (
+    STORED_BLOCK,
+    PackedPhaseSource,
+    source_implementation,
+)
 from tests.training.test_financial_run import corpus
 
 ENV = "MARS_TITAN_TRAIN_ARCHIVE"
@@ -16,12 +20,13 @@ def test_training_uses_verified_copy_on_repeat_and_resume(tmp_path, monkeypatch)
     src = sources["train"]
     spec = src.specification()
     ref = {i: fingerprint(src.batched_events(start_cursor=i, block_rows=4), spec) for i in (0, 1)}
+    stored = fingerprint(src.batched_events(block_rows=STORED_BLOCK), spec)
     root = tmp_path / "cache"
     monkeypatch.setenv(ENV, str(root))
     src = PackedPhaseSource(src.dataset, src.path, root)
     assert fingerprint(src.batched_events(block_rows=4), spec) == ref[0]
-    manifest = json.loads((root / "small.json").read_text())
-    assert manifest["verified"] == ref[0] and manifest["index"] == src.identity
+    manifest = json.loads((root / "events.json").read_text())
+    assert manifest["verified"] == stored and manifest["index"] == src.identity
     assert fingerprint(src.batched_events(start_cursor=1, block_rows=4), spec) == ref[1]
     assert source_implementation(src)
     assert source_implementation(src).keys() == {
@@ -53,8 +58,9 @@ def test_measured_phases_replay_their_own_verified_copy(tmp_path, monkeypatch):
         report = cache.receipt()
         assert report["builds"] == 1 and report["packed_passes"] == 2
         folder = tmp_path / "cache" / source.phase.partition
-        manifest = json.loads((folder / "small.json").read_text())
-        assert manifest["index"] == source.identity and manifest["verified"] == reference
+        manifest = json.loads((folder / "events.json").read_text())
+        stored = fingerprint(plain[name].batched_events(block_rows=STORED_BLOCK), spec)
+        assert manifest["index"] == source.identity and manifest["verified"] == stored
 
 
 def test_specification_is_stored_next_to_the_index_and_reused_without_reading(
@@ -94,7 +100,7 @@ def test_damaged_optional_copy_is_rebuilt_without_touching_the_source(tmp_path, 
     monkeypatch.setenv(ENV, str(root))
     source = PackedPhaseSource(source.dataset, source.path, root)
     original = fingerprint(source.batched_events(block_rows=4), spec)
-    path = root / "small.arrow"
+    path = root / "events.arrow"
     with path.open("r+b") as stream:
         stream.write(b"invalid")
     assert fingerprint(source.batched_events(block_rows=4), spec) == original
@@ -116,10 +122,10 @@ def test_space_or_another_builder_keeps_the_original_cursor(tmp_path, monkeypatc
     with monkeypatch.context() as constrained:
         constrained.setattr(cache, "_budget", lambda folder: 0)
         assert fingerprint(source.batched_events(block_rows=4), spec) == original
-    with (root / "small.lock").open("a") as lock:
+    with (root / "events.lock").open("a") as lock:
         fcntl.flock(lock, fcntl.LOCK_EX)
         assert fingerprint(source.batched_events(block_rows=4), spec) == original
-    assert not (root / "small.arrow").exists()
+    assert not (root / "events.arrow").exists()
     with pytest.raises(ValueError, match="cursor"):
         list(source.batched_events(start_cursor=-1, block_rows=4))
 
@@ -154,7 +160,7 @@ def test_invalid_archive_never_masks_a_changed_source(tmp_path, monkeypatch):
     data, origins = corpus(tmp_path / "source")
     source = PackedPhaseSource(data, origins["train"].path, tmp_path / "cache")
     ref = fingerprint(source.batched_events(block_rows=4), source.specification())
-    (tmp_path / "cache" / "small.arrow").unlink()
+    (tmp_path / "cache" / "events.arrow").unlink()
     with monkeypatch.context() as no_room:
 
         def quota(*args, **kwargs):
@@ -173,6 +179,65 @@ def test_invalid_archive_never_masks_a_changed_source(tmp_path, monkeypatch):
         list(source.batched_events(block_rows=4))
 
 
+@pytest.mark.parametrize("stored", [STORED_BLOCK, 7])
+def test_one_copy_serves_every_block_size_with_the_original_blocks(tmp_path, monkeypatch, stored):
+    """El ajuste y el lector leen la misma copia con bloques distintos, sin reconstruirla.
+
+    Con un bloque guardado de 7 filas, los bloques de 2, 3 y 4 no lo dividen, y el de 2 parte
+    los instantes de tres filas: la copia los reproduce igual que el lector original.
+    """
+    from mars_titan.memory import training_event_cache as cache
+
+    monkeypatch.setattr(cache, "STORED_BLOCK", stored)
+    _, sources = corpus(tmp_path / "src")
+    plain = sources["train"]
+    spec = plain.specification()
+    sizes = (1, 2, 3, 4, 7, STORED_BLOCK)
+    reference = {size: fingerprint(plain.batched_events(block_rows=size), spec) for size in sizes}
+    largest = max(
+        len(block["sample_ids"])
+        for event in plain.batched_events(block_rows=STORED_BLOCK)
+        for block in event.inputs
+    )
+    assert 2 < largest <= 7
+    root = tmp_path / "cache"
+    packed = PackedPhaseSource(plain.dataset, plain.path, root)
+    cache.reset_usage()
+    for size in sizes:
+        assert fingerprint(packed.batched_events(block_rows=size), spec) == reference[size]
+    report = cache.receipt()
+    assert report["builds"] == 1 and report["packed_passes"] == len(sizes)
+    assert "block_fallbacks" not in report
+    stamp = json.loads((root / "events.json").read_text())
+    assert stamp["block"] == stored and stamp["split_events"] == 0
+    assert stamp["verified"] == reference[stored]
+
+
+def test_a_copy_with_split_instants_serves_only_the_blocks_that_divide_it(tmp_path, monkeypatch):
+    """Si un instante ocupa varias filas guardadas, otro bloque lee el original sin reconstruir."""
+    from mars_titan.memory import event_archive
+    from mars_titan.memory import training_event_cache as cache
+
+    _, sources = corpus(tmp_path / "src")
+    plain = sources["train"]
+    spec = plain.specification()
+    monkeypatch.setattr(cache, "STORED_BLOCK", 2)
+    root = tmp_path / "cache"
+    packed = PackedPhaseSource(plain.dataset, plain.path, root)
+    cache.reset_usage()
+    for size in (2, 1, 3):
+        expected = fingerprint(plain.batched_events(block_rows=size), spec)
+        assert fingerprint(packed.batched_events(block_rows=size), spec) == expected
+    report = cache.receipt()
+    assert report["builds"] == 1 and report["packed_passes"] == 2
+    assert report["block_fallbacks"] == 1
+    stamp = json.loads((root / "events.json").read_text())
+    assert stamp["block"] == 2 and stamp["split_events"] > 0
+    assert event_archive.compatible(stamp, 1) and not event_archive.compatible(stamp, 3)
+    with pytest.raises(ValueError, match="bloque"):
+        list(event_archive.replay(plain, spec, root / "events.arrow", stamp, cursor=0, block=3))
+
+
 def test_queue_provides_private_storage_and_respects_explicit_settings(tmp_path, monkeypatch):
     from mars_titan.training import comparison_campaign as c
 
@@ -180,14 +245,14 @@ def test_queue_provides_private_storage_and_respects_explicit_settings(tmp_path,
     decl, _ = c.load_declaration()
     monkeypatch.delenv(ENV, raising=False)
     monkeypatch.delenv("MARS_TITAN_CUDA_HOST_FINITE", raising=False)
-    env = c._environment(layout, decl)
+    env = c.job_environment(layout, decl)
     assert (
         env[ENV] == str(layout.state / "packed-inputs")
         and env["MARS_TITAN_CUDA_HOST_FINITE"] == "1"
     )
     monkeypatch.setenv(ENV, "")
     monkeypatch.setenv("MARS_TITAN_CUDA_HOST_FINITE", "0")
-    env = c._environment(layout, decl)
+    env = c.job_environment(layout, decl)
     assert env[ENV] == "" and env["MARS_TITAN_CUDA_HOST_FINITE"] == "0"
 
 

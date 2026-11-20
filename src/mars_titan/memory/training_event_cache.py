@@ -1,9 +1,11 @@
 """Archivos de trabajo acotados para reutilizar las entradas verificadas de cada tramo.
 
-Cada tramo de la ventana (ajuste, validación, calibración y evaluación) guarda su copia en su
-propia carpeta, con dos huecos según el tamaño de bloque. La copia se construye una vez desde
-el lector Parquet, se verifica fila a fila contra él y después se reproduce con los mismos
-eventos, etiquetas y cursor. Sin copia válida, el lector vuelve a la ruta original.
+Cada tramo de la ventana (ajuste, validación, calibración y evaluación) guarda una copia en su
+propia carpeta. La copia se construye una vez desde el lector Parquet con el bloque máximo, se
+verifica fila a fila contra él y después se reproduce con los mismos eventos, etiquetas y
+cursor. Con el bloque máximo ningún instante ocupa más de una fila guardada, así que la misma
+copia sirve a cualquier tamaño de bloque, aunque el ajuste y el lector lean con bloques
+distintos. Sin copia válida, el lector vuelve a la ruta original.
 """
 
 import argparse
@@ -30,7 +32,12 @@ from .financial_observations import FinancialObservationSource
 
 ENV = "MARS_TITAN_TRAIN_ARCHIVE"
 RESERVE = 4 * 1024**3
-KIND = "verified_training_event_archive_v1"
+KIND = "verified_training_event_archive_v2"
+# Bloque con el que se guarda cada copia. Un instante del lector original admite como mucho
+# 8.192 entradas, el mismo bloque máximo, así que ninguno ocupa más de una fila guardada.
+# `split_events` lo comprueba en cada copia. Con un bloque por consumidor, el ajuste (8.192) y el
+# lector (3.584) reconstruían la copia del otro en cada cambio.
+STORED_BLOCK = MAX_BLOCK_ROWS
 # Tramos que admiten copia. La reserva final no está entre ellos: nunca se empaqueta.
 PARTITIONS = ("train", "validation", "calibration", "evaluation")
 SPECIFICATION = "input-specification.json"
@@ -270,9 +277,8 @@ def stream(source, root, start, block):
         raise ValueError(
             "La carpeta de caché debe pertenecer a la cuenta y solo ella puede escribir"
         )
-    slot = "wide" if block >= 1024 else "small"
     path, manifest, lockfile = (
-        root / f"{slot}.{extension}" for extension in ("arrow", "json", "lock")
+        root / f"events.{extension}" for extension in ("arrow", "json", "lock")
     )
     for item in (path, manifest, lockfile):
         safe_destination(item)
@@ -284,7 +290,7 @@ def stream(source, root, start, block):
         spec=spec.fingerprint(),
         start=0,
         events=total,
-        block=block,
+        block=STORED_BLOCK,
         implementation=implementation(),
     )
     original = getattr(source, "reference_batched_events", source.batched_events)
@@ -308,6 +314,13 @@ def stream(source, root, start, block):
             # Se conserva el cerrojo exclusivo durante esta primera lectura: cambiar de
             # modo no es atómico en todos los sistemas de archivos.
         stamp, signature = hit
+        if not event_archive.compatible(stamp, block):
+            # Una copia con instantes divididos solo sirve a los bloques que dividen el suyo.
+            # Reconstruirla daría la misma copia, así que este consumidor lee el original.
+            fcntl.flock(handle, fcntl.LOCK_UN)
+            _note("block_fallbacks")
+            yield from original(start_cursor=start, block_rows=block)
+            return
         _note("packed_passes")
         with _lock:
             _usage.update(

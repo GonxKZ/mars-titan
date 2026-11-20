@@ -76,8 +76,9 @@ dominio: las claves están normalizadas y la memoria pasa por la capa de normali
 
 - **Copia empaquetada verificada por tramo** (`training_event_cache`): ajuste, validación,
   calibración y evaluación se reproducen desde Arrow con mapeo de memoria, con la huella del
-  índice, de la especificación y del bloque. Ningún tramo medido toca Parquet tras la primera
-  pasada. La reserva final nunca se empaqueta.
+  índice y de la especificación. Cada tramo tiene una sola copia, guardada con el bloque máximo
+  y comprimida con zstd, que sirve a cualquier tamaño de bloque. Ningún tramo medido toca
+  Parquet tras la primera pasada. La reserva final nunca se empaqueta.
 - **Especificación de entradas junto al índice**: se decodifica una vez por tramo y se guarda
   con la identidad del corpus, del índice, de la política y de la representación; los trabajos
   siguientes la reconstruyen sin abrir los miles de archivos Parquet del primer evento.
@@ -284,6 +285,82 @@ grafo del tramo y con la repetición por bloques.
   - Controles con memoria desactivada o congelada: de 2,7 a 2,8 min.
 - **Cuando termine la preparación**, sus 15 GiB pasan a la campaña: 4 trabajos con 32 GiB de
   anfitrión y 4 × 8 GiB de CUDA, siempre que la memoria anónima de los orígenes tardíos lo permita.
+
+## Proyección fusionada, continuaciones y copias empaquetadas (20 de noviembre de 2026)
+
+### Proyección del codec en los lectores
+
+- Con py-spy, el einsum del codec era entre el 37 % y el 42 % del tiempo de `mars_titan_m1` y
+  `mars_titan_m2` en 2006. En aarch64, einsum suma con FMA y el núcleo nativo, que multiplica y
+  suma por separado, nunca se activaba. bf8b2472 añade `project_codec_block_fused`
+  ([codec episódico](episodic-codec.md#aritmética-fusionada-en-aarch64)).
+- **Datos reales.** Se recorrieron los 2.202 bloques de los cuatro tramos de 2005 (3.306.229
+  filas), con el mismo camino de datos que el lector. Einsum y el núcleo dieron los mismos bits en
+  todos los campos de `EpisodicEncoding`. La codificación completa, con 4 hilos y la campaña en
+  marcha, mejoró así:
+  - validación, de 29,0 a 18,0 s;
+  - calibración, de 26,4 a 17,2 s;
+  - evaluación, de 42,6 a 28,2 s;
+  - ajuste, de 71,2 a 50,6 s.
+
+  Son entre 1,41 y 1,61 veces más rápido. El resumen está en
+  `~/.local/state/mars-titan/dgx-titans-us-v31/monitor/codec-real-check-2005.json`.
+
+### Continuaciones de estado
+
+| Estado | Commit | Motivo | Trabajos heredados |
+| --- | --- | --- | --- |
+| `todos` | c1ecc639 | Lanzamiento | — |
+| `todos-bf8b2472` | bf8b2472 | Proyección fusionada | 25 |
+| `todos-f3802dd4` | f3802dd4 | Ruta real del padre heredado | 26; los 3 lectores fallidos empiezan de nuevo |
+
+- **Padres enlazados.** La herencia enlaza los resultados terminados, y el lector verifica a su
+  padre sin admitir enlaces intermedios. Los tres lectores de 2007 de `todos-bf8b2472` fallaron
+  con «El destino incluye un enlace intermedio». Desde f3802dd4, la campaña pasa la ruta real.
+  Con el estado real, los tres lectores aceptan su padre heredado.
+- **Huella binaria del enlace nativo.** La identidad del lector incluye `native_sha256`, la
+  huella del archivo `.so`. Compilar de nuevo el enlace en otro `worktree`, aunque las fuentes
+  no cambien, cambia esa huella. Por eso `mars_titan_m1/2008/seed-42`, pausado en
+  `todos-bf8b2472`, falló al reanudar con «La identidad de la ventana ha cambiado». Si las
+  fuentes nativas no cambian, la continuación reutiliza el mismo binario.
+- **Permisos de la carpeta de una copia.** `stream` exige carpetas que solo la cuenta pueda
+  escribir. Crear `packed-inputs/2018/train` con `mkdir -p` (0775) hizo fallar la preparación de
+  2018. Se corrigió con `chmod 700`.
+- **Reinicio declarado.** `inherit --restart-paused` deja fuera los trabajos pausados, que
+  empiezan de nuevo en el destino. Sirve cuando el código nuevo cambia la identidad de sus
+  ajustes y el punto de recuperación ya no puede reanudarse.
+
+### Una copia empaquetada para todos los bloques
+
+La telemetría de la cola mostró que el primer lector de cada origen reconstruía las cuatro copias:
+
+| Trabajo | Duración | Reconstrucción | Fracción |
+| --- | --- | --- | --- |
+| `mars_titan_m0/2005/seed-42` | 577 s | 375 s | 65 % |
+| `mars_titan_m0/2006/seed-42` | 788 s | 230 s | 29 % |
+| `mars_titan_m0/2007/seed-42` | 728 s | 455 s | 63 % |
+| `mars_titan_m0/2008/seed-42` | 798 s | 510 s | 64 % |
+
+Mientras tanto, los demás lectores del origen leían Parquet (`busy_fallbacks`).
+
+- **Causa.** La copia exigía el bloque del consumidor: 8.192 filas en los ajustes y 3.584 en los
+  lectores. Las copias de 2008 con uno y otro bloque tienen la misma huella SHA-256, porque
+  ningún instante supera 3.584 filas: solo cambiaba el recibo. Aun así, cada cambio entre ajuste
+  y lector reescribía la copia completa. En toda la campaña suman del orden de 30 a 45 horas de
+  trabajo.
+- **Corrección.** Una copia por tramo, guardada con el bloque máximo (8.192). Un instante del
+  lector original tiene como mucho 8.192 entradas, así que ninguno ocupa más de una fila
+  guardada. `split_events` lo comprueba en cada copia. La reproducción divide cada instante
+  desde su primera fila, como el lector original, con cualquier tamaño de bloque. Si una copia
+  tuviera instantes divididos, solo serviría a los bloques que dividen el suyo. Los demás leerían
+  el original (`block_fallbacks`), sin reconstruirla.
+- **Compresión zstd.** En la copia de 2008, zstd de nivel 1 ocupa el 0,418 del tamaño sin
+  comprimir, frente al 0,470 de lz4, y descomprime a 2,5 GB/s. Las copias de los 19 orígenes y
+  los cuatro tramos ocuparían unos 600 GiB con lz4 y no cabían, junto con las salidas de la
+  campaña, en el disco libre. Con zstd ocupan unos 535 GiB.
+- **Coste del cambio.** La huella de la implementación entra en el recibo de cada copia y en la
+  identidad de los ajustes que la leen. Por eso todas las copias se reconstruyen una vez, y los
+  trabajos pausados empiezan de nuevo (`--restart-paused`).
 
 ## Agente cognitivo con herramientas
 
