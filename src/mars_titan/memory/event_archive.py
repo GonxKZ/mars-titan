@@ -35,7 +35,10 @@ SCHEMA = pa.schema(
     ]
 )
 BLOCK_FIELDS = {"sample_ids", "market", "input_available_at", "prediction_at", "presence", "inputs"}
-MAX_BYTES = 16 * 1024**3
+# Cota de una copia. La vista de EE. UU. (4.198 activos, ~7 KiB de entradas por fila) ocupa del
+# orden de 50 a 100 GB comprimida en las ventanas tardías: con 16 GiB la DGX volvía a Parquet en
+# cada época. La reserva de disco de training_event_cache sigue protegiendo el volumen.
+MAX_BYTES = 192 * 1024**3
 
 
 class ArchiveBudgetError(ValueError):

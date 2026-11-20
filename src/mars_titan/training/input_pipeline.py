@@ -8,9 +8,11 @@ Un error se entrega en la misma posición en que lo habría lanzado la ruta secu
 de los elementos anteriores, y cerrar el consumidor detiene al productor.
 
 Las opciones se declaran con `PipelineOptions` o con las variables de entorno
-`MARS_TITAN_DECODE_WORKERS` y `MARS_TITAN_PREFETCH_BATCHES`. Sin ellas la lectura es la
-secuencial. No cambian qué datos se leen ni en qué orden, así que no forman parte de la
-identidad científica de ningún ajuste.
+`MARS_TITAN_DECODE_WORKERS`, `MARS_TITAN_PREFETCH_BATCHES` y `MARS_TITAN_PREPARE_WORKERS`.
+Sin ellas la lectura es la secuencial. Con hilos de preparación, `prepared` reparte la
+preparación de los elementos entre ellos y los entrega en el orden de entrada. Las opciones
+no cambian qué datos se leen ni en qué orden, así que no forman parte de la identidad
+científica de ningún ajuste.
 """
 
 import atexit
@@ -18,13 +20,15 @@ import os
 import queue
 import threading
 from collections import deque
-from concurrent.futures import Future
+from concurrent.futures import Future, ThreadPoolExecutor
 from dataclasses import dataclass
 
 DECODE_WORKERS_ENV = "MARS_TITAN_DECODE_WORKERS"
 PREFETCH_ENV = "MARS_TITAN_PREFETCH_BATCHES"
 GROUP_CACHE_ENV = "MARS_TITAN_GROUP_CACHE_MIB"
+PREPARE_WORKERS_ENV = "MARS_TITAN_PREPARE_WORKERS"
 MAX_DECODE_WORKERS = 16
+MAX_PREPARE_WORKERS = 16
 MAX_PREFETCH = 64
 # La lectura cronológica conserva un grupo decodificado por activo, unos 0,7 MiB con las
 # anchuras de la edición v3. En 2023 hay 4.162 activos US con muestra en la misma sesión, así
@@ -60,10 +64,15 @@ class PipelineOptions:
     decode_workers: int = 0
     prefetch_batches: int = 0
     group_cache_mib: int = GROUP_CACHE_MIB
+    # Hilos que validan los lotes adelantados por el prefetch. Con cero valida el propio hilo
+    # productor. La validación copia, comprueba y sella cada bloque (unos 30 ms por sesión de
+    # 4.000 activos), y NumPy y hashlib liberan el GIL durante ese trabajo.
+    prepare_workers: int = 0
 
     def __post_init__(self):
         _bounded_integer(self.decode_workers, MAX_DECODE_WORKERS, "decode_workers")
         _bounded_integer(self.prefetch_batches, MAX_PREFETCH, "prefetch_batches")
+        _bounded_integer(self.prepare_workers, MAX_PREPARE_WORKERS, "prepare_workers")
         _bounded_integer(self.group_cache_mib, MAX_GROUP_CACHE_MIB, "group_cache_mib")
         if self.group_cache_mib < 1:
             raise ValueError("La caché de grupos necesita al menos 1 MiB")
@@ -76,6 +85,7 @@ class PipelineOptions:
             group_cache_mib=_environment_integer(
                 GROUP_CACHE_ENV, MAX_GROUP_CACHE_MIB, GROUP_CACHE_MIB
             ),
+            prepare_workers=_environment_integer(PREPARE_WORKERS_ENV, MAX_PREPARE_WORKERS),
         )
 
     @property
@@ -92,6 +102,7 @@ class PipelineOptions:
             DECODE_WORKERS_ENV: str(self.decode_workers),
             PREFETCH_ENV: str(self.prefetch_batches),
             GROUP_CACHE_ENV: str(self.group_cache_mib),
+            PREPARE_WORKERS_ENV: str(self.prepare_workers),
         }
 
 
@@ -267,7 +278,7 @@ def background(iterable, depth):
         _PRODUCERS.discard(producer)
 
 
-def prepared(items, prepare, depth):
+def prepared(items, prepare, depth, workers=0):
     """Entregar cada elemento de `items` junto con `prepare(elemento)`.
 
     Devuelve parejas (elemento, resultado). `resultado.result()` devuelve lo que da `prepare`
@@ -276,12 +287,17 @@ def prepared(items, prepare, depth):
     `prepare` van en el hilo productor de `background`, con hasta `depth` parejas en espera,
     y el resultado es un `Future` ya resuelto. Con cero no hay hilo y `prepare` se calcula
     cuando el consumidor pide el resultado, igual que sin esta función. `prepare` debe ser una
-    función pura del elemento, sin efectos que dependan de cuándo se ejecuta.
+    función pura del elemento, sin efectos que dependan de cuándo se ejecuta. Con `workers`
+    positivo y prefetch, la preparación se reparte entre esos hilos y las parejas siguen
+    llegando en el orden de `items`, cada una con su `Future`.
     """
     if type(depth) is not int or depth < 0:
         raise ValueError("La profundidad del prefetch debe ser un entero no negativo")
+    _bounded_integer(workers, MAX_PREPARE_WORKERS, "workers")
     if not depth:
         return ((item, _Later(prepare, item)) for item in items)
+    if workers:
+        return background(_parallel_outcomes(items, prepare, workers), depth)
     return background(_with_outcomes(items, prepare), depth)
 
 
@@ -295,6 +311,41 @@ class _Later:
 
     def result(self):
         return self._prepare(self._item)
+
+
+def _parallel_outcomes(items, prepare, workers):
+    """`_with_outcomes` con `prepare` en `workers` hilos y como mucho `workers` tareas sin entregar.
+
+    Un error al leer `items` se lanza después de entregar las parejas ya enviadas, en la misma
+    posición que en el recorrido secuencial. Un error de `prepare` queda en su `Future`. Al
+    cerrar se cancelan las tareas aún no entregadas que no han empezado y se espera a las demás.
+    """
+    pending, iterator, failure = deque(), iter(items), None
+    executor = ThreadPoolExecutor(workers, thread_name_prefix="mars-titan-prepare")
+    try:
+        while True:
+            try:
+                item = next(iterator)
+            except StopIteration:
+                break
+            except BaseException as error:  # Se entrega tras las parejas anteriores.
+                failure = error
+                break
+            pending.append((item, submit(executor, prepare, item)))
+            if len(pending) >= workers:
+                yield pending.popleft()
+        while pending:
+            yield pending.popleft()
+        if failure is not None:
+            raise failure
+    finally:
+        # Solo se cancelan las tareas sin entregar. Las entregadas pertenecen ya al consumidor,
+        # que puede pedir su resultado después de que se agote el recorrido.
+        drain([outcome for _, outcome in pending])
+        executor.shutdown(wait=not in_task())
+        close = getattr(iterator, "close", None)
+        if close is not None:
+            close()
 
 
 def _with_outcomes(items, prepare):

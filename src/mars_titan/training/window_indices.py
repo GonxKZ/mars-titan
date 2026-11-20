@@ -68,7 +68,7 @@ def locked(path):
         yield
 
 
-def phase_sources(dataset, phases, root, *, train_cache=False):
+def phase_sources(dataset, phases, root, *, train_cache=False, predicted_cache=False):
     """Preparar o reutilizar un índice por fase, con la huella de su identidad en el nombre.
 
     La identidad incluye la vista, la fase y el código y las bibliotecas que construyen el
@@ -76,7 +76,9 @@ def phase_sources(dataset, phases, root, *, train_cache=False):
     anterior se queda sin usar hasta que se libera la vista. El cerrojo junto a cada índice
     impide que dos trabajos simultáneos construyan el mismo: el segundo espera y lo reutiliza.
     Un índice que quedó a medias se completa, porque `prepare_observation_index` lo reanuda con
-    la identidad ya escrita.
+    la identidad ya escrita. `train_cache` y `predicted_cache` entregan el tramo de ajuste y los
+    tramos medidos desde su copia empaquetada (`training_event_cache`) cuando la campaña la
+    declara: los eventos, las etiquetas y el cursor son los del índice.
     """
     root, sources = Path(root), {}
     for name, phase in phases.items():
@@ -86,7 +88,10 @@ def phase_sources(dataset, phases, root, *, train_cache=False):
             manifest = prepare_observation_index(
                 dataset, folder, phase=phase, resume=folder.exists()
             )
-        if train_cache and phase.partition == "train":
+        # Con la caché declarada, cada tramo puede llegar de su copia empaquetada verificada.
+        if (train_cache and phase.partition == "train") or (
+            predicted_cache and phase.partition != "train"
+        ):
             from mars_titan.memory.training_event_cache import source_for_phase
 
             sources[name] = source_for_phase(dataset, manifest, phase)

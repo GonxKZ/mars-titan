@@ -66,6 +66,16 @@ def _logit(probability: float) -> float:
 
 # Valor por defecto de torch.nn.LayerNorm. Las fuentes no fijan el épsilon de la memoria.
 LAYER_NORM_EPS = 1e-5
+# Derivada interna de la escritura. autograd_v1 es la ruta histórica con torch.autograd.grad y
+# conserva la identidad. analytic_v1 escribe las mismas derivadas en forma cerrada
+# (associative_gradient.py) y entra en la identidad cuando se declara.
+AUTOGRAD_INNER_GRADIENT = "autograd_v1"
+ANALYTIC_INNER_GRADIENT = "analytic_v1"
+# Mismas derivadas cerradas en un kernel de Triton por flujo, con su VJP cerrado
+# (fused_memory_write.py). Solo memorias de profundidad 2 y dimensión 64 en CUDA.
+FUSED_INNER_GRADIENT = "fused_v1"
+INNER_GRADIENTS = (AUTOGRAD_INNER_GRADIENT, ANALYTIC_INNER_GRADIENT, FUSED_INNER_GRADIENT)
+FUSED_DIMENSION = 64
 # La sección 4.4 del artículo no fija el núcleo de la convolución. Se adopta como decisión
 # propia el valor de Gated DeltaNet y de ShortConvolution en flash-linear-attention.
 PAPER_CONVOLUTION_KERNEL = 4
@@ -73,8 +83,11 @@ PAPER_CONVOLUTION_KERNEL = 4
 # q y k, tal como las describe la sección 4.4.
 PAPER_PROJECTIONS = "titans_mac_paper_projections_v2"
 # Flujos por bloque y bytes de estado admitidos. Los valores por defecto siguen en 256 y
-# 64 MiB: un bloque mayor solo existe si la receta lo declara y cambia su identidad.
-MAX_BLOCK_ROWS = 4096
+# 64 MiB: un bloque mayor solo existe si la receta lo declara y cambia su identidad. La cota
+# de filas sube a 8.192 para la vista completa de EE. UU. en la DGX: su sesión mayor tiene
+# 4.193 activos y las variantes por sesión necesitan la sesión entera en un único bloque.
+# Con 8.192 flujos, los pesos y el momentum de MAC ocupan 512 MiB, dentro de MAX_STATE_BYTES.
+MAX_BLOCK_ROWS = 8192
 MAX_STATE_BYTES = 1024**3
 
 
@@ -351,9 +364,32 @@ class MemoryConfig(FingerprintOnce):
     # R1 y U2 de #786. Sin declararlas, la identidad y el cálculo no cambian.
     huber: HuberMemory | None = None
     time_scales: ScaleInvariantTime | None = None
+    inner_gradient: str = AUTOGRAD_INNER_GRADIENT
 
     def __post_init__(self) -> None:
         bounded_integer(self.dim, "dim", 1, 512)
+        if self.inner_gradient not in INNER_GRADIENTS:
+            raise ValueError("inner_gradient debe ser autograd_v1, analytic_v1 o fused_v1")
+        if self.inner_gradient != AUTOGRAD_INNER_GRADIENT and (
+            self.bank_readout is not None or self.multiscale is not None or self.huber is not None
+        ):
+            # Los bancos, la multiescala y la pérdida de Huber cambian la variable de derivación
+            # o la pérdida. Necesitan sus propias derivadas cerradas y su propia comprobación.
+            raise ValueError(
+                "El gradiente analítico no cubre bancos, multiescala ni la pérdida de Huber"
+            )
+        if self.inner_gradient == FUSED_INNER_GRADIENT and (
+            self.depth != 2
+            or self.dim != FUSED_DIMENSION
+            or self.plasticity is not None
+            or (self.stability is not None and self.stability.gradient_clip is not None)
+        ):
+            # El kernel escribe exactamente S′ = ηS − θG y W′ = (1 − α)W + S′ sobre dos
+            # matrices de 64 × 64. El recorte de PT1 y la plasticidad cambian esa escritura.
+            raise ValueError(
+                "La escritura fusionada cubre profundidad 2 y dimensión 64 "
+                "sin recorte ni plasticidad"
+            )
         if type(self.qkv_silu) is not bool:
             raise ValueError("qkv_silu debe ser booleano")
         if self.qkv_convolution != 0:
@@ -463,6 +499,7 @@ class MemoryConfig(FingerprintOnce):
         fields.pop("bank_readout")
         fields.pop("huber")
         fields.pop("time_scales")
+        inner_gradient = fields.pop("inner_gradient")
         # Sin bias ni residual se conserva literalmente la identidad v1 y su huella.
         extension = (
             {}
@@ -515,6 +552,20 @@ class MemoryConfig(FingerprintOnce):
             extension["associative_loss"] = self.huber.identity()
         if self.time_scales is not None:
             extension["alpha_time_scales"] = self.time_scales.identity()
+        # Sin declararla se conserva la identidad anterior y su huella.
+        if inner_gradient == ANALYTIC_INNER_GRADIENT:
+            extension["inner_gradient"] = {
+                "form": ANALYTIC_INNER_GRADIENT,
+                "derivatives": "closed_form_mlp_gelu_exact_layer_norm",
+                "outer_gradient": "first_order_through_explicit_inner_gradient",
+            }
+        elif inner_gradient == FUSED_INNER_GRADIENT:
+            extension["inner_gradient"] = {
+                "form": FUSED_INNER_GRADIENT,
+                "derivatives": "closed_form_mlp_gelu_exact_layer_norm",
+                "outer_gradient": "closed_form_vjp_recomputed_per_flow",
+                "kernel": "triton_one_program_per_flow_no_atomics",
+            }
         return {
             **fields,
             **extension,

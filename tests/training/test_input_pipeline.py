@@ -14,6 +14,7 @@ from mars_titan.training.input_pipeline import (
     GROUP_CACHE_ENV,
     GROUP_CACHE_MIB,
     PREFETCH_ENV,
+    PREPARE_WORKERS_ENV,
     PipelineOptions,
     background,
     ordered_map,
@@ -225,21 +226,21 @@ def test_invalid_depth_is_rejected(depth):
         next(background(iter(range(3)), depth))
 
 
-@pytest.mark.parametrize("depth", [0, 1, 3])
-def test_prepared_pairs_each_item_with_its_preparation_in_order(depth):
-    pairs = list(prepared(iter(range(100)), jittered, depth))
+@pytest.mark.parametrize(("depth", "workers"), [(0, 0), (1, 0), (3, 0), (2, 1), (3, 4)])
+def test_prepared_pairs_each_item_with_its_preparation_in_order(depth, workers):
+    pairs = list(prepared(iter(range(100)), jittered, depth, workers))
     assert [item for item, _ in pairs] == list(range(100))
     assert [outcome.result() for _, outcome in pairs] == [v * v for v in range(100)]
 
 
-@pytest.mark.parametrize("depth", [0, 2])
-def test_a_preparation_error_waits_until_the_consumer_asks_for_it(depth):
+@pytest.mark.parametrize(("depth", "workers"), [(0, 0), (2, 0), (2, 3)])
+def test_a_preparation_error_waits_until_the_consumer_asks_for_it(depth, workers):
     def prepare(value):
         if value == 4:
             raise Boom(value)
         return value
 
-    stream = prepared(source(8), prepare, depth)
+    stream = prepared(source(8), prepare, depth, workers)
     pairs = [next(stream) for _ in range(6)]
     # El error no detiene la lectura ni se adelanta: solo lo ve quien pide ese resultado.
     assert [item for item, _ in pairs] == list(range(6))
@@ -251,11 +252,11 @@ def test_a_preparation_error_waits_until_the_consumer_asks_for_it(depth):
     stream.close()
 
 
-@pytest.mark.parametrize("depth", [0, 2])
-def test_prepared_raises_a_read_error_after_the_previous_items(depth):
+@pytest.mark.parametrize(("depth", "workers"), [(0, 0), (2, 0), (2, 3)])
+def test_prepared_raises_a_read_error_after_the_previous_items(depth, workers):
     received, log = [], []
     with pytest.raises(Boom):
-        for item, outcome in prepared(source(20, fail_at=9, log=log), jittered, depth):
+        for item, outcome in prepared(source(20, fail_at=9, log=log), jittered, depth, workers):
             received.append((item, outcome.result()))
     assert received == [(v, v * v) for v in range(9)]
     assert log[-1] == "closed"
@@ -289,14 +290,36 @@ def test_prepared_stays_within_its_depth_and_closes_its_source():
     assert not [t for t in threading.enumerate() if t.name == "mars-titan-prefetch"]
 
 
+def test_parallel_preparation_runs_in_its_pool_and_closes_without_threads_left():
+    names, log = set(), []
+
+    def prepare(value):
+        names.add(threading.current_thread().name)
+        return jittered(value)
+
+    stream = prepared(source(10_000, log=log), prepare, 2, 3)
+    assert [next(stream)[1].result() for _ in range(50)] == [v * v for v in range(50)]
+    stream.close()
+    assert names and all(name.startswith("mars-titan-prepare") for name in names)
+    assert log[-1] == "closed"
+    alive = {t.name for t in threading.enumerate()}
+    assert not [n for n in alive if n.startswith(("mars-titan-prepare", "mars-titan-prefetch"))]
+
+
 @pytest.mark.parametrize("depth", [-1, True, 1.0])
 def test_prepared_rejects_an_invalid_depth(depth):
     with pytest.raises(ValueError):
         prepared(iter(range(3)), jittered, depth)
 
 
+@pytest.mark.parametrize("workers", [-1, True, 17, 2.0])
+def test_prepared_rejects_invalid_workers(workers):
+    with pytest.raises(ValueError):
+        prepared(iter(range(3)), jittered, 2, workers)
+
+
 def test_options_default_to_the_sequential_reader(monkeypatch):
-    for name in (DECODE_WORKERS_ENV, PREFETCH_ENV, GROUP_CACHE_ENV):
+    for name in (DECODE_WORKERS_ENV, PREFETCH_ENV, GROUP_CACHE_ENV, PREPARE_WORKERS_ENV):
         monkeypatch.delenv(name, raising=False)
     options = PipelineOptions.from_environment()
     assert options == PipelineOptions()
@@ -305,7 +328,9 @@ def test_options_default_to_the_sequential_reader(monkeypatch):
 
 
 def test_options_round_trip_through_the_environment(monkeypatch):
-    options = PipelineOptions(decode_workers=3, prefetch_batches=8, group_cache_mib=512)
+    options = PipelineOptions(
+        decode_workers=3, prefetch_batches=8, group_cache_mib=512, prepare_workers=4
+    )
     for name, value in options.environment().items():
         monkeypatch.setenv(name, value)
     assert PipelineOptions.from_environment() == options
@@ -322,6 +347,7 @@ def test_options_round_trip_through_the_environment(monkeypatch):
         (PREFETCH_ENV, " 4"),
         (GROUP_CACHE_ENV, "0"),
         (GROUP_CACHE_ENV, "8193"),
+        (PREPARE_WORKERS_ENV, "17"),
     ],
 )
 def test_invalid_environment_fails_fast(monkeypatch, name, value):
@@ -338,6 +364,7 @@ def test_invalid_environment_fails_fast(monkeypatch, name, value):
         dict(prefetch_batches=65),
         dict(group_cache_mib=0),
         dict(group_cache_mib=1.5),
+        dict(prepare_workers=-1),
     ],
 )
 def test_invalid_options_fail_fast(fields):

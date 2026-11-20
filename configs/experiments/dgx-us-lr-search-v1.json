@@ -1,0 +1,317 @@
+{
+  "schema_version": 1,
+  "kind": "comparison_campaign_v1",
+  "market": "US",
+  "final_test_access": false,
+  "description": "Búsqueda declarada de la DGX antes de la campaña completa, en los orígenes de desarrollo 2005, 2006 y 2007 con semilla 42 y parada por meseta de validación. Nivel search (desde cero): AdamW con ritmos 3e-4, 1e-3 y 3e-3; AdamW con media exponencial de pesos (δ = 0,995) a 1e-3 y 3e-3; AdamW sin calendario (100 pasos de calentamiento) a 1e-3 y 3e-3. Criterio fijado antes de ejecutar: menor media entre los tres orígenes del MAE por sesión de validación de la época elegida; si la diferencia relativa con la receta del protocolo (AdamW 1e-3) es menor que 0,5 %, se conserva esa receta. Nivel chains: continuación encadenada 2005→2006→2007 con AdamW 1e-3, sin y con contracción y ruido (λ = 0,6, s = 0,01), comparada con el ajuste desde cero en 2006 y 2007 con el mismo criterio. Nivel probes: una época por origen de cada familia de la campaña para medir su coste y comprobar que arranca en la GB10. Nivel readers: el lector m3 con meseta (hasta 12 épocas), el núcleo cognitivo con herramientas (banco m3, cuatro refinamientos supervisados que parten de la identidad y puerta de familiaridad) con meseta y hasta seis épocas, y dos lectores exigentes con una época. Solo se usa validación; calibración y evaluación no intervienen. Todos los intentos se conservan.",
+  "cohort": {
+    "size": 4198
+  },
+  "origins": [
+    {
+      "year": 2005,
+      "fold": "fold-000",
+      "role": "development"
+    },
+    {
+      "year": 2006,
+      "fold": "fold-001",
+      "role": "development"
+    },
+    {
+      "year": 2007,
+      "fold": "fold-002",
+      "role": "development"
+    }
+  ],
+  "seeds": [
+    42
+  ],
+  "tiers": [
+    "search",
+    "chains",
+    "probes",
+    "readers"
+  ],
+  "recipes": {
+    "lr3e-4": "configs/titans/dgx-us-core-lr3e-4-v1.json",
+    "lr1e-3": "configs/titans/dgx-us-core-v1.json",
+    "lr3e-3": "configs/titans/dgx-us-core-lr3e-3-v1.json",
+    "reader": "configs/titans/dgx-us-reader-v1.json",
+    "reader_cognitive": "configs/titans/dgx-us-reader-cognitive-v1.json",
+    "ema": "configs/titans/dgx-us-core-ema-v1.json",
+    "ema-lr3e-3": "configs/titans/dgx-us-core-ema-lr3e-3-v1.json",
+    "sf": "configs/titans/dgx-us-core-sf-v1.json",
+    "sf-lr3e-3": "configs/titans/dgx-us-core-sf-lr3e-3-v1.json",
+    "sp": "configs/titans/dgx-us-core-sp-v1.json"
+  },
+  "models": {
+    "titans_mac": {
+      "machine": "mars_titan",
+      "recipe": "lr1e-3",
+      "runner": "fit",
+      "tier": "search",
+      "variant": "mac_online"
+    },
+    "titans_mac_lr3e-4": {
+      "machine": "mars_titan",
+      "recipe": "lr3e-4",
+      "runner": "fit",
+      "tier": "search",
+      "variant": "mac_online"
+    },
+    "titans_mac_lr3e-3": {
+      "machine": "mars_titan",
+      "recipe": "lr3e-3",
+      "runner": "fit",
+      "tier": "search",
+      "variant": "mac_online"
+    },
+    "titans_mac_ema": {
+      "machine": "mars_titan",
+      "recipe": "ema",
+      "runner": "fit",
+      "tier": "search",
+      "variant": "mac_online"
+    },
+    "titans_mac_ema_lr3e-3": {
+      "machine": "mars_titan",
+      "recipe": "ema-lr3e-3",
+      "runner": "fit",
+      "tier": "search",
+      "variant": "mac_online"
+    },
+    "titans_mac_sf": {
+      "machine": "mars_titan",
+      "recipe": "sf",
+      "runner": "fit",
+      "tier": "search",
+      "variant": "mac_online"
+    },
+    "titans_mac_sf_lr3e-3": {
+      "machine": "mars_titan",
+      "recipe": "sf-lr3e-3",
+      "runner": "fit",
+      "tier": "search",
+      "variant": "mac_online"
+    },
+    "titans_mac_chain": {
+      "machine": "mars_titan",
+      "recipe": "lr1e-3",
+      "runner": "fit",
+      "tier": "chains",
+      "variant": "mac_online",
+      "continuation": "previous_origin"
+    },
+    "titans_mac_chain_sp": {
+      "machine": "mars_titan",
+      "recipe": "sp",
+      "runner": "fit",
+      "tier": "chains",
+      "variant": "mac_online",
+      "continuation": "previous_origin"
+    },
+    "titans_mac_disabled": {
+      "machine": "mars_titan",
+      "recipe": "lr1e-3",
+      "runner": "fit",
+      "tier": "probes",
+      "variant": "mac_disabled",
+      "epochs": 1
+    },
+    "titans_mac_frozen": {
+      "machine": "mars_titan",
+      "recipe": "lr1e-3",
+      "runner": "fit",
+      "tier": "probes",
+      "variant": "mac_frozen",
+      "epochs": 1
+    },
+    "area_network": {
+      "machine": "mars_titan",
+      "predictor_changes": {
+        "holographic_network": {
+          "areas": 19,
+          "cycles": 2,
+          "hidden_groups": 4,
+          "kind": "holographic_network_v1",
+          "leakage": 0.1,
+          "levels": 1,
+          "local_gain": 0.25,
+          "local_steps": 1,
+          "rank": 4,
+          "summary": true,
+          "summary_gain": 0.25,
+          "topology": "ring"
+        }
+      },
+      "recipe": "lr1e-3",
+      "runner": "fit",
+      "tier": "probes",
+      "variant": "mac_online",
+      "epochs": 1
+    },
+    "area_network_asset_groups": {
+      "machine": "mars_titan",
+      "predictor_changes": {
+        "asset_groups": {
+          "buckets": 5,
+          "clusters": 8,
+          "iterations": 32,
+          "min_observations": 36,
+          "mode": "past_window"
+        },
+        "holographic_network": {
+          "areas": 19,
+          "cycles": 2,
+          "hidden_groups": 4,
+          "kind": "holographic_network_v1",
+          "leakage": 0.1,
+          "levels": 1,
+          "local_gain": 0.25,
+          "local_steps": 1,
+          "rank": 4,
+          "summary": true,
+          "summary_gain": 0.25,
+          "topology": "ring"
+        }
+      },
+      "recipe": "lr1e-3",
+      "runner": "fit",
+      "tier": "probes",
+      "variant": "mac_online",
+      "epochs": 1
+    },
+    "asset_groups": {
+      "machine": "mars_titan",
+      "predictor_changes": {
+        "asset_groups": {
+          "buckets": 5,
+          "clusters": 8,
+          "iterations": 32,
+          "min_observations": 36,
+          "mode": "past_window"
+        }
+      },
+      "recipe": "lr1e-3",
+      "runner": "fit",
+      "tier": "probes",
+      "variant": "mac_online",
+      "epochs": 1
+    },
+    "cross_asset_attention": {
+      "machine": "mars_titan",
+      "predictor_changes": {
+        "cross_asset_attention": {
+          "heads": 4,
+          "mode": "same_session"
+        }
+      },
+      "recipe": "lr1e-3",
+      "runner": "fit",
+      "tier": "probes",
+      "variant": "mac_online",
+      "epochs": 1
+    },
+    "mars_titan_m3": {
+      "components": {
+        "episodic_bank": "m3"
+      },
+      "machine": "mars_titan",
+      "parent": "titans_mac",
+      "recipe": "reader",
+      "runner": "reader",
+      "search_case": "lr1e-3",
+      "tier": "readers",
+      "epochs": 12
+    },
+    "mars_titan_m3_bridge_complete": {
+      "components": {
+        "episodic_bank": "m3",
+        "evidence_bridge": {
+          "bridge_gain": 0.25,
+          "cycles": 1,
+          "regions": [
+            "view_1",
+            "view_2",
+            "view_3"
+          ],
+          "seed": 42,
+          "topology": "complete"
+        }
+      },
+      "machine": "mars_titan",
+      "parent": "titans_mac",
+      "recipe": "reader",
+      "runner": "reader",
+      "search_case": "lr1e-3",
+      "tier": "readers",
+      "epochs": 1
+    },
+    "mars_titan_m3_k4": {
+      "components": {
+        "episodic_bank": "m3",
+        "refinements": 4
+      },
+      "machine": "mars_titan",
+      "parent": "titans_mac",
+      "recipe": "reader",
+      "runner": "reader",
+      "search_case": "lr1e-3",
+      "tier": "readers",
+      "epochs": 1
+    },
+    "mars_titan_cognitive": {
+      "machine": "mars_titan",
+      "runner": "reader",
+      "tier": "readers",
+      "parent": "titans_mac",
+      "recipe": "reader_cognitive",
+      "search_case": "lr1e-3",
+      "components": {
+        "episodic_bank": "m3",
+        "refinements": 4
+      },
+      "epochs": 6
+    }
+  },
+  "stopping": {
+    "fit": {
+      "metric": "session_mae",
+      "stopping": "validation_plateau",
+      "patience": 3,
+      "min_delta": 0.00001,
+      "max_epochs": 16,
+      "initial_state": "reported"
+    },
+    "reader": {
+      "metric": "session_mae",
+      "stopping": "validation_plateau",
+      "patience": 3,
+      "min_delta": 0.00001,
+      "max_epochs": 12
+    }
+  },
+  "execution": {
+    "pipeline": {
+      "decode_workers": 4,
+      "prefetch_batches": 6,
+      "group_cache_mib": 2048,
+      "prepare_workers": 3
+    },
+    "workers": {
+      "mars_titan": 3,
+      "references": 1
+    }
+  },
+  "budget": {
+    "min_free_gib": 50,
+    "memory_gib": {
+      "mars_titan": 16
+    },
+    "cuda_gib": {
+      "mars_titan": 8
+    }
+  },
+  "source_declaration_sha256": "585594e40886506fe2a4cf011d1e1cc350cc49a8c801d7c049eda5e8685c27d6"
+}

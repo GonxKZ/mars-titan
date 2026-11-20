@@ -882,6 +882,41 @@ def test_the_declared_budget_sets_the_free_disk_margin(tmp_path):
     )
 
 
+def test_declared_gpu_budget_bounds_every_cuda_job_and_fits_in_its_memory(tmp_path, monkeypatch):
+    from mars_titan.training import campaign_slots
+
+    for budget in (
+        dict(cuda_gib=[]),
+        dict(cuda_gib=dict(laptop=4)),
+        dict(cuda_gib=dict(mars_titan=0)),
+        dict(cuda_gib=dict(mars_titan=True)),
+        dict(cuda_gib=dict(mars_titan=campaign.MAX_CUDA_GIB + 1)),
+    ):
+        with pytest.raises(ValueError, match="El presupuesto declara el disco estimado"):
+            campaign.checked_declaration(declaration(budget=budget))
+    with pytest.raises(ValueError, match="no puede superar su memoria declarada"):
+        campaign.checked_declaration(
+            declaration(budget=dict(cuda_gib=dict(mars_titan=8), memory_gib=dict(mars_titan=6)))
+        )
+    document = campaign.checked_declaration(
+        declaration(budget=dict(cuda_gib=dict(mars_titan=5.5), memory_gib=dict(mars_titan=12)))
+    )
+    place, limits = layout(tmp_path), []
+    monkeypatch.setattr(campaign_slots, "bound_vram", lambda limit: limits.append(limit))
+    monkeypatch.setattr(campaign, "execute_job", lambda *_, **__: report("paused"))
+    gpu = campaign.plan(document, "mars_titan")[0]
+    assert gpu.runner in campaign.CUDA_RUNNERS
+    assert campaign.run_job(document, place, gpu, cuda_gib=5.5) == PAUSED
+    assert limits == [int(5.5 * 2**30)]
+    assert campaign.read_record(place, gpu.key)["attempts"][-1]["cuda_limit_bytes"] == limits[0]
+    host = next(j for j in campaign.plan(document, "references") if j.runner == "rule")
+    assert campaign.run_job(document, place, host, cuda_gib=5.5) == PAUSED
+    assert campaign.run_job(document, place, gpu, device="cpu", cuda_gib=5.5) == PAUSED
+    assert campaign.run_job(document, place, gpu) == PAUSED
+    assert limits == [int(5.5 * 2**30)]
+    assert "cuda_limit_bytes" not in campaign.read_record(place, host.key)["attempts"][-1]
+
+
 @pytest.mark.parametrize("value", ["mañana", "2026-12-05", "2026-12-05T00:00:00", None, 5])
 def test_a_campaign_deadline_needs_an_explicit_timezone(value):
     with pytest.raises(ValueError, match="fecha límite"):

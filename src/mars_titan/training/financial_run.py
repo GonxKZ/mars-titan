@@ -32,7 +32,6 @@ from mars_titan.data.storage import atomic_json, outside_source, sha256
 from mars_titan.evaluation.session_metrics import SessionErrors
 from mars_titan.learning_traces.hooks import observing, traced_update
 from mars_titan.memory import training_event_cache
-from mars_titan.memory.financial_observations import FinancialObservationSource
 from mars_titan.memory.mature_reliability import ReliabilitySignal
 from mars_titan.models.predictive_adaptation import is_adapter_name
 from mars_titan.models.quantile_head import PINBALL, QUANTILE_HEAD, pinball_loss
@@ -850,13 +849,25 @@ class ChronologicalInference:
         """
         predictor, run = self.predictor, _Pass(rows=rows)
         predictor.eval()
-        with torch.no_grad():
-            for event in source.batched_events(block_rows=self.recipe.block_rows):
+        specification = predictor.config.inputs
+        # Como en el ajuste: con prefetch, el hilo productor lee el evento siguiente y sus hilos
+        # de preparación validan los bloques mientras este hilo calcula el actual.
+        events = nvtx_ranges.iterate(
+            "titans.read",
+            prepared(
+                source.batched_events(block_rows=self.recipe.block_rows),
+                lambda event: validated_cpu_batches(event.inputs, specification),
+                source.dataset.pipeline.prefetch_batches,
+                source.dataset.pipeline.prepare_workers,
+            ),
+        )
+        with torch.no_grad(), closing(events):
+            for event, blocks in events:
                 if stop is not None and stop.requested:
                     raise Paused
                 self._labels(run, event, train=False)
                 if event.inputs:
-                    self._observe(run, source, event, differentiable=False)
+                    self._observe(run, source, event, differentiable=False, blocks=blocks)
                 if event.close_phase:
                     self._close(run)
         if run.counters["labels"] == 0:
@@ -921,7 +932,7 @@ class ChronologicalTrainer(ChronologicalInference):
         super().__init__(predictor, recipe, audit=audit)
         if (
             not training_event_cache.supported(train)
-            or type(validation) is not FinancialObservationSource
+            or not training_event_cache.supported(validation)
             or train.phase.partition != "train"
             or validation.phase.partition != "validation"
             or train.dataset.identity != validation.dataset.identity
@@ -1407,6 +1418,7 @@ class ChronologicalTrainer(ChronologicalInference):
                 ),
                 lambda event: validated_cpu_batches(event.inputs, specification),
                 source.dataset.pipeline.prefetch_batches,
+                source.dataset.pipeline.prepare_workers,
             ),
         )
         with closing(events):
