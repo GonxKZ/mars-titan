@@ -1,6 +1,7 @@
 """Cohortes de la campaña de comparación con manifiestos de prueba, sin abrir datos (#836)."""
 
 import copy
+import hashlib
 import json
 
 import pytest
@@ -135,3 +136,124 @@ def test_written_cohort_is_reused_and_a_changed_source_or_size_is_refused(tmp_pa
     atomic_json(manifest, view)
     with pytest.raises(ValueError, match="no corresponde"):
         cohorts.write_cohort(origin, tmp_path / "cohort", size=16)
+
+
+def joint_source(origin=2019):
+    """Vista conjunta ficticia: los activos de US de la de prueba y otros tantos de CN."""
+    document = source(origin)
+    view = document.pop("temporal_view")
+    chinese = []
+    for asset in document["assets"][:40]:
+        other = dict(asset, market="CN", symbol=f"{600000 + len(chinese)}.SH")
+        chinese.append(other)
+    document["assets"] = sorted(
+        document["assets"] + chinese, key=lambda asset: (asset["market"], asset["symbol"])
+    )
+    document["coverage"] = [
+        dict(market=a["market"], symbol=a["symbol"], state="encoded", samples=a["samples"])
+        for a in document["assets"]
+    ]
+    document["markets"] = ["CN", "US"]
+    document["temporal_views"] = {
+        market: dict(view, protocol=dict(view["protocol"], market=market))
+        for market in ("US", "CN")
+    }
+    document["candidate_count"] = len(document["assets"])
+    document["samples"] = sum(asset["samples"] for asset in document["assets"])
+    return reconcile(document)
+
+
+def write_source(path, document):
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(document, indent=1))
+    return path
+
+
+@pytest.mark.parametrize(
+    "build, markets, size", [(source, ["US"], 301), (joint_source, ["CN", "US"], 341)]
+)
+def test_a_full_view_cohort_is_the_source_byte_for_byte_with_its_receipt(
+    tmp_path, build, markets, size
+):
+    path = write_source(tmp_path / "views/fold/manifest.json", build(2019))
+    manifest, receipt = cohorts.write_full_view(path, tmp_path / "state/cohorts/2019", size=size)
+    assert manifest.read_bytes() == path.read_bytes()
+    selection = receipt["selection"]
+    assert receipt["kind"] == cohorts.FULL_VIEW_KIND and receipt["manifest_sha256"] == sha256(path)
+    assert receipt["source"] == dict(path=str(path.resolve()), sha256=sha256(path))
+    assert selection["rule"] == cohorts.FULL_VIEW_RULE and selection["markets"] == markets
+    assert selection["size"] == size and selection["evaluation"] == ["2019-01-01", "2020-01-01"]
+    assert selection["targets_used"] is False and selection["future_coverage_used"] is False
+    assert selection["counts"] == build(2019)["counts"]
+    # La huella de los activos es la de sus pares (mercado, símbolo) ordenados.
+    pairs = sorted([asset["market"], asset["symbol"]] for asset in build(2019)["assets"])
+    expected = hashlib.sha256(json.dumps(pairs, separators=(",", ":")).encode()).hexdigest()
+    assert selection["assets_sha256"] == expected
+    assert json.loads((tmp_path / "state/cohorts/2019/cohort.json").read_text()) == receipt
+    # Repetirla la reutiliza; con otra vista o con otro tamaño se rechaza.
+    again = cohorts.write_full_view(path, tmp_path / "state/cohorts/2019", size=size)
+    assert again == (manifest, receipt)
+    with pytest.raises(ValueError, match="espera"):
+        cohorts.write_full_view(path, tmp_path / "state/cohorts/otra", size=size - 1)
+    assert not (tmp_path / "state/cohorts/otra").exists()
+    changed = build(2019)
+    changed["assets"][0]["samples"] += 1
+    changed["coverage"][0]["samples"] += 1
+    changed["samples"] += 1
+    other = write_source(tmp_path / "views/otra/manifest.json", changed)
+    with pytest.raises(ValueError, match="no es esta vista completa"):
+        cohorts.write_full_view(other, tmp_path / "state/cohorts/2019", size=size)
+    assert manifest.read_bytes() == path.read_bytes()
+
+
+def test_the_joint_view_keeps_both_markets_one_window_and_every_asset():
+    document = joint_source(2022)
+    markets, fold, identities = cohorts.full_view(document)
+    assert markets == ["CN", "US"] and fold["evaluation"] == ["2022-01-01", "2023-01-01"]
+    assert len(identities) == 341 and identities == sorted(identities)
+    assert sum(market == "CN" for market, _ in identities) == 40
+
+
+@pytest.mark.parametrize(
+    "change, message",
+    [
+        (lambda d: d.update(scope="development_snapshot"), "vista histórica completa"),
+        (lambda d: d.update(cohort_complete=False), "vista histórica completa"),
+        (lambda d: d.update(failed_assets=1), "vista histórica completa"),
+        (lambda d: d.update(final_test_opened=True), "vista histórica completa|calendarios"),
+        (lambda d: d.update(data_subset="x"), "vista histórica completa"),
+        (lambda d: d.update(markets=["US"]), "calendarios|mercados"),
+        (lambda d: d["assets"].append(dict(d["assets"][0])), "repite un activo|concilian"),
+        (
+            lambda d: (
+                d["assets"][0].update(symbol="../x"),
+                d["coverage"][0].update(symbol="../x"),
+            ),
+            "identidad válida",
+        ),
+        (lambda d: d["assets"][0]["counts"].update(train=-1), "enteros no negativos"),
+        (lambda d: d["counts"].update(train=d["counts"]["train"] + 1), "no concilian"),
+        (lambda d: d["roots"].update(labels="relativa"), "rutas absolutas"),
+        (
+            lambda d: d["temporal_views"]["CN"].update(
+                fold=dict(d["temporal_views"]["CN"]["fold"], id="fold-000")
+            ),
+            "ventana|cortes",
+        ),
+    ],
+)
+def test_a_full_view_refuses_filters_other_markets_and_inconsistent_counts(change, message):
+    document = joint_source()
+    change(document)
+    with pytest.raises(ValueError, match=message):
+        cohorts.full_view(document)
+
+
+def test_a_joint_view_cannot_lose_a_whole_market():
+    document = joint_source()
+    document["assets"] = [asset for asset in document["assets"] if asset["market"] == "US"]
+    document["coverage"] = [item for item in document["coverage"] if item["market"] == "US"]
+    document["candidate_count"] = len(document["assets"])
+    document["samples"] = sum(asset["samples"] for asset in document["assets"])
+    with pytest.raises(ValueError, match="calendarios|mercado"):
+        cohorts.full_view(reconcile(document))
