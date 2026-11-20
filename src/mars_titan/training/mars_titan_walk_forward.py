@@ -67,7 +67,7 @@ from mars_titan.models.titans.financial import (
 )
 
 from . import window_indices
-from .checkpoints import StopRequest, load_training_state
+from .checkpoints import StopRequest, load_training_state, resumable_run
 from .common_epoch import EpochValidation, checked_scoring, selected_score
 from .corpus_inputs import CorpusDataset
 from .financial_run import Paused
@@ -661,7 +661,7 @@ def run_readout_window(
     label = trace_name(family.label).replace("-", "_")
     attach_traces(trainer, output / "traces", traces, f"{label}_readout")
     try:
-        fit = trainer.run(resume=(output / "fit").exists(), stop=stop, joint_epoch=joint_epoch)
+        fit = trainer.run(resume=resumable_run(output / "fit"), stop=stop, joint_epoch=joint_epoch)
         if fit["status"] == AWAIT:
             report.update(status=AWAIT, individual_stop_epoch=fit["individual_stop_epoch"])
             return report

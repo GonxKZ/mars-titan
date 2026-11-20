@@ -2138,3 +2138,31 @@ def test_queue_can_be_limited_to_seeds_and_combines_with_origins_and_tiers(tmp_p
     for seeds in ([], [41], [42, 7]):
         with pytest.raises(ValueError, match="Semilla desconocida"):
             campaign.Queue(document, place, "mars_titan", seeds=seeds)
+
+
+def test_declared_threads_survive_a_later_change_of_affinity_even_when_they_equal_the_default():
+    # El caso que falló en la GB10: los hilos declarados coinciden con el valor por defecto
+    # (todos los núcleos) y el hilo principal se fija después en menos núcleos.
+    code = (
+        "import os\n"
+        "import torch\n"
+        "from mars_titan.training.comparison_campaign import apply_threads\n"
+        "cores = len(os.sched_getaffinity(0))\n"
+        "assert cores >= 2, cores\n"
+        "declared = dict(intra=cores, interop=cores)\n"
+        "assert apply_threads(declared) == declared\n"
+        "assert apply_threads(dict(declared)) == declared\n"
+        "os.sched_setaffinity(0, {min(os.sched_getaffinity(0))})\n"
+        "after = dict(intra=torch.get_num_threads(), interop=torch.get_num_interop_threads())\n"
+        "assert after == declared, (after, declared)\n"
+        "try:\n"
+        "    apply_threads(dict(intra=cores, interop=1))\n"
+        "except ValueError as error:\n"
+        "    print('ok', str(error))\n"
+    )
+    environment = {k: v for k, v in os.environ.items() if k != "OMP_NUM_THREADS"}
+    done = subprocess.run(
+        [sys.executable, "-c", code], capture_output=True, text=True, timeout=180, env=environment
+    )
+    assert done.returncode == 0, done.stderr[-2000:]
+    assert done.stdout.strip() == "ok El proceso ya fijó otros hilos de cálculo"

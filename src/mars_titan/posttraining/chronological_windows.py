@@ -46,7 +46,7 @@ from mars_titan.models.titans.config import canonical
 from mars_titan.models.titans.financial import FinancialConfig, FinancialPredictor
 from mars_titan.training.campaign_chain import posttraining_rows
 from mars_titan.training.carried_predictions import carried_window
-from mars_titan.training.checkpoints import StopRequest, load_training_state
+from mars_titan.training.checkpoints import StopRequest, load_training_state, resumable_run
 from mars_titan.training.corpus_inputs import CorpusDataset
 from mars_titan.training.financial_run import (
     ChronologicalInference,
@@ -243,7 +243,7 @@ def _fit_and_predict(trainer, predict, sources, dataset, output, report, stop, c
     stop = stop or StopRequest()
     started = time.perf_counter()
     try:
-        fit = trainer.run(resume=(output / "fit").exists(), stop=stop)
+        fit = trainer.run(resume=resumable_run(output / "fit"), stop=stop)
         if fit["status"] != "completed":
             report["status"] = "paused"
             return report

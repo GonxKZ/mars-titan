@@ -387,6 +387,23 @@ def load_training_state(
         raise ValueError("No existe un punto de control confirmado e íntegro")
 
 
+def resumable_run(output: Path) -> bool:
+    """Si `output` guarda una ejecución que se pueda continuar; retira la que murió sin informe.
+
+    El informe `run.json` se escribe después del primer estado guardado. Una carpeta real sin
+    informe es de un intento que murió antes: no tiene nada que continuar y, si se dejara, la
+    ejecución no podría empezar (la carpeta existe) ni continuar (falta el informe), así que
+    ningún reintento saldría adelante. Un enlace o un informe irregular no se tocan: los rechaza
+    la propia ejecución con su mensaje.
+    """
+    if output.is_symlink() or not output.is_dir():
+        return output.exists()
+    if os.path.lexists(output / "run.json"):
+        return True
+    shutil.rmtree(output)
+    return False
+
+
 def capture_rng(device: str) -> dict:
     """Conservar los generadores usados por las referencias y su dispositivo explícito."""
     if device not in {"cpu", "cuda:0"}:

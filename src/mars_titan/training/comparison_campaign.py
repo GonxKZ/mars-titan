@@ -1100,18 +1100,31 @@ def _checked_threads(threads):
     return threads
 
 
+# Hilos que este proceso ya fijó con `apply_threads`, o None.
+_APPLIED_THREADS = None
+
+
 def apply_threads(threads):
     """Fijar en el proceso de un trabajo los hilos declarados, antes de cualquier cálculo."""
     if _checked_threads(threads) is None:
         return None
     import torch
 
+    global _APPLIED_THREADS
+    if _APPLIED_THREADS is not None:
+        # PyTorch solo deja fijar una vez los hilos entre operaciones.
+        _require(_APPLIED_THREADS == threads, "El proceso ya fijó otros hilos de cálculo")
+        return dict(threads)
     torch.set_num_threads(threads["intra"])
-    # PyTorch rechaza cambiar los hilos entre operaciones cuando ya ha lanzado alguna.
-    if torch.get_num_interop_threads() != threads["interop"]:
-        torch.set_num_interop_threads(threads["interop"])
+    # Siempre de forma explícita, aunque el valor por defecto ya coincida: mientras no se fija,
+    # PyTorch responde con los núcleos de la máscara de afinidad del hilo que pregunta, y el
+    # número cambia si alguien cambia esa máscara después. Con 20 declarados en un equipo de
+    # 20 núcleos, fijar el hilo principal en 10 dejaba la identidad numérica en 10 a medio
+    # ajuste.
+    torch.set_num_interop_threads(threads["interop"])
     applied = dict(intra=torch.get_num_threads(), interop=torch.get_num_interop_threads())
     _require(applied == threads, f"PyTorch no aplicó los hilos declarados: {applied}")
+    _APPLIED_THREADS = dict(threads)
     return applied
 
 

@@ -583,6 +583,30 @@ def test_window_resumes_from_coherent_barriers_and_never_repeats_a_completed_win
         window(base["view"], base["protocol"], base["recipe"], output)
 
 
+def test_a_fit_that_died_before_its_first_state_starts_again_on_the_next_attempt(
+    base, tmp_path, monkeypatch
+):
+    """El primer guardado falla: la carpeta del ajuste queda sin informe y el reintento arranca."""
+    output, original, calls = tmp_path / "run", ChronologicalTrainer._check_runtime, []
+
+    def fail_once(self):
+        calls.append(len(calls))
+        if len(calls) == 1:
+            raise ValueError("El código o la configuración numérica cambiaron durante el recorrido")
+        return original(self)
+
+    monkeypatch.setattr(ChronologicalTrainer, "_check_runtime", fail_once)
+    with pytest.raises(ValueError, match="cambiaron durante el recorrido"):
+        window(base["view"], base["protocol"], base["recipe"], output)
+    # Lo que deja un intento muerto antes de su primer estado: la carpeta, sin informe.
+    assert (output / "fit").is_dir() and not (output / "fit" / "run.json").exists()
+    final, _ = window(base["view"], base["protocol"], base["recipe"], output)
+    assert final["status"] == "completed" and len(calls) > 1
+    left = base["root"] / "runs" / "mac_online"
+    for partition in wf.PREDICTED:
+        assert _compare(left, output, partition)
+
+
 def test_window_refuses_while_the_learning_hold_blocks(base, tmp_path, learning_hold, monkeypatch):
     learning_hold(False)
 
