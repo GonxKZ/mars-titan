@@ -15,6 +15,18 @@ empiezan en cero, de modo que el predictor emite al principio lo mismo que su co
 La alternativa trivial añade el mismo orden de parámetros sin interacción multiplicativa
 con la presencia: k unidades ocultas más en la fusión, en una rama residual
 D · SiLU(E x) cuya salida empieza en cero porque D empieza en cero.
+
+`macro_film_v1` condiciona los bloques de cada activo con el estado macroeconómico. El bloque
+macro codifica los 140 indicadores de la cesta, 70 series y 70 fórmulas con sus máscaras y sus
+edades, y es el mismo para todos los activos de una sesión: sumado a la fusión desplaza a la vez
+todas las filas y no puede cambiar su orden. La modulación hace que la sensibilidad a cada rasgo
+propio del activo dependa de ese estado:
+
+    z'_m = p_m · ((1 + tanh(Γ_m z_macro)) ⊙ z_m + Β_m z_macro)
+
+para m en precios, noticias, gráficos y fundamentales. La tangente acota la escala entre 0 y 2.
+Γ y Β empiezan en cero, así que el predictor emite al principio lo mismo que su control, y el
+gradiente llega desde todas las filas, también las completas. El bloque macro pasa sin cambios.
 """
 
 import hashlib
@@ -25,8 +37,11 @@ from torch import nn
 
 FILM = "film_v1"
 WIDE_FUSION = "wide_fusion_v1"
-PRESENCE_MODULATIONS = (FILM, WIDE_FUSION)
+MACRO_FILM = "macro_film_v1"
+PRESENCE_MODULATIONS = (FILM, WIDE_FUSION, MACRO_FILM)
 MODALITY_COUNT = 5
+# Los cuatro primeros bloques son propios del activo y el quinto es el macro de la sesión.
+ASSET_BLOCKS = 4
 
 
 def film_parameters(hidden_size):
@@ -68,6 +83,31 @@ class PresenceFiLM(nn.Module):
         # que la suma con ceros conserve el signo de un cero.
         complete = presence.all(dim=1)
         return torch.where(complete[:, None, None], blocks, modulated)
+
+
+def macro_film_parameters(hidden_size):
+    """Escala y desplazamiento de los cuatro bloques del activo, lineales en el bloque macro."""
+    return 2 * ASSET_BLOCKS * hidden_size * hidden_size
+
+
+class MacroFiLM(nn.Module):
+    """Modulación de los bloques de cada activo por el bloque macro de su sesión."""
+
+    def __init__(self, hidden_size):
+        super().__init__()
+        shape = (ASSET_BLOCKS, hidden_size, hidden_size)
+        self.scale = nn.Parameter(torch.zeros(shape))
+        self.shift = nn.Parameter(torch.zeros(shape))
+
+    def forward(self, blocks, presence):
+        """Modular [lote, 5, H] con su propio bloque macro y devolver la misma forma."""
+        assets, macro = blocks[:, :ASSET_BLOCKS], blocks[:, ASSET_BLOCKS]
+        scale = torch.tanh(torch.einsum("mhk,bk->bmh", self.scale, macro))
+        shift = torch.einsum("mhk,bk->bmh", self.shift, macro)
+        present = presence[:, :ASSET_BLOCKS, None].to(dtype=blocks.dtype)
+        # Una modalidad ausente sigue anulada: ni la escala ni el desplazamiento la rellenan.
+        modulated = present * (assets + scale * assets + shift)
+        return torch.cat((modulated, blocks[:, ASSET_BLOCKS:]), dim=1)
 
 
 class WideFusionBranch(nn.Module):
