@@ -5,7 +5,9 @@ solo escribe su registro, y `execute_job` por funciones que devuelven un informe
 """
 
 import copy
+import dataclasses
 import json
+import os
 import subprocess
 import sys
 import threading
@@ -2015,3 +2017,102 @@ def test_runners_read_an_inherited_parent_through_its_real_path(tmp_path, monkey
     assert options["initial"] == (source / "titans_mac_chain/2019/seed-42").resolve()
     for folder in (arguments[1], options["initial"]):
         safe_destination(folder / "run.json")
+
+
+def test_queue_can_be_limited_to_a_block_of_origins(tmp_path):
+    document, place = campaign.checked_declaration(declaration()), layout(tmp_path)
+    full = campaign.Queue(document, place, "mars_titan")
+    block = campaign.Queue(document, place, "mars_titan", origins=[2023])
+    assert block.jobs and {job.year for job in block.jobs} == {2023}
+    # El bloque conserva el orden del plan y a cada lector con el ajuste de su mismo origen.
+    assert block.jobs == [job for job in full.jobs if job.year == 2023]
+    keys = {job.key for job in block.jobs}
+    assert any(job.needs for job in block.jobs)
+    assert all(job.needs is None or job.needs in keys for job in block.jobs)
+    both = campaign.Queue(document, place, "mars_titan", origins=[2019, 2023], tiers=["areas"])
+    assert {job.year for job in both.jobs} == {2019, 2023}
+    assert {job.tier for job in both.jobs} == {"areas"}
+    for origins in ([], [2020], [2019, 1999]):
+        with pytest.raises(ValueError, match="Origen desconocido"):
+            campaign.Queue(document, place, "mars_titan", origins=origins)
+
+
+def test_a_block_of_origins_must_keep_the_parent_of_every_job(tmp_path, monkeypatch):
+    document, place = campaign.checked_declaration(declaration()), layout(tmp_path)
+    jobs = campaign.plan(document, "mars_titan")
+    reader = next(job for job in jobs if job.needs is not None and job.year == 2023)
+    orphan = dataclasses.replace(reader, needs=reader.needs.replace("/2023/", "/2019/"))
+    changed = [orphan if job is reader else job for job in jobs]
+    monkeypatch.setattr(campaign, "plan", lambda *_: changed)
+    with pytest.raises(ValueError, match="deja fuera al padre"):
+        campaign.Queue(document, place, "mars_titan", origins=[2023])
+    # Con los dos orígenes en el bloque, el padre vuelve a estar dentro.
+    assert campaign.Queue(document, place, "mars_titan", origins=[2019, 2023]).jobs == changed
+
+
+THREADS = dict(intra=6, interop=3)
+
+
+def test_declared_threads_reach_the_job_environment_and_reject_other_shapes(tmp_path):
+    execution = dict(declaration()["execution"], threads=THREADS)
+    document = campaign.checked_declaration(declaration(execution=execution))
+    environment = campaign.job_environment(layout(tmp_path), document)
+    assert environment["OMP_NUM_THREADS"] == environment["OPENBLAS_NUM_THREADS"] == "6"
+    invalid = (
+        dict(intra=6),
+        dict(THREADS, extra=1),
+        dict(intra=0, interop=3),
+        dict(intra=6, interop=257),
+        dict(intra=True, interop=3),
+        dict(intra=6.0, interop=3),
+        [6, 3],
+    )
+    for threads in invalid:
+        with pytest.raises(ValueError, match="hilos declaran"):
+            campaign.checked_declaration(declaration(execution=dict(execution, threads=threads)))
+    # Sin declararlos, el entorno no los fija: los decide el proceso, como antes.
+    plain = campaign.job_environment(layout(tmp_path), campaign.checked_declaration(declaration()))
+    assert plain.get("OMP_NUM_THREADS") == os.environ.get("OMP_NUM_THREADS")
+    assert plain.get("OPENBLAS_NUM_THREADS") == os.environ.get("OPENBLAS_NUM_THREADS")
+
+
+def test_a_job_applies_its_declared_threads_whatever_its_affinity():
+    # El proceso se fija a un solo núcleo antes de cargar PyTorch, que entonces contaría un hilo.
+    code = (
+        "import os\n"
+        "os.sched_setaffinity(0, {min(os.sched_getaffinity(0))})\n"
+        "import torch\n"
+        "from mars_titan.training.comparison_campaign import apply_threads\n"
+        "assert apply_threads(None) is None\n"
+        "before = (torch.get_num_threads(), torch.get_num_interop_threads())\n"
+        "applied = apply_threads(dict(intra=6, interop=3))\n"
+        "print(before, applied, torch.get_num_threads(), torch.get_num_interop_threads())\n"
+    )
+    environment = {k: v for k, v in os.environ.items() if k != "OMP_NUM_THREADS"}
+    done = subprocess.run(
+        [sys.executable, "-c", code], capture_output=True, text=True, timeout=180, env=environment
+    )
+    assert done.returncode == 0, done.stderr[-2000:]
+    assert done.stdout.strip() == "(1, 1) {'intra': 6, 'interop': 3} 6 3"
+
+
+def test_a_model_can_declare_its_own_stopping_rule(tmp_path):
+    own = dict(RULE, patience=7, max_epochs=3)
+    document = declaration()
+    document["models"]["titans_mac"]["stopping"] = own
+    checked = campaign.checked_declaration(document)
+    assert campaign.job_rule(checked, checked["models"]["titans_mac"]) == own
+    # Los demás modelos conservan la regla de su ejecutor.
+    area = campaign.job_rule(checked, checked["models"]["area_network"])
+    assert area == checked["stopping"]["fit"] != own
+    without_budget = {key: value for key, value in own.items() if key != "max_epochs"}
+    for invalid in ({}, dict(own, metric="other"), without_budget):
+        broken = declaration()
+        broken["models"]["titans_mac"]["stopping"] = invalid
+        with pytest.raises(ValueError):
+            campaign.checked_declaration(broken)
+    # Un ejecutor sin regla de parada no la admite.
+    broken = declaration()
+    broken["models"]["rule"]["stopping"] = own
+    with pytest.raises(ValueError, match="no declara sus campos"):
+        campaign.checked_declaration(broken)
