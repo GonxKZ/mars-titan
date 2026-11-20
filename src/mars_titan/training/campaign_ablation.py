@@ -14,12 +14,15 @@ Cada ablación vive en `<estado>/ablations/<variante>/<modelo>/<origen>/seed-<se
 evaluación y su recibo `carry.json`. Una ablación con recibo se comprueba (variante, tramo,
 huella del informe del trabajo y de sus predicciones) y no se repite; un recibo incoherente
 detiene la orden. Una carpeta sin recibo es un intento interrumpido sin nada confirmado y se
-descarta antes de repetirlo. Cada tarea corre en un proceso nuevo con el entorno de los
+descarta antes de repetirlo; un cerrojo exclusivo impide que dos órdenes recorran el mismo
+estado a la vez, porque una descartaría la carpeta que la otra está escribiendo. Cada tarea
+corre en un proceso nuevo con el entorno de los
 trabajos de la campaña y, con `cuda_gib`, su mismo tope de memoria en la GPU. El resumen de la
 orden queda en `<estado>/ablations/summary.json`.
 """
 
 import argparse
+import fcntl
 import json
 import multiprocessing
 import os
@@ -183,6 +186,17 @@ def run(
     )
     _require(device in ("cpu", "cuda:0"), "El dispositivo debe ser cpu o cuda:0 explícitos")
     jobs, variants = selected(declaration, machine, models, variants)
+    root = layout.state / FOLDER
+    root.mkdir(parents=True, exist_ok=True)
+    with (root / ".lock").open("a") as lock:
+        try:
+            fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        except BlockingIOError as error:
+            raise ValueError("Otra orden de ablación recorre ya este estado") from error
+        return _run(declaration, layout, machine, jobs, variants, models, workers, cuda_gib, device)
+
+
+def _run(declaration, layout, machine, jobs, variants, models, workers, cuda_gib, device):
     summary = dict(
         schema_version=1,
         kind=KIND,
@@ -214,7 +228,6 @@ def run(
                 summary["discarded"].append(name)
             tasks.append((job.key, variant))
     path = layout.state / FOLDER / "summary.json"
-    path.parent.mkdir(parents=True, exist_ok=True)
     atomic_json(path, summary)
     with _pool(workers) as pool:
         futures = {
