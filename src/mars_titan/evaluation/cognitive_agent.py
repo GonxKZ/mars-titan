@@ -68,6 +68,7 @@ import pyarrow.compute as pc
 import pyarrow.parquet as pq
 
 from mars_titan.data.input_policy import HISTORICAL_MASKED
+from mars_titan.data.modality_ablation import VARIANTS as ABLATIONS
 from mars_titan.environments.cohorts import FINAL_TEST_START_US
 from mars_titan.evaluation import online_arbiters as arbiters
 from mars_titan.evaluation import variant_screening_analysis as analysis
@@ -87,7 +88,11 @@ WITH = "core_with_"
 PLACEBO_OPTION = "placebo"
 CONTEXTUAL = "agent_contextual"
 SUBSET = "shapley/"
-EMPTY_SUBSET = "shapley/"
+# Juego de modalidades de cada modelo declarado: S completa del trabajo y S con cada ablación
+# de `data.modality_ablation`, leída como una ausencia real sin reentrenar.
+MODALITY = "modality/"
+FULL = "full"
+MAX_MODALITY_MODELS = 8
 # Regímenes: dispersión transversal reciente alta o baja y mercado reciente al alza o a la baja.
 REGIMES = ("low_dispersion_down", "low_dispersion_up", "high_dispersion_down", "high_dispersion_up")
 UNKNOWN_REGIME = -1
@@ -211,9 +216,95 @@ def checked_declaration(document):
         and len(set(seeds)) == len(seeds),
         "Las semillas son enteros sin repetir",
     )
+    modalities = document.get("modalities")
+    _require(
+        modalities is None
+        or (
+            isinstance(modalities, dict)
+            and set(modalities) == {"models"}
+            and isinstance(modalities["models"], list)
+            and 1 <= len(modalities["models"]) <= MAX_MODALITY_MODELS
+            and all(isinstance(model, str) and model for model in modalities["models"])
+            and len(set(modalities["models"])) == len(modalities["models"])
+        ),
+        f"modalities declara entre 1 y {MAX_MODALITY_MODELS} modelos distintos, o no se declara",
+    )
+    document = dict(document, modalities=modalities)
     if feedback["margin"] is not None:
         document = dict(document, feedback=dict(feedback, margin=float(feedback["margin"])))
     return document
+
+
+def modality_game():
+    """Jugadores del juego de modalidades y emisión de cada coalición de modalidades leídas.
+
+    Los jugadores son las modalidades que la edición con máscaras puede ablacionar. La
+    coalición completa es S del trabajo y cada ablación deja leídas las demás. El juego
+    necesita todas las coaliciones para que Shapley y la interacción sean exactos.
+    """
+    players = tuple(sorted({name for names in ABLATIONS.values() for name in names}))
+    coalitions = {players: FULL}
+    for variant, removed in ABLATIONS.items():
+        coalitions[tuple(p for p in players if p not in removed)] = variant
+    every = {subset for size in range(len(players) + 1) for subset in combinations(players, size)}
+    _require(set(coalitions) == every, "Las ablaciones declaradas no cubren todas las coaliciones")
+    return players, coalitions
+
+
+def modality_effects(series, model):
+    """Efectos de las modalidades de un modelo sobre su métrica por sesión de S.
+
+    Shapley exacto de cada modalidad, efecto total (S completa menos S sin ninguna, que es la
+    suma de los Shapley) e interacción de Möbius de la coalición completa
+    (Σ_S (−1)^(|T|−|S|) v(S)): positiva si las modalidades se complementan y negativa si son
+    redundantes. Una sesión cuenta si todas las coaliciones la definen.
+    """
+    players, coalitions = modality_game()
+    prefix = f"{MODALITY}{model}/"
+    game = {subset_name(kept): series[prefix + name] for kept, name in coalitions.items()}
+    result = {
+        f"{prefix}shapley({player})": value
+        for player, value in shapley_values(players, game).items()
+    }
+    defined = np.logical_and.reduce([defined for _, defined in game.values()])
+    full, empty = series[prefix + FULL][0], series[prefix + coalitions[()]][0]
+    result[f"{prefix}total"] = (np.where(defined, full - empty, 0.0), defined)
+    # La suma de Möbius como diferencias finitas sucesivas en cada jugador: el mismo valor,
+    # con cancelación exacta cuando dos contribuciones marginales coinciden.
+    values = {kept: series[prefix + name][0] for kept, name in coalitions.items()}
+    for player in players:
+        values = {
+            kept: values[tuple(sorted((*kept, player)))] - values[kept]
+            for kept in values
+            if player not in kept
+        }
+    result[f"{prefix}interaction"] = (np.where(defined, values[()], 0.0), defined)
+    return result
+
+
+def load_ablation(state, variant, model, year, seed, markets, full):
+    """S de un trabajo con una ablación de modalidades, comprobada contra el trabajo y su S.
+
+    Devuelve la emisión, la ruta de sus predicciones y su huella comprobada. La ablación tiene
+    que predecir las
+    mismas filas y objetivos que la S completa del trabajo.
+    """
+    from mars_titan.training import campaign_ablation
+
+    key = f"{model}/{year}/seed-{seed}"
+    folder = Path(state) / campaign_ablation.FOLDER / variant / key
+    receipt = campaign_ablation.checked_receipt(
+        folder, Path(state) / "runs" / key / "run.json", variant
+    )
+    _require(receipt is not None, f"Falta la ablación {folder}")
+    entry = receipt["predictions"][campaign_ablation.PARTITION]
+    path = folder / entry["path"]
+    panel = ForecastPanel.from_arrow(pq.read_table(path), markets=markets)
+    _require(
+        panel.row_id.equals(full.panel.row_id) and np.array_equal(panel.target, full.panel.target),
+        f"La ablación {folder} no predice las filas de S de su trabajo",
+    )
+    return analysis.Emission(panel, panel.prediction, None), path, entry["sha256"]
 
 
 def load_emission(runs, model, year, seed, markets):
@@ -678,8 +769,11 @@ def origin_series(declaration, campaign, state, views, year, input_policy=HISTOR
     )
     markets = (campaign["market"],)
     models = [declaration["core"]] + [m for ms in declaration["tools"].values() for m in ms]
+    declared = declaration["modalities"]
+    modality_models = [] if declared is None else declared["models"]
     metric, min_assets = declaration["metric"], declaration["feedback"]["min_assets"]
     per_seed, telemetry, inputs, reference = {}, {}, {}, None
+    modalities = {}
     for seed in declaration["seeds"]:
         emissions = {
             model: load_emission(Path(state) / "runs", model, year, seed, markets)
@@ -705,6 +799,35 @@ def origin_series(declaration, campaign, state, views, year, input_policy=HISTOR
             for name, o in outcomes.items()
             if not name.startswith(SUBSET)
         }
+        modalities[str(seed)] = {}
+        for model in modality_models:
+            if model in emissions:
+                full = emissions[model]
+            else:
+                full = load_emission(Path(state) / "runs", model, year, seed, markets)
+                path = Path(state) / "runs" / model / str(year) / f"seed-{seed}"
+                path = path / "evaluation-predictions.parquet"
+                inputs[str(path.relative_to(state))] = hashlib.sha256(path.read_bytes()).hexdigest()
+            unabstained = np.zeros(full.panel.sessions, dtype=bool)
+            prefix = f"{MODALITY}{model}/"
+            per_seed[seed][prefix + FULL] = stage_metric(
+                full, unabstained, metric, min_assets=min_assets
+            )
+            changes = {}
+            for variant in ABLATIONS:
+                ablated, path, digest = load_ablation(
+                    state, variant, model, year, seed, markets, full
+                )
+                inputs[str(path.relative_to(state))] = digest
+                per_seed[seed][prefix + variant] = stage_metric(
+                    ablated, unabstained, metric, min_assets=min_assets
+                )
+                delta = np.abs(ablated.prediction - full.prediction)
+                changes[variant] = dict(
+                    changed_rows=float(np.mean(delta > 0)),
+                    mean_absolute_change=float(delta.mean()),
+                )
+            modalities[str(seed)][model] = changes
     names = list(per_seed[declaration["seeds"][0]])
     averaged = {
         name: analysis.seed_average([per_seed[seed][name] for seed in declaration["seeds"]])
@@ -716,6 +839,7 @@ def origin_series(declaration, campaign, state, views, year, input_policy=HISTOR
         day=np.floor_divide(reference.session_time, DAY_MICROSECONDS),
         series=averaged,
         telemetry=telemetry,
+        modalities=modalities,
         inputs=inputs,
     )
 
@@ -749,6 +873,14 @@ def families(declaration, series, day):
     if declaration["shapley"]:
         values = shapley_values(tools, series)
         declared["shapley"] = [member(f"shapley({tool})", *values[tool]) for tool in tools]
+    if declaration["modalities"] is not None:
+        players, _ = modality_game()
+        effects = (*(f"shapley({player})" for player in players), "total", "interaction")
+        declared["modalities"] = [
+            member(f"{MODALITY}{model}/{effect}", *series[f"{MODALITY}{model}/{effect}"])
+            for model in declaration["modalities"]["models"]
+            for effect in effects
+        ]
     return {
         name: analysis.evaluate_family(
             members, day, block_length=inference["block_days"], inference=inference
@@ -761,6 +893,14 @@ def analyze(declaration, campaign, state, views, *, processes=1):
     """Informe completo del agente con las emisiones de la campaña y su serie por sesión."""
     declaration = checked_declaration(declaration)
     _require(campaign.get("final_test_access") is False, "La campaña no abre el test final")
+    if declaration["modalities"] is not None:
+        _require(
+            all(
+                campaign["models"].get(model, {}).get("runner") in ("fit", "reader")
+                for model in declaration["modalities"]["models"]
+            ),
+            "Las modalidades se miden en ajustes o lectores de la campaña",
+        )
     arguments = [
         (declaration, campaign, str(state), str(views), year) for year in declaration["origins"]
     ]
@@ -787,6 +927,9 @@ def analyze(declaration, campaign, state, views, *, processes=1):
         tools = list(declaration["tools"])
         for tool, value in shapley_values(tools, series).items():
             series[f"shapley({tool})"] = value
+    if declaration["modalities"] is not None:
+        for model in declaration["modalities"]["models"]:
+            series.update(modality_effects(series, model))
     means = {
         name: dict(
             mean=float(values[defined].mean()) if defined.any() else None,
@@ -803,7 +946,9 @@ def analyze(declaration, campaign, state, views, *, processes=1):
         means=means,
         families=families(declaration, series, days),
         origins={
-            str(item["year"]): dict(telemetry=item["telemetry"], inputs=item["inputs"])
+            str(item["year"]): dict(
+                telemetry=item["telemetry"], modalities=item["modalities"], inputs=item["inputs"]
+            )
             for item in origins
         },
     )

@@ -4,8 +4,11 @@ from dataclasses import replace
 
 import numpy as np
 import pyarrow as pa
+import pyarrow.parquet as pq
 import pytest
 
+from mars_titan.data.modality_ablation import ablation_identity
+from mars_titan.data.storage import atomic_json, sha256
 from mars_titan.evaluation import cognitive_agent as agent
 from mars_titan.evaluation import variant_screening_analysis as analysis
 from mars_titan.evaluation.arbiter_analysis import joined, stage_metric
@@ -423,3 +426,156 @@ def test_shared_mixtures_are_computed_once_per_options_mode_and_margin(monkeypat
 def test_an_integer_margin_is_read_as_the_same_float():
     document = declaration(feedback=dict(window=20, min_assets=10, margin=0, shuffled_seed=5))
     assert document["feedback"]["margin"] == 0.0 and type(document["feedback"]["margin"]) is float
+
+
+@pytest.mark.parametrize(
+    "modalities",
+    [
+        {},
+        dict(models=[]),
+        dict(models=["strong", "strong"]),
+        dict(models=[""]),
+        dict(models=["strong"], variants=["mask_news"]),
+        dict(models=[f"m{i}" for i in range(agent.MAX_MODALITY_MODELS + 1)]),
+        ["strong"],
+    ],
+)
+def test_modalities_declare_only_distinct_models(modalities):
+    with pytest.raises(ValueError):
+        declaration(modalities=modalities)
+
+
+def test_modality_game_covers_every_coalition_of_the_ablatable_modalities():
+    players, coalitions = agent.modality_game()
+    assert players == ("fundamentals", "news")
+    assert coalitions == {
+        ("fundamentals", "news"): agent.FULL,
+        ("fundamentals",): "mask_news",
+        ("news",): "mask_fundamentals",
+        (): "mask_news_and_fundamentals",
+    }
+
+
+def test_modality_effects_are_exact_shapley_total_and_interaction():
+    rng = np.random.default_rng(3)
+    base, news, fundamentals, synergy = rng.standard_normal((4, 50))
+    defined = np.ones(50, dtype=bool)
+    defined[7] = False
+    prefix = f"{agent.MODALITY}m/"
+
+    def entry(values, mask=defined):
+        return np.where(mask, values, 0.0), mask
+
+    series = {
+        prefix + "mask_news_and_fundamentals": entry(base),
+        prefix + "mask_fundamentals": entry(base + news),
+        prefix + "mask_news": entry(base + fundamentals, np.ones(50, dtype=bool)),
+        prefix + agent.FULL: entry(base + news + fundamentals + synergy),
+    }
+    effects = agent.modality_effects(series, "m")
+    expected = {
+        "shapley(news)": news + synergy / 2,
+        "shapley(fundamentals)": fundamentals + synergy / 2,
+        "total": news + fundamentals + synergy,
+        "interaction": synergy,
+    }
+    for name, values in expected.items():
+        got, mask = effects[prefix + name]
+        np.testing.assert_array_equal(mask, defined)
+        np.testing.assert_allclose(got[defined], values[defined], rtol=0, atol=1e-12)
+        assert not got[~defined].any()
+    shapley = effects[prefix + "shapley(news)"][0] + effects[prefix + "shapley(fundamentals)"][0]
+    np.testing.assert_allclose(shapley, effects[prefix + "total"][0], rtol=0, atol=1e-12)
+
+
+def test_families_measure_each_modality_of_the_declared_models():
+    """Las noticias llevan toda la señal del modelo y los fundamentales ninguna."""
+    emissions, maturity = world()
+    document = declaration(modalities=dict(models=["strong"]))
+    outcomes = agent.variants(document, emissions, maturity)
+    series = {
+        name: stage_metric(o["emission"], o["abstained"], "session_rank_ic", min_assets=10)
+        for name, o in outcomes.items()
+    }
+    none = np.zeros(emissions["core"].panel.sessions, dtype=bool)
+    prefix = f"{agent.MODALITY}strong/"
+    for name, source in (
+        (agent.FULL, "strong"),
+        ("mask_fundamentals", "strong"),
+        ("mask_news", "noise"),
+        ("mask_news_and_fundamentals", "noise"),
+    ):
+        series[prefix + name] = stage_metric(
+            emissions[source], none, "session_rank_ic", min_assets=10
+        )
+    series.update(agent.modality_effects(series, "strong"))
+    day = np.floor_divide(emissions["core"].panel.session_time, DAY_MICROSECONDS)
+    result = agent.families(document, series, day)
+    rows = {row["name"]: row for row in result["modalities"]["members"]}
+    assert set(rows) == {
+        prefix + effect
+        for effect in ("shapley(fundamentals)", "shapley(news)", "total", "interaction")
+    }
+    assert rows[prefix + "shapley(news)"]["passes"] and rows[prefix + "total"]["passes"]
+    for effect in ("shapley(fundamentals)", "interaction"):
+        assert rows[prefix + effect]["estimate"] == 0 and not rows[prefix + effect]["passes"]
+
+
+def _table(panel, prediction):
+    rows = panel.row_id.to_pylist()
+    asset, moment = zip(*(row.rsplit("/", 1) for row in rows), strict=True)
+    return pa.table(
+        dict(
+            sample_id=pa.array(rows),
+            asset_id=pa.array(asset),
+            market=pa.array(["US"] * panel.rows),
+            prediction_at=pa.array(np.array(moment, dtype=np.int64)).cast(
+                pa.timestamp("us", tz="UTC")
+            ),
+            target=pa.array(panel.target),
+            prediction=pa.array(prediction),
+        )
+    )
+
+
+def test_an_ablation_is_read_only_with_its_receipt_and_the_rows_of_its_job(tmp_path):
+    emissions, _ = world()
+    full = emissions["strong"]
+    state, key, variant = tmp_path / "state", "strong/2005/seed-42", "mask_news"
+    run = state / "runs" / key
+    run.mkdir(parents=True)
+    atomic_json(run / "run.json", dict(kind="titans_walk_forward_window"))
+    folder = state / "ablations" / variant / key
+
+    def write(table):
+        folder.mkdir(parents=True, exist_ok=True)
+        path = folder / "evaluation-predictions.parquet"
+        pq.write_table(table, path)
+        atomic_json(
+            folder / "carry.json",
+            dict(
+                status="completed",
+                final_test_opened=False,
+                scientific_training_started=False,
+                modality_ablation=ablation_identity(variant),
+                anchor=dict(run_sha256=sha256(run / "run.json")),
+                predictions=dict(evaluation=dict(path=path.name, sha256=sha256(path))),
+            ),
+        )
+
+    def load():
+        return agent.load_ablation(state, variant, "strong", 2005, 42, ("US",), full)
+
+    with pytest.raises(ValueError, match="Falta la ablación"):
+        load()
+    shifted = full.prediction * 0.5
+    write(_table(full.panel, shifted))
+    emission, path, digest = load()
+    np.testing.assert_array_equal(emission.prediction, shifted)
+    assert emission.calibration is None and digest == sha256(path)
+    write(_table(full.panel, shifted).slice(1))
+    with pytest.raises(ValueError, match="filas de S"):
+        load()
+    atomic_json(run / "run.json", dict(kind="titans_walk_forward_window", changed=True))
+    with pytest.raises(ValueError, match="no corresponde"):
+        load()

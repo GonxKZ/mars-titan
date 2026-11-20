@@ -2,7 +2,7 @@
   "schema_version": 1,
   "kind": "cognitive_agent_v1",
   "final_test_access": false,
-  "description": "Agente cognitivo con herramientas sobre la campaña DGX completa (idea de Karpathy: núcleo cognitivo pequeño, herramientas, bucle de realimentación y agente que funciona). Núcleo: Titans-MAC. Herramientas por capacidad: recuperación episódica (lector m3), bucle de refinamiento (k2 y k4), núcleo cognitivo (refinamientos supervisados con puerta constante y con puerta de familiaridad), puente de evidencias entre vistas (completo y en anillo), pares entre activos (grupos de activos y atención entre activos) y áreas holográficas (red de áreas sola y con grupos). Los controles de la campaña (memoria desactivada o congelada, lector sin banco, grupos desordenados, atención propia, áreas parciales y puente propio) no son herramientas, y los diseños de banco alternativos m1 y m2 se comparan dentro de la escalera de recuperación del modelo, no en el agente, para que el valor de Shapley sea exacto con seis herramientas. Bucle: AdaNormalHedge.TV con etiquetas maduras, ventana de 63 sesiones, abstención si ninguna opción tiene IC maduro positivo y enrutado por régimen con 21 sesiones maduras. Medida: contribución marginal y aislada de cada herramienta, valor de Shapley exacto, media uniforme, realimentación desordenada, placebo y abstención, con bootstrap circular por bloques de 21 días, 4.000 réplicas, Romano y Wolf y Holm. Criterio fijado antes de ver resultados: una herramienta mejora al agente si su contribución marginal de IC de rangos es positiva con valor p de Romano y Wolf ≤ 0,05 en su familia.",
+  "description": "Agente cognitivo con herramientas sobre la campaña DGX completa (idea de Karpathy: núcleo cognitivo pequeño, herramientas, bucle de realimentación y agente que funciona). Núcleo: Titans-MAC. Herramientas por capacidad: recuperación episódica (lector m3), bucle de refinamiento (k2 y k4), núcleo cognitivo (refinamientos supervisados con puerta constante y con puerta de familiaridad), puente de evidencias entre vistas (completo y en anillo), pares entre activos (grupos de activos y atención entre activos) y áreas holográficas (red de áreas sola y con grupos). Los controles de la campaña (memoria desactivada o congelada, lector sin banco, grupos desordenados, atención propia, áreas parciales y puente propio) no son herramientas, y los diseños de banco alternativos m1 y m2 se comparan dentro de la escalera de recuperación del modelo, no en el agente, para que el valor de Shapley sea exacto con seis herramientas. Bucle: AdaNormalHedge.TV con etiquetas maduras, ventana de 63 sesiones, abstención si ninguna opción tiene IC maduro positivo y enrutado por régimen con 21 sesiones maduras. Medida: contribución marginal y aislada de cada herramienta, valor de Shapley exacto, media uniforme, realimentación desordenada, placebo y abstención, con bootstrap circular por bloques de 21 días, 4.000 réplicas, Romano y Wolf y Holm. Criterio fijado antes de ver resultados: una herramienta mejora al agente si su contribución marginal de IC de rangos es positiva con valor p de Romano y Wolf ≤ 0,05 en su familia. Multimodalidad: juego exacto de Shapley sobre noticias y fundamentales, las modalidades que pueden faltar en la edición con máscaras (precios, gráficos y macro nunca faltan), en el núcleo, la recuperación episódica, el núcleo cognitivo y las áreas holográficas. Cada coalición es la evaluación del mismo estado elegido con las demás modalidades leídas como una ausencia real (data.modality_ablation, también en el calentamiento), sin reentrenar; se miden el Shapley de cada modalidad, el efecto total y la interacción de Möbius en una familia propia con Romano y Wolf. Criterio fijado antes de ver resultados: una modalidad mejora un modelo si su Shapley de IC de rangos es positivo con valor p de Romano y Wolf ≤ 0,05 en esa familia.",
   "campaign": "configs/experiments/dgx-us-campaign-v1.json",
   "core": "titans_mac",
   "tools": {
@@ -75,5 +75,13 @@
     42,
     43,
     44
-  ]
+  ],
+  "modalities": {
+    "models": [
+      "titans_mac",
+      "mars_titan_m3",
+      "mars_titan_cognitive",
+      "area_network"
+    ]
+  }
 }
