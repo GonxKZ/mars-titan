@@ -292,6 +292,54 @@ def test_swapped_assets_in_one_archived_model_are_rejected(tmp_path):
         analysis.analyze([first, second], tmp_path / "analysis", plots=False)
 
 
+def test_memory_peaks_distinguish_measured_attempts_in_json_and_csv(tmp_path):
+    declaration, digest, layout = campaign_state(tmp_path / "source")
+    key = "transformer/2019/seed-42"
+    path = layout.record(key)
+    record = json.loads(path.read_text())
+    record["attempts"].insert(0, dict(status="failed", error_type="KernelOOMKill", seconds=2.0))
+    record["attempts"][1]["resources"] = dict(peak_rss_bytes=4096, cuda_reserved_peak_bytes=0)
+    path.write_text(json.dumps(record))
+    complete = "transformer/2019/seed-43"
+    path = layout.record(complete)
+    record = json.loads(path.read_text())
+    record["attempts"][0]["resources"] = dict(peak_rss_bytes=3072)
+    record["attempts"].insert(0, dict(status="paused", resources=dict(peak_rss_bytes=6144)))
+    path.write_text(json.dumps(record))
+    archive = tmp_path / "references.zip"
+    export_results(declaration, digest, layout, "references", archive)
+    output = tmp_path / "analysis"
+    report = analysis.analyze([archive], output, allow_partial=True, plots=False)
+    rows = {row["job"]: row for row in report["resources"]}
+    partial = rows[key]
+    assert partial["peak_rss_bytes"] is None
+    assert partial["observed_peak_rss_bytes"] == 4096 and partial["peak_rss_bytes_attempts"] == 1
+    assert partial["cuda_reserved_peak_bytes"] is None
+    assert partial["observed_cuda_reserved_peak_bytes"] == 0
+    assert partial["cuda_reserved_peak_bytes_attempts"] == 1
+    assert partial["observed_gpu_memory_peak_sampled_bytes"] is None
+    assert partial["gpu_memory_peak_sampled_bytes_attempts"] == 0 and partial["attempts"] == 2
+    assert rows[complete]["peak_rss_bytes"] == rows[complete]["observed_peak_rss_bytes"] == 6144
+    assert rows[complete]["peak_rss_bytes_attempts"] == 2
+    with (output / "resources.csv").open() as stream:
+        csv_rows = {r["job"]: r for r in csv.DictReader(stream)}
+    assert csv_rows[key]["peak_rss_bytes"] == ""
+    assert csv_rows[key]["observed_peak_rss_bytes"] == "4096"
+    assert csv_rows[key]["peak_rss_bytes_attempts"] == "1"
+
+
+@pytest.mark.parametrize("value", [-1, False, 1.5, "4096"])
+def test_memory_peak_requires_an_integer_byte_count(value):
+    with pytest.raises(ValueError, match="peak_rss_bytes"):
+        analysis._memory_peaks([{"peak_rss_bytes": value}], 1)
+
+
+def test_memory_peaks_without_attempts_remain_unknown():
+    peaks = analysis._memory_peaks([], 0)
+    assert peaks["peak_rss_bytes"] is None and peaks["observed_peak_rss_bytes"] is None
+    assert peaks["peak_rss_bytes_attempts"] == 0
+
+
 def test_analysis_never_overwrites_previous_outputs(tmp_path):
     first, second = packages(tmp_path)
     destination = tmp_path / "analysis"
