@@ -116,11 +116,15 @@ class EmbeddingCache:
 
 
 def require_cuda(*, max_bytes=6 * 1024**3, min_free_bytes=0):
+    """Exigir cuda:0 y limitar el asignador de PyTorch a `max_bytes`.
+
+    El valor por defecto, 6 GiB, es el presupuesto del portátil de 8 GB. Con `max_bytes=None` no
+    se fija ningún tope propio: lo gobierna quien llama, como la campaña con `budget.cuda_gib`.
+    """
     import torch
 
     if (
-        type(max_bytes) is not int
-        or max_bytes <= 0
+        (max_bytes is not None and (type(max_bytes) is not int or max_bytes <= 0))
         or type(min_free_bytes) is not int
         or min_free_bytes < 0
     ):
@@ -137,7 +141,8 @@ def require_cuda(*, max_bytes=6 * 1024**3, min_free_bytes=0):
     total = torch.cuda.get_device_properties(0).total_memory
     if min_free_bytes and torch.cuda.mem_get_info(0)[0] < min_free_bytes:
         raise RuntimeError("La memoria CUDA libre no alcanza la reserva de codificación")
-    torch.cuda.set_per_process_memory_fraction(min(1.0, max_bytes / total), 0)
+    if max_bytes is not None:
+        torch.cuda.set_per_process_memory_fraction(min(1.0, max_bytes / total), 0)
     return torch.device("cuda:0")
 
 

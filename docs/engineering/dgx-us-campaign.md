@@ -458,6 +458,12 @@ completados. La v1 queda como registro del brazo «selección por MAE»; su esta
   de la memoria sin inicializar. La identidad de cada trabajo registra las dos políticas.
 - **Hilos declarados** (`execution.threads`: 20 intra y 20 interop). Cada trabajo los fija al
   arrancar y los exporta a OpenMP y OpenBLAS, así que su identidad no depende de dónde se ejecute.
+- **Presupuesto de GPU real.** Las ventanas de ajuste y de lector llamaban a `require_cuda()` con
+  su valor por defecto, los 6 GiB del portátil de 8 GB, que rebajaba en silencio el tope de la
+  campaña: con 8 GiB declarados, cada trabajo de la v1 tuvo 6. Con la atención en el núcleo
+  matemático, `area_network` y `area_network_asset_groups` fallaron en 2013 con «6.00 GiB
+  allowed». Ahora la ventana exige CUDA sin fijar un tope propio (`require_window_cuda`) y la
+  campaña declara 16 GiB de GPU y 24 GiB de memoria por trabajo, con 4 trabajadores.
 - **Bloques de orígenes.** Las copias empaquetadas de los 19 orígenes suman unos 570 GiB y no
   caben a la vez en el disco. La cola se ejecuta por bloques (`--origin`), empezando por
   2013–2016, y las copias de un bloque se borran cuando termina. `budget.min_free_gib` sube a 60.
