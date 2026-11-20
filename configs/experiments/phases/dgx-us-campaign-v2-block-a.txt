@@ -4,3 +4,12 @@
 5 --seed 42 --origin 2014 --no-preflight
 5 --seed 42 --origin 2015 --no-preflight
 5 --seed 42 --origin 2016 --no-preflight
+# Bloque A, semillas 43 y 44: los 22 modelos de la v1. Las variantes esperan a la criba.
+5 --seed 43 --seed 44 --origin 2013 --no-preflight --tier core --tier cognitive --tier controls --tier networks --tier refinements --tier bridge
+5 --seed 43 --seed 44 --origin 2014 --no-preflight --tier core --tier cognitive --tier controls --tier networks --tier refinements --tier bridge
+5 --seed 43 --seed 44 --origin 2015 --no-preflight --tier core --tier cognitive --tier controls --tier networks --tier refinements --tier bridge
+5 --seed 43 --seed 44 --origin 2016 --no-preflight --tier core --tier cognitive --tier controls --tier networks --tier refinements --tier bridge
+# Bloque B, semilla 42: los 22 modelos. Cada trabajo construye la copia empaquetada que falte.
+5 --seed 42 --origin 2017 --no-preflight --tier core --tier cognitive --tier controls --tier networks --tier refinements --tier bridge
+5 --seed 42 --origin 2018 --no-preflight --tier core --tier cognitive --tier controls --tier networks --tier refinements --tier bridge
+5 --seed 42 --origin 2019 --no-preflight --tier core --tier cognitive --tier controls --tier networks --tier refinements --tier bridge
