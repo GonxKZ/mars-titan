@@ -17,6 +17,7 @@ import zipfile
 from datetime import UTC, datetime
 from pathlib import Path, PurePosixPath
 
+from mars_titan.data.asset_symbols import MAX_SYMBOL_LENGTH
 from mars_titan.data.storage import outside_source
 
 KIND = "comparison_campaign_results_v1"
@@ -639,8 +640,14 @@ class ResultsBundle:
             "La tabla no está declarada",
         )
         data = self.archive.read(name)
+        metadata = pq.read_metadata(pa.BufferReader(data))
+        dictionary_columns = [
+            column
+            for column in ("sample_id", "asset_id", "market")
+            if column in metadata.schema.names
+        ]
         parquet = pq.ParquetFile(
-            pa.BufferReader(data), read_dictionary=["sample_id", "asset_id", "market"]
+            pa.BufferReader(data), metadata=metadata, read_dictionary=dictionary_columns
         )
         _require(
             parquet.metadata.num_rows <= MAX_TABLE_ROWS and parquet.metadata.num_columns <= 64,
@@ -654,7 +661,11 @@ class ResultsBundle:
             "La tabla supera el límite descomprimido",
         )
         table = parquet.read(use_threads=False)
-        for name, maximum in (("sample_id", 256), ("asset_id", 64), ("market", 8)):
+        for name, maximum in (
+            ("sample_id", 256),
+            ("asset_id", len("US/") + MAX_SYMBOL_LENGTH),
+            ("market", 8),
+        ):
             if name not in table.column_names:
                 continue
             for chunk in table[name].chunks:
