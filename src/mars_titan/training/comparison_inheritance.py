@@ -171,12 +171,27 @@ def _hold_jobs(stack, source, jobs, *, finish_active):
         fcntl.flock(handle, fcntl.LOCK_EX)
 
 
-def inherit(old, new, old_digest, new_digest, source, target, *, commit, root, finish_active=False):
+def inherit(
+    old,
+    new,
+    old_digest,
+    new_digest,
+    source,
+    target,
+    *,
+    commit,
+    root,
+    finish_active=False,
+    restart_paused=False,
+):
     """Copiar los estados pausados y enlazar los terminados, con el origen cerrado para aprender.
 
     El destino conserva una referencia local a los resultados completados y copia los índices.
     El directorio de origen debe mantenerse. No se transportan modelos entre ordenadores.
     La autorización del destino se registra después con la orden habitual `authorize`.
+    Con `restart_paused`, los trabajos pausados empiezan de nuevo en el destino. Sirve cuando
+    el código nuevo cambia la identidad de sus ajustes (por ejemplo, la de las copias
+    empaquetadas o la del enlace nativo) y su punto de recuperación ya no podría reanudarse.
     """
     checked_declaration(old, root=root)
     checked_declaration(new, root=root)
@@ -248,6 +263,9 @@ def inherit(old, new, old_digest, new_digest, source, target, *, commit, root, f
                     "Solo se heredan resultados completos y puntos de recuperación pausados"
                 )
                 continue
+            if restart_paused and record["status"] == PAUSED:
+                omitted[key] = "Reinicio declarado: el trabajo pausado empieza de nuevo"
+                continue
             _check_versions(record)
             report = _document(source.output(key) / "run.json")
             _require(
@@ -297,6 +315,7 @@ def inherit(old, new, old_digest, new_digest, source, target, *, commit, root, f
             code_commit=commit,
             inherited={},
             omitted=omitted,
+            paused="restarted" if restart_paused else "transferred",
             created_at_utc=datetime.now(UTC).isoformat(),
             final_test_opened=False,
         )

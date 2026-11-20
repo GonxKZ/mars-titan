@@ -80,6 +80,29 @@ def test_completed_parents_keep_their_resolved_paths_and_paused_readers_are_copi
     assert not target.authorization.exists()
 
 
+def test_declared_restart_omits_paused_jobs_and_keeps_completed_results(tmp_path):
+    old, digest, original = source(tmp_path, paused=True)
+    reader = "mars_titan_m3/2019/seed-42"
+    target = campaign.Layout(tmp_path / "continued", original.views)
+    receipt = inherit(
+        old,
+        old,
+        digest,
+        "b" * 64,
+        original,
+        target,
+        commit="c" * 40,
+        root=campaign.ROOT,
+        restart_paused=True,
+    )
+    assert receipt["paused"] == "restarted" and len(receipt["inherited"]) == 5
+    assert receipt["omitted"] == {reader: "Reinicio declarado: el trabajo pausado empieza de nuevo"}
+    assert not target.output(reader).exists() and not target.record(reader).exists()
+    assert campaign.read_record(target, reader)["status"] == "pending"
+    assert (original.output(reader) / "run.json").is_file()
+    assert json.loads(original.authorization.read_text())["training_allowed"] is False
+
+
 def test_changed_training_budget_is_not_reused(tmp_path):
     old, digest, original = source(tmp_path)
     new = copy.deepcopy(old)
@@ -235,9 +258,16 @@ def test_admin_inheritance_identifies_the_target_runtime_and_rejects_dirty_code(
     monkeypatch.setattr(migration, "inherit", capture)
     monkeypatch.setattr(campaign, "load_declaration", declaration)
     assert campaign.main(args) == 0
-    assert observed == {"root": root, "commit": "c" * 40, "finish_active": False}
+    assert observed == {
+        "root": root,
+        "commit": "c" * 40,
+        "finish_active": False,
+        "restart_paused": False,
+    }
     assert campaign.main([*args, "--finish-active"]) == 0
     assert observed["finish_active"] is True
+    assert campaign.main([*args, "--restart-paused"]) == 0
+    assert observed["restart_paused"] is True
 
 
 def test_inherited_indices_are_accepted_by_the_real_reader_and_do_not_alias_the_source(

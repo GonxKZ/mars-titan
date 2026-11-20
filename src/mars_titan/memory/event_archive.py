@@ -35,6 +35,11 @@ SCHEMA = pa.schema(
     ]
 )
 BLOCK_FIELDS = {"sample_ids", "market", "input_available_at", "prediction_at", "presence", "inputs"}
+# Compresión de cada búfer de la copia. En la copia real de 2008, zstd de nivel 1 ocupa el 0,418
+# del tamaño sin comprimir, frente al 0,470 de lz4 (un 11 % menos), y descomprime a 2,5 GB/s en la
+# GB10, muy por encima de lo que consume la reproducción. El nivel 3 solo baja al 0,410 y
+# comprime a un tercio de la velocidad.
+COMPRESSION = pa.Codec("zstd", compression_level=1)
 # Cota de una copia. La vista de EE. UU. (4.198 activos, ~7 KiB de entradas por fila) ocupa del
 # orden de 50 a 100 GB comprimida en las ventanas tardías: con 16 GiB la DGX volvía a Parquet en
 # cada época. La reserva de disco de training_event_cache sigue protegiendo el volumen.
@@ -152,8 +157,8 @@ def write(source, spec, path, *, start, count, block, max_bytes, verify_rows=Fal
     safe_destination(path)
     for root in (*source.dataset.roots.values(), source.path.parent, source.dataset.path.parent):
         outside_source(root, path)
-    options = pa.ipc.IpcWriteOptions(compression="lz4", use_threads=False)
-    reference = None
+    options = pa.ipc.IpcWriteOptions(compression=COMPRESSION, use_threads=False)
+    reference, split = None, 0
     with path.open("xb") as stream:
         try:
             with (
@@ -162,9 +167,11 @@ def write(source, spec, path, *, start, count, block, max_bytes, verify_rows=Fal
             ):
 
                 def writing():
+                    nonlocal split
                     check_at = 0
                     for event in events:
                         writer.write_batch(_encode(event))
+                        split += len(event.inputs) > 1
                         size = stream.tell()
                         if size > max_bytes:
                             raise ArchiveBudgetError("La copia supera el presupuesto de disco")
@@ -194,6 +201,7 @@ def write(source, spec, path, *, start, count, block, max_bytes, verify_rows=Fal
         start=start,
         events=count,
         block=block,
+        split_events=split,
         bytes=path.stat().st_size,
         sha256=sha256(path),
     )
@@ -226,12 +234,26 @@ def verified_signature(path, stamp):
     return before
 
 
+def compatible(stamp, block):
+    """Si la copia reproduce exactamente los bloques de `block` filas del lector original.
+
+    `_decode` divide cada fila guardada desde su principio, y el lector original divide cada
+    instante desde su primera fila. Coinciden cuando el bloque guardado es múltiplo de `block`,
+    o cuando ningún instante ocupa más de una fila guardada, porque entonces cada instante se
+    divide entero. Con el bloque máximo ningún instante se divide, y una sola copia sirve al
+    ajuste y al lector aunque lean con bloques distintos.
+    """
+    return (
+        type(block) is int
+        and block > 0
+        and (stamp["split_events"] == 0 or stamp["block"] % block == 0)
+    )
+
+
 def replay(source, spec, path, stamp, *, cursor, block, signature=None):
     """Reproducir eventos verificados con el tamaño de bloque que pide el consumidor."""
-    if (
-        block <= 0
-        or stamp["block"] % block
-        or not stamp["start"] <= cursor <= stamp["start"] + stamp["events"]
+    if not compatible(stamp, block) or not (
+        stamp["start"] <= cursor <= stamp["start"] + stamp["events"]
     ):
         raise ValueError("El cursor o el tamaño de bloque no corresponde a esta copia")
     safe_destination(path)
