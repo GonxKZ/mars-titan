@@ -23,6 +23,7 @@ from mars_titan.training.comparison_input_migration import same_state
 
 
 def lotes_ajuste(ruta, sello, espec, filas, instantes):
+    firma = event_archive.verified_signature(ruta, sello)
     inicio = int(sello["events"] * 0.8)
     lotes, metas = [], {}
     with pa.memory_map(str(ruta), "r") as stream:
@@ -41,6 +42,10 @@ def lotes_ajuste(ruta, sello, espec, filas, instantes):
                 lotes.append(DecisionBatch.from_corpus(parte, espec))
             if len(lotes) == instantes:
                 break
+    if event_archive._signature(ruta) != firma:
+        raise event_archive.InvalidArchive(
+            "El archivo verificado cambió durante la lectura del corte"
+        )
     claves = [
         (f, t)
         for b in lotes

@@ -1,8 +1,10 @@
 """Huella de selección, aislamiento de datos y derivadas de las variantes del ensayo."""
 
 from collections import Counter
+from pathlib import Path
 from types import SimpleNamespace
 
+import pyarrow as pa
 import pytest
 import torch
 from torch.utils._python_dispatch import TorchDispatchMode
@@ -12,6 +14,31 @@ from mars_titan.models.titans import MACConfig, MemoryConfig, TitansMAC
 from mars_titan.training import financial_run as fr
 from mars_titan.training.titans_walk_forward import unfused_attention
 from tests.models.titans.test_financial_adapter import setup
+
+
+def test_el_corte_cpu_rechaza_un_archivo_de_igual_tamano_con_otro_contenido(tmp_path, monkeypatch):
+    from mars_titan.data.storage import sha256
+    from mars_titan.memory import event_archive
+
+    scripts = Path(__file__).resolve().parents[2] / "benchmarks/comparison_efficiency_20261118"
+    monkeypatch.syspath_prepend(str(scripts))
+    from replay_cpu import lotes_ajuste
+
+    path = tmp_path / "corte.arrow"
+
+    def escribir(instante):
+        row = event_archive._encode(
+            SimpleNamespace(at=instante, close_phase=True, inputs=(), labels=())
+        )
+        with pa.OSFile(str(path), "wb") as target, pa.ipc.new_file(target, row.schema) as writer:
+            writer.write_batch(row)
+
+    escribir(1)
+    receipt = dict(events=1, block=1024, bytes=path.stat().st_size, sha256=sha256(path))
+    escribir(2)
+    assert path.stat().st_size == receipt["bytes"]
+    with pytest.raises(event_archive.InvalidArchive, match="huella"):
+        lotes_ajuste(path, receipt, None, 1, 2)
 
 
 class CuentaOperaciones(TorchDispatchMode):
