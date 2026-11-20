@@ -29,6 +29,12 @@ from .forecast_panel import DAY_MICROSECONDS, SessionSeries
 WARMUP_COMMITS = frozenset({GPU_RELEASE, WARMUP_RELEASE})
 PACKED_DECLARATION = "9d81bb4f5477df2b26dc9bd2346b3a5bdb5c23115fc86c110a07bdb6d29539ca"
 WARMUP_FIELDS = ("hits", "events", "tensor_bytes", "limit_bytes", "allocation_fallbacks")
+MEMORY_PEAKS = (
+    "peak_rss_bytes",
+    "cuda_allocated_peak_bytes",
+    "cuda_reserved_peak_bytes",
+    "gpu_memory_peak_sampled_bytes",
+)
 ARCHIVE_FIELDS = (
     "builds",
     "build_seconds",
@@ -110,6 +116,22 @@ def _scope(declaration, stage):
     return origins, expected
 
 
+def _memory_peaks(resources, attempts):
+    """Dar el máximo completo solo cuando todos los intentos aportan ese contador."""
+    peaks = {}
+    for name in MEMORY_PEAKS:
+        measured = [row[name] for row in resources if row.get(name) is not None]
+        _require(
+            all(type(value) is int and value >= 0 for value in measured),
+            f"El contador {name} debe contener bytes enteros no negativos",
+        )
+        observed = max(measured, default=None)
+        peaks[name] = observed if len(measured) == attempts else None
+        peaks[f"observed_{name}"] = observed
+        peaks[f"{name}_attempts"] = len(measured)
+    return peaks
+
+
 def _resource_row(bundle, key, descriptor, fit):
     record = bundle.read_json(descriptor["record"])
     attempts = record.get("attempts", [])
@@ -124,10 +146,6 @@ def _resource_row(bundle, key, descriptor, fit):
         )
 
     resource = [row["resources"] for row in attempts if isinstance(row.get("resources"), dict)]
-
-    def peak(name):
-        values = [row[name] for row in resource if row.get(name) is not None]
-        return max(values) if values else None
 
     whole = total("process_wall_seconds")
     cpu = [row.get("cpu_seconds") for row in resource]
@@ -165,10 +183,7 @@ def _resource_row(bundle, key, descriptor, fit):
         cpu_seconds=math.fsum(cpu)
         if len(resource) == len(attempts) and cpu and all(v is not None for v in cpu)
         else None,
-        peak_rss_bytes=peak("peak_rss_bytes"),
-        cuda_allocated_peak_bytes=peak("cuda_allocated_peak_bytes"),
-        cuda_reserved_peak_bytes=peak("cuda_reserved_peak_bytes"),
-        gpu_memory_peak_sampled_bytes=peak("gpu_memory_peak_sampled_bytes"),
+        **_memory_peaks(resource, len(attempts)),
         execution_lineage=[record["source_execution"]] if record.get("source_execution") else [],
         attempt_executions=[row["execution"] for row in attempts if row.get("execution")],
         measured_attempts=len(resource),
@@ -529,10 +544,9 @@ def _write_outputs(output, report, summary_rows, curves, plots):
             "pipeline_wall_seconds",
             "pipeline_cost_reason",
             "cpu_seconds",
-            "peak_rss_bytes",
-            "cuda_allocated_peak_bytes",
-            "cuda_reserved_peak_bytes",
-            "gpu_memory_peak_sampled_bytes",
+            *MEMORY_PEAKS,
+            *(f"observed_{k}" for k in MEMORY_PEAKS),
+            *(f"{k}_attempts" for k in MEMORY_PEAKS),
             *(f"last_fit_warmup_{k}" for k in WARMUP_FIELDS),
             "measured_archive_attempts",
             *(f"archive_{k}" for k in ARCHIVE_FIELDS),
@@ -579,7 +593,9 @@ def _write_outputs(output, report, summary_rows, curves, plots):
         "los contrastes y la procedencia. `metrics.csv` resume las medias por sesión "
         "de cada origen. `sessions/` conserva los estadísticos por sesión. "
         "`learning-curves.csv` y `learning-curves.json` conservan las curvas registradas. "
-        "`resources.csv` describe los intentos y sus costes.\n\n"
+        "`resources.csv` describe los intentos y sus costes. Un pico de memoria vacío "
+        "indica que falta cobertura. El prefijo `observed_` muestra el mayor valor "
+        "registrado y el sufijo `_attempts` cuenta los intentos que lo midieron.\n\n"
         "Los valores vacíos no se sustituyen por cero. Los MAE brutos de controles "
         "de orden no son comparables. El cambio porcentual del MAE es una variación "
         "del error, no una rentabilidad. Las correlaciones indefinidas mantienen su máscara. "
