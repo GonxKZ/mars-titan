@@ -107,6 +107,61 @@ def test_damaged_optional_copy_is_rebuilt_without_touching_the_source(tmp_path, 
     assert fingerprint(source.batched_events(block_rows=4), spec) == original
 
 
+def test_passes_trust_the_signature_verified_at_build_and_reread_a_changed_copy(
+    tmp_path, monkeypatch
+):
+    import os
+
+    from mars_titan.memory import event_archive
+    from mars_titan.memory import training_event_cache as cache
+
+    _, sources = corpus(tmp_path / "src")
+    source = sources["train"]
+    spec = source.specification()
+    original = fingerprint(source.batched_events(block_rows=4), spec)
+    root = tmp_path / "cache"
+    monkeypatch.setenv(ENV, str(root))
+    source = PackedPhaseSource(source.dataset, source.path, root)
+    hashed, digest = [], event_archive.sha256
+    monkeypatch.setattr(
+        event_archive, "sha256", lambda path: hashed.append(path.name) or digest(path)
+    )
+
+    cache.reset_usage()
+    assert fingerprint(source.batched_events(block_rows=4), spec) == original
+    # La construcción lee la copia al escribirla y otra vez ya renombrada, antes del sello.
+    assert hashed == ["events.pending", "events.arrow"]
+    path = root / "events.arrow"
+    built = path.stat()
+    stamp = json.loads((root / "events.json").read_text())
+    assert stamp["signature"] == [built.st_dev, built.st_ino, built.st_size, built.st_ctime_ns]
+
+    hashed.clear()
+    cache.reset_usage()
+    for block in (4, 3, STORED_BLOCK):
+        assert fingerprint(source.batched_events(block_rows=block), spec) == fingerprint(
+            sources["train"].batched_events(block_rows=block), spec
+        )
+    assert hashed == [] and cache.receipt()["packed_passes"] == 3
+
+    # Otra firma con el mismo contenido: se vuelve a leer entero, se acepta y se cuenta.
+    path.chmod(0o600)
+    assert path.stat().st_ctime_ns != built.st_ctime_ns
+    cache.reset_usage()
+    assert fingerprint(source.batched_events(block_rows=4), spec) == original
+    assert hashed == ["events.arrow"] and cache.receipt()["rehashed_copies"] == 1
+
+    # Mismo tamaño y otro contenido: la huella lo rechaza y la copia se reconstruye.
+    with path.open("r+b") as stream:
+        stream.seek(-16, os.SEEK_END)
+        stream.write(bytes(16))
+    assert path.stat().st_size == built.st_size
+    cache.reset_usage()
+    assert fingerprint(source.batched_events(block_rows=4), spec) == original
+    usage = cache.receipt()
+    assert usage["invalid_copies"] >= 1 and usage["builds"] == 1
+
+
 def test_space_or_another_builder_keeps_the_original_cursor(tmp_path, monkeypatch):
     import fcntl
 

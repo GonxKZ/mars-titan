@@ -194,6 +194,7 @@ def write(source, spec, path, *, start, count, block, max_bytes, verify_rows=Fal
         except BaseException:
             path.unlink(missing_ok=True)
             raise
+    written = _signature(path)
     stamp = dict(
         dataset=source.dataset.identity,
         index=source.identity,
@@ -202,12 +203,16 @@ def write(source, spec, path, *, start, count, block, max_bytes, verify_rows=Fal
         events=count,
         block=block,
         split_events=split,
-        bytes=path.stat().st_size,
+        bytes=written[2],
         sha256=sha256(path),
     )
+    if _signature(path) != written:
+        raise InvalidArchive("Ha cambiado la huella del archivo de trabajo")
     if verify_rows:
+        # La huella recién calculada corresponde a esta firma: la comprobación de las filas no
+        # necesita leer el archivo otra vez para verificarlo.
         actual = fingerprint(
-            replay(source, spec, path, stamp, cursor=start, block=block),
+            replay(source, spec, path, stamp, cursor=start, block=block, signature=written),
             spec,
             source.dataset.pipeline.prefetch_batches,
         )
@@ -223,13 +228,23 @@ def _signature(path):
 
 
 def verified_signature(path, stamp):
+    """Firma del archivo de trabajo, con su tamaño y su SHA-256 comprobados.
+
+    El sello de una copia guarda la firma (dispositivo, inodo, tamaño y ctime) con que se
+    comprobó su huella al construirla. Si la firma actual es esa, el archivo es el comprobado:
+    escribirlo, sustituirlo o cambiar sus permisos mueve el ctime, que una cuenta sin
+    privilegios no puede fijar. Es el criterio de la caché de huellas de las entradas del
+    corpus. Así una pasada no vuelve a leer la copia entera solo para comprobarla, entre 9 y
+    12 GiB por pasada en 2009-2011. Sin firma guardada, o con otra, se lee el archivo completo
+    y se exige la misma huella.
+    """
     safe_destination(path)
     before = _signature(path)
-    if (
-        not 0 < stamp["bytes"] == before[2] <= MAX_BYTES
-        or sha256(path) != stamp["sha256"]
-        or _signature(path) != before
-    ):
+    if not 0 < stamp["bytes"] == before[2] <= MAX_BYTES:
+        raise InvalidArchive("Ha cambiado la huella del archivo de trabajo")
+    if stamp.get("signature") == list(before):
+        return before
+    if sha256(path) != stamp["sha256"] or _signature(path) != before:
         raise InvalidArchive("Ha cambiado la huella del archivo de trabajo")
     return before
 

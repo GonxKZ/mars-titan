@@ -204,13 +204,25 @@ def _match(path, manifest, expected):
         or len(verified["digest"]) != 64
     ):
         return None
-    if type(stamp.get("bytes")) is not int or not isinstance(stamp.get("sha256"), str):
+    recorded = stamp.get("signature")
+    if (
+        type(stamp.get("bytes")) is not int
+        or not isinstance(stamp.get("sha256"), str)
+        or not isinstance(recorded, list)
+        or len(recorded) != 4
+        or any(type(value) is not int for value in recorded)
+    ):
         return None
     try:
-        return stamp, event_archive.verified_signature(path, stamp)
+        signature = event_archive.verified_signature(path, stamp)
     except event_archive.InvalidArchive:
         _note("invalid_copies")
         return None
+    if list(signature) != recorded:
+        # Mismo contenido con otra firma, por ejemplo tras cambiar los permisos: cada apertura
+        # vuelve a leer la copia entera, y el recibo lo cuenta.
+        _note("rehashed_copies")
+    return stamp, signature
 
 
 def _build(source, spec, path, manifest, expected):
@@ -237,6 +249,10 @@ def _build(source, spec, path, manifest, expected):
         )
         stamp.update(expected)
         os.replace(stage, path)
+        # El renombrado mueve el ctime. La huella se comprueba sobre el archivo ya en su sitio
+        # y el sello publica la firma de ese momento para que las pasadas no la repitan.
+        signature = event_archive.verified_signature(path, stamp)
+        stamp["signature"] = list(signature)
         atomic_json(manifest, stamp)
     except event_archive.ArchiveBudgetError:
         _note("space_fallbacks")
@@ -252,7 +268,7 @@ def _build(source, spec, path, manifest, expected):
     _note("builds")
     _note("verified_rows", stamp["verified"]["rows"])
     _note("built_bytes", stamp["bytes"])
-    return stamp, event_archive.verified_signature(path, stamp)
+    return stamp, signature
 
 
 def stream(source, root, start, block):

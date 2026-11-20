@@ -362,6 +362,45 @@ Mientras tanto, los demás lectores del origen leían Parquet (`busy_fallbacks`)
   identidad de los ajustes que la leen. Por eso todas las copias se reconstruyen una vez, y los
   trabajos pausados empiezan de nuevo (`--restart-paused`).
 
+### Perfil de los trabajos: verificación sin relectura y filas de la vista
+
+Perfil con py-spy 0.4.4 (`record --nonblocking --idle --threads`, 60 s a 40 Hz, sin pausar los
+procesos) de dos trabajos en marcha, y muestreo por segundo de los bytes leídos (`rchar`):
+
+| Trabajo | Hilo | SHA-256 de la copia | Filas de la vista |
+| --- | --- | --- | --- |
+| `mars_titan_m3/2009/seed-42` (lector) | principal | 19,5 % | 15,1 % |
+| `titans_mac/2010/seed-42` (ajuste) | lectura anticipada | 21,9 % | — |
+
+En el ajuste, el hilo principal pasó el 21,3 % de la ventana esperando el primer bloque de la
+pasada, mientras la lectura anticipada calculaba la huella. En los dos trabajos, la lectura
+anticipada pasa más del 74 % del tiempo esperando a que el consumidor libere sitio en la cola:
+cuando hay datos, la entrada no limita.
+
+- **Huella en cada pasada.** `verified_signature` volvía a calcular el SHA-256 de la copia entera
+  al abrirla en cada pasada. Son entre 9 y 12 GiB por pasada en 2009-2011, a 2,1 GB/s desde la
+  caché de páginas o a unos 0,45 GB/s desde el disco, y cada trabajo hace de 9 a 18 pasadas.
+- **Corrección.** Tras renombrar la copia, el constructor comprueba la huella sobre el archivo
+  ya en su sitio. El sello publica la firma de ese momento: dispositivo, inodo, tamaño y ctime.
+  Una pasada que encuentra esa misma firma no vuelve a leer el archivo. Escribirlo,
+  sustituirlo o cambiar sus permisos mueve el ctime, que una cuenta sin privilegios no puede
+  fijar; es el criterio de la caché de huellas de las entradas del corpus. Con otra firma, se
+  lee entero y se exige la misma huella (`rehashed_copies` en el recibo). Con otro contenido,
+  la copia se rechaza (`invalid_copies`) y se reconstruye. La construcción también deja de
+  releer la copia para verificar sus filas: lee el archivo dos veces en lugar de tres.
+- **Filas de la vista.** `view_rows` abría el Parquet de cada uno de los 4.198 activos y sus
+  etiquetas en cada llamada. Cada época de validación y cada tramo final la llaman. En la vista
+  de 2010, la primera llamada tarda 19,6 s en validación y 5,3 s en evaluación; repetida, 0,005
+  y 0,038 s. Ahora se lee una vez por objeto de vista y tramo, y cada llamada devuelve copias.
+- **Coste del cambio.** La huella de la implementación cambia. Las copias se reconstruyen y los
+  trabajos pausados empiezan de nuevo. Los terminados se heredan: ni `event_archive` ni
+  `candidate_walk_forward` están en sus listas de código. La herencia usa `--finish-active`,
+  así que los trabajos activos terminan con su versión.
+- **Sin cambiar.** El sello SHA-256 de cada lote en CPU (`CPUDecisionBatch._digest`, 8 % del hilo
+  principal del lector) es la garantía de que el lote no cambia. El hilo principal del ajuste
+  está limitado por Python: la GPU está al 17 %, `backward` ocupa el 11 % y la norma del
+  recorte el 5 %, junto con las comprobaciones de finitud. Queda pendiente medirlo con nsys.
+
 ## Agente cognitivo con herramientas
 
 `src/mars_titan/evaluation/cognitive_agent.py` lleva a la evaluación la cadena de Karpathy
