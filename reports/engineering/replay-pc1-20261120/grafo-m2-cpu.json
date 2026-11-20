@@ -1,0 +1,77 @@
+{
+  "origen": 2023,
+  "semilla": 43,
+  "checkpoint_padre": "f4e9929327e8a0573da8b4f925aedab36b3aa26d463db9f08a0858134b9bdcee",
+  "checkpoint_lector": "f46dea3ace0cabb7343db3975826c7dd0534887ef4056bf811485a70f50ba693",
+  "indice": "b7d680618b98351729b786699b8e48928c5b2d9dd59d2a861be1792933e48895",
+  "archivo": "452fe75e5129ecc324018303a25f9bef6a4f0f88b4213e7c8ee7ab9a85994c5e",
+  "inicio": 4428,
+  "filas": [
+    {
+      "instante": 0,
+      "filas": 512,
+      "huella_entrada": "56f312d07d0a8921a75fcd33724176accadce883e1d7269dd395ec4f5fbc4e59",
+      "iguales_todos_los_campos": true,
+      "error_estado_fijo_cuantiles": 0.0,
+      "error_estado_fijo_peso": 0.0,
+      "error_estado_fijo_contador": 0
+    },
+    {
+      "instante": 0,
+      "filas": 324,
+      "huella_entrada": "05dceeaf65fcb2478eb424a444ea249ef446dd27f73156b1916a9adbd9dae2ac",
+      "iguales_todos_los_campos": true,
+      "error_estado_fijo_cuantiles": 0.0,
+      "error_estado_fijo_peso": 0.0,
+      "error_estado_fijo_contador": 0
+    },
+    {
+      "instante": 1,
+      "filas": 512,
+      "huella_entrada": "3dd4bc63b0e7f780519702fb8c1a1f500601991f5336acaa2f02a02a40c52feb",
+      "iguales_todos_los_campos": true,
+      "error_estado_fijo_cuantiles": 0.051399365067481995,
+      "error_estado_fijo_peso": 0.42462438344955444,
+      "error_estado_fijo_contador": 1
+    },
+    {
+      "instante": 1,
+      "filas": 324,
+      "huella_entrada": "a264ba9c2f1a184dd78b546a03a890511496364dee30274fca821964904d7088",
+      "iguales_todos_los_campos": true,
+      "error_estado_fijo_cuantiles": 0.0,
+      "error_estado_fijo_peso": 0.0,
+      "error_estado_fijo_contador": 0
+    },
+    {
+      "instante": 2,
+      "filas": 512,
+      "huella_entrada": "2daca631528b48c682ee9ca81b0e53405b8b7c6c1f48a7cf4ac9c4aa02522043",
+      "iguales_todos_los_campos": true,
+      "error_estado_fijo_cuantiles": 0.10067205131053925,
+      "error_estado_fijo_peso": 0.448160856962204,
+      "error_estado_fijo_contador": 2
+    },
+    {
+      "instante": 2,
+      "filas": 325,
+      "huella_entrada": "c0b4e8bacab26d0beaa698198d98369e50e0488736db92c90689efe1a7c4baca",
+      "iguales_todos_los_campos": true,
+      "error_estado_fijo_cuantiles": 0.0,
+      "error_estado_fijo_peso": 0.0,
+      "error_estado_fijo_contador": 0
+    }
+  ],
+  "bloques_elegibles": 3,
+  "dispositivo": "cpu",
+  "indicador_reutilizado": {
+    "False": null,
+    "True": "primera emisi\u00f3n"
+  },
+  "primera_excepcion": "El contador de pasos desbordar\u00eda int64",
+  "rng_identico": true,
+  "tiempo_de_captura_s": null,
+  "memoria_grafo": {},
+  "control_total_s": 6.715095879044384,
+  "ajustes": 0
+}

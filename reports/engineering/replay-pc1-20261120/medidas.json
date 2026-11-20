@@ -1,0 +1,877 @@
+{
+  "fecha": "2026-11-20",
+  "revision_cientifica": "f52cc3c332ba358e7afc1772e2038f05505c2285",
+  "equipo": {
+    "cpu": "AMD Ryzen 9 8945HS",
+    "gpu": "NVIDIA GeForce RTX 4070 Laptop GPU",
+    "vram_total_mib": 8188,
+    "controlador_nvidia": "595.99.02",
+    "sistema": "Linux 7.0.0-42-generic x86_64",
+    "torch": "2.14.0+cu130",
+    "precision": "fp32_strict",
+    "hilos_cpu_en_ensayo_cpu": 1,
+    "hilos_cpu_en_ensayo_cuda": 2,
+    "procesos_graficos_mib": [
+      50,
+      49,
+      48,
+      46
+    ],
+    "energia_j": null,
+    "coste_eur": null
+  },
+  "datos": {
+    "modelo": "titans_mac",
+    "origen": 2021,
+    "semilla": 44,
+    "particion": "train",
+    "archivo_sha256": "54338e57b632038828777226574045bd643d929f5d799db3373c04a5db1ab752",
+    "indice_sha256": "2de861115ac4540744b0c477ba346be81776947fa934cd91a707721ee2e766ec",
+    "checkpoint_sha256": "c5e8e1d8b5e428f985b00ed15af84577db413d9a953feff0764297c03ed55b3b",
+    "objetivo": "pinball",
+    "pasos_optimizador": 0,
+    "test_final_abierto": false
+  },
+  "criterio": "Conservar únicamente si la paridad es exacta y el beneficio se repite en el recorrido completo y su tramo estable.",
+  "cpu": {
+    "filas_por_instante": 32,
+    "instantes": 8,
+    "indices": [
+      4024,
+      4032
+    ],
+    "observaciones": 256,
+    "etiquetas": 224,
+    "bytes_entrada": 1821952,
+    "huellas_lotes": [
+      "5ba09d8e4c05ed4ba0bc878bc2cbbf81a75c27994aa196387d38c52f59b94b02",
+      "bc2553575e669a7f25065535e6087ac4c81328e1a479be100a182db8d93e246a",
+      "8bc44e24b7075dcd40cbd97f60f998288d4ec02915ac8cb5135884cd096adde7",
+      "bdc3508fb614b6983c12431367d7e1d98efbec9ac7b5eebadda6c962370dccf9",
+      "769406599766bb3fb4e70c866946b822d9133d29d9c2eec898b5c4912df755be",
+      "0967d1efd003e830bb3d868d95b08d4f337032fef33849750647858f52ee5e05",
+      "a6f333a829591975d29ca287098919604a3afe35a55a3d117862efdc35cef68f",
+      "b91ff56e263178057a00e793761dab31d7be385de634e2be92d6d7eb58a68914"
+    ],
+    "tamano_grupo_replay": 1024,
+    "mascara": {
+      "muestras": [
+        {
+          "par": 1,
+          "base": {
+            "emision_ms": 335.773558,
+            "replay_ms": 409.582736,
+            "ambos_ms": 745.356294
+          },
+          "candidata": {
+            "emision_ms": 308.381914,
+            "replay_ms": 418.441734,
+            "ambos_ms": 726.823648
+          }
+        },
+        {
+          "par": 2,
+          "base": {
+            "emision_ms": 323.917538,
+            "replay_ms": 420.846631,
+            "ambos_ms": 744.764169
+          },
+          "candidata": {
+            "emision_ms": 332.550405,
+            "replay_ms": 504.347625,
+            "ambos_ms": 836.89803
+          }
+        },
+        {
+          "par": 3,
+          "base": {
+            "emision_ms": 318.213305,
+            "replay_ms": 460.988605,
+            "ambos_ms": 779.20191
+          },
+          "candidata": {
+            "emision_ms": 314.141977,
+            "replay_ms": 445.005462,
+            "ambos_ms": 759.147439
+          }
+        },
+        {
+          "par": 4,
+          "base": {
+            "emision_ms": 230.411075,
+            "replay_ms": 371.443412,
+            "ambos_ms": 601.854487
+          },
+          "candidata": {
+            "emision_ms": 320.864289,
+            "replay_ms": 340.41867,
+            "ambos_ms": 661.282959
+          }
+        },
+        {
+          "par": 5,
+          "base": {
+            "emision_ms": 336.998511,
+            "replay_ms": 410.151683,
+            "ambos_ms": 747.150194
+          },
+          "candidata": {
+            "emision_ms": 311.388002,
+            "replay_ms": 412.574641,
+            "ambos_ms": 723.962643
+          }
+        },
+        {
+          "par": 6,
+          "base": {
+            "emision_ms": 330.938117,
+            "replay_ms": 468.026819,
+            "ambos_ms": 798.964936
+          },
+          "candidata": {
+            "emision_ms": 270.150215,
+            "replay_ms": 437.818983,
+            "ambos_ms": 707.969198
+          }
+        }
+      ],
+      "paridad": {
+        "salida": "e1a88747b4d2bd3e5af846a30482e5c97cf7829c1a5f21e7c7f16c0cf413a24e",
+        "estado": "c76a84b4239d068f99a00427d5e340881bfc23f2e648c9a696e840872b3d67dd",
+        "derivadas": "f0eb56bc5c224d6050ec91286a01f76191d8ae64aa9805748e16b32a43ae844e",
+        "rng": "26f3d6546c9a7e7cdc4442b60afdd65ff76e62dda2dc02b9cf04aadfc0383004",
+        "perdida": 0.004144879989326,
+        "orden_flujos_fechas_identico": true
+      },
+      "rss_max_proceso_kib": 804784
+    },
+    "seleccion": {
+      "muestras": [
+        {
+          "par": 1,
+          "base": {
+            "emision_ms": 215.677054,
+            "replay_ms": 349.063391,
+            "ambos_ms": 564.740445
+          },
+          "candidata": {
+            "emision_ms": 182.302257,
+            "replay_ms": 361.896211,
+            "ambos_ms": 544.198468
+          }
+        },
+        {
+          "par": 2,
+          "base": {
+            "emision_ms": 255.799346,
+            "replay_ms": 362.025519,
+            "ambos_ms": 617.824865
+          },
+          "candidata": {
+            "emision_ms": 212.254132,
+            "replay_ms": 413.786543,
+            "ambos_ms": 626.040675
+          }
+        },
+        {
+          "par": 3,
+          "base": {
+            "emision_ms": 240.333434,
+            "replay_ms": 286.838302,
+            "ambos_ms": 527.171736
+          },
+          "candidata": {
+            "emision_ms": 185.467881,
+            "replay_ms": 425.757202,
+            "ambos_ms": 611.225083
+          }
+        },
+        {
+          "par": 4,
+          "base": {
+            "emision_ms": 258.471839,
+            "replay_ms": 300.607052,
+            "ambos_ms": 559.078891
+          },
+          "candidata": {
+            "emision_ms": 256.56674,
+            "replay_ms": 431.651139,
+            "ambos_ms": 688.217879
+          }
+        },
+        {
+          "par": 5,
+          "base": {
+            "emision_ms": 256.848938,
+            "replay_ms": 277.286433,
+            "ambos_ms": 534.135371
+          },
+          "candidata": {
+            "emision_ms": 241.060885,
+            "replay_ms": 260.929173,
+            "ambos_ms": 501.990058
+          }
+        },
+        {
+          "par": 6,
+          "base": {
+            "emision_ms": 234.914343,
+            "replay_ms": 253.505481,
+            "ambos_ms": 488.419824
+          },
+          "candidata": {
+            "emision_ms": 289.840145,
+            "replay_ms": 242.1212,
+            "ambos_ms": 531.961345
+          }
+        }
+      ],
+      "paridad": {
+        "salida": "e1a88747b4d2bd3e5af846a30482e5c97cf7829c1a5f21e7c7f16c0cf413a24e",
+        "estado": "c76a84b4239d068f99a00427d5e340881bfc23f2e648c9a696e840872b3d67dd",
+        "derivadas": "f0eb56bc5c224d6050ec91286a01f76191d8ae64aa9805748e16b32a43ae844e",
+        "rng": "26f3d6546c9a7e7cdc4442b60afdd65ff76e62dda2dc02b9cf04aadfc0383004",
+        "perdida": 0.004144879989326,
+        "orden_flujos_fechas_identico": true
+      },
+      "rss_max_proceso_kib": 809652
+    },
+    "perdidas": {
+      "muestras": [
+        {
+          "par": 1,
+          "base": {
+            "emision_ms": 298.669633,
+            "replay_ms": 283.689891,
+            "ambos_ms": 582.359524
+          },
+          "candidata": {
+            "emision_ms": 319.588897,
+            "replay_ms": 441.338136,
+            "ambos_ms": 760.927033
+          }
+        },
+        {
+          "par": 2,
+          "base": {
+            "emision_ms": 334.404049,
+            "replay_ms": 476.205285,
+            "ambos_ms": 810.609334
+          },
+          "candidata": {
+            "emision_ms": 316.798553,
+            "replay_ms": 450.744601,
+            "ambos_ms": 767.543154
+          }
+        },
+        {
+          "par": 3,
+          "base": {
+            "emision_ms": 318.062339,
+            "replay_ms": 435.522341,
+            "ambos_ms": 753.58468
+          },
+          "candidata": {
+            "emision_ms": 315.012366,
+            "replay_ms": 336.895076,
+            "ambos_ms": 651.907442
+          }
+        },
+        {
+          "par": 4,
+          "base": {
+            "emision_ms": 314.824866,
+            "replay_ms": 437.071314,
+            "ambos_ms": 751.89618
+          },
+          "candidata": {
+            "emision_ms": 256.898509,
+            "replay_ms": 431.000433,
+            "ambos_ms": 687.898942
+          }
+        },
+        {
+          "par": 5,
+          "base": {
+            "emision_ms": 317.585559,
+            "replay_ms": 451.489535,
+            "ambos_ms": 769.075094
+          },
+          "candidata": {
+            "emision_ms": 317.189121,
+            "replay_ms": 427.06267,
+            "ambos_ms": 744.251791
+          }
+        },
+        {
+          "par": 6,
+          "base": {
+            "emision_ms": 302.865196,
+            "replay_ms": 381.910923,
+            "ambos_ms": 684.776119
+          },
+          "candidata": {
+            "emision_ms": 319.295754,
+            "replay_ms": 432.873158,
+            "ambos_ms": 752.168912
+          }
+        }
+      ],
+      "paridad": {
+        "salida": "e1a88747b4d2bd3e5af846a30482e5c97cf7829c1a5f21e7c7f16c0cf413a24e",
+        "estado": "c76a84b4239d068f99a00427d5e340881bfc23f2e648c9a696e840872b3d67dd",
+        "derivadas": "f0eb56bc5c224d6050ec91286a01f76191d8ae64aa9805748e16b32a43ae844e",
+        "rng": "26f3d6546c9a7e7cdc4442b60afdd65ff76e62dda2dc02b9cf04aadfc0383004",
+        "perdida": 0.004144879989326,
+        "orden_flujos_fechas_identico": true
+      },
+      "rss_max_proceso_kib": 806368
+    }
+  },
+  "cuda": {
+    "inicio_evento": 4024,
+    "eventos_disponibles": 56,
+    "segmentos": 4,
+    "segmentos_calentamiento": 2,
+    "observaciones_estables": 12752,
+    "etiquetas_estables": 12624,
+    "mascara": {
+      "muestras": [
+        {
+          "alternativa": "base",
+          "par": 1,
+          "recorrido_s": 1.7117015721742064,
+          "estable_s": 0.7006696909666061,
+          "latencia_segmento_p50_s": 0.35033311194274575,
+          "latencia_segmento_p95_s": 0.40005180212901903,
+          "pico_vram_asignada_bytes": 2002717184,
+          "pico_vram_reservada_bytes": 2197815296,
+          "rss_proceso_kib": 2048124
+        },
+        {
+          "alternativa": "mascara",
+          "par": 1,
+          "recorrido_s": 1.4352158091496676,
+          "estable_s": 0.6305065718479455,
+          "latencia_segmento_p50_s": 0.31525181292090565,
+          "latencia_segmento_p95_s": 0.3178395181777887,
+          "pico_vram_asignada_bytes": 2002717184,
+          "pico_vram_reservada_bytes": 2197815296,
+          "rss_proceso_kib": 2048264
+        },
+        {
+          "alternativa": "mascara",
+          "par": 2,
+          "recorrido_s": 1.5504876768682152,
+          "estable_s": 0.6357672607991844,
+          "latencia_segmento_p50_s": 0.3178820324828848,
+          "latencia_segmento_p95_s": 0.32405077343573796,
+          "pico_vram_asignada_bytes": 1947305984,
+          "pico_vram_reservada_bytes": 2197815296,
+          "rss_proceso_kib": 2048664
+        },
+        {
+          "alternativa": "base",
+          "par": 2,
+          "recorrido_s": 1.4053479288704693,
+          "estable_s": 0.5998835219070315,
+          "latencia_segmento_p50_s": 0.299940463504754,
+          "latencia_segmento_p95_s": 0.2999481445760466,
+          "pico_vram_asignada_bytes": 2002717184,
+          "pico_vram_reservada_bytes": 2197815296,
+          "rss_proceso_kib": 2048664
+        },
+        {
+          "alternativa": "base",
+          "par": 3,
+          "recorrido_s": 1.6617255019955337,
+          "estable_s": 0.6347890871111304,
+          "latencia_segmento_p50_s": 0.317393206525594,
+          "latencia_segmento_p95_s": 0.31919555941130967,
+          "pico_vram_asignada_bytes": 1947305984,
+          "pico_vram_reservada_bytes": 2197815296,
+          "rss_proceso_kib": 2048664
+        },
+        {
+          "alternativa": "mascara",
+          "par": 3,
+          "recorrido_s": 1.5547360929194838,
+          "estable_s": 0.7155136410146952,
+          "latencia_segmento_p50_s": 0.3577552625210956,
+          "latencia_segmento_p95_s": 0.40314547965535896,
+          "pico_vram_asignada_bytes": 1950281728,
+          "pico_vram_reservada_bytes": 2197815296,
+          "rss_proceso_kib": 2048664
+        }
+      ],
+      "paridad": {
+        "predicciones": 25495,
+        "salida_sha256": "43141cdfc49f5d6bf159adfc082e5d4b4c07a55628365af39ffc983c6a0a66ac",
+        "gradientes_sha256": [
+          "22b4b9845d0021cf250598dd279890a8fd7d3fc2f35bf2dd26a62220cab2597b",
+          "a511e49bccc2506c49d06032336f207c681b10d3cd3d61340f08bab7c8067177",
+          "7faa61977829997242cfc57d14e7b533d02e402507ce8a206cedddef1b544320",
+          "bcad829c32956cf65fe0aaf50d3fcdc0f749a58ccd67b18b69844c9d7805e579"
+        ],
+        "estado_sha256": "3ff3a79f9025a2db0128cb26b64671e129dba3d5d2551d502a0f212dae790087",
+        "parametros_sha256": "264b35e616a28c7a790f9e3e38cfbcac750d3fbdf67f86a852e5780df9b8bc7e",
+        "rng_sha256": "097326d21a41dd1b5a353fb1fc7993f2b0cb22b001e79684e8fdafcce3a5fe9f",
+        "cursor": {
+          "epoch": 0,
+          "phase": "train",
+          "event": 4056,
+          "stage": "inputs"
+        },
+        "contadores": {
+          "observations": 25495,
+          "warmup_observations": 0,
+          "predictions": 25495,
+          "labels": 25231,
+          "labels_in_loss": 25231,
+          "labels_without_graph": 0,
+          "updates": 4,
+          "segments": 4,
+          "loss_sum": 84.9289154887665,
+          "unresolved": 0
+        }
+      },
+      "verificacion_archivo_s": 48.22935558692552
+    },
+    "seleccion": {
+      "muestras": [
+        {
+          "alternativa": "base",
+          "par": 1,
+          "recorrido_s": 1.8456034620758146,
+          "estable_s": 0.8459788290783763,
+          "latencia_segmento_p50_s": 0.42298761603888124,
+          "latencia_segmento_p95_s": 0.4732735085650347,
+          "pico_vram_asignada_bytes": 2002716672,
+          "pico_vram_reservada_bytes": 2197815296,
+          "rss_proceso_kib": 2051128
+        },
+        {
+          "alternativa": "seleccion",
+          "par": 1,
+          "recorrido_s": 1.661733970977366,
+          "estable_s": 0.7200504380743951,
+          "latencia_segmento_p50_s": 0.3600234210025519,
+          "latencia_segmento_p95_s": 0.36871179421432315,
+          "pico_vram_asignada_bytes": 2002716672,
+          "pico_vram_reservada_bytes": 2197815296,
+          "rss_proceso_kib": 2051128
+        },
+        {
+          "alternativa": "seleccion",
+          "par": 2,
+          "recorrido_s": 1.7089940479490906,
+          "estable_s": 0.6920906421728432,
+          "latencia_segmento_p50_s": 0.3460434725275263,
+          "latencia_segmento_p95_s": 0.35214430749183523,
+          "pico_vram_asignada_bytes": 1947305472,
+          "pico_vram_reservada_bytes": 2197815296,
+          "rss_proceso_kib": 2054100
+        },
+        {
+          "alternativa": "base",
+          "par": 2,
+          "recorrido_s": 1.6895691112149507,
+          "estable_s": 0.7058292510919273,
+          "latencia_segmento_p50_s": 0.35291293752379715,
+          "latencia_segmento_p95_s": 0.354943232703954,
+          "pico_vram_asignada_bytes": 2002716672,
+          "pico_vram_reservada_bytes": 2197815296,
+          "rss_proceso_kib": 2054100
+        },
+        {
+          "alternativa": "base",
+          "par": 3,
+          "recorrido_s": 1.7720147881191224,
+          "estable_s": 0.7304564118385315,
+          "latencia_segmento_p50_s": 0.36522527097258717,
+          "latencia_segmento_p95_s": 0.3795916783506982,
+          "pico_vram_asignada_bytes": 1947305472,
+          "pico_vram_reservada_bytes": 2197815296,
+          "rss_proceso_kib": 2054100
+        },
+        {
+          "alternativa": "seleccion",
+          "par": 3,
+          "recorrido_s": 1.7579616059083492,
+          "estable_s": 0.782936881063506,
+          "latencia_segmento_p50_s": 0.39146698801778257,
+          "latencia_segmento_p95_s": 0.44563831207342447,
+          "pico_vram_asignada_bytes": 1950281216,
+          "pico_vram_reservada_bytes": 2197815296,
+          "rss_proceso_kib": 2054100
+        }
+      ],
+      "paridad": {
+        "predicciones": 25495,
+        "salida_sha256": "43141cdfc49f5d6bf159adfc082e5d4b4c07a55628365af39ffc983c6a0a66ac",
+        "gradientes_sha256": [
+          "22b4b9845d0021cf250598dd279890a8fd7d3fc2f35bf2dd26a62220cab2597b",
+          "a511e49bccc2506c49d06032336f207c681b10d3cd3d61340f08bab7c8067177",
+          "7faa61977829997242cfc57d14e7b533d02e402507ce8a206cedddef1b544320",
+          "bcad829c32956cf65fe0aaf50d3fcdc0f749a58ccd67b18b69844c9d7805e579"
+        ],
+        "estado_sha256": "3ff3a79f9025a2db0128cb26b64671e129dba3d5d2551d502a0f212dae790087",
+        "parametros_sha256": "264b35e616a28c7a790f9e3e38cfbcac750d3fbdf67f86a852e5780df9b8bc7e",
+        "rng_sha256": "097326d21a41dd1b5a353fb1fc7993f2b0cb22b001e79684e8fdafcce3a5fe9f",
+        "cursor": {
+          "epoch": 0,
+          "phase": "train",
+          "event": 4056,
+          "stage": "inputs"
+        },
+        "contadores": {
+          "observations": 25495,
+          "warmup_observations": 0,
+          "predictions": 25495,
+          "labels": 25231,
+          "labels_in_loss": 25231,
+          "labels_without_graph": 0,
+          "updates": 4,
+          "segments": 4,
+          "loss_sum": 84.9289154887665,
+          "unresolved": 0
+        }
+      },
+      "verificacion_archivo_s": 19.965526417130604
+    }
+  },
+  "primitivas_cpu": {
+    "filas": 796,
+    "bytes_entrada": 5665132,
+    "dtype": "torch.float32",
+    "forma_mascara": [
+      6,
+      6
+    ],
+    "dispositivo": "cpu",
+    "hilos": 1,
+    "seleccion_identidad": {
+      "llamadas_por_medida": 10,
+      "muestras_ns": {
+        "base": [
+          8136527.9,
+          7305713.5,
+          7395508,
+          7728071,
+          8218240.6,
+          7791916.8,
+          7269826.8,
+          7017947.1,
+          7280526.1
+        ],
+        "seleccion": [
+          5493475.9,
+          5613291.3,
+          5842779.5,
+          5873758.3,
+          5453399.5,
+          5277106.7,
+          5295584.7,
+          5379788.2,
+          5275732.6
+        ]
+      },
+      "operadores": {
+        "base": {
+          "aten.detach.default": 5,
+          "aten.linalg_vector_norm.default": 5,
+          "aten._local_scalar_dense.default": 5,
+          "aten.lift_fresh.default": 6,
+          "aten.index.Tensor": 6
+        },
+        "seleccion": {
+          "aten.detach.default": 5,
+          "aten.linalg_vector_norm.default": 5,
+          "aten._local_scalar_dense.default": 5,
+          "aten.clone.default": 6
+        }
+      }
+    },
+    "mascara": {
+      "llamadas_por_medida": 500,
+      "muestras_ns": {
+        "base": [
+          3036.32,
+          4565.22,
+          3135.644,
+          3280.146,
+          3407.34,
+          3345.386,
+          3332.722,
+          3246.886,
+          3190.202
+        ],
+        "mascara": [
+          46.044,
+          44.602,
+          62.416,
+          43.52,
+          47.968,
+          46.946,
+          59.148,
+          70.028,
+          51.976
+        ]
+      },
+      "operadores": {
+        "base": {
+          "aten.ones.default": 1,
+          "aten.triu.default": 1
+        },
+        "mascara": {}
+      }
+    },
+    "mac_completo": {
+      "llamadas_por_medida": 1,
+      "muestras_ns": {
+        "base": [
+          385558502,
+          387492989,
+          409542200,
+          541734495,
+          518629878,
+          541955137,
+          489186785
+        ],
+        "mascara": [
+          416920375,
+          390775006,
+          477605191,
+          444310873,
+          704814559,
+          387462178,
+          403415359
+        ]
+      },
+      "operadores": {
+        "base": {
+          "aten.detach.default": 51,
+          "aten.linalg_vector_norm.default": 41,
+          "aten._local_scalar_dense.default": 45,
+          "aten.ge.Scalar": 5,
+          "aten.all.default": 6,
+          "aten.t.default": 8,
+          "aten.view.default": 12,
+          "aten.mm.default": 5,
+          "aten._unsafe_view.default": 2,
+          "aten.clamp_min.default": 2,
+          "aten.expand.default": 5,
+          "aten.div.Tensor": 2,
+          "aten.transpose.int": 19,
+          "aten.bmm.default": 9,
+          "aten.gelu.default": 3,
+          "aten.native_layer_norm.default": 3,
+          "aten.add.Tensor": 6,
+          "aten.unsqueeze.default": 10,
+          "aten.cat.default": 1,
+          "aten.ones.default": 1,
+          "aten.triu.default": 1,
+          "aten.clone.default": 4,
+          "aten.zeros_like.default": 1,
+          "aten.masked_fill_.Scalar": 1,
+          "aten.squeeze.dim": 3,
+          "aten.select.int": 4,
+          "aten._scaled_dot_product_flash_attention_for_cpu.default": 1,
+          "aten.permute.default": 1,
+          "aten.slice.Tensor": 1,
+          "aten.le.Scalar": 1,
+          "aten.unbind.int": 1,
+          "aten.addmm.default": 3,
+          "aten.sigmoid.default": 3,
+          "aten.mul.Tensor": 9,
+          "aten.sub.Tensor": 3,
+          "aten.pow.Tensor_Scalar": 2,
+          "aten.sum.default": 1,
+          "aten.ones_like.default": 1,
+          "aten.mul.Scalar": 1,
+          "aten.native_layer_norm_backward.default": 1,
+          "aten.gelu_backward.default": 1,
+          "aten.rsub.Scalar": 2
+        },
+        "mascara": {
+          "aten.detach.default": 51,
+          "aten.linalg_vector_norm.default": 41,
+          "aten._local_scalar_dense.default": 45,
+          "aten.ge.Scalar": 5,
+          "aten.all.default": 6,
+          "aten.t.default": 8,
+          "aten.view.default": 12,
+          "aten.mm.default": 5,
+          "aten._unsafe_view.default": 2,
+          "aten.clamp_min.default": 2,
+          "aten.expand.default": 5,
+          "aten.div.Tensor": 2,
+          "aten.transpose.int": 19,
+          "aten.bmm.default": 9,
+          "aten.gelu.default": 3,
+          "aten.native_layer_norm.default": 3,
+          "aten.add.Tensor": 6,
+          "aten.unsqueeze.default": 10,
+          "aten.cat.default": 1,
+          "aten.clone.default": 4,
+          "aten.zeros_like.default": 1,
+          "aten.masked_fill_.Scalar": 1,
+          "aten.squeeze.dim": 3,
+          "aten.select.int": 4,
+          "aten._scaled_dot_product_flash_attention_for_cpu.default": 1,
+          "aten.permute.default": 1,
+          "aten.slice.Tensor": 1,
+          "aten.le.Scalar": 1,
+          "aten.unbind.int": 1,
+          "aten.addmm.default": 3,
+          "aten.sigmoid.default": 3,
+          "aten.mul.Tensor": 9,
+          "aten.sub.Tensor": 3,
+          "aten.pow.Tensor_Scalar": 2,
+          "aten.sum.default": 1,
+          "aten.ones_like.default": 1,
+          "aten.mul.Scalar": 1,
+          "aten.native_layer_norm_backward.default": 1,
+          "aten.gelu_backward.default": 1,
+          "aten.rsub.Scalar": 2
+        }
+      }
+    }
+  },
+  "primitivas_cuda": {
+    "filas": 796,
+    "bytes_seleccion": 5665132,
+    "digesto_lote": "90b282961f9b04834ce6cf9be993885fd7e807b6d73b89235c29052378b354e8",
+    "mascara_base": {
+      "repeticiones": 100,
+      "host_y_dispositivo_us": [
+        13.029469999999998,
+        12.567029999999999,
+        12.75367,
+        12.61682,
+        12.22792
+      ],
+      "eventos_cuda_us": [
+        12.474559545516968,
+        12.419840097427368,
+        12.624000310897827,
+        12.49343991279602,
+        12.113920450210571
+      ],
+      "actividad_cuda": {
+        "void at::native::vectorized_elementwise_kernel<4, at::native::FillFunctor<bool>, std::array<char*, 1ul>, false>(int, at::native::FillFunctor<bool>, std::array<char*, 1ul>)": 1,
+        "void at::native::triu_tril_kernel<bool, int, true, 8, false>(at::cuda::detail::TensorInfo<bool, int>, at::cuda::detail::TensorInfo<bool const, int>, long, long, int)": 1
+      },
+      "aten": {
+        "aten::ones": 1,
+        "aten::empty": 1,
+        "aten::fill_": 1,
+        "aten::triu": 1
+      }
+    },
+    "mascara_fija": {
+      "repeticiones": 100,
+      "host_y_dispositivo_us": [
+        0.71841,
+        0.41025,
+        0.32499,
+        0.31607,
+        0.31427
+      ],
+      "eventos_cuda_us": [
+        0.27168000116944313,
+        0.19360000267624855,
+        0.16863999888300896,
+        0.1651199907064438,
+        0.16575999557971954
+      ],
+      "actividad_cuda": {},
+      "aten": {}
+    },
+    "seleccion_base": {
+      "repeticiones": 8,
+      "host_y_dispositivo_us": [
+        1177.815,
+        1219.167625,
+        1235.25425,
+        1287.8235,
+        1286.2695
+      ],
+      "eventos_cuda_us": [
+        1173.4039783477783,
+        1215.3960466384888,
+        1232.591986656189,
+        1285.2120399475098,
+        1283.4080457687378
+      ],
+      "actividad_cuda": {
+        "Memset (Device)": 4,
+        "void at::native::reduce_kernel<512, 1, at::native::ReduceOp<float, at::native::AbsMaxOps<float, float, float>, unsigned int, float, 4, 4> >(at::native::ReduceOp<float, at::native::AbsMaxOps<float, float, float>, unsigned int, float, 4, 4>)": 5,
+        "Memcpy HtoD (Pageable -> Device)": 6,
+        "void at::native::vectorized_gather_kernel<16, long>(char*, char*, long*, int, long, long, long, long, bool)": 4,
+        "void at::native::index_elementwise_kernel<128, 4, at::native::gpu_index_kernel<at::native::index_kernel_impl<at::native::OpaqueType<4> >(at::TensorIteratorBase&, c10::ArrayRef<long>, c10::ArrayRef<long>)::{lambda(char*, char const*, long)#1}>(at::TensorIteratorBase&, c10::ArrayRef<long>, c10::ArrayRef<long>, at::native::index_kernel_impl<at::native::OpaqueType<4> >(at::TensorIteratorBase&, c10::ArrayRef<long>, c10::ArrayRef<long>)::{lambda(char*, char const*, long)#1} const&, bool)::{lambda(int)#1}>(long, at::native::gpu_index_kernel<at::native::index_kernel_impl<at::native::OpaqueType<4> >(at::TensorIteratorBase&, c10::ArrayRef<long>, c10::ArrayRef<long>)::{lambda(char*, char const*, long)#1}>(at::TensorIteratorBase&, c10::ArrayRef<long>, c10::ArrayRef<long>, at::native::index_kernel_impl<at::native::OpaqueType<4> >(at::TensorIteratorBase&, c10::ArrayRef<long>, c10::ArrayRef<long>)::{lambda(char*, char const*, long)#1} const&, bool)::{lambda(int)#1})": 1,
+        "void at::native::index_elementwise_kernel<128, 4, at::native::gpu_index_kernel<at::native::index_kernel_impl<at::native::OpaqueType<1> >(at::TensorIteratorBase&, c10::ArrayRef<long>, c10::ArrayRef<long>)::{lambda(char*, char const*, long)#1}>(at::TensorIteratorBase&, c10::ArrayRef<long>, c10::ArrayRef<long>, at::native::index_kernel_impl<at::native::OpaqueType<1> >(at::TensorIteratorBase&, c10::ArrayRef<long>, c10::ArrayRef<long>)::{lambda(char*, char const*, long)#1} const&, bool)::{lambda(int)#1}>(long, at::native::gpu_index_kernel<at::native::index_kernel_impl<at::native::OpaqueType<1> >(at::TensorIteratorBase&, c10::ArrayRef<long>, c10::ArrayRef<long>)::{lambda(char*, char const*, long)#1}>(at::TensorIteratorBase&, c10::ArrayRef<long>, c10::ArrayRef<long>, at::native::index_kernel_impl<at::native::OpaqueType<1> >(at::TensorIteratorBase&, c10::ArrayRef<long>, c10::ArrayRef<long>)::{lambda(char*, char const*, long)#1} const&, bool)::{lambda(int)#1})": 1,
+        "void at::native::(anonymous namespace)::CatArrayBatchedCopy_alignedK_contig<at::native::(anonymous namespace)::OpaqueType<4u>, unsigned int, 1, 128, 1, 16>(at::native::(anonymous namespace)::OpaqueType<4u>*, at::native::(anonymous namespace)::CatArrInputTensorMetadata<at::native::(anonymous namespace)::OpaqueType<4u>, unsigned int, 128, 1>, at::native::(anonymous namespace)::TensorSizeStride<unsigned int, 4u>, int, unsigned int)": 1,
+        "Memcpy DtoH (Device -> Pageable)": 1
+      },
+      "aten": {
+        "aten::detach": 5,
+        "aten::linalg_vector_norm": 5,
+        "aten::as_strided": 16,
+        "aten::empty": 6,
+        "aten::to": 7,
+        "aten::_to_copy": 7,
+        "aten::empty_strided": 7,
+        "aten::copy_": 7,
+        "aten::lift_fresh": 6,
+        "aten::index": 6,
+        "aten::reshape": 6,
+        "aten::view": 6,
+        "aten::stack": 1,
+        "aten::unsqueeze": 5,
+        "aten::cat": 1,
+        "aten::resolve_conj": 1,
+        "aten::resolve_neg": 1
+      }
+    },
+    "seleccion_clon": {
+      "repeticiones": 8,
+      "host_y_dispositivo_us": [
+        246.1285,
+        225.68125,
+        214.054,
+        210.474875,
+        230.30225
+      ],
+      "eventos_cuda_us": [
+        238.39199542999268,
+        222.84400463104248,
+        211.46799623966217,
+        207.97200500965118,
+        227.8439998626709
+      ],
+      "actividad_cuda": {
+        "Memset (Device)": 4,
+        "void at::native::reduce_kernel<512, 1, at::native::ReduceOp<float, at::native::AbsMaxOps<float, float, float>, unsigned int, float, 4, 4> >(at::native::ReduceOp<float, at::native::AbsMaxOps<float, float, float>, unsigned int, float, 4, 4>)": 5,
+        "Memcpy DtoD (Device -> Device)": 6,
+        "void at::native::(anonymous namespace)::CatArrayBatchedCopy_alignedK_contig<at::native::(anonymous namespace)::OpaqueType<4u>, unsigned int, 1, 128, 1, 16>(at::native::(anonymous namespace)::OpaqueType<4u>*, at::native::(anonymous namespace)::CatArrInputTensorMetadata<at::native::(anonymous namespace)::OpaqueType<4u>, unsigned int, 128, 1>, at::native::(anonymous namespace)::TensorSizeStride<unsigned int, 4u>, int, unsigned int)": 1,
+        "Memcpy DtoH (Device -> Pageable)": 1
+      },
+      "aten": {
+        "aten::detach": 5,
+        "aten::linalg_vector_norm": 5,
+        "aten::as_strided": 10,
+        "aten::clone": 6,
+        "aten::empty_strided": 7,
+        "aten::copy_": 7,
+        "aten::stack": 1,
+        "aten::unsqueeze": 5,
+        "aten::cat": 1,
+        "aten::resolve_conj": 1,
+        "aten::resolve_neg": 1,
+        "aten::to": 1,
+        "aten::_to_copy": 1
+      }
+    }
+  }
+}

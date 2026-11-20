@@ -1,0 +1,126 @@
+{
+  "candidato": "mascara",
+  "origen": 2021,
+  "semilla": 44,
+  "checkpoint": "c5e8e1d8b5e428f985b00ed15af84577db413d9a953feff0764297c03ed55b3b",
+  "archivo": "54338e57b632038828777226574045bd643d929f5d799db3373c04a5db1ab752",
+  "indice": "2de861115ac4540744b0c477ba346be81776947fa934cd91a707721ee2e766ec",
+  "corte": [
+    4024,
+    56
+  ],
+  "torch": "2.14.0+cu130",
+  "gpu": "NVIDIA GeForce RTX 4070 Laptop GPU",
+  "hilos": 2,
+  "paridad": {
+    "base": {
+      "gradients": [
+        "22b4b9845d0021cf250598dd279890a8fd7d3fc2f35bf2dd26a62220cab2597b",
+        "a511e49bccc2506c49d06032336f207c681b10d3cd3d61340f08bab7c8067177",
+        "7faa61977829997242cfc57d14e7b533d02e402507ce8a206cedddef1b544320",
+        "bcad829c32956cf65fe0aaf50d3fcdc0f749a58ccd67b18b69844c9d7805e579"
+      ],
+      "predictions": "43141cdfc49f5d6bf159adfc082e5d4b4c07a55628365af39ffc983c6a0a66ac",
+      "prediction_count": 25495,
+      "counters": {
+        "observations": 25495,
+        "warmup_observations": 0,
+        "predictions": 25495,
+        "labels": 25231,
+        "labels_in_loss": 25231,
+        "labels_without_graph": 0,
+        "updates": 4,
+        "segments": 4,
+        "loss_sum": 84.9289154887665,
+        "unresolved": 0
+      }
+    },
+    "mascara": {
+      "gradients": [
+        "22b4b9845d0021cf250598dd279890a8fd7d3fc2f35bf2dd26a62220cab2597b",
+        "a511e49bccc2506c49d06032336f207c681b10d3cd3d61340f08bab7c8067177",
+        "7faa61977829997242cfc57d14e7b533d02e402507ce8a206cedddef1b544320",
+        "bcad829c32956cf65fe0aaf50d3fcdc0f749a58ccd67b18b69844c9d7805e579"
+      ],
+      "predictions": "43141cdfc49f5d6bf159adfc082e5d4b4c07a55628365af39ffc983c6a0a66ac",
+      "prediction_count": 25495,
+      "counters": {
+        "observations": 25495,
+        "warmup_observations": 0,
+        "predictions": 25495,
+        "labels": 25231,
+        "labels_in_loss": 25231,
+        "labels_without_graph": 0,
+        "updates": 4,
+        "segments": 4,
+        "loss_sum": 84.9289154887665,
+        "unresolved": 0
+      }
+    }
+  },
+  "estado_y_rng_identicos": true,
+  "pasos_de_optimizador": 0,
+  "tiempos": [
+    {
+      "modo": "base",
+      "par": 0,
+      "mode": "original",
+      "with_parity_audit": false,
+      "samples": 12752,
+      "labels": 12624,
+      "events": 16,
+      "seconds": 0.7097097809892148,
+      "monotonic_start": 1238509.849956267,
+      "monotonic_finish": 1238510.559666048,
+      "rows_per_second": 17967.907927414893,
+      "exposed_input_seconds": 0.13433282007463276,
+      "main_thread_phase_seconds": {
+        "_labels": 0.015542183769866824,
+        "_observe": 0.25402463017962873,
+        "_update": 0.30470366799272597
+      },
+      "start_to_first_barrier_s": 0.4909371230751276,
+      "pass_seconds": 1.4980124239809811,
+      "warm_segments": 2,
+      "measured_segments": 2,
+      "segment_p50_s": 0.3548548904946074,
+      "segment_p95_s": 0.40694279958261176,
+      "allocated_bytes": 2002717184,
+      "reserved_bytes": 2197815296,
+      "rss_kib": 2125540
+    },
+    {
+      "modo": "mascara",
+      "par": 0,
+      "mode": "original",
+      "with_parity_audit": false,
+      "samples": 12752,
+      "labels": 12624,
+      "events": 16,
+      "seconds": 0.5847352598793805,
+      "monotonic_start": 1238511.364460214,
+      "monotonic_finish": 1238511.949195474,
+      "rows_per_second": 21808.159820275745,
+      "exposed_input_seconds": 0.032657589530572295,
+      "main_thread_phase_seconds": {
+        "_labels": 0.015917397802695632,
+        "_observe": 0.24924432300031185,
+        "_update": 0.28574726404622197
+      },
+      "start_to_first_barrier_s": 0.5058960779570043,
+      "pass_seconds": 1.3877214009407908,
+      "warm_segments": 2,
+      "measured_segments": 2,
+      "segment_p50_s": 0.29236762993969023,
+      "segment_p95_s": 0.29645000465679916,
+      "allocated_bytes": 2002717184,
+      "reserved_bytes": 2197815296,
+      "rss_kib": 2125540
+    }
+  ],
+  "primitivas": null,
+  "mediana_estable_s": {
+    "base": 0.7097097809892148,
+    "mascara": 0.5847352598793805
+  }
+}
