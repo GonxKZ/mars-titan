@@ -254,8 +254,14 @@ grafo del tramo y con la repetición por bloques.
   fijo en c1ecc639 con la declaración 393fc98e: 1254 trabajos, orden `seed_tier`, plazo
   2026-12-02T18:00Z y permiso expreso registrado con nota. La comprobación inicial de la cola
   arrancó durante unos 6 s cada una de las 11 arquitecturas con ajuste propio, con datos reales y
-  la copia empaquetada verificada, y todas quedaron «bien». Los lectores se comprueban al
-  terminar su padre.
+  la copia empaquetada verificada, y todas quedaron «bien». Los lectores no pasan por esa
+  comprobación porque necesitan a su padre ajustado: arrancan en cuanto este termina.
+- **Reproducibilidad entre estados.** `titans_mac/2005/seed-42` de la campaña, que graba trazas
+  de aprendizaje, reproduce exactamente el de la búsqueda, que no las grababa: mismo MAE de
+  validación (0,014131073766871805, época 2) y las tres tablas de predicciones idénticas fila a
+  fila (194 655, 100 689 y 414 341 filas). Las trazas no tocan la aritmética del ajuste. En
+  tiempo, 534 s frente a 449 s en la búsqueda (pausado y reanudado), con otra mezcla de trabajos
+  simultáneos: eso no aísla el coste de las trazas, que se mide con 2006 y 2007.
 - **Reparto de los 64 GB.** Slice de 40 GiB: preparación 15 GiB y campaña 25 GiB. A eso se suman
   3 trabajos × 8 GiB de CUDA. La campaña no declara `MemoryHigh`.
 - **`MemoryHigh` por debajo de `MemoryMax` estrangula.** La preparación tenía `MemoryHigh=13G` y
