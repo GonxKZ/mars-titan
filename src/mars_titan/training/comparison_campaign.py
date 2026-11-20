@@ -1157,6 +1157,7 @@ class Queue:
         workers=1,
         tiers=None,
         origins=None,
+        seeds=None,
         declaration_path=None,
     ):
         _require(type(workers) is int and 1 <= workers <= 8, "Entre 1 y 8 trabajadores")
@@ -1175,6 +1176,13 @@ class Queue:
                 all(job.needs is None or job.needs in kept for job in jobs),
                 "El bloque de orígenes deja fuera al padre de alguno de sus trabajos",
             )
+        if seeds is not None:
+            # La criba ajusta primero una semilla: cada lector depende del ajuste de su semilla.
+            _require(
+                bool(seeds) and set(seeds) <= set(declaration["seeds"]),
+                "Semilla desconocida en la campaña",
+            )
+            jobs = [job for job in jobs if job.seed is None or job.seed in set(seeds)]
         self.declaration, self.layout, self.machine = declaration, layout, machine
         self.jobs, self.workers, self.declaration_path = jobs, workers, declaration_path
         self.stop = threading.Event()
@@ -1666,6 +1674,9 @@ def main(argv=None):
     parser.add_argument(
         "--origin", action="append", type=int, help="Limitar la cola a estos orígenes (año)"
     )
+    parser.add_argument(
+        "--seed", action="append", type=int, help="Limitar la cola a estas semillas"
+    )
     parser.add_argument("--key", help="Trabajo que ejecuta la orden interna job")
     parser.add_argument("--note", help="Nota del permiso expreso, obligatoria en authorize")
     parser.add_argument("--device", choices=("cpu", "cuda:0"), default="cuda:0")
@@ -1814,6 +1825,7 @@ def main(argv=None):
         workers=args.workers or declaration["execution"]["workers"][args.machine],
         tiers=args.tier,
         origins=args.origin,
+        seeds=args.seed,
         declaration_path=args.declaration,
     )
     for name in (signal.SIGINT, signal.SIGTERM):
