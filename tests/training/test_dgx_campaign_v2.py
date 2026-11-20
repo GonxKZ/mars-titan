@@ -35,6 +35,11 @@ CONTROLS = dict(
     titans_mac_rank=("titans_mac_nols", "predictor.session_rank_inputs"),
     titans_mac_ic_rank=("titans_mac_ic", "predictor.session_rank_inputs"),
     titans_mac_aux=("titans_mac", "predictor.auxiliary_horizons"),
+    titans_mac_macro=("titans_mac", "predictor.presence_modulation"),
+    titans_mac_no_charts=("titans_mac", "predictor.removed_modalities"),
+    titans_mac_no_macro=("titans_mac", "predictor.removed_modalities"),
+    titans_mac_no_news=("titans_mac", "predictor.removed_modalities"),
+    titans_mac_no_fundamentals=("titans_mac", "predictor.removed_modalities"),
     titans_mac_ema=("titans_mac", "recipe.weight_average"),
     titans_mac_sf=("titans_mac", "recipe.schedule_free"),
     titans_mac_mdrop=("titans_mac", "predictor.modality_dropout"),
@@ -75,7 +80,7 @@ def test_the_campaign_keeps_every_previous_model_and_adds_one_tier_per_variant(d
     for name in added:
         tier = "v_" + name.removeprefix("titans_mac_")
         assert document["models"][name]["tier"] == tier and tier in document["tiers"]
-    assert len(campaign.plan(document, "mars_titan")) == 48 * 19 * 3
+    assert len(campaign.plan(document, "mars_titan")) == 53 * 19 * 3
 
 
 def test_every_runner_selects_by_the_session_rank_ic_and_the_control_by_the_protocol(document):
@@ -121,3 +126,18 @@ def test_the_memory_variants_the_fused_write_does_not_cover_use_autograd(documen
         assert spec["predictor.memory_inner_gradient"] == "autograd_v1"
     for name in ("titans_mac", "titans_mac_film", "titans_mac_timescales", "titans_mac_l2"):
         assert specification(document, name)["predictor.memory_inner_gradient"] == "fused_v1"
+
+
+def test_the_modality_contrasts_remove_one_modality_each_and_condition_on_the_macro(document):
+    names = ("charts", "macro", "news", "fundamentals")
+    removed = {
+        name: specification(document, f"titans_mac_no_{name}")["predictor.removed_modalities"]
+        for name in names
+    }
+    assert removed == {name: dict(names=[name]) for name in names}
+    macro = specification(document, "titans_mac_macro")
+    assert macro["predictor.presence_modulation"] == "macro_film_v1"
+    # El control los recibe todos y no modula: ninguna de las dos opciones aparece en él.
+    control = specification(document, "titans_mac")
+    assert "predictor.removed_modalities" not in control
+    assert "predictor.presence_modulation" not in control

@@ -263,3 +263,40 @@ def test_a_pinned_state_needs_its_digest_and_an_intact_file(tmp_path):
     with pytest.raises(ValueError, match="estado fijado íntegro"):
         engine.choose_pinned(tmp_path, expected_identity=IDENTITY, expected_sha256=digest)
     assert json.loads((tmp_path / "latest.json").read_text())["best"] is None
+
+
+def test_a_run_that_died_before_its_report_is_removed_and_one_with_its_report_is_kept(tmp_path):
+    resumable = module().resumable_run
+    assert resumable(tmp_path / "missing") is False and not (tmp_path / "missing").exists()
+    empty = tmp_path / "empty"
+    empty.mkdir()
+    assert resumable(empty) is False and not empty.exists()
+    # Un estado a medio escribir tampoco se puede continuar: sin informe no hay referencia a él.
+    dead = tmp_path / "dead"
+    (dead / "checkpoints").mkdir(parents=True)
+    (dead / "checkpoints" / "partial.pt").write_bytes(b"medio estado")
+    assert resumable(dead) is False and not dead.exists()
+    alive = tmp_path / "alive"
+    (alive / "checkpoints").mkdir(parents=True)
+    (alive / "run.json").write_text("{}")
+    assert resumable(alive) is True
+    assert (alive / "run.json").read_text() == "{}" and (alive / "checkpoints").is_dir()
+
+
+def test_a_link_or_an_irregular_report_is_left_for_the_run_to_reject(tmp_path):
+    resumable = module().resumable_run
+    target = tmp_path / "target"
+    target.mkdir()
+    link = tmp_path / "link"
+    link.symlink_to(target, target_is_directory=True)
+    assert resumable(link) is True and link.is_symlink() and target.is_dir()
+    hanging = tmp_path / "hanging"
+    hanging.symlink_to(tmp_path / "nowhere")
+    assert resumable(hanging) is False and hanging.is_symlink()
+    broken = tmp_path / "broken"
+    broken.mkdir()
+    (broken / "run.json").symlink_to(tmp_path / "nowhere")
+    assert resumable(broken) is True and (broken / "run.json").is_symlink()
+    regular = tmp_path / "file"
+    regular.write_text("no es una carpeta")
+    assert resumable(regular) is True and regular.read_text() == "no es una carpeta"

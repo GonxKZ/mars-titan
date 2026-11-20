@@ -62,7 +62,12 @@ from mars_titan.models.titans.financial_inputs import FINAL_TEST_US
 from mars_titan.models.titans.local_control import MACProjectionConfig
 
 from .candidate_walk_forward import check_view_rows
-from .checkpoints import StopRequest, load_training_state, release_recovery_states
+from .checkpoints import (
+    StopRequest,
+    load_training_state,
+    release_recovery_states,
+    resumable_run,
+)
 from .common_epoch import (
     VERSIONED,
     EpochValidation,
@@ -707,7 +712,7 @@ def run_titans_window(
     started = time.perf_counter()
     attach_traces(trainer, output / "traces", traces, trace_family)
     try:
-        fit = trainer.run(resume=(output / "fit").exists(), stop=stop, joint_epoch=joint_epoch)
+        fit = trainer.run(resume=resumable_run(output / "fit"), stop=stop, joint_epoch=joint_epoch)
         if fit["status"] == AWAIT:
             report.update(status=AWAIT, individual_stop_epoch=fit["individual_stop_epoch"])
             return report
