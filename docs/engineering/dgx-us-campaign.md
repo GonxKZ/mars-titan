@@ -248,6 +248,37 @@ grafo del tramo y con la repetición por bloques.
   a 55–65 s): el límite está en el hilo de Python de cada trabajo, no en la concurrencia de
   kernels. Sigue activo para la búsqueda mientras se mide con más trabajos.
 
+## Lanzamiento de la campaña completa (20 de noviembre de 2026)
+
+- **Qué corre.** `mars-titan-campana.service` en `mars-titan.slice`, desde el `git worktree`
+  fijo en c1ecc639 con la declaración 393fc98e: 1254 trabajos, orden `seed_tier`, plazo
+  2026-12-02T18:00Z y permiso expreso registrado con nota. La comprobación inicial de la cola
+  arrancó durante unos 6 s cada una de las 11 arquitecturas con ajuste propio, con datos reales y
+  la copia empaquetada verificada, y todas quedaron «bien». Los lectores se comprueban al
+  terminar su padre.
+- **Reparto de los 64 GB.** Slice de 40 GiB: preparación 15 GiB y campaña 25 GiB. A eso se suman
+  3 trabajos × 8 GiB de CUDA. La campaña no declara `MemoryHigh`.
+- **`MemoryHigh` por debajo de `MemoryMax` estrangula.** La preparación tenía `MemoryHigh=13G` y
+  un conjunto de trabajo anónimo de 13,96 GiB, sin caché que liberar. El núcleo la detenía en cada
+  asignación: `memory.pressure` *full* del 83,9 % y 1,2 millones de eventos `high`. La copia de
+  evaluación de 2016 llevaba 1,47 GB en 28 min, cuando la de 2015 tardó 4 min. Con `MemoryHigh`
+  igual a `MemoryMax` (el mismo presupuesto) la presión bajó al 12,8 % y escribió 670 MB en
+  2,5 min. Regla: en unidades con memoria anónima, el presupuesto es `MemoryMax`; un `MemoryHigh`
+  menor no ahorra memoria, solo frena.
+- **Primeras medidas con 3 trabajos.**
+  - Uso de GPU entre el 59 % y el 96 % (media de unos 82 %).
+  - CPU ociosa al 60 % y espera de E/S del 6 %.
+  - 7,1 GiB de memoria anónima entre los tres trabajos. El resto del cgroup es caché de página
+    de las copias empaquetadas.
+  - Cada intento de la cola guarda `resources.peak_rss_bytes`. Los 9,8 GiB de pico de un ajuste
+    de Titans-MAC incluyen las páginas mapeadas de la copia.
+- **Costes de la búsqueda por trabajo, origen 2005, con 3 trabajos a la vez.**
+  - Titans-MAC: 9,0 min de media entre 2005 y 2007.
+  - Redes de áreas, grupos de activos y atención entre activos: de 3,1 a 4,3 min.
+  - Controles con memoria desactivada o congelada: de 2,7 a 2,8 min.
+- **Cuando termine la preparación**, sus 15 GiB pasan a la campaña: 4 trabajos con 32 GiB de
+  anfitrión y 4 × 8 GiB de CUDA, siempre que la memoria anónima de los orígenes tardíos lo permita.
+
 ## Agente cognitivo con herramientas
 
 `src/mars_titan/evaluation/cognitive_agent.py` lleva a la evaluación la cadena de Karpathy
