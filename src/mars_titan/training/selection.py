@@ -11,6 +11,13 @@ presupuesto, conserva el estado de cada época evaluada y espera (`AWAIT`) a que
 semillas fije la época común con `common_epoch`. Las semillas aplican así las mismas
 actualizaciones y emiten la misma época. El MAE de sesión sigue eligiendo el mejor estado del
 propio ajuste, que solo se informa como sensibilidad.
+
+La métrica de selección es el MAE de sesión del protocolo o, como enmienda que declara la
+campaña, el IC de rangos por sesión (`session_rank_ic`). Con errores gaussianos, predecir con
+correlación ρ reduce el MAE frente a la predicción cero en un factor √(1 − ρ²) ≈ 1 − ρ²/2: con
+ρ = 0,04 son ocho diezmilésimas, así que una mejora mínima de MAE no distingue estados con un
+IC muy distinto. Con el IC de rangos la selección minimiza la pérdida (1 − IC) / 2 de la
+validación, que está entre 0 y 1.
 """
 
 import math
@@ -33,25 +40,54 @@ CHRONOLOGICAL_MODES = (*STOPPING_MODES, COMMON_EPOCH)
 # ocultaría si el modelo ajustado aprende algo. Solo lo admite el ajuste de Titans-MAC.
 INITIAL_STATE = "initial_state"
 INITIAL_REPORTED = "reported"
+# Métricas de selección. El MAE de sesión es la del protocolo. El IC de rangos por sesión es
+# la enmienda que puede declarar una campaña.
+SESSION_MAE, SESSION_RANK_IC = "session_mae", "session_rank_ic"
+METRICS = (SESSION_MAE, SESSION_RANK_IC)
+# Definiciones que entran en la identidad de la receta que elige con cada métrica.
+MAE_DEFINITION = "SessionErrors.session_mae_on_issued_predictions"
+RANK_IC_DEFINITION = (
+    "one_minus_mean_session_spearman_of_issued_predictions_and_targets_halved_"
+    "over_sessions_with_min_assets_and_two_non_constant_sides_else_one_half"
+)
+MAX_MIN_ASSETS = 100_000
 # Estas son las decisiones posibles tras una validación completa.
 CONTINUE, FINISH, AWAIT = "continue", "finish", "awaiting_joint_stop"
 
 
 def validate_selection(options, *, epochs=None, modes=STOPPING_MODES, initial_reported=False):
     optional = {"minimum_epochs", "stopping", *((INITIAL_STATE,) if initial_reported else ())}
+    ranked = isinstance(options, dict) and options.get("metric") == SESSION_RANK_IC
+    required = {"metric", "patience", "min_delta", *(("min_assets",) if ranked else ())}
     if (
         not isinstance(options, dict)
-        or not {"metric", "patience", "min_delta"}
-        <= set(options)
-        <= {"metric", "patience", "min_delta", *optional}
-        or options["metric"] != "session_mae"
+        or not required <= set(options) <= {*required, *optional}
+        or options["metric"] not in METRICS
         or type(options["patience"]) is not int
         or not 1 <= options["patience"] <= 1000
         or type(options["min_delta"]) not in (int, float)
         or not math.isfinite(options["min_delta"])
         or options["min_delta"] < 0
     ):
-        raise ValueError("La selección necesita MAE por sesión, paciencia y mejora mínima válidos")
+        raise ValueError(
+            "La selección necesita IC de rangos por sesión con sus activos mínimos, paciencia y "
+            "mejora mínima válidos"
+            if ranked
+            else "La selección necesita MAE por sesión, paciencia y mejora mínima válidos"
+        )
+    if ranked and (
+        type(options["min_assets"]) is not int
+        or not 3 <= options["min_assets"] <= MAX_MIN_ASSETS
+        or options["min_delta"] >= 1
+    ):
+        raise ValueError(
+            "El IC de rangos por sesión declara entre 3 y 100.000 activos mínimos y una mejora "
+            "mínima menor que su pérdida máxima"
+        )
+    if ranked and options.get("stopping") == COMMON_EPOCH:
+        raise ValueError(
+            "La época común puntúa con su propio IC y conserva el MAE por sesión como métrica"
+        )
     if options.get(INITIAL_STATE, INITIAL_REPORTED) != INITIAL_REPORTED:
         raise ValueError("El estado inicial solo se declara como medido y no emitido")
     if "stopping" in options and options["stopping"] not in modes:
@@ -67,6 +103,31 @@ def validate_selection(options, *, epochs=None, modes=STOPPING_MODES, initial_re
         raise ValueError(
             "El mínimo de épocas debe dejar evaluaciones posteriores en el presupuesto"
         )
+
+
+def metric_definition(options):
+    """Definición de la métrica de selección que entra en la identidad de una receta."""
+    return RANK_IC_DEFINITION if options["metric"] == SESSION_RANK_IC else MAE_DEFINITION
+
+
+def selection_score(options, metrics):
+    """Puntuación que la selección minimiza con la métrica declarada.
+
+    Con `session_mae` es el MAE por sesión de la validación. Con `session_rank_ic` es la
+    pérdida (1 − IC) / 2 del IC de rangos medio de las sesiones con correlación definida, entre
+    0 y 1. Una validación sin ninguna sesión definida no ordena los activos y recibe la pérdida
+    1/2 de un IC nulo, la misma que una predicción constante.
+    """
+    if options["metric"] != SESSION_RANK_IC:
+        return metrics[SESSION_MAE]
+    if SESSION_RANK_IC not in metrics:
+        raise ValueError("La validación no se puntuó con el IC de rangos por sesión")
+    value = metrics[SESSION_RANK_IC]
+    if value is None:
+        return 0.5
+    if type(value) is not float or not math.isfinite(value) or not -1 <= value <= 1:
+        raise ValueError("El IC de rangos por sesión debe ser un número entre −1 y 1")
+    return (1.0 - value) / 2.0
 
 
 def advance_selection(previous, score, epoch, options):
@@ -233,7 +294,9 @@ def campaign_rule(protocol_rule, override, *, modes=STOPPING_MODES, initial_repo
     """Devuelve la regla de un ajuste, que es la del protocolo o la parada temprana de la campaña.
 
     La campaña puede cambiar el modo, la paciencia, la mejora mínima y las épocas mínima y
-    máxima, nunca la métrica. Sin `override` se devuelve la del protocolo. `modes` son los
+    máxima. La métrica solo cambia en un sentido: una campaña puede declarar el IC de rangos por
+    sesión en lugar del MAE del protocolo, una enmienda que queda escrita en la regla y en la
+    identidad de cada ajuste. Sin `override` se devuelve la del protocolo. `modes` son los
     modos que admite el entrenador que la aplica e `initial_reported` indica si admite un
     estado inicial medido y no emitido.
     """
@@ -241,12 +304,18 @@ def campaign_rule(protocol_rule, override, *, modes=STOPPING_MODES, initial_repo
         return dict(protocol_rule)
     if (
         not isinstance(override, dict)
-        or override.get("metric") != protocol_rule["metric"]
+        or override.get("metric") not in (protocol_rule["metric"], SESSION_RANK_IC)
+        or (
+            protocol_rule["metric"] == SESSION_RANK_IC
+            and override.get("min_assets") != protocol_rule.get("min_assets")
+        )
         or "max_epochs" not in override
         or type(override["max_epochs"]) is not int
         or not 1 <= override["max_epochs"] <= 1000
     ):
-        raise ValueError("La parada de la campaña conserva la métrica y declara su máximo")
+        raise ValueError(
+            "La parada de la campaña conserva la métrica, o declara el IC de rangos, y su máximo"
+        )
     validate_selection(
         {key: value for key, value in override.items() if key != "max_epochs"},
         epochs=override["max_epochs"],

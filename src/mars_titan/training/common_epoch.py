@@ -23,7 +23,7 @@ from mars_titan.evaluation import scale_diagnostics as sd
 from mars_titan.evaluation.forecast_panel import ForecastPanel
 
 from .checkpoints import choose_pinned
-from .selection import COMMON_EPOCH
+from .selection import COMMON_EPOCH, SESSION_RANK_IC, selection_score
 
 # Columnas de la predicción puntual de cada época, el contrato mínimo de `ForecastPanel`.
 POINT_COLUMNS = ("sample_id", "market", "prediction_at", "target", "prediction")
@@ -93,11 +93,13 @@ class EpochValidation:
     necesitan las salidas que combinan semillas.
     """
 
-    def __init__(self, rows, tables, *, min_assets, directory=None):
+    def __init__(self, rows, tables, *, min_assets, directory=None, rank=False):
         if type(min_assets) is not int or min_assets < 3:
             raise ValueError("El IC por sesión necesita al menos tres activos")
+        if type(rank) is not bool or (rank and directory is not None):
+            raise ValueError("El IC de rangos de la selección no guarda predicciones por época")
         self._rows, self._tables, self.min_assets = rows, tables, min_assets
-        self.directory = directory
+        self.directory, self.rank = directory, rank
 
     def rows(self):
         return self._rows()
@@ -106,6 +108,9 @@ class EpochValidation:
         """Campos de la validación de `epoch` que añade la época común."""
         table = pa.concat_tables(self._tables(rows, metrics))
         panel = ForecastPanel.from_arrow(table)
+        if self.rank:
+            # Con el IC de rangos como métrica de selección solo se guarda su serie.
+            return rank_record(panel, self.min_assets)
         values, defined = sd.session_correlations(
             panel, panel.prediction, min_assets=self.min_assets
         )
@@ -125,6 +130,37 @@ class EpochValidation:
                 path=f"{self.directory.name}/{path.name}", sha256=sha256(path), rows=written
             )
         return record
+
+
+def rank_record(panel, min_assets):
+    """Campos de una validación puntuada con el IC de rangos por sesión.
+
+    `session_rank_ic` es la media de las sesiones con correlación definida, o None si ninguna
+    la tiene. La serie por sesión permite repetir después cualquier regla de selección.
+    """
+    values, defined = sd.session_correlations(
+        panel, panel.prediction, rank=True, min_assets=min_assets
+    )
+    return dict(
+        session_rank_ic=float(values[defined].mean()) if defined.any() else None,
+        session_rank_ic_values=values.tolist(),
+        session_rank_ic_defined=defined.tolist(),
+        session_time=panel.session_time.tolist(),
+        cohort_sha256=panel.cohort_sha256,
+    )
+
+
+def selected_score(rule, metrics, tables):
+    """Puntuación de selección de un tramo de validación ya emitido y conciliado con la vista.
+
+    Es la que la ventana compara con la del estado elegido. Con el IC de rangos se vuelve a
+    calcular con las mismas tablas que se confirman, por el mismo camino que en el ajuste.
+    """
+    if rule["metric"] != SESSION_RANK_IC:
+        return selection_score(rule, metrics)
+    panel = ForecastPanel.from_arrow(pa.concat_tables(tables))
+    record = rank_record(panel, rule["min_assets"])
+    return selection_score(rule, {SESSION_RANK_IC: record[SESSION_RANK_IC]})
 
 
 def chosen_state(checkpoints, identity, report, history, selection, epoch):

@@ -36,10 +36,13 @@ def restore_flags(monkeypatch):
         torch.backends.cudnn.deterministic,
         torch.backends.cudnn.benchmark,
     )
+    fill = torch.utils.deterministic.fill_uninitialized_memory
     torch.use_deterministic_algorithms(False)
+    torch.utils.deterministic.fill_uninitialized_memory = True
     torch.backends.cudnn.deterministic, torch.backends.cudnn.benchmark = False, False
     monkeypatch.setenv(determinism.WORKSPACE_VARIABLE, ":4096:8")
     yield
+    torch.utils.deterministic.fill_uninitialized_memory = fill
     torch.use_deterministic_algorithms(flags[0], warn_only=flags[1])
     torch.backends.cudnn.deterministic, torch.backends.cudnn.benchmark = flags[2:]
 
@@ -250,3 +253,31 @@ def test_the_candidate_run_declares_and_checks_its_determinism(shared, tmp_path)
     torch.backends.cudnn.deterministic = False
     with pytest.raises(ValueError, match="configuración numérica"):
         fixed._check_runtime()
+
+
+UNFILLED = determinism.TORCH_DETERMINISTIC_UNFILLED
+
+
+def test_the_second_version_skips_the_fill_of_uninitialized_memory():
+    assert torch.utils.deterministic.fill_uninitialized_memory
+    filled = determinism.apply_determinism(POLICY)
+    # La versión 1 no toca el relleno ni lo nombra en su identidad.
+    assert torch.utils.deterministic.fill_uninitialized_memory
+    assert "fill_uninitialized_memory" not in filled
+    identity = determinism.apply_determinism(UNFILLED)
+    assert not torch.utils.deterministic.fill_uninitialized_memory
+    assert identity == dict(filled, policy=UNFILLED, fill_uninitialized_memory=False)
+    assert determinism.determinism_identity(UNFILLED) == identity
+    # Sin relleno, el proceso sigue cumpliendo la versión 1, que no lo exige.
+    assert determinism.determinism_identity(POLICY) == filled
+    torch.utils.deterministic.fill_uninitialized_memory = True
+    with pytest.raises(ValueError, match="determinismo declarado"):
+        determinism.determinism_identity(UNFILLED)
+
+
+def test_the_second_version_enters_every_recipe_identity():
+    assert determinism.POLICIES == (POLICY, UNFILLED) and determinism.valid_determinism(UNFILLED)
+    for recipe in RECIPES:
+        declared = recipe(determinism=UNFILLED).identity()
+        assert declared["determinism"] == UNFILLED
+        assert {k: v for k, v in declared.items() if k != "determinism"} == recipe().identity()
