@@ -217,6 +217,11 @@ vista una sola vez para la madurez, la deja en 22,6 s con los mismos resultados:
 abstenciones idénticos bit a bit a `online_mixture` y la predicción combinada con una
 diferencia de redondeo de BLAS por debajo de 10⁻¹⁴.
 
+El informe añade el cómputo registrado del núcleo y de cada herramienta (`costs`: segundos de
+pared de todos los intentos de sus trabajos en la cola de la campaña, sin contar en un lector el
+ajuste de su padre) y, con Shapley, la mejora de IC de cada herramienta por hora de cómputo
+propia: la pregunta de Karpathy de si un núcleo pequeño con herramientas compensa su coste.
+
 ### Multimodalidad: juego de modalidades
 
 Las modalidades que pueden faltar en la edición con máscaras son noticias y fundamentales;

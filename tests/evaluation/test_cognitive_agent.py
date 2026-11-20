@@ -579,3 +579,28 @@ def test_an_ablation_is_read_only_with_its_receipt_and_the_rows_of_its_job(tmp_p
     atomic_json(run / "run.json", dict(kind="titans_walk_forward_window", changed=True))
     with pytest.raises(ValueError, match="no corresponde"):
         load()
+
+
+def test_tool_costs_sum_every_attempt_and_give_the_gain_per_hour(tmp_path):
+    document = declaration(shapley=True, seeds=[42, 43])
+    queue = tmp_path / "queue"
+    queue.mkdir()
+    durations = dict(core=(1800.0, 600.0), strong=(3600.0,), noise=(900.0, 900.0))
+    for model, attempts in durations.items():
+        for seed in (42, 43):
+            atomic_json(
+                queue / f"{model}--2005--seed-{seed}.json",
+                dict(status="completed", attempts=[dict(seconds=s) for s in attempts]),
+            )
+    means = {"shapley(strong_tool)": dict(mean=0.02), "shapley(noise_tool)": dict(mean=None)}
+    costs = agent.tool_costs(document, tmp_path, means)
+    assert costs["core"]["seconds"] == 2 * 2400.0 and costs["core"]["hours"] == 4800.0 / 3600
+    assert costs["strong_tool"]["models"] == {"strong": 7200.0}
+    assert costs["strong_tool"]["shapley_per_hour"] == pytest.approx(0.02 / 2.0)
+    assert costs["noise_tool"]["shapley_per_hour"] is None
+    atomic_json(queue / "noise--2005--seed-43.json", dict(status="running", attempts=[]))
+    with pytest.raises(ValueError, match="no ha terminado"):
+        agent.tool_costs(document, tmp_path, means)
+    (queue / "noise--2005--seed-43.json").unlink()
+    with pytest.raises(ValueError, match="Falta el registro"):
+        agent.tool_costs(document, tmp_path, means)
