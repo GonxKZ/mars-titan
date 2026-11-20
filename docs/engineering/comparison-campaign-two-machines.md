@@ -328,6 +328,12 @@ El reparto mantiene juntas las comparaciones neuronales de cada año y semilla. 
 
 ## Reunir los resultados
 
+PC1 puede activar `MARS_TITAN_COMPARISON_PREDICTION_STORAGE=compact_v1` al arrancar la cola. La opción predeterminada es `default`. El perfil compacto se aplica a los Parquet de predicciones de validación, calibración y evaluación que escriba cada trabajo asignado a `references`. El intento registra `prediction_storage` cuando se activa. Una reanudación puede conservar particiones emitidas con el formato anterior.
+
+El escritor usa Zstandard de nivel 9 y `BYTE_STREAM_SPLIT` en las columnas flotantes. En la regla de reversión, que repite muchas puntuaciones de rango, solo aplica esa codificación al objetivo y conserva el diccionario de las puntuaciones. Las columnas, los grupos de filas y el orden de las predicciones se mantienen en ambos formatos.
+
+Las seis tablas de validación de Titans, GRU, M2, la regla de reversión, LightGBM y Ridge ocuparon 27.626.501 bytes con la escritura predeterminada y 18.240.069 con el perfil compacto. El contenido Arrow descomprimido coincidió bit a bit y el panel pudo leer las seis tablas. En tres escrituras por perfil con un hilo de CPU, la mediana en Ridge pasó de 151 a 212 ms y la de GRU de 150 a 112 ms. Son tiempos del escritor con los lotes ya en memoria e incluyen la sincronización en disco.
+
 Al terminar, o con la cola pausada, las salidas de cada equipo se guardan en un ZIP. La exportación incluye las predicciones de validación, calibración y evaluación con sus objetivos, la declaración, la identidad de las cohortes, los informes de ajuste, las curvas disponibles y los estados de todos los trabajos. Excluye pesos, checkpoints, estados de optimizador y datos de entrada.
 
 ```bash
