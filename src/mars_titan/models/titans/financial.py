@@ -163,8 +163,6 @@ FUSION_DROPOUTS = (0.1, 0.2)
 # claves de las máscaras.
 MODALITY_DROPOUT = "modality_dropout_v1"
 FUSION_DROPOUT = "fusion_dropout_v1"
-# Transformación del knockout de modalidades en evaluación (modo de análisis, sin identidad).
-MODALITY_KNOCKOUT = "modality_knockout_v1"
 # Las máscaras dependen de la semilla del predictor, de la época del ajuste y de la huella del
 # lote, no del flujo del generador global: la pasada sin grafo, su repetición con grafo de la
 # acumulación y una reanudación ven exactamente las mismas máscaras.
@@ -1002,8 +1000,6 @@ class FinancialPredictor(nn.Module):
         self.config = config
         # Época del ajuste en la clave de las máscaras del dropout declarado.
         self._fit_epoch = 0
-        # Modalidades retiradas por `modality_knockout` en evaluación, o None.
-        self._knockout = None
         self.masked = masked_inputs(config.inputs.input_policy)
         with torch.device("cpu"), torch.random.fork_rng(devices=[]):
             torch.random.default_generator.manual_seed(config.seed)
@@ -1655,35 +1651,6 @@ class FinancialPredictor(nn.Module):
         self._validate_state(state)
         return self._usage(state)
 
-    @contextmanager
-    def modality_knockout(self, modalities):
-        """Retirar en evaluación las modalidades dadas de cada lote, por la ruta de una ausencia.
-
-        Modo de análisis para medir cuánto aporta cada modalidad (noticias, gráficos,
-        fundamentales, macro) a las predicciones de un modelo ya ajustado: bit de presencia
-        falso y entradas a cero, como una ausencia real del corpus, en todas las filas. No cambia
-        la identidad ni los pesos, exige el predictor en evaluación y la política con máscaras, y
-        no retira el precio. Al salir vuelve el estado anterior.
-        """
-        names = tuple(modalities)
-        retirable = set(MODALITIES) - {"prices"}
-        if (
-            self.training
-            or not masked_inputs(self.config.inputs.input_policy)
-            or not names
-            or len(set(names)) != len(names)
-            or not set(names) <= retirable
-        ):
-            raise ValueError(
-                "El knockout retira modalidades distintas del precio, sin repetir, con el "
-                "predictor en evaluación y la política con máscaras"
-            )
-        previous, self._knockout = self._knockout, tuple(sorted(names, key=MODALITIES.index))
-        try:
-            yield
-        finally:
-            self._knockout = previous
-
     def set_fit_epoch(self, epoch):
         """Fijar la época del ajuste que entra en la clave de las máscaras del dropout declarado.
 
@@ -2082,12 +2049,6 @@ class FinancialPredictor(nn.Module):
                 )
             keep[:, MODALITIES.index("prices")] = True
             batch = batch.with_absences(keep, MODALITY_DROPOUT)
-        if self._knockout is not None:
-            if self.training:
-                raise ValueError("El knockout de modalidades solo se aplica en evaluación")
-            keep = torch.ones_like(batch.presence)
-            keep[:, [MODALITIES.index(name) for name in self._knockout]] = False
-            batch = batch.with_absences(keep, f"{MODALITY_KNOCKOUT}:{','.join(self._knockout)}")
         received = batch
         if self.config.session_rank_inputs is not None:
             # Rangos entre las filas del bloque, que son todas las de su instante y mercado.
