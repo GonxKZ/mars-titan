@@ -1848,7 +1848,8 @@ def test_execute_job_gives_each_runner_its_window_rule_and_parent(tmp_path, monk
     campaign.execute_job(document, place, jobs["mars_titan_m1/2019/seed-42"])
     name, arguments, options, stopped = calls.pop()
     assert name == "reader" and not stopped
-    assert arguments == (view, place.output("titans_mac/2019/seed-42"), campaign.ROOT / READER)
+    parent = place.output("titans_mac/2019/seed-42").resolve()
+    assert arguments == (view, parent, campaign.ROOT / READER)
     assert options["components"] == dict(episodic_bank="m1") and options["search_case"] == "lr1e-3"
     assert options["stopping"] == dict(RULE) and options["seed"] == 42
 
@@ -1967,3 +1968,50 @@ def test_declared_learning_traces_reach_every_neural_runner(tmp_path, monkeypatc
         campaign.execute_job(document, place, jobs["mars_titan_m1/2019/seed-42"], device="cpu")
         assert calls == [("fit", wanted), ("reader", wanted)]
         calls.clear()
+
+
+def test_runners_read_an_inherited_parent_through_its_real_path(tmp_path, monkeypatch):
+    """La herencia enlaza los padres terminados del origen, que el lector verifica sin enlaces.
+
+    El lector y la continuación encadenada reciben la ruta real, la misma que anota la petición
+    de un lector pausado en el origen.
+    """
+    from mars_titan.data.cohort_files import safe_destination
+    from mars_titan.training import mars_titan_walk_forward, titans_walk_forward
+
+    calls = []
+
+    def recorder(name):
+        def call(*arguments, **options):
+            calls.append((name, arguments, options))
+            return dict(status="completed")
+
+        return call
+
+    monkeypatch.setattr(titans_walk_forward, "view_protocol", lambda view: dict(view=str(view)))
+    monkeypatch.setattr(titans_walk_forward, "run_titans_window", recorder("fit"))
+    monkeypatch.setattr(mars_titan_walk_forward, "run_mars_titan_window", recorder("reader"))
+    document = declaration()
+    document["models"]["titans_mac_chain"] = dict(
+        document["models"]["titans_mac"], continuation=campaign.CONTINUATION
+    )
+    document, place = campaign.checked_declaration(document), layout(tmp_path / "continued")
+    for year in (2019, 2023):
+        place.cohort(year).mkdir(parents=True)
+        (place.cohort(year) / "manifest.json").write_text("{}")
+    jobs = {
+        job.key: job for machine in campaign.MACHINES for job in campaign.plan(document, machine)
+    }
+    source = tmp_path / "original"
+    for key in ("titans_mac/2019/seed-42", "titans_mac_chain/2019/seed-42"):
+        (source / key).mkdir(parents=True)
+        place.output(key).parent.mkdir(parents=True, exist_ok=True)
+        place.output(key).symlink_to(source / key, target_is_directory=True)
+    campaign.execute_job(document, place, jobs["mars_titan_m1/2019/seed-42"], device="cpu")
+    campaign.execute_job(document, place, jobs["titans_mac_chain/2023/seed-42"], device="cpu")
+    (reader, arguments, _), (fit, _, options) = calls
+    assert (reader, fit) == ("reader", "fit")
+    assert arguments[1] == (source / "titans_mac/2019/seed-42").resolve()
+    assert options["initial"] == (source / "titans_mac_chain/2019/seed-42").resolve()
+    for folder in (arguments[1], options["initial"]):
+        safe_destination(folder / "run.json")

@@ -649,6 +649,17 @@ def job_state(layout, job, records=None):
     return PENDING if status == RUNNING else status
 
 
+def _parent_output(layout, job):
+    """Carpeta del padre terminado de un lector o de una continuación, por su ruta real.
+
+    Una continuación en otro estado enlaza los resultados terminados del origen. El lector y la
+    continuación verifican los archivos del padre sin admitir enlaces intermedios y anotan su
+    ruta real en la petición. Con la ruta resuelta, un lector pausado en el origen reanuda en la
+    continuación con la misma petición, y uno nuevo lee el padre que se comprobó al heredarlo.
+    """
+    return layout.output(job.needs).resolve()
+
+
 def _checked_traces(traces):
     """Trazas de aprendizaje de #448 para todos los ajustes y lectores, o ninguna.
 
@@ -737,7 +748,7 @@ def execute_job(declaration, layout, job, *, device="cuda:0", root=ROOT, preflig
                 # Continuación encadenada: parte del estado elegido del origen anterior, que
                 # puede volver a elegir si ninguna época lo mejora. Solo el primer origen
                 # registra su estado inicial sin emitirlo.
-                initial = layout.output(job.needs)
+                initial = _parent_output(layout, job)
                 rule = {key: value for key, value in rule.items() if key != "initial_state"}
             return run_titans_window(
                 view,
@@ -758,7 +769,7 @@ def execute_job(declaration, layout, job, *, device="cuda:0", root=ROOT, preflig
 
         return run_mars_titan_window(
             view,
-            layout.output(job.needs),
+            _parent_output(layout, job),
             recipe,
             components=dict(model["components"]),
             seed=job.seed,
