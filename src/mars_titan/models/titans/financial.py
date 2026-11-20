@@ -2,7 +2,7 @@
 
 import hashlib
 import math
-from contextlib import nullcontext
+from contextlib import contextmanager, nullcontext
 from dataclasses import asdict, dataclass, fields, replace
 
 import torch
@@ -14,6 +14,7 @@ from mars_titan.data.price_windows import PRICE_WINDOW_CHANNELS, gate_price_wind
 from mars_titan.data.sector_map import SectorMap
 from mars_titan.models.baselines.multimodal import (
     HEADS,
+    MODALITIES,
     PRESENCE_FUSION,
     SCALAR_HEAD,
     STRICT_FUSION,
@@ -152,6 +153,20 @@ from .state import (
 )
 
 VARIANTS = ("transformer_direct", "mac_disabled", "mac_frozen", "mac_online")
+# Probabilidad máxima de los dropout declarados: por encima, la mitad de las activaciones o de
+# las modalidades desaparecería en cada paso y el ajuste dejaría de parecerse a la emisión.
+MAX_DROPOUT = 0.5
+# Probabilidades del dropout de fusión admitidas por el diseño experimental de las referencias
+# (validate_architecture en baselines/multimodal.py).
+FUSION_DROPOUTS = (0.1, 0.2)
+# Nombre de la transformación de ModDrop en la huella del lote derivado y propósitos de las
+# claves de las máscaras.
+MODALITY_DROPOUT = "modality_dropout_v1"
+FUSION_DROPOUT = "fusion_dropout_v1"
+# Las máscaras dependen de la semilla del predictor, de la época del ajuste y de la huella del
+# lote, no del flujo del generador global: la pasada sin grafo, su repetición con grafo de la
+# acumulación y una reanudación ven exactamente las mismas máscaras.
+DROPOUT_MASKS = "keyed_by_seed_fit_epoch_and_batch_digest_v1"
 # Codificadores de precios de las referencias que admite el mismo predictor (#836). Sin
 # declarar ninguno se construye el Transformer compacto de siempre.
 REFERENCE_ENCODERS = ("rnn", "lstm", "gru", "dlinear")
@@ -256,10 +271,35 @@ class FinancialConfig:
     # Derivada interna de la escritura de MAC. autograd_v1 conserva la identidad. analytic_v1
     # usa las derivadas cerradas de associative_gradient.py con el mismo metagradiente.
     memory_inner_gradient: str = AUTOGRAD_INNER_GRADIENT
+    # Regularización declarada de la DGX. `fusion_dropout` es la probabilidad del dropout de
+    # las capas de la fusión multimodal (el nn.Dropout que la referencia ya construye).
+    # `modality_dropout` retira en ajuste cada modalidad presente distinta del precio con esa
+    # probabilidad, fila a fila y de forma independiente, por la misma ruta que una ausencia
+    # real (bit de presencia falso y entradas a cero), como ModDrop (Neverova et al., 2015).
+    # Las dos usan el generador del dispositivo, que guarda el checkpoint, y no actúan al
+    # validar ni al emitir. Sin declararlas, la identidad y el cálculo no cambian.
+    fusion_dropout: float | None = None
+    modality_dropout: float | None = None
 
     def __post_init__(self):
         if self.memory_inner_gradient not in INNER_GRADIENTS:
-            raise ValueError("memory_inner_gradient debe ser autograd_v1 o analytic_v1")
+            raise ValueError("memory_inner_gradient debe ser autograd_v1, analytic_v1 o fused_v1")
+        # La fusión comparte el diseño experimental de las referencias: 0,1 o 0,2.
+        if self.fusion_dropout is not None and (
+            isinstance(self.fusion_dropout, bool)
+            or not isinstance(self.fusion_dropout, (int, float))
+            or self.fusion_dropout not in FUSION_DROPOUTS
+        ):
+            raise ValueError(f"fusion_dropout debe ser uno de {FUSION_DROPOUTS}")
+        if self.modality_dropout is not None and (
+            isinstance(self.modality_dropout, bool)
+            or not isinstance(self.modality_dropout, (int, float))
+            or not math.isfinite(self.modality_dropout)
+            or not 0.0 < self.modality_dropout <= MAX_DROPOUT
+        ):
+            raise ValueError(f"modality_dropout debe pertenecer a (0, {MAX_DROPOUT}]")
+        if self.modality_dropout is not None and not masked_inputs(self.inputs.input_policy):
+            raise ValueError("modality_dropout necesita la política con máscaras y su presencia")
         self._check_input_contract()
         self._check_memory_gates()
         self._check_memory_multiscale()
@@ -756,6 +796,19 @@ class FinancialConfig:
         # Igual que gate_bias: solo aparece si se declara y figura en las cuatro variantes.
         if self.memory_inner_gradient != AUTOGRAD_INNER_GRADIENT:
             result.update(memory_inner_gradient=self.memory_inner_gradient)
+        if self.fusion_dropout is not None:
+            result.update(dropout=float(self.fusion_dropout))
+        if self.fusion_dropout is not None or self.modality_dropout is not None:
+            result.update(dropout_masks=DROPOUT_MASKS)
+        if self.modality_dropout is not None:
+            result.update(
+                modality_dropout=dict(
+                    probability=float(self.modality_dropout),
+                    scope="present_non_price_modalities_independent_per_row",
+                    route="presence_bit_false_and_zero_inputs",
+                    phase="fit_only",
+                )
+            )
         if self.memory_projections != "linear_v1":
             result.update(memory_projections=self.memory_projections)
         if self.attention_layout != "batch_first_v1":
@@ -945,6 +998,8 @@ class FinancialPredictor(nn.Module):
         ):
             raise ValueError("Las variantes del núcleo de #786 necesitan su propio contraste con C")
         self.config = config
+        # Época del ajuste en la clave de las máscaras del dropout declarado.
+        self._fit_epoch = 0
         self.masked = masked_inputs(config.inputs.input_policy)
         with torch.device("cpu"), torch.random.fork_rng(devices=[]):
             torch.random.default_generator.manual_seed(config.seed)
@@ -955,7 +1010,7 @@ class FinancialPredictor(nn.Module):
                 context=config.inputs.context,
                 hidden_size=config.hidden_size,
                 layers=config.layers,
-                dropout=0.0,
+                dropout=0.0 if config.fusion_dropout is None else config.fusion_dropout,
                 # Con el lote por defecto (256) el contrato del codificador no cambia.
                 **({"max_batch": config.max_batch} if kind == "transformer" else {}),
             )
@@ -1596,6 +1651,31 @@ class FinancialPredictor(nn.Module):
         self._validate_state(state)
         return self._usage(state)
 
+    def set_fit_epoch(self, epoch):
+        """Fijar la época del ajuste que entra en la clave de las máscaras del dropout declarado.
+
+        El recorrido la fija al empezar cada pasada de ajuste y al reanudar, desde su cursor.
+        """
+        bounded_integer(epoch, "época del ajuste", 0, 1_000_000)
+        self._fit_epoch = epoch
+
+    @contextmanager
+    def _dropout_masks(self, batch, purpose):
+        """Generador con la clave de las máscaras, sin tocar el flujo del generador global.
+
+        La semilla deriva de la del predictor, de la época del ajuste y de la huella del lote,
+        así que cada pasada sobre el mismo lote en la misma época sortea las mismas máscaras.
+        Al salir se restaura el estado del generador global.
+        """
+        digest = hashlib.sha256(
+            canonical([purpose, self.config.seed, self._fit_epoch, batch.input_digest]).encode()
+        ).digest()
+        device = batch.presence.device
+        devices = [device.index or 0] if device.type == "cuda" else []
+        with torch.random.fork_rng(devices=devices):
+            torch.manual_seed(int.from_bytes(digest[:8], "little") & (2**63 - 1))
+            yield
+
     def initial_state(self, flow_ids, *, differentiable=False):
         check_differentiable(differentiable)
         self.verify_parameter_identity()
@@ -1960,6 +2040,15 @@ class FinancialPredictor(nn.Module):
         if self.session_level and session_complete is not True:
             raise ValueError("Las operaciones por sesión necesitan la sesión completa en un bloque")
         markets = tuple(flow.split("/", 1)[0] for flow in batch.flow_ids)
+        if self.training and self.config.modality_dropout is not None:
+            # Antes de los rangos y de la escala: la ausencia añadida es idéntica a una real.
+            with self._dropout_masks(batch, MODALITY_DROPOUT):
+                keep = (
+                    torch.rand(batch.presence.shape, device=batch.presence.device)
+                    >= self.config.modality_dropout
+                )
+            keep[:, MODALITIES.index("prices")] = True
+            batch = batch.with_absences(keep, MODALITY_DROPOUT)
         received = batch
         if self.config.session_rank_inputs is not None:
             # Rangos entre las filas del bloque, que son todas las de su instante y mercado.
@@ -2013,21 +2102,27 @@ class FinancialPredictor(nn.Module):
             for value, message in encoder_checks:
                 require_finite(value, message)
             next_regions = None
-            if self.regional_execution is not None:
-                token, next_context, regional_trace = self._program_fusion(
-                    price, batch, context, context_selection
-                )
-            elif self.axial_time_region is not None:
-                token, next_regions = self._axial_fuse(
-                    price, batch.inputs, batch.presence, state.regions
-                )
-                next_context = context
-            elif self.fractal_shared_operator is not None:
-                token = self._fractal_fuse(price, batch, received.inputs["prices"])
-                next_context = context
-            else:
-                token = self._fuse(price, batch.inputs, batch.presence)
-                next_context = context
+            fusion_masks = (
+                self._dropout_masks(batch, FUSION_DROPOUT)
+                if self.training and self.config.fusion_dropout is not None
+                else nullcontext()
+            )
+            with fusion_masks:
+                if self.regional_execution is not None:
+                    token, next_context, regional_trace = self._program_fusion(
+                        price, batch, context, context_selection
+                    )
+                elif self.axial_time_region is not None:
+                    token, next_regions = self._axial_fuse(
+                        price, batch.inputs, batch.presence, state.regions
+                    )
+                    next_context = context
+                elif self.fractal_shared_operator is not None:
+                    token = self._fractal_fuse(price, batch, received.inputs["prices"])
+                    next_context = context
+                else:
+                    token = self._fuse(price, batch.inputs, batch.presence)
+                    next_context = context
             check_finite(token, "El token fusionado")
             observed = token
             if (

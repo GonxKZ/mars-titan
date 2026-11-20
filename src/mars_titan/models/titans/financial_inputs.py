@@ -415,6 +415,44 @@ class DecisionBatch:
             hashlib.sha256(canonical([transform, self.input_digest]).encode()).hexdigest(),
         )
 
+    def with_absences(self, keep, transform):
+        """El mismo lote con ausencias añadidas donde `keep` es falso, sin cambiar fila ni instante.
+
+        Una ausencia añadida sigue la misma ruta que una real: el bit de presencia pasa a falso
+        y las entradas de esa modalidad en esa fila pasan a cero. El precio nunca se retira.
+        La huella une el nombre de la transformación con la del lote original.
+        """
+        self.verify()
+        price = MODALITIES.index("prices")
+        if (
+            not isinstance(transform, str)
+            or not isinstance(keep, torch.Tensor)
+            or keep.dtype != torch.bool
+            or keep.shape != self.presence.shape
+            or keep.device != self.presence.device
+            or not bool(keep[:, price].all())
+        ):
+            raise ValueError("Las ausencias añadidas necesitan un nombre y no retiran el precio")
+        presence = self.presence & keep
+        inputs = {}
+        for column, name in enumerate(MODALITIES):
+            value = self.inputs[name]
+            if name == "prices":
+                inputs[name] = value
+                continue
+            kept = presence[:, column].reshape((-1,) + (1,) * (value.dim() - 1))
+            inputs[name] = torch.where(kept, value, torch.zeros_like(value))
+        return DecisionBatch._create(
+            inputs,
+            presence,
+            self.flow_ids,
+            self.sample_ids,
+            self.prediction_at,
+            self.input_available_at,
+            self.input_contract_id,
+            hashlib.sha256(canonical([transform, self.input_digest]).encode()).hexdigest(),
+        )
+
     def select(self, indices):
         self.verify()
         if (
