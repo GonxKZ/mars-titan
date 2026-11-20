@@ -1766,7 +1766,12 @@ def main(argv=None):
     if args.command == "prepare":
         receipts = prepare(declaration, layout)
         for year, selection in receipts.items():
-            print(f"{year}: {selection['size']} activos de {selection['eligible_count']} elegibles")
+            if selection["rule"] == FULL_VIEW_RULE:
+                markets = "+".join(selection["markets"])
+                print(f"{year}: vista completa de {markets}, {selection['size']} activos")
+            else:
+                size, eligible = selection["size"], selection["eligible_count"]
+                print(f"{year}: {size} activos de {eligible} elegibles")
         return 0
     if args.command == "export":
         return _export(declaration, digest, layout, args)

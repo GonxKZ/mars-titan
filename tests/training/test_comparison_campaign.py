@@ -2233,3 +2233,30 @@ def test_prepare_writes_the_full_view_of_each_origin_and_checks_its_markets(tmp_
     )
     kept = campaign.prepare(whole, Layout(tmp_path / "whole", tmp_path / "us-views"))
     assert all(s["markets"] == ["US"] and s["size"] == 301 for s in kept.values())
+
+
+def test_the_prepare_command_reports_fingerprint_cohorts_and_full_views(tmp_path, capsys):
+    from tests.training.test_comparison_cohorts import joint_source
+    from tests.training.test_screening_cohorts import source
+
+    def prepared(name, document, build):
+        path = tmp_path / f"{name}.json"
+        path.write_text(json.dumps(document))
+        place = Layout(tmp_path / name, tmp_path / f"{name}-views")
+        for fold, year in (("fold-014", 2019), ("fold-018", 2023)):
+            view = place.source(fold)
+            view.parent.mkdir(parents=True, exist_ok=True)
+            view.write_text(json.dumps(build(year)))
+        arguments = ["--declaration", str(path), "--state", str(place.state)]
+        assert campaign.main(["prepare", *arguments, "--views", str(place.views)]) == 0
+        return capsys.readouterr().out.splitlines()
+
+    assert prepared("us", declaration(), source) == [
+        "2019: 16 activos de 300 elegibles",
+        "2023: 16 activos de 300 elegibles",
+    ]
+    full = dict(size=341, rule="entire_source_view")
+    assert prepared("joint", declaration(market="US+CN", cohort=full), joint_source) == [
+        "2019: vista completa de CN+US, 341 activos",
+        "2023: vista completa de CN+US, 341 activos",
+    ]
