@@ -4,6 +4,9 @@ La campaña fija FP32 sin TF32 en cuBLAS ni en cuDNN. Una receta sin precisión 
 conserva la configuración del proceso y su identidad anterior. No se ejecuta ningún paso.
 """
 
+import subprocess
+import sys
+
 import pytest
 import torch
 
@@ -29,9 +32,14 @@ def restore_flags():
         torch.backends.cudnn.allow_tf32,
         torch.get_float32_matmul_precision(),
     )
+    attention = policy.attention_backends()
     yield
     torch.backends.cuda.matmul.allow_tf32, torch.backends.cudnn.allow_tf32 = flags[:2]
     torch.set_float32_matmul_precision(flags[2])
+    torch.backends.cuda.enable_flash_sdp(attention["flash"])
+    torch.backends.cuda.enable_mem_efficient_sdp(attention["mem_efficient"])
+    torch.backends.cuda.enable_cudnn_sdp(attention["cudnn"])
+    torch.backends.cuda.enable_math_sdp(attention["math"])
 
 
 def test_fp32_strict_disables_tf32_in_cublas_and_cudnn():
@@ -117,3 +125,87 @@ def test_declared_precision_enters_the_run_identity_and_is_checked(shared, tmp_p
     torch.backends.cudnn.allow_tf32 = True
     with pytest.raises(ValueError, match="configuración numérica"):
         strict._check_runtime()
+
+
+def test_fp32_ieee_attention_leaves_only_the_math_kernel():
+    identity = policy.apply_kernel_policy(policy.FP32_IEEE_ATTENTION)
+    assert policy.attention_backends() == policy.MATH_ONLY == identity["attention_backends"]
+    assert identity["precision"] == "fp32_ieee_attention_v1"
+    assert policy.kernel_policy_identity(policy.FP32_IEEE_ATTENTION) == identity
+    # El mismo proceso cumple también fp32_strict, cuya identidad no nombra la atención.
+    strict = policy.kernel_policy_identity(policy.FP32_STRICT)
+    assert "attention_backends" not in strict
+    shared_fields = {k: v for k, v in identity.items() if k != "attention_backends"}
+    assert shared_fields == dict(strict, precision="fp32_ieee_attention_v1")
+
+
+@pytest.mark.parametrize(
+    "leave",
+    [
+        lambda: torch.backends.cuda.enable_flash_sdp(True),
+        lambda: torch.backends.cuda.enable_mem_efficient_sdp(True),
+        lambda: torch.backends.cuda.enable_cudnn_sdp(True),
+        lambda: torch.backends.cuda.enable_math_sdp(False),
+    ],
+    ids=["flash", "mem_efficient", "cudnn", "math"],
+)
+def test_the_ieee_identity_fails_when_the_attention_leaves_the_math_kernel(leave):
+    identity = policy.apply_kernel_policy(policy.FP32_IEEE_ATTENTION)
+    leave()
+    with pytest.raises(ValueError, match="política de precisión"):
+        policy.kernel_policy_identity(policy.FP32_IEEE_ATTENTION)
+    with pytest.raises(ValueError, match="política de precisión"):
+        policy.require_policy(policy.FP32_IEEE_ATTENTION, identity)
+    # fp32_strict no restringe la atención: su comprobación no depende de estos núcleos.
+    policy.kernel_policy_identity(policy.FP32_STRICT)
+
+
+def test_fp32_strict_does_not_touch_the_attention_kernels():
+    before = policy.attention_backends()
+    policy.apply_kernel_policy(policy.FP32_STRICT)
+    assert policy.attention_backends() == before
+
+
+def test_the_ieee_precision_enters_every_recipe_identity():
+    for recipe in RECIPES:
+        declared = recipe(precision=policy.FP32_IEEE_ATTENTION).identity()
+        assert declared["precision"] == "fp32_ieee_attention_v1"
+        assert {k: v for k, v in declared.items() if k != "precision"} == recipe().identity()
+
+
+CUDA_CHECK = """
+import torch
+from torch.nn.attention import SDPBackend, sdpa_kernel
+from torch.nn.functional import scaled_dot_product_attention as attention
+
+from mars_titan.training import kernel_policy as policy
+
+generator = torch.Generator(device="cuda").manual_seed(7)
+q, k, v = (
+    torch.randn(512, 2, 9, 32, device="cuda", generator=generator, requires_grad=True)
+    for _ in range(3)
+)
+with sdpa_kernel(SDPBackend.MATH):
+    reference = attention(q, k, v).detach()
+exact = attention(q.detach().double(), k.detach().double(), v.detach().double())
+policy.apply_kernel_policy(policy.FP32_IEEE_ATTENTION)
+gradients = []
+for _ in range(2):
+    output = attention(q, k, v)
+    gradients.append(torch.autograd.grad(output.square().sum(), (q, k, v)))
+    assert torch.equal(output.detach(), reference)
+    error = (output.detach().double() - exact).abs().max() / exact.abs().max()
+    assert error.item() < 4e-7, error.item()
+for first, second in zip(*gradients, strict=True):
+    assert torch.equal(first, second)
+print("ok")
+"""
+
+
+@pytest.mark.skipif(not torch.cuda.is_available(), reason="Necesita CUDA")
+def test_on_cuda_the_ieee_attention_is_the_math_kernel_and_repeats_its_gradient():
+    # En otro proceso: iniciar CUDA aquí cambiaría lo que ven las pruebas del determinismo.
+    done = subprocess.run(
+        [sys.executable, "-c", CUDA_CHECK], capture_output=True, text=True, timeout=300
+    )
+    assert done.returncode == 0 and done.stdout.strip() == "ok", done.stderr[-2000:]

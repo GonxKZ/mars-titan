@@ -21,6 +21,7 @@ from mars_titan.memory.mars_titan_variant import load_declaration, select_varian
 from mars_titan.models.quantile_head import QUANTILE_COLUMNS
 from mars_titan.training import mars_titan_walk_forward as mw
 from mars_titan.training.learning_hold import LearningHoldError
+from mars_titan.training.selection import RANK_IC_DEFINITION, selection_score
 from tests.learning_traces.parity import EVERY_STEP, metrics, same_rows, trace_rows
 from tests.suite_support import skip_without_episodic_native
 from tests.training.test_titans_walk_forward import (
@@ -446,3 +447,23 @@ def test_common_epoch_reader_waits_then_emits_its_epoch_and_versions(base, tmp_p
         version = pq.read_table(output / record["path"]).sort_by("sample_id")
         assert version.equals(table(output, name))
     assert len(list((output / "fit" / "checkpoints").glob("state-*.pt"))) == 1
+
+
+def test_rank_ic_reader_scores_every_validation_and_rechecks_its_chosen_state(base, tmp_path):
+    output = tmp_path / "ranked"
+    rule = dict(RULE, metric="session_rank_ic", min_assets=3, max_epochs=2)
+    report, _ = mars(base["view"], base["parent"], base["plan"], output, stopping=rule)
+    assert report["status"] == "completed" and "epoch_scoring" not in report["request"]
+    assert json.dumps(rule, sort_keys=True) in json.dumps(report["identity"], sort_keys=True)
+    fit = json.loads((output / "fit" / "run.json").read_text())
+    assert "epoch_states" not in fit and RANK_IC_DEFINITION in json.dumps(fit["identity"])
+    assert [entry["epoch"] for entry in fit["history"]] == [0, 1, 2]
+    losses = [selection_score(rule, entry["validation"]) for entry in fit["history"]]
+    assert fit["best_score"] == min(losses)
+    check = report["validation_selection_check"]
+    assert check["best_score"] == fit["best_score"] and check["absolute_difference"] == 0
+    panel = ForecastPanel.from_arrow(pq.read_table(output / "validation-predictions.parquet"))
+    values, defined = sd.session_correlations(panel, panel.prediction, rank=True, min_assets=3)
+    chosen = fit["history"][fit["best_epoch"]]["validation"]
+    assert chosen["session_rank_ic_values"] == values.tolist()
+    assert chosen["session_rank_ic_defined"] == defined.tolist()

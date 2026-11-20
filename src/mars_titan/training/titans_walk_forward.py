@@ -68,6 +68,7 @@ from .common_epoch import (
     EpochValidation,
     bind_versions,
     checked_scoring,
+    selected_score,
     version_path,
 )
 from .corpus_inputs import CorpusDataset
@@ -75,7 +76,14 @@ from .financial_run import ChronologicalRecipe, ChronologicalTrainer, Paused, lo
 from .learning_hold import require_learning_allowed
 from .learning_statistics import learning_statistics
 from .search_cases import case_options, checked_predictor_changes, checked_search_cases
-from .selection import AWAIT, CHRONOLOGICAL_MODES, INITIAL_STATE, campaign_rule, with_rule
+from .selection import (
+    AWAIT,
+    CHRONOLOGICAL_MODES,
+    INITIAL_STATE,
+    SESSION_RANK_IC,
+    campaign_rule,
+    with_rule,
+)
 from .temporal_contract import temporal_contracts
 from .walk_forward_phases import PREDICTED, checked_fit_months, checked_warmup, window_phases
 from .window_indices import index_root, phase_sources
@@ -633,6 +641,14 @@ def run_titans_window(
             min_assets=scoring["min_assets"],
             directory=output / "epochs" if scoring["predictions"] else None,
         )
+    elif rule["metric"] == SESSION_RANK_IC:
+        # Enmienda declarada: cada validación se puntúa con el IC de rangos por sesión.
+        trainer.epoch_scorer = EpochValidation(
+            lambda: PredictionRows(trainer.emits_levels),
+            lambda rows, metrics: checked_tables(rows, metrics, dataset, "validation"),
+            min_assets=rule["min_assets"],
+            rank=True,
+        )
     identity = dict(
         schema_version=1,
         kind=KIND,
@@ -711,7 +727,7 @@ def run_titans_window(
             metrics = trainer.predict_partition(sources[name], rows, stop=stop)
             tables = checked_tables(rows, metrics, dataset, name)
             if name == "validation":
-                best, recomputed = fit["best_score"], metrics["session_mae"]
+                best, recomputed = fit["best_score"], selected_score(rule, metrics, tables)
                 report["validation_selection_check"] = dict(
                     best_score=best,
                     recomputed=recomputed,

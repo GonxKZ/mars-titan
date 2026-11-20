@@ -68,14 +68,14 @@ from mars_titan.models.titans.financial import (
 
 from . import window_indices
 from .checkpoints import StopRequest, load_training_state
-from .common_epoch import EpochValidation, checked_scoring
+from .common_epoch import EpochValidation, checked_scoring, selected_score
 from .corpus_inputs import CorpusDataset
 from .financial_run import Paused
 from .learning_hold import require_learning_allowed
 from .mars_titan_run import MarsTitanInference, ReadoutTrainer, case_recipe, load_recipe
 from .mars_titan_run import retention_config as readout_retention
 from .search_cases import checked_predictor_changes
-from .selection import AWAIT, CHRONOLOGICAL_MODES, campaign_rule, with_rule
+from .selection import AWAIT, CHRONOLOGICAL_MODES, SESSION_RANK_IC, campaign_rule, with_rule
 from .titans_walk_forward import (
     DTYPES,
     PREDICTED,
@@ -611,6 +611,14 @@ def run_readout_window(
             min_assets=scoring["min_assets"],
             directory=output / "epochs" if scoring["predictions"] else None,
         )
+    elif rule["metric"] == SESSION_RANK_IC:
+        # Enmienda declarada: cada validación se puntúa con el IC de rangos por sesión.
+        trainer.epoch_scorer = EpochValidation(
+            lambda: PredictionRows(trainer.quantiles),
+            lambda rows, metrics: checked_tables(rows, metrics, dataset, "validation"),
+            min_assets=rule["min_assets"],
+            rank=True,
+        )
     identity = dict(
         schema_version=1,
         kind=family.kind,
@@ -694,7 +702,7 @@ def run_readout_window(
             metrics = trainer.evaluate(sources[name], stop=stop, rows=rows)
             tables = checked_tables(rows, metrics, dataset, name)
             if name == "validation":
-                score, recomputed = fit["best_score"], metrics["session_mae"]
+                score, recomputed = fit["best_score"], selected_score(rule, metrics, tables)
                 report["validation_selection_check"] = dict(
                     best_score=score,
                     recomputed=recomputed,

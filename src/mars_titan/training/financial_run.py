@@ -63,7 +63,6 @@ from .checkpoints import (
 )
 from .common_epoch import chosen_state
 from .determinism import (
-    TORCH_DETERMINISTIC,
     declared_determinism,
     valid_determinism,
 )
@@ -78,12 +77,15 @@ from .selection import (
     CHRONOLOGICAL_MODES,
     COMMON_EPOCH,
     FINISH,
+    SESSION_RANK_IC,
     VALIDATION_PLATEAU,
     advance_selection,
     awaiting,
     bind_joint_epoch,
     epoch_decision,
     initial_selection,
+    metric_definition,
+    selection_score,
     validate_selection,
 )
 from .shrink_perturb import ShrinkPerturb, shrink_perturb
@@ -212,7 +214,7 @@ class ChronologicalRecipe:
                 "La receta necesita truncamiento, presupuesto, optimizador y parada válidos"
             )
         if not valid_determinism(self.determinism):
-            raise ValueError(f"El determinismo de la receta es None o {TORCH_DETERMINISTIC}")
+            raise ValueError("El determinismo de la receta es None o una política admitida")
         self.weight_options()
 
     def weight_options(self):
@@ -272,7 +274,7 @@ class ChronologicalRecipe:
             label_rule="loss_only_after_maturity_event_then_next_segment_update",
             loss_reduction="mean_over_matured_labels_of_segment",
             fast_state="reset_each_pass_then_warmup",
-            selection_metric_definition="SessionErrors.session_mae_on_issued_predictions",
+            selection_metric_definition=metric_definition(self.selection),
         )
 
 
@@ -1627,6 +1629,10 @@ class ChronologicalTrainer(ChronologicalInference):
         common = self.recipe.selection.get("stopping") == COMMON_EPOCH
         if common and self.epoch_scorer is None:
             raise ValueError("La época común necesita puntuar cada validación con su IC")
+        # Con el IC de rangos como métrica, cada validación se puntúa también con él.
+        ranked = self.recipe.selection["metric"] == SESSION_RANK_IC
+        if ranked and self.epoch_scorer is None:
+            raise ValueError("El IC de rangos por sesión necesita puntuar cada validación")
         stop = stop or StopRequest()
         report_path = output / "run.json"
         cursor, run = dict(epoch=0, phase="validation"), None
@@ -1722,28 +1728,29 @@ class ChronologicalTrainer(ChronologicalInference):
                         continue
                 if cursor["phase"] == "validation":
                     # La época común puntúa las filas de esta misma validación desde la época 1.
-                    rows = self.epoch_scorer.rows() if common and epoch >= 1 else None
+                    # El IC de rangos puntúa todas, también la del estado inicial.
+                    scored = ranked or (common and epoch >= 1)
+                    rows = self.epoch_scorer.rows() if scored else None
                     with self._emitted_weights():
                         metrics = self.evaluate(self.validation, stop=stop, rows=rows)
                     if rows is not None:
                         metrics.update(self.epoch_scorer.score(epoch, rows, metrics))
+                    score = selection_score(options, metrics)
                     if self.trace is not None or self.traces is not None:
                         event = dict(
                             kind="validation",
                             epoch=epoch,
                             global_step=self.global_step,
-                            score=metrics["session_mae"],
+                            score=score,
                         )
                         if self.traces is not None:
                             self.traces.validation(event)
                         if self.trace is not None:
                             self.trace(event, self._trace_modules())
                     self.selection = (
-                        initial_selection(metrics["session_mae"], options)
+                        initial_selection(score, options)
                         if epoch == 0
-                        else advance_selection(
-                            self.selection, metrics["session_mae"], epoch, options
-                        )
+                        else advance_selection(self.selection, score, epoch, options)
                     )
                     self.history.append(
                         dict(
@@ -1769,7 +1776,7 @@ class ChronologicalTrainer(ChronologicalInference):
                     save(
                         cursor,
                         best=self.selection["last_improved"],
-                        pin=epoch if rows is not None else None,
+                        pin=epoch if common and rows is not None else None,
                     )
                     if stop.requested and not finished:
                         raise Paused

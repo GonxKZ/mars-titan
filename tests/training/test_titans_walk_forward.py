@@ -30,6 +30,7 @@ from mars_titan.training import titans_walk_forward as wf
 from mars_titan.training.corpus_inputs import CorpusDataset
 from mars_titan.training.financial_run import ChronologicalTrainer
 from mars_titan.training.learning_hold import LearningHoldError
+from mars_titan.training.selection import MAE_DEFINITION, RANK_IC_DEFINITION, selection_score
 from mars_titan.training.temporal_corpus import prepare_temporal_corpus
 from mars_titan.training.walk_forward_phases import months_before
 from mars_titan.training.window_indices import SHARED_INDICES_ENV
@@ -1443,3 +1444,38 @@ def test_a_continuation_cannot_declare_its_parent_state_as_reported_only(tmp_pat
             stopping=rule,
         )
     assert not (tmp_path / "child").exists()
+
+
+RANKED = dict(RULE, metric="session_rank_ic", min_assets=3, max_epochs=2)
+
+
+def test_rank_ic_window_scores_every_validation_and_rechecks_its_chosen_state(base, tmp_path):
+    output = tmp_path / "ranked"
+    with unfused_attention():
+        report, _ = window(base["view"], base["protocol"], base["recipe"], output, stopping=RANKED)
+    assert report["status"] == "completed" and report["identity"]["stopping_rule"] == RANKED
+    # La enmienda vive en la regla: no declara puntuación aparte ni fija estados por época.
+    assert "epoch_scoring" not in report["request"]
+    fit = json.loads((output / "fit" / "run.json").read_text())
+    assert "epoch_states" not in fit and RANK_IC_DEFINITION in json.dumps(fit["identity"])
+    assert [entry["epoch"] for entry in fit["history"]] == [0, 1, 2]
+    losses = []
+    for entry in fit["history"]:
+        scored = entry["validation"]
+        assert len(scored["session_rank_ic_values"]) == len(scored["session_rank_ic_defined"])
+        assert "session_ic_values" not in scored and "epoch_predictions" not in scored
+        losses.append(selection_score(RANKED, scored))
+    # Con el registrador los pesos no cambian: ninguna época mejora al estado inicial.
+    assert fit["best_epoch"] == 0 and fit["best_score"] == losses[0] == losses[1] == losses[2]
+    check = report["validation_selection_check"]
+    assert check["best_score"] == fit["best_score"] and check["absolute_difference"] == 0
+    # El IC del ajuste es el del análisis sobre la validación que emite la ventana.
+    panel = ForecastPanel.from_arrow(pq.read_table(output / "validation-predictions.parquet"))
+    values, defined = sd.session_correlations(panel, panel.prediction, rank=True, min_assets=3)
+    assert fit["history"][0]["validation"]["session_rank_ic_values"] == values.tolist()
+    assert fit["history"][0]["validation"]["session_rank_ic_defined"] == defined.tolist()
+    # La ventana con el MAE del protocolo conserva su regla y es otra ejecución.
+    mae, _ = base["runs"]["mac_online"]
+    assert mae["identity"]["stopping_rule"]["metric"] == "session_mae"
+    assert mae["run_id"] != report["run_id"]
+    assert MAE_DEFINITION in (base["root"] / "runs/mac_online/fit/run.json").read_text()

@@ -62,7 +62,6 @@ from .checkpoints import (
     save_training_state,
 )
 from .determinism import (
-    TORCH_DETERMINISTIC,
     declared_determinism,
     valid_determinism,
 )
@@ -175,7 +174,7 @@ class CandidateRecipe:
                 "optimizador, acumulación, recomputación y checkpoints válidos"
             )
         if not valid_determinism(self.determinism):
-            raise ValueError(f"El determinismo de la receta es None o {TORCH_DETERMINISTIC}")
+            raise ValueError("El determinismo de la receta es None o una política admitida")
 
     def identity(self):
         fields = asdict(self)
