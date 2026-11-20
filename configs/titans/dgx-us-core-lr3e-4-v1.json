@@ -1,0 +1,64 @@
+{
+  "schema_version": 1,
+  "recipe_name": "titans_financial_chronological_v1",
+  "status": "declared_not_executed",
+  "variants": [
+    "transformer_direct",
+    "mac_disabled",
+    "mac_frozen",
+    "mac_online"
+  ],
+  "pairing_source": "mac_online",
+  "predictor": {
+    "hidden_size": 64,
+    "layers": 1,
+    "persistent_tokens": 4,
+    "dtype": "float32",
+    "bank_policy": "disabled",
+    "refinements": 1,
+    "head": "quantile_head_v1",
+    "gate_bias": {
+      "alpha_half_life": 256,
+      "eta": 0.5,
+      "theta": 0.05
+    },
+    "memory_residual_layer_norm": true,
+    "max_batch": 8192,
+    "max_state_bytes": 1073741824,
+    "attention_layout": "sequence_contiguous_v1",
+    "learning_scale": {
+      "clip": 5,
+      "price_returns": true,
+      "zero_median": true
+    },
+    "memory_inner_gradient": "fused_v1"
+  },
+  "recipe": {
+    "truncation": 8,
+    "loss": "pinball",
+    "huber_delta": 0.01,
+    "weight_decay": 0,
+    "max_grad_norm": 1,
+    "epochs": 30,
+    "selection": {
+      "metric": "session_mae",
+      "patience": 5,
+      "min_delta": 0.00001,
+      "stopping": "fixed_budget"
+    },
+    "block_rows": 8192,
+    "checkpoint_updates": 256,
+    "checkpoint_seconds": 900,
+    "accumulation_rows": 8192,
+    "precision": "fp32_strict",
+    "learning_rate": 0.0003
+  },
+  "walk_forward": {
+    "warmup_months": 12
+  },
+  "pending": [
+    "Variante de dgx-us-core-v1 con ritmo de aprendizaje 0.0003 para la búsqueda declarada de la DGX (configs/experiments/dgx-us-lr-search-v1.json). El resto de la receta es idéntico.",
+    "Los hiperparámetros de aprendizaje son los del protocolo hasta que la búsqueda declarada de la DGX fije los suyos. La campaña aplica su propia regla de parada adaptativa.",
+    "Sin resultados publicados. El test final de 2024 permanece cerrado."
+  ]
+}

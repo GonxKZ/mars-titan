@@ -43,6 +43,7 @@ from mars_titan.data.cohort_files import read_manifest, safe_destination
 from mars_titan.data.storage import atomic_json
 
 from .comparison_cohorts import write_cohort
+from .corpus_inputs import DIGEST_CACHE_ENV
 from .input_pipeline import PipelineOptions
 from .learning_hold import HOLD_ENV
 from .selection import CHRONOLOGICAL_MODES, validate_selection
@@ -85,6 +86,8 @@ MAX_ATTEMPTS = 3
 # Disco libre por debajo del cual la cola deja de coger trabajos. Un disco lleno haría
 # fallar a cada trabajo hasta agotar sus intentos, y así la cola se detiene sin perderlos.
 MIN_FREE_GIB = 1.0
+# Techo del tope de GPU por trabajo: la memoria total de la GB10 son 128 GB unificados.
+MAX_CUDA_GIB = 120.0
 DONE, FAILED, PAUSED, RUNNING, PENDING, BLOCKED = (
     "completed",
     "failed",
@@ -100,8 +103,12 @@ _MODEL_FIELDS = {
     "tabular": {"config", "fit_months", "radius", "min_assets"},
     "ridge": {"config"},
 }
+# Continuación encadenada de un ajuste (DGX): cada origen parte del estado elegido del mismo
+# modelo y semilla en el origen anterior de su etapa, con run_titans_window(initial=...). El
+# ejecutor exige que la validación del padre acabe antes que la de la continuación.
+CONTINUATION = "previous_origin"
 _OPTIONAL = {
-    "fit": {"predictor_changes", "epochs"},
+    "fit": {"predictor_changes", "epochs", "continuation"},
     "reader": {"epochs"},
     "rule": set(),
     "tabular": set(),
@@ -205,11 +212,11 @@ def _deadline(value):
 def _checked_budget(budget):
     _require(
         isinstance(budget, dict)
-        and set(budget) <= {"disk_gib", "memory_gib", "min_free_gib", "deadline_utc"}
-        and isinstance(budget.get("disk_gib", {}), dict)
-        and set(budget.get("disk_gib", {})) <= set(MACHINES)
-        and isinstance(budget.get("memory_gib", {}), dict)
-        and set(budget.get("memory_gib", {})) <= set(MACHINES)
+        and set(budget) <= {"disk_gib", "memory_gib", "cuda_gib", "min_free_gib", "deadline_utc"}
+        and all(
+            isinstance(budget.get(key, {}), dict) and set(budget.get(key, {})) <= set(MACHINES)
+            for key in ("disk_gib", "memory_gib", "cuda_gib")
+        )
         and all(
             type(value) in (int, float) and value >= 0
             for value in (
@@ -217,9 +224,21 @@ def _checked_budget(budget):
                 *budget.get("memory_gib", {}).values(),
                 budget.get("min_free_gib", 0),
             )
+        )
+        and all(
+            type(value) in (int, float) and 0 < value <= MAX_CUDA_GIB
+            for value in budget.get("cuda_gib", {}).values()
         ),
-        "El presupuesto declara el disco estimado, la memoria de cada equipo y el margen libre",
+        "El presupuesto declara el disco estimado, la memoria y la GPU de cada equipo y el "
+        "margen libre",
     )
+    # La memoria de un trabajo incluye su reserva de GPU: en la memoria unificada de la GB10
+    # las dos salen del mismo banco.
+    for machine, limit in budget.get("cuda_gib", {}).items():
+        _require(
+            limit <= budget.get("memory_gib", {}).get(machine, limit),
+            f"La GPU de cada trabajo de {machine} no puede superar su memoria declarada",
+        )
     if "deadline_utc" in budget:
         _deadline(budget["deadline_utc"])
 
@@ -341,6 +360,21 @@ def checked_declaration(document, *, root=ROOT, check_recipe_files=True):
         )
         if runner in GPU_RUNNERS:
             job_rule(document, model)
+        if "continuation" in model:
+            _require(
+                model["continuation"] == CONTINUATION,
+                f"El modelo {name} solo admite la continuación {CONTINUATION}",
+            )
+            for history in (False, True):
+                years = [
+                    origin["year"]
+                    for origin in document["origins"]
+                    if (origin["role"] == HISTORY) is history
+                ]
+                _require(
+                    all(a < b for a, b in zip(years, years[1:], strict=False)),
+                    "Una cadena necesita los orígenes de cada etapa en orden creciente",
+                )
     for name, model in models.items():
         if model["runner"] != "reader":
             continue
@@ -413,6 +447,10 @@ def plan(declaration, machine):
                         needs = None
                         if runner == "reader":
                             needs = f"{models[name]['parent']}/{origin['year']}/seed-{seed}"
+                        elif models[name].get("continuation") == CONTINUATION:
+                            index = origins.index(origin)
+                            if index:
+                                needs = f"{name}/{origins[index - 1]['year']}/seed-{seed}"
                         jobs.append(
                             Job(
                                 name,
@@ -644,6 +682,13 @@ def execute_job(declaration, layout, job, *, device="cuda:0", root=ROOT, preflig
         if preflight:
             stop.request_stop()
         if job.runner == "fit":
+            initial = None
+            if job.needs is not None:
+                # Continuación encadenada: parte del estado elegido del origen anterior, que
+                # puede volver a elegir si ninguna época lo mejora. Solo el primer origen
+                # registra su estado inicial sin emitirlo.
+                initial = layout.output(job.needs)
+                rule = {key: value for key, value in rule.items() if key != "initial_state"}
             return run_titans_window(
                 view,
                 view_protocol(view),
@@ -656,6 +701,7 @@ def execute_job(declaration, layout, job, *, device="cuda:0", root=ROOT, preflig
                 stop=stop,
                 stopping=rule,
                 predictor_changes=model.get("predictor_changes"),
+                initial=initial,
             )
         from .mars_titan_walk_forward import run_mars_titan_window
 
@@ -673,11 +719,16 @@ def execute_job(declaration, layout, job, *, device="cuda:0", root=ROOT, preflig
         )
 
 
-def run_job(declaration, layout, job, *, device="cuda:0", root=ROOT, preflight=False):
+def run_job(
+    declaration, layout, job, *, device="cuda:0", root=ROOT, preflight=False, cuda_gib=None
+):
     """Ejecutar un trabajo y dejar su resultado en el registro de la cola.
 
     Devuelve el estado final. Un informe pausado conserva el trabajo como pausado, para que
-    la siguiente orden lo continúe desde su último checkpoint.
+    la siguiente orden lo continúe desde su último checkpoint. Con `cuda_gib`, el asignador
+    de PyTorch del trabajo no puede reservar más de esa memoria en la GPU: varios trabajos a la
+    vez suman como mucho trabajadores × `cuda_gib`, y un trabajo que la superase falla con un
+    error de memoria registrado en vez de invadir el presupuesto de los demás.
     """
     from contextlib import nullcontext
 
@@ -710,6 +761,12 @@ def run_job(declaration, layout, job, *, device="cuda:0", root=ROOT, preflight=F
         and model["config"].get("execution", {}).get("backend") == "opencl_float64"
     )
     try:
+        if cuda_gib is not None and job.runner in CUDA_RUNNERS and device.startswith("cuda"):
+            from . import campaign_slots
+
+            limit = int(cuda_gib * 2**30)
+            campaign_slots.bound_vram(limit)
+            attempt["cuda_limit_bytes"] = limit
         if opencl:
             from mars_titan.models.baselines.lightgbm_backend import check_gpu_backend
 
@@ -952,14 +1009,22 @@ def _claim(layout, jobs, taken):
     return None, None
 
 
-def _environment(layout, declaration):
+def _environment(layout, declaration, job=None):
     environment = dict(os.environ)
     # La tubería de lectura solo cambia el caudal: el conjunto y el orden de las filas no.
     environment.update(PipelineOptions(**declaration["execution"]["pipeline"]).environment())
     environment[HOLD_ENV] = str(layout.authorization)
     environment[SHARED_INDICES_ENV] = str(layout.indices)
     environment[STATE_ENV], environment[VIEWS_ENV] = str(layout.state), str(layout.views)
-    environment.setdefault("MARS_TITAN_TRAIN_ARCHIVE", str(layout.state / "packed-inputs"))
+    # Cada origen tiene su copia empaquetada. Con trabajos de varios orígenes a la vez, un
+    # único hueco obligaría a reconstruirla o a volver a la lectura de Parquet en cada cambio.
+    archive = layout.state / "packed-inputs"
+    if job is not None:
+        archive = archive / str(job.year)
+    environment.setdefault("MARS_TITAN_TRAIN_ARCHIVE", str(archive))
+    # Huellas de los archivos de datos con su firma ctime: solo el primer trabajo los lee
+    # enteros y los siguientes comprueban que ningún archivo ha cambiado desde entonces.
+    environment.setdefault(DIGEST_CACHE_ENV, str(layout.state / "file-digests.json"))
     environment.setdefault("MARS_TITAN_CUDA_HOST_FINITE", "1")
     environment[NATIVE_ENV] = str(layout.native)
     # cuBLAS determinista, como exige el recorrido cronológico en cuda:0.
@@ -1019,7 +1084,7 @@ class Queue:
                 self._command(job, preflight=preflight),
                 stdout=stream,
                 stderr=subprocess.STDOUT,
-                env=_environment(self.layout, self.declaration),
+                env=_environment(self.layout, self.declaration, job),
                 cwd=str(ROOT),
             )
             with self.guard:
@@ -1593,7 +1658,12 @@ def main(argv=None):
         jobs = {job.key: job for job in plan(declaration, args.machine)}
         _require(args.key in jobs, "El trabajo no pertenece a la cola de este equipo")
         status = run_job(
-            declaration, layout, jobs[args.key], device=args.device, preflight=args.preflight
+            declaration,
+            layout,
+            jobs[args.key],
+            device=args.device,
+            preflight=args.preflight,
+            cuda_gib=declaration.get("budget", {}).get("cuda_gib", {}).get(args.machine),
         )
         return {DONE: 0, PAUSED: 3, PENDING: 4}.get(status, 1)
     queue = Queue(

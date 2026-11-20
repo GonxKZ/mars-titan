@@ -5,7 +5,7 @@ import json
 import pytest
 
 from benchmarks.comparison_input_archive import fingerprint
-from mars_titan.memory.training_event_cache import PackedTrainingSource, source_implementation
+from mars_titan.memory.training_event_cache import PackedPhaseSource, source_implementation
 from tests.training.test_financial_run import corpus
 
 ENV = "MARS_TITAN_TRAIN_ARCHIVE"
@@ -18,7 +18,7 @@ def test_training_uses_verified_copy_on_repeat_and_resume(tmp_path, monkeypatch)
     ref = {i: fingerprint(src.batched_events(start_cursor=i, block_rows=4), spec) for i in (0, 1)}
     root = tmp_path / "cache"
     monkeypatch.setenv(ENV, str(root))
-    src = PackedTrainingSource(src.dataset, src.path, root)
+    src = PackedPhaseSource(src.dataset, src.path, root)
     assert fingerprint(src.batched_events(block_rows=4), spec) == ref[0]
     manifest = json.loads((root / "small.json").read_text())
     assert manifest["verified"] == ref[0] and manifest["index"] == src.identity
@@ -31,13 +31,68 @@ def test_training_uses_verified_copy_on_repeat_and_resume(tmp_path, monkeypatch)
     assert not source_implementation(sources["validation"])
 
 
+def test_measured_phases_replay_their_own_verified_copy(tmp_path, monkeypatch):
+    from mars_titan.memory import training_event_cache as cache
+    from mars_titan.memory.financial_observations import FinancialObservationSource
+    from mars_titan.training.window_indices import phase_sources
+
+    data, original = corpus(tmp_path / "source")
+    phases = {k: s.phase for k, s in original.items()}
+    monkeypatch.setenv(ENV, str(tmp_path / "cache"))
+    packed = phase_sources(data, phases, tmp_path / "index", train_cache=True, predicted_cache=True)
+    plain = phase_sources(data, phases, tmp_path / "index")
+    assert all(type(source) is PackedPhaseSource for source in packed.values())
+    assert all(type(source) is FinancialObservationSource for source in plain.values())
+    for name, source in packed.items():
+        spec = plain[name].specification()
+        reference = fingerprint(plain[name].batched_events(block_rows=4), spec)
+        assert source.identity == plain[name].identity
+        cache.reset_usage()
+        assert fingerprint(source.batched_events(block_rows=4), spec) == reference
+        assert fingerprint(source.batched_events(block_rows=4), spec) == reference
+        report = cache.receipt()
+        assert report["builds"] == 1 and report["packed_passes"] == 2
+        folder = tmp_path / "cache" / source.phase.partition
+        manifest = json.loads((folder / "small.json").read_text())
+        assert manifest["index"] == source.identity and manifest["verified"] == reference
+
+
+def test_specification_is_stored_next_to_the_index_and_reused_without_reading(
+    tmp_path, monkeypatch
+):
+    from mars_titan.memory import training_event_cache as cache
+    from mars_titan.memory.financial_observations import FinancialObservationSource
+
+    _, sources = corpus(tmp_path / "src")
+    for name, plain in sources.items():
+        first = PackedPhaseSource(plain.dataset, plain.path, tmp_path / "cache" / name)
+        expected = plain.specification()
+        assert first.specification().fingerprint() == expected.fingerprint()
+        stored = json.loads((plain.path.parent / cache.SPECIFICATION).read_text())
+        assert stored["identity"]["view_sha256"] == plain.identity
+        assert stored["dimensions"] == expected.dimensions
+        second = PackedPhaseSource(plain.dataset, plain.path, tmp_path / "cache" / name)
+        with monkeypatch.context() as unread:
+
+            def refuse(self):
+                raise AssertionError("La especificación guardada no debe leer eventos")
+
+            unread.setattr(FinancialObservationSource, "events", refuse)
+            assert second.specification().fingerprint() == expected.fingerprint()
+            assert second.specification() is second.specification()
+        stored["identity"]["view_sha256"] = "0" * 64
+        (plain.path.parent / cache.SPECIFICATION).write_text(json.dumps(stored))
+        third = PackedPhaseSource(plain.dataset, plain.path, tmp_path / "cache" / name)
+        assert third.specification().fingerprint() == expected.fingerprint()
+
+
 def test_damaged_optional_copy_is_rebuilt_without_touching_the_source(tmp_path, monkeypatch):
     _, sources = corpus(tmp_path / "src")
     source = sources["train"]
     spec = source.specification()
     root = tmp_path / "cache"
     monkeypatch.setenv(ENV, str(root))
-    source = PackedTrainingSource(source.dataset, source.path, root)
+    source = PackedPhaseSource(source.dataset, source.path, root)
     original = fingerprint(source.batched_events(block_rows=4), spec)
     path = root / "small.arrow"
     with path.open("r+b") as stream:
@@ -57,7 +112,7 @@ def test_space_or_another_builder_keeps_the_original_cursor(tmp_path, monkeypatc
     root = tmp_path / "cache"
     original = fingerprint(source.batched_events(block_rows=4), spec)
     monkeypatch.setenv(ENV, str(root))
-    source = PackedTrainingSource(source.dataset, source.path, root)
+    source = PackedPhaseSource(source.dataset, source.path, root)
     with monkeypatch.context() as constrained:
         constrained.setattr(cache, "_budget", lambda folder: 0)
         assert fingerprint(source.batched_events(block_rows=4), spec) == original
@@ -80,7 +135,7 @@ def test_factory_preserves_the_original_index_and_records_the_actual_backend(tmp
     runs = phase_sources(data, phases, tmp_path / "index", train_cache=True)
     normal = phase_sources(data, phases, tmp_path / "index", train_cache=False)
     assert (
-        type(runs["train"]) is PackedTrainingSource
+        type(runs["train"]) is PackedPhaseSource
         and type(runs["validation"]) is FinancialObservationSource
     )
     assert type(normal["train"]) is FinancialObservationSource
@@ -97,7 +152,7 @@ def test_invalid_archive_never_masks_a_changed_source(tmp_path, monkeypatch):
     from mars_titan.memory import event_archive
 
     data, origins = corpus(tmp_path / "source")
-    source = PackedTrainingSource(data, origins["train"].path, tmp_path / "cache")
+    source = PackedPhaseSource(data, origins["train"].path, tmp_path / "cache")
     ref = fingerprint(source.batched_events(block_rows=4), source.specification())
     (tmp_path / "cache" / "small.arrow").unlink()
     with monkeypatch.context() as no_room:

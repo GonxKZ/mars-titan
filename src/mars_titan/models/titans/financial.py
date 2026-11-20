@@ -51,6 +51,8 @@ from .axial_time_region import (
 from .bank_readout import BankReadoutConfig
 from .config import (
     ATTENTION_LAYOUTS,
+    AUTOGRAD_INNER_GRADIENT,
+    INNER_GRADIENTS,
     MAX_BLOCK_ROWS,
     MAX_STATE_BYTES,
     PAPER_CONVOLUTION_KERNEL,
@@ -251,8 +253,13 @@ class FinancialConfig:
     # #836: codificador de precios de una referencia en lugar del Transformer compacto, para
     # que las referencias recurrentes y DLinear compartan entrenador, receta y filas.
     reference_encoder: str | None = None
+    # Derivada interna de la escritura de MAC. autograd_v1 conserva la identidad. analytic_v1
+    # usa las derivadas cerradas de associative_gradient.py con el mismo metagradiente.
+    memory_inner_gradient: str = AUTOGRAD_INNER_GRADIENT
 
     def __post_init__(self):
+        if self.memory_inner_gradient not in INNER_GRADIENTS:
+            raise ValueError("memory_inner_gradient debe ser autograd_v1 o analytic_v1")
         self._check_input_contract()
         self._check_memory_gates()
         self._check_memory_multiscale()
@@ -746,6 +753,9 @@ class FinancialConfig:
         # Igual que gate_bias: solo aparece si se declara y se registra en las cuatro variantes.
         if self.memory_residual_layer_norm:
             result.update(memory_residual_layer_norm=True)
+        # Igual que gate_bias: solo aparece si se declara y figura en las cuatro variantes.
+        if self.memory_inner_gradient != AUTOGRAD_INNER_GRADIENT:
+            result.update(memory_inner_gradient=self.memory_inner_gradient)
         if self.memory_projections != "linear_v1":
             result.update(memory_projections=self.memory_projections)
         if self.attention_layout != "batch_first_v1":
@@ -1110,6 +1120,7 @@ class FinancialPredictor(nn.Module):
                         bank_readout=config.memory_bank_readout,
                         huber=config.memory_huber,
                         time_scales=config.memory_time_scales,
+                        inner_gradient=config.memory_inner_gradient,
                     ),
                     heads=4,
                     persistent_tokens=config.persistent_tokens,

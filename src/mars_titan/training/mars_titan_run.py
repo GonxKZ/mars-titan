@@ -43,7 +43,6 @@ from mars_titan.memory.financial_consumers import (
     episodic_bank,
     mature_record,
 )
-from mars_titan.memory.financial_observations import FinancialObservationSource
 from mars_titan.memory.retention_bank import RetentionConfig
 from mars_titan.models.quantile_head import PINBALL, QUANTILE_HEAD, pinball_loss
 from mars_titan.models.titans.config import MAX_BLOCK_ROWS, MAX_STATE_BYTES, canonical
@@ -891,7 +890,7 @@ class ReadoutTrainer(MarsTitanInference):
         )
         if (
             not training_event_cache.supported(train)
-            or type(validation) is not FinancialObservationSource
+            or not training_event_cache.supported(validation)
             or train.phase.partition != "train"
             or validation.phase.partition != "validation"
             or train.dataset.identity != validation.dataset.identity
@@ -1121,6 +1120,7 @@ class ReadoutTrainer(MarsTitanInference):
                 ),
                 lambda event: validated_cpu_batches(event.inputs, specification),
                 source.dataset.pipeline.prefetch_batches,
+                source.dataset.pipeline.prepare_workers,
             ),
         )
         with closing(events):

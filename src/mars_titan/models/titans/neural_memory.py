@@ -6,9 +6,17 @@ import torch
 from torch import Tensor, nn
 from torch.nn import functional as F
 
+from .associative_gradient import associative_gradients
 from .bank_readout import BankReadout
 from .causal_convolution import CausalDepthwiseConvolution
-from .config import LAYER_NORM_EPS, MemoryConfig, bounded_integer, require_identity
+from .config import (
+    ANALYTIC_INNER_GRADIENT,
+    FUSED_INNER_GRADIENT,
+    LAYER_NORM_EPS,
+    MemoryConfig,
+    bounded_integer,
+    require_identity,
+)
 from .huber_memory import huber_elements, huber_threshold
 from .key_competition import competitive_normalize
 from .plasticity import _advance_validated as advance_plasticity
@@ -697,7 +705,17 @@ class NeuralMemory(nn.Module):
         weights, momentum, levels = state.weights, state.momentum, state.levels
         modulation = state.modulation
         key_window, value_window = state.convolution or (None, None)
-        with torch.enable_grad():
+        analytic = self.config.inner_gradient == ANALYTIC_INNER_GRADIENT
+        fused = self.config.inner_gradient == FUSED_INNER_GRADIENT
+        if fused:
+            # Triton solo se importa si la configuración declara la escritura fusionada.
+            from .fused_memory_write import fused_associative_write
+        # La derivada cerrada no necesita autograd interno. Sin grafo exterior, el bucle entero
+        # corre sin registrar operaciones: los valores son los mismos y no se crean grafos que
+        # la escritura descartaría al separar el estado.
+        closed = analytic or fused
+        mode = torch.no_grad() if closed and not differentiable else torch.enable_grad()
+        with mode:
             for index, token in enumerate(observed.unbind(1)):
                 if not differentiable:
                     token = token.detach()
@@ -728,37 +746,78 @@ class NeuralMemory(nn.Module):
                     if "forget" in gate_shift:
                         alpha_logits = alpha_logits + gate_shift["forget"]
                 alpha, eta, theta = self._gates(alpha_logits, eta_logits, theta_logits)
-                # La copia separa la variable de derivación interna de y(M_prev). Con el banco
-                # de PT5 la memoria lee la media de sus niveles, y el gradiente se toma en ella.
-                local, prediction = self._associative_problem(
-                    keys.unsqueeze(1),
-                    replace(state, weights=weights, levels=levels),
-                    differentiable,
-                )
-                residual = prediction.squeeze(1) - values
-                if self.config.huber is None:
-                    elements = residual.square()
-                else:
-                    # R1 cambia r² por 2·H_δ en cada canal. Dentro del umbral sigue siendo r².
-                    threshold = huber_threshold(self.huber_weight, self.huber_bias, token, values)
-                    elements = huber_elements(residual, threshold)
-                loss = elements.sum()
-                check_finite(loss, "La pérdida asociativa")
-                if surprise is not None:
-                    surprise.append(elements.detach().sum(-1))
-                gradients = torch.autograd.grad(loss, local, create_graph=differentiable)
                 observation = {} if self.observer is not None else None
-                weights, momentum, levels, modulation = self._write(
-                    weights,
-                    momentum,
-                    levels,
-                    gradients,
-                    (alpha, eta, theta),
-                    differentiable,
-                    modulation=modulation,
-                    steps=state.steps + index if self.config.plasticity is not None else None,
-                    observation=observation,
-                )
+                if fused:
+                    # Un kernel por flujo calcula las derivadas cerradas y escribe el momentum y
+                    # los pesos del paso. La configuración excluye recorte, plasticidad, bancos y
+                    # multiescala, así que no hay niveles ni modulación que avanzar.
+                    weights, momentum, elements = fused_associative_write(
+                        weights,
+                        momentum,
+                        keys,
+                        values,
+                        (alpha, eta, theta),
+                        residual_layer_norm=self.config.residual_layer_norm,
+                        eps=LAYER_NORM_EPS,
+                    )
+                    loss = elements.sum()
+                    check_finite(loss, "La pérdida asociativa")
+                    if surprise is not None:
+                        surprise.append(elements.detach().sum(-1))
+                    for value in (*weights, *momentum):
+                        check_finite(value, "La actualización de memoria")
+                    if not differentiable:
+                        weights = tuple(w.detach() for w in weights)
+                        momentum = tuple(m.detach() for m in momentum)
+                elif analytic:
+                    # Mismas derivadas en forma cerrada. La configuración excluye bancos,
+                    # multiescala y Huber, así que se derivan los pesos legibles del primer nivel.
+                    gradients, elements = associative_gradients(
+                        weights,
+                        keys,
+                        values,
+                        residual_layer_norm=self.config.residual_layer_norm,
+                        eps=LAYER_NORM_EPS,
+                    )
+                    loss = elements.sum()
+                    check_finite(loss, "La pérdida asociativa")
+                    if surprise is not None:
+                        surprise.append(elements.detach().sum(-1))
+                else:
+                    # La copia separa la variable de derivación interna de y(M_prev). Con el
+                    # banco de PT5 la memoria lee la media de sus niveles, y el gradiente se
+                    # toma en ella.
+                    local, prediction = self._associative_problem(
+                        keys.unsqueeze(1),
+                        replace(state, weights=weights, levels=levels),
+                        differentiable,
+                    )
+                    residual = prediction.squeeze(1) - values
+                    if self.config.huber is None:
+                        elements = residual.square()
+                    else:
+                        # R1 cambia r² por 2·H_δ en cada canal. Dentro del umbral sigue siendo r².
+                        threshold = huber_threshold(
+                            self.huber_weight, self.huber_bias, token, values
+                        )
+                        elements = huber_elements(residual, threshold)
+                    loss = elements.sum()
+                    check_finite(loss, "La pérdida asociativa")
+                    if surprise is not None:
+                        surprise.append(elements.detach().sum(-1))
+                    gradients = torch.autograd.grad(loss, local, create_graph=differentiable)
+                if not fused:
+                    weights, momentum, levels, modulation = self._write(
+                        weights,
+                        momentum,
+                        levels,
+                        gradients,
+                        (alpha, eta, theta),
+                        differentiable,
+                        modulation=modulation,
+                        steps=state.steps + index if self.config.plasticity is not None else None,
+                        observation=observation,
+                    )
                 if self.observer is not None:
                     self.observer(
                         alpha=alpha,

@@ -10,6 +10,8 @@ from dataclasses import FrozenInstanceError
 import pytest
 import torch
 
+from mars_titan.models.titans.config import MAX_BLOCK_ROWS
+
 DEVICES = ("cpu", pytest.param("cuda:0", marks=pytest.mark.cuda))
 DTYPES = (torch.float32, torch.float64)
 GROUPS = ((0, 2), (1, 3, 4))
@@ -359,7 +361,8 @@ def test_incompatible_local_operator_is_rejected_before_neural_work(local):
 
 
 @pytest.mark.parametrize(
-    "hidden,max_batch", [(0, 8), (True, 8), (513, 8), (3, 0), (3, True), (3, 4097)]
+    "hidden,max_batch",
+    [(0, 8), (True, 8), (513, 8), (3, 0), (3, True), (3, MAX_BLOCK_ROWS + 1)],
 )
 def test_dimensions_and_physical_batch_are_explicit_and_bounded(hidden, max_batch):
     api = hierarchy_api()

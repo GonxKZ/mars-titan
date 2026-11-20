@@ -61,10 +61,10 @@ from mars_titan.learning_traces.hooks import (
     open_recorder,
     trace_identity,
 )
+from mars_titan.memory import training_event_cache
 from mars_titan.memory.associative_memory import MatureCorrection
 from mars_titan.memory.cohort_noise import estimate_cohort_noise
 from mars_titan.memory.episodic_codec import FrozenEpisodeCodec
-from mars_titan.memory.financial_observations import FinancialObservationSource
 from mars_titan.memory.financial_session import FinancialPhase
 from mars_titan.memory.kernel_memory import KERNEL_RULE
 from mars_titan.memory.lesion_ledger import LesionLedger
@@ -571,7 +571,7 @@ class CorrectionInference(ChronologicalInference):
         repetirlo desde el principio tras una interrupción.
         """
         if (
-            type(source) is not FinancialObservationSource
+            not training_event_cache.supported(source)
             or source.phase.partition not in PREDICTED
             or not _compatible(self.predictor.config.inputs, source.specification())
         ):
@@ -853,7 +853,7 @@ def window_cohort_noise(predictor, chronological, source, correlation_cap):
     etiqueta. La memoria rápida empieza en su estado inicial y observa el calentamiento.
     """
     _require(
-        type(source) is FinancialObservationSource
+        training_event_cache.supported(source)
         and source.phase.partition == "train"
         and _compatible(predictor.config.inputs, source.specification()),
         "El tramo de estimación no es un tramo de ajuste de la entrada del padre",

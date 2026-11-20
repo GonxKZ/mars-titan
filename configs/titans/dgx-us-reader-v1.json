@@ -1,0 +1,45 @@
+{
+  "schema_version": 1,
+  "recipe_name": "mars_titan_episodic_readout_chronological_v1",
+  "status": "declared_not_executed",
+  "recipe": {
+    "update_instants": 8,
+    "loss": "pinball",
+    "weight_decay": 0,
+    "max_grad_norm": 1,
+    "epochs": 30,
+    "selection": {
+      "metric": "session_mae",
+      "patience": 5,
+      "min_delta": 0.00001,
+      "stopping": "fixed_budget"
+    },
+    "block_rows": 3584,
+    "neighbors": 8,
+    "temperature": 1,
+    "bank_capacity": 1024,
+    "bank_seed": 73,
+    "max_working_bytes": 1073741824,
+    "checkpoint_updates": 256,
+    "checkpoint_seconds": 900,
+    "precision": "fp32_strict"
+  },
+  "walk_forward": {
+    "search_cases": {
+      "lr3e-4": {
+        "learning_rate": 0.0003
+      },
+      "lr1e-3": {
+        "learning_rate": 0.001
+      },
+      "lr3e-3": {
+        "learning_rate": 0.003
+      }
+    }
+  },
+  "pending": [
+    "Receta del lector episódico para la DGX de EE. UU. Parte de comparison-campaign-reader-v1 con bloques de 3.584 filas: una sesión de hasta 3.584 activos cabe en un bloque, y el lector con puente de evidencias más exigente necesita 972 MiB para repetir un bloque diferenciable con el banco lleno, dentro del presupuesto de 1 GiB. El gradiente del segmento es la media sobre etiquetas sea cual sea el bloque.",
+    "Los casos de búsqueda repiten los ritmos de la búsqueda declarada del ajuste: el lector usa el mismo ritmo que su padre, como en el protocolo.",
+    "Sin resultados publicados. El test final de 2024 permanece cerrado."
+  ]
+}

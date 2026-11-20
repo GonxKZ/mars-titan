@@ -1,8 +1,15 @@
-"""Dos archivos de trabajo acotados para reutilizar entradas de ajuste verificadas."""
+"""Archivos de trabajo acotados para reutilizar las entradas verificadas de cada tramo.
+
+Cada tramo de la ventana (ajuste, validación, calibración y evaluación) guarda su copia en su
+propia carpeta, con dos huecos según el tamaño de bloque. La copia se construye una vez desde
+el lector Parquet, se verifica fila a fila contra él y después se reproduce con los mismos
+eventos, etiquetas y cursor. Sin copia válida, el lector vuelve a la ruta original.
+"""
 
 import argparse
 import errno
 import fcntl
+import hashlib
 import json
 import os
 import shutil
@@ -13,8 +20,10 @@ from pathlib import Path
 
 from mars_titan.data.cohort_files import safe_destination
 from mars_titan.data.storage import atomic_json, outside_source, sha256
-from mars_titan.models.titans.config import MAX_BLOCK_ROWS
+from mars_titan.models.titans.config import MAX_BLOCK_ROWS, canonical
+from mars_titan.models.titans.financial_inputs import FinancialInputSpec
 from mars_titan.training.input_pipeline import background
+from mars_titan.training.window_indices import locked
 
 from . import event_archive
 from .financial_observations import FinancialObservationSource
@@ -22,18 +31,66 @@ from .financial_observations import FinancialObservationSource
 ENV = "MARS_TITAN_TRAIN_ARCHIVE"
 RESERVE = 4 * 1024**3
 KIND = "verified_training_event_archive_v1"
+# Tramos que admiten copia. La reserva final no está entre ellos: nunca se empaqueta.
+PARTITIONS = ("train", "validation", "calibration", "evaluation")
+SPECIFICATION = "input-specification.json"
+SPECIFICATION_KIND = "observation_input_specification_v1"
 _lock = threading.Lock()
 _usage = {}
 
 
-class PackedTrainingSource(FinancialObservationSource):
-    """Fuente de ajuste con transporte verificable e índice canónico independiente."""
+class PackedPhaseSource(FinancialObservationSource):
+    """Fuente de un tramo con transporte verificable e índice canónico independiente."""
 
     def __init__(self, dataset, manifest, directory):
         super().__init__(dataset, manifest)
-        if self.phase.partition != "train":
-            raise ValueError("La copia preparada solo admite el tramo de ajuste")
+        if self.phase.partition not in PARTITIONS:
+            raise ValueError("La copia preparada solo admite los tramos de la ventana")
         self.directory = directory
+        self._specification = None
+
+    def specification(self):
+        """Especificación de entradas del tramo, guardada una vez junto a su índice.
+
+        La primera consulta decodifica el primer evento con entradas, como la fuente original,
+        y guarda sus anchuras con la identidad del corpus, del índice, de la política y de la
+        representación. Las siguientes, en este proceso o en otro trabajo sobre el mismo
+        índice, la reconstruyen sin leer Parquet. Una anchura que no correspondiera a los datos
+        la rechazaría la validación del primer bloque y la huella de la copia empaquetada.
+        """
+        if self._specification is None:
+            manifest = self.dataset.manifest
+            identity = dict(
+                source_sha256=self.dataset.identity,
+                view_sha256=self.identity,
+                input_policy=manifest["input_policy"],
+                representation_sha256=sha256_text(canonical(manifest["representation"])),
+            )
+            path = self.path.parent / SPECIFICATION
+            with locked(path):
+                dimensions = _stored_dimensions(path, identity)
+                if dimensions is None:
+                    specification = super().specification()
+                    atomic_json(
+                        path,
+                        dict(
+                            schema_version=1,
+                            kind=SPECIFICATION_KIND,
+                            identity=identity,
+                            dimensions=specification.dimensions,
+                        ),
+                    )
+                    _note("specification_reads")
+                else:
+                    specification = FinancialInputSpec(
+                        source_sha256=self.dataset.identity,
+                        view_sha256=self.identity,
+                        representation=manifest["representation"],
+                        dimensions=dimensions,
+                        input_policy=manifest["input_policy"],
+                    )
+            self._specification = specification
+        return self._specification
 
     def reference_batched_events(self, *, start_cursor=0, block_rows=256, max_cached_bytes=None):
         return super().batched_events(
@@ -49,18 +106,19 @@ class PackedTrainingSource(FinancialObservationSource):
 
 
 def source_for_phase(dataset, manifest, phase):
+    """Fuente empaquetada en la carpeta de su tramo si la campaña declara la caché."""
     directory = os.environ.get(ENV)
-    if directory and phase.partition == "train":
-        return PackedTrainingSource(dataset, manifest, directory)
+    if directory and phase.partition in PARTITIONS:
+        return PackedPhaseSource(dataset, manifest, Path(directory) / phase.partition)
     return FinancialObservationSource(dataset, manifest)
 
 
 def supported(source):
-    return type(source) in (FinancialObservationSource, PackedTrainingSource)
+    return type(source) in (FinancialObservationSource, PackedPhaseSource)
 
 
 def source_implementation(source):
-    return implementation() if type(source) is PackedTrainingSource else {}
+    return implementation() if type(source) is PackedPhaseSource else {}
 
 
 def reset_usage():
@@ -86,6 +144,29 @@ def implementation():
             ("mars_titan.memory.training_event_cache", __file__),
         )
     }
+
+
+def sha256_text(text):
+    return hashlib.sha256(text.encode()).hexdigest()
+
+
+def _stored_dimensions(path, identity):
+    """Anchuras guardadas si el archivo corresponde a esta identidad, o None."""
+    if not path.is_file() or path.is_symlink() or path.stat().st_size > 64 * 1024:
+        return None
+    try:
+        stamp = json.loads(path.read_text(encoding="utf-8"))
+    except (ValueError, UnicodeDecodeError):
+        return None
+    if (
+        not isinstance(stamp, dict)
+        or stamp.get("schema_version") != 1
+        or stamp.get("kind") != SPECIFICATION_KIND
+        or stamp.get("identity") != identity
+        or not isinstance(stamp.get("dimensions"), dict)
+    ):
+        return None
+    return stamp["dimensions"]
 
 
 def _budget(folder):
@@ -195,9 +276,7 @@ def stream(source, root, start, block):
     )
     for item in (path, manifest, lockfile):
         safe_destination(item)
-    spec = getattr(source, "_archive_spec", None)
-    if spec is None:
-        spec = source._archive_spec = source.specification()
+    spec = source.specification()
     expected = dict(
         kind=KIND,
         dataset=source.dataset.identity,
@@ -250,7 +329,7 @@ def main():
     from mars_titan.training.corpus_inputs import CorpusDataset
 
     parser = argparse.ArgumentParser(
-        description="Preparar y verificar en CPU la copia cronológica de un índice de ajuste"
+        description="Preparar y verificar en CPU la copia cronológica del índice de un tramo"
     )
     parser.add_argument("view", type=Path)
     parser.add_argument("index", type=Path)
@@ -259,8 +338,8 @@ def main():
     args = parser.parse_args()
     dataset = CorpusDataset(args.view, input_policy=HISTORICAL_MASKED)
     source = FinancialObservationSource(dataset, args.index)
-    if source.phase.partition != "train":
-        raise ValueError("La preparación solo admite un índice de ajuste")
+    if source.phase.partition not in PARTITIONS:
+        raise ValueError("La preparación solo admite el índice de un tramo de la ventana")
     with closing(stream(source, args.directory, 0, args.block_rows)) as events:
         next(events)
     result = receipt()
