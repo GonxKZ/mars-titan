@@ -98,7 +98,8 @@ def _mean(outcome, metric="session_rank_ic"):
         dict(tools={}),
         dict(metric="session_mae_raw"),
         dict(feedback=dict(window=0, min_assets=10, margin=None, shuffled_seed=5)),
-        dict(feedback=dict(window=20, min_assets=10, margin=1, shuffled_seed=5)),
+        dict(feedback=dict(window=20, min_assets=10, margin=True, shuffled_seed=5)),
+        dict(feedback=dict(window=20, min_assets=10, margin=float("nan"), shuffled_seed=5)),
         dict(inference=dict(block_days=5, replicates=10, seed=1, confidence=0.95)),
         dict(origins=[2024]),
         dict(origins=[2006, 2005]),
@@ -374,3 +375,8 @@ def test_shared_mixtures_are_computed_once_per_options_mode_and_margin(monkeypat
     # Núcleo, agente, uniforme, desordenado y una variante por herramienta: los subconjuntos
     # de Shapley sin margen coinciden con ellas y no se recalculan.
     assert len(calls) == 6
+
+
+def test_an_integer_margin_is_read_as_the_same_float():
+    document = declaration(feedback=dict(window=20, min_assets=10, margin=0, shuffled_seed=5))
+    assert document["feedback"]["margin"] == 0.0 and type(document["feedback"]["margin"]) is float
