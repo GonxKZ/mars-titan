@@ -162,9 +162,9 @@ def bank_memory_policy(warmup_months, fit_months=None):
 def _cuda(device):
     _require(device in ("cpu", "cuda:0"), "El dispositivo debe ser cpu o cuda:0 explícitos")
     if device == "cuda:0":
-        from mars_titan.data.embeddings import require_cuda
+        from .titans_walk_forward import require_window_cuda
 
-        require_cuda()
+        require_window_cuda()
         _require(
             os.environ.get("CUBLAS_WORKSPACE_CONFIG") in {":4096:8", ":16:8"},
             "Configura CUBLAS_WORKSPACE_CONFIG antes de iniciar PyTorch",

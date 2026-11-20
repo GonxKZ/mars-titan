@@ -95,6 +95,10 @@ def test_every_recipe_declares_the_ieee_attention_and_the_deterministic_algorith
     assert document["execution"]["threads"] == dict(intra=20, interop=20)
     assert document["execution"]["order"] == "seed_tier"
     assert document["budget"]["min_free_gib"] == 60
+    # Cada trabajo dispone de 16 GiB de GPU: la ventana ya no los rebaja a los 6 del portátil.
+    assert document["budget"]["cuda_gib"] == dict(mars_titan=16)
+    assert document["budget"]["memory_gib"] == dict(mars_titan=24)
+    assert document["execution"]["workers"]["mars_titan"] == 4
     for path in document["recipes"].values():
         recipe = json.loads((ROOT / path).read_text())["recipe"]
         assert recipe["precision"] == FP32_IEEE_ATTENTION

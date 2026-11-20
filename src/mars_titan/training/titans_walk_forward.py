@@ -409,6 +409,19 @@ class PredictionRows:
         return self.tables
 
 
+def require_window_cuda():
+    """Exigir cuda:0 para una ventana sin fijarle un presupuesto de memoria propio.
+
+    El tope de la GPU lo fija quien lanza la ventana: la campaña lo declara en `budget.cuda_gib`
+    y lo aplica al asignador antes de ejecutar el trabajo. El valor por defecto de
+    `require_cuda`, los 6 GiB del portátil, rebajaba en silencio ese tope: con 8 GiB declarados,
+    cada ajuste y cada lector de la campaña tenían 6.
+    """
+    from mars_titan.data.embeddings import require_cuda
+
+    require_cuda(max_bytes=None)
+
+
 def checked_tables(rows, metrics, dataset, partition):
     """Tablas de un tramo con exactamente las filas y objetivos de la vista.
 
@@ -590,9 +603,7 @@ def run_titans_window(
             "La salida contiene datos de otra ejecución",
         )
     if device == "cuda:0":
-        from mars_titan.data.embeddings import require_cuda
-
-        require_cuda()
+        require_window_cuda()
         _require(
             os.environ.get("CUBLAS_WORKSPACE_CONFIG") in {":4096:8", ":16:8"},
             "Configura CUBLAS_WORKSPACE_CONFIG antes de iniciar PyTorch",
@@ -913,9 +924,7 @@ def carry_titans(
     chronological = case_recipe(document, request.get("search_case"))
     anchor_manifest, _ = read_manifest(anchor_view, 64 * 1024**2)
     if device == "cuda:0":
-        from mars_titan.data.embeddings import require_cuda
-
-        require_cuda()
+        require_window_cuda()
         _require(
             os.environ.get("CUBLAS_WORKSPACE_CONFIG") in {":4096:8", ":16:8"},
             "Configura CUBLAS_WORKSPACE_CONFIG antes de iniciar PyTorch",

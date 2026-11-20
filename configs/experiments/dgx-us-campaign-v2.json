@@ -206,10 +206,10 @@
   "budget": {
     "min_free_gib": 60,
     "memory_gib": {
-      "mars_titan": 16
+      "mars_titan": 24
     },
     "cuda_gib": {
-      "mars_titan": 8
+      "mars_titan": 16
     },
     "deadline_utc": "2026-12-02T18:00:00+00:00"
   },
