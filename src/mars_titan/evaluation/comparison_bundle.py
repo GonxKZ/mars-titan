@@ -17,6 +17,7 @@ import zipfile
 from datetime import UTC, datetime
 from pathlib import Path, PurePosixPath
 
+from mars_titan.data.asset_symbols import MAX_SYMBOL_LENGTH
 from mars_titan.data.storage import outside_source, sha256
 
 from . import comparison_trace_bundle as traces
@@ -116,9 +117,10 @@ class _Payloads:
                 before = status.st_ino, status.st_size, status.st_mtime_ns
                 stream = source.open("rb")
             info = zipfile.ZipInfo(name)
-            info.compress_type = (
-                zipfile.ZIP_DEFLATED if name.endswith((".json", ".log")) else zipfile.ZIP_STORED
+            compress = name.endswith((".json", ".log")) or (
+                name.startswith("traces/") and name.endswith(".parquet")
             )
+            info.compress_type = zipfile.ZIP_DEFLATED if compress else zipfile.ZIP_STORED
             with stream, archive.open(info, "w", force_zip64=True) as target:
                 while block := stream.read(_CHUNK):
                     written += len(block)
@@ -739,11 +741,13 @@ class ResultsBundle:
         )
         data = self.archive.read(name)
         metadata = pq.read_metadata(pa.BufferReader(data))
-        dictionaries = [
-            n for n in ("sample_id", "asset_id", "market") if n in metadata.schema.names
+        dictionary_columns = [
+            column
+            for column in ("sample_id", "asset_id", "market")
+            if column in metadata.schema.names
         ]
         parquet = pq.ParquetFile(
-            pa.BufferReader(data), metadata=metadata, read_dictionary=dictionaries
+            pa.BufferReader(data), metadata=metadata, read_dictionary=dictionary_columns
         )
         _require(
             parquet.metadata.num_rows <= MAX_TABLE_ROWS and parquet.metadata.num_columns <= 64,
@@ -757,7 +761,11 @@ class ResultsBundle:
             "La tabla supera el límite descomprimido",
         )
         table = parquet.read(use_threads=False)
-        for name, maximum in (("sample_id", 256), ("asset_id", 64), ("market", 8)):
+        for name, maximum in (
+            ("sample_id", 256),
+            ("asset_id", len("US/") + MAX_SYMBOL_LENGTH),
+            ("market", 8),
+        ):
             if name not in table.column_names:
                 continue
             for chunk in table[name].chunks:

@@ -23,7 +23,7 @@ PARTITIONS = ("validation", "calibration", "evaluation")
 def write_table(path, sessions, *, scale=1.0):
     """Escribir una tabla con el contrato de predicciones de los ejecutores."""
     rows = [
-        (f"{day}-{position}", datetime.fromisoformat(day).replace(tzinfo=UTC), target, value)
+        (f"US/A{position}", datetime.fromisoformat(day).replace(tzinfo=UTC), target, value)
         for day, pairs in sessions
         for position, (value, target) in enumerate(pairs)
     ]
@@ -31,8 +31,8 @@ def write_table(path, sessions, *, scale=1.0):
     pq.write_table(
         pa.table(
             dict(
-                sample_id=[row[0] for row in rows],
-                asset_id=[row[0].rsplit("-", 1)[1] for row in rows],
+                sample_id=[f"{flow}/{int(at.timestamp()) * 1_000_000}" for flow, at, _, _ in rows],
+                asset_id=[row[0] for row in rows],
                 market=["US"] * len(rows),
                 prediction_at=pa.array([row[1] for row in rows], pa.timestamp("us", tz="UTC")),
                 target=[row[2] for row in rows],

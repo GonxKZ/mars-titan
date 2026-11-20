@@ -14,9 +14,9 @@ La proyección solo lee y escribe manifiestos. No abre muestras, etiquetas ni mo
 import copy
 import hashlib
 import json
-import re
 from pathlib import Path
 
+from mars_titan.data.asset_symbols import RESERVED_SYMBOLS, SYMBOL
 from mars_titan.data.cohort_files import read_manifest, safe_destination
 from mars_titan.data.input_policy import HISTORICAL_MASKED
 from mars_titan.data.storage import atomic_json, outside_source, sha256
@@ -29,7 +29,6 @@ COHORT_SALT = "mars-titan-comparison-campaign-v1"
 RULE = "sha256_among_origin_train_positive"
 MAX_SIZE = 4096
 KIND = "comparison_campaign_cohort_v1"
-_SYMBOL = re.compile(r"[A-Z0-9.^_=\-]{1,64}")
 
 
 def _require(condition, message):
@@ -65,8 +64,8 @@ def _fold(source):
         _require(
             asset.get("market") == "US"
             and isinstance(symbol, str)
-            and symbol not in {".", ".."}
-            and _SYMBOL.fullmatch(symbol) is not None,
+            and symbol not in RESERVED_SYMBOLS
+            and SYMBOL.fullmatch(symbol) is not None,
             "El activo no tiene una identidad US válida",
         )
         counts = asset.get("counts", {})
