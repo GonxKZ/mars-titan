@@ -1,0 +1,175 @@
+{
+  "schema_version": 1,
+  "kind": "comparison_campaign_v1",
+  "market": "US",
+  "final_test_access": false,
+  "description": "Segunda criba de la DGX en EE. UU.: variantes de una sola variable del núcleo titans_mac que exigen código posterior a la campaña v2, con su propio control en el mismo commit y las mismas reglas (selección por IC de rangos, atención FP32 IEEE, determinismo obligatorio, 20 hilos). titans_mac_macro condiciona los bloques de cada activo con el bloque macro de la sesión, los 140 indicadores de la cesta (70 series y 70 fórmulas): sumado a la fusión el macro no puede cambiar el orden de los activos. titans_mac_no_charts, no_macro, no_news y no_fundamentals retiran una modalidad del predictor, en el ajuste y al emitir, por la ruta de una ausencia real: miden qué aporta cada modalidad cuando el modelo puede adaptarse a no tenerla. El vector del gráfico es un ResNet18 de la misma ventana de precios y ocupa el 85 % de las muestras. Orígenes 2013–2016, los primeros con noticias y fundamentales en más del 13 % y el 56 % de las filas, semilla 42. Criterio fijado antes de ver resultados, solo con validación: una variante mejora si la media de su IC de rangos de validación supera a la del control en al menos 0,003; una modalidad aporta si retirarla baja esa media en al menos 0,003, y es prescindible si la diferencia queda dentro de ±0,003. El control debe reproducir bit a bit las predicciones de titans_mac en la campaña v2. El test final de 2024 permanece cerrado.",
+  "source_declaration_sha256": "dd8292f06e6346662c679c17559fc3ac41334001dec4e65e0ae762647b2b0e22",
+  "cohort": {
+    "size": 4198
+  },
+  "seeds": [
+    42
+  ],
+  "origins": [
+    {
+      "fold": "fold-008",
+      "role": "development",
+      "year": 2013
+    },
+    {
+      "fold": "fold-009",
+      "role": "development",
+      "year": 2014
+    },
+    {
+      "fold": "fold-010",
+      "role": "development",
+      "year": 2015
+    },
+    {
+      "fold": "fold-011",
+      "role": "development",
+      "year": 2016
+    }
+  ],
+  "tiers": [
+    "control",
+    "macro",
+    "no_charts",
+    "no_macro",
+    "no_news",
+    "no_fundamentals"
+  ],
+  "recipes": {
+    "core": "configs/titans/dgx-us-core-v2.json",
+    "reader": "configs/titans/dgx-us-reader-v2.json",
+    "reader_cognitive": "configs/titans/dgx-us-reader-cognitive-v2.json",
+    "reader_cognitive_constant": "configs/titans/dgx-us-reader-cognitive-constant-v2.json"
+  },
+  "stopping": {
+    "fit": {
+      "metric": "session_rank_ic",
+      "min_assets": 30,
+      "stopping": "validation_plateau",
+      "patience": 3,
+      "min_delta": 0.0,
+      "max_epochs": 16,
+      "initial_state": "reported"
+    },
+    "reader": {
+      "metric": "session_rank_ic",
+      "min_assets": 30,
+      "stopping": "validation_plateau",
+      "patience": 3,
+      "min_delta": 0.0,
+      "max_epochs": 12
+    }
+  },
+  "execution": {
+    "pipeline": {
+      "decode_workers": 4,
+      "prefetch_batches": 6,
+      "group_cache_mib": 2048,
+      "prepare_workers": 3
+    },
+    "workers": {
+      "mars_titan": 2,
+      "references": 1
+    },
+    "learning_traces": {
+      "every": 8,
+      "max_bytes": 67108864
+    },
+    "order": "seed_tier",
+    "threads": {
+      "intra": 20,
+      "interop": 20
+    }
+  },
+  "budget": {
+    "min_free_gib": 60,
+    "memory_gib": {
+      "mars_titan": 24
+    },
+    "cuda_gib": {
+      "mars_titan": 16
+    },
+    "deadline_utc": "2026-12-02T18:00:00+00:00"
+  },
+  "models": {
+    "titans_mac": {
+      "machine": "mars_titan",
+      "runner": "fit",
+      "variant": "mac_online",
+      "recipe": "core",
+      "tier": "control"
+    },
+    "titans_mac_macro": {
+      "machine": "mars_titan",
+      "runner": "fit",
+      "variant": "mac_online",
+      "recipe": "core",
+      "tier": "macro",
+      "predictor_changes": {
+        "presence_modulation": "macro_film_v1"
+      }
+    },
+    "titans_mac_no_charts": {
+      "machine": "mars_titan",
+      "runner": "fit",
+      "variant": "mac_online",
+      "recipe": "core",
+      "tier": "no_charts",
+      "predictor_changes": {
+        "removed_modalities": {
+          "names": [
+            "charts"
+          ]
+        }
+      }
+    },
+    "titans_mac_no_macro": {
+      "machine": "mars_titan",
+      "runner": "fit",
+      "variant": "mac_online",
+      "recipe": "core",
+      "tier": "no_macro",
+      "predictor_changes": {
+        "removed_modalities": {
+          "names": [
+            "macro"
+          ]
+        }
+      }
+    },
+    "titans_mac_no_news": {
+      "machine": "mars_titan",
+      "runner": "fit",
+      "variant": "mac_online",
+      "recipe": "core",
+      "tier": "no_news",
+      "predictor_changes": {
+        "removed_modalities": {
+          "names": [
+            "news"
+          ]
+        }
+      }
+    },
+    "titans_mac_no_fundamentals": {
+      "machine": "mars_titan",
+      "runner": "fit",
+      "variant": "mac_online",
+      "recipe": "core",
+      "tier": "no_fundamentals",
+      "predictor_changes": {
+        "removed_modalities": {
+          "names": [
+            "fundamentals"
+          ]
+        }
+      }
+    }
+  }
+}

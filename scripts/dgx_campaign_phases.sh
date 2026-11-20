@@ -7,8 +7,14 @@
 # Uso: conductor-v2.sh <copia fija> <estado> <vistas> <archivo de fases>
 # Cada línea del archivo de fases: <trabajadores> <argumentos de run>. Las líneas vacías y las
 # que empiezan por # se ignoran. El conductor para si se le pide parar (SIGTERM).
+# Un quinto argumento opcional nombra la declaración (por defecto, la de la campaña v2) y un
+# sexto la carpeta de copias empaquetadas de otro estado: cada fase lee entonces
+# <carpeta>/<origen de la fase> (MARS_TITAN_TRAIN_ARCHIVE), para que una criba comparta las
+# copias de la campaña sin duplicarlas en disco. Exige fases de un solo origen.
 set -u
 copia="$1"; estado="$2"; vistas="$3"; fases="$4"
+declaracion="${5:-configs/experiments/dgx-us-campaign-v2.json}"
+copias="${6:-}"
 parar=0
 trap "parar=1" TERM INT
 cd "$copia" || exit 2
@@ -17,8 +23,15 @@ while IFS= read -r linea || [ -n "$linea" ]; do
   [ "$parar" -eq 0 ] || break
   trabajadores="${linea%% *}"; argumentos="${linea#* }"
   echo "fase: $linea ($(date -u +%Y-%m-%dT%H:%M:%SZ))"
+  if [ -n "$copias" ]; then
+    # Las copias compartidas son de un origen: la fase debe nombrar exactamente uno.
+    origenes=$(printf '%s\n' "$argumentos" | grep -o -- '--origin [0-9]*' | awk '{print $2}')
+    [ "$(printf '%s\n' "$origenes" | grep -c .)" -eq 1 ] || { echo "La fase necesita un único --origin para compartir copias: $linea"; exit 2; }
+    export MARS_TITAN_TRAIN_ARCHIVE="$copias/$origenes"
+    [ -d "$MARS_TITAN_TRAIN_ARCHIVE" ] || { echo "Faltan las copias compartidas de $origenes en $copias"; exit 2; }
+  fi
   # shellcheck disable=SC2086
-  ./scripts/dgx_campaign.sh run --machine mars_titan --declaration configs/experiments/dgx-us-campaign-v2.json --state "$estado" --views "$vistas" --workers "$trabajadores" $argumentos &
+  ./scripts/dgx_campaign.sh run --machine mars_titan --declaration "$declaracion" --state "$estado" --views "$vistas" --workers "$trabajadores" $argumentos &
   hijo=$!
   wait "$hijo"; codigo=$?
   # Una señal interrumpe wait: se espera a que la cola pause sus trabajos en su barrera.
