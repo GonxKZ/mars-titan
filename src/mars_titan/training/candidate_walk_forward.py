@@ -26,7 +26,9 @@ de la candidata. Iguala la ventana de información observada por todos los model
 memoria y queda registrado en la identidad de cada fase.
 """
 
+import threading
 import time
+import weakref
 from dataclasses import asdict, fields
 from datetime import UTC, datetime
 from pathlib import Path
@@ -174,8 +176,35 @@ def window_sources(dataset, folder, partitions, warmup_months):
     return phase_sources(dataset, {name: phases[name] for name in partitions}, folder)
 
 
+# Filas declaradas por cada objeto de vista abierto, por tramo. Se liberan con la vista.
+_VIEW_ROWS = weakref.WeakKeyDictionary()
+_VIEW_ROWS_LOCK = threading.Lock()
+
+
 def view_rows(dataset, partition):
-    """Filas que la vista declara en un tramo: mercado, activo, instante y objetivo."""
+    """Filas que la vista declara en un tramo: mercado, activo, instante y objetivo.
+
+    Se leen una vez por objeto de vista y tramo. Leerlas abre el Parquet de cada activo y sus
+    etiquetas: 19,6 s la validación y 5,3 s la evaluación de la vista de 2010, con 4.198
+    activos, frente a 0,04 s al repetirlas. Cada época de validación las volvía a pedir.
+    Mientras el objeto existe su manifiesto no cambia, y fija la huella de cada archivo. Cada
+    llamada devuelve copias, así que quien las modifique no altera las siguientes.
+    """
+    with _VIEW_ROWS_LOCK:
+        known = _VIEW_ROWS.get(dataset, {}).get(partition)
+    if known is None:
+        known = _declared_rows(dataset, partition)
+        with _VIEW_ROWS_LOCK:
+            known = _VIEW_ROWS.setdefault(dataset, {}).setdefault(partition, known)
+    return dict(
+        market=list(known["market"]),
+        asset_id=list(known["asset_id"]),
+        prediction_at=known["prediction_at"].copy(),
+        target=known["target"].copy(),
+    )
+
+
+def _declared_rows(dataset, partition):
     columns = dict(market=[], asset_id=[], prediction_at=[], target=[])
     for asset in sorted(dataset.assets, key=lambda row: (row["market"], row["symbol"])):
         with pq.ParquetFile(dataset._file(asset, "samples")) as file:

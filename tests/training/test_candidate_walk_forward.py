@@ -226,6 +226,35 @@ def reference_table(view, partition):
     )
 
 
+def test_view_rows_are_read_once_per_view_object_and_partition(views, monkeypatch):
+    view = views.windows["US"]["fold-000"]
+    dataset = CorpusDataset(view, input_policy=HISTORICAL_MASKED)
+    calls, labels = [], dataset._labels
+    monkeypatch.setattr(dataset, "_labels", lambda *args: calls.append(args[1]) or labels(*args))
+    first = walk.view_rows(dataset, "evaluation")
+    assert calls == ["evaluation"] * len(dataset.assets)
+    expected = {
+        name: list(values) if isinstance(values, list) else values.copy()
+        for name, values in first.items()
+    }
+    first["market"].append("ajeno")
+    first["target"][0] += 1.0
+    second = walk.view_rows(dataset, "evaluation")
+    assert len(calls) == len(dataset.assets)
+    assert second["market"] == expected["market"] and second["asset_id"] == expected["asset_id"]
+    np.testing.assert_array_equal(second["prediction_at"], expected["prediction_at"])
+    np.testing.assert_array_equal(second["target"], expected["target"])
+    walk.view_rows(dataset, "validation")
+    assert calls.count("validation") == len(dataset.assets)
+
+    fresh = CorpusDataset(view, input_policy=HISTORICAL_MASKED)
+    reads, own = [], fresh._labels
+    monkeypatch.setattr(fresh, "_labels", lambda *args: reads.append(args[1]) or own(*args))
+    again = walk.view_rows(fresh, "evaluation")
+    assert reads == ["evaluation"] * len(fresh.assets)
+    np.testing.assert_array_equal(again["target"], expected["target"])
+
+
 def test_predicted_rows_are_the_rows_of_the_other_arms(views, anchor):
     view = views.windows["US"]["fold-000"]
     for name, record in anchor.report["predictions"].items():
