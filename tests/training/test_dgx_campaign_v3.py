@@ -228,8 +228,10 @@ def test_the_campaigns_with_technical_inputs_only_add_the_declared_extension(nam
     path, source = ROOT / "configs/experiments" / name, ROOT / "configs/experiments" / origin
     document, previous = campaign.load_declaration(path)[0], json.loads(source.read_text())
     assert document["inputs"] == dict(technical="long_horizon_v1") and "inputs" not in previous
-    own = {"inputs", "description", "source_declaration_sha256"}
+    own = {"inputs", "description", "source_declaration_sha256", "cohort"}
     assert set(document) == set(previous) | {"inputs"}
+    # La extensión la declara la cohorte, que es la vista completa de cada origen.
+    assert document["cohort"] == dict(size=previous["cohort"]["size"], rule=FULL_VIEW_RULE)
     for key in set(previous) - own:
         assert document[key] == previous[key], key
     assert document["source_declaration_sha256"] == hashlib.sha256(source.read_bytes()).hexdigest()
