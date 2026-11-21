@@ -12,7 +12,9 @@ import torch
 from mars_titan.models.titans.session_ic_objective import (
     SESSION_IC_TERM,
     SessionICTerm,
+    liquidity_weights,
     parse_session_ic_term,
+    session_correlations,
 )
 
 
@@ -169,3 +171,152 @@ def test_the_identity_names_the_term_and_its_values():
 def test_invalid_declarations_are_rejected(value):
     with pytest.raises(ValueError):
         parse_session_ic_term(value)
+
+
+def average_ranks(values):
+    order = sorted(range(len(values)), key=lambda index: values[index])
+    ranks, start = [0.0] * len(values), 0
+    while start < len(order):
+        stop = start
+        while stop + 1 < len(order) and values[order[stop + 1]] == values[order[start]]:
+            stop += 1
+        for position in range(start, stop + 1):
+            ranks[order[position]] = (start + stop) / 2 + 1
+        start = stop + 1
+    return ranks
+
+
+def reference_weights(liquidity, power):
+    ranks = average_ranks(liquidity)
+    raw = [(0.05 + (rank - 0.5) / len(liquidity)) ** power for rank in ranks]
+    return [value / sum(raw) for value in raw]
+
+
+def weighted_pearson(left, right, weights):
+    mean_left = sum(w * a for w, a in zip(weights, left, strict=True))
+    mean_right = sum(w * b for w, b in zip(weights, right, strict=True))
+    covariance = sum(
+        w * (a - mean_left) * (b - mean_right) for w, a, b in zip(weights, left, right, strict=True)
+    )
+    spread_left = sum(w * (a - mean_left) ** 2 for w, a in zip(weights, left, strict=True))
+    spread_right = sum(w * (b - mean_right) ** 2 for w, b in zip(weights, right, strict=True))
+    return covariance / (spread_left * spread_right) ** 0.5
+
+
+def weighted_reference(point, target, sessions, liquidity, weight, minimum_rows, power):
+    groups = {}
+    for row, key in enumerate(sessions):
+        groups.setdefault(key, []).append(row)
+    values = []
+    for rows in groups.values():
+        if len(rows) < minimum_rows:
+            continue
+        weights = reference_weights([liquidity[row] for row in rows], power)
+        scores = normal_scores([target[row] for row in rows])
+        values.append(weighted_pearson([point[row] for row in rows], scores, weights))
+    return -weight * sum(values) / len(values) if values else 0.0
+
+
+def liquid_sample(rows=40, seed=5):
+    point, target, sessions = sample(rows, seed)
+    generator = torch.Generator().manual_seed(seed + 100)
+    liquidity = 12 + 3 * torch.randn(rows, dtype=torch.float64, generator=generator)
+    # Empates de liquidez dentro de una sesión.
+    liquidity[3], liquidity[6] = liquidity[0], liquidity[0]
+    return point, target, sessions, liquidity
+
+
+@pytest.mark.parametrize("power", [0.5, 1.0, 2.0])
+def test_the_weighted_term_is_the_weighted_correlation_of_each_session(power):
+    point, target, sessions, liquidity = liquid_sample()
+    term = SessionICTerm(weight=2.5, minimum_rows=5, liquidity_column=-3, liquidity_power=power)
+    expected = weighted_reference(
+        point.tolist(), target.tolist(), sessions, liquidity.tolist(), 2.5, 5, power
+    )
+    value = term.term(point, target, sessions, liquidity)
+    assert value.item() == pytest.approx(expected, rel=1e-8)
+    assert value.item() != pytest.approx(
+        reference(point.tolist(), target.tolist(), sessions, 2.5, 5)
+    )
+    # Los pesos de una sesión suman uno, crecen con la liquidez y los empates lo comparten.
+    rows = [row for row, key in enumerate(sessions) if key == ("US", 1)]
+    weights = liquidity_weights(liquidity[rows], power)
+    torch.testing.assert_close(
+        weights,
+        torch.tensor(reference_weights(liquidity[rows].tolist(), power), dtype=torch.float64),
+        rtol=1e-12,
+        atol=0,
+    )
+    assert weights.sum().item() == pytest.approx(1.0)
+    order = liquidity[rows].argsort()
+    assert bool((weights[order][1:] >= weights[order][:-1]).all())
+    # Cualquier transformación creciente de la liquidez deja los mismos pesos.
+    torch.testing.assert_close(
+        liquidity_weights(torch.exp(liquidity[rows] / 4), power), weights, rtol=1e-12, atol=0
+    )
+
+
+def test_equal_liquidity_gives_the_unweighted_term():
+    point, target, sessions, _ = liquid_sample()
+    plain = SessionICTerm(weight=2.0, minimum_rows=5).term(point, target, sessions)
+    term = SessionICTerm(weight=2.0, minimum_rows=5, liquidity_column=-1, liquidity_power=1.0)
+    flat = torch.full_like(point, 7.0)
+    torch.testing.assert_close(term.term(point, target, sessions, flat), plain, rtol=1e-9, atol=0)
+    # Y la correlación ponderada es la de siempre cuando no se declara la liquidez.
+    torch.testing.assert_close(
+        session_correlations(point, target, sessions, 5),
+        session_correlations(point, target, sessions, 5, liquidity=None, power=None),
+        rtol=0,
+        atol=0,
+    )
+
+
+def test_the_liquid_rows_weigh_more_and_the_liquidity_has_no_gradient():
+    point, target, sessions, liquidity = liquid_sample()
+    point = point.clone().requires_grad_(True)
+    liquidity = liquidity.clone().requires_grad_(True)
+    term = SessionICTerm(minimum_rows=5, liquidity_column=-1, liquidity_power=2.0)
+    value = term.term(point, target, sessions, liquidity)
+    (gradient,) = torch.autograd.grad(value, point, retain_graph=True)
+    assert torch.isfinite(gradient).all() and gradient.abs().sum() > 0
+    assert torch.autograd.grad(value, liquidity, allow_unused=True)[0] is None
+    # En cada sesión, la mitad más líquida recibe más gradiente que la menos líquida.
+    for key in {key for key in sessions if key != ("CN", 9)}:
+        rows = [row for row, other in enumerate(sessions) if other == key]
+        order = sorted(rows, key=lambda row: liquidity[row].item())
+        half = len(order) // 2
+        assert gradient[order[half:]].abs().sum() > gradient[order[:half]].abs().sum()
+    # Mover el punto contra el gradiente mejora el término ponderado.
+    moved = point.detach() - 0.05 * gradient
+    assert term.term(moved, target, sessions, liquidity.detach()) < value
+
+
+def test_the_liquidity_is_declared_whole_and_enters_the_identity_only_then():
+    plain = SessionICTerm(weight=3.0, minimum_rows=8)
+    declared = SessionICTerm(weight=3.0, minimum_rows=8, liquidity_column=-29, liquidity_power=0.5)
+    assert not plain.weighted and declared.weighted
+    assert "liquidity_column" not in plain.identity()
+    identity = declared.identity()
+    assert identity["liquidity_column"] == -29 and identity["liquidity_power"] == 0.5
+    assert {k: v for k, v in identity.items() if k in plain.identity()} == plain.identity()
+    values = dict(weight=3.0, minimum_rows=8, liquidity_column=-29, liquidity_power=0.5)
+    assert parse_session_ic_term(values) == declared
+    point, target, sessions, liquidity = liquid_sample()
+    with pytest.raises(ValueError, match="solo si la declara"):
+        plain.term(point, target, sessions, liquidity)
+    with pytest.raises(ValueError, match="solo si la declara"):
+        declared.term(point, target, sessions)
+    for changes in (
+        dict(liquidity_column=-29),
+        dict(liquidity_power=0.5),
+        dict(liquidity_column=0, liquidity_power=0.5),
+        dict(liquidity_column=3, liquidity_power=0.5),
+        dict(liquidity_column=-1.0, liquidity_power=0.5),
+        dict(liquidity_column=True, liquidity_power=0.5),
+        dict(liquidity_column=-1, liquidity_power=0.0),
+        dict(liquidity_column=-1, liquidity_power=-1.0),
+        dict(liquidity_column=-1, liquidity_power=9.0),
+        dict(liquidity_column=-1, liquidity_power=float("nan")),
+    ):
+        with pytest.raises(ValueError):
+            parse_session_ic_term(dict(weight=3.0, minimum_rows=8, **changes))

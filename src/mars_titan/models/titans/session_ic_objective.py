@@ -118,10 +118,21 @@ class SessionICTerm:
     cabeza escalar y emite una puntuación estandarizada.
 
     Es una derivación propia. Sin sesiones con suficientes filas el término vale cero.
+
+    Con `liquidity_column` y `liquidity_power` la correlación de cada sesión pondera sus
+    filas por liquidez: con q_i la posición de la fila entre las de su sesión al ordenarlas por
+    la columna declarada del bloque del gráfico (su rango medio menos 1/2, entre n), el peso
+    es (0,05 + q_i)^p, normalizado a suma uno, y la media, la dispersión y el producto de la
+    correlación son los ponderados. Los rangos del objetivo no cambian. Así el término cuenta
+    más el orden entre los activos que se pueden operar. Con p = 0 sería la correlación sin
+    ponderar. La columna es una entrada disponible al emitir y no lleva gradiente.
     """
 
     weight: float = 1.0
     minimum_rows: int = 8
+    # Columna del bloque del gráfico con la liquidez de cada fila, contada desde el final.
+    liquidity_column: int | None = None
+    liquidity_power: float | None = None
 
     def __post_init__(self):
         if type(self.minimum_rows) is not int or not 3 <= self.minimum_rows <= 4096:
@@ -130,10 +141,25 @@ class SessionICTerm:
         if not 0 < weight <= 1e3:
             raise ValueError("weight debe ser positivo y acotado")
         object.__setattr__(self, "weight", weight)
+        if (self.liquidity_column is None) != (self.liquidity_power is None):
+            raise ValueError("La liquidez del término declara su columna y su exponente")
+        if self.liquidity_column is not None:
+            if type(self.liquidity_column) is not int or not -4096 <= self.liquidity_column < 0:
+                raise ValueError("liquidity_column cuenta desde el final del bloque: es negativa")
+            power = _number(self.liquidity_power, "liquidity_power")
+            if not 0 < power <= 8:
+                raise ValueError("liquidity_power debe estar entre 0 y 8")
+            object.__setattr__(self, "liquidity_power", power)
+
+    @property
+    def weighted(self):
+        """Si la correlación pondera las filas por liquidez."""
+        return self.liquidity_column is not None
 
     def identity(self):
-        return dict(
-            **asdict(self),
+        result = dict(
+            weight=self.weight,
+            minimum_rows=self.minimum_rows,
             schema_version=1,
             name=SESSION_IC_TERM,
             point="median_of_the_quantile_head_or_scalar_output",
@@ -144,25 +170,87 @@ class SessionICTerm:
             sign="weight_times_mean_correlation_subtracted_from_the_declared_loss",
             standardization_floor=dict(relative=RELATIVE_FLOOR, absolute="dtype_eps_squared"),
         )
+        # Sin la liquidez se conserva literalmente la identidad anterior.
+        if self.weighted:
+            result.update(
+                liquidity_column=self.liquidity_column,
+                liquidity_power=self.liquidity_power,
+                row_weighting=(
+                    "offset_0.05_plus_session_position_of_the_chart_column_to_the_power_"
+                    "normalized_to_sum_one"
+                ),
+                liquidity_source="chart_block_column_counted_from_the_end_as_received",
+            )
+        return result
 
-    def term(self, point, target, sessions):
+    def term(self, point, target, sessions, liquidity=None):
         """−w por la correlación media de las sesiones del tramo, o cero si no hay ninguna."""
-        correlations = session_correlations(point, target, sessions, self.minimum_rows)
+        if self.weighted != (liquidity is not None):
+            raise ValueError("El término recibe la liquidez de cada fila solo si la declara")
+        correlations = session_correlations(
+            point,
+            target,
+            sessions,
+            self.minimum_rows,
+            liquidity=liquidity,
+            power=self.liquidity_power,
+        )
         if not len(correlations):
             return point.sum() * 0
         return -self.weight * correlations.mean()
 
 
 def parse_session_ic_term(raw):
-    """Aceptar la configuración, sus dos valores o None."""
+    """Aceptar la configuración, sus valores o None."""
     if raw is None:
         return None
     if type(raw) is SessionICTerm:
         raw.__post_init__()
         return raw
-    if type(raw) is dict and set(raw) == {"weight", "minimum_rows"}:
+    if type(raw) is dict and set(raw) in (
+        {"weight", "minimum_rows"},
+        {"weight", "minimum_rows", "liquidity_column", "liquidity_power"},
+    ):
         return SessionICTerm(**raw)
-    raise ValueError("session_ic_term debe declarar weight y minimum_rows, o ser None")
+    raise ValueError(
+        "session_ic_term debe declarar weight y minimum_rows (y liquidity_column con "
+        "liquidity_power), o ser None"
+    )
+
+
+def liquidity_weights(values, power):
+    """Pesos de las filas de una sesión: (0,05 + posición por liquidez)^p, con suma uno."""
+    if values.ndim != 1 or values.numel() == 0:
+        raise ValueError("La liquidez necesita un valor por fila de la sesión")
+    require_finite(values, "La liquidez de la sesión debe ser finita")
+    ordered = values.sort().values
+    lower = torch.searchsorted(ordered, values, right=False)
+    upper = torch.searchsorted(ordered, values, right=True)
+    # Rango medio de las filas empatadas, como en los rangos del objetivo.
+    position = ((lower + upper + 1).to(values.dtype) / 2 - 0.5) / values.numel()
+    weights = (0.05 + position) ** power
+    return weights / weights.sum()
+
+
+def weighted_standardized(values, weights):
+    """Como `standardized`, con la media y la dispersión ponderadas. Los pesos suman uno."""
+    if (
+        not isinstance(values, torch.Tensor)
+        or values.ndim != 1
+        or values.numel() == 0
+        or values.dtype not in (torch.float32, torch.float64)
+        or weights.shape != values.shape
+    ):
+        raise ValueError("La normalización ponderada necesita un peso por valor en FP32 o FP64")
+    require_finite(values, "Las puntuaciones de la sesión deben ser finitas")
+    epsilon = torch.finfo(values.dtype).eps
+    maximum = values.detach().abs().amax().clamp_min(epsilon)
+    _, exponent = torch.frexp(maximum)
+    magnitude = torch.ldexp(torch.ones_like(maximum), exponent - 1)
+    scaled = values / magnitude
+    centered = scaled - (weights * scaled).sum()
+    floor = RELATIVE_FLOOR * (weights * scaled.square()).sum() + (epsilon / magnitude).square()
+    return centered / torch.sqrt((weights * centered.square()).sum() + floor)
 
 
 def standardized_scores(scores, markets):
@@ -180,11 +268,12 @@ def standardized_scores(scores, markets):
     return result
 
 
-def session_correlations(scores, target, sessions, minimum_rows):
+def session_correlations(scores, target, sessions, minimum_rows, *, liquidity=None, power=None):
     """Correlación regularizada por sesión entre puntuaciones y rangos normales del objetivo.
 
     Usa el suelo de `standardized`. Una sesión con objetivo constante aporta cero. Devuelve
-    una entrada por sesión con suficientes filas, en el orden de primera aparición.
+    una entrada por sesión con suficientes filas, en el orden de primera aparición. Con
+    `liquidity` y `power`, cada sesión pondera sus filas con `liquidity_weights`.
     """
     if (
         scores.ndim != 1
@@ -193,6 +282,10 @@ def session_correlations(scores, target, sessions, minimum_rows):
         or scores.dtype != target.dtype
     ):
         raise ValueError("Puntuaciones, objetivos y sesiones deben ir fila a fila")
+    if (liquidity is None) != (power is None) or (
+        liquidity is not None and liquidity.shape != scores.shape
+    ):
+        raise ValueError("La ponderación necesita la liquidez de cada fila y su exponente")
     groups = {}
     for row, key in enumerate(sessions):
         groups.setdefault(key, []).append(row)
@@ -204,7 +297,12 @@ def session_correlations(scores, target, sessions, minimum_rows):
         score = scores.index_select(0, index)
         labels = target.index_select(0, index).unsqueeze(-1)
         normal = gaussian_ranks(labels, torch.ones_like(labels, dtype=torch.bool)).squeeze(-1)
-        values.append((standardized(score) * standardized(normal)).mean())
+        if liquidity is None:
+            values.append((standardized(score) * standardized(normal)).mean())
+            continue
+        weights = liquidity_weights(liquidity.detach().index_select(0, index), power)
+        product = weighted_standardized(score, weights) * weighted_standardized(normal, weights)
+        values.append((weights * product).sum())
     if not values:
         return scores.new_zeros(0)
     return torch.stack(values)

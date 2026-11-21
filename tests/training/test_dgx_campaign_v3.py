@@ -6,7 +6,9 @@ from pathlib import Path
 
 import pytest
 
+from mars_titan.data import technical_features
 from mars_titan.training import comparison_campaign as campaign
+from mars_titan.training import mars_titan_run as readout
 from mars_titan.training.comparison_cohorts import FULL_VIEW_RULE
 from mars_titan.training.financial_run import ChronologicalRecipe
 
@@ -585,3 +587,63 @@ def test_the_campaigns_on_the_session_ic_term_and_the_dense_branch_keep_each_con
     assert declared["titans_mac_ic"] == "titans_mac_scalar_noic"
     assert declared["titans_mac_no_charts"] == "titans_mac_nobranch"
     assert declared["titans_mac_disabled_noic"] == "titans_mac_disabled"
+
+
+def test_the_extension_of_the_campaign_changes_one_field_per_model():
+    path = ROOT / "configs/experiments/dgx-us-campaign-v8-ext1.json"
+    source = ROOT / "configs/experiments/dgx-us-campaign-v8.json"
+    document, previous = campaign.load_declaration(path)[0], json.loads(source.read_text())
+    own = {"description", "source_declaration_sha256", "models", "tiers", "recipes"}
+    assert set(document) == set(previous)
+    for key in set(previous) - own:
+        assert document[key] == previous[key], key
+    assert document["tiers"] == ["core", "controls", "x1_liquid", "x1_readers", "x1_reader_ic"]
+    # El núcleo y los lectores de la base son los de la campaña: mismos campos y recetas.
+    for model in ("titans_mac", "titans_mac_disabled"):
+        assert document["models"][model] == previous["models"][model]
+    for model in ("mars_titan_m0", "mars_titan_m3", "mars_titan_cognitive"):
+        entry, before = document["models"][model], previous["models"][model]
+        assert {k: v for k, v in entry.items() if k != "tier"} == {
+            k: v for k, v in before.items() if k != "tier"
+        }
+        assert entry["tier"] == "x1_readers"
+    for name in ("core", "reader", "reader_cognitive"):
+        assert document["recipes"][name] == previous["recipes"][name]
+
+    def changed(left, right):
+        one, two = flat_specification(document, left), flat_specification(document, right)
+        keys = (one.keys() | two.keys()) - {"predictor_changes"}
+        return {key for key in keys if one.get(key) != two.get(key)}
+
+    term = "recipe.session_ic_term"
+    base = flat_specification(document, "titans_mac")[term]
+    assert base == {"weight": 3.0, "minimum_rows": 8}
+    # La columna declarada es el volumen medio en dólares de 21 sesiones de los rasgos.
+    names = technical_features.NAMES_V2
+    column = names.index("log_dollar_volume_21") - len(names)
+    for control in ("titans_mac", "titans_mac_disabled"):
+        for suffix, power in (("liq05", 0.5), ("liq1", 1.0)):
+            assert changed(f"{control}_{suffix}", control) == {term}
+            declared = flat_specification(document, f"{control}_{suffix}")[term]
+            assert declared == {**base, "liquidity_column": column, "liquidity_power": power}
+            recipe = ChronologicalRecipe(**_recipe(document, f"{control}_{suffix}"))
+            assert recipe.session_ic().weighted
+    for control in ("mars_titan_m0", "mars_titan_m3", "mars_titan_cognitive"):
+        assert changed(f"{control}_ic", control) == {term}
+        assert flat_specification(document, f"{control}_ic")[term] == base
+        assert document["models"][f"{control}_ic"]["parent"] == "titans_mac"
+        reader = readout.ReadoutRecipe(**_recipe(document, f"{control}_ic"))
+        assert reader.session_ic() is not None and not reader.session_ic().weighted
+        assert readout.ReadoutRecipe(**_recipe(document, control)).session_ic() is None
+    declared = json.loads(
+        (ROOT / "configs/experiments/dgx-us-campaign-v8-ext1-contrasts.json").read_text()
+    )["controls"]
+    assert set(declared) == set(document["models"]) - {"titans_mac"}
+    assert set(declared.values()) <= set(document["models"])
+    assert declared["mars_titan_m3_ic"] == "mars_titan_m3"
+    assert declared["titans_mac_disabled_liq1"] == "titans_mac_disabled"
+
+
+def _recipe(document, model):
+    name = document["models"][model]["recipe"]
+    return json.loads((ROOT / document["recipes"][name]).read_text())["recipe"]

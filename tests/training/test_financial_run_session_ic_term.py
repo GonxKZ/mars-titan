@@ -14,7 +14,7 @@ from mars_titan.models.titans.financial import FinancialConfig, FinancialPredict
 from mars_titan.models.titans.session_ic_objective import SESSION_IC_TERM, SessionICObjective
 from mars_titan.training.corpus_inputs import CorpusDataset
 from mars_titan.training.financial_run import ChronologicalRecipe, ChronologicalTrainer
-from tests.models.titans.test_session_ic_term import reference
+from tests.models.titans.test_session_ic_term import reference, weighted_reference
 from tests.training.chronological_fixture import chronological_corpus, decision, phases
 from tests.training.test_financial_run import SELECTION, RecordingOptimizer, corpus, entries
 from tests.training.test_financial_run_auxiliary_horizons import AUXILIARY
@@ -96,8 +96,12 @@ class Spy:
     def __init__(self, inner):
         self.inner, self.calls = inner, []
 
-    def term(self, point, target, sessions):
-        value = self.inner.term(point, target, sessions)
+    def __getattr__(self, name):
+        # El recorrido lee del término su columna de liquidez.
+        return getattr(self.inner, name)
+
+    def term(self, point, target, sessions, liquidity=None):
+        value = self.inner.term(point, target, sessions, liquidity)
         self.calls.append(
             (point.detach().clone(), target.detach().clone(), list(sessions), value.detach())
         )
@@ -336,3 +340,91 @@ def test_the_term_runs_with_the_weight_options(shared, tmp_path, options):
     assert engine.run()["status"] == "completed"
     assert spy.calls and any(value.item() != 0 for *_, value in spy.calls)
     assert set(options) <= set(engine.identity["recipe"])
+
+
+LIQUID = dict(weight=2.0, minimum_rows=3, liquidity_column=-1, liquidity_power=1.0)
+
+
+def test_the_weighted_term_receives_the_liquidity_of_each_labelled_row(shared, tmp_path):
+    engine = trainer(shared, tmp_path / "run", session_ic_term=LIQUID)
+    assert engine.liquidity
+    received, losses = {}, []
+    graphs, task = engine._graphs, engine._task_loss
+
+    def spy_graphs(prepared, batch):
+        column = batch.inputs["charts"][:, -1].tolist()
+        for flow, at, value in zip(batch.flow_ids, batch.prediction_at, column, strict=True):
+            received[flow, at] = value
+        outputs = graphs(prepared, batch)
+        # Cinco cuantiles y, al final, la liquidez de la fila sin gradiente.
+        assert outputs.shape == (len(batch.flow_ids), 6)
+        torch.testing.assert_close(outputs[:, :5], prepared.quantiles, rtol=0, atol=0)
+        return outputs
+
+    def spy_task(prediction, target, keys):
+        losses.append((prediction.detach().clone(), target.clone(), list(keys)))
+        return task(prediction, target, keys)
+
+    engine._graphs, engine._task_loss = spy_graphs, spy_task
+    engine.session_ic = spy = Spy(engine.session_ic)
+    assert engine.run()["status"] == "completed"
+    assert len(losses) == len(spy.calls) > 2
+    for prediction, target, keys in losses:
+        assert prediction.shape == (len(keys), 6)
+        assert prediction[:, -1].tolist() == [received[key] for key in keys]
+        sessions = [(flow.split("/", 1)[0], at) for flow, at in keys]
+        expected = pinball_loss(prediction[:, :5], target).item() + weighted_reference(
+            median(prediction[:, :5]).tolist(),
+            target.tolist(),
+            sessions,
+            prediction[:, -1].tolist(),
+            LIQUID["weight"],
+            LIQUID["minimum_rows"],
+            LIQUID["liquidity_power"],
+        )
+        assert task(prediction, target, keys).item() == pytest.approx(expected, rel=1e-7, abs=1e-12)
+    # La liquidez distingue filas en el corpus de prueba: no es una columna constante.
+    assert len(set(received.values())) > 1
+    gradients = records(engine)
+    assert all(record["head.weight"].abs().sum() > 0 for record in gradients)
+    identity = engine.identity["recipe"]["session_ic_term"]
+    assert identity["liquidity_column"] == -1 and identity["liquidity_power"] == 1.0
+
+
+@pytest.mark.parametrize("truncation", [3, 1])
+def test_replay_reproduces_the_gradients_of_the_weighted_term(shared, tmp_path, truncation):
+    direct = trainer(shared, tmp_path / "direct", truncation=truncation, session_ic_term=LIQUID)
+    direct.run()
+    replayed = trainer(
+        shared,
+        tmp_path / "replayed",
+        truncation=truncation,
+        accumulation_rows=8,
+        session_ic_term=LIQUID,
+    )
+    replayed.run()
+    left, right = records(direct), records(replayed)
+    assert len(left) == len(right) > 2
+    for first, second in zip(left, right, strict=True):
+        for name, value in first.items():
+            torch.testing.assert_close(second[name], value, rtol=1e-9, atol=1e-12)
+    # Y la ponderación cambia los gradientes respecto del término sin ponderar.
+    plain = trainer(shared, tmp_path / "plain", truncation=truncation)
+    plain.run()
+    assert any(
+        not torch.equal(first["head.weight"], second["head.weight"])
+        for first, second in zip(left, records(plain), strict=True)
+    )
+
+
+def test_the_weighted_term_with_the_scalar_head_and_its_column_check(shared, tmp_path):
+    model = predictor(shared, head=SCALAR_HEAD)
+    engine = trainer(shared, tmp_path / "scalar", model=model, loss="mae", session_ic_term=LIQUID)
+    engine.session_ic = spy = Spy(engine.session_ic)
+    assert engine.run()["status"] == "completed"
+    assert spy.calls and all(point.ndim == 1 for point, *_ in spy.calls)
+    width = shared["train"].specification().dimensions["charts"]
+    beyond = dict(LIQUID, liquidity_column=-(width + 1))
+    with pytest.raises(ValueError, match="bloque del gráfico"):
+        trainer(shared, tmp_path / "beyond", session_ic_term=beyond)
+    assert trainer(shared, tmp_path / "edge", session_ic_term=dict(LIQUID, liquidity_column=-width))
