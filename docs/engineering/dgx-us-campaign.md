@@ -1059,14 +1059,121 @@ con los árboles (0,110): la curva se aplana cerca de 0,093, y lo que quede lo t
 la criba (pérdida de IC por sesión, tasa, promedio de pesos) y la rama técnica sobre esta
 receta.
 
-Por eso las campañas con rasgos definitivas, `dgx-us-campaign-v7.json` y
-`dgx-us-cn-campaign-v6.json` (commit f37cf055), ponen todos los ajustes sobre una copia de su
-receta cuyo único cambio es `recipe.truncation`, 2 en lugar de 8: cada contraste de un solo
-campo sigue siéndolo. El nivel `r3_t8` conserva los tres ajustes del núcleo con la receta
-anterior, que mide el cambio con todas sus épocas y enlaza con la campaña sin rasgos, y
-`r3_steps` prueba 1 y 4 instantes y un lector con la misma cadencia. Los estados intermedios
-de las pruebas (commits dbae075f, 7c8f4f94 y 7f3ffe16) se retiraron: sus cifras son las de
-estas tablas.
+Por eso las campañas con rasgos ponen todos los ajustes sobre una copia de su receta con
+`recipe.truncation` 2 en lugar de 8 (`dgx-us-campaign-v7.json` y
+`dgx-us-cn-campaign-v6.json`, commit f37cf055): cada contraste de un solo campo sigue
+siéndolo. Esas dos declaraciones no llegaron a recorrerse: la sección siguiente cambió la base
+otra vez el mismo día y las campañas vigentes son la v8 y la conjunta v7. Los estados
+intermedios de las pruebas (commits dbae075f, 7c8f4f94, 7f3ffe16 y f37cf055) se retiraron: sus
+cifras son las de estas tablas.
+
+### Pérdida de IC por sesión y rama densa
+
+La cadencia acercó el núcleo a 0,093 y ahí se aplanaba, lejos de los árboles (0,110). Para
+separar las causas se midió qué necesita una red para igualarlos con los 46 rasgos solos, sin
+el resto del modelo: mismas filas del origen 2013 de EE. UU., columnas centradas y escaladas
+con estadísticas robustas del ajuste y recortadas a 5, etiqueta dividida por su escala, Adam
+con tasa 1e-3 constante, recorte de gradiente a 1, sesiones en orden y una actualización cada
+dos, diez épocas. Cada fila cambia un solo campo de la primera red. El ruido entre semillas es
+de 0,0006.
+
+| Red con los 46 rasgos solos | Validación | Calibración | Evaluación |
+| --- | --- | --- | --- |
+| `−alfa`, sin ajustar nada | 0,084 | 0,099 | 0,081 |
+| Modelo lineal, pérdida de la mediana | 0,090 | 0,090 | 0,088 |
+| Red densa 46-128-128-1, pérdida de la mediana | 0,104 | 0,112 | 0,105 |
+| … pinball de cinco cuantiles | 0,103 | 0,103 | 0,103 |
+| … Huber | 0,098 | 0,112 | 0,101 |
+| … error cuadrático contra el rango de la etiqueta en su sesión | 0,110 | 0,116 | 0,109 |
+| … correlación por sesión con la etiqueta recortada | 0,100 | 0,115 | 0,101 |
+| … **correlación por sesión con el rango de la etiqueta** | **0,115** | **0,123** | **0,113** |
+| … pinball más esa correlación con peso 1 | 0,113 | 0,118 | 0,110 |
+| … pinball más esa correlación con peso 3 | 0,115 | 0,122 | 0,110 |
+| … pinball más esa correlación con peso 10 | 0,114 | 0,123 | 0,112 |
+| Con la correlación: una capa oculta | 0,109 | 0,122 | 0,109 |
+| Con la correlación: cuatro capas | 0,115 | 0,121 | 0,112 |
+| Con la correlación: 512 unidades | 0,116 | 0,124 | 0,114 |
+| Con la correlación: codificación lineal a trozos de 16 tramos | 0,109 | 0,114 | 0,107 |
+| Con la correlación: una actualización por sesión | 0,116 | 0,124 | 0,113 |
+| Con la correlación: una actualización cada ocho sesiones | 0,112 | 0,121 | 0,111 |
+| Con la correlación: 30 épocas (la mejor, la 17) | 0,115 | 0,125 | 0,113 |
+| Con la correlación: rangos por sesión de los rasgos en lugar de sus valores | 0,111 | 0,120 | 0,111 |
+| Con la correlación: valores y rangos por sesión | 0,118 | 0,123 | 0,117 |
+| Árboles, mismo objetivo de rangos | 0,111 | 0,118 | 0,114 |
+| Media en rangos de la red con correlación y los árboles | 0,115 | 0,124 | 0,116 |
+| Media de tres semillas de la red con correlación | 0,115 | 0,125 | 0,114 |
+
+Lo que dice la tabla:
+
+- El núcleo de la campaña usaba los rasgos casi como un modelo lineal (0,093 frente a 0,090).
+  Los rasgos necesitan su propio camino no lineal, y con una capa oculta no basta.
+- Lo que más pesa es la pérdida. Ordenar cada sesión frente al rango de la etiqueta da 0,010
+  más que predecir el retorno, y no es por comparar dentro de la sesión, sino por el rango: la
+  misma correlación contra la etiqueta en bruto se queda en 0,100. La etiqueta tiene colas
+  pesadas y una dispersión distinta en cada sesión, y el rango las quita.
+- Sumar esa correlación a la pérdida de cuantiles conserva la ganancia y deja la predicción en
+  unidades de retorno, con sus cuantiles.
+- La codificación lineal a trozos empeora a la red densa con las dos pérdidas.
+- Promediar semillas apenas suma (sus predicciones correlan 0,97 por sesión) y mezclar con los
+  árboles suma de 0,001 a 0,003. Ninguna de las dos sustituye a un modelo mejor.
+
+De ahí salen tres piezas, cada una como un campo declarado y con su control:
+
+- `session_ic_term_v1` (`recipe.session_ic_term`): la receta resta a su pérdida `weight`
+  veces la media por sesión de la correlación regularizada entre el punto emitido, la mediana
+  con la cabeza de cuantiles, y las puntuaciones normales de los rangos del objetivo. La
+  cabeza, las unidades, los cuantiles y los lectores no cambian. El objetivo de salida
+  `session_ic_objective_v1`, que ya estaba en la criba, usa la misma correlación pero
+  sustituye la cabeza escalar, no se combina con `learning_scale` ni con la rama y un lector
+  no puede leerlo.
+- `technical_branch_v2`: la rama sin codificación, capas densas sobre los rasgos ya
+  normalizados con la capa de salida inicializada a cero.
+- `session_ranks` en esa rama: cada rasgo entra con su valor y con la puntuación normal de su
+  rango entre las filas de su sesión y mercado. Como los rangos de un subconjunto serían
+  otros, el predictor exige la sesión completa en el bloque.
+
+Piloto en el núcleo (EE. UU., origen 2013, semilla 42, IC de validación por época, una
+actualización cada 2 instantes; estado `piloto-v8`, commit 8eb43edd):
+
+| Modelo | 1 | 2 | 3 | 4 | 5 | 6 | 7 |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| Sin memoria, receta anterior | 0,091 | 0,093 | | | | | |
+| Sin memoria, rama a trozos | 0,091 | 0,094 | 0,095 | 0,097 | 0,096 | 0,098 | 0,101 |
+| Sin memoria, rama densa | 0,094 | 0,096 | 0,098 | | | | |
+| Sin memoria, término de peso 3 | 0,100 | 0,103 | 0,104 | | | | |
+| Sin memoria, término y rama a trozos | 0,101 | 0,105 | 0,106 | | | | |
+| **Sin memoria, término y rama densa** | **0,104** | **0,107** | **0,109** | | | | |
+| Memoria activa, término y rama densa | 0,103 | 0,106 | | | | | |
+| Memoria congelada, término y rama densa | 0,104 | | | | | | |
+| Sin memoria, objetivo de salida de IC (sin escala ni rama) | 0,097 | 0,096 | 0,098 | | | | |
+| Su control con cabeza escalar | 0,092 | 0,093 | 0,092 | | | | |
+
+En su primera época, el núcleo con el término y la rama densa supera a todo lo anterior en
+todas sus épocas. Las dos piezas suman: el término da 0,009 y la rama densa 0,004 más, y la
+densa mejora a la de tramos. El piloto se paró cuando el relevo necesitó el estado; sus
+cifras completas las repite la campaña con los nombres de sus niveles.
+
+Las campañas vigentes, `dgx-us-campaign-v8.json` y `dgx-us-cn-campaign-v7.json`
+(commit 114bcf4e), ponen el término de peso 3 en todos los ajustes y la rama densa en los que
+normalizan sus entradas. Cada modelo conserva su nombre, su nivel y el resto de su definición.
+Los niveles `r4_` cambian una pieza de la base en el núcleo:
+
+| Nivel | Qué cambia respecto de la base |
+| --- | --- |
+| `r4_noic` | Sin el término |
+| `r4_nobranch` | Sin la rama |
+| `r4_piecewise` | Rama de tramos en lugar de la densa |
+| `r4_weight` | Peso 1 y peso 10 |
+| `r4_steps` | Una actualización cada 1, 4 y 8 instantes, y un lector con la cadencia de 2 |
+| `r4_dense` | 256 unidades en la rama |
+| `r4_ranks` | Rangos por sesión junto a los valores en la rama |
+| `r4_original` | La receta de la campaña sin rasgos (8 instantes, sin término ni rama), que enlaza con ella |
+| `r4_readers` | Lectores sobre el núcleo sin el término: mide si la ganancia llega a los lectores |
+
+Los modelos con el objetivo de salida de IC conservan su receta sin el término y ganan su
+propio control (`v_scalar_noic`), y el modelo sin el bloque del gráfico pierde la rama con él
+y se compara con el núcleo sin rama.
+
 
 ### Herramientas nuevas
 
@@ -1095,10 +1202,10 @@ fuentes. Lo que propuso y lo que se ha decidido, siempre con una medida:
 
 | Propuesta | Decisión | Motivo |
 | --- | --- | --- |
-| Rama tabular con codificación lineal a trozos | Hecha, como variante de un solo cambio | A igualdad de épocas no separa al núcleo de su control; se mide con todas sus épocas sobre la receta rápida |
+| Rama tabular con codificación lineal a trozos | Hecha y superada | Con los rasgos solos empeora a una red densa (0,109 frente a 0,115); la base lleva la densa y la de tramos queda como control (`r4_piecewise`) |
 | Conexión directa de `−alfa` a la salida, o ajustar `z` | No hace falta | En unidades de retorno, ajustar la etiqueta o `z` da el mismo IC en las dos (0,109 y 0,083 a 0,086): se mide con la predicción más alfa |
 | Medir `z` como objetivo económico principal | Hecho en todos los informes | La etiqueta premia `−alfa`, que con `z` tiene IC negativo |
-| Pérdida de IC por sesión sobre rangos gaussianos | Ya estaba en la criba (`v_ic`, `v_ic_rank`) | Se mide con rasgos junto al resto de variantes |
+| Pérdida de IC por sesión sobre rangos gaussianos | Adoptada en la base como término de la pérdida | Es el cambio que más sube el IC (0,104 a 0,115 con los rasgos solos; 0,091 a 0,100 en el núcleo); el objetivo de salida sigue en la criba (`v_ic`, `v_ic_rank`) |
 | Macro por FiLM en lugar de concatenado | Ya estaba en la criba (`v_macro`) | Igual |
 | Mezcla de rangos con los árboles | Hecha en los informes | La referencia tabular entra en las combinaciones elegidas en validación y calibración |
 | Más rasgos: tira y afloja, quiebre del alfa, horquilla, calendario | Probados en árboles | Añaden 0,001 o menos sobre la v2; no entran |
@@ -1108,6 +1215,20 @@ fuentes. Lo que propuso y lo que se ha decidido, siempre con una medida:
 | 2013 como origen de desarrollo y 2014–2023 limpios | Adoptado | Las decisiones de hoy miraron la evaluación de 2013 |
 | Carteras por deciles con rotación y costes | Herramienta escrita y probada, sin integrar | Queda para la lectura económica final |
 
+Una segunda ronda, ya con estas medidas, propuso nueve cambios más:
+
+| Propuesta | Decisión | Motivo |
+| --- | --- | --- |
+| Mezclar en rangos la red con los árboles | Medida; ya está en los informes | Suma de 0,001 a 0,003 con los rasgos solos, no los 0,005 que estimaba |
+| Promedio de pesos y conjunto de semillas | Medido; en la criba (`v_ema`) y en las semillas 43 y 44 | Tres semillas suman 0,0005: correlan 0,97 |
+| Rangos gaussianos por sesión de los rasgos | Hechos como `session_ranks` (`r4_ranks`) | Solos empeoran (0,111); junto a los valores, 0,118 |
+| Tablero de fiabilidad: estabilidad por meses, sesiones positivas, caída del IC acumulado | Herramienta encargada | Completa a la t de Newey-West, al SPA y al conjunto de confianza |
+| Decaimiento, dropout de modalidades y parada por IC | Ya en la criba (`v_wd`, `v_mdrop`, `v_fdrop`) y en la regla de parada | Se miden sobre la base nueva |
+| Árboles con objetivo de rangos | Medido antes | 0,111 frente a 0,110 con Huber |
+| Ponderar la correlación por liquidez | Sin adoptar | Necesita llevar la liquidez hasta la pérdida; el tercio líquido se mide en cada informe |
+| Cabezas auxiliares de varios horizontes | Ya en la criba (`v_aux`) | Se mide sobre la base nueva |
+| Penalizar la dispersión del IC entre sesiones | Sin adoptar | Con dos sesiones por actualización esa dispersión no se puede estimar |
+
 ### Protocolo de evidencia
 
 El origen 2013 es el de desarrollo: la versión de los rasgos, la rama y las herramientas se han
@@ -1115,29 +1236,33 @@ decidido con su validación y su calibración, y su evaluación se ha mirado. Lo
 2023 no tienen todavía ningún resultado con rasgos: son la evidencia fuera de muestra y se leen
 con el diseño ya fijado. El test final de 2024 sigue cerrado.
 
-### Plan vigente (undécima revisión del 21 de noviembre)
+### Plan vigente (decimocuarta revisión del 21 de noviembre)
 
-Las campañas con rasgos son `dgx-us-campaign-v7.json` y `dgx-us-cn-campaign-v6.json`, en el
-commit f37cf055. El plan recorre, con una fase cada vez y la preparación de la siguiente
+Las campañas con rasgos son `dgx-us-campaign-v8.json` y `dgx-us-cn-campaign-v7.json`, en el
+commit 114bcf4e. El plan recorre, con una fase cada vez y la preparación de la siguiente
 adelantada:
 
 | Bloque | Qué recorre |
 | --- | --- |
-| 1 | Origen 2013. Sin rasgos, lo que falta para emparejar cada modelo. Con rasgos: modelos principales con y sin rama, criba de las 31 variantes y de la segunda ronda, promoción, semillas 43 y 44, modelos secundarios y la conjunta |
+| 1 | Origen 2013. Sin rasgos, lo que falta para emparejar cada modelo. Con rasgos: modelos principales con los controles de la base (niveles `r4_`), criba de las variantes y de la segunda ronda, promoción, semillas 43 y 44, modelos secundarios y la conjunta |
 | 2 | Origen 2023, los modelos ajustados con todos los datos: con rasgos en EE. UU. y en la conjunta (más las variantes promovidas), su pareja sin rasgos en EE. UU. y la ventana desde 2009 |
 | 3 | Orígenes 2014 a 2022 con rasgos en EE. UU., con un informe que reúne los orígenes recorridos |
 | 4 | Semillas 43 y 44 del origen 2023 con rasgos y la pareja conjunta sin rasgos |
 | 5 | Si queda plazo: orígenes 2014 a 2022 de la conjunta con rasgos y la ventana en 2016 |
 
-La rama técnica y los controles de la cadencia (niveles `r3_`) entran en el origen 2013 de
-EE. UU. La orden de promoción que sigue al primer informe con rasgos
-(`dgx_campaign_promotion.py --candidates r3_`) los añade a los demás orígenes y a la conjunta
-solo si superan a sus controles en validación y calibración de 2013 por 0,003 de IC con t de 2.
-El origen 2023 lleva además `r3_t8`, para emparejar con la campaña sin rasgos a igual receta. La misma regla, con las 31 variantes de la criba, decide cuáles pasan a los
+Los niveles `r4_` entran en el origen 2013 de EE. UU. La orden de promoción que sigue al
+primer informe con rasgos (`dgx_campaign_promotion.py --candidates r4_`) solo lleva uno a los
+demás orígenes y a la conjunta si supera a la base en validación y calibración de 2013 por
+0,003 de IC con t de 2: así, un control que resultara mejor que la base tendría evidencia en
+todos los orígenes. El origen 2023 lleva además `r4_original`, `r4_noic` y `r4_nobranch`,
+para emparejar con la campaña sin rasgos a igual receta y repetir la descomposición en el
+origen más reciente. La misma regla, con las variantes de la criba, decide cuáles pasan a los
 orígenes 2018 y 2023.
 
-Cada origen lanza antes su referencia tabular en segundo plano, y cada informe lleva las dos
-medidas (etiqueta y `z`), el tercio más líquido, la t de Newey-West y la inferencia frente a
+Antes de preparar el origen 2013 con rasgos, una orden detiene el piloto y otra trae sus
+copias empaquetadas al estado de la campaña, que tiene la misma cohorte. Cada origen lanza
+antes su referencia tabular en segundo plano, y cada informe lleva las dos medidas (etiqueta y
+`z`), el tercio más líquido, la t de Newey-West y la inferencia frente a
 `lightgbm_technical`. El plan está en `configs/experiments/phases/dgx-relay-plan-20261121.txt`.
 
 ## Agente cognitivo con herramientas
