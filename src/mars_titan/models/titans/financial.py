@@ -154,6 +154,7 @@ from .state import (
     require_finite,
     require_true,
 )
+from .technical_branch import TechnicalBranch, TechnicalBranchConfig, parse_technical_branch
 
 VARIANTS = ("transformer_direct", "mac_disabled", "mac_frozen", "mac_online")
 # Probabilidad máxima de los dropout declarados: por encima, la mitad de las activaciones o de
@@ -290,6 +291,9 @@ class FinancialConfig:
     # Contrasta si una modalidad aporta algo que las demás no den ya, como el vector del gráfico,
     # que se calcula con la misma ventana de precios. Se declara como {"names": [...]}.
     removed_modalities: tuple[str, ...] | None = None
+    # Rama de los rasgos técnicos del bloque del gráfico, tras MAC y antes de la cabeza, con
+    # codificación lineal a trozos. Sin declararla, la identidad y el cálculo no cambian.
+    technical_branch: TechnicalBranchConfig | None = None
 
     def __post_init__(self):
         if self.memory_inner_gradient not in INNER_GRADIENTS:
@@ -332,6 +336,7 @@ class FinancialConfig:
         self._check_mature_reliability()
         self._check_core_variants()
         self._check_learning_scale()
+        self._check_technical_branch()
         self._check_memory_projections()
         self._check_runtime_limits()
 
@@ -633,6 +638,21 @@ class FinancialConfig:
                 "reference_encoder admite rnn, lstm, gru o dlinear, sin otro codificador temporal"
             )
 
+    def _check_technical_branch(self):
+        """La rama técnica lee columnas normalizadas del bloque del gráfico."""
+        object.__setattr__(self, "technical_branch", parse_technical_branch(self.technical_branch))
+        declared = self.technical_branch
+        if declared is None:
+            return
+        if self.learning_scale is None:
+            raise ValueError(
+                "technical_branch necesita las entradas normalizadas de learning_scale"
+            )
+        if declared.columns > self.inputs.dimensions["charts"]:
+            raise ValueError("technical_branch declara más columnas que el bloque del gráfico")
+        if self.removed_modalities is not None and "charts" in self.removed_modalities:
+            raise ValueError("technical_branch lee el bloque del gráfico y no admite retirarlo")
+
     def _check_session_mixers(self):
         """Exclusiones entre los operadores que mezclan activos."""
         object.__setattr__(
@@ -857,6 +877,8 @@ class FinancialConfig:
                     phase="fit_and_emission",
                 )
             )
+        if self.technical_branch is not None:
+            result.update(technical_branch=self.technical_branch.identity())
         if self.memory_projections != "linear_v1":
             result.update(memory_projections=self.memory_projections)
         if self.attention_layout != "batch_first_v1":
@@ -1273,6 +1295,18 @@ class FinancialPredictor(nn.Module):
                 dtype=dtype,
             )
             if config.asset_groups is not None
+            else None
+        )
+        # La rama técnica usa su propio generador derivado de la semilla y empieza sin efecto.
+        self.technical_branch = (
+            TechnicalBranch(
+                config.hidden_size,
+                config.technical_branch,
+                clip=config.learning_scale.clip,
+                seed=config.seed,
+                dtype=dtype,
+            )
+            if config.technical_branch is not None
             else None
         )
         # #791 empieza con pesos nulos y no consume ningún generador.
@@ -2242,6 +2276,9 @@ class FinancialPredictor(nn.Module):
                     markets,
                     batch.prediction_at,
                 )
+            if self.technical_branch is not None:
+                # Los rasgos técnicos ya normalizados suman su residuo a la representación.
+                encoded = encoded + self.technical_branch(batch.inputs["charts"])
             if self.local_control is not None:
                 local_result = self.local_control(
                     self.mac,

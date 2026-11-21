@@ -85,10 +85,18 @@ _KRON_MODULES = (
 )
 
 
-def _implementation(*, hierarchy=False, kronlstm=False):
+def declared_sources(config):
+    """Módulos de mecanismos del predictor que solo entran en la identidad si se declaran."""
+    if getattr(config, "technical_branch", None) is not None:
+        return ("mars_titan.models.titans.technical_branch",)
+    return ()
+
+
+def _implementation(*, hierarchy=False, kronlstm=False, declared=()):
     sources = _SOURCE_MODULES + ((RegionalHierarchy.__module__,) if hierarchy else ())
     if kronlstm:
         sources += _KRON_MODULES
+    sources += tuple(declared)
     return {
         name: hashlib.sha256(Path(importlib.import_module(name).__file__).read_bytes()).hexdigest()
         for name in sources
@@ -259,6 +267,10 @@ def _execution_signature(models):
         )
         else ()
     )
+    # Los mecanismos declarados por el predictor también son submódulos conocidos.
+    for _, model in models:
+        if type(model) is FinancialPredictor:
+            sources += declared_sources(model.config)
     # Las instancias de una clase comparten sus métodos. La caché vive solo en esta llamada.
     class_methods = {}
     for prefix, model in models:
@@ -394,7 +406,10 @@ class FrozenFinancialConsumer:
         self._flags = _numerics()
         predictor.verify_parameter_identity()
         self._readout_id = self._readout_digest()
-        self._code = _implementation(kronlstm=predictor.config.temporal_encoder is not None)
+        self._code = _implementation(
+            kronlstm=predictor.config.temporal_encoder is not None,
+            declared=declared_sources(predictor.config),
+        )
         self._identity = dict(
             schema_version=1,
             recipe="frozen_financial_mac_then_episodic_v1",
@@ -443,7 +458,10 @@ class FrozenFinancialConsumer:
             self.predictor.verify_parameter_identity()
             if (
                 self._readout_digest() != self._readout_id
-                or _implementation(kronlstm=self.predictor.config.temporal_encoder is not None)
+                or _implementation(
+                    kronlstm=self.predictor.config.temporal_encoder is not None,
+                    declared=declared_sources(self.predictor.config),
+                )
                 != self._code
             ):
                 raise ValueError("El código o los pesos del lector cambiaron durante la sesión")

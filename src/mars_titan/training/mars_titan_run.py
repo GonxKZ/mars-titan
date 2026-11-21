@@ -59,7 +59,11 @@ from mars_titan.models.titans.financial_inputs import (
     device_tensor,
     validated_cpu_batches,
 )
-from mars_titan.models.titans.frozen_financial import _implementation, _numerics
+from mars_titan.models.titans.frozen_financial import (
+    _implementation,
+    _numerics,
+    declared_sources,
+)
 from mars_titan.models.titans.output_objectives import reads_scalar_point
 from mars_titan.models.titans.state import deferred_checks
 
@@ -995,7 +999,10 @@ class ReadoutTrainer(MarsTitanInference):
             name = "mars_titan.training.determinism"
             own[name] = sha256(Path(importlib.import_module(name).__file__))
         return {
-            **_implementation(kronlstm=self.predictor.config.temporal_encoder is not None),
+            **_implementation(
+                kronlstm=self.predictor.config.temporal_encoder is not None,
+                declared=declared_sources(self.predictor.config),
+            ),
             **own,
         }
 
