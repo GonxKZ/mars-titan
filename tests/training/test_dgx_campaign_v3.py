@@ -339,3 +339,76 @@ def test_the_campaigns_with_more_updates_only_change_the_instants_of_each_update
     assert set(declared["controls"]) == set(document["models"]) - {"titans_mac"}
     for model, (control, _) in STEP_CONTROLS.items():
         assert declared["controls"][model] == control
+
+
+def flat_specification(document, name):
+    """Especificación de un modelo, también si es un lector (sin predictor propio en su receta)."""
+    model = document["models"][name]
+    recipe = json.loads((ROOT / document["recipes"][model["recipe"]]).read_text())
+    flat = {f"recipe.{key}": value for key, value in recipe["recipe"].items()}
+    flat.update({f"predictor.{k}": v for k, v in (recipe.get("predictor") or {}).items()})
+    flat.update({f"predictor.{k}": v for k, v in (model.get("predictor_changes") or {}).items()})
+    flat.update({key: value for key, value in model.items() if key not in ("recipe", "tier")})
+    return flat
+
+
+@pytest.mark.parametrize(
+    ("name", "origin"),
+    [
+        ("dgx-us-campaign-v7.json", "dgx-us-campaign-v6.json"),
+        ("dgx-us-cn-campaign-v6.json", "dgx-us-cn-campaign-v5.json"),
+    ],
+)
+def test_the_campaigns_on_the_faster_recipe_only_change_the_instants_of_each_update(name, origin):
+    path, source = ROOT / "configs/experiments" / name, ROOT / "configs/experiments" / origin
+    document, previous = campaign.load_declaration(path)[0], json.loads(source.read_text())
+    own = {"description", "source_declaration_sha256", "models", "tiers", "recipes"}
+    assert set(document) == set(previous)
+    for key in set(previous) - own:
+        assert document[key] == previous[key], key
+    kept = [tier for tier in previous["tiers"] if tier not in ("r3_steps", "r3_combo")]
+    assert document["tiers"] == [*kept, "r3_t8", "r3_steps"]
+    carried = {n for n, m in previous["models"].items() if m["tier"] in kept}
+    added = set(document["models"]) - carried
+    assert added == {
+        "titans_mac_t8",
+        "titans_mac_frozen_t8",
+        "titans_mac_disabled_t8",
+        "titans_mac_t1",
+        "titans_mac_t4",
+        "titans_mac_disabled_t1",
+        "titans_mac_disabled_t4",
+        "mars_titan_m0_u2",
+    }
+    # Cada modelo conserva su definición: solo cambia, en los ajustes, la cadencia de su receta.
+    for model in sorted(carried):
+        assert document["models"][model] == previous["models"][model], model
+        now, before = flat_specification(document, model), flat_specification(previous, model)
+        changed = {key for key in now.keys() | before.keys() if now.get(key) != before.get(key)}
+        if document["models"][model]["runner"] == "fit":
+            assert changed == {"recipe.truncation"}, model
+            assert now["recipe.truncation"] == 2 and before["recipe.truncation"] == 8
+        else:
+            assert changed == set(), model
+    # Los controles de la cadencia: la receta anterior y otros valores, con ese único cambio.
+    for model in sorted(added - {"mars_titan_m0_u2"}):
+        control, instants = model.rsplit("_t", 1)
+        assert difference(document, model, control) == {"recipe.truncation"}
+        assert specification(document, model)["recipe.truncation"] == int(instants)
+        tier = "r3_t8" if instants == "8" else "r3_steps"
+        assert document["models"][model]["tier"] == tier
+    for model in ("titans_mac_t8", "titans_mac_frozen_t8", "titans_mac_disabled_t8"):
+        before = flat_specification(previous, model.removesuffix("_t8"))
+        assert flat_specification(document, model) == before
+    reader, quick = (
+        flat_specification(document, "mars_titan_m0"),
+        flat_specification(document, "mars_titan_m0_u2"),
+    )
+    changed = {key for key in reader.keys() | quick.keys() if reader.get(key) != quick.get(key)}
+    assert changed == {"recipe.update_instants"} and quick["recipe.update_instants"] == 2
+    declared = json.loads(
+        (ROOT / "configs/experiments/dgx-us-campaign-v7-contrasts.json").read_text()
+    )
+    assert set(declared["controls"]) == set(document["models"]) - {"titans_mac"}
+    assert declared["controls"]["titans_mac_disabled_t8"] == "titans_mac_disabled"
+    assert declared["controls"]["mars_titan_m0_u2"] == "mars_titan_m0"
