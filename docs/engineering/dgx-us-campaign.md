@@ -654,7 +654,7 @@ final, así que el orden es el valor de cada bloque:
 
 | Bloque | Campaña | Origen | Semillas | Modelos | Horas de reloj estimadas |
 | --- | --- | --- | --- | --- | --- |
-| 1 | conjunta, después EE. UU. | 2013 | 42 | 22 principales; el resto de los 53 de EE. UU. | 23 |
+| 1 | conjunta, EE. UU. y redes de la conjunta | 2013 | 42 | 22 principales; el resto de los 53 de EE. UU. (31 variantes) | 23 |
 | 2 | EE. UU., después conjunta | 2023 | 42 | núcleo, cognitivos, controles y redes | 64 |
 | 3 | EE. UU. y conjunta, origen a origen | 2014–2016 | 42 | los 53 de EE. UU.; en la conjunta, núcleo, cognitivos y controles | 113 |
 | 4 | EE. UU., después conjunta | 2023 | 43 y 44 | núcleo, sus lectores y sus controles | 54 |
@@ -701,8 +701,30 @@ disponible, disco libre y presión de memoria de producción (`guardia/historia.
 
 La campaña conjunta es multimodal con los mismos cinco bloques y sus bits de presencia, pero en
 los orígenes 2013–2016 China aporta precios, gráficos y macro: sus noticias solo entran en el
-ajuste de los orígenes cuyo tramo de ajuste alcanza 2019–2020, y sus fundamentales casi no
-existen en la edición.
+ajuste de los orígenes cuyo tramo de ajuste alcanza 2020, y sus fundamentales casi no existen en
+la edición.
+
+Todos los orígenes ajustan desde 2000 (2006 en China): el origen es el año que se evalúa, no el
+primero que se usa. Lo que existe desde 2000 son los precios, los gráficos y la macro, que pasa
+de 59 indicadores observados de 140 en 2000 a 87 en 2006, 109 en 2012 y 140 en 2023. Las
+noticias y los fundamentales de EE. UU. empiezan en 2009 (0,6 % y 3,9 % de las muestras de ese
+año; 13,2 % y 55,9 % en 2012) y las noticias de China en 2020 (34,1 %), como recoge la auditoría
+de [cobertura histórica](../data/historical-coverage.md): la copia de FinMultiTime no trae
+noticias de EE. UU. anteriores a abril de 2009 ni de China anteriores a marzo de 2020. Antes de
+esas fechas las modalidades van enmascaradas con su motivo (`no_admissible_value` o
+`source_missing`), no rellenadas.
+
+**Primera lectura del aprendizaje (EE. UU., 2013, semilla 42).** El IC de rangos de validación
+por época de `titans_mac` oscila entre 0,008 y 0,043 (0,018, 0,016, 0,022, 0,008, 0,024, 0,043,
+0,029, 0,032 y 0,021), mientras que con la memoria congelada queda entre 0,036 y 0,048 desde la
+segunda época y con la memoria desactivada entre 0,032 y 0,042. La época elegida de `titans_mac`
+es un pico: su evaluación baja a 0,031, frente a 0,048 y 0,045 de los controles. Con esta receta
+la escritura en línea de la memoria añade varianza al orden entre activos y no señal. Los
+lectores sí son estables (`m3`: 0,055 a 0,056 en todas sus épocas; evaluación 0,053). Es un
+origen y una semilla; las variantes de la regla de escritura son las que deben corregirlo, y por
+eso el plan las adelanta a las redes de la conjunta. La criba se leerá con un contraste pareado
+por sesión entre cada variante y su control, además del umbral de +0,003: elegir la mejor época
+de una curva ruidosa favorece a las variantes inestables.
 
 **Disco.** Entre las 16:20 y las 00:30 UTC el disco libre bajó de 274 a 95 GiB sin que el
 entrenamiento creciera: otra sesión de trabajo del equipo escribió 238 GiB de compilaciones bajo

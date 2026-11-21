@@ -12,13 +12,13 @@
 # van en una fase propia con 3 trabajadores. Las copias de cada origen se preparan antes de su primera fase: si las
 # construye un trabajo mientras los demás esperan, cada uno retiene varios GiB y en 2023 la suma supera el tope del grupo.
 #
-# Bloque 1, origen 2013, semilla 42. La campaña conjunta de EE. UU. y China recorre por primera vez sus 22 modelos
-# principales a tamaño completo; después EE. UU. termina sus 53 modelos (22 principales y 31 variantes).
+# Bloque 1, origen 2013, semilla 42. La campaña conjunta de EE. UU. y China recorre por primera vez sus modelos principales
+# a tamaño completo; después EE. UU. termina sus 53 modelos (las 31 variantes de Titans) y la conjunta ajusta sus redes.
 /home/gpic/TITANS-IA/MARS-TITAN-conjunta-5fee626c|/home/gpic/.local/state/mars-titan/dgx-titans-us-cn-v31/v1/semillas-42,43,44/todos-5fee626c|/home/gonzalo/.local/state/mars-titan/campaign-a-v2-views-v31-20261013/views/US+CN|configs/experiments/dgx-us-cn-campaign-v1.json|4 --seed 42 --origin 2013 --no-preflight --tier core --tier cognitive --tier controls --tier refinements --tier bridge
-/home/gpic/TITANS-IA/MARS-TITAN-conjunta-5fee626c|/home/gpic/.local/state/mars-titan/dgx-titans-us-cn-v31/v1/semillas-42,43,44/todos-5fee626c|/home/gonzalo/.local/state/mars-titan/campaign-a-v2-views-v31-20261013/views/US+CN|configs/experiments/dgx-us-cn-campaign-v1.json|3 --seed 42 --origin 2013 --no-preflight --tier networks
-limpia|/home/gpic/.local/state/mars-titan/dgx-titans-us-cn-v31/v1/semillas-42,43,44/todos-5fee626c/packed-inputs/2013
 /home/gpic/TITANS-IA/MARS-TITAN-campana-10cd0c47|/home/gpic/.local/state/mars-titan/dgx-titans-us-v31/v2/semillas-42,43,44/todos-10cd0c47|/home/gonzalo/.local/state/mars-titan/campaign-a-v2-views-v31-20261013/views/US|configs/experiments/dgx-us-campaign-v2.json|4 --seed 42 --origin 2013 --no-preflight
 limpia|/home/gpic/.local/state/mars-titan/dgx-titans-us-v31/v2/semillas-42,43,44/todos-10cd0c47/packed-inputs/2013
+/home/gpic/TITANS-IA/MARS-TITAN-conjunta-5fee626c|/home/gpic/.local/state/mars-titan/dgx-titans-us-cn-v31/v1/semillas-42,43,44/todos-5fee626c|/home/gonzalo/.local/state/mars-titan/campaign-a-v2-views-v31-20261013/views/US+CN|configs/experiments/dgx-us-cn-campaign-v1.json|3 --seed 42 --origin 2013 --no-preflight --tier networks
+limpia|/home/gpic/.local/state/mars-titan/dgx-titans-us-cn-v31/v1/semillas-42,43,44/todos-5fee626c/packed-inputs/2013
 #
 # Bloque 2, origen 2023, semilla 42: los modelos entrenados con todos los datos, primero EE. UU. y después EE. UU. y China.
 # Núcleo, lectores, cognitivos, controles y redes entre activos. Los refinamientos y puentes del lector quedan para el final.
