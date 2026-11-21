@@ -1037,6 +1037,37 @@ Otra idea medida y descartada: readaptar cada sesión, con las etiquetas ya real
 barata de una memoria de régimen supervisada). Empeora en todos los casos, entre 0,000 y 0,021
 de IC, con t de hasta −4,4: las pendientes recientes de los rasgos son ruido en este problema.
 
+### Actualizaciones del optimizador por época
+
+La receta del núcleo actualizaba el optimizador una vez cada 8 instantes de decisión
+(`recipe.truncation`): 371 actualizaciones por época en el origen 2013. El núcleo con rasgos
+seguía subiendo en su quinta época, tras solo 1.855 actualizaciones, y la rama técnica no lo
+separaba de su control. El siguiente cambio de un solo campo fue esa cadencia, con las mismas
+filas por época y el mismo tiempo por época:
+
+| Modelo (IC de validación por época) | 1 | 2 | 3 | 4 | 5 |
+| --- | --- | --- | --- | --- | --- |
+| Sin memoria, una actualización cada 8 instantes | 0,071 | 0,081 | 0,085 | 0,090 | 0,091 |
+| Sin memoria, cada 2 instantes (1.478 por época) | 0,091 | 0,093 | | | |
+| Sin memoria, cada instante (2.955 por época) | 0,086 | 0,087 | | | |
+| Memoria congelada, cada 8 instantes | 0,033 | 0,075 | 0,085 | 0,086 | |
+| Memoria congelada, cada 2 instantes | 0,086 | | | | |
+
+Con una actualización cada 2 instantes el núcleo alcanza en una época lo que necesitaba cinco.
+A los modelos no les faltaba capacidad sino actualizaciones. No cierra por sí solo la distancia
+con los árboles (0,110): la curva se aplana cerca de 0,093, y lo que quede lo tienen que medir
+la criba (pérdida de IC por sesión, tasa, promedio de pesos) y la rama técnica sobre esta
+receta.
+
+Por eso las campañas con rasgos definitivas, `dgx-us-campaign-v7.json` y
+`dgx-us-cn-campaign-v6.json` (commit f37cf055), ponen todos los ajustes sobre una copia de su
+receta cuyo único cambio es `recipe.truncation`, 2 en lugar de 8: cada contraste de un solo
+campo sigue siéndolo. El nivel `r3_t8` conserva los tres ajustes del núcleo con la receta
+anterior, que mide el cambio con todas sus épocas y enlaza con la campaña sin rasgos, y
+`r3_steps` prueba 1 y 4 instantes y un lector con la misma cadencia. Los estados intermedios
+de las pruebas (commits dbae075f, 7c8f4f94 y 7f3ffe16) se retiraron: sus cifras son las de
+estas tablas.
+
 ### Herramientas nuevas
 
 - `scripts/dgx_tabular_reference.py` ajusta los árboles con los rasgos que declara la cohorte
@@ -1064,7 +1095,7 @@ fuentes. Lo que propuso y lo que se ha decidido, siempre con una medida:
 
 | Propuesta | Decisión | Motivo |
 | --- | --- | --- |
-| Rama tabular con codificación lineal a trozos | Hecha, como variante de un solo cambio | El núcleo con los rasgos por la vía lineal se queda en 0,091 frente a 0,110 de los árboles |
+| Rama tabular con codificación lineal a trozos | Hecha, como variante de un solo cambio | A igualdad de épocas no separa al núcleo de su control; se mide con todas sus épocas sobre la receta rápida |
 | Conexión directa de `−alfa` a la salida, o ajustar `z` | No hace falta | En unidades de retorno, ajustar la etiqueta o `z` da el mismo IC en las dos (0,109 y 0,083 a 0,086): se mide con la predicción más alfa |
 | Medir `z` como objetivo económico principal | Hecho en todos los informes | La etiqueta premia `−alfa`, que con `z` tiene IC negativo |
 | Pérdida de IC por sesión sobre rangos gaussianos | Ya estaba en la criba (`v_ic`, `v_ic_rank`) | Se mide con rasgos junto al resto de variantes |
@@ -1084,10 +1115,10 @@ decidido con su validación y su calibración, y su evaluación se ha mirado. Lo
 2023 no tienen todavía ningún resultado con rasgos: son la evidencia fuera de muestra y se leen
 con el diseño ya fijado. El test final de 2024 sigue cerrado.
 
-### Plan vigente (novena revisión del 21 de noviembre)
+### Plan vigente (undécima revisión del 21 de noviembre)
 
-Las campañas con rasgos son `dgx-us-campaign-v5.json` y `dgx-us-cn-campaign-v4.json`, en el
-commit 7c8f4f94. El plan recorre, con una fase cada vez y la preparación de la siguiente
+Las campañas con rasgos son `dgx-us-campaign-v7.json` y `dgx-us-cn-campaign-v6.json`, en el
+commit f37cf055. El plan recorre, con una fase cada vez y la preparación de la siguiente
 adelantada:
 
 | Bloque | Qué recorre |
@@ -1098,10 +1129,11 @@ adelantada:
 | 4 | Semillas 43 y 44 del origen 2023 con rasgos y la pareja conjunta sin rasgos |
 | 5 | Si queda plazo: orígenes 2014 a 2022 de la conjunta con rasgos y la ventana en 2016 |
 
-La rama técnica entra en el origen 2013 de EE. UU. La orden de promoción que sigue al primer
-informe con rasgos (`dgx_campaign_promotion.py --candidates r3_`) la añade a los demás orígenes
-y a la conjunta solo si supera a sus controles en validación y calibración de 2013 por 0,003
-de IC con t de 2. La misma regla, con las 31 variantes de la criba, decide cuáles pasan a los
+La rama técnica y los controles de la cadencia (niveles `r3_`) entran en el origen 2013 de
+EE. UU. La orden de promoción que sigue al primer informe con rasgos
+(`dgx_campaign_promotion.py --candidates r3_`) los añade a los demás orígenes y a la conjunta
+solo si superan a sus controles en validación y calibración de 2013 por 0,003 de IC con t de 2.
+El origen 2023 lleva además `r3_t8`, para emparejar con la campaña sin rasgos a igual receta. La misma regla, con las 31 variantes de la criba, decide cuáles pasan a los
 orígenes 2018 y 2023.
 
 Cada origen lanza antes su referencia tabular en segundo plano, y cada informe lleva las dos
