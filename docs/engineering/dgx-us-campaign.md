@@ -1022,14 +1022,15 @@ Piloto en el origen 2013 (semilla 42), IC de validación por época, con los ras
 | Modelo | Época 1 | 2 | 3 | 4 | 5 |
 | --- | --- | --- | --- | --- | --- |
 | `titans_mac_disabled` | 0,071 | 0,081 | 0,085 | 0,090 | 0,091 |
-| `titans_mac_disabled_branch` | 0,072 | 0,080 | | | |
+| `titans_mac_disabled_branch` | 0,072 | 0,080 | 0,087 | 0,088 | |
 | `titans_mac_frozen` | 0,033 | 0,075 | 0,085 | 0,086 | |
 | `titans_mac_frozen_branch` | 0,081 | 0,082 | | | |
 | `titans_mac_branch` (memoria en línea) | 0,068 | | | | |
 
 Sin rasgos, los mismos modelos no pasaron de 0,042 (desactivada) y 0,048 (congelada). La rama
-acelera el arranque con la memoria congelada y no separa todavía a la variante sin memoria: el
-piloto sigue y la criba del origen 2013 decide con todas sus épocas.
+acelera el arranque con la memoria congelada y, a igualdad de épocas, no separa a la variante
+sin memoria (0,088 frente a 0,090 en la cuarta). No es todavía una mejora demostrada: el piloto
+sigue y la orden de promoción decide con todas las épocas del origen 2013.
 
 Otra idea medida y descartada: readaptar cada sesión, con las etiquetas ya realizadas de las 5,
 21 o 63 sesiones anteriores, una corrección lineal de la predicción de los árboles (la versión
