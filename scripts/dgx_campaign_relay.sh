@@ -35,6 +35,14 @@
 #
 # Una fase que falla nada más arrancar (antes de MARS_TITAN_RELAY_MIN_SECONDS, 60 s) detiene el
 # relevo sin anotarla: un permiso que falta o una copia rota no deben consumir el plan.
+#
+# Preparación adelantada: una línea «prepara» corre sola y deja la GPU parada mientras dura. Si
+# MARS_TITAN_RELAY_AHEAD nombra un ejecutable, al empezar cada fase de entrenamiento el relevo le
+# pide que construya en segundo plano las copias de la siguiente línea «prepara» del plan, siempre
+# que antes de ella solo haya órdenes y limpiezas de otras copias. El ejecutable decide si hay
+# margen («start <copia fija> <estado> <receta> <año>»), dice si sigue trabajando («busy») y para
+# («stop»). Al llegar a esa línea el relevo espera a que acabe y la ejecuta como siempre, que
+# reutiliza lo construido. Una pausa o una parada también detienen la preparación adelantada.
 set -u
 [ $# -ge 1 ] && [ $# -le 2 ] || { echo "Uso: $0 <plan> [unidad a la que esperar]" >&2; exit 2; }
 plan="$1"; espera="${2:-}"
@@ -43,11 +51,37 @@ carpeta="${MARS_TITAN_RELAY_STATE:-$HOME/.local/state/mars-titan/relevo}"
 pausa="$carpeta/pausa"; hecho="$plan.hecho"
 sondeo="${MARS_TITAN_RELAY_POLL:-15}"; minimo="${MARS_TITAN_RELAY_MIN_SECONDS:-60}"
 python="${MARS_TITAN_DGX_PYTHON:-$HOME/.local/share/mars-titan/dgx-us-py312/bin/python}"
+adelanto="${MARS_TITAN_RELAY_AHEAD:-}"
+[ -n "$adelanto" ] && [ ! -x "$adelanto" ] && adelanto=""
 mkdir -p "$carpeta"
 hijo=""; parar=0
 trap 'parar=1; [ -n "$hijo" ] && kill -TERM "$hijo" 2>/dev/null' TERM INT
 nota() { echo "relevo: $* ($(date -u +%Y-%m-%dT%H:%M:%SZ))"; }
 dormir() { sleep "$1" & wait $! 2>/dev/null; }
+adelanta() {
+  # $1: fases terminadas. Busca la primera línea «prepara» posterior a la fase en curso.
+  [ -n "$adelanto" ] || return 0
+  local numero=$(( $1 + 1 )) siguiente limpiezas=" " copia estado receta origen
+  while :; do
+    numero=$((numero + 1))
+    siguiente=$(grep -v -E '^[[:space:]]*(#|$)' "$plan" | sed -n "${numero}p")
+    case "$siguiente" in
+      "") return 0 ;;
+      orden\|*) ;;
+      limpia\|*) limpiezas="$limpiezas${siguiente#limpia|} " ;;
+      prepara\|*) break ;;
+      *) return 0 ;;
+    esac
+  done
+  IFS='|' read -r _ copia estado receta origen <<< "$siguiente"
+  [[ "$origen" =~ ^20[0-9]{2}$ ]] && [ -n "$estado" ] && [ -n "$receta" ] &&
+    [ -f "$copia/scripts/dgx_prepare_inputs.py" ] || return 0
+  # Unas copias que el plan retira antes de prepararlas no se construyen por adelantado.
+  case "$limpiezas" in *" $estado/packed-inputs/$origen "*) return 0 ;; esac
+  if "$adelanto" start "$copia" "$estado" "$receta" "$origen"; then
+    nota "preparación adelantada de la fase $numero: $siguiente"
+  fi
+}
 
 if [ -n "$espera" ]; then
   nota "espera a que termine $espera"
@@ -102,6 +136,12 @@ while [ "$parar" = 0 ]; do
       nota "fase $((terminadas + 1)) mal escrita: $linea"
       exit 2
     fi
+    if [ -n "$adelanto" ]; then
+      # La preparación adelantada de estas copias, si sigue en curso, termina antes.
+      while [ "$parar" = 0 ] && [ ! -e "$pausa" ] && "$adelanto" busy; do dormir "$sondeo"; done
+      [ "$parar" = 1 ] && break
+      [ -e "$pausa" ] && continue
+    fi
     nota "fase $((terminadas + 1)): $linea"
     inicio=$(date +%s)
     ( cd "$copia" && exec env \
@@ -127,12 +167,14 @@ while [ "$parar" = 0 ]; do
     ( cd "$copia" && exec ./scripts/dgx_campaign.sh run --machine mars_titan \
         --declaration "$declaracion" --state "$estado" --views "$vistas" \
         --workers "$trabajadores" $argumentos ) &
+    adelanta "$terminadas"
   fi
   hijo=$!; pausada=0
   while kill -0 "$hijo" 2>/dev/null; do
     if [ "$pausada" = 0 ] && [ -e "$pausa" ]; then
       nota "pausa pedida: la fase para en su siguiente barrera"
       kill -TERM "$hijo" 2>/dev/null
+      [ -n "$adelanto" ] && "$adelanto" stop
       pausada=1
     fi
     dormir "$sondeo"
@@ -151,5 +193,6 @@ while [ "$parar" = 0 ]; do
   fi
   echo $((terminadas + 1)) > "$hecho.tmp" && mv "$hecho.tmp" "$hecho"
 done
+[ -n "$adelanto" ] && "$adelanto" stop
 nota "parada pedida"
 exit 0
