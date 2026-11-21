@@ -559,6 +559,12 @@ class ChronologicalInference:
         self.session_ic = recipe.session_ic()
         if self.session_ic is not None and self.objective is not None:
             raise ValueError("El término de IC por sesión no se combina con un objetivo de salida")
+        # Con liquidez, cada fila lleva a la pérdida su columna del bloque del gráfico.
+        self.liquidity = self.session_ic is not None and self.session_ic.weighted
+        if self.liquidity and (
+            -self.session_ic.liquidity_column > predictor.config.inputs.dimensions["charts"]
+        ):
+            raise ValueError("La columna de liquidez no pertenece al bloque del gráfico")
         # F1 y A4 son otros objetivos de salida. Solo se distinguen para rechazar el
         # postentrenamiento, que todavía no tiene un contraste declarado para ellos.
         self.undeclared_posttraining = (
@@ -680,7 +686,7 @@ class ChronologicalInference:
                     continue
                 # El error y la selección usan la mediana emitida. La pérdida usa los cinco niveles.
                 # `unbind` deja un solo nodo de autograd para las filas del bloque.
-                graphs = self._graphs(prepared).unbind()
+                graphs = self._graphs(prepared, batch).unbind()
                 if grad:
                     for row, key in enumerate(
                         zip(batch.flow_ids, batch.prediction_at, strict=True)
@@ -708,13 +714,24 @@ class ChronologicalInference:
         if event.inputs and not warmup:
             run.instants += 1
 
-    def _graphs(self, prepared):
-        """Salidas por fila que entran en la pérdida del tramo."""
+    def _graphs(self, prepared, batch):
+        """Salidas por fila que entran en la pérdida del tramo.
+
+        Con el término ponderado por liquidez, cada fila añade al final su liquidez recibida,
+        sin gradiente: así llega a la pérdida con su predicción, también en la repetición por
+        bloques, sin más estado que guardar.
+        """
         if self.quantiles:
-            return prepared.quantiles
-        if self.objective is not None:
+            outputs = prepared.quantiles
+        elif self.objective is not None:
             return prepared.outputs
-        return prepared.point_predictions
+        else:
+            outputs = prepared.point_predictions
+        if not self.liquidity:
+            return outputs
+        liquidity = batch.inputs["charts"][:, self.session_ic.liquidity_column].detach()
+        outputs = outputs if outputs.ndim == 2 else outputs.unsqueeze(1)
+        return torch.cat((outputs, liquidity.to(outputs.dtype).unsqueeze(1)), dim=1)
 
     def _levels(self, prepared):
         if self.quantiles:
@@ -1179,12 +1196,18 @@ class ChronologicalTrainer(ChronologicalInference):
         if self.objective is not None:
             sessions = [(flow.split("/", 1)[0], at) for flow, at in keys]
             return self.objective.loss(prediction, target, sessions)
+        liquidity = None
+        if self.liquidity:
+            # La última columna es la liquidez de la fila; el resto, sus salidas.
+            liquidity, prediction = prediction[:, -1], prediction[:, :-1]
+            if not self.quantiles:
+                prediction = prediction.squeeze(1)
         loss = self._loss(prediction, target)
         if self.session_ic is not None:
             # El punto es el que se emite: la mediana con cuantiles o la salida escalar.
             sessions = [(flow.split("/", 1)[0], at) for flow, at in keys]
             point = median(prediction) if self.quantiles else prediction
-            loss = loss + self.session_ic.term(point, target, sessions)
+            loss = loss + self.session_ic.term(point, target, sessions, liquidity)
         return loss
 
     def _loss(self, prediction, target):
@@ -1296,7 +1319,7 @@ class ChronologicalTrainer(ChronologicalInference):
                     if prepared.local_control is not None:
                         penalties.append(prepared.local_control.penalty)
                         replayed += len(prepared.local_control.flow_ids)
-                    outputs = self._graphs(prepared).unbind()
+                    outputs = self._graphs(prepared, batch).unbind()
                     for row, key in enumerate(
                         zip(batch.flow_ids, batch.prediction_at, strict=True)
                     ):

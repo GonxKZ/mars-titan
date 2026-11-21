@@ -1,0 +1,19 @@
+{
+  "schema_version": 1,
+  "kind": "dgx_campaign_contrasts",
+  "description": "Control de cada modelo de la extensión de la campaña DGX v8: la liquidez y los lectores con el término se comparan con el modelo del que solo los separa ese campo.",
+  "controls": {
+    "titans_mac_disabled": "titans_mac",
+    "titans_mac_liq05": "titans_mac",
+    "titans_mac_liq1": "titans_mac",
+    "titans_mac_disabled_liq05": "titans_mac_disabled",
+    "titans_mac_disabled_liq1": "titans_mac_disabled",
+    "mars_titan_m0": "titans_mac",
+    "mars_titan_m3": "mars_titan_m0",
+    "mars_titan_cognitive": "mars_titan_m3",
+    "mars_titan_m0_ic": "mars_titan_m0",
+    "mars_titan_m3_ic": "mars_titan_m3",
+    "mars_titan_cognitive_ic": "mars_titan_cognitive"
+  },
+  "always_kept": []
+}

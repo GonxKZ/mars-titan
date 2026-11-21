@@ -65,6 +65,7 @@ from mars_titan.models.titans.frozen_financial import (
     declared_sources,
 )
 from mars_titan.models.titans.output_objectives import reads_scalar_point
+from mars_titan.models.titans.session_ic_objective import parse_session_ic_term
 from mars_titan.models.titans.state import deferred_checks
 
 from . import anchored_decay
@@ -163,8 +164,22 @@ class ReadoutRecipe:
     determinism: str | None = None
     # R3 de #786. None conserva el lector y la identidad anteriores.
     familiarity_gate: str | None = None
+    # None ajusta con la pérdida declarada. Un objeto le suma el IC por sesión del punto
+    # emitido por el lector (`session_ic_term_v1`), como en la receta del núcleo.
+    session_ic_term: dict | None = None
+
+    def session_ic(self):
+        """Término de IC por sesión de la receta, o None si no lo declara."""
+        if self.session_ic_term is not None and type(self.session_ic_term) is not dict:
+            raise ValueError("session_ic_term debe declarar weight y minimum_rows, o ser None")
+        term = parse_session_ic_term(self.session_ic_term)
+        if term is not None and term.weighted:
+            # El lector repite bloques ya emitidos y no conserva sus entradas.
+            raise ValueError("El término del lector no pondera por liquidez")
+        return term
 
     def __post_init__(self):
+        self.session_ic()
         validate_selection(self.selection, epochs=self.epochs, modes=CHRONOLOGICAL_MODES)
         if type(self.supervised_refinements) is list:
             object.__setattr__(self, "supervised_refinements", tuple(self.supervised_refinements))
@@ -238,6 +253,11 @@ class ReadoutRecipe:
             fields.pop("determinism")
         if fields["familiarity_gate"] is None:
             fields.pop("familiarity_gate")
+        term = self.session_ic()
+        if term is None:
+            fields.pop("session_ic_term")
+        else:
+            fields["session_ic_term"] = term.identity()
         return dict(
             schema_version=1,
             recipe=RECIPE,
@@ -448,6 +468,8 @@ class MarsTitanInference:
         self.quantiles = config.head == QUANTILE_HEAD
         if self.quantiles != (recipe.loss == PINBALL):
             raise ValueError("La cabeza de cuantiles se ajusta solo y siempre con pinball")
+        # El término de IC por sesión se suma a la pérdida del lector en cada actualización.
+        self.session_ic = recipe.session_ic()
         supervised = recipe.supervised_refinements
         if supervised is not None and supervised[-1] != readout.config.refinements:
             raise ValueError("La supervisión por refinamientos debe acabar en el K del lector")
@@ -1028,6 +1050,38 @@ class ReadoutTrainer(MarsTitanInference):
             supervised=self.recipe.supervised_refinements,
         )
 
+    def _session_gradients(self, run, matured):
+        """Término de IC por sesión del tramo y su gradiente respecto de cada punto emitido.
+
+        El término depende de todas las filas de cada sesión, que pueden estar en bloques
+        distintos, y cada bloque se repite y retropropaga por separado. Como la repetición
+        reproduce bit a bit los puntos emitidos, el gradiente del término respecto de ellos
+        se calcula una vez con los emitidos y cada bloque suma el producto de su parte por
+        sus puntos repetidos: su gradiente respecto de los pesos es el del término.
+        Devuelve el valor del término y, por bloque, el gradiente de sus filas con etiqueta.
+        """
+        points, targets, sessions, sizes = [], [], [], {}
+        for block in sorted(matured):
+            record, labels = run.blocks[block], matured[block]
+            positions = [i for i, key in enumerate(record["keys"]) if key in labels]
+            index = device_tensor(np.asarray(positions, dtype=np.int64), self.device, torch.int64)
+            points.append(record["issued"].index_select(0, index))
+            for position in positions:
+                flow, decision_at = record["keys"][position]
+                targets.append(labels[flow, decision_at])
+                sessions.append((flow.split("/", 1)[0], decision_at))
+            sizes[block] = len(positions)
+        point = torch.cat(points).detach().clone().requires_grad_(True)
+        target = device_tensor(np.asarray(targets, dtype=np.float64), self.device, self.dtype)
+        with torch.enable_grad():
+            term = self.session_ic.term(point, target, sessions)
+            (gradient,) = torch.autograd.grad(term, point)
+        parts, start = {}, 0
+        for block, size in sizes.items():
+            parts[block] = gradient[start : start + size]
+            start += size
+        return term.detach(), parts
+
     def _update(self, run, at):
         """Repetir cada bloque del tramo con etiquetas y acumular la pérdida media del tramo."""
         total = len(run.used)
@@ -1035,6 +1089,9 @@ class ReadoutTrainer(MarsTitanInference):
             matured = {}
             for flow, decision_at, block, value in run.used:
                 matured.setdefault(block, {})[flow, decision_at] = value
+            term, session_gradients = None, {}
+            if self.session_ic is not None:
+                term, session_gradients = self._session_gradients(run, matured)
             # Las comprobaciones y pérdidas de cada bloque se leen juntas al final del tramo,
             # con una sola sincronización. El error es el de la primera comprobación fallida
             # en el orden de antes y se lanza antes del paso.
@@ -1075,8 +1132,18 @@ class ReadoutTrainer(MarsTitanInference):
                     loss = self._loss(result, index, target) * (len(positions) / total)
                     checks.append(torch.isfinite(loss))
                     messages.append("La pérdida del tramo no es finita")
-                    self._backward_block(loss, record)
                     losses.append(loss.detach())
+                    if block in session_gradients:
+                        # Parte del término de IC por sesión que corresponde a este bloque.
+                        emitted = result.point_predictions.index_select(0, index)
+                        loss = loss + (session_gradients[block] * emitted).sum()
+                        checks.append(torch.isfinite(loss))
+                        messages.append("La pérdida del tramo no es finita")
+                    self._backward_block(loss, record)
+            if term is not None:
+                checks.append(torch.isfinite(term))
+                messages.append("La pérdida del tramo no es finita")
+                losses.append(term)
             with nvtx_ranges.phase("readout.checks"):
                 flags = torch.stack(checks).tolist()
                 for valid, message in zip(flags, messages, strict=True):
