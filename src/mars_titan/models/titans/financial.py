@@ -26,6 +26,7 @@ from mars_titan.models.learning_scale import TRANSFORM as LEARNING_TRANSFORM
 from mars_titan.models.learning_scale import LearningScale, LearningScaler, parse_learning_scale
 from mars_titan.models.quantile_head import (
     CONTRACT,
+    MEDIAN_GAIN,
     MEDIAN_INDEX,
     QUANTILE_HEAD,
     QuantileHead,
@@ -299,6 +300,10 @@ class FinancialConfig:
     # Rama de los rasgos técnicos del bloque del gráfico, tras MAC y antes de la cabeza, con
     # codificación lineal a trozos. Sin declararla, la identidad y el cálculo no cambian.
     technical_branch: TechnicalBranchConfig | TechnicalDenseConfig | None = None
+    # None conserva la mediana libre de la cabeza de cuantiles. `learned_median_gain_v1` la
+    # multiplica por exp de un escalar aprendido, que absorbe la escala cuando otra parte de
+    # la pérdida no depende de ella.
+    median_gain: str | None = None
 
     def __post_init__(self):
         if self.memory_inner_gradient not in INNER_GRADIENTS:
@@ -342,6 +347,7 @@ class FinancialConfig:
         self._check_core_variants()
         self._check_learning_scale()
         self._check_technical_branch()
+        self._check_median_gain()
         self._check_memory_projections()
         self._check_runtime_limits()
 
@@ -643,6 +649,15 @@ class FinancialConfig:
                 "reference_encoder admite rnn, lstm, gru o dlinear, sin otro codificador temporal"
             )
 
+    def _check_median_gain(self):
+        """La ganancia de la mediana pertenece a la cabeza de cuantiles."""
+        if self.median_gain is None:
+            return
+        if type(self.median_gain) is not str or self.median_gain != MEDIAN_GAIN:
+            raise ValueError("median_gain admite learned_median_gain_v1 o None")
+        if self.head != QUANTILE_HEAD:
+            raise ValueError("median_gain necesita la cabeza quantile_head_v1")
+
     def _check_technical_branch(self):
         """La rama técnica lee columnas normalizadas del bloque del gráfico."""
         object.__setattr__(self, "technical_branch", parse_technical_branch(self.technical_branch))
@@ -845,6 +860,16 @@ class FinancialConfig:
             result.update(output=QUANTILE_HEAD, output_head=dict(CONTRACT))
         if self.quantile_routing is not None:
             result.update(quantile_routing=self.quantile_routing.identity())
+        if self.median_gain is not None:
+            result.update(
+                median_gain=dict(
+                    schema_version=1,
+                    name=MEDIAN_GAIN,
+                    parametrization="emitted_median_is_exp_of_a_learned_scalar_times_free_median",
+                    initial_scalar=0.0,
+                    tails="softplus_increments_over_the_emitted_median",
+                )
+            )
         if self.temporal_encoder is not None:
             result.update(
                 temporal_encoder=self.temporal_encoder,
@@ -1115,7 +1140,10 @@ class FinancialPredictor(nn.Module):
             # iniciales que la variante escalar con la misma semilla.
             if config.head == QUANTILE_HEAD:
                 self.head = QuantileHead(
-                    config.hidden_size, routing=config.quantile_routing, scaled=scaled
+                    config.hidden_size,
+                    routing=config.quantile_routing,
+                    scaled=scaled,
+                    median_gain=config.median_gain is not None,
                 )
             elif scaled:
                 # La cabeza escalar conserva los pesos sorteados y añade su escala de salida.

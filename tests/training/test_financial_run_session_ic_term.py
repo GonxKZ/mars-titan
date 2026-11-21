@@ -8,7 +8,13 @@ import torch
 from mars_titan.data.input_policy import HISTORICAL_MASKED
 from mars_titan.memory import financial_observations as observations
 from mars_titan.models.baselines.multimodal import SCALAR_HEAD
-from mars_titan.models.quantile_head import PINBALL, QUANTILE_HEAD, median, pinball_loss
+from mars_titan.models.quantile_head import (
+    MEDIAN_GAIN,
+    PINBALL,
+    QUANTILE_HEAD,
+    median,
+    pinball_loss,
+)
 from mars_titan.models.titans.cross_asset_attention import CrossAssetAttentionConfig
 from mars_titan.models.titans.financial import FinancialConfig, FinancialPredictor
 from mars_titan.models.titans.session_ic_objective import SESSION_IC_TERM, SessionICObjective
@@ -428,3 +434,32 @@ def test_the_weighted_term_with_the_scalar_head_and_its_column_check(shared, tmp
     with pytest.raises(ValueError, match="bloque del gráfico"):
         trainer(shared, tmp_path / "beyond", session_ic_term=beyond)
     assert trainer(shared, tmp_path / "edge", session_ic_term=dict(LIQUID, liquidity_column=-width))
+
+
+def test_the_gain_of_the_median_is_trained_by_the_quantile_loss_and_not_by_the_term(
+    shared, tmp_path
+):
+    def model():
+        return predictor(shared, median_gain=MEDIAN_GAIN)
+
+    with_term = trainer(shared, tmp_path / "with", model=model(), max_grad_norm=None)
+    with_term.run()
+    without = trainer(
+        shared, tmp_path / "without", model=model(), max_grad_norm=None, session_ic_term=None
+    )
+    without.run()
+    left, right = records(with_term), records(without)
+    assert len(left) == len(right) > 2
+    scale = max(record["head.median_gain"].abs().item() for record in right)
+    assert scale > 0
+    for first, second in zip(left, right, strict=True):
+        # El término no depende de la escala de la mediana: a la ganancia solo le llega pinball.
+        torch.testing.assert_close(
+            first["head.median_gain"], second["head.median_gain"], rtol=1e-6, atol=1e-8 * scale
+        )
+    # Y el término sí cambia el gradiente de la dirección de la mediana.
+    assert any(
+        not torch.equal(first["head.weight"][2], second["head.weight"][2])
+        for first, second in zip(left, right, strict=True)
+    )
+    assert with_term.identity["predictor"]["median_gain"]["name"] == MEDIAN_GAIN

@@ -656,6 +656,99 @@ def test_the_extension_of_the_campaign_changes_one_field_per_model():
     assert declared["titans_mac_disabled_liq1"] == "titans_mac_disabled"
 
 
+@pytest.mark.parametrize(
+    ("name", "origin"),
+    [
+        ("dgx-us-campaign-v9.json", "dgx-us-campaign-v8.json"),
+        ("dgx-us-cn-campaign-v8.json", "dgx-us-cn-campaign-v7.json"),
+    ],
+)
+def test_the_campaigns_with_the_median_gain_only_add_it_and_their_controls(name, origin):
+    path, source = ROOT / "configs/experiments" / name, ROOT / "configs/experiments" / origin
+    document, previous = campaign.load_declaration(path)[0], json.loads(source.read_text())
+    own = {"description", "source_declaration_sha256", "models", "tiers", "recipes"}
+    assert set(document) == set(previous)
+    for key in set(previous) - own:
+        assert document[key] == previous[key], key
+    assert document["source_declaration_sha256"] == hashlib.sha256(source.read_bytes()).hexdigest()
+    assert document["tiers"] == previous["tiers"] + ["r4_nogain", "r4_liquid", "r4_reader_ic"]
+    gain, term = "predictor.median_gain", "recipe.session_ic_term"
+
+    def changed(left, right, other=None):
+        one, two = flat_specification(document, left), flat_specification(other or document, right)
+        keys = (one.keys() | two.keys()) - {"predictor_changes"}
+        return {key for key in keys if one.get(key) != two.get(key)}
+
+    # Cada modelo conserva su entrada. Solo gana la ganancia si ajusta una cabeza de cuantiles.
+    assert set(previous["models"]) < set(document["models"])
+    gained = 0
+    for model, before in previous["models"].items():
+        assert document["models"][model] == before, model
+        now = flat_specification(document, model)
+        quantiles = now.get("predictor.head") == "quantile_head_v1"
+        kept = before.get("recipe") in ("core_original", "core_scalar_noic", "core_scalar")
+        if before["runner"] == "fit" and quantiles and not kept:
+            assert changed(model, model, previous) == {gain}, model
+            assert now[gain] == "learned_median_gain_v1"
+            gained += 1
+        else:
+            assert changed(model, model, previous) == set(), model
+            assert now.get(gain) is None, model
+    assert gained > 60
+    # La ganancia solo se declara con la cabeza de cuantiles, que es la única que la admite.
+    for model in document["models"]:
+        now = flat_specification(document, model)
+        assert now.get(gain) is None or now.get("predictor.head") == "quantile_head_v1", model
+    base = flat_specification(document, "titans_mac")[term]
+    assert base == {"weight": 3.0, "minimum_rows": 8}
+    for control in ("titans_mac", "titans_mac_frozen", "titans_mac_disabled"):
+        # Sin la ganancia, el núcleo es el de la campaña anterior, campo a campo.
+        assert changed(f"{control}_nogain", control) == {gain}
+        assert changed(f"{control}_nogain", control, previous) == set()
+        assert document["models"][f"{control}_nogain"]["tier"] == "r4_nogain"
+    names = technical_features.NAMES_V2
+    column = names.index("log_dollar_volume_21") - len(names)
+    for control in ("titans_mac", "titans_mac_disabled"):
+        for suffix, power in (("liq05", 0.5), ("liq1", 1.0)):
+            assert changed(f"{control}_{suffix}", control) == {term}
+            declared = flat_specification(document, f"{control}_{suffix}")[term]
+            assert declared == {**base, "liquidity_column": column, "liquidity_power": power}
+            assert (
+                ChronologicalRecipe(**_recipe(document, f"{control}_{suffix}"))
+                .session_ic()
+                .weighted
+            )
+            assert document["models"][f"{control}_{suffix}"]["tier"] == "r4_liquid"
+        for suffix, weight in (("icw03", 0.3), ("icw01", 0.1), ("icw1", 1.0), ("icw10", 10.0)):
+            assert changed(f"{control}_{suffix}", control) == {term}
+            declared = flat_specification(document, f"{control}_{suffix}")[term]
+            assert declared == {**base, "weight": weight}
+            assert document["models"][f"{control}_{suffix}"]["tier"] == "r4_weight"
+    for control in ("mars_titan_m0", "mars_titan_m3", "mars_titan_cognitive"):
+        assert changed(f"{control}_ic", control) == {term}
+        assert flat_specification(document, f"{control}_ic")[term] == base
+        assert document["models"][f"{control}_ic"]["parent"] == "titans_mac"
+        assert document["models"][f"{control}_ic"]["tier"] == "r4_reader_ic"
+        assert readout.ReadoutRecipe(**_recipe(document, f"{control}_ic")).session_ic() is not None
+    # Las piezas de la base siguen separadas de ella por un solo campo.
+    for control in ("titans_mac", "titans_mac_frozen", "titans_mac_disabled"):
+        assert changed(f"{control}_noic", control) == {term}
+        assert changed(f"{control}_nobranch", control) == {"predictor.technical_branch"}
+        assert changed(f"{control}_xrank", control) == {"predictor.technical_branch"}
+    declared = json.loads(
+        (ROOT / "configs/experiments/dgx-us-campaign-v9-contrasts.json").read_text()
+    )["controls"]
+    assert set(declared) == set(document["models"]) - {"titans_mac"}
+    assert set(declared.values()) <= set(document["models"])
+    assert declared["titans_mac_frozen_nogain"] == "titans_mac_frozen"
+    assert declared["mars_titan_cognitive_ic"] == "mars_titan_cognitive"
+    assert declared["titans_mac_disabled_icw01"] == "titans_mac_disabled"
+    # El plan cuenta los modelos nuevos en los tres orígenes de desarrollo de sus niveles.
+    jobs = campaign.plan(document, "mars_titan")
+    added = {job.model for job in jobs if job.tier in ("r4_nogain", "r4_liquid", "r4_reader_ic")}
+    assert len(added) == 3 + 4 + 3
+
+
 def _recipe(document, model):
     name = document["models"][model]["recipe"]
     return json.loads((ROOT / document["recipes"][name]).read_text())["recipe"]

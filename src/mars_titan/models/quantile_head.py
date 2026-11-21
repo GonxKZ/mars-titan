@@ -7,6 +7,16 @@ acumulados desde la mediana hacia cada cola. El orden no decreciente se cumple
 por construcción, también en coma flotante, porque restar o sumar un valor no
 negativo nunca cruza el operando al redondear.
 
+Con `median_gain` (`learned_median_gain_v1`) la mediana emitida es exp(g) por la mediana
+libre, con g un escalar aprendido que empieza en cero, y las colas siguen siendo incrementos
+sobre ella. Sirve cuando otra parte de la pérdida no depende de la escala de la mediana, como
+el término de IC por sesión: su gradiente es ortogonal a la mediana, cada paso la agranda y
+solo pinball la frena, de modo que el núcleo de la campaña emitía una mediana diez veces más
+dispersa que la calibrada, con más error absoluto que predecir cero. Ese término tampoco
+depende de g, así que a g solo lo ajusta pinball y absorbe la escala con un parámetro. Con
+los 46 rasgos solos, la cabeza con ganancia deja el factor de mínimos absolutos de la mediana
+en 0,95 (0,38 a 0,51 sin ella) y ordena igual o mejor (0,115 frente a 0,114 en validación).
+
 La pérdida es la media de pinball con pesos iguales sobre los cinco niveles y la
 predicción puntual es la mediana. En un residuo nulo se usa el subgradiente
 medio (tau - 1/2), el mismo que da `torch.maximum` al repartir el empate. Así el
@@ -22,6 +32,7 @@ from torch.nn import functional
 from .quantile_routing import QuantileRouting
 
 QUANTILE_HEAD = "quantile_head_v1"
+MEDIAN_GAIN = "learned_median_gain_v1"
 PINBALL = "pinball"
 LEVELS = (0.025, 0.1, 0.5, 0.9, 0.975)
 MEDIAN_INDEX = 2
@@ -127,15 +138,34 @@ class QuantileHead(nn.Linear):
     en el candidato nativo. La salida tiene forma [filas, 5].
     """
 
-    def __init__(self, in_features, *, device=None, dtype=None, routing=None, scaled=False):
+    def __init__(
+        self,
+        in_features,
+        *,
+        device=None,
+        dtype=None,
+        routing=None,
+        scaled=False,
+        median_gain=False,
+    ):
         if type(in_features) is not int or not 1 <= in_features <= 4096:
             raise ValueError("La anchura de entrada de la cabeza no es válida")
         if routing is not None and not isinstance(routing, QuantileRouting):
             raise ValueError("La ruta de cuantiles necesita QuantileRouting o None")
         if type(scaled) is not bool:
             raise ValueError("La escala de salida de la cabeza se declara con un booleano")
+        if type(median_gain) is not bool:
+            raise ValueError("La ganancia de la mediana se declara con un booleano")
         super().__init__(in_features, len(LEVELS), device=device, dtype=dtype)
         self.routing = routing
+        # Sin la ganancia el parámetro no existe y el estado conserva sus nombres. Con ella
+        # empieza en cero: exp(0) = 1 y la cabeza emite lo mismo que sin declararla.
+        self.register_parameter(
+            "median_gain",
+            nn.Parameter(torch.zeros((), device=device, dtype=self.weight.dtype))
+            if median_gain
+            else None,
+        )
         # Con `learning_scale` (#836) los cinco cuantiles se multiplican por la escala de las
         # etiquetas del ajuste. Sin ella no existe el buffer y el estado conserva sus nombres.
         self.scaled = scaled
@@ -149,19 +179,22 @@ class QuantileHead(nn.Linear):
 
     def _quantiles(self, value):
         raw = super().forward(value)
+        point = raw[..., MEDIAN_INDEX]
+        if self.median_gain is not None:
+            # Un factor positivo común conserva el signo y el orden de la mediana entre filas.
+            point = torch.exp(self.median_gain) * point
         routing = self.routing
         if (
             routing is None
             or (routing.median_from_tails and routing.encoder_from_spreads)
             or not torch.is_grad_enabled()
         ):
-            return ordered_quantiles(raw)
+            return _assemble(raw, point, point)
         spreads = (
             raw
             if routing.encoder_from_spreads
             else functional.linear(value.detach(), self.weight, self.bias)
         )
-        point = raw[..., MEDIAN_INDEX]
         location = point if routing.median_from_tails else point.detach()
         return _assemble(spreads, point, location)
 

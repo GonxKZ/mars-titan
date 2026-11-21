@@ -136,6 +136,8 @@ def _module_settings(module):
             if not isinstance(module.routing, QuantileRouting):
                 raise ValueError("La cabeza congelada no conserva una ruta identificada")
             settings["quantile_routing"] = module.routing.identity()
+        if isinstance(module, QuantileHead) and module.median_gain is not None:
+            settings["median_gain"] = "learned_median_gain_v1"
     elif isinstance(module, nn.LayerNorm):
         fields = ("normalized_shape", "eps", "elementwise_affine")
         settings["bias"] = module.bias is not None

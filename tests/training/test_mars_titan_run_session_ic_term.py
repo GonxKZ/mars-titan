@@ -7,6 +7,7 @@ import torch
 
 from mars_titan.data.input_policy import HISTORICAL_MASKED
 from mars_titan.memory import financial_observations as observations
+from mars_titan.models.quantile_head import MEDIAN_GAIN, MEDIAN_INDEX
 from mars_titan.models.titans.financial import FinancialConfig, FinancialPredictor
 from mars_titan.models.titans.session_ic_objective import SESSION_IC_TERM
 from mars_titan.training import mars_titan_run as mt
@@ -59,7 +60,7 @@ class Spy:
         return value
 
 
-def dispersed_parent(sessions):
+def dispersed_parent(sessions, **changes):
     """Padre con la memoria de la receta de campaña, que conserva la dispersión entre activos.
 
     Con la memoria v1 del fixture la salida se iguala entre activos y la correlación
@@ -73,6 +74,7 @@ def dispersed_parent(sessions):
         head="quantile_head_v1",
         memory_residual_layer_norm=True,
         gate_bias=dict(alpha_half_life=256.0, eta=0.5, theta=0.05),
+        **changes,
     )
     return FinancialPredictor(config, dtype=torch.float64).eval().requires_grad_(False)
 
@@ -207,3 +209,56 @@ def test_the_reader_recipe_declares_the_term_whole_and_without_liquidity():
     ):
         with pytest.raises(ValueError):
             mt.ReadoutRecipe(session_ic_term=value)
+
+
+@pytest.mark.native("MARS_TITAN_EPISODIC_NATIVE")
+@pytest.mark.parametrize("term", [None, TERM])
+def test_a_parent_with_the_median_gain_reads_as_its_equivalent_without_it(
+    sessions,
+    tmp_path,
+    native,  # noqa: F811
+    learning_doubles,
+    term,
+):
+    """Un lector aplica la cabeza del padre: la ganancia debe llegar a lo que emite.
+
+    Un padre con ganancia 1/4 emite lo mismo que otro sin ella con la fila de la mediana
+    de su cabeza dividida entre cuatro. Si algún camino del lector calculara los cuantiles
+    con los pesos de la cabeza, sin su ganancia, las dos lecturas se separarían.
+    """
+    gained, plain = dispersed_parent(sessions, median_gain=MEDIAN_GAIN), dispersed_parent(sessions)
+    with torch.no_grad():
+        gained.head.median_gain.fill_(-2.0)
+        factor = torch.exp(gained.head.median_gain)
+        plain.head.weight[MEDIAN_INDEX].mul_(factor)
+        plain.head.bias[MEDIAN_INDEX].mul_(factor)
+    gained._seal_parameters()
+    plain._seal_parameters()
+
+    def read(model, folder):
+        engine = build(
+            sessions,
+            tmp_path / folder,
+            native,
+            model=model,
+            plan=recipe(max_grad_norm=None, session_ic_term=term),
+        )
+        report = engine.run()
+        assert report["status"] == "completed"
+        return engine
+
+    left, right = read(gained, "gained"), read(plain, "plain")
+    assert left.identity != right.identity
+    seen = 0
+    for partition in ("train", "validation"):
+        one = entries(left.audit, "prediction", partition)
+        two = entries(right.audit, "prediction", partition)
+        assert len(one) == len(two) > 0
+        for first, second in zip(one, two, strict=True):
+            assert first[2:4] == second[2:4]
+            assert first[4] == pytest.approx(second[4], rel=1e-9, abs=1e-12)
+            seen += first[4] != 0
+    assert seen > 0
+    # La actualización del lector también coincide: el gradiente pasa por la ganancia.
+    for first, second in zip(gradients(left), gradients(right), strict=True):
+        close(first, second, rtol=1e-8, atol=1e-11)

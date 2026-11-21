@@ -1246,6 +1246,66 @@ La extensión lleva el núcleo de la base, que es el padre de los lectores y el 
 liquidez y de los pesos, y los tres lectores principales con y sin el término. Se recorre en el origen 2013
 detrás de la campaña, con sus mismas copias empaquetadas, y su informe la compara con ella.
 
+#### Ganancia aprendida de la mediana (`median_gain: learned_median_gain_v1`)
+
+Un factor elegido en calibración arregla la medida, no el modelo: su salida solo es fiable con
+la corrección al lado. La cabeza de cuantiles admite ahora una ganancia. La mediana emitida es
+`exp(g)` por la mediana libre, con `g` un escalar aprendido que empieza en cero, y las colas
+siguen siendo incrementos sobre la mediana emitida. La correlación del término tampoco depende
+de `g`, así que a `g` solo lo ajusta la pérdida de cuantiles y absorbe, con un parámetro, la
+escala que el término infla. Sin la declaración el parámetro no existe: mismos nombres del
+estado, misma identidad y misma salida bit a bit.
+
+Con los 46 rasgos solos y la cabeza ordenada de la campaña (una semilla; el ruido entre
+semillas es 0,0006). «Factor» es por cuánto habría que multiplicar la mediana emitida para
+minimizar su error absoluto: 1 es una mediana calibrada.
+
+| Peso del término | Ganancia | Validación | Calibración | Evaluación | Dispersión | Factor |
+| ---: | --- | ---: | ---: | ---: | ---: | ---: |
+| 0 | no | 0,1035 | 0,1087 | 0,1031 | 0,170 | 0,87 |
+| 0,1 | no | 0,1125 | 0,1165 | 0,1082 | 0,127 | 0,80 |
+| 0,3 | no | 0,1140 | 0,1164 | 0,1087 | 0,127 | 0,72 |
+| 0,3 | sí | 0,1158 | 0,1215 | 0,1112 | 0,103 | 0,96 |
+| 1 | no | 0,1139 | 0,1157 | 0,1082 | 0,140 | 0,65 |
+| 1 | sí | 0,1151 | 0,1221 | 0,1115 | 0,098 | 0,97 |
+| 3 | no | 0,1143 | 0,1194 | 0,1103 | 0,191 | 0,50 |
+| 3 | sí | 0,1153 | 0,1213 | 0,1117 | 0,098 | 0,95 |
+| 10 | sí | 0,1154 | 0,1209 | 0,1132 | 0,099 | 0,95 |
+
+- Sin la ganancia, el factor cae al subir el peso (0,87 sin término, 0,50 con peso 3). Con
+  ella queda entre 0,95 y 0,97 con cualquier peso entre 0,3 y 10.
+- La ganancia no cuesta orden: con cada peso queda por encima en los tres tramos, entre 0,001
+  y 0,006.
+- Con la ganancia el peso deja de importar en los tramos de decisión entre 0,3 y 10 (0,1151 a
+  0,1158 en validación y 0,1209 a 0,1221 en calibración): ya no hay que elegir entre ordenar y
+  conservar la escala.
+
+El núcleo terminado de la campaña v8 da la medida de lo que se corrige. En la evaluación de
+2013, la mediana que emite el núcleo sin memoria tiene un error absoluto de 0,0252, cuando
+predecir cero da 0,0112 y la misma mediana por su factor de calibración (0,058) da 0,0111. Sus
+intervalos del 80 % y del 95 % cubren el 84,1 % y el 94,9 %: las colas se ajustan alrededor de
+la mediana inflada y conservan la cobertura, pero son más anchas de lo necesario.
+
+En el entrenador, a la ganancia solo le llega la pérdida de cuantiles: una prueba compara su
+gradiente con y sin el término, y coincide. Los lectores aplican la cabeza de su padre, así
+que reciben la mediana a escala; otra prueba recorre un lector sobre un padre con ganancia 1/4
+y sobre el padre equivalente sin ella, con la fila de la mediana dividida entre cuatro, y los
+puntos emitidos y los gradientes coinciden, también por el camino nativo.
+
+Las campañas `dgx-us-campaign-v9.json` y `dgx-us-cn-campaign-v8.json` son la v8 y la conjunta
+v7 con la ganancia en todas las recetas que ajustan una cabeza de cuantiles. Cada modelo
+conserva su nombre, su nivel y el resto de su definición. Niveles nuevos:
+
+- `r4_nogain`: el núcleo sin la ganancia, que es campo a campo el de la v8.
+- `r4_liquid`, `r4_reader_ic` y los pesos 0,3 y 0,1 en `r4_weight`: las piezas de la
+  extensión, ahora sobre la base con ganancia.
+
+Comparaciones pareadas con los rasgos solos (tres semillas, misma semilla en cada pareja):
+los rangos por sesión junto a los valores suben la evaluación en las tres (0,1150, 0,1145 y
+0,1138 frente a 0,1102, 0,1120 y 0,1108) y la validación (0,0007 a 0,0018), con la
+calibración igual. Los 43 rasgos adicionales no ayudan (validación 0,1139, 0,1120 y 0,1130
+frente a 0,1152, 0,1150 y 0,1139), así que la versión de los rasgos no cambia.
+
 
 ### Herramientas nuevas
 
@@ -1306,6 +1366,17 @@ Una segunda ronda, ya con estas medidas, propuso nueve cambios más:
 | Ponderar la correlación por liquidez | Sin adoptar | Necesita llevar la liquidez hasta la pérdida; el tercio líquido se mide en cada informe |
 | Cabezas auxiliares de varios horizontes | Ya en la criba (`v_aux`) | Se mide sobre la base nueva |
 | Penalizar la dispersión del IC entre sesiones | Sin adoptar | Con dos sesiones por actualización esa dispersión no se puede estimar |
+
+Una tercera ronda, con la medida de la escala inflada, pidió causas y remedios:
+
+| Propuesta | Decisión | Motivo |
+| --- | --- | --- |
+| Separar la puntuación que ordena de la escala que se emite | Hecha como ganancia aprendida de la mediana | Es la forma mínima: un escalar que solo ajusta la pérdida de cuantiles. Deja el factor en 0,95 y no cuesta orden |
+| No dejar el peso 3 con un factor posterior como solución final | Adoptado | Las campañas v9 y conjunta v8 llevan la ganancia en la base |
+| Peso del término alrededor de 0,2 como control de un solo campo | En `r4_weight` (0,1, 0,3, 1 y 10) | Con la ganancia el peso deja de importar entre 0,3 y 10 |
+| Decaimiento de pesos y promedio de pesos contra la caída tras la cuarta época | Ya en la criba (`v_wd`, `v_ema`) | Se miden sobre la base |
+| Intervalos conformes por bloques de sesión | Herramienta encargada y comprobada | Margen por sesiones demasiado prudente (97,6 % para el 95 %): se integra con el margen por filas |
+| No entrenar los lectores solo con la pérdida de cuantiles sobre un núcleo sin calibrar | `r4_reader_ic` y padre con ganancia | El lector aplica la cabeza del padre, con su ganancia |
 
 ### Protocolo de evidencia
 
