@@ -1163,8 +1163,8 @@ como trabajo siguiente:
 - El término sube también el IC del tercio más líquido: de 0,051 / 0,068 / 0,060 con la
   pérdida de la mediana a 0,071 / 0,085 / 0,068.
 - Ponderar la correlación por liquidez con exponente 0,5 a 1 sube el tercio líquido otros
-  0,003 a 0,005 sin apenas coste en el conjunto; con exponente 2 lo pierde todo (0,107). No
-  está en la campaña: hay que llevar la liquidez de cada fila hasta la pérdida.
+  0,003 a 0,005 sin apenas coste en el conjunto; con exponente 2 el conjunto pierde 0,008
+  (0,107). Va en la extensión de la campaña, descrita más abajo.
 - Los 43 rasgos de más que no aportaban a los árboles dan a la red 0,002 en validación y
   calibración y 0,003 a 0,004 en evaluación (0,116 / 0,125 / 0,117). No justifican por ahora
   otra versión de los rasgos, que obligaría a preparar de nuevo todas las copias.
@@ -1189,6 +1189,32 @@ Los niveles `r4_` cambian una pieza de la base en el núcleo:
 Los modelos con el objetivo de salida de IC conservan su receta sin el término y ganan su
 propio control (`v_scalar_noic`), y el modelo sin el bloque del gráfico pierde la rama con él
 y se compara con el núcleo sin rama.
+
+#### Extensión: liquidez en el término y lectores con el término
+
+Dos piezas se midieron o escribieron cuando la campaña ya entrenaba. Las dos cambian el código
+de un recorrido, y un estado solo hereda trabajos cuyo código numérico no ha cambiado, así que
+van en una declaración propia, `dgx-us-campaign-v8-ext1.json` (commit a958cef2), con los
+controles que pide cada contraste. Los modelos finales de la campaña no cambian.
+
+- `x1_liquid`: `session_ic_term` admite `liquidity_column` y `liquidity_power`. El peso de
+  cada fila en la correlación de su sesión es 0,05 más su posición por esa columna del bloque
+  del gráfico, elevado al exponente y normalizado. La columna declarada, la −29, es
+  `log_dollar_volume_21`. Se miden los exponentes 0,5 y 1 en el núcleo con y sin memoria.
+  Cada fila lleva su liquidez a la pérdida junto a sus salidas, sin gradiente, de modo que la
+  repetición por bloques no necesita guardar nada más.
+- `x1_reader_ic`: la receta de los lectores admite el mismo término sobre el punto que emiten.
+  Los lectores no añadían orden al de su núcleo: en la conjunta sin rasgos, el lector sin banco
+  queda 0,005 por debajo del núcleo congelado en la decisión e igual en la evaluación, y el
+  cognitivo otros 0,002 por debajo. Una sesión puede repartirse entre bloques que el lector
+  repite y retropropaga uno a uno. Como la repetición reproduce bit a bit los puntos emitidos,
+  el gradiente del término respecto de ellos se calcula una vez con los emitidos y cada bloque
+  suma el producto de su parte por sus puntos repetidos. Las pruebas comprueban que el
+  gradiente no depende del reparto en bloques y que es lineal en el peso.
+
+La extensión lleva el núcleo de la base, que es el padre de los lectores y el control de la
+liquidez, y los tres lectores principales con y sin el término. Se recorre en el origen 2013
+detrás de la campaña, con sus mismas copias empaquetadas, y su informe la compara con ella.
 
 
 ### Herramientas nuevas
@@ -1258,7 +1284,7 @@ decidido con su validación y su calibración, y su evaluación se ha mirado. Lo
 2023 no tienen todavía ningún resultado con rasgos: son la evidencia fuera de muestra y se leen
 con el diseño ya fijado. El test final de 2024 sigue cerrado.
 
-### Plan vigente (decimoquinta revisión del 21 de noviembre)
+### Plan vigente (decimosexta revisión del 21 de noviembre)
 
 Las campañas con rasgos son `dgx-us-campaign-v8.json` y `dgx-us-cn-campaign-v7.json`, en el
 commit 114bcf4e. El plan recorre, con una fase cada vez y la preparación de la siguiente
@@ -1266,7 +1292,7 @@ adelantada:
 
 | Bloque | Qué recorre |
 | --- | --- |
-| 1 | Origen 2013. Sin rasgos, lo que falta para emparejar cada modelo. Con rasgos: modelos principales con los controles de la base (niveles `r4_`), criba de las variantes y de la segunda ronda, promoción, semillas 43 y 44, modelos secundarios y la conjunta |
+| 1 | Origen 2013. Con rasgos: modelos principales con los controles de la base (niveles `r4_`), criba de las variantes y de la segunda ronda, promoción, semillas 43 y 44 y modelos secundarios; lo que faltaba sin rasgos; la extensión, y la conjunta |
 | 2 | Origen 2023, los modelos ajustados con todos los datos: con rasgos en EE. UU. y en la conjunta (más las variantes promovidas), su pareja sin rasgos en EE. UU. y la ventana desde 2009 |
 | 3 | Orígenes 2014 a 2022 con rasgos en EE. UU., con un informe que reúne los orígenes recorridos |
 | 4 | Semillas 43 y 44 del origen 2023 con rasgos y la pareja conjunta sin rasgos |
