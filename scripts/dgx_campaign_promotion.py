@@ -89,16 +89,21 @@ def with_tiers(run, tiers):
     return run["prefix"] + "|" + " ".join(kept)
 
 
-def decide(origin, controls, always, *, keep, gain, t_value):
-    """Aplicar la regla al informe del origen de criba. Devuelve niveles y su justificación."""
+def decide(origin, controls, always, *, keep, gain, t_value, prefixes=("v_",)):
+    """Aplicar la regla al informe del origen de criba. Devuelve niveles y su justificación.
+
+    `prefixes` son los prefijos de los niveles que se valoran: las variantes de la criba (`v_`)
+    o, en otra orden, otro grupo de modelos con sus controles declarados.
+    """
     models = origin["models"]
     tier = {name: model["tier"] for name, model in models.items()}
     rows = {row["model"]: row for row in origin["contrasts"]}
-    variants = sorted(name for name in rows if (tier.get(name) or "").startswith("v_"))
+    prefixes = tuple(prefixes)
+    variants = sorted(name for name in rows if (tier.get(name) or "").startswith(prefixes))
 
     def needed(name):
         chain, current = [], controls.get(name)
-        while current is not None and (tier.get(current) or "").startswith("v_"):
+        while current is not None and (tier.get(current) or "").startswith(prefixes):
             chain.append(current)
             current = controls.get(current)
         return chain
@@ -139,8 +144,9 @@ def decide(origin, controls, always, *, keep, gain, t_value):
     )
 
 
-def edit_plan(lines, phase, decision, prune, promote):
+def edit_plan(lines, phase, decision, prune, promote, prefixes=("v_",)):
     """Quitar y añadir niveles en las fases posteriores a `phase`. Devuelve líneas y cambios."""
+    prefixes = tuple(prefixes)
     result, changes, position = list(lines), [], 0
     for index, line in enumerate(lines):
         if not is_phase(line):
@@ -151,9 +157,11 @@ def edit_plan(lines, phase, decision, prune, promote):
             continue
         year, tiers = run["origins"][0], run["tiers"]
         updated = None
-        if year in prune.get(run["state"], ()) and any(t.startswith("v_") for t in tiers):
+        if year in prune.get(run["state"], ()) and any(t.startswith(prefixes) for t in tiers):
             # Un nivel sin valorar (su variante no terminó en el origen de criba) no sigue.
-            updated = [t for t in tiers if not t.startswith("v_") or t in decision["kept_tiers"]]
+            updated = [
+                t for t in tiers if not t.startswith(prefixes) or t in decision["kept_tiers"]
+            ]
         elif year in promote.get(run["state"], ()) and tiers and "core" in tiers:
             updated = tiers + [t for t in decision["promoted_tiers"] if t not in tiers]
         if updated is not None and updated != tiers:
@@ -234,10 +242,17 @@ def main(argv=None):
     parser.add_argument("--phase", type=int, default=os.environ.get("MARS_TITAN_RELAY_PHASE"))
     parser.add_argument("--prune", action="append", default=[], help="estado:años de la criba")
     parser.add_argument("--promote", action="append", default=[], help="estado:años finales")
+    parser.add_argument(
+        "--candidates",
+        action="append",
+        metavar="PREFIJO",
+        help="Prefijo de los niveles que se valoran (v_ por defecto); se puede repetir",
+    )
     parser.add_argument("--keep", type=int, default=12)
     parser.add_argument("--gain", type=float, default=0.003)
     parser.add_argument("--t", type=float, default=2.0)
     args = parser.parse_args(argv)
+    prefixes = tuple(args.candidates or ["v_"])
     args.output.mkdir(parents=True, exist_ok=True)
     document = dict(
         schema_version=1,
@@ -246,7 +261,11 @@ def main(argv=None):
         seed=args.seed,
         state=str(args.state),
         rule=dict(
-            keep=args.keep, gain=args.gain, t=args.t, decision_splits=["validation", "calibration"]
+            keep=args.keep,
+            gain=args.gain,
+            t=args.t,
+            decision_splits=["validation", "calibration"],
+            candidates=list(prefixes),
         ),
         created_at_utc=datetime.now(UTC).isoformat(),
         changes=[],
@@ -269,6 +288,7 @@ def main(argv=None):
             keep=args.keep,
             gain=args.gain,
             t_value=args.t,
+            prefixes=prefixes,
         )
         document["decision"] = decision
         if not decision["assessed_tiers"]:
@@ -278,7 +298,7 @@ def main(argv=None):
         plan, phase = Path(args.plan), int(args.phase)
         lines = plan.read_text().split("\n")
         edited, changes = edit_plan(
-            lines, phase, decision, _targets(args.prune), _targets(args.promote)
+            lines, phase, decision, _targets(args.prune), _targets(args.promote), prefixes
         )
         phases = [line for line in edited if is_phase(line)]
         before = [line for line in lines if is_phase(line)]

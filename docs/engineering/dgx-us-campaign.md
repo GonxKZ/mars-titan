@@ -876,6 +876,237 @@ evaluación) y +0,0111 en evaluación con el núcleo (t = 2,9). El IC de evaluac
 menor que el de EE. UU. (0,028 frente a 0,054 con la memoria congelada), con 810 activos por
 sesión y sin noticias ni fundamentales en ese origen. Son tres modelos y una semilla.
 
+## Etiqueta, rasgos técnicos y tercera ronda (21 de noviembre de 2026)
+
+### Qué resta la etiqueta
+
+La etiqueta de la edición histórica (`data.budget_targets.residual_targets`) es
+
+    y(t+1) = r(t+1) − alfa(t) − beta(t) · m(t+1)
+
+donde `r` y `m` son las rentabilidades de apertura a cierre del activo y del factor de mercado
+(SPY o CSI 300) y `alfa` y `beta` salen de un OLS con intercepto sobre las 252 sesiones del
+calendario que terminan en la sesión de la predicción, con 126 pares como mínimo. Las dos se
+conocen al predecir. Reconstruida con los precios preparados, la etiqueta del origen 2013 de
+EE. UU. coincide en todas sus filas con un error mediano de 10⁻¹⁷. El predictor, que ve 64
+sesiones, no puede calcular ese alfa: sin más información solo lo aproxima.
+
+Llamando `z = r − beta · m` al rendimiento intradía cubierto de mercado, que es lo que se puede
+operar, la etiqueta es exactamente `y = z − alfa`. De ahí salen dos consecuencias:
+
+- `−alfa`, sin ajustar nada, ordena la etiqueta con un IC de rangos de 0,084, 0,099 y 0,081 en
+  validación, calibración y evaluación de 2013 (t de Newey-West de 19,5 en evaluación), por
+  encima de todos los modelos de la campaña sin rasgos (0,031 a 0,053). El alfa de 252 sesiones
+  es en buena parte error de estimación, y la etiqueta lo resta entero.
+- Con `z` el signo se invierte: `+alfa` tiene 0,045, porque una parte del alfa intradía
+  persiste. Un modelo que solo aprendiera `−alfa` ordenaría bien la etiqueta y mal lo operable.
+
+Por eso cada informe mide las dos cosas. La predicción de un modelo para `z` es la suya para la
+etiqueta más alfa, en unidades de retorno. Lo comprueba un modelo de árboles con los 46 rasgos:
+ajustado con la etiqueta en unidades de retorno tiene un IC de 0,109 con la etiqueta y de 0,083
+con `z` al sumarle alfa; ajustado directamente con `z` tiene 0,086 con `z` y los mismos 0,109
+con la etiqueta al restarle alfa. Un solo modelo en unidades de retorno, como los de la campaña
+con su cabeza de cuantiles, sirve para los dos objetivos, y no hace falta otra campaña con otra
+etiqueta.
+
+### Los modelos sin rasgos frente a las referencias (EE. UU., origen 2013, semilla 42)
+
+| Predicción | IC de evaluación | t NW | IC sin alfa | Tercio líquido | Líquido sin alfa |
+| --- | --- | --- | --- | --- | --- |
+| −alfa y +alfa, sin ajustar nada | 0,0813 | 19,5 | 0,0450 | 0,0510 | 0,0341 |
+| Árboles con los 46 rasgos (`lightgbm_technical`) | 0,1122 | 29,3 | 0,0837 | 0,0678 | 0,0537 |
+| Lectores MARS-TITAN (`mars_titan_m0`) | 0,0530 | 10,6 | 0,0487 | 0,0323 | 0,0385 |
+| `titans_mac_frozen` | 0,0475 | 9,2 | 0,0484 | 0,0240 | 0,0360 |
+| `cross_asset_attention` | 0,0490 | 9,3 | 0,0463 | 0,0208 | 0,0334 |
+| `titans_mac_disabled` | 0,0451 | 13,7 | 0,0482 | 0,0105 | 0,0301 |
+| `titans_mac` | 0,0312 | 16,9 | 0,0463 | 0,0085 | 0,0344 |
+
+«IC sin alfa» es el de la predicción más alfa con `z`. Los modelos sin rasgos apenas superan en
+`z` a `+alfa` (0,046 a 0,049 frente a 0,045). Con el contraste SPA de Hansen ningún modelo
+supera a los árboles (p = 1,00) y el conjunto de confianza de modelos al 90 % solo los contiene
+a ellos: con la información que reciben, los modelos de la campaña sin rasgos quedan lejos de
+un modelo sencillo que sí ve el alfa.
+
+### Experimentos tabulares: qué información cuenta
+
+Árboles de gradiente (LightGBM, 400 árboles salvo que se diga, número elegido en validación)
+ajustados solo con rasgos técnicos causales, con los mismos tramos que la campaña. Son baratos
+(minutos de CPU) y dicen qué información hay antes de gastar GPU.
+
+| Rasgos y objetivo | Validación | Calibración | Evaluación |
+| --- | --- | --- | --- |
+| −alfa solo | 0,0840 | 0,0986 | 0,0813 |
+| 30 rasgos de `long_horizon_v1` | 0,1093 | 0,1167 | 0,1106 |
+| Los mismos sin el alfa ni su t | 0,0869 | 0,0966 | 0,0877 |
+| 46 rasgos de `long_horizon_v2` | 0,1107 | 0,1178 | 0,1136 |
+| v2 con 1.200 árboles y pérdida de Huber en unidades de retorno | 0,1099 | 0,1201 | 0,1122 |
+| v2 más etiqueta realizada de 63 y 252 sesiones y alfa de 126 | 0,1118 | 0,1179 | 0,1144 |
+| v2 más horquilla y liquidez (Roll, rango, sesiones sin negociar de 252) | 0,1112 | 0,1179 | 0,1145 |
+| v2 más estado del mercado (rendimientos y volatilidad del índice) | 0,1107 | 0,1162 | 0,1139 |
+| v2 más calendario (día de la semana y del mes, fin de mes) | 0,1115 | 0,1247 | 0,1151 |
+| v2 más todo lo anterior (68 rasgos) | 0,1127 | 0,1250 | 0,1143 |
+| v2 ajustado con `z`, medido con `z` | 0,0807 | 0,0764 | 0,0869 |
+
+Lo que se concluye, con sus medidas:
+
+- El alfa es la pieza principal (quitarlo cuesta 0,023 de IC), pero los demás rasgos añaden
+  0,03 sobre `−alfa`: hay señal real además del desplazamiento.
+- La v2 añade 16 rasgos a la v1 y gana 0,003 en evaluación. Los grupos probados después añaden
+  0,001 o menos, salvo el calendario en calibración (61 sesiones de otoño de 2012), que no se
+  repite en validación ni en evaluación. La v2 queda como versión definitiva.
+- Contraer el alfa por su error típico, `−alfa · s² / (tau² + s²)`, o dividirlo por él, empeora
+  entre 0,001 y 0,006 frente a `−alfa` sin más. La idea era razonable y la medida la descarta.
+- El recorte de `learning_scale` a 5 escalas robustas afecta al 2,2 % de las filas del alfa y
+  no cambia su IC (0,0813 antes y después).
+- En el tercio más líquido de cada sesión los árboles conservan 0,068 con la etiqueta y 0,054
+  con `z`: la señal no vive solo en los valores pequeños.
+- En China el archivo del factor (CSI 300) no está en este equipo. La media intradía de 252
+  sesiones, que no necesita factor, tiene allí un IC de 0,059 en evaluación, igual que un alfa
+  calculado frente a un factor construido con los propios activos (0,058). En EE. UU., donde se
+  puede comprobar, ese factor ponderado por volumen reproduce el alfa verdadero con una
+  correlación de 0,999. La v2 incluye esa media en porcentaje para que los activos de China
+  reciban la información aunque falte el archivo.
+
+### Rasgos técnicos `long_horizon_v1` y `long_horizon_v2`
+
+`mars_titan.data.technical_features` calcula por activo, con los precios disponibles hasta cada
+sesión, rasgos acotados a ±8. La v1 tiene 30: el alfa, su t, la beta y la volatilidad residual
+del OLS de la etiqueta; rentabilidades de 5 a 252 sesiones y el momento 12-1 en unidades de
+volatilidad; volatilidad anual y sus cocientes; distancia al máximo y al mínimo de 252 sesiones;
+volumen en dólares, su tendencia, volumen anómalo e iliquidez; los movimientos de la última
+sesión y de las 21 anteriores; y tres indicadores de historia suficiente. La v2 conserva esas
+30 columnas bit a bit y añade 16: medias intradía y nocturna de 5, 63 y 252 sesiones (la de 252
+también en porcentaje), la etiqueta ya realizada de las últimas 1, 5 y 21 sesiones, el alfa de
+21 y 63 sesiones, la fracción de sesiones sin negociación y la posición del cierre en el rango.
+
+Una vista los declara con `input_extensions: {"technical": "long_horizon_v2"}` y
+`CorpusDataset` los añade al bloque del gráfico al leer (512 → 558 columnas). Como los declara
+el manifiesto, la vista tiene otra huella y sus índices y copias empaquetadas son propios. Una
+campaña los declara para todas sus cohortes con `inputs`.
+
+Fiabilidad de los rasgos, que son la entrada más importante de la tercera ronda:
+
+- Las pruebas comprueban que el alfa y la beta son los de la implementación de referencia de la
+  etiqueta, que la etiqueta realizada es la etiqueta de la sesión anterior y que ninguna fila
+  cambia al alterar precios o factor posteriores.
+- `tests/data/technical_features_reference.py` es una segunda implementación, escrita por otro
+  modelo (Gemini 4 Neon) a partir de la especificación en prosa y sin ver la primera. Coinciden
+  en los precios reales de 150 activos (618.223 filas) con una diferencia máxima de 2,6·10⁻⁶,
+  y una prueba lo mantiene.
+- Leída a través de `CorpusDataset`, la etiqueta se reconstruye con los rasgos con un error
+  máximo de 8·10⁻¹⁰.
+
+### Rama de los rasgos técnicos (`technical_branch_v1`)
+
+Con los rasgos en el bloque del gráfico, el núcleo con la memoria desactivada sube en el origen
+2013 de un IC de validación de 0,042 a 0,091 en cinco épocas (0,071, 0,081, 0,085, 0,090 y
+0,091), y con la memoria congelada a 0,086 en cuatro. Supera a `−alfa` (0,084) y se queda
+lejos de los árboles con los mismos rasgos (0,110). Los rasgos entran por la misma proyección
+lineal que las 512 dimensiones de la incrustación del gráfico, y los árboles parten cada rasgo
+por umbrales, cosa que una proyección lineal no hace.
+
+`models.titans.technical_branch` lee las columnas técnicas aparte, tras MAC y la mezcla entre
+activos y antes de la cabeza: codificación lineal a trozos de cada rasgo ya normalizado
+(Gorishniy, Rubachev y Babenko, 2022), con bordes fijos en los cuantiles de la normal entre
+±5, una incrustación por rasgo, una capa oculta y un residuo que se suma a la representación
+de cada flujo con una puerta que empieza en cero. Un predictor que la declara empieza con el
+mismo tronco y las mismas predicciones que su control (62.001 parámetros más sobre 189.063), y
+un lector ajustado sobre el núcleo recibe el residuo en la representación de trabajo. Sin
+declararla, la identidad y el cálculo no cambian. Las campañas `dgx-us-campaign-v5.json` y
+`dgx-us-cn-campaign-v4.json` añaden a las de con rasgos los niveles `r3_branch` (los tres
+ajustes del núcleo con la rama como único cambio) y `r3_branch_more` (atención entre activos y
+lectores sobre el núcleo con rama).
+
+Piloto en el origen 2013 (semilla 42), IC de validación por época, con los rasgos v2:
+
+| Modelo | Época 1 | 2 | 3 | 4 | 5 |
+| --- | --- | --- | --- | --- | --- |
+| `titans_mac_disabled` | 0,071 | 0,081 | 0,085 | 0,090 | 0,091 |
+| `titans_mac_disabled_branch` | 0,072 | 0,080 | | | |
+| `titans_mac_frozen` | 0,033 | 0,075 | 0,085 | 0,086 | |
+| `titans_mac_frozen_branch` | 0,081 | 0,082 | | | |
+| `titans_mac_branch` (memoria en línea) | 0,068 | | | | |
+
+Sin rasgos, los mismos modelos no pasaron de 0,042 (desactivada) y 0,048 (congelada). La rama
+acelera el arranque con la memoria congelada y no separa todavía a la variante sin memoria: el
+piloto sigue y la criba del origen 2013 decide con todas sus épocas.
+
+Otra idea medida y descartada: readaptar cada sesión, con las etiquetas ya realizadas de las 5,
+21 o 63 sesiones anteriores, una corrección lineal de la predicción de los árboles (la versión
+barata de una memoria de régimen supervisada). Empeora en todos los casos, entre 0,000 y 0,021
+de IC, con t de hasta −4,4: las pendientes recientes de los rasgos son ruido en este problema.
+
+### Herramientas nuevas
+
+- `scripts/dgx_tabular_reference.py` ajusta los árboles con los rasgos que declara la cohorte
+  de un origen y escribe sus predicciones con el formato de la campaña en un estado de
+  referencia (`--reference` del informe). Cada tabla lleva así su referencia sencilla con la
+  misma información.
+- `scripts/dgx_screening_report.py --offset` da, por modelo, el IC con la etiqueta y con `z`,
+  los dos en el tercio más líquido, la t de Newey-West y la combinación con `−alfa`. Con
+  `--inference MODELO` escribe `sessions.csv` y añade la inferencia de
+  `scripts/dgx_ic_inference.py`: intervalos por bootstrap estacionario, Diebold-Mariano, el
+  contraste SPA de Hansen y el conjunto de confianza de modelos de Hansen, Lunde y Nason. Ese
+  módulo lo escribió Gemini desde una especificación y se comprobó aquí con simulaciones
+  propias: tamaño del SPA y de Diebold-Mariano bajo la nula al 5 %, 5,5 % y 5,3 %; el mejor
+  modelo queda en el conjunto y el peor sale en 100 de 100 simulaciones; la t de Newey-West
+  coincide con un cálculo directo.
+- El relevo construye por adelantado, mientras entrena una fase, las copias de la siguiente
+  línea «prepara» (`MARS_TITAN_RELAY_AHEAD`, `scripts/dgx_campaign_ahead.sh`). Cada
+  preparación dejaba la GPU parada unos 40 minutos en el origen 2013 y más en los posteriores,
+  y el plan tiene 29.
+
+### Propuestas de un segundo modelo y qué se ha hecho con cada una
+
+Se pidió a Gemini 4 Neon, con un resumen anónimo de los hallazgos, que propusiera mejoras con
+fuentes. Lo que propuso y lo que se ha decidido, siempre con una medida:
+
+| Propuesta | Decisión | Motivo |
+| --- | --- | --- |
+| Rama tabular con codificación lineal a trozos | Hecha, como variante de un solo cambio | El núcleo con los rasgos por la vía lineal se queda en 0,091 frente a 0,110 de los árboles |
+| Conexión directa de `−alfa` a la salida, o ajustar `z` | No hace falta | En unidades de retorno, ajustar la etiqueta o `z` da el mismo IC en las dos (0,109 y 0,083 a 0,086): se mide con la predicción más alfa |
+| Medir `z` como objetivo económico principal | Hecho en todos los informes | La etiqueta premia `−alfa`, que con `z` tiene IC negativo |
+| Pérdida de IC por sesión sobre rangos gaussianos | Ya estaba en la criba (`v_ic`, `v_ic_rank`) | Se mide con rasgos junto al resto de variantes |
+| Macro por FiLM en lugar de concatenado | Ya estaba en la criba (`v_macro`) | Igual |
+| Mezcla de rangos con los árboles | Hecha en los informes | La referencia tabular entra en las combinaciones elegidas en validación y calibración |
+| Más rasgos: tira y afloja, quiebre del alfa, horquilla, calendario | Probados en árboles | Añaden 0,001 o menos sobre la v2; no entran |
+| Memoria compartida de régimen con ajuste supervisado por sesión | Pendiente | Es otro mecanismo de memoria; antes hay que ver qué hace la memoria actual con los rasgos |
+| Inferencia con dependencia y contraste múltiple (HAC, bootstrap, SPA, MCS) | Hecha | `dgx_ic_inference.py` y `--inference` |
+| Estratos de liquidez | Hechos | Tercio más líquido en los informes |
+| 2013 como origen de desarrollo y 2014–2023 limpios | Adoptado | Las decisiones de hoy miraron la evaluación de 2013 |
+| Carteras por deciles con rotación y costes | Herramienta escrita y probada, sin integrar | Queda para la lectura económica final |
+
+### Protocolo de evidencia
+
+El origen 2013 es el de desarrollo: la versión de los rasgos, la rama y las herramientas se han
+decidido con su validación y su calibración, y su evaluación se ha mirado. Los orígenes 2014 a
+2023 no tienen todavía ningún resultado con rasgos: son la evidencia fuera de muestra y se leen
+con el diseño ya fijado. El test final de 2024 sigue cerrado.
+
+### Plan vigente (novena revisión del 21 de noviembre)
+
+Las campañas con rasgos son `dgx-us-campaign-v5.json` y `dgx-us-cn-campaign-v4.json`, en el
+commit 7c8f4f94. El plan recorre, con una fase cada vez y la preparación de la siguiente
+adelantada:
+
+| Bloque | Qué recorre |
+| --- | --- |
+| 1 | Origen 2013. Sin rasgos, lo que falta para emparejar cada modelo. Con rasgos: modelos principales con y sin rama, criba de las 31 variantes y de la segunda ronda, promoción, semillas 43 y 44, modelos secundarios y la conjunta |
+| 2 | Origen 2023, los modelos ajustados con todos los datos: con rasgos en EE. UU. y en la conjunta (más las variantes promovidas), su pareja sin rasgos en EE. UU. y la ventana desde 2009 |
+| 3 | Orígenes 2014 a 2022 con rasgos en EE. UU., con un informe que reúne los orígenes recorridos |
+| 4 | Semillas 43 y 44 del origen 2023 con rasgos y la pareja conjunta sin rasgos |
+| 5 | Si queda plazo: orígenes 2014 a 2022 de la conjunta con rasgos y la ventana en 2016 |
+
+La rama técnica entra en el origen 2013 de EE. UU. La orden de promoción que sigue al primer
+informe con rasgos (`dgx_campaign_promotion.py --candidates r3_`) la añade a los demás orígenes
+y a la conjunta solo si supera a sus controles en validación y calibración de 2013 por 0,003
+de IC con t de 2. La misma regla, con las 31 variantes de la criba, decide cuáles pasan a los
+orígenes 2018 y 2023.
+
+Cada origen lanza antes su referencia tabular en segundo plano, y cada informe lleva las dos
+medidas (etiqueta y `z`), el tercio más líquido, la t de Newey-West y la inferencia frente a
+`lightgbm_technical`. El plan está en `configs/experiments/phases/dgx-relay-plan-20261121.txt`.
+
 ## Agente cognitivo con herramientas
 
 `src/mars_titan/evaluation/cognitive_agent.py` lleva a la evaluación la cadena de Karpathy
