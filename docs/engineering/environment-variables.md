@@ -14,7 +14,7 @@ Una variable vacía equivale a no declararla. Una ruta declarada que no existe n
 | `MARS_TITAN_DECODE_WORKERS` | `training/input_pipeline.py` | Hilos de decodificación del lector cronológico, de 0 a 16 | 0, la ruta secuencial |
 | `MARS_TITAN_PREFETCH_BATCHES` | `training/input_pipeline.py` | Lotes adelantados por el lector, de 0 a 64 | 0 |
 | `MARS_TITAN_PREPARE_WORKERS` | `training/input_pipeline.py` | Hilos que validan por adelantado los bloques leídos (finitud, ventanas, vectores históricos, identificadores y huella), de 0 a 16. Los bloques se entregan en el orden de entrada y el resultado es idéntico al secuencial | 0, la validación en el hilo productor |
-| `MARS_TITAN_DGX_PYTHON` | `scripts/dgx_campaign.sh` | Intérprete con el que el lanzador de la DGX ejecuta la campaña | `~/.local/share/mars-titan/dgx-us-py312/bin/python` |
+| `MARS_TITAN_DGX_PYTHON` | `scripts/dgx_campaign.sh`, `scripts/dgx_campaign_relay.sh` | Intérprete con el que el lanzador de la DGX ejecuta la campaña y el relevo prepara las copias de un origen | `~/.local/share/mars-titan/dgx-us-py312/bin/python` |
 | `MARS_TITAN_RELAY_STATE` | `scripts/dgx_campaign_relay.sh` | Carpeta del relevo de campañas de la DGX. Mientras contiene el archivo `pausa`, la fase en curso para en su siguiente barrera y el relevo espera | `~/.local/state/mars-titan/relevo` |
 | `MARS_TITAN_RELAY_POLL` | `scripts/dgx_campaign_relay.sh` | Segundos entre dos consultas del relevo: la pausa, la fase en curso y la unidad a la que espera | `15` |
 | `MARS_TITAN_RELAY_MIN_SECONDS` | `scripts/dgx_campaign_relay.sh` | Duración mínima, en segundos, de una fase que falla para que el relevo la anote y siga. Por debajo, el relevo se detiene sin consumir el plan | `60` |
