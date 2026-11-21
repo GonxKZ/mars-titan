@@ -463,3 +463,119 @@ def test_the_pilot_of_the_session_ic_term_changes_one_field_per_model():
     for name in ("core_ic1", "core_ic3", "core_ic10", "core_ic3_t1"):
         recipe = json.loads((ROOT / document["recipes"][name]).read_text())
         assert ChronologicalRecipe(**recipe["recipe"]).session_ic() is not None
+
+
+@pytest.mark.parametrize(
+    ("name", "origin"),
+    [
+        ("dgx-us-campaign-v8.json", "dgx-us-campaign-v7.json"),
+        ("dgx-us-cn-campaign-v7.json", "dgx-us-cn-campaign-v6.json"),
+    ],
+)
+def test_the_campaigns_on_the_session_ic_term_and_the_dense_branch_keep_each_contrast(name, origin):
+    path, source = ROOT / "configs/experiments" / name, ROOT / "configs/experiments" / origin
+    document, previous = campaign.load_declaration(path)[0], json.loads(source.read_text())
+    own = {"description", "source_declaration_sha256", "models", "tiers", "recipes"}
+    assert set(document) == set(previous)
+    for key in set(previous) - own:
+        assert document[key] == previous[key], key
+    dropped = {"r3_branch", "r3_branch_more", "r3_t8", "r3_steps"}
+    kept = [tier for tier in previous["tiers"] if tier not in dropped]
+    added = [
+        "r4_noic",
+        "r4_nobranch",
+        "r4_piecewise",
+        "r4_weight",
+        "r4_steps",
+        "r4_original",
+        "r4_dense",
+        "r4_readers",
+    ]
+    assert [tier for tier in document["tiers"] if tier != "v_scalar_noic"] == kept + added
+    assert document["tiers"].index("v_scalar_noic") == document["tiers"].index("v_scalar") + 1
+    term, branch, steps = (
+        "recipe.session_ic_term",
+        "predictor.technical_branch",
+        "recipe.truncation",
+    )
+    weight = {"weight": 3.0, "minimum_rows": 8}
+    dense = {"columns": 46, "hidden": 128, "depth": 2}
+
+    def changed(left, right, other=None):
+        one, two = flat_specification(document, left), flat_specification(other or document, right)
+        # Los cambios del predictor ya están desplegados campo a campo.
+        keys = (one.keys() | two.keys()) - {"predictor_changes"}
+        return {key for key in keys if one.get(key) != two.get(key)}
+
+    # Cada modelo conserva su definición: solo gana el término y, si normaliza, la rama.
+    carried = {model for model, entry in previous["models"].items() if entry["tier"] not in dropped}
+    assert carried < set(document["models"])
+    for model in sorted(carried):
+        entry, before = document["models"][model], previous["models"][model]
+        assert {k: v for k, v in entry.items() if k != "recipe"} == {
+            k: v for k, v in before.items() if k != "recipe"
+        }, model
+        now = flat_specification(document, model)
+        objective = "session_ic_objective" in (entry.get("predictor_changes") or {})
+        if entry["runner"] != "fit" or objective:
+            expected = set()
+        elif now.get("predictor.learning_scale") is None or model == "titans_mac_no_charts":
+            expected = {term}
+        else:
+            expected = {term, branch}
+        assert changed(model, model, previous) == expected, model
+        if term in expected:
+            assert now[term] == weight and now["recipe.truncation"] == 2
+        if branch in expected:
+            assert now[branch] == dense
+    # Los niveles r4_ quitan o cambian una pieza de la base.
+    for base in ("titans_mac", "titans_mac_frozen", "titans_mac_disabled"):
+        assert changed(f"{base}_noic", base) == {term}
+        assert changed(f"{base}_nobranch", base) == {branch}
+        assert changed(f"{base}_t8", base) == {steps}
+        assert changed(f"{base}_original", base) == {term, branch, steps}
+        # La receta original es la de la campaña sin rasgos, y la base anterior, la v7.
+        assert changed(f"{base}_original", f"{base}_t8", previous) == set()
+        assert flat_specification(document, f"{base}_noic").get(term) is None
+        assert flat_specification(document, f"{base}_nobranch").get(branch) is None
+    for base in ("titans_mac", "titans_mac_disabled"):
+        assert changed(f"{base}_piecewise", base) == {branch}
+        assert changed(f"{base}_dense256", base) == {branch}
+        assert changed(f"{base}_icw1", base) == changed(f"{base}_icw10", base) == {term}
+        assert changed(f"{base}_t1", base) == changed(f"{base}_t4", base) == {steps}
+        assert flat_specification(document, f"{base}_icw10")[term]["weight"] == 10.0
+        assert flat_specification(document, f"{base}_piecewise")[branch] == {
+            "columns": 46,
+            "bins": 16,
+            "embedding": 8,
+            "hidden": 128,
+        }
+    for head in ("titans_mac", "titans_mac_disabled"):
+        assert changed(f"{head}_scalar_noic", f"{head}_scalar") == {term}
+        assert changed(f"{head}_ic", f"{head}_scalar_noic") == {"predictor.session_ic_objective"}
+    assert changed("titans_mac_no_charts", "titans_mac_nobranch") == {
+        "predictor.removed_modalities"
+    }
+    assert changed("mars_titan_m0_noic", "mars_titan_m0") == {"parent"}
+    assert changed("mars_titan_m3_noic", "mars_titan_m3") == {"parent"}
+    assert document["models"]["mars_titan_m0_noic"]["parent"] == "titans_mac_noic"
+    assert changed("mars_titan_m0_u2", "mars_titan_m0") == {"recipe.update_instants"}
+    # Las recetas se cargan con su término y el predictor admite su rama.
+    for recipe_name in (
+        "core",
+        "core_scalar",
+        "core_nols",
+        "core_ema",
+        "core_t8",
+        "core_piecewise",
+    ):
+        recipe = json.loads((ROOT / document["recipes"][recipe_name]).read_text())
+        assert ChronologicalRecipe(**recipe["recipe"]).session_ic() is not None, recipe_name
+    declared = json.loads(
+        (ROOT / "configs/experiments/dgx-us-campaign-v8-contrasts.json").read_text()
+    )["controls"]
+    assert set(declared) == set(document["models"]) - {"titans_mac"}
+    assert set(declared.values()) <= set(document["models"])
+    assert declared["titans_mac_ic"] == "titans_mac_scalar_noic"
+    assert declared["titans_mac_no_charts"] == "titans_mac_nobranch"
+    assert declared["titans_mac_disabled_noic"] == "titans_mac_disabled"

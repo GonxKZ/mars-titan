@@ -9,13 +9,17 @@ from mars_titan.data.input_policy import HISTORICAL_MASKED
 from mars_titan.memory import financial_observations as observations
 from mars_titan.models.baselines.multimodal import SCALAR_HEAD
 from mars_titan.models.quantile_head import PINBALL, QUANTILE_HEAD, median, pinball_loss
+from mars_titan.models.titans.cross_asset_attention import CrossAssetAttentionConfig
 from mars_titan.models.titans.financial import FinancialConfig, FinancialPredictor
 from mars_titan.models.titans.session_ic_objective import SESSION_IC_TERM, SessionICObjective
 from mars_titan.training.corpus_inputs import CorpusDataset
 from mars_titan.training.financial_run import ChronologicalRecipe, ChronologicalTrainer
 from tests.models.titans.test_session_ic_term import reference
 from tests.training.chronological_fixture import chronological_corpus, decision, phases
-from tests.training.test_financial_run import SELECTION, RecordingOptimizer, entries
+from tests.training.test_financial_run import SELECTION, RecordingOptimizer, corpus, entries
+from tests.training.test_financial_run_auxiliary_horizons import AUXILIARY
+from tests.training.test_financial_run_auxiliary_horizons import trainer as auxiliary_trainer
+from tests.training.test_financial_run_weight_options import ScheduleFreeDouble
 
 ASSETS = 5
 TERM = dict(weight=2.0, minimum_rows=3)
@@ -61,7 +65,7 @@ def predictor(sources, *, head=QUANTILE_HEAD, **changes):
     return FinancialPredictor(config, dtype=torch.float64)
 
 
-def trainer(sources, output, *, model=None, **options):
+def trainer(sources, output, *, model=None, factory=RecordingOptimizer, **options):
     recipe = dict(
         truncation=3,
         epochs=1,
@@ -76,7 +80,7 @@ def trainer(sources, output, *, model=None, **options):
         train=sources["train"],
         validation=sources["validation"],
         output=output,
-        optimizer_factory=RecordingOptimizer,
+        optimizer_factory=factory,
         audit=True,
     )
 
@@ -279,3 +283,56 @@ def test_the_term_is_not_combined_with_distillation_or_an_output_objective(share
     )
     with pytest.raises(ValueError, match="objetivo de salida"):
         trainer(shared, tmp_path / "objective", model=model, loss="mae")
+
+
+def test_the_term_is_added_with_cross_asset_attention_and_its_replay(shared, tmp_path):
+    def model():
+        mixer = CrossAssetAttentionConfig(mode="same_session")
+        return predictor(shared, cross_asset_attention=mixer)
+
+    direct = trainer(shared, tmp_path / "direct", model=model())
+    direct.session_ic = spy = Spy(direct.session_ic)
+    assert direct.run()["status"] == "completed"
+    assert spy.calls and any(value.item() != 0 for *_, value in spy.calls)
+    replayed = trainer(shared, tmp_path / "replayed", model=model(), accumulation_rows=8)
+    replayed.run()
+    left, right = records(direct), records(replayed)
+    assert len(left) == len(right) > 2
+    for first, second in zip(left, right, strict=True):
+        for name, value in first.items():
+            torch.testing.assert_close(second[name], value, rtol=1e-9, atol=1e-12)
+
+
+def test_the_term_does_not_change_the_gradient_of_the_auxiliary_heads(tmp_path):
+    _, sources = corpus(tmp_path / "corpus")
+    reference = auxiliary_trainer(sources, tmp_path / "reference")
+    engine = auxiliary_trainer(sources, tmp_path / "term", session_ic_term=TERM)
+    engine.session_ic = spy = Spy(engine.session_ic)
+    reports = reference.run(), engine.run()
+    assert all(report["status"] == "completed" for report in reports)
+    assert spy.calls
+    counters = [report["history"][1]["train"] for report in reports]
+    assert counters[0]["auxiliary_labels_in_loss"] == counters[1]["auxiliary_labels_in_loss"] > 0
+    names = {id(p): name for name, p in engine.predictor.named_parameters()}
+    others = {id(p): name for name, p in reference.predictor.named_parameters()}
+    left = [{names[k]: v for k, v in record.items()} for record in engine.optimizer.records]
+    right = [{others[k]: v for k, v in record.items()} for record in reference.optimizer.records]
+    assert len(left) == len(right) > 2
+    for first, second in zip(left, right, strict=True):
+        for name in AUXILIARY:
+            assert (first[name] is None) == (second[name] is None)
+            if first[name] is not None:
+                torch.testing.assert_close(first[name], second[name], rtol=0, atol=0)
+
+
+@pytest.mark.parametrize(
+    "options",
+    [dict(weight_average=dict(decay=0.9)), dict(schedule_free=dict(warmup_steps=0, beta1=0.9))],
+)
+def test_the_term_runs_with_the_weight_options(shared, tmp_path, options):
+    factory = ScheduleFreeDouble if "schedule_free" in options else RecordingOptimizer
+    engine = trainer(shared, tmp_path / "run", factory=factory, **options)
+    engine.session_ic = spy = Spy(engine.session_ic)
+    assert engine.run()["status"] == "completed"
+    assert spy.calls and any(value.item() != 0 for *_, value in spy.calls)
+    assert set(options) <= set(engine.identity["recipe"])
