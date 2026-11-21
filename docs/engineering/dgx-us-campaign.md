@@ -812,6 +812,48 @@ en `~/.local/share/mars-titan/herramientas`:
 El veredicto de la criba sigue siendo la media de los orígenes 2013–2016: lo da el informe
 agregado de 2016.
 
+### Justificación de cada decisión
+
+Cada decisión se apoya en una medida de esta campaña y, cuando existe, en el estudio del estado
+del arte del 20 de noviembre (22 artículos de 2025 y 2026 leídos a texto completo: Titans, MIRAS,
+ATLAS, HOPE, LaCT, las críticas al aprendizaje en tiempo de prueba, escalado y conjuntos, y
+predicción de la sección cruzada de rentabilidades). Ninguna cifra externa se toma como ganancia
+esperada: fija qué se contrasta.
+
+| Área | Decisión | Medida propia | Respaldo externo | Dónde se contrasta |
+| --- | --- | --- | --- | --- |
+| Ventana de datos | Ajustar desde 2000 | 2000–2008 es el 23 % de las muestras de EE. UU.; sin noticias ni fundamentales | Ventanas crecientes en Gu, Kelly y Xiu (RFS 2020) | `ventana_2016` y `ventana_2023` |
+| Modalidades | Las cinco, con máscaras; el macro también como condicionante | Presencia por año y mercado (tabla anterior) | El macro es constante en la sesión y no puede ordenar activos por sí solo | `v_no_*`, `v_macro`, `titans_mac_disabled_macro` |
+| Mercados | EE. UU. y EE. UU. con China, emparejados | Conjunta frente a EE. UU. en sus sesiones: +0,0080 con la memoria congelada (t = 2,1) | — | Informe de cada origen (`--compare`) |
+| Métrica y selección | IC de rangos por sesión; decisión con validación y calibración | La mejora del MAE crece con el cuadrado del IC y no distingue 0,040 de 0,055 | — | Contraste pareado por sesión |
+| Memoria en línea del núcleo | No depender de ella: los modelos finales se cruzan con la memoria desactivada | Desactivarla o congelarla mejora la evaluación en EE. UU. (t = 4,0 y 2,9) y la decisión en la conjunta (t = 4,0 y 4,1) | Liu et al. (ICML 2026): la escritura con pérdida clave-valor equivale a una atención lineal aprendida | Variantes de la regla de escritura y `r2_*` |
+| Regla de escritura | Contrastar puerta de momento, caja de estabilidad, Huber, cascada y escalas de tiempo | Curva de validación inestable (0,008 a 0,043 por época) | La puerta de olvido y el momento son las palancas mayores de las ablaciones de Titans; Huber es la idea de Yaad (MIRAS) | `v_eta015`, `v_stability`, `v_huber`, `v_cascade`, `v_timescales` |
+| Memoria episódica del lector | No repetir `m1` ni `m2` | Diferencias pareadas con el lector sin banco de 0,0003 como mucho; `m1` cuesta 8,3 horas | — | `ladder` solo en 2013 |
+| Lector en dos etapas | Mantenerlo en el nivel principal | +0,0068 sobre el control congelado (t = 4,2) | — | Todos los orígenes |
+| Atención entre activos | Cruzarla con la memoria desactivada y con el lector | +0,0178 en evaluación (t = 3,2); su control sin vecinos pierde 0,0311 | MASTER (AAAI 2024, arXiv:2312.15235) | `r2_xattn`, `r2_reader_xattn` |
+| Capacidad | Probar 128 y 32, pero crecer con conjuntos | El núcleo tiene 186.119 parámetros | Con datos fijos, un conjunto alcanza mejor pérdida que un modelo mayor (Kim et al., 2025, arXiv:2509.14786); la «virtud de la complejidad» está discutida (Kelly, Malamud y Zhou, 2024; Nagel, 2025) | `r2_capacity` y combinaciones |
+| Objetivo | Contrastar el IC por sesión y las entradas en rangos, también sin memoria en línea | — | Las pérdidas de ranking mueven poco el IC en la literatura revisada: se mide, no se supone | `v_ic`, `v_rank`, `r2_disabled` |
+| Regularización y optimizador | Media exponencial de pesos, AdamW sin calendario, dropout, decaimiento y dos tasas | La búsqueda de la v1 los juzgó por MAE en años sin noticias | — | Criba y `titans_mac_disabled_ema` |
+| Combinaciones | Media de rangos elegida con validación y calibración; semillas 43 y 44 en 2023 | Evaluación de 0,0530 a 0,0591 con dos modelos | Conjuntos de semillas y de familias (Lobacheva et al., 2020, arXiv:2007.08483) | Informe de cada origen |
+| Numérica | FP32 IEEE, determinismo e hilos declarados, sin cambios | El recorrido se repite bit a bit | — | Identidad de cada trabajo |
+
+### Lo que queda fuera de este plazo y por qué
+
+- **Rasgos de precio de horizonte largo y de liquidez (252 a 512 sesiones) e intensidad de
+  noticias.** Es la mejora con más respaldo (Gu, Kelly y Xiu, 2020; Jiang, Kelly y Xiu, 2023) y la
+  única que llegaría a todas las filas, pero cambia la representación de la edición de datos y
+  sus huellas: necesita la cadena de preparación del equipo de origen y una edición nueva.
+- **Un vector por noticia con agregación aprendida y recencia, y un codificador de texto
+  financiero sin anticipación.** Hoy se promedian por igual las noticias de cinco sesiones con un
+  MiniLM general. Requiere la caché de vectores por noticia y volver a codificar el texto.
+- **Regla Omega y Muon interno (ATLAS), retenciones de MIRAS, memoria continua de HOPE, memoria
+  multicabezal de 64 por cabeza.** Piden código y núcleos nuevos. Sus ganancias publicadas son
+  pequeñas, proceden de un solo grupo y de una ejecución por configuración, y aquí la memoria en
+  línea todavía no supera a la congelada: primero debe ganar alguna regla de la criba.
+- **Tamaño oculto de 128 con la memoria en línea.** El estado de memoria crece con el cuadrado de
+  la dimensión y la escritura fusionada solo cubre 64; por eso la capacidad se contrasta con la
+  memoria desactivada.
+
 ### Plan vigente
 
 | Bloque | Qué recorre | Fin estimado |
@@ -820,6 +862,9 @@ agregado de 2016.
 | 2 | Origen 2023 de las dos campañas: niveles principales, segunda ronda, variantes promovidas, semillas 43 y 44 de los modelos que entran en las combinaciones y contraste de la ventana | 25 de noviembre |
 | 3 | Orígenes 2014–2016: resto de la criba de EE. UU. y conjunta emparejada | 28 de noviembre |
 | 4 | Orígenes 2022 → 2017 con los niveles del 2023, hasta donde llegue el plazo | 2 de diciembre |
+
+El 2 de diciembre a las 18:00 UTC la cola deja de lanzar trabajos por su fecha límite declarada
+y un temporizador para el relevo; los estados, los resultados y los informes se conservan.
 
 ### Primeras lecturas de la conjunta
 
