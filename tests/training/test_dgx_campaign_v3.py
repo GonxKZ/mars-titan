@@ -490,6 +490,7 @@ def test_the_campaigns_on_the_session_ic_term_and_the_dense_branch_keep_each_con
         "r4_original",
         "r4_dense",
         "r4_readers",
+        "r4_ranks",
     ]
     assert [tier for tier in document["tiers"] if tier != "v_scalar_noic"] == kept + added
     assert document["tiers"].index("v_scalar_noic") == document["tiers"].index("v_scalar") + 1
@@ -536,6 +537,11 @@ def test_the_campaigns_on_the_session_ic_term_and_the_dense_branch_keep_each_con
         assert changed(f"{base}_original", base) == {term, branch, steps}
         # La receta original es la de la campaña sin rasgos, y la base anterior, la v7.
         assert changed(f"{base}_original", f"{base}_t8", previous) == set()
+        assert changed(f"{base}_xrank", base) == {branch}
+        assert flat_specification(document, f"{base}_xrank")[branch] == {
+            **dense,
+            "session_ranks": True,
+        }
         assert flat_specification(document, f"{base}_noic").get(term) is None
         assert flat_specification(document, f"{base}_nobranch").get(branch) is None
     for base in ("titans_mac", "titans_mac_disabled"):

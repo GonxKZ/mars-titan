@@ -3,7 +3,7 @@
   "kind": "comparison_campaign_v1",
   "market": "US+CN",
   "final_test_access": false,
-  "description": "Campaña DGX conjunta de EE. UU. y China, v7 (GB10): la v6 con el término de IC por sesión y la rama densa de rasgos técnicos en todos los ajustes. Todos los ajustes suman a su pérdida el IC por sesión del punto emitido con peso 3 (session_ic_term_v1) y, los que normalizan sus entradas, leen los 46 rasgos técnicos con una rama densa (technical_branch_v2). En el piloto del origen 2013 de EE. UU., el núcleo sin memoria pasa en su primera época de 0,091 de IC de validación a 0,100 con el término, a 0,094 con la rama y a 0,104 con ambos; con los rasgos solos, una red densa llega a 0,115 con esa pérdida y los árboles a 0,111. Los niveles r4_ quitan o cambian cada pieza de la base (término, rama, su forma, su peso y la cadencia) y r4_original conserva la receta de la campaña sin rasgos, que enlaza con ella.",
+  "description": "Campaña DGX conjunta de EE. UU. y China, v7 (GB10): la v6 con el término de IC por sesión y la rama densa de rasgos técnicos en todos los ajustes. Todos los ajustes suman a su pérdida el IC por sesión del punto emitido con peso 3 (session_ic_term_v1) y, los que normalizan sus entradas, leen los 46 rasgos técnicos con una rama densa (technical_branch_v2). En el piloto del origen 2013 de EE. UU., el núcleo sin memoria pasa en su primera época de 0,091 de IC de validación a 0,100 con el término, a 0,094 con la rama y a 0,104 con ambos; con los rasgos solos, una red densa llega a 0,115 con esa pérdida y los árboles a 0,111. Los niveles r4_ quitan o cambian cada pieza de la base (término, rama, su forma, su peso y la cadencia), r4_ranks añade a la rama los rangos por sesión de los rasgos y r4_original conserva la receta de la campaña sin rasgos, que enlaza con ella.",
   "source_declaration_sha256": "d18c63cd28b0197f77476a66a94a75dce1fb1bafe68c48f6e7cfc0955017002f",
   "cohort": {
     "size": 5008,
@@ -167,7 +167,8 @@
     "r4_steps",
     "r4_original",
     "r4_dense",
-    "r4_readers"
+    "r4_readers",
+    "r4_ranks"
   ],
   "recipes": {
     "core": "configs/titans/dgx-us-core-u2-ic3-dense-v6.json",
@@ -198,6 +199,7 @@
     "core_icw1": "configs/titans/dgx-us-core-u2-ic1-dense-v6.json",
     "core_icw10": "configs/titans/dgx-us-core-u2-ic10-dense-v6.json",
     "core_dense256": "configs/titans/dgx-us-core-u2-ic3-dense256-v6.json",
+    "core_xrank": "configs/titans/dgx-us-core-u2-ic3-dense-ranks-v6.json",
     "core_original": "configs/titans/dgx-us-core-v2.json",
     "core_scalar_noic": "configs/titans/dgx-us-core-scalar-u2-v5.json",
     "core_t1": "configs/titans/dgx-us-core-u1-ic3-dense-v6.json",
@@ -1112,6 +1114,13 @@
       "tier": "r4_original",
       "variant": "mac_online"
     },
+    "titans_mac_xrank": {
+      "machine": "mars_titan",
+      "recipe": "core_xrank",
+      "runner": "fit",
+      "tier": "r4_ranks",
+      "variant": "mac_online"
+    },
     "titans_mac_frozen_noic": {
       "machine": "mars_titan",
       "recipe": "core_noic",
@@ -1140,6 +1149,13 @@
       "tier": "r4_original",
       "variant": "mac_frozen"
     },
+    "titans_mac_frozen_xrank": {
+      "machine": "mars_titan",
+      "recipe": "core_xrank",
+      "runner": "fit",
+      "tier": "r4_ranks",
+      "variant": "mac_frozen"
+    },
     "titans_mac_disabled_noic": {
       "machine": "mars_titan",
       "recipe": "core_noic",
@@ -1166,6 +1182,13 @@
       "recipe": "core_original",
       "runner": "fit",
       "tier": "r4_original",
+      "variant": "mac_disabled"
+    },
+    "titans_mac_disabled_xrank": {
+      "machine": "mars_titan",
+      "recipe": "core_xrank",
+      "runner": "fit",
+      "tier": "r4_ranks",
       "variant": "mac_disabled"
     },
     "titans_mac_piecewise": {
