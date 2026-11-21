@@ -267,11 +267,34 @@ def test_the_inference_writes_the_sessions_and_tests_every_model_against_the_ref
     assert inference["models"]["mejor"]["diebold_mariano"]["p_value"] < 0.05
     text = (output / "report.md").read_text()
     assert "## Inferencia entre modelos frente a `control`" in text and "(fuera)" in text
+    # La misma tabla de sesiones da la estabilidad de cada modelo.
+    stability = document["stability"]
+    assert set(stability) == set(inference["models"])
+    values = {
+        name: [float(line.split(",")[column]) for line in lines[1:]]
+        for column, name in enumerate(lines[0].split(",")[1:], start=1)
+    }
+    for name, scopes in stability.items():
+        item = scopes["all"]
+        assert set(scopes) == {"all"} and item["sessions"] == states.SESSIONS["evaluation"]
+        assert item["mean"] == pytest.approx(inference["models"][name]["mean"], abs=1e-12)
+        positive = sum(value > 0 for value in values[name]) / len(values[name])
+        assert item["positive_fraction"] == pytest.approx(positive)
+        accumulated, peak, depth = 0.0, 0.0, 0.0
+        for value in values[name]:
+            accumulated += value
+            peak = max(peak, accumulated)
+            depth = max(depth, peak - accumulated)
+        assert item["max_drawdown"]["depth"] == pytest.approx(depth, abs=1e-12)
+        assert sum(month["sessions"] for month in item["monthly"]) == item["sessions"]
+    assert stability["mejor"]["all"]["icir"] > stability["ruido"]["all"]["icir"]
+    assert "## Estabilidad del IC de evaluación" in text and "| `mejor` | todos |" in text
     # Sin la opción no se escribe nada más, y una referencia que no está no rompe el informe.
     plain = tmp_path / "sin"
     assert report.main(["--state", str(state), "--year", "2013", "--output", str(plain)]) == 0
     assert not (plain / "sessions.csv").exists()
     assert json.loads((plain / "report.json").read_text())["inference"] is None
+    assert json.loads((plain / "report.json").read_text())["stability"] is None
     absent = tmp_path / "ausente"
     assert report.main([*arguments[:4], "--output", str(absent), "--inference", "no_esta"]) == 0
     assert json.loads((absent / "report.json").read_text())["inference"] is None

@@ -30,7 +30,9 @@ Con `--inference MODELO` escribe `sessions.csv`, el IC de evaluación de cada mo
 sesión, y añade la inferencia de `dgx_ic_inference.py` frente a ese modelo de referencia:
 intervalos por bootstrap estacionario, Diebold-Mariano, el contraste SPA de Hansen (¿supera
 algún modelo a la referencia una vez descontado que se han probado todos?) y el conjunto de
-confianza de modelos de Hansen, Lunde y Nason.
+confianza de modelos de Hansen, Lunde y Nason. Si `dgx_ic_stability.py` está junto a esta
+herramienta, añade con la misma tabla la estabilidad de cada modelo: ICIR, sesiones y meses
+con IC positivo, peor mes, caída máxima del IC acumulado y peor ventana de 21 sesiones.
 
 Solo lee: no toca los estados ni abre ningún tramo que la campaña no haya emitido.
 
@@ -306,6 +308,17 @@ def _inference_module():
     if not path.is_file():
         raise ValueError("Falta dgx_ic_inference.py para la inferencia entre modelos")
     spec = importlib.util.spec_from_file_location("dgx_ic_inference", path)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+def _stability_module():
+    """`dgx_ic_stability`, junto a esta herramienta, o None si no está instalada."""
+    path = Path(__file__).resolve().with_name("dgx_ic_stability.py")
+    if not path.is_file():
+        return None
+    spec = importlib.util.spec_from_file_location("dgx_ic_stability", path)
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
     return module
@@ -719,6 +732,7 @@ def build(
         if compare
         else None,
         inference=None,
+        stability=None,
     )
     if inference:
         # La tabla de sesiones no se guarda en el informe: `main` la escribe en su propio archivo.
@@ -866,6 +880,35 @@ def markdown(report):
                 f"{_f(test['p_value'], 3)} | {_f(mcs['p_values'][name], 3)}{mark} |"
             )
         lines.append("")
+    stability = report.get("stability")
+    if stability:
+        ordered = sorted(stability.items(), key=lambda item: -item[1]["all"]["mean"])
+        lines += [
+            "## Estabilidad del IC de evaluación",
+            "",
+            "Con las mismas sesiones (`sessions.csv`). ICIR es la media del IC entre su "
+            "desviación por sesión. La caída máxima es la mayor pérdida del IC acumulado desde "
+            "un máximo anterior, la racha cuenta sesiones seguidas con IC nulo o negativo y la "
+            "peor ventana es la media más baja de 21 sesiones seguidas.",
+            "",
+            "| Modelo | Ámbito | Sesiones | ICIR | Sesiones con IC positivo | Meses con IC "
+            "positivo | Peor mes | Caída máxima | Racha | Peor ventana | Segunda mitad menos "
+            "primera |",
+            "| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |",
+        ]
+        for name, scopes in ordered:
+            for scope, item in scopes.items():
+                month, window, halves = item["worst_month"], item["worst_window"], item["halves"]
+                lines.append(
+                    f"| `{name}` | {'todos' if scope == 'all' else scope} | {item['sessions']} | "
+                    f"{_f(item['icir'], 2)} | {_f(100 * item['positive_fraction'], 1)} % | "
+                    f"{_f(100 * item['months_positive_fraction'], 1)} % | "
+                    f"{month['month']} ({_f(month['mean'])}) | "
+                    f"{_f(item['max_drawdown']['depth'], 2)} | {item['longest_negative_run']} | "
+                    f"{_f(window['mean']) if window else '—'} | "
+                    f"{_f(halves['difference']) if halves else '—'} |"
+                )
+        lines.append("")
     if report["comparison"]:
         lines += [
             f"## Este estado frente a `{report['comparison']['state']}` en sus sesiones comunes",
@@ -921,6 +964,9 @@ def main(argv=None):
         report["inference"] = _inference_module().analizar_tabla_ic(
             args.output / "sessions.csv", args.inference, bootstrap=args.bootstrap, seed=0
         )
+        stability = _stability_module()
+        if stability is not None:
+            report["stability"] = stability.stability_table(args.output / "sessions.csv")
     (args.output / "report.json").write_text(
         json.dumps(report, ensure_ascii=False, indent=1) + "\n"
     )
