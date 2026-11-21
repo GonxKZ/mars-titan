@@ -450,3 +450,124 @@ def test_the_pause_stops_an_order_and_repeats_it_when_lifted(tmp_path):
     finally:
         process.kill()
     assert "plan terminado tras 1 fases" in process.stdout.read()
+
+
+AHEAD = """#!/usr/bin/env bash
+# Preparación adelantada sustituta: anota lo que se le pide y obedece a sus archivos.
+here="$(dirname "$0")"
+echo "$*" >> "$here/adelanto.txt"
+case "$1" in
+  start) [ ! -e "$here/sin-margen" ] ;;
+  busy) [ -e "$here/ocupado" ] ;;
+  stop) exit 0 ;;
+esac
+"""
+
+
+def ahead(tmp_path):
+    script = tmp_path / "adelanto.sh"
+    script.write_text(AHEAD)
+    script.chmod(0o755)
+    return script
+
+
+def asked(tmp_path, order=None):
+    path = tmp_path / "adelanto.txt"
+    lines = path.read_text().splitlines() if path.exists() else []
+    return lines if order is None else [item for item in lines if item.split()[0] == order]
+
+
+def test_the_next_preparation_is_built_ahead_while_a_phase_trains(tmp_path):
+    us, joint = copy(tmp_path, "us"), copy(tmp_path, "conjunta")
+    tool_path = tool(tmp_path)
+    plan = tmp_path / "plan.txt"
+    plan.write_text(
+        line(us, "4 --origin 2013")
+        + f"\norden|{tool_path}|informe\n"
+        + f"limpia|{us}/estado/packed-inputs/2013\n"
+        + f"prepara|{joint}|{joint}/estado|configs/receta.json|2023\n"
+        + line(joint, "4 --origin 2023")
+        + "\n"
+    )
+    settings = dict(preparer(tmp_path, joint), MARS_TITAN_RELAY_AHEAD=str(ahead(tmp_path)))
+    done = run(tmp_path, plan, **settings)
+    assert done.returncode == 0 and "plan terminado tras 5 fases" in done.stdout
+    # Se pide una vez, al empezar la primera fase, con los datos de la línea «prepara».
+    assert asked(tmp_path, "start") == [f"start {joint} {joint}/estado configs/receta.json 2023"]
+    assert "preparación adelantada de la fase 4" in done.stdout
+    first = done.stdout.index("preparación adelantada de la fase 4")
+    assert done.stdout.index("fase 1:") < first < done.stdout.index("fase 2:")
+    # La línea «prepara» se ejecuta después como siempre y reutiliza lo construido.
+    assert calls(joint)[0].startswith("scripts/dgx_prepare_inputs.py origin --view")
+    assert len(calls(joint)) == 2 and asked(tmp_path, "busy") != []
+
+
+def test_nothing_is_built_ahead_without_margin_or_when_the_plan_does_not_allow_it(tmp_path):
+    us = copy(tmp_path, "us")
+    (us / "scripts/dgx_prepare_inputs.py").write_text("")
+    script = ahead(tmp_path)
+    plan = tmp_path / "plan.txt"
+    # Otra fase de entrenamiento antes de la preparación: sus copias no se adelantan.
+    plan.write_text(
+        line(us, "4 --origin 2013")
+        + "\n"
+        + line(us, "4 --origin 2014")
+        + f"\nlimpia|{us}/estado/packed-inputs/2015\n"
+        + f"prepara|{us}|{us}/estado|configs/receta.json|2015\n"
+    )
+    settings = dict(preparer(tmp_path, us), MARS_TITAN_RELAY_AHEAD=str(script))
+    done = run(tmp_path, plan, **settings)
+    # Tampoco las que el plan retira antes de prepararlas (segunda fase).
+    assert done.returncode == 0 and asked(tmp_path, "start") == []
+    assert "preparación adelantada" not in done.stdout
+    # Sin margen el ejecutable no la lanza y el relevo no la anota.
+    Path(f"{plan}.hecho").unlink()
+    plan.write_text(
+        line(us, "4 --origin 2013") + f"\nprepara|{us}|{us}/estado|configs/receta.json|2016\n"
+    )
+    (tmp_path / "sin-margen").touch()
+    scarce = run(tmp_path, plan, **settings)
+    assert scarce.returncode == 0 and len(asked(tmp_path, "start")) == 1
+    assert "preparación adelantada" not in scarce.stdout
+    # Un ejecutable que no existe equivale a no declararlo.
+    Path(f"{plan}.hecho").unlink()
+    missing = run(tmp_path, plan, **dict(settings, MARS_TITAN_RELAY_AHEAD=str(tmp_path / "no")))
+    assert missing.returncode == 0 and len(asked(tmp_path, "start")) == 1
+
+
+def test_a_preparation_waits_for_the_one_built_ahead_and_a_pause_stops_it(tmp_path):
+    folder = copy(tmp_path, "larga", "larga")
+    plan = tmp_path / "plan.txt"
+    plan.write_text(
+        line(folder, "4 --origin 2013")
+        + f"\nprepara|{folder}|{folder}/estado|configs/receta.json|2014\n"
+    )
+    script = ahead(tmp_path)
+    (tmp_path / "ocupado").touch()
+    pause = tmp_path / "relevo/pausa"
+    settings = dict(preparer(tmp_path, folder), MARS_TITAN_RELAY_AHEAD=str(script))
+    process = subprocess.Popen(
+        ["bash", str(RELAY), str(plan)],
+        stdout=subprocess.PIPE,
+        text=True,
+        env=environment(tmp_path, **settings),
+    )
+    try:
+        assert wait_for(lambda: len(calls(folder)) == 1 and asked(tmp_path, "start") != [])
+        # Una pausa para la fase y también la preparación adelantada.
+        pause.touch()
+        assert wait_for(lambda: "parada" in calls(folder) and asked(tmp_path, "stop") != [])
+        pause.unlink()
+        assert wait_for(lambda: len(asked(tmp_path, "start")) == 2)
+        (folder / "termina").touch()
+        # La fase termina, pero la línea «prepara» espera a la adelantada.
+        assert wait_for(lambda: Path(f"{plan}.hecho").exists())
+        assert wait_for(lambda: len(asked(tmp_path, "busy")) >= 3)
+        prepared = [item for item in calls(folder) if item.startswith("scripts/")]
+        assert prepared == [] and Path(f"{plan}.hecho").read_text().strip() == "1"
+        (tmp_path / "ocupado").unlink()
+        assert process.wait(timeout=30) == 0
+    finally:
+        process.kill()
+    assert "plan terminado tras 2 fases" in process.stdout.read()
+    assert [item for item in calls(folder) if item.startswith("scripts/")] != []
