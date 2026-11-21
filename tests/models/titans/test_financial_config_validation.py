@@ -65,7 +65,8 @@ def configuration(**changes):
         ),
         (
             dict(presence_modulation="unknown", regional_fusion={}),
-            "presence_modulation admite film_v1 o wide_fusion_v1 con la política con máscaras",
+            "presence_modulation admite film_v1, wide_fusion_v1 o macro_film_v1 con la política "
+            "con máscaras",
         ),
         (
             dict(regional_fusion={}, regional_execution={}),
