@@ -19,9 +19,12 @@ JSON y otro Markdown con:
 
 Con `--offset` mide además el desplazamiento conocido de la etiqueta. La etiqueta es
 `r(t+1) - alfa(t) - beta(t) * m(t+1)` y alfa se conoce al predecir (`data.technical_features`):
-el informe da el IC de `-alfa` por sí solo, el de cada modelo con la etiqueta sin alfa (su
-habilidad para anticipar `r - beta * m`) y el de su combinación con `-alfa`, con el peso elegido
-en validación y calibración.
+el informe da el IC de `-alfa` por sí solo, el de cada modelo con la etiqueta sin alfa y el de
+su combinación con `-alfa`, con el peso elegido en validación y calibración. La etiqueta sin
+alfa, `r - beta * m`, es el rendimiento que se puede operar. Como la etiqueta es exactamente esa
+menos alfa, la predicción de un modelo para ella es la suya más alfa, en unidades de retorno:
+ese es el «IC sin alfa». Las dos medidas se dan también en el tercio más líquido de cada sesión
+(volumen medio en dólares de 21 sesiones), y los IC de evaluación llevan su t de Newey-West.
 
 Solo lee: no toca los estados ni abre ningún tramo que la campaña no haya emitido.
 
@@ -85,7 +88,7 @@ def _technical_module():
 
 
 class KnownOffset:
-    """Alfa de la etiqueta de cada fila, calculado con los precios preparados de la cohorte."""
+    """Alfa de la etiqueta y liquidez de cada fila, con los precios preparados de la cohorte."""
 
     def __init__(self, state, year):
         manifest = json.loads((state / "cohorts" / str(year) / "manifest.json").read_text())
@@ -116,6 +119,10 @@ class KnownOffset:
 
     def alpha(self, asset, instants):
         """Alfa de un activo en cada instante de predicción, o NaN sin modelo de mercado."""
+        return self.known(asset, instants)[0]
+
+    def known(self, asset, instants):
+        """Alfa (NaN sin modelo de mercado) y volumen en dólares de 21 sesiones de cada instante."""
         if asset not in self.assets:
             market, symbol = asset.split("/", 1)
             prices, days = self._table(self.prepared / market / symbol / "prices.parquet")
@@ -125,18 +132,20 @@ class KnownOffset:
             names = self.module.NAMES
             known = features[:, names.index("has_market_model")] > 0
             values = features[:, names.index("alpha_percent")].astype(np.float64) / 100
-            self.assets[asset] = days, np.where(known, values, np.nan)
-        days, values = self.assets[asset]
+            liquidity = features[:, names.index("log_dollar_volume_21")].astype(np.float64)
+            self.assets[asset] = days, np.where(known, values, np.nan), liquidity
+        days, values, liquidity = self.assets[asset]
         wanted = instants.astype("datetime64[us]").astype("datetime64[D]")
         position = np.searchsorted(days, wanted)
         inside = position < len(days)
         inside[inside] = days[position[inside]] == wanted[inside]
-        result = np.full(len(instants), np.nan)
+        result, volume = np.full(len(instants), np.nan), np.full(len(instants), np.nan)
         result[inside] = values[position[inside]]
-        return result
+        volume[inside] = liquidity[position[inside]]
+        return result, volume
 
     def rows(self, run, split):
-        """Alfa de las filas de un tramo, en el orden de `load_split`."""
+        """Alfa y liquidez de las filas de un tramo, en el orden de `load_split`."""
         table = pq.read_table(
             run / f"{split}-predictions.parquet",
             columns=["sample_id", "asset_id", "market", "prediction_at"],
@@ -145,13 +154,13 @@ class KnownOffset:
         )
         assets = np.asarray(table.column("asset_id").to_pylist())
         instants = table.column("prediction_at").cast("int64").to_numpy()
-        result = np.full(len(assets), np.nan)
+        result, volume = np.full(len(assets), np.nan), np.full(len(assets), np.nan)
         order = np.argsort(assets, kind="mergesort")
         bounds = np.r_[0, np.flatnonzero(assets[order][1:] != assets[order][:-1]) + 1, len(assets)]
         for start, end in zip(bounds[:-1], bounds[1:], strict=True):
             rows = order[start:end]
-            result[rows] = self.alpha(str(assets[rows[0]]), instants[rows])
-        return result
+            result[rows], volume[rows] = self.known(str(assets[rows[0]]), instants[rows])
+        return result, volume
 
 
 def _z(values):
@@ -181,6 +190,40 @@ def offset_sessions(data, alpha, weight, *, free, prediction=None):
     return result
 
 
+def implied_sessions(data, alpha, liquidity=None, *, free, prediction=None):
+    """IC por sesión en unidades de retorno, con todas las filas o en el tercio más líquido.
+
+    Con `free` se mide la etiqueta sin alfa con la predicción más alfa, que es la predicción
+    del modelo para ese objetivo. Sin `free`, la etiqueta con la predicción tal cual. Sin
+    `prediction` se mide el desplazamiento solo. Con `liquidity` solo entra el tercio de filas
+    con más volumen en dólares de cada sesión. Solo cuentan las filas con alfa conocido.
+    """
+    result = {}
+    for market, instant, start, end in data["sessions"]:
+        known = np.isfinite(alpha[start:end])
+        if liquidity is not None:
+            known &= np.isfinite(liquidity[start:end])
+        if known.sum() < MIN_ASSETS:
+            continue
+        offset = alpha[start:end][known]
+        target = data["target"][start:end][known]
+        signal = np.zeros(len(offset)) if prediction is None else prediction[start:end][known]
+        if free:
+            target, signal = target + offset, signal + offset
+        elif prediction is None:
+            signal = -offset
+        if liquidity is not None:
+            order = np.argsort(liquidity[start:end][known], kind="mergesort")
+            top = order[len(order) - len(order) // 3 :]
+            if len(top) < MIN_ASSETS:
+                continue
+            target, signal = target[top], signal[top]
+        value = correlation(average_ranks(signal), average_ranks(target))
+        if not math.isnan(value):
+            result[(market, instant)] = value
+    return result
+
+
 WEIGHTS = tuple(round(0.1 * step, 1) for step in range(11))
 
 
@@ -190,12 +233,12 @@ def offset_report(reports, provider, year, seed):
     models = {}
     for name, report in sorted(reports.items()):
         run = Path(report["state"]) / "runs" / name / str(year) / f"seed-{seed}"
-        per_split = {}
+        per_split, volumes = {}, {}
         for split in SPLITS:
             digest = report["_splits"][split]["sample"]
             if (split, digest) not in alphas:
                 alphas[split, digest] = provider.rows(run, split)
-            per_split[split] = alphas[split, digest]
+            per_split[split], volumes[split] = alphas[split, digest]
         if not any(np.isfinite(values).any() for values in per_split.values()):
             continue
 
@@ -204,10 +247,32 @@ def offset_report(reports, provider, year, seed):
             prediction = data["prediction"] if model else None
             return offset_sessions(data, per_split[split], weight, free=free, prediction=prediction)
 
+        def units(
+            split,
+            free,
+            liquid=False,
+            model=True,
+            report=report,
+            per_split=per_split,
+            volumes=volumes,
+        ):
+            data = report["_splits"][split]
+            return summary(
+                implied_sessions(
+                    data,
+                    per_split[split],
+                    volumes[split] if liquid else None,
+                    free=free,
+                    prediction=data["prediction"] if model else None,
+                ).values()
+            )
+
         if baseline is None:
             baseline = dict(
                 label={s: summary(ics(s, 0.0, False, model=False).values()) for s in SPLITS},
                 free={s: summary(ics(s, 0.0, True, model=False).values()) for s in SPLITS},
+                liquid_label=units("evaluation", False, liquid=True, model=False),
+                liquid_free=units("evaluation", True, liquid=True, model=False),
             )
 
         def decision(weight, ics=ics):
@@ -217,7 +282,12 @@ def offset_report(reports, provider, year, seed):
         weight = max(WEIGHTS, key=decision)
         models[name] = dict(
             label=summary(ics("evaluation", 1.0, False).values()),
-            free={s: summary(ics(s, 1.0, True).values()) for s in SPLITS},
+            # La predicción del modelo para la etiqueta sin alfa es la suya más alfa.
+            free={s: units(s, True) for s in SPLITS},
+            # Los rangos de la predicción tal cual frente a la etiqueta sin alfa.
+            free_ranks={s: summary(ics(s, 1.0, True).values()) for s in SPLITS},
+            liquid_label=units("evaluation", False, liquid=True),
+            liquid_free=units("evaluation", True, liquid=True),
             weight=weight,
             combined=summary(ics("evaluation", weight, False).values()),
         )
@@ -272,16 +342,39 @@ def session_ic(data, prediction=None):
     return result
 
 
+NEWEY_WEST_LAGS = 10
+
+
+def newey_west_t(values, lags=NEWEY_WEST_LAGS):
+    """t de la media con la varianza de Newey y West (núcleo de Bartlett), o None.
+
+    Los IC de sesiones consecutivas no son independientes: el desplazamiento conocido de la
+    etiqueta comparte 251 de sus 252 sesiones de un día al siguiente.
+    """
+    values = np.asarray(values, dtype=np.float64)
+    count = len(values)
+    if count < 3 * lags:
+        return None
+    centered = values - values.mean()
+    variance = float(centered @ centered) / count
+    for lag in range(1, lags + 1):
+        weight = 1 - lag / (lags + 1)
+        variance += 2 * weight * float(centered[lag:] @ centered[:-lag]) / count
+    return float(values.mean() / math.sqrt(variance / count)) if variance > 0 else None
+
+
 def summary(values):
+    """Media, dispersión e ICIR de los IC de unas sesiones, en su orden temporal."""
     values = np.asarray(list(values), dtype=np.float64)
     if len(values) == 0:
-        return dict(sessions=0, mean=None, std=None, icir=None)
+        return dict(sessions=0, mean=None, std=None, icir=None, t_nw=None)
     std = float(values.std(ddof=1)) if len(values) > 1 else 0.0
     return dict(
         sessions=int(len(values)),
         mean=float(values.mean()),
         std=std,
         icir=float(values.mean() / std) if std > 0 else None,
+        t_nw=newey_west_t(values),
     )
 
 
@@ -662,20 +755,27 @@ def markdown(report):
                 "",
                 "La etiqueta resta el alfa de las 252 sesiones anteriores, que se conoce al "
                 "predecir. `-alfa` por sí solo tiene un IC de evaluación de "
-                f"{_f(base['label']['evaluation']['mean'])}; con la etiqueta sin alfa, `+alfa` "
-                f"tiene {_f(base['free']['evaluation']['mean'])}.",
+                f"{_f(base['label']['evaluation']['mean'])} "
+                f"({_f(base['liquid_label']['mean'])} en el tercio más líquido). La etiqueta "
+                "sin alfa es el rendimiento que se puede operar, y la predicción de un modelo "
+                "para ella es la suya más alfa: `+alfa` por sí solo tiene "
+                f"{_f(base['free']['evaluation']['mean'])} "
+                f"({_f(base['liquid_free']['mean'])} en el tercio más líquido).",
                 "",
-                "| Modelo | IC de evaluación | IC sin alfa | Peso del modelo | Con -alfa |",
-                "| --- | --- | --- | --- | --- |",
+                "| Modelo | IC de evaluación | t NW | IC sin alfa | t NW | Líquido | "
+                "Líquido sin alfa | Peso | Con -alfa |",
+                "| --- | --- | --- | --- | --- | --- | --- | --- | --- |",
             ]
             ordered_known = sorted(
                 known["models"].items(), key=lambda item: -(item[1]["combined"]["mean"] or -9)
             )
             for name, item in ordered_known:
+                free = item["free"]["evaluation"]
                 lines.append(
-                    f"| `{name}` | {_f(item['label']['mean'])} | "
-                    f"{_f(item['free']['evaluation']['mean'])} | {_f(item['weight'], 1)} | "
-                    f"{_f(item['combined']['mean'])} |"
+                    f"| `{name}` | {_f(item['label']['mean'])} | {_f(item['label']['t_nw'], 1)} | "
+                    f"{_f(free['mean'])} | {_f(free['t_nw'], 1)} | "
+                    f"{_f(item['liquid_label']['mean'])} | {_f(item['liquid_free']['mean'])} | "
+                    f"{_f(item['weight'], 1)} | {_f(item['combined']['mean'])} |"
                 )
             lines.append("")
     if report["comparison"]:

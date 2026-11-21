@@ -180,3 +180,60 @@ def test_the_known_offset_of_the_label_is_measured_alone_and_with_each_model():
     partial[: assets - 10] = np.nan
     fewer = report.offset_sessions(data, partial, 0.0, free=False)
     assert len(fewer) == sessions - 1
+
+
+def test_the_prediction_for_the_label_without_alpha_is_the_prediction_plus_alpha():
+    random = np.random.default_rng(11)
+    sessions, assets = 30, 90
+    count = sessions * assets
+    alpha = random.normal(0, 1.0, count)
+    skill = random.normal(0, 1.0, count)
+    free = 0.5 * alpha + 0.4 * skill + random.normal(0, 1.0, count)
+    liquidity = random.normal(0, 1.0, count)
+    # Un modelo calibrado en unidades de retorno predice la etiqueta: lo operable menos alfa.
+    prediction = 0.5 * alpha + 0.4 * skill - alpha
+    data = dict(
+        target=free - alpha,
+        prediction=prediction,
+        sessions=[("US", s, s * assets, (s + 1) * assets) for s in range(sessions)],
+    )
+
+    def mean(**options):
+        return report.summary(report.implied_sessions(data, alpha, **options).values())["mean"]
+
+    label = mean(free=False, prediction=prediction)
+    implied = mean(free=True, prediction=prediction)
+    as_is = report.summary(
+        report.offset_sessions(data, alpha, 1.0, free=True, prediction=prediction).values()
+    )["mean"]
+    # Sumar alfa devuelve la predicción de lo operable; sin sumarlo, el modelo parece no saber.
+    assert label > 0.3 and implied > 0.4 and implied > as_is + 0.3
+    # Los desplazamientos solos: -alfa con la etiqueta y +alfa con la etiqueta sin alfa.
+    assert mean(free=False) > 0.2 and mean(free=True) > 0.2
+    # El tercio más líquido usa un tercio de las filas de cada sesión.
+    top = report.implied_sessions(data, alpha, liquidity, free=False, prediction=prediction)
+    assert len(top) == sessions and abs(np.mean(list(top.values())) - label) < 0.1
+    few = dict(data, sessions=[("US", 0, 0, 60)])
+    assert report.implied_sessions(few, alpha, liquidity, free=False, prediction=prediction) == {}
+    unknown = alpha.copy()
+    unknown[: assets - 10] = np.nan
+    assert len(report.implied_sessions(data, unknown, free=True, prediction=prediction)) == 29
+
+
+def test_the_newey_west_t_discounts_the_dependence_between_sessions():
+    random = np.random.default_rng(3)
+    independent = 0.05 + random.normal(0, 0.1, 400)
+    plain = independent.mean() / (independent.std(ddof=1) / np.sqrt(len(independent)))
+    assert report.newey_west_t(independent) == pytest.approx(plain, rel=0.25)
+    # Una serie con memoria tiene menos información que su número de sesiones.
+    noise = random.normal(0, 0.1, 400)
+    persistent = np.empty(400)
+    persistent[0] = noise[0]
+    for index in range(1, 400):
+        persistent[index] = 0.8 * persistent[index - 1] + noise[index]
+    persistent += 0.05
+    naive = persistent.mean() / (persistent.std(ddof=1) / np.sqrt(len(persistent)))
+    assert abs(report.newey_west_t(persistent)) < 0.6 * abs(naive)
+    assert report.newey_west_t(independent[:20]) is None
+    assert report.summary(independent)["t_nw"] == report.newey_west_t(independent)
+    assert report.summary([])["t_nw"] is None

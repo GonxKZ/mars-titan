@@ -38,7 +38,7 @@ case "${1:-}" in
       [ "${disponible:-0}" -ge "${MARS_TITAN_AHEAD_MIN_MEMORY_GIB:-40}" ] || exit 1
     systemctl --user reset-failed "$unidad.service" 2> /dev/null
     exec systemd-run --user -q --unit "$unidad" --slice=mars-titan.slice \
-      -p MemoryHigh=16G -p MemoryMax=24G -p MemorySwapMax=0 \
+      -p MemoryHigh=24G -p MemoryMax=30G -p MemorySwapMax=0 \
       -p CPUWeight=20 -p IOWeight=20 -p Nice=10 --working-directory="$copia" \
       -E MARS_TITAN_SHARED_INDICES="$estado/indices" \
       -E MARS_TITAN_TRAIN_ARCHIVE="$estado/packed-inputs/$origen" \
