@@ -1,0 +1,219 @@
+"""Promoción de la criba: regla fijada de antemano y edición del plan del relevo."""
+
+import importlib.util
+import json
+from pathlib import Path
+
+import pytest
+
+ROOT = Path(__file__).resolve().parents[2]
+
+
+def load(name, path):
+    spec = importlib.util.spec_from_file_location(name, path)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+promotion = load("dgx_campaign_promotion", ROOT / "scripts/dgx_campaign_promotion.py")
+states = load("screening_states", Path(__file__).with_name("screening_states.py"))
+CONTROLS = dict(
+    v_buena="base",
+    v_regular="base",
+    v_mala="base",
+    v_escalar="base",
+    v_ic="v_escalar",
+    v_modalidad="base",
+)
+
+
+def origin(rows):
+    """Informe mínimo de un origen: (media de decisión, t) de cada variante frente a su control."""
+    models = {name: dict(tier="core" if name == "base" else name) for name in ("base", *rows)}
+    contrasts = [
+        dict(
+            model=name,
+            control=CONTROLS[name],
+            decision=dict(mean=mean, t=t),
+            evaluation=dict(mean=mean / 2, t=t / 2),
+        )
+        for name, (mean, t) in rows.items()
+    ]
+    return dict(models=models, contrasts=contrasts)
+
+
+RESULTS = dict(
+    v_buena=(0.010, 3.5),
+    v_regular=(0.004, 1.2),
+    v_mala=(-0.008, -2.5),
+    v_escalar=(-0.001, -0.3),
+    v_ic=(0.006, 2.4),
+    v_modalidad=(-0.004, -1.0),
+)
+
+
+def test_the_rule_keeps_the_best_variants_the_modality_contrasts_and_their_controls():
+    decision = promotion.decide(
+        origin(RESULTS), CONTROLS, ["v_modalidad", "no_esta"], keep=2, gain=0.003, t_value=2.0
+    )
+    assert [row["model"] for row in decision["ranked"]] == [
+        "v_buena",
+        "v_ic",
+        "v_regular",
+        "v_escalar",
+        "v_modalidad",
+        "v_mala",
+    ]
+    # Siguen las dos mejores, el contraste de modalidad y el control de la que lo necesita.
+    assert decision["kept_tiers"] == ["v_buena", "v_escalar", "v_ic", "v_modalidad"]
+    # Se promueve lo que supera el umbral con t suficiente, con su control.
+    assert decision["promoted_models"] == ["v_buena", "v_ic"]
+    assert decision["promoted_tiers"] == ["v_buena", "v_escalar", "v_ic"]
+    assert decision["assessed_tiers"] == sorted(RESULTS)
+    none = promotion.decide(origin(RESULTS), CONTROLS, [], keep=1, gain=0.02, t_value=2.0)
+    assert none["promoted_tiers"] == [] and none["kept_tiers"] == ["v_buena"]
+
+
+def plan_lines(us, joint):
+    tiers = " ".join(f"--tier {name}" for name in ("core", "controls", *sorted(RESULTS)))
+    one, other = f"/copia|{us}|/vistas|d.json|", f"/copia|{joint}|/vistas|j.json|"
+    return [
+        "# plan de prueba",
+        f"{one}4 --seed 42 --origin 2013 --no-preflight {tiers}",
+        f"orden|/herramientas/promocion|--state {us}",
+        f"prepara|/copia|{us}|receta.json|2014",
+        f"{one}4 --seed 42 --origin 2014 --no-preflight {tiers}",
+        f"limpia|{us}/packed-inputs/2014",
+        f"{one}4 --seed 42 --origin 2023 --no-preflight --tier core --tier controls",
+        f"{one}3 --seed 42 --origin 2023 --no-preflight --tier networks",
+        f"{one}4 --seed 43 --seed 44 --origin 2023 --no-preflight --tier core",
+        f"{other}4 --seed 42 --origin 2014 --no-preflight {tiers}",
+        f"{other}4 --seed 42 --origin 2023 --no-preflight --tier core",
+        "",
+    ]
+
+
+def test_the_edition_only_touches_later_phases_of_the_declared_states_and_origins():
+    decision = promotion.decide(
+        origin(RESULTS), CONTROLS, ["v_modalidad"], keep=2, gain=0.003, t_value=2.0
+    )
+    lines = plan_lines("/estado/us", "/estado/conjunta")
+    prune = {"/estado/us": {2013, 2014}}
+    promote = {"/estado/us": {2023}, "/estado/conjunta": {2023}}
+    edited, changes = promotion.edit_plan(lines, 2, decision, prune, promote)
+    # La fase ya recorrida (2013) y las que no son de ejecución quedan como estaban.
+    assert edited[:4] == lines[:4] and edited[5] == lines[5]
+    assert edited[4].endswith(
+        "--no-preflight --tier core --tier controls --tier v_buena --tier v_escalar --tier v_ic "
+        "--tier v_modalidad"
+    )
+    # En los orígenes finales entran las promovidas, solo en la fase del núcleo y la semilla 42.
+    assert edited[6].endswith(
+        "--tier core --tier controls --tier v_buena --tier v_escalar --tier v_ic"
+    )
+    assert edited[7] == lines[7] and edited[8] == lines[8]
+    # La conjunta no se poda (no está declarada en la criba) y sí recibe las promovidas.
+    assert edited[9] == lines[9]
+    assert edited[10].endswith("--tier core --tier v_buena --tier v_escalar --tier v_ic")
+    assert [(c["phase"], c["origin"]) for c in changes] == [(4, 2014), (6, 2023), (10, 2023)]
+    assert changes[0]["removed"] == ["v_mala", "v_regular"] and changes[0]["added"] == []
+    assert all(promotion.valid(line) for line in edited if promotion.is_phase(line))
+
+
+@pytest.fixture
+def campaign(tmp_path):
+    state = tmp_path / "estado"
+    states.write_model(state, "base", 2013, 0.15, seed=1)
+    states.write_model(state, "v_buena", 2013, 0.45, seed=2, tier="v_buena")
+    states.write_model(state, "v_mala", 2013, 0.0, seed=3, tier="v_mala")
+    states.write_model(state, "v_modalidad", 2013, 0.15, seed=4, tier="v_modalidad")
+    contrasts = tmp_path / "contrastes.json"
+    contrasts.write_text(
+        json.dumps(
+            dict(
+                controls=dict(v_buena="base", v_mala="base", v_modalidad="base"),
+                always_kept=["v_modalidad"],
+            )
+        )
+    )
+    tiers = "--tier core --tier v_buena --tier v_mala --tier v_modalidad"
+    plan = tmp_path / "plan.txt"
+    run = f"/copia|{state}|/vistas|d.json|4 --seed 42"
+    lines = [
+        f"{run} --origin 2013 --no-preflight {tiers}",
+        f"orden|/herramientas/promocion|--state {state}",
+        f"{run} --origin 2014 --no-preflight {tiers}",
+        f"{run} --origin 2023 --no-preflight --tier core",
+        "",
+    ]
+    plan.write_text("\n".join(lines))
+    return state, contrasts, plan
+
+
+def arguments(state, contrasts, plan, output, **changes):
+    values = dict(keep="1", phase="2")
+    values.update(changes)
+    paths = dict(state=state, contrasts=contrasts, output=output, plan=plan)
+    command = ["--year", "2013", "--phase", values["phase"], "--keep", values["keep"]]
+    for name, path in paths.items():
+        command += [f"--{name}", str(path)]
+    return [*command, "--prune", f"{state}:2014", "--promote", f"{state}:2023"]
+
+
+def test_the_command_writes_the_records_and_edits_the_plan_once(campaign, tmp_path):
+    state, contrasts, plan = campaign
+    before = plan.read_text().split("\n")
+    output = tmp_path / "registros"
+    assert promotion.main(arguments(state, contrasts, plan, output)) == 0
+    after = plan.read_text().split("\n")
+    assert after[:2] == before[:2]
+    assert after[2].endswith("--no-preflight --tier core --tier v_buena --tier v_modalidad")
+    assert after[3].endswith("--tier core --tier v_buena")
+    document = json.loads((output / "promotion.json").read_text())
+    assert document["decision"]["promoted_models"] == ["v_buena"] and "error" not in document
+    assert [change["phase"] for change in document["changes"]] == [3, 4]
+    assert (output / "plan-anterior.txt").read_text().split("\n") == before
+    assert (output / "report.md").is_file() and json.loads((output / "report.json").read_text())
+    assert "Promovidas a los orígenes finales: `v_buena`." in (output / "promotion.md").read_text()
+    # Repetida (tras una pausa del relevo), no cambia nada más.
+    assert promotion.main(arguments(state, contrasts, plan, output)) == 0
+    assert plan.read_text().split("\n") == after
+    assert json.loads((output / "promotion.json").read_text())["changes"] == []
+
+
+def test_a_failure_leaves_the_plan_untouched_and_recorded(campaign, tmp_path):
+    state, contrasts, plan = campaign
+    before = plan.read_text()
+    output = tmp_path / "registros"
+    # Sin variantes terminadas no hay nada que decidir.
+    empty = tmp_path / "vacio"
+    (empty / "queue").mkdir(parents=True)
+    assert promotion.main(arguments(empty, contrasts, plan, output)) == 1
+    document = json.loads((output / "promotion.json").read_text())
+    assert "Ninguna variante ha terminado" in document["error"] and plan.read_text() == before
+    assert "No se ha tocado el plan" in (output / "promotion.md").read_text()
+    # Una fase que no corresponde al plan tampoco lo cambia.
+    assert promotion.main(arguments(state, contrasts, plan, output, phase="0")) == 0
+    late = promotion.main(arguments(state, contrasts, plan, tmp_path / "otros", phase="9"))
+    assert (
+        late == 0 and json.loads((tmp_path / "otros/promotion.json").read_text())["changes"] == []
+    )
+
+
+@pytest.mark.parametrize(
+    ("line", "accepted"),
+    [
+        ("limpia|/estado/packed-inputs/2013", True),
+        ("limpia|/estado/runs", False),
+        ("prepara|/copia|/estado|configs/receta.json|2023", True),
+        ("prepara|/copia|/estado|configs/receta.json|23", False),
+        ("orden|/herramientas/informe|--state /estado --year 2013", True),
+        ("orden|informe|--state /estado", False),
+        ("/copia|/estado|/vistas|d.json|4 --seed 42 --origin 2013", True),
+        ("/copia|/estado|/vistas|d.json|9 --seed 42", False),
+        ("/copia|/estado|/vistas|4 --seed 42", False),
+    ],
+)
+def test_the_phase_forms_are_the_ones_the_relay_accepts(line, accepted):
+    assert promotion.valid(line) is accepted

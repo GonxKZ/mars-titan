@@ -353,3 +353,100 @@ def test_the_pause_stops_a_preparation_and_repeats_it_when_lifted(tmp_path):
         process.kill()
     assert "plan terminado tras 1 fases" in process.stdout.read()
     assert Path(f"{plan}.hecho").read_text().strip() == "1"
+
+
+TOOL = """#!/usr/bin/env bash
+# Herramienta sustituta de una orden: anota su llamada y, si se le pide, amplía el plan.
+here="$(dirname "$0")"
+trap 'echo parada >> "$here/ordenes.txt"; exit 143' TERM
+echo "$MARS_TITAN_RELAY_PHASE | $MARS_TITAN_RELAY_PLAN | $*" >> "$here/ordenes.txt"
+case "$(cat "$here/conducta" 2>/dev/null || echo bien)" in
+  rota) exit 7 ;;
+  inserta)
+    # Edita solo lo posterior a su fase: sustituye la siguiente por otra.
+    sed -i 's/--origin 2014/--origin 2014 --tier elegido/' "$MARS_TITAN_RELAY_PLAN" ;;
+  larga)
+    for _ in $(seq 1 300); do sleep 0.1 & wait $!; [ -e "$here/termina" ] && exit 0; done ;;
+esac
+exit 0
+"""
+
+
+def tool(tmp_path, behaviour="bien"):
+    folder = tmp_path / "herramientas"
+    folder.mkdir()
+    path = folder / "orden"
+    path.write_text(TOOL)
+    path.chmod(0o755)
+    (folder / "conducta").write_text(behaviour)
+    return path
+
+
+def orders(path):
+    record = path.parent / "ordenes.txt"
+    return record.read_text().splitlines() if record.exists() else []
+
+
+def test_an_order_runs_between_phases_and_may_edit_the_later_ones(tmp_path):
+    folder, command = copy(tmp_path, "us"), tool(tmp_path, "inserta")
+    plan = tmp_path / "plan.txt"
+    plan.write_text(
+        line(folder, "4 --origin 2013")
+        + f"\norden|{command}|--state {folder}/estado --year 2013\n"
+        + line(folder, "4 --origin 2014")
+        + "\n"
+    )
+    done = run(tmp_path, plan)
+    assert done.returncode == 0 and "plan terminado tras 3 fases" in done.stdout
+    # La orden recibe su número de fase y el plan, y la fase siguiente ya es la que ha dejado.
+    assert orders(command) == [f"2 | {plan} | --state {folder}/estado --year 2013"]
+    assert calls(folder)[1].endswith("--workers 4 --origin 2014 --tier elegido")
+    assert Path(f"{plan}.hecho").read_text().strip() == "3"
+
+
+@pytest.mark.parametrize("behaviour", ["rota", "falta"])
+def test_an_order_that_fails_or_is_missing_never_stops_the_training(tmp_path, behaviour):
+    folder, command = copy(tmp_path, "us"), tool(tmp_path, behaviour)
+    if behaviour == "falta":
+        command.unlink()
+    plan = tmp_path / "plan.txt"
+    plan.write_text(f"orden|{command}|--year 2013\n" + line(folder, "4 --origin 2014") + "\n")
+    # Ni siquiera dentro del margen de arranque: una orden no es una fase de entrenamiento.
+    done = run(tmp_path, plan, MARS_TITAN_RELAY_MIN_SECONDS="60")
+    assert done.returncode == 0 and "plan terminado tras 2 fases" in done.stdout
+    expected = "falta la herramienta" if behaviour == "falta" else "la orden terminó con código 7"
+    assert expected in done.stdout and len(calls(folder)) == 1
+
+
+def test_an_order_without_an_absolute_tool_is_badly_written(tmp_path):
+    folder = copy(tmp_path, "us")
+    plan = tmp_path / "plan.txt"
+    plan.write_text("orden|herramienta|--year 2013\n" + line(folder, "4 --origin 2014") + "\n")
+    done = run(tmp_path, plan)
+    assert done.returncode == 2 and "mal escrita" in done.stdout and calls(folder) == []
+
+
+def test_the_pause_stops_an_order_and_repeats_it_when_lifted(tmp_path):
+    command = tool(tmp_path, "larga")
+    plan = tmp_path / "plan.txt"
+    plan.write_text(f"orden|{command}|--year 2013\n")
+    pause = tmp_path / "relevo/pausa"
+    process = subprocess.Popen(
+        ["bash", str(RELAY), str(plan)],
+        stdout=subprocess.PIPE,
+        text=True,
+        env=environment(tmp_path),
+    )
+    try:
+        assert wait_for(lambda: len(orders(command)) == 1)
+        pause.touch()
+        assert wait_for(lambda: "parada" in orders(command))
+        time.sleep(0.5)
+        assert not Path(f"{plan}.hecho").exists()
+        pause.unlink()
+        assert wait_for(lambda: len(orders(command)) == 3)
+        (command.parent / "termina").touch()
+        assert process.wait(timeout=30) == 0
+    finally:
+        process.kill()
+    assert "plan terminado tras 1 fases" in process.stdout.read()
