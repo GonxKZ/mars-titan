@@ -1190,11 +1190,41 @@ Los modelos con el objetivo de salida de IC conservan su receta sin el término 
 propio control (`v_scalar_noic`), y el modelo sin el bloque del gráfico pierde la rama con él
 y se compara con el núcleo sin rama.
 
+#### La escala de la predicción con el término
+
+El primer modelo terminado de la campaña, el núcleo sin memoria del origen 2013, ordena la
+etiqueta con 0,109 de IC en validación, 0,114 en calibración y 0,105 en evaluación (los
+árboles, 0,110, 0,120 y 0,112), y supera al mismo modelo sin rasgos en 0,060 (t = 14). Pero su
+medida de lo operable, la predicción más alfa frente a la etiqueta sin alfa, caía a 0,017
+frente a 0,084 de los árboles. La causa es la escala y no la información:
+
+- La correlación del término no depende de la escala de la predicción. Su gradiente es
+  ortogonal a ella, así que cada paso la agranda, y solo la pérdida de cuantiles la frena. Con
+  peso 3, la dispersión de la predicción por sesión es 1,35 veces la de la etiqueta, cuando la
+  de un modelo calibrado es 0,14, y su coeficiente sobre `−alfa` es 5,4 a 6,5 en lugar de
+  0,65 a 0,70. Al sumar alfa a una predicción diez veces más dispersa, alfa deja de contar.
+- Multiplicada por el factor que más IC sin alfa da en validación y calibración (0,05), su
+  medida de lo operable es 0,074 en evaluación y 0,045 en el tercio más líquido (los árboles,
+  0,084 y 0,054).
+- Con los 46 rasgos solos y el factor elegido en calibración, ordenar cada sesión no
+  perjudica a lo operable: 0,076 con la pérdida de la mediana, 0,077 con la correlación, 0,078
+  con la pérdida mixta y 0,082 con los rangos por sesión en las entradas; en el tercio más
+  líquido, 0,047, 0,055, 0,052 y 0,060.
+
+Consecuencias. La predicción emitida por los modelos con el término no está en unidades de
+retorno calibradas: sirve para ordenar y, para lo operable o para el error absoluto, hay que
+multiplicarla antes por su factor. El informe da ahora, por modelo, esa dispersión, el factor
+elegido en los tramos de decisión y las medidas «a escala». Los cuantiles de las colas siguen
+ajustándose con su pérdida, pero la mediana emitida puede salirse de ellos: quien use los
+intervalos debe recalibrarlos con el tramo de calibración. La extensión mide pesos menores
+del término (`x1_weight`, 0,3 y 0,1), que con los rasgos solos conservan casi todo el orden
+(0,113 y 0,112 de validación frente a 0,115) e inflan menos la escala.
+
 #### Extensión: liquidez en el término y lectores con el término
 
 Dos piezas se midieron o escribieron cuando la campaña ya entrenaba. Las dos cambian el código
 de un recorrido, y un estado solo hereda trabajos cuyo código numérico no ha cambiado, así que
-van en una declaración propia, `dgx-us-campaign-v8-ext1.json` (commit a958cef2), con los
+van en una declaración propia, `dgx-us-campaign-v8-ext1.json`, con los
 controles que pide cada contraste. Los modelos finales de la campaña no cambian.
 
 - `x1_liquid`: `session_ic_term` admite `liquidity_column` y `liquidity_power`. El peso de
@@ -1213,7 +1243,7 @@ controles que pide cada contraste. Los modelos finales de la campaña no cambian
   gradiente no depende del reparto en bloques y que es lineal en el peso.
 
 La extensión lleva el núcleo de la base, que es el padre de los lectores y el control de la
-liquidez, y los tres lectores principales con y sin el término. Se recorre en el origen 2013
+liquidez y de los pesos, y los tres lectores principales con y sin el término. Se recorre en el origen 2013
 detrás de la campaña, con sus mismas copias empaquetadas, y su informe la compara con ella.
 
 

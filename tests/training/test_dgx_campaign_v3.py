@@ -597,7 +597,14 @@ def test_the_extension_of_the_campaign_changes_one_field_per_model():
     assert set(document) == set(previous)
     for key in set(previous) - own:
         assert document[key] == previous[key], key
-    assert document["tiers"] == ["core", "controls", "x1_liquid", "x1_readers", "x1_reader_ic"]
+    assert document["tiers"] == [
+        "core",
+        "controls",
+        "x1_liquid",
+        "x1_weight",
+        "x1_readers",
+        "x1_reader_ic",
+    ]
     # El núcleo y los lectores de la base son los de la campaña: mismos campos y recetas.
     for model in ("titans_mac", "titans_mac_disabled"):
         assert document["models"][model] == previous["models"][model]
@@ -628,6 +635,11 @@ def test_the_extension_of_the_campaign_changes_one_field_per_model():
             assert declared == {**base, "liquidity_column": column, "liquidity_power": power}
             recipe = ChronologicalRecipe(**_recipe(document, f"{control}_{suffix}"))
             assert recipe.session_ic().weighted
+    for control in ("titans_mac", "titans_mac_disabled"):
+        for suffix, weight in (("icw03", 0.3), ("icw01", 0.1)):
+            assert changed(f"{control}_{suffix}", control) == {term}
+            declared = flat_specification(document, f"{control}_{suffix}")[term]
+            assert declared == {**base, "weight": weight}
     for control in ("mars_titan_m0", "mars_titan_m3", "mars_titan_cognitive"):
         assert changed(f"{control}_ic", control) == {term}
         assert flat_specification(document, f"{control}_ic")[term] == base

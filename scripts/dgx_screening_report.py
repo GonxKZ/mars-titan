@@ -23,8 +23,11 @@ el informe da el IC de `-alfa` por sí solo, el de cada modelo con la etiqueta s
 su combinación con `-alfa`, con el peso elegido en validación y calibración. La etiqueta sin
 alfa, `r - beta * m`, es el rendimiento que se puede operar. Como la etiqueta es exactamente esa
 menos alfa, la predicción de un modelo para ella es la suya más alfa, en unidades de retorno:
-ese es el «IC sin alfa». Las dos medidas se dan también en el tercio más líquido de cada sesión
-(volumen medio en dólares de 21 sesiones), y los IC de evaluación llevan su t de Newey-West.
+ese es el «IC sin alfa». Solo vale tal cual si la predicción tiene la escala de los retornos,
+así que se da también con la predicción multiplicada por el factor que más IC sin alfa da en
+validación y calibración, junto a la dispersión de la predicción frente a la de la etiqueta.
+Las dos medidas se dan también en el tercio más líquido de cada sesión (volumen medio en dólares
+de 21 sesiones), y los IC de evaluación llevan su t de Newey-West.
 
 Con `--inference MODELO` escribe `sessions.csv`, el IC de evaluación de cada modelo en cada
 sesión, y añade la inferencia de `dgx_ic_inference.py` frente a ese modelo de referencia:
@@ -233,6 +236,46 @@ def implied_sessions(data, alpha, liquidity=None, *, free, prediction=None):
 
 
 WEIGHTS = tuple(round(0.1 * step, 1) for step in range(11))
+# Factores que se prueban para la predicción de lo operable, k·p + alfa.
+SCALES = (0.01, 0.02, 0.03, 0.05, 0.07, 0.1, 0.15, 0.2, 0.3, 0.5, 0.7, 1.0, 1.5, 2.0, 3.0)
+
+
+def best_scale(splits, alphas, scales=SCALES):
+    """Factor de la predicción con más IC sin alfa en validación y calibración.
+
+    La predicción de un modelo para lo operable es la suya más alfa solo si su escala es la de
+    los retornos. Un modelo ajustado para ordenar cada sesión no la garantiza: una predicción
+    diez veces más dispersa que la calibrada deja a alfa sin peso en la suma. El factor se elige
+    con los tramos de decisión, entre los declarados, y la evaluación se mide con él.
+    """
+
+    def decision(factor):
+        values = [
+            value
+            for split in DECISION
+            for value in implied_sessions(
+                splits[split],
+                alphas[split],
+                free=True,
+                prediction=factor * splits[split]["prediction"],
+            ).values()
+        ]
+        return float(np.mean(values)) if values else -1.0
+
+    return max(scales, key=decision)
+
+
+def dispersion(data, alpha):
+    """Media por sesión de la dispersión de la predicción entre la de la etiqueta."""
+    ratios = []
+    for _, _, start, end in data["sessions"]:
+        known = np.isfinite(alpha[start:end])
+        if known.sum() < MIN_ASSETS:
+            continue
+        spread = data["target"][start:end][known].std()
+        if spread > 0:
+            ratios.append(float(data["prediction"][start:end][known].std() / spread))
+    return float(np.mean(ratios)) if ratios else None
 
 
 def offset_report(reports, provider, year, seed):
@@ -288,6 +331,20 @@ def offset_report(reports, provider, year, seed):
             return float(np.mean(values)) if values else -1.0
 
         weight = max(WEIGHTS, key=decision)
+        scale = best_scale(report["_splits"], per_split)
+
+        def scaled(split, liquid=False, report=report, per_split=per_split, volumes=volumes):
+            data = report["_splits"][split]
+            return summary(
+                implied_sessions(
+                    data,
+                    per_split[split],
+                    volumes[split] if liquid else None,
+                    free=True,
+                    prediction=scale * data["prediction"],  # noqa: B023
+                ).values()
+            )
+
         models[name] = dict(
             label=summary(ics("evaluation", 1.0, False).values()),
             # La predicción del modelo para la etiqueta sin alfa es la suya más alfa.
@@ -296,6 +353,11 @@ def offset_report(reports, provider, year, seed):
             free_ranks={s: summary(ics(s, 1.0, True).values()) for s in SPLITS},
             liquid_label=units("evaluation", False, liquid=True),
             liquid_free=units("evaluation", True, liquid=True),
+            # Lo mismo con la predicción multiplicada por el factor elegido en la decisión.
+            scale=scale,
+            free_scaled={s: scaled(s) for s in SPLITS},
+            liquid_free_scaled=scaled("evaluation", liquid=True),
+            dispersion=dispersion(report["_splits"]["calibration"], per_split["calibration"]),
             weight=weight,
             combined=summary(ics("evaluation", weight, False).values()),
         )
@@ -833,19 +895,31 @@ def markdown(report):
                 f"{_f(base['free']['evaluation']['mean'])} "
                 f"({_f(base['liquid_free']['mean'])} en el tercio más líquido).",
                 "",
-                "| Modelo | IC de evaluación | t NW | IC sin alfa | t NW | Líquido | "
-                "Líquido sin alfa | Peso | Con -alfa |",
-                "| --- | --- | --- | --- | --- | --- | --- | --- | --- |",
+                "Sumar alfa solo da la predicción de lo operable si la del modelo tiene la escala "
+                "de los retornos. «Dispersión» es la de la predicción entre la de la etiqueta "
+                "por sesión, en calibración: un modelo calibrado queda muy por debajo de uno, y "
+                "uno ajustado para ordenar cada sesión puede quedar por encima. Por eso se da "
+                "también la medida «a escala», con la predicción multiplicada por el factor "
+                "que da más IC sin alfa en validación y calibración.",
+                "",
+                "| Modelo | IC de evaluación | t NW | IC sin alfa | t NW | Dispersión | Factor | "
+                "Sin alfa a escala | t NW | Líquido | Líquido sin alfa | Líquido sin alfa a "
+                "escala | Peso | Con -alfa |",
+                "| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | "
+                "--- |",
             ]
             ordered_known = sorted(
                 known["models"].items(), key=lambda item: -(item[1]["combined"]["mean"] or -9)
             )
             for name, item in ordered_known:
-                free = item["free"]["evaluation"]
+                free, scaled = item["free"]["evaluation"], item["free_scaled"]["evaluation"]
                 lines.append(
                     f"| `{name}` | {_f(item['label']['mean'])} | {_f(item['label']['t_nw'], 1)} | "
                     f"{_f(free['mean'])} | {_f(free['t_nw'], 1)} | "
+                    f"{_f(item['dispersion'], 2)} | {_f(item['scale'], 2)} | "
+                    f"{_f(scaled['mean'])} | {_f(scaled['t_nw'], 1)} | "
                     f"{_f(item['liquid_label']['mean'])} | {_f(item['liquid_free']['mean'])} | "
+                    f"{_f(item['liquid_free_scaled']['mean'])} | "
                     f"{_f(item['weight'], 1)} | {_f(item['combined']['mean'])} |"
                 )
             lines.append("")
