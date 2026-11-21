@@ -239,3 +239,56 @@ def test_the_campaigns_with_technical_inputs_only_add_the_declared_extension(nam
     wrong = dict(json.loads(path.read_text()), inputs=dict(technical="otra"))
     with pytest.raises(ValueError, match="extensión de entradas"):
         campaign.checked_declaration(wrong, root=ROOT)
+
+
+BRANCH_CONTROLS = dict(
+    titans_mac_branch="titans_mac",
+    titans_mac_frozen_branch="titans_mac_frozen",
+    titans_mac_disabled_branch="titans_mac_disabled",
+    cross_asset_attention_branch="cross_asset_attention",
+    cross_asset_attention_disabled_branch="cross_asset_attention_disabled",
+)
+BRANCH_READERS = dict(mars_titan_m0_branch="mars_titan_m0", mars_titan_m3_branch="mars_titan_m3")
+
+
+@pytest.mark.parametrize(
+    ("name", "origin"),
+    [
+        ("dgx-us-campaign-v5.json", "dgx-us-campaign-v4.json"),
+        ("dgx-us-cn-campaign-v4.json", "dgx-us-cn-campaign-v3.json"),
+    ],
+)
+def test_the_campaigns_with_the_technical_branch_only_add_its_models(name, origin):
+    from mars_titan.data.technical_features import VERSIONS
+
+    path, source = ROOT / "configs/experiments" / name, ROOT / "configs/experiments" / origin
+    document, previous = campaign.load_declaration(path)[0], json.loads(source.read_text())
+    own = {"description", "source_declaration_sha256", "models", "tiers"}
+    assert set(document) == set(previous)
+    for key in set(previous) - own:
+        assert document[key] == previous[key], key
+    assert document["tiers"] == [*previous["tiers"], "r3_branch", "r3_branch_more"]
+    added = set(document["models"]) - set(previous["models"])
+    assert added == set(BRANCH_CONTROLS) | set(BRANCH_READERS)
+    for model, definition in previous["models"].items():
+        assert document["models"][model] == definition
+    columns = len(VERSIONS[document["inputs"]["technical"]])
+    # Cada ajuste con rama difiere de su control en ese único campo del predictor.
+    for model, control in BRANCH_CONTROLS.items():
+        assert difference(document, model, control) == {"predictor.technical_branch"}
+        branch = specification(document, model)["predictor.technical_branch"]
+        assert branch == dict(columns=columns, bins=16, embedding=8, hidden=128)
+    # Y cada lector, en el núcleo con rama sobre el que se ajusta.
+    for model, control in BRANCH_READERS.items():
+        reader, reference = document["models"][model], document["models"][control]
+        changed = {
+            key for key in reader.keys() | reference.keys() if reader.get(key) != reference.get(key)
+        }
+        assert changed == {"parent", "tier"} and reader["parent"] == "titans_mac_branch"
+    assert document["final_test_access"] is False
+    declared = json.loads(
+        (ROOT / "configs/experiments/dgx-us-campaign-v5-contrasts.json").read_text()
+    )
+    assert set(declared["controls"]) == set(document["models"]) - {"titans_mac"}
+    for model, control in {**BRANCH_CONTROLS, **BRANCH_READERS}.items():
+        assert declared["controls"][model] == control

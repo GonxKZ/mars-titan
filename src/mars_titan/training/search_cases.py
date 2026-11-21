@@ -79,6 +79,8 @@ PREDICTOR_CHANGES = (
     # #836: escalas de aprendizaje del tramo de ajuste y codificador de una referencia.
     "learning_scale",
     "reference_encoder",
+    # Rama de los rasgos técnicos del bloque del gráfico: columns, bins, embedding y hidden.
+    "technical_branch",
 )
 # Cambios que se declaran con un nombre en lugar de un objeto.
 NAMED_CHANGES = (
@@ -116,7 +118,7 @@ def checked_predictor_changes(changes):
             "mature_reliability, memory_huber y memory_time_scales como objetos no vacíos, y "
             "presence_modulation, attention_layout, temporal_encoder, session_rank_inputs, "
             "differential_attention y reference_encoder como nombres no vacíos. También "
-            "admiten learning_scale y removed_modalities como objetos no vacíos"
+            "admiten learning_scale, removed_modalities y technical_branch como objetos no vacíos"
         )
     return changes
 
