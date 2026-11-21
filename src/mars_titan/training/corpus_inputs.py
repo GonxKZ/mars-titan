@@ -15,6 +15,7 @@ import pyarrow as pa
 import pyarrow.compute as pc
 import pyarrow.parquet as pq
 
+from mars_titan.data import technical_features
 from mars_titan.data.batches import read_bounded_table
 from mars_titan.data.cohort_files import read_manifest
 from mars_titan.data.input_perturbations import read_variant, variant_modalities
@@ -551,6 +552,21 @@ class CorpusDataset:
 
         self._target_factor_sources = revision_sources(meta, input_policy=input_policy)
         self.context = meta["context_sessions"]
+        # Extensión de entradas declarada por la vista: rasgos técnicos de horizonte largo, que
+        # se añaden al bloque del gráfico al leer. Sin ella la lectura no cambia.
+        extensions = meta.get("input_extensions")
+        if extensions is not None and (
+            not self.masked
+            or extensions != {"technical": technical_features.NAME}
+            or modality_ablation is not None
+        ):
+            raise ValueError(
+                "La extensión de entradas debe ser la de rasgos técnicos de la edición con "
+                "máscaras, sin variante de lectura"
+            )
+        self.technical = None if extensions is None else extensions["technical"]
+        self._technical_rows, self._technical_lock = OrderedDict(), threading.Lock()
+        self._market_factors = {}
         # Las ediciones desde la v3.1 declaran ventanas por sesión del calendario con presencia.
         contract = (meta.get("representation") or {}).get("price_window")
         if contract is not None and (
@@ -937,7 +953,66 @@ class CorpusDataset:
         availability, availability_valid = _availability(
             table, macro_override=macro[1:] if macro else None, presence=presence
         )
+        if self.technical is not None:
+            vectors = self._with_technical(asset, vectors, ends)
         return timestamps, ends, vectors, presence, availability, availability_valid
+
+    def _market_factor(self, market):
+        """Días y rentabilidad intradía del factor de mercado declarado, o (None, None).
+
+        Es el archivo que usa la etiqueta, comprobado con la huella del manifiesto. Si no está
+        en este equipo, los rasgos del modelo de mercado quedan apagados para ese mercado.
+        """
+        if market not in self._market_factors:
+            declared = (self.manifest.get("market_factors") or {}).get(market) or {}
+            path, factor = declared.get("prices_path"), (None, None)
+            if isinstance(path, str) and Path(path).is_file():
+                if declared.get("return_convention") != "close_over_open_minus_one" or sha256(
+                    Path(path)
+                ) != declared.get("prices_sha256"):
+                    raise ValueError("El factor de mercado no es el que declara la vista")
+                table = read_bounded_table(Path(path), max_rows=200_000, max_bytes=MAX_TABLE_BYTES)
+                opened, close = table["open"].to_numpy(), table["close"].to_numpy()
+                days = (
+                    _times(table["available_at"]).astype("datetime64[us]").astype("datetime64[D]")
+                )
+                with np.errstate(divide="ignore", invalid="ignore"):
+                    returns = np.where((opened > 0) & (close > 0), close / opened - 1, np.nan)
+                factor = (days, returns)
+            self._market_factors[market] = factor
+        return self._market_factors[market]
+
+    def _with_technical(self, asset, vectors, ends):
+        """Añadir al bloque del gráfico los rasgos técnicos de la sesión de cada fila.
+
+        Cada fila toma los de su `price_end_index`, la última sesión de precios disponible al
+        predecir. Los rasgos del activo se calculan una vez por recorrido de sus grupos.
+        """
+        key = asset["market"], asset["symbol"]
+        with self._technical_lock:
+            rows = self._technical_rows.get(key)
+            if rows is None:
+                table = read_bounded_table(
+                    self._file(asset, "prices"), max_rows=200_000, max_bytes=MAX_TABLE_BYTES
+                )
+                prices = np.column_stack(
+                    [table[c].to_numpy() for c in ("open", "high", "low", "close", "volume")]
+                )
+                days = (
+                    _times(table["available_at"]).astype("datetime64[us]").astype("datetime64[D]")
+                )
+                rows = technical_features.technical_features(
+                    prices, days, *self._market_factor(asset["market"])
+                )
+                self._technical_rows[key] = rows
+                while len(self._technical_rows) > 128:
+                    self._technical_rows.popitem(last=False)
+            else:
+                self._technical_rows.move_to_end(key)
+        ends = np.asarray(ends)
+        if not len(ends) or ends.min() < 0 or ends.max() >= len(rows):
+            raise ValueError("Una fila apunta fuera de los precios del activo")
+        return dict(vectors, charts=np.concatenate([vectors["charts"], rows[ends]], axis=1))
 
     def _ablated(self, table, decoded, asset):
         # La lectura original ya pasó sus comprobaciones. La tabla de la variante vuelve a

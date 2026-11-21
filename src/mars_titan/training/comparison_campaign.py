@@ -42,7 +42,12 @@ from pathlib import Path
 from mars_titan.data.cohort_files import read_manifest, safe_destination
 from mars_titan.data.storage import atomic_json
 
-from .comparison_cohorts import FULL_VIEW_RULE, write_cohort, write_full_view
+from .comparison_cohorts import (
+    FULL_VIEW_RULE,
+    checked_extensions,
+    write_cohort,
+    write_full_view,
+)
 from .corpus_inputs import DIGEST_CACHE_ENV
 from .input_pipeline import PipelineOptions
 from .learning_hold import HOLD_ENV
@@ -370,6 +375,9 @@ def checked_declaration(document, *, root=ROOT, check_recipe_files=True):
         and all(isinstance(name, str) and _MODEL_NAME.fullmatch(name) for name in models),
         "La declaración necesita modelos con identificadores válidos y dentro del límite",
     )
+    # Extensión de entradas de toda la campaña: la declaran sus cohortes, no cada modelo, para
+    # que todos sus trabajos compartan índices y copias empaquetadas.
+    checked_extensions(document.get("inputs"))
     if "analysis" in document:
         from mars_titan.evaluation.comparison_protocol import checked
 
@@ -627,13 +635,23 @@ def prepare(declaration, layout):
         _require(source.is_file(), f"Falta la vista del origen {origin['year']} en {source}")
         cohort = declaration["cohort"]
         if cohort.get("rule") == FULL_VIEW_RULE:
-            _, receipt = write_full_view(source, layout.cohort(origin["year"]), size=cohort["size"])
+            _, receipt = write_full_view(
+                source,
+                layout.cohort(origin["year"]),
+                size=cohort["size"],
+                extensions=declaration.get("inputs"),
+            )
             _require(
                 receipt["selection"]["markets"] == sorted(declaration["market"].split("+")),
                 f"La vista de {origin['year']} no es la de {declaration['market']}",
             )
         else:
-            _, receipt = write_cohort(source, layout.cohort(origin["year"]), size=cohort["size"])
+            _, receipt = write_cohort(
+                source,
+                layout.cohort(origin["year"]),
+                size=cohort["size"],
+                extensions=declaration.get("inputs"),
+            )
         selection = receipt["selection"]
         # La carpeta, la ventana y el año declarado deben ser el mismo origen.
         _require(
