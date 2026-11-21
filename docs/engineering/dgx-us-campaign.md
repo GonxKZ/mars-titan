@@ -651,20 +651,33 @@ final, así que el orden es el valor de cada bloque:
 
 | Bloque | Campaña | Origen | Semillas | Modelos | Horas de reloj estimadas |
 | --- | --- | --- | --- | --- | --- |
-| 1 | conjunta, después EE. UU. | 2013 | 42 | 22 principales; el resto de los 53 de EE. UU. | 21 |
-| 2 | EE. UU., después conjunta | 2023 | 42 | núcleo, cognitivos, controles y redes | 55 |
-| 3 | EE. UU. y conjunta, origen a origen | 2014–2016 | 42 | los 53 de EE. UU.; en la conjunta, como en el bloque 2 | 113 |
+| 1 | conjunta, después EE. UU. | 2013 | 42 | 22 principales; el resto de los 53 de EE. UU. | 23 |
+| 2 | EE. UU., después conjunta | 2023 | 42 | núcleo, cognitivos, controles y redes | 64 |
+| 3 | EE. UU. y conjunta, origen a origen | 2014–2016 | 42 | los 53 de EE. UU.; en la conjunta, núcleo, cognitivos y controles | 113 |
 | 4 | EE. UU., después conjunta | 2023 | 43 y 44 | núcleo, sus lectores y sus controles | 54 |
-| 5 | las dos, si queda plazo | 2022; después 2021 → 2017 | 42 | como en el bloque 2; y los refinamientos y puentes aplazados | — |
+| 5 | las dos, si queda plazo | 2022; después 2021 → 2017 | 42 | como en el bloque 2; y los refinamientos, puentes y redes aplazados | — |
 
-Los bloques 1 a 4 suman unas 245 horas de reloj más unas 10 de construcción de copias, contra
+Los bloques 1 a 4 suman unas 254 horas de reloj más unas 10 de construcción de copias, contra
 281 hasta el plazo. El origen 2023 es el modelo que se ajusta con todos los datos, así que su
 base va delante del resto de la criba; las semillas van detrás de la criba para poder dedicar
 ese tiempo a las variantes que la criba promueva, que se añaden delante del bloque 4. Los
 refinamientos y los puentes del lector, que en 2013 empatan con `m3` (menos de 0,0005 de IC de
 rangos de validación), solo se ajustan con la conjunta en 2013 y quedan para el bloque 5 en lo
 demás. La primera fase conjunta a tamaño completo arrancó el 21 de noviembre a las 00:49 UTC,
-tras pausar en su barrera los cuatro trabajos de EE. UU. que estaban en marcha.
+tras pausar en su barrera los cuatro trabajos de EE. UU. que estaban en marcha: su copia
+empaquetada de 2013 se construyó en 15 minutos (19,1 GiB de ajuste y 3,7 de validación) y una
+época de `titans_mac` son 552 pasos y unos 8 minutos, frente a 371 pasos en EE. UU.
+
+**Memoria de la conjunta.** En esa primera media hora `area_network` ocupó 12,9 GiB de GPU
+(7,9 a 8,7 en EE. UU.) y cada trabajo 6 GiB de memoria de proceso (2,5 a 3 en EE. UU.): los
+cuatro arrancaron sin copia empaquetada y esperaron a que uno la construyera. Al continuar desde
+su punto guardado, con la copia ya hecha, vuelven a 2,5–3 GiB. Con tres redes entre activos y
+`titans_mac` a la vez, la conjunta pediría 15 GiB más de GPU que el peor rato medido en EE. UU.
+(35,4 GiB), así que sus redes van en una fase propia con 3 trabajadores, después de los demás
+niveles con 4; en 2014–2016 quedan para el bloque 5. Cuesta unas 2 horas en 2013 y unas 9 en
+2023, y se puede relajar cuando el monitor, que ahora muestrea también la unidad del relevo,
+tenga la GPU real de esas redes. La guardia guarda además una lectura por minuto de memoria
+disponible, disco libre y presión de memoria de producción (`guardia/historia.log`).
 
 **Modalidades por mercado.** Presencia medida en las muestras codificadas de la edición v3.1
 (columna `presence`, orden del contrato de máscaras):
