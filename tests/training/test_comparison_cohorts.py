@@ -257,3 +257,57 @@ def test_a_joint_view_cannot_lose_a_whole_market():
     document["samples"] = sum(asset["samples"] for asset in document["assets"])
     with pytest.raises(ValueError, match="calendarios|mercado"):
         cohorts.full_view(reconcile(document))
+
+
+TECHNICAL = dict(technical="long_horizon_v1")
+
+
+def test_a_cohort_with_an_input_extension_declares_it_and_is_another_view(tmp_path):
+    origin = tmp_path / "views/fold-014/manifest.json"
+    atomic_json(origin, source())
+    plain, _ = cohorts.write_cohort(origin, tmp_path / "sin", size=16)
+    manifest, receipt = cohorts.write_cohort(
+        origin, tmp_path / "con", size=16, extensions=TECHNICAL
+    )
+    view, base = json.loads(manifest.read_text()), json.loads(plain.read_text())
+    # Los mismos activos y contratos; solo se añade la declaración, y la huella cambia.
+    assert view == dict(base, input_extensions=TECHNICAL) and sha256(manifest) != sha256(plain)
+    assert receipt["input_extensions"] == TECHNICAL
+    assert receipt["manifest_sha256"] == sha256(manifest)
+    again = cohorts.write_cohort(origin, tmp_path / "con", size=16, extensions=TECHNICAL)
+    assert again == (manifest, receipt)
+    # Una cohorte guardada con extensión no vale para la campaña sin ella, ni al revés.
+    with pytest.raises(ValueError, match="no corresponde"):
+        cohorts.write_cohort(origin, tmp_path / "con", size=16)
+    with pytest.raises(ValueError, match="no corresponde"):
+        cohorts.write_cohort(origin, tmp_path / "sin", size=16, extensions=TECHNICAL)
+
+
+def test_a_full_view_with_an_input_extension_is_the_view_plus_its_declaration(tmp_path):
+    path = write_source(tmp_path / "views/fold/manifest.json", joint_source(2019))
+    folder = tmp_path / "state/cohorts/2019"
+    manifest, receipt = cohorts.write_full_view(path, folder, size=341, extensions=TECHNICAL)
+    assert json.loads(manifest.read_text()) == dict(joint_source(2019), input_extensions=TECHNICAL)
+    assert receipt["manifest_sha256"] == sha256(manifest) != sha256(path)
+    assert receipt["input_extensions"] == TECHNICAL and receipt["source"]["sha256"] == sha256(path)
+    assert receipt["selection"]["markets"] == ["CN", "US"]
+    assert cohorts.write_full_view(path, folder, size=341, extensions=TECHNICAL) == (
+        manifest,
+        receipt,
+    )
+    with pytest.raises(ValueError, match="no es esta vista completa"):
+        cohorts.write_full_view(path, folder, size=341)
+    view = json.loads(manifest.read_text())
+    view["candidate_count"] += 1
+    atomic_json(manifest, view)
+    with pytest.raises(ValueError, match="no es esta vista completa"):
+        cohorts.write_full_view(path, folder, size=341, extensions=TECHNICAL)
+
+
+@pytest.mark.parametrize("extensions", [{}, dict(technical="otra"), dict(noticias="x"), "long"])
+def test_only_the_declared_input_extension_is_accepted(tmp_path, extensions):
+    origin = tmp_path / "views/fold-014/manifest.json"
+    atomic_json(origin, source())
+    with pytest.raises(ValueError, match="extensión de entradas"):
+        cohorts.write_cohort(origin, tmp_path / "cohort", size=16, extensions=extensions)
+    assert not (tmp_path / "cohort").exists()

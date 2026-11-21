@@ -1,0 +1,194 @@
+"""Rasgos técnicos causales de horizonte largo de un activo (`long_horizon_v1`).
+
+La etiqueta de la edición histórica es el residuo de la rentabilidad intradía de la sesión
+siguiente, `r(t+1) - alfa(t) - beta(t) * m(t+1)`, con alfa y beta de un OLS con intercepto sobre
+las 252 sesiones del calendario que terminan en `t` (`data.budget_targets.residual_targets`).
+Alfa y beta se conocen al predecir, pero la ventana del predictor solo ve 64 sesiones. Este
+módulo calcula, con los precios disponibles hasta cada sesión, esos dos valores tal como los usa
+la etiqueta y el resto de rasgos de precio y liquidez de horizonte largo.
+
+Cada fila usa solo sus sesiones y las anteriores: cambiar un precio posterior no cambia ninguna
+fila anterior. Los valores van en float32, acotados a ±8, con cero donde falta historia y un
+indicador de historia suficiente.
+"""
+
+import numpy as np
+from numpy.lib.stride_tricks import sliding_window_view
+
+NAME = "long_horizon_v1"
+# Ventana y mínimo de pares del OLS de la etiqueta.
+HISTORY, MINIMUM = 252, 126
+LIMIT = 8.0
+NAMES = (
+    "alpha_percent",
+    "alpha_t",
+    "beta",
+    "log_residual_volatility",
+    "has_market_model",
+    "return_5",
+    "return_21",
+    "return_63",
+    "return_126",
+    "return_252",
+    "momentum_12_1",
+    "log_volatility_252",
+    "volatility_21_over_252",
+    "volatility_63_over_252",
+    "distance_to_high_252",
+    "distance_to_low_252",
+    "has_252_sessions",
+    "log_dollar_volume_21",
+    "dollar_volume_21_over_252",
+    "dollar_volume_5_over_63",
+    "abnormal_volume",
+    "log_illiquidity_21",
+    "return_1",
+    "intraday_1",
+    "overnight_1",
+    "range_1",
+    "intraday_21",
+    "overnight_21",
+    "maximum_return_21",
+    "has_63_sessions",
+)
+WIDTH = len(NAMES)
+
+
+def _window_sum(values, window):
+    """Suma de las `window` últimas filas hasta cada una, con las que haya al principio."""
+    total = np.concatenate([[0.0], np.cumsum(values, dtype=np.float64)])
+    index = np.arange(1, len(values) + 1)
+    return total[index] - total[np.maximum(index - window, 0)]
+
+
+def _window_extreme(values, window, function):
+    result = np.full(len(values), np.nan)
+    if len(values) >= window:
+        result[window - 1 :] = function(sliding_window_view(values, window), axis=1)
+    return result
+
+
+def market_model(intraday, market):
+    """Alfa, beta, desviación residual y pares del OLS de la etiqueta en cada sesión.
+
+    `intraday` y `market` son las rentabilidades de apertura a cierre del activo y del factor
+    de mercado sobre el mismo calendario, con NaN donde falta la sesión. Usa los pares válidos
+    de las 252 sesiones que terminan en cada una y exige 126, como la etiqueta.
+    """
+    valid = np.isfinite(intraday) & np.isfinite(market)
+    x, y = np.where(valid, market, 0.0), np.where(valid, intraday, 0.0)
+    pairs = _window_sum(valid.astype(np.float64), HISTORY)
+    sum_x, sum_y = _window_sum(x, HISTORY), _window_sum(y, HISTORY)
+    with np.errstate(divide="ignore", invalid="ignore"):
+        xx = _window_sum(x * x, HISTORY) - sum_x * sum_x / pairs
+        xy = _window_sum(x * y, HISTORY) - sum_x * sum_y / pairs
+        yy = _window_sum(y * y, HISTORY) - sum_y * sum_y / pairs
+        beta = xy / xx
+        alpha = sum_y / pairs - beta * sum_x / pairs
+        residual = np.sqrt(np.maximum(yy - beta * xy, 0.0) / np.maximum(pairs - 2, 1))
+    known = (pairs >= MINIMUM) & (xx > np.finfo(float).eps)
+    for values in (alpha, beta, residual):
+        values[~known] = np.nan
+    return alpha, beta, residual, pairs
+
+
+def technical_features(prices, sessions, calendar=None, market=None):
+    """Rasgos de cada fila de `prices` (apertura, máximo, mínimo, cierre y volumen).
+
+    `sessions` es el día de cada fila. `calendar` y `market` son los días del factor de mercado
+    y su rentabilidad intradía; sin ellos los rasgos del modelo de mercado quedan a cero con su
+    indicador apagado. Devuelve un array float32 de forma [filas, WIDTH].
+    """
+    prices = np.asarray(prices, dtype=np.float64)
+    sessions = np.asarray(sessions, dtype="datetime64[D]")
+    if prices.ndim != 2 or prices.shape[1] != 5 or len(sessions) != len(prices):
+        raise ValueError("Los rasgos técnicos necesitan una tabla OHLCV y el día de cada fila")
+    if len(sessions) > 1 and np.any(np.diff(sessions.astype(np.int64)) <= 0):
+        raise ValueError("Los rasgos técnicos necesitan sesiones en orden creciente")
+    opened, high, low, close, volume = prices.T
+    rows = len(prices)
+    features = {name: np.full(rows, np.nan) for name in NAMES}
+    with np.errstate(divide="ignore", invalid="ignore"):
+        log_close = np.log(close)
+        daily = np.full(rows, np.nan)
+        daily[1:] = log_close[1:] - log_close[:-1]
+        filled = np.nan_to_num(daily)
+
+        def change(sessions_back):
+            result = np.full(rows, np.nan)
+            result[sessions_back:] = log_close[sessions_back:] - log_close[:-sessions_back]
+            return result
+
+        def volatility(window):
+            mean = _window_sum(filled, window) / window
+            squared = _window_sum(filled * filled, window) / window
+            result = np.sqrt(np.maximum(squared - mean * mean, 0.0))
+            result[:window] = np.nan
+            return result
+
+        year = volatility(252)
+        for window in (5, 21, 63, 126, 252):
+            features[f"return_{window}"] = change(window) / (year * np.sqrt(window))
+        momentum = np.full(rows, np.nan)
+        if rows > 252:
+            momentum[252:] = log_close[231 : rows - 21] - log_close[: rows - 252]
+        features["momentum_12_1"] = momentum / (year * np.sqrt(231))
+        features["log_volatility_252"] = np.log(year * 100)
+        features["volatility_21_over_252"] = np.log(volatility(21) / year)
+        features["volatility_63_over_252"] = np.log(volatility(63) / year)
+        features["distance_to_high_252"] = log_close - np.log(_window_extreme(close, 252, np.max))
+        features["distance_to_low_252"] = log_close - np.log(_window_extreme(close, 252, np.min))
+        features["has_252_sessions"] = (np.arange(rows) >= 252).astype(np.float64)
+        features["has_63_sessions"] = (np.arange(rows) >= 63).astype(np.float64)
+        dollars = close * np.maximum(volume, 0.0)
+        mean_21, mean_252 = _window_sum(dollars, 21) / 21, _window_sum(dollars, 252) / 252
+        mean_21[:20], mean_252[:251] = np.nan, np.nan
+        mean_5, mean_63 = _window_sum(dollars, 5) / 5, _window_sum(dollars, 63) / 63
+        mean_63[:62] = np.nan
+        # Volumen en dólares centrado en diez millones diarios y en unidades de e³.
+        features["log_dollar_volume_21"] = (np.log(mean_21) - np.log(1e7)) / 3
+        features["dollar_volume_21_over_252"] = np.log(mean_21 / mean_252)
+        features["dollar_volume_5_over_63"] = np.log(mean_5 / mean_63)
+        volume_21 = _window_sum(volume, 21) / 21
+        volume_21[:20] = np.nan
+        features["abnormal_volume"] = np.log(volume / volume_21)
+        impact = np.where(dollars > 0, np.abs(filled) / dollars, 0.0)
+        illiquidity = _window_sum(impact, 21) / 21
+        illiquidity[:20] = np.nan
+        # Ilíquidez de Amihud centrada en 1e-9 por dólar y en unidades de e³.
+        features["log_illiquidity_21"] = (np.log(illiquidity) - np.log(1e-9)) / 3
+        overnight = np.full(rows, np.nan)
+        overnight[1:] = np.log(opened[1:] / close[:-1])
+        intraday_log = np.log(close / opened)
+        features["return_1"] = daily / year
+        features["intraday_1"] = intraday_log / year
+        features["overnight_1"] = overnight / year
+        features["range_1"] = np.log(high / low) / year
+        sum_intraday = _window_sum(np.nan_to_num(intraday_log), 21) / 21
+        sum_overnight = _window_sum(np.nan_to_num(overnight), 21) / 21
+        sum_intraday[:20], sum_overnight[:21] = np.nan, np.nan
+        features["intraday_21"] = sum_intraday / year * np.sqrt(21)
+        features["overnight_21"] = sum_overnight / year * np.sqrt(21)
+        features["maximum_return_21"] = _window_extreme(filled, 21, np.max) / year
+        features["has_market_model"] = np.zeros(rows)
+        if calendar is not None and market is not None:
+            calendar = np.asarray(calendar, dtype="datetime64[D]")
+            market = np.asarray(market, dtype=np.float64)
+            position = np.searchsorted(calendar, sessions)
+            inside = position < len(calendar)
+            inside[inside] = calendar[position[inside]] == sessions[inside]
+            ratio = np.where((opened > 0) & (close > 0), close / opened - 1, np.nan)
+            aligned = np.full(len(calendar), np.nan)
+            aligned[position[inside]] = ratio[inside]
+            alpha, beta, residual, pairs = market_model(aligned, market)
+            for name, values in (
+                ("alpha_percent", alpha * 100),
+                ("alpha_t", alpha / (residual / np.sqrt(pairs))),
+                ("beta", beta),
+                ("log_residual_volatility", np.log(residual * 100)),
+            ):
+                features[name][inside] = values[position[inside]]
+            features["has_market_model"] = np.isfinite(features["alpha_percent"]).astype(np.float64)
+    table = np.column_stack([features[name] for name in NAMES])
+    table = np.clip(np.where(np.isfinite(table), table, 0.0), -LIMIT, LIMIT)
+    return table.astype(np.float32)

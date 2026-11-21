@@ -24,6 +24,7 @@ from pathlib import Path
 from mars_titan.data.cohort_files import read_manifest, safe_destination
 from mars_titan.data.input_policy import HISTORICAL_MASKED
 from mars_titan.data.storage import atomic_json, outside_source, sha256
+from mars_titan.data.technical_features import NAME as TECHNICAL
 from mars_titan.evaluation.splits import PARTITIONS
 
 from .cohort_contract import cohort_identity
@@ -144,16 +145,32 @@ def project_cohort(source, *, size):
     return view, selection
 
 
-def write_cohort(source_path, output, *, size):
+def checked_extensions(extensions):
+    """Extensión de entradas que una campaña declara para sus cohortes, o None.
+
+    La única es la de rasgos técnicos de horizonte largo, que `CorpusDataset` añade al bloque
+    del gráfico al leer. La declara el manifiesto de la cohorte, así que su huella, sus índices
+    y sus copias empaquetadas son distintos de los de la misma vista sin extensión.
+    """
+    _require(
+        extensions is None or extensions == {"technical": TECHNICAL},
+        f"La única extensión de entradas es technical: {TECHNICAL}",
+    )
+    return extensions
+
+
+def write_cohort(source_path, output, *, size, extensions=None):
     """Escribir la vista de la cohorte en `output/manifest.json` junto a su recibo.
 
-    Si ya existe se comprueba que corresponde a la misma vista de origen, regla y tamaño, y
-    se reutiliza. Devuelve la ruta del manifiesto y el recibo.
+    Si ya existe se comprueba que corresponde a la misma vista de origen, regla, tamaño y
+    extensión de entradas, y se reutiliza. Devuelve la ruta del manifiesto y el recibo.
     """
     source_path, output = Path(source_path), Path(output)
     safe_destination(output)
     source, digest = read_manifest(source_path, 64 * 1024**2)
     view, selection = project_cohort(source, size=size)
+    if checked_extensions(extensions) is not None:
+        view = dict(view, input_extensions=extensions)
     for root in source["roots"].values():
         outside_source(Path(root), output)
     manifest, receipt_path = output / "manifest.json", output / "cohort.json"
@@ -167,6 +184,8 @@ def write_cohort(source_path, output, *, size):
         optimizer_steps=0,
         final_test_opened=False,
     )
+    if extensions is not None:
+        receipt["input_extensions"] = extensions
     if manifest.exists() or receipt_path.exists():
         previous, _ = read_manifest(receipt_path, 1024**2)
         current, _ = read_manifest(manifest, 64 * 1024**2)
@@ -255,8 +274,11 @@ def full_view(source):
     return markets, folds[0], sorted(identities)
 
 
-def write_full_view(source_path, output, *, size):
+def write_full_view(source_path, output, *, size, extensions=None):
     """Escribir como cohorte la vista completa del origen, byte a byte, junto a su recibo.
+
+    Con una extensión de entradas el manifiesto es el de la vista más su declaración
+    (`input_extensions`): los mismos activos, raíces y contratos, con otra huella.
 
     `size` es el número de activos que la declaración espera: la vista debe tener exactamente
     esos. No se elige ningún activo, así que ni los objetivos ni la cobertura intervienen. Si la
@@ -299,16 +321,32 @@ def write_full_view(source_path, output, *, size):
         optimizer_steps=0,
         final_test_opened=False,
     )
+    document = None
+    if checked_extensions(extensions) is not None:
+        document = dict(source, input_extensions=extensions)
+        receipt["input_extensions"] = extensions
+        del receipt["manifest_sha256"]
     if manifest.exists() or receipt_path.exists():
         previous, _ = read_manifest(receipt_path, 1024**2)
-        _require(
-            previous == receipt and manifest.is_file() and sha256(manifest) == digest,
-            "La cohorte guardada no es esta vista completa",
-        )
+        if document is None:
+            same = previous == receipt and manifest.is_file() and sha256(manifest) == digest
+        else:
+            same = (
+                {key: value for key, value in previous.items() if key != "manifest_sha256"}
+                == receipt
+                and manifest.is_file()
+                and previous.get("manifest_sha256") == sha256(manifest)
+                and read_manifest(manifest, 64 * 1024**2)[0] == document
+            )
+        _require(same, "La cohorte guardada no es esta vista completa")
         return manifest, previous
     output.mkdir(parents=True, exist_ok=True)
-    temporary = output / "manifest.json.tmp"
-    temporary.write_bytes(raw)
-    temporary.replace(manifest)
+    if document is None:
+        temporary = output / "manifest.json.tmp"
+        temporary.write_bytes(raw)
+        temporary.replace(manifest)
+    else:
+        atomic_json(manifest, document)
+        receipt["manifest_sha256"] = sha256(manifest)
     atomic_json(receipt_path, receipt)
     return manifest, receipt
