@@ -658,3 +658,88 @@ def test_strict_reader_keeps_float64_vector_conversion(tmp_path):
     batch = next(CorpusDataset(path).batches(partition="train", batch_size=3, epoch=0, seed=42))
     assert batch["inputs"]["news"].dtype == np.float32
     assert sorted(batch["inputs"]["news"][:, 0].tolist()) == [0.0, 1.0, 2.0]
+
+
+def test_the_technical_extension_appends_the_features_of_each_row(tmp_path):
+    from mars_titan.data import technical_features as technical
+
+    path = supervised(tmp_path)
+    plain = read_all(path)
+    meta = json.loads(path.read_text())
+    table = pq.read_table(tmp_path / "samples/US/AAA/samples.parquet")
+    ends = dict(
+        zip(
+            table["prediction_at"].cast(pa.timestamp("us")).cast(pa.int64()).to_pylist(),
+            table["price_end_index"].to_pylist(),
+            strict=True,
+        )
+    )
+
+    def ohlcv(file):
+        prices = pq.read_table(file)
+        values = np.column_stack(
+            [prices[c].to_numpy() for c in ("open", "high", "low", "close", "volume")]
+        )
+        stamps = prices["available_at"].cast(pa.timestamp("us")).cast(pa.int64()).to_numpy()
+        return values, stamps.astype("datetime64[us]").astype("datetime64[D]")
+
+    values, days = ohlcv(meta["roots"]["prepared"] + "/US/AAA/prices.parquet")
+    factor, calendar = ohlcv(meta["market_factors"]["US"]["prices_path"])
+    market = factor[:, 3] / factor[:, 0] - 1
+    # El factor es el de la etiqueta solo si la vista declara su convención intradía.
+    dump(path, dict(meta, input_extensions=dict(technical=technical.NAME_V2)))
+    with pytest.raises(ValueError, match="factor de mercado"):
+        read_all(path)
+    declared = dict(meta["market_factors"]["US"], return_convention="close_over_open_minus_one")
+    meta = dict(meta, market_factors=dict(US=declared))
+    for version in technical.VERSIONS:
+        dump(path, dict(meta, input_extensions=dict(technical=version)))
+        extended = read_all(path)
+        expected = technical.technical_features(values, days, calendar, market, version=version)
+        width = len(technical.VERSIONS[version])
+        assert len(extended) == len(plain) > 0
+        for before, after in zip(plain, extended, strict=True):
+            assert after["sample_ids"] == before["sample_ids"]
+            charts = after["inputs"]["charts"]
+            base = before["inputs"]["charts"]
+            assert charts.dtype == np.float32 and charts.shape == (1, base.shape[1] + width)
+            assert np.array_equal(charts[:, : base.shape[1]], base)
+            instant = int(after["prediction_at"][0].astype("datetime64[us]").astype(np.int64))
+            assert np.array_equal(charts[0, base.shape[1] :], expected[ends[instant]])
+            for name in ("prices", "news", "fundamentals", "macro"):
+                assert np.array_equal(after["inputs"][name], before["inputs"][name])
+            assert np.array_equal(after["presence"], before["presence"])
+            assert after["target"].tolist() == before["target"].tolist()
+    # Los rasgos que se comparan no son triviales: hay historia y modelo de mercado.
+    names = technical.VERSIONS[technical.NAME_V2]
+    used = expected[sorted(ends.values())]
+    for name in ("has_market_model", "beta", "log_dollar_volume_21", "intraday_252"):
+        assert used[:, names.index(name)].any(), name
+    # Sin el archivo del factor, los rasgos del modelo de mercado quedan apagados.
+    absent = dict(declared, prices_path=str(tmp_path / "no-existe.parquet"))
+    dump(
+        path,
+        dict(
+            meta,
+            market_factors=dict(US=absent),
+            input_extensions=dict(technical=technical.NAME_V2),
+        ),
+    )
+    alone = technical.technical_features(values, days, version=technical.NAME_V2)
+    for batch in read_all(path):
+        instant = int(batch["prediction_at"][0].astype("datetime64[us]").astype(np.int64))
+        added = batch["inputs"]["charts"][0, -len(names) :]
+        assert np.array_equal(added, alone[ends[instant]])
+        assert added[names.index("has_market_model")] == 0
+    # Otra extensión, otra versión o una variante de lectura no se admiten.
+    for wrong in (dict(technical="long_horizon_v9"), dict(otra="x"), "long_horizon_v2"):
+        dump(path, dict(meta, input_extensions=wrong))
+        with pytest.raises(ValueError, match="extensión de entradas"):
+            read_all(path)
+    dump(path, dict(meta, input_extensions=dict(technical=technical.NAME_V2)))
+    with pytest.raises(ValueError, match="extensión de entradas"):
+        CorpusDataset(path, input_policy=HISTORICAL_MASKED, modality_ablation="mask_news")
+    dump(path, meta)
+    assert [b["inputs"]["charts"].shape for b in read_all(path)] == [
+        b["inputs"]["charts"].shape for b in plain
+    ]
