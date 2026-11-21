@@ -8,6 +8,7 @@ import pytest
 
 from mars_titan.training import comparison_campaign as campaign
 from mars_titan.training.comparison_cohorts import FULL_VIEW_RULE
+from mars_titan.training.financial_run import ChronologicalRecipe
 
 ROOT = Path(__file__).resolve().parents[2]
 DECLARATION = ROOT / "configs/experiments/dgx-us-campaign-v3.json"
@@ -412,3 +413,53 @@ def test_the_campaigns_on_the_faster_recipe_only_change_the_instants_of_each_upd
     assert set(declared["controls"]) == set(document["models"]) - {"titans_mac"}
     assert declared["controls"]["titans_mac_disabled_t8"] == "titans_mac_disabled"
     assert declared["controls"]["mars_titan_m0_u2"] == "mars_titan_m0"
+
+
+def test_the_pilot_of_the_session_ic_term_changes_one_field_per_model():
+    path = ROOT / "configs/experiments/dgx-us-pilot-v8.json"
+    source = ROOT / "configs/experiments/dgx-us-campaign-v7.json"
+    document, previous = campaign.load_declaration(path)[0], json.loads(source.read_text())
+    own = {"description", "source_declaration_sha256", "models", "tiers", "recipes"}
+    assert set(document) == set(previous)
+    for key in set(previous) - own:
+        assert document[key] == previous[key], key
+    assert document["tiers"] == ["core", "controls", "p8_a", "p8_b", "p8_c"]
+    assert document["recipes"]["core"] == previous["recipes"]["core"]
+    for model in ("titans_mac", "titans_mac_disabled", "titans_mac_frozen"):
+        assert document["models"][model] == previous["models"][model]
+    term, branch = "recipe.session_ic_term", "predictor.technical_branch"
+    dense = {"columns": 46, "hidden": 128, "depth": 2}
+    # Cada modelo y su control, con el único campo que los separa.
+    contrasts = {
+        ("titans_mac_disabled_ic3", "titans_mac_disabled"): {term},
+        ("titans_mac_disabled_dense", "titans_mac_disabled"): {branch},
+        ("titans_mac_disabled_dense_ic3", "titans_mac_disabled_ic3"): {branch},
+        ("titans_mac_disabled_dense_ic3", "titans_mac_disabled_dense"): {term},
+        ("titans_mac_disabled_branch_ic3", "titans_mac_disabled_ic3"): {branch},
+        ("titans_mac_disabled_branch_ic3", "titans_mac_disabled_dense_ic3"): {branch},
+        ("titans_mac_frozen_dense_ic3", "titans_mac_disabled_dense_ic3"): {"variant"},
+        ("titans_mac_dense_ic3", "titans_mac_disabled_dense_ic3"): {"variant"},
+        ("titans_mac_disabled_dense_ic1", "titans_mac_disabled_dense_ic3"): {term},
+        ("titans_mac_disabled_dense_ic10", "titans_mac_disabled_dense_ic3"): {term},
+        ("titans_mac_disabled_dense_ic3_t1", "titans_mac_disabled_dense_ic3"): {
+            "recipe.truncation"
+        },
+    }
+    for (model, control), fields in contrasts.items():
+        assert difference(document, model, control) == fields, (model, control)
+    assert {model for model, _ in contrasts} == set(document["models"]) - {
+        "titans_mac",
+        "titans_mac_disabled",
+        "titans_mac_frozen",
+    }
+    for model, weight in (("ic1", 1.0), ("ic3", 3.0), ("ic10", 10.0)):
+        declared = specification(document, f"titans_mac_disabled_dense_{model}")
+        assert declared[term] == {"weight": weight, "minimum_rows": 8}
+        assert declared[branch] == dense and declared["recipe.loss"] == "pinball"
+    piecewise = specification(document, "titans_mac_disabled_branch_ic3")[branch]
+    assert piecewise == {"columns": 46, "bins": 16, "embedding": 8, "hidden": 128}
+    assert specification(document, "titans_mac_disabled_dense_ic3_t1")["recipe.truncation"] == 1
+    # Las recetas se cargan con su término y los predictores con su rama.
+    for name in ("core_ic1", "core_ic3", "core_ic10", "core_ic3_t1"):
+        recipe = json.loads((ROOT / document["recipes"][name]).read_text())
+        assert ChronologicalRecipe(**recipe["recipe"]).session_ic() is not None

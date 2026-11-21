@@ -42,6 +42,7 @@ from .session_ranks import gaussian_ranks
 from .state import require_finite
 
 SESSION_IC_OBJECTIVE = "session_ic_objective_v1"
+SESSION_IC_TERM = "session_ic_term_v1"
 # Fracción de la media de s² que se suma a la varianza al estandarizar.
 RELATIVE_FLOOR = 1e-10
 
@@ -94,6 +95,74 @@ class SessionICObjective:
 
     def build(self, hidden_size, *, seed, dtype):
         return SessionScale(self, dtype=dtype)
+
+
+@dataclass(frozen=True)
+class SessionICTerm:
+    """Término de IC por sesión que una receta suma a su pérdida (`session_ic_term_v1`).
+
+    La pérdida declarada, pinball con la cabeza de cuantiles o una pérdida puntual, mide el
+    error fila a fila en unidades de retorno. El contraste de la campaña es el IC medio por
+    sesión, que solo depende del orden de las predicciones dentro de cada sesión. Con este
+    término la pérdida del tramo es
+
+        L = L_declarada − w · (1/|T|) Σ_{t∈T} ρ_t(p, g)
+
+    p es el punto emitido, la mediana con la cabeza de cuantiles, y g, T y ρ_t son los de
+    `session_ic_objective_v1`: las puntuaciones normales de los rangos del objetivo, las
+    sesiones con al menos `minimum_rows` etiquetas maduras en el tramo y la correlación
+    regularizada dentro de cada una. La pérdida declarada sigue fijando el nivel y la escala
+    de las predicciones, que conservan sus unidades y sus cuantiles. El término no depende
+    de ellos y solo empuja el orden dentro de cada sesión. La cabeza, la predicción emitida
+    y sus consumidores no cambian, a diferencia del objetivo de salida, que sustituye la
+    cabeza escalar y emite una puntuación estandarizada.
+
+    Es una derivación propia. Sin sesiones con suficientes filas el término vale cero.
+    """
+
+    weight: float = 1.0
+    minimum_rows: int = 8
+
+    def __post_init__(self):
+        if type(self.minimum_rows) is not int or not 3 <= self.minimum_rows <= 4096:
+            raise ValueError("minimum_rows debe ser un entero entre 3 y 4096")
+        weight = _number(self.weight, "weight")
+        if not 0 < weight <= 1e3:
+            raise ValueError("weight debe ser positivo y acotado")
+        object.__setattr__(self, "weight", weight)
+
+    def identity(self):
+        return dict(
+            **asdict(self),
+            schema_version=1,
+            name=SESSION_IC_TERM,
+            point="median_of_the_quantile_head_or_scalar_output",
+            correlation="regularized_correlation_of_point_and_target_normal_scores_per_session",
+            constant_target_session="zero_contribution",
+            target_scores="inverse_normal_of_average_rank_minus_half_among_matured_rows",
+            session_weighting="equal_mean_over_sessions_with_minimum_rows",
+            sign="weight_times_mean_correlation_subtracted_from_the_declared_loss",
+            standardization_floor=dict(relative=RELATIVE_FLOOR, absolute="dtype_eps_squared"),
+        )
+
+    def term(self, point, target, sessions):
+        """−w por la correlación media de las sesiones del tramo, o cero si no hay ninguna."""
+        correlations = session_correlations(point, target, sessions, self.minimum_rows)
+        if not len(correlations):
+            return point.sum() * 0
+        return -self.weight * correlations.mean()
+
+
+def parse_session_ic_term(raw):
+    """Aceptar la configuración, sus dos valores o None."""
+    if raw is None:
+        return None
+    if type(raw) is SessionICTerm:
+        raw.__post_init__()
+        return raw
+    if type(raw) is dict and set(raw) == {"weight", "minimum_rows"}:
+        return SessionICTerm(**raw)
+    raise ValueError("session_ic_term debe declarar weight y minimum_rows, o ser None")
 
 
 def standardized_scores(scores, markets):

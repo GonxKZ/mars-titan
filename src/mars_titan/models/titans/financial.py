@@ -154,7 +154,12 @@ from .state import (
     require_finite,
     require_true,
 )
-from .technical_branch import TechnicalBranch, TechnicalBranchConfig, parse_technical_branch
+from .technical_branch import (
+    TechnicalBranchConfig,
+    TechnicalDenseConfig,
+    build_technical_branch,
+    parse_technical_branch,
+)
 
 VARIANTS = ("transformer_direct", "mac_disabled", "mac_frozen", "mac_online")
 # Probabilidad máxima de los dropout declarados: por encima, la mitad de las activaciones o de
@@ -293,7 +298,7 @@ class FinancialConfig:
     removed_modalities: tuple[str, ...] | None = None
     # Rama de los rasgos técnicos del bloque del gráfico, tras MAC y antes de la cabeza, con
     # codificación lineal a trozos. Sin declararla, la identidad y el cálculo no cambian.
-    technical_branch: TechnicalBranchConfig | None = None
+    technical_branch: TechnicalBranchConfig | TechnicalDenseConfig | None = None
 
     def __post_init__(self):
         if self.memory_inner_gradient not in INNER_GRADIENTS:
@@ -1299,7 +1304,7 @@ class FinancialPredictor(nn.Module):
         )
         # La rama técnica usa su propio generador derivado de la semilla y empieza sin efecto.
         self.technical_branch = (
-            TechnicalBranch(
+            build_technical_branch(
                 config.hidden_size,
                 config.technical_branch,
                 clip=config.learning_scale.clip,
