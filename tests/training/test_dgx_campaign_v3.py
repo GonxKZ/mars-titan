@@ -292,3 +292,50 @@ def test_the_campaigns_with_the_technical_branch_only_add_its_models(name, origi
     assert set(declared["controls"]) == set(document["models"]) - {"titans_mac"}
     for model, control in {**BRANCH_CONTROLS, **BRANCH_READERS}.items():
         assert declared["controls"][model] == control
+
+
+STEP_CONTROLS = dict(
+    titans_mac_disabled_t1=("titans_mac_disabled", 1),
+    titans_mac_disabled_t2=("titans_mac_disabled", 2),
+    titans_mac_disabled_t4=("titans_mac_disabled", 4),
+    titans_mac_frozen_t2=("titans_mac_frozen", 2),
+    titans_mac_t2=("titans_mac", 2),
+    titans_mac_t4=("titans_mac", 4),
+    titans_mac_disabled_branch_t2=("titans_mac_disabled_branch", 2),
+    titans_mac_frozen_branch_t2=("titans_mac_frozen_branch", 2),
+)
+
+
+@pytest.mark.parametrize(
+    ("name", "origin"),
+    [
+        ("dgx-us-campaign-v6.json", "dgx-us-campaign-v5.json"),
+        ("dgx-us-cn-campaign-v5.json", "dgx-us-cn-campaign-v4.json"),
+    ],
+)
+def test_the_campaigns_with_more_updates_only_change_the_instants_of_each_update(name, origin):
+    path, source = ROOT / "configs/experiments" / name, ROOT / "configs/experiments" / origin
+    document, previous = campaign.load_declaration(path)[0], json.loads(source.read_text())
+    own = {"description", "source_declaration_sha256", "models", "tiers", "recipes"}
+    assert set(document) == set(previous)
+    for key in set(previous) - own:
+        assert document[key] == previous[key], key
+    assert document["tiers"] == [*previous["tiers"], "r3_steps", "r3_combo"]
+    assert set(document["models"]) - set(previous["models"]) == set(STEP_CONTROLS)
+    for model, definition in previous["models"].items():
+        assert document["models"][model] == definition
+    for recipe, file in previous["recipes"].items():
+        assert document["recipes"][recipe] == file
+    for model, (control, instants) in STEP_CONTROLS.items():
+        assert difference(document, model, control) == {"recipe.truncation"}
+        assert specification(document, model)["recipe.truncation"] == instants
+        assert specification(document, control)["recipe.truncation"] == 8
+        assert document["models"][model]["tier"] == (
+            "r3_combo" if "branch" in model else "r3_steps"
+        )
+    declared = json.loads(
+        (ROOT / "configs/experiments/dgx-us-campaign-v6-contrasts.json").read_text()
+    )
+    assert set(declared["controls"]) == set(document["models"]) - {"titans_mac"}
+    for model, (control, _) in STEP_CONTROLS.items():
+        assert declared["controls"][model] == control
