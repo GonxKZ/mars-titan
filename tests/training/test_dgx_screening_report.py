@@ -220,6 +220,60 @@ def test_the_prediction_for_the_label_without_alpha_is_the_prediction_plus_alpha
     assert len(report.implied_sessions(data, unknown, free=True, prediction=prediction)) == 29
 
 
+def test_the_scale_of_the_decision_splits_recovers_the_skill_of_an_overdispersed_model():
+    random = np.random.default_rng(5)
+    sessions, assets = 40, 90
+    count = sessions * assets
+
+    def split():
+        alpha = random.normal(0, 1.0, count)
+        skill = random.normal(0, 1.0, count)
+        free = 0.5 * alpha + 0.4 * skill + random.normal(0, 1.0, count)
+        calibrated = 0.5 * alpha + 0.4 * skill - alpha
+        data = dict(
+            target=free - alpha,
+            prediction=calibrated,
+            sessions=[("US", s, s * assets, (s + 1) * assets) for s in range(sessions)],
+        )
+        return data, alpha
+
+    splits, alphas = {}, {}
+    for name in report.SPLITS:
+        splits[name], alphas[name] = split()
+
+    def free(data, alpha, factor):
+        values = report.implied_sessions(
+            data, alpha, free=True, prediction=factor * data["prediction"]
+        )
+        return report.summary(values.values())["mean"]
+
+    # Con la predicción calibrada, el mejor factor es el suyo y no cambia casi nada.
+    own = report.best_scale(splits, alphas)
+    assert 0.7 <= own <= 1.5
+    honest = free(splits["evaluation"], alphas["evaluation"], 1.0)
+    assert free(splits["evaluation"], alphas["evaluation"], own) == pytest.approx(honest, abs=0.02)
+    # Doce veces más dispersa: sumar alfa ya no devuelve lo operable, y el factor lo recupera.
+    wide = {name: dict(data, prediction=12 * data["prediction"]) for name, data in splits.items()}
+    scale = report.best_scale(wide, alphas)
+    assert scale == pytest.approx(own / 12, rel=0.5) and scale in report.SCALES
+    collapsed = free(wide["evaluation"], alphas["evaluation"], 1.0)
+    recovered = free(wide["evaluation"], alphas["evaluation"], scale)
+    assert collapsed < honest - 0.2 and recovered == pytest.approx(honest, abs=0.03)
+    # El factor solo mira validación y calibración: cambiar la evaluación no lo mueve.
+    changed = dict(
+        wide, evaluation=dict(wide["evaluation"], prediction=-wide["evaluation"]["prediction"])
+    )
+    assert report.best_scale(changed, alphas) == scale
+    # La dispersión delata la escala: la calibrada queda por debajo de uno.
+    narrow = report.dispersion(splits["calibration"], alphas["calibration"])
+    assert narrow < 1 and report.dispersion(
+        wide["calibration"], alphas["calibration"]
+    ) == pytest.approx(12 * narrow)
+    partial = alphas["calibration"].copy()
+    partial[: assets * (sessions - 1) + assets - 10] = np.nan
+    assert report.dispersion(splits["calibration"], partial) is None
+
+
 def test_the_newey_west_t_discounts_the_dependence_between_sessions():
     random = np.random.default_rng(3)
     independent = 0.05 + random.normal(0, 0.1, 400)

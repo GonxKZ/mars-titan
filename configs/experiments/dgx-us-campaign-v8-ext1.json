@@ -3,7 +3,7 @@
   "kind": "comparison_campaign_v1",
   "market": "US",
   "final_test_access": false,
-  "description": "Extensión de la campaña DGX v8 en EE. UU. (GB10): dos piezas medidas después de fijar su base y que cambian el código de los recorridos, por lo que no pueden heredar su estado. x1_liquid pondera por liquidez la correlación del término de IC por sesión (con los 46 rasgos solos sube el IC del tercio más líquido de 0,003 a 0,005 sin coste en el conjunto con exponente 0,5 a 1). x1_reader_ic suma el mismo término a la pérdida de los lectores, que hasta ahora no añadían orden al de su núcleo. Lleva el núcleo de la base, que es el padre de los lectores y el control de la liquidez, y los tres lectores con su pérdida de siempre.",
+  "description": "Extensión de la campaña DGX v8 en EE. UU. (GB10): dos piezas medidas después de fijar su base y que cambian el código de los recorridos, por lo que no pueden heredar su estado. x1_liquid pondera por liquidez la correlación del término de IC por sesión (con los 46 rasgos solos sube el IC del tercio más líquido de 0,003 a 0,005 sin coste en el conjunto con exponente 0,5 a 1). x1_reader_ic suma el mismo término a la pérdida de los lectores, que hasta ahora no añadían orden al de su núcleo. Lleva el núcleo de la base, que es el padre de los lectores y el control de la liquidez, y los tres lectores con su pérdida de siempre. x1_weight baja el peso del término a 0,3 y 0,1: con peso 3 el núcleo ordena mejor la etiqueta, pero emite predicciones unas diez veces más dispersas que un modelo calibrado, y lo operable solo se recupera multiplicándolas por un factor elegido en la decisión.",
   "source_declaration_sha256": "e39a509bc6c63c00ba306a0ec3e4a13feb568f6003e6dcbe11bfac8590059b3c",
   "cohort": {
     "size": 4198,
@@ -115,6 +115,7 @@
     "core",
     "controls",
     "x1_liquid",
+    "x1_weight",
     "x1_readers",
     "x1_reader_ic"
   ],
@@ -122,6 +123,8 @@
     "core": "configs/titans/dgx-us-core-u2-ic3-dense-v6.json",
     "core_liq05": "configs/titans/dgx-us-core-u2-ic3-liq05-dense-v7.json",
     "core_liq1": "configs/titans/dgx-us-core-u2-ic3-liq1-dense-v7.json",
+    "core_icw03": "configs/titans/dgx-us-core-u2-ic03-dense-v7.json",
+    "core_icw01": "configs/titans/dgx-us-core-u2-ic01-dense-v7.json",
     "reader": "configs/titans/dgx-us-reader-v2.json",
     "reader_ic": "configs/titans/dgx-us-reader-ic3-v7.json",
     "reader_cognitive": "configs/titans/dgx-us-reader-cognitive-v2.json",
@@ -252,6 +255,34 @@
       "recipe": "core_liq1",
       "runner": "fit",
       "tier": "x1_liquid",
+      "variant": "mac_disabled"
+    },
+    "titans_mac_icw03": {
+      "machine": "mars_titan",
+      "recipe": "core_icw03",
+      "runner": "fit",
+      "tier": "x1_weight",
+      "variant": "mac_online"
+    },
+    "titans_mac_icw01": {
+      "machine": "mars_titan",
+      "recipe": "core_icw01",
+      "runner": "fit",
+      "tier": "x1_weight",
+      "variant": "mac_online"
+    },
+    "titans_mac_disabled_icw03": {
+      "machine": "mars_titan",
+      "recipe": "core_icw03",
+      "runner": "fit",
+      "tier": "x1_weight",
+      "variant": "mac_disabled"
+    },
+    "titans_mac_disabled_icw01": {
+      "machine": "mars_titan",
+      "recipe": "core_icw01",
+      "runner": "fit",
+      "tier": "x1_weight",
       "variant": "mac_disabled"
     },
     "mars_titan_m0_ic": {
