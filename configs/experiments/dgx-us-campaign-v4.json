@@ -3,7 +3,7 @@
   "kind": "comparison_campaign_v1",
   "market": "US",
   "final_test_access": false,
-  "description": "Campaña DGX v4 en EE. UU. (GB10): la v3 con rasgos técnicos de horizonte largo. Sus cohortes declaran la extensión de entradas long_horizon_v1: al leer, el bloque del gráfico recibe 30 rasgos causales de horizonte largo de cada activo, entre ellos el alfa y la beta del OLS de 252 sesiones que la etiqueta resta y que se conocen al predecir. Medido en el origen 2013 de EE. UU.: menos alfa, sin ajustar nada, tiene un IC de rangos de 0,081 en la evaluación y el mejor modelo sin estos rasgos 0,053. La diferencia entre un modelo de esta campaña y el mismo modelo, origen y semilla de la campaña de origen es esa información. El test final de 2024 permanece cerrado.",
+  "description": "Campaña DGX v4 en EE. UU. (GB10): la v3 con rasgos técnicos de horizonte largo. Sus cohortes declaran la extensión de entradas long_horizon_v2: al leer, el bloque del gráfico recibe 46 rasgos causales de cada activo, entre ellos el alfa y la beta del OLS de 252 sesiones que la etiqueta resta y que se conocen al predecir, las medias intradía y nocturna de 5 a 252 sesiones y la etiqueta ya realizada de las últimas sesiones. Medido en el origen 2013 de EE. UU.: menos alfa, sin ajustar nada, tiene un IC de rangos de 0,081 en la evaluación, el mejor modelo sin estos rasgos 0,053 y un modelo de árboles ajustado solo con ellos 0,114. La diferencia entre un modelo de esta campaña y el mismo modelo, origen y semilla de la campaña de origen es esa información. El test final de 2024 permanece cerrado.",
   "source_declaration_sha256": "c1da16c06c3522cdbb83e299cef139d595cd86725bebdf7f272688fda50e3ca3",
   "cohort": {
     "size": 4198,
@@ -1051,6 +1051,6 @@
     }
   },
   "inputs": {
-    "technical": "long_horizon_v1"
+    "technical": "long_horizon_v2"
   }
 }

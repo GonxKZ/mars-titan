@@ -557,7 +557,9 @@ class CorpusDataset:
         extensions = meta.get("input_extensions")
         if extensions is not None and (
             not self.masked
-            or extensions != {"technical": technical_features.NAME}
+            or not isinstance(extensions, dict)
+            or set(extensions) != {"technical"}
+            or extensions["technical"] not in technical_features.VERSIONS
             or modality_ablation is not None
         ):
             raise ValueError(
@@ -1002,7 +1004,7 @@ class CorpusDataset:
                     _times(table["available_at"]).astype("datetime64[us]").astype("datetime64[D]")
                 )
                 rows = technical_features.technical_features(
-                    prices, days, *self._market_factor(asset["market"])
+                    prices, days, *self._market_factor(asset["market"]), version=self.technical
                 )
                 self._technical_rows[key] = rows
                 while len(self._technical_rows) > 128:

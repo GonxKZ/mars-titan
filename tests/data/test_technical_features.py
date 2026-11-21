@@ -123,3 +123,119 @@ def test_invalid_tables_are_rejected(problem):
         sessions = sessions[:-1]
     with pytest.raises(ValueError, match="rasgos técnicos"):
         technical.technical_features(table, sessions)
+
+
+def test_the_second_version_keeps_the_first_bit_for_bit_and_adds_its_columns():
+    _, sessions, table, market = market_prices(seed=5)
+    first = technical.technical_features(table, sessions, sessions, market)
+    second = technical.technical_features(
+        table, sessions, sessions, market, version=technical.NAME_V2
+    )
+    names = technical.VERSIONS[technical.NAME_V2]
+    assert names[: technical.WIDTH] == technical.NAMES and len(names) == technical.WIDTH + 16
+    assert second.shape == (len(table), len(names)) and second.dtype == np.float32
+    assert np.array_equal(second[:, : technical.WIDTH], first)
+    assert np.isfinite(second).all() and np.abs(second).max() <= technical.LIMIT
+    # Sin factor de mercado, los rasgos que lo necesitan quedan a cero y los demás no cambian.
+    alone = technical.technical_features(table, sessions, version=technical.NAME_V2)
+    market_based = [
+        "realized_label_1",
+        "realized_label_5",
+        "realized_label_21",
+        "alpha_21_percent",
+        "alpha_63_percent",
+    ]
+    for name in names[technical.WIDTH :]:
+        column = names.index(name)
+        if name in market_based:
+            assert not alone[:, column].any() and second[300:, column].any()
+        else:
+            assert np.array_equal(alone[:, column], second[:, column])
+    with pytest.raises(ValueError, match="versión"):
+        technical.technical_features(table, sessions, version="long_horizon_v9")
+
+
+def test_the_second_version_is_causal_row_by_row():
+    _, sessions, table, market = market_prices(seed=6)
+    cut = 700
+    complete = technical.technical_features(
+        table, sessions, sessions, market, version=technical.NAME_V2
+    )
+    changed, other = table.copy(), market.copy()
+    changed[cut:] *= np.linspace(1.5, 0.4, len(table) - cut)[:, None]
+    other[cut:] = -other[cut:] + 0.01
+    after = technical.technical_features(
+        changed, sessions, sessions, other, version=technical.NAME_V2
+    )
+    # Cambiar precios y factor desde una sesión no cambia ninguna fila anterior.
+    assert np.array_equal(after[:cut], complete[:cut])
+    assert not np.array_equal(after[cut:], complete[cut:])
+    truncated = technical.technical_features(
+        table[:cut], sessions[:cut], sessions[:cut], market[:cut], version=technical.NAME_V2
+    )
+    assert np.array_equal(truncated, complete[:cut])
+
+
+def test_the_realized_label_is_the_label_of_the_previous_session():
+    clock, sessions, table, market = market_prices(seed=7)
+    features = technical.technical_features(
+        table, sessions, sessions, market, version=technical.NAME_V2
+    )
+    names = technical.VERSIONS[technical.NAME_V2]
+    days = [day.isoformat() for day in clock.days]
+    base = dict(session=days, available_at=clock.decisions)
+    market_frame = pd.DataFrame({**base, "open": 100.0, "close": 100 * (1 + market)})
+    asset_frame = pd.DataFrame({**base, "open": table[:, 0], "close": table[:, 3]})
+    labels = residual_targets(asset_frame, market_frame, clock, cutoff=days[-1])
+    labels = labels[labels.reason == "accepted"].reset_index(drop=True)
+    position = {day: row for row, day in enumerate(days)}
+    alpha, beta, residual, _ = technical.market_model(table[:, 3] / table[:, 0] - 1, market)
+    checked = 0
+    for _, label in labels.iloc[::29].iterrows():
+        row = position[label.prediction_at.date().isoformat()]
+        # La etiqueta de la predicción en `row` se realiza al cierre de la sesión siguiente.
+        expected = label.target / residual[row]
+        assert abs(expected) < technical.LIMIT
+        assert features[row + 1, names.index("realized_label_1")] == pytest.approx(
+            expected, rel=2e-5, abs=1e-6
+        )
+        checked += 1
+    assert checked > 25
+    # Las sumas de 5 y 21 sesiones son las de la última etiqueta realizada.
+    one = features[:, names.index("realized_label_1")].astype(np.float64)
+    row = 600
+    assert features[row, names.index("realized_label_5")] == pytest.approx(
+        one[row - 4 : row + 1].sum() / np.sqrt(5), rel=1e-4, abs=1e-5
+    )
+    assert features[row, names.index("realized_label_21")] == pytest.approx(
+        one[row - 20 : row + 1].sum() / np.sqrt(21), rel=1e-4, abs=1e-5
+    )
+    free = table[:, 3] / table[:, 0] - 1 - beta * market
+    assert features[row, names.index("alpha_63_percent")] == pytest.approx(
+        np.nansum(free[row - 62 : row + 1]) / 63 * 100, rel=1e-4, abs=1e-6
+    )
+
+
+def test_the_added_price_features_have_their_known_values():
+    sessions = np.arange("2020-01-01", "2021-06-01", dtype="datetime64[D]")
+    rows = len(sessions)
+    close = 20 * np.exp(0.001 * np.arange(rows))
+    opened = close * np.exp(-0.002)
+    high, low = close * 1.01, opened * 0.99
+    volume = np.full(rows, 1e6)
+    volume[-10:] = 0.0
+    table = np.column_stack([opened, high, low, close, volume])
+    features = technical.technical_features(table, sessions, version=technical.NAME_V2)
+    names = technical.VERSIONS[technical.NAME_V2]
+    last = features[-1]
+    # Cada sesión sube un 0,2 % de apertura a cierre y baja un 0,1 % de cierre a apertura.
+    assert last[names.index("intraday_mean_252_percent")] == pytest.approx(0.2, rel=1e-4)
+    assert last[names.index("overnight_mean_252_percent")] == pytest.approx(-0.1, rel=1e-4)
+    assert last[names.index("untraded_63")] == pytest.approx(10 / 63, rel=1e-5)
+    expected = (2 * close[-1] - high[-1] - low[-1]) / (high[-1] - low[-1])
+    assert last[names.index("close_location_1")] == pytest.approx(expected, rel=1e-5)
+    assert last[names.index("close_location_5")] == pytest.approx(expected, rel=1e-4)
+    # Sin historia suficiente las medias valen cero.
+    assert features[100, names.index("intraday_mean_252_percent")] == 0
+    assert features[3, names.index("close_location_5")] == 0
+    assert features[61, names.index("untraded_63")] == 0

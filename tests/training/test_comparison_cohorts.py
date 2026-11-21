@@ -259,7 +259,7 @@ def test_a_joint_view_cannot_lose_a_whole_market():
         cohorts.full_view(reconcile(document))
 
 
-TECHNICAL = dict(technical="long_horizon_v1")
+TECHNICAL = dict(technical="long_horizon_v2")
 
 
 def test_a_cohort_with_an_input_extension_declares_it_and_is_another_view(tmp_path):
@@ -304,7 +304,24 @@ def test_a_full_view_with_an_input_extension_is_the_view_plus_its_declaration(tm
         cohorts.write_full_view(path, folder, size=341, extensions=TECHNICAL)
 
 
-@pytest.mark.parametrize("extensions", [{}, dict(technical="otra"), dict(noticias="x"), "long"])
+def test_each_version_of_the_technical_features_is_another_view(tmp_path):
+    origin = tmp_path / "views/fold-014/manifest.json"
+    atomic_json(origin, source())
+    first, _ = cohorts.write_cohort(
+        origin, tmp_path / "v1", size=16, extensions=dict(technical="long_horizon_v1")
+    )
+    second, _ = cohorts.write_cohort(origin, tmp_path / "v2", size=16, extensions=TECHNICAL)
+    assert json.loads(first.read_text())["input_extensions"] == dict(technical="long_horizon_v1")
+    assert json.loads(second.read_text())["input_extensions"] == TECHNICAL
+    assert sha256(first) != sha256(second)
+    with pytest.raises(ValueError, match="no corresponde|otra|extensión"):
+        cohorts.write_cohort(origin, tmp_path / "v1", size=16, extensions=TECHNICAL)
+
+
+@pytest.mark.parametrize(
+    "extensions",
+    [{}, dict(technical="otra"), dict(noticias="x"), "long", dict(technical=["long_horizon_v2"])],
+)
 def test_only_the_declared_input_extension_is_accepted(tmp_path, extensions):
     origin = tmp_path / "views/fold-014/manifest.json"
     atomic_json(origin, source())

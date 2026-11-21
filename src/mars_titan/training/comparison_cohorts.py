@@ -24,7 +24,7 @@ from pathlib import Path
 from mars_titan.data.cohort_files import read_manifest, safe_destination
 from mars_titan.data.input_policy import HISTORICAL_MASKED
 from mars_titan.data.storage import atomic_json, outside_source, sha256
-from mars_titan.data.technical_features import NAME as TECHNICAL
+from mars_titan.data.technical_features import VERSIONS as TECHNICAL
 from mars_titan.evaluation.splits import PARTITIONS
 
 from .cohort_contract import cohort_identity
@@ -148,13 +148,20 @@ def project_cohort(source, *, size):
 def checked_extensions(extensions):
     """Extensión de entradas que una campaña declara para sus cohortes, o None.
 
-    La única es la de rasgos técnicos de horizonte largo, que `CorpusDataset` añade al bloque
-    del gráfico al leer. La declara el manifiesto de la cohorte, así que su huella, sus índices
-    y sus copias empaquetadas son distintos de los de la misma vista sin extensión.
+    La única es la de rasgos técnicos de horizonte largo, en una de sus versiones, que
+    `CorpusDataset` añade al bloque del gráfico al leer. La declara el manifiesto de la cohorte,
+    así que su huella, sus índices y sus copias empaquetadas son distintos de los de la misma
+    vista sin extensión o con otra versión.
     """
     _require(
-        extensions is None or extensions == {"technical": TECHNICAL},
-        f"La única extensión de entradas es technical: {TECHNICAL}",
+        extensions is None
+        or (
+            isinstance(extensions, dict)
+            and set(extensions) == {"technical"}
+            and isinstance(extensions["technical"], str)
+            and extensions["technical"] in TECHNICAL
+        ),
+        f"La única extensión de entradas es technical: {' o '.join(TECHNICAL)}",
     )
     return extensions
 
