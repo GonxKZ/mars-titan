@@ -146,3 +146,37 @@ def test_the_command_writes_both_reports(state, tmp_path):
     text = (output / "report.md").read_text()
     assert "## Origen 2013: 4 modelos" in text and "| `mejor` | `control` |" in text
     assert "### Combinaciones por media de rangos del origen 2013" in text
+
+
+def test_the_known_offset_of_the_label_is_measured_alone_and_with_each_model():
+    random = np.random.default_rng(7)
+    sessions, assets = 40, 60
+    alpha = random.normal(0, 1.0, sessions * assets)
+    skill = random.normal(0, 1.0, sessions * assets)
+    free = 0.3 * skill + random.normal(0, 1.0, sessions * assets)
+    # La etiqueta resta alfa; el modelo anticipa la parte libre y no sabe nada de alfa.
+    data = dict(
+        target=free - alpha,
+        prediction=skill.copy(),
+        sessions=[("US", s, s * assets, (s + 1) * assets) for s in range(sessions)],
+    )
+    alone = report.summary(report.offset_sessions(data, alpha, 0.0, free=False).values())
+    model = report.summary(
+        report.offset_sessions(data, alpha, 1.0, free=False, prediction=skill).values()
+    )
+    both = report.summary(
+        report.offset_sessions(data, alpha, 0.3, free=False, prediction=skill).values()
+    )
+    clean = report.summary(
+        report.offset_sessions(data, alpha, 1.0, free=True, prediction=skill).values()
+    )
+    assert alone["sessions"] == sessions and alone["mean"] > 0.5
+    # El modelo solo acierta poco con la etiqueta oficial; combinado supera al desplazamiento.
+    assert 0 < model["mean"] < alone["mean"] < both["mean"]
+    # Sin alfa en la etiqueta se ve su habilidad real.
+    assert clean["mean"] > model["mean"]
+    # Las filas sin alfa conocido no cuentan, y una sesión con menos de 30 se omite.
+    partial = alpha.copy()
+    partial[: assets - 10] = np.nan
+    fewer = report.offset_sessions(data, partial, 0.0, free=False)
+    assert len(fewer) == sessions - 1
