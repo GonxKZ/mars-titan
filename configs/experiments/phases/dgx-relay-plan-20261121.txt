@@ -1,13 +1,16 @@
 # Plan del relevo de campañas MARS-TITAN en la DGX. Revisión del 21 de noviembre de 2026. Plazo: 2 de diciembre, 18:00 UTC.
 # Una fase cada vez. El orden es la prioridad: si el plazo corta, corta por el final.
-# Formato: <copia fija>|<estado>|<vistas>|<declaración>|<trabajadores> <argumentos de run>, o limpia|<copias de un origen>.
+# Formato: <copia fija>|<estado>|<vistas>|<declaración>|<trabajadores> <argumentos de run>;
+# prepara|<copia fija>|<estado>|<receta>|<año> construye antes, con un solo proceso, las copias de ese origen;
+# limpia|<copias de un origen> las retira cuando sus fases han terminado.
 #
 # Por qué cambia el orden: con los 20 primeros trabajos medidos (origen 2013), un trabajo ocupa de media 1,8 horas de un
 # trabajador, no 1, y el coste crece con las filas de entrenamiento de cada origen. El plan del día 20 pedía unas 2.400
 # horas de trabajador y hasta el plazo caben unas 1.100. Lo que no cabe queda al final, en orden de valor.
 #
-# Memoria: un trabajo de la campaña conjunta ocupa unos 6 GiB de memoria de proceso (3 en EE. UU.) y sus redes entre
-# activos unos 13 GiB de GPU (8 en EE. UU.). Por eso las redes de la conjunta van en una fase propia con 3 trabajadores.
+# Memoria: las redes entre activos de la campaña conjunta ocupan unos 13 GiB de GPU cada una (8 en EE. UU.), así que
+# van en una fase propia con 3 trabajadores. Las copias de cada origen se preparan antes de su primera fase: si las
+# construye un trabajo mientras los demás esperan, cada uno retiene varios GiB y en 2023 la suma supera el tope del grupo.
 #
 # Bloque 1, origen 2013, semilla 42. La campaña conjunta de EE. UU. y China recorre por primera vez sus 22 modelos
 # principales a tamaño completo; después EE. UU. termina sus 53 modelos (22 principales y 31 variantes).
@@ -19,75 +22,102 @@ limpia|/home/gpic/.local/state/mars-titan/dgx-titans-us-v31/v2/semillas-42,43,44
 #
 # Bloque 2, origen 2023, semilla 42: los modelos entrenados con todos los datos, primero EE. UU. y después EE. UU. y China.
 # Núcleo, lectores, cognitivos, controles y redes entre activos. Los refinamientos y puentes del lector quedan para el final.
+prepara|/home/gpic/TITANS-IA/MARS-TITAN-campana-10cd0c47|/home/gpic/.local/state/mars-titan/dgx-titans-us-v31/v2/semillas-42,43,44/todos-10cd0c47|configs/titans/dgx-us-core-v1.json|2023
 /home/gpic/TITANS-IA/MARS-TITAN-campana-10cd0c47|/home/gpic/.local/state/mars-titan/dgx-titans-us-v31/v2/semillas-42,43,44/todos-10cd0c47|/home/gonzalo/.local/state/mars-titan/campaign-a-v2-views-v31-20261013/views/US|configs/experiments/dgx-us-campaign-v2.json|4 --seed 42 --origin 2023 --no-preflight --tier core --tier cognitive --tier controls --tier networks
 limpia|/home/gpic/.local/state/mars-titan/dgx-titans-us-v31/v2/semillas-42,43,44/todos-10cd0c47/packed-inputs/2023
+prepara|/home/gpic/TITANS-IA/MARS-TITAN-conjunta-5fee626c|/home/gpic/.local/state/mars-titan/dgx-titans-us-cn-v31/v1/semillas-42,43,44/todos-5fee626c|configs/titans/dgx-us-core-v1.json|2023
 /home/gpic/TITANS-IA/MARS-TITAN-conjunta-5fee626c|/home/gpic/.local/state/mars-titan/dgx-titans-us-cn-v31/v1/semillas-42,43,44/todos-5fee626c|/home/gonzalo/.local/state/mars-titan/campaign-a-v2-views-v31-20261013/views/US+CN|configs/experiments/dgx-us-cn-campaign-v1.json|4 --seed 42 --origin 2023 --no-preflight --tier core --tier cognitive --tier controls
 /home/gpic/TITANS-IA/MARS-TITAN-conjunta-5fee626c|/home/gpic/.local/state/mars-titan/dgx-titans-us-cn-v31/v1/semillas-42,43,44/todos-5fee626c|/home/gonzalo/.local/state/mars-titan/campaign-a-v2-views-v31-20261013/views/US+CN|configs/experiments/dgx-us-cn-campaign-v1.json|3 --seed 42 --origin 2023 --no-preflight --tier networks
 limpia|/home/gpic/.local/state/mars-titan/dgx-titans-us-cn-v31/v1/semillas-42,43,44/todos-5fee626c/packed-inputs/2023
 #
 # Bloque 3, orígenes 2014–2016, semilla 42: el resto de la criba de EE. UU. (53 modelos) y la conjunta emparejada
 # (núcleo, lectores, cognitivos y controles; sus redes de estos orígenes quedan para el bloque 5).
+prepara|/home/gpic/TITANS-IA/MARS-TITAN-campana-10cd0c47|/home/gpic/.local/state/mars-titan/dgx-titans-us-v31/v2/semillas-42,43,44/todos-10cd0c47|configs/titans/dgx-us-core-v1.json|2014
 /home/gpic/TITANS-IA/MARS-TITAN-campana-10cd0c47|/home/gpic/.local/state/mars-titan/dgx-titans-us-v31/v2/semillas-42,43,44/todos-10cd0c47|/home/gonzalo/.local/state/mars-titan/campaign-a-v2-views-v31-20261013/views/US|configs/experiments/dgx-us-campaign-v2.json|4 --seed 42 --origin 2014 --no-preflight
 limpia|/home/gpic/.local/state/mars-titan/dgx-titans-us-v31/v2/semillas-42,43,44/todos-10cd0c47/packed-inputs/2014
+prepara|/home/gpic/TITANS-IA/MARS-TITAN-conjunta-5fee626c|/home/gpic/.local/state/mars-titan/dgx-titans-us-cn-v31/v1/semillas-42,43,44/todos-5fee626c|configs/titans/dgx-us-core-v1.json|2014
 /home/gpic/TITANS-IA/MARS-TITAN-conjunta-5fee626c|/home/gpic/.local/state/mars-titan/dgx-titans-us-cn-v31/v1/semillas-42,43,44/todos-5fee626c|/home/gonzalo/.local/state/mars-titan/campaign-a-v2-views-v31-20261013/views/US+CN|configs/experiments/dgx-us-cn-campaign-v1.json|4 --seed 42 --origin 2014 --no-preflight --tier core --tier cognitive --tier controls
 limpia|/home/gpic/.local/state/mars-titan/dgx-titans-us-cn-v31/v1/semillas-42,43,44/todos-5fee626c/packed-inputs/2014
+prepara|/home/gpic/TITANS-IA/MARS-TITAN-campana-10cd0c47|/home/gpic/.local/state/mars-titan/dgx-titans-us-v31/v2/semillas-42,43,44/todos-10cd0c47|configs/titans/dgx-us-core-v1.json|2015
 /home/gpic/TITANS-IA/MARS-TITAN-campana-10cd0c47|/home/gpic/.local/state/mars-titan/dgx-titans-us-v31/v2/semillas-42,43,44/todos-10cd0c47|/home/gonzalo/.local/state/mars-titan/campaign-a-v2-views-v31-20261013/views/US|configs/experiments/dgx-us-campaign-v2.json|4 --seed 42 --origin 2015 --no-preflight
 limpia|/home/gpic/.local/state/mars-titan/dgx-titans-us-v31/v2/semillas-42,43,44/todos-10cd0c47/packed-inputs/2015
+prepara|/home/gpic/TITANS-IA/MARS-TITAN-conjunta-5fee626c|/home/gpic/.local/state/mars-titan/dgx-titans-us-cn-v31/v1/semillas-42,43,44/todos-5fee626c|configs/titans/dgx-us-core-v1.json|2015
 /home/gpic/TITANS-IA/MARS-TITAN-conjunta-5fee626c|/home/gpic/.local/state/mars-titan/dgx-titans-us-cn-v31/v1/semillas-42,43,44/todos-5fee626c|/home/gonzalo/.local/state/mars-titan/campaign-a-v2-views-v31-20261013/views/US+CN|configs/experiments/dgx-us-cn-campaign-v1.json|4 --seed 42 --origin 2015 --no-preflight --tier core --tier cognitive --tier controls
 limpia|/home/gpic/.local/state/mars-titan/dgx-titans-us-cn-v31/v1/semillas-42,43,44/todos-5fee626c/packed-inputs/2015
+prepara|/home/gpic/TITANS-IA/MARS-TITAN-campana-10cd0c47|/home/gpic/.local/state/mars-titan/dgx-titans-us-v31/v2/semillas-42,43,44/todos-10cd0c47|configs/titans/dgx-us-core-v1.json|2016
 /home/gpic/TITANS-IA/MARS-TITAN-campana-10cd0c47|/home/gpic/.local/state/mars-titan/dgx-titans-us-v31/v2/semillas-42,43,44/todos-10cd0c47|/home/gonzalo/.local/state/mars-titan/campaign-a-v2-views-v31-20261013/views/US|configs/experiments/dgx-us-campaign-v2.json|4 --seed 42 --origin 2016 --no-preflight
 limpia|/home/gpic/.local/state/mars-titan/dgx-titans-us-v31/v2/semillas-42,43,44/todos-10cd0c47/packed-inputs/2016
+prepara|/home/gpic/TITANS-IA/MARS-TITAN-conjunta-5fee626c|/home/gpic/.local/state/mars-titan/dgx-titans-us-cn-v31/v1/semillas-42,43,44/todos-5fee626c|configs/titans/dgx-us-core-v1.json|2016
 /home/gpic/TITANS-IA/MARS-TITAN-conjunta-5fee626c|/home/gpic/.local/state/mars-titan/dgx-titans-us-cn-v31/v1/semillas-42,43,44/todos-5fee626c|/home/gonzalo/.local/state/mars-titan/campaign-a-v2-views-v31-20261013/views/US+CN|configs/experiments/dgx-us-cn-campaign-v1.json|4 --seed 42 --origin 2016 --no-preflight --tier core --tier cognitive --tier controls
 limpia|/home/gpic/.local/state/mars-titan/dgx-titans-us-cn-v31/v1/semillas-42,43,44/todos-5fee626c/packed-inputs/2016
 #
 # Bloque 4, origen 2023: semillas 43 y 44 del núcleo, sus lectores y sus controles. Las variantes que promueva la criba
 # (media del IC de rangos de validación ≥ +0,003 sobre su control en 2013–2016) se añaden delante de este bloque.
+prepara|/home/gpic/TITANS-IA/MARS-TITAN-campana-10cd0c47|/home/gpic/.local/state/mars-titan/dgx-titans-us-v31/v2/semillas-42,43,44/todos-10cd0c47|configs/titans/dgx-us-core-v1.json|2023
 /home/gpic/TITANS-IA/MARS-TITAN-campana-10cd0c47|/home/gpic/.local/state/mars-titan/dgx-titans-us-v31/v2/semillas-42,43,44/todos-10cd0c47|/home/gonzalo/.local/state/mars-titan/campaign-a-v2-views-v31-20261013/views/US|configs/experiments/dgx-us-campaign-v2.json|4 --seed 43 --seed 44 --origin 2023 --no-preflight --tier core --tier controls
 limpia|/home/gpic/.local/state/mars-titan/dgx-titans-us-v31/v2/semillas-42,43,44/todos-10cd0c47/packed-inputs/2023
+prepara|/home/gpic/TITANS-IA/MARS-TITAN-conjunta-5fee626c|/home/gpic/.local/state/mars-titan/dgx-titans-us-cn-v31/v1/semillas-42,43,44/todos-5fee626c|configs/titans/dgx-us-core-v1.json|2023
 /home/gpic/TITANS-IA/MARS-TITAN-conjunta-5fee626c|/home/gpic/.local/state/mars-titan/dgx-titans-us-cn-v31/v1/semillas-42,43,44/todos-5fee626c|/home/gonzalo/.local/state/mars-titan/campaign-a-v2-views-v31-20261013/views/US+CN|configs/experiments/dgx-us-cn-campaign-v1.json|4 --seed 43 --seed 44 --origin 2023 --no-preflight --tier core --tier controls
 limpia|/home/gpic/.local/state/mars-titan/dgx-titans-us-cn-v31/v1/semillas-42,43,44/todos-5fee626c/packed-inputs/2023
 #
 # Bloque 5, solo si queda plazo: origen 2022; refinamientos, puentes y redes aplazados; orígenes 2021 a 2017.
+prepara|/home/gpic/TITANS-IA/MARS-TITAN-campana-10cd0c47|/home/gpic/.local/state/mars-titan/dgx-titans-us-v31/v2/semillas-42,43,44/todos-10cd0c47|configs/titans/dgx-us-core-v1.json|2022
 /home/gpic/TITANS-IA/MARS-TITAN-campana-10cd0c47|/home/gpic/.local/state/mars-titan/dgx-titans-us-v31/v2/semillas-42,43,44/todos-10cd0c47|/home/gonzalo/.local/state/mars-titan/campaign-a-v2-views-v31-20261013/views/US|configs/experiments/dgx-us-campaign-v2.json|4 --seed 42 --origin 2022 --no-preflight --tier core --tier cognitive --tier controls --tier networks
 limpia|/home/gpic/.local/state/mars-titan/dgx-titans-us-v31/v2/semillas-42,43,44/todos-10cd0c47/packed-inputs/2022
+prepara|/home/gpic/TITANS-IA/MARS-TITAN-conjunta-5fee626c|/home/gpic/.local/state/mars-titan/dgx-titans-us-cn-v31/v1/semillas-42,43,44/todos-5fee626c|configs/titans/dgx-us-core-v1.json|2022
 /home/gpic/TITANS-IA/MARS-TITAN-conjunta-5fee626c|/home/gpic/.local/state/mars-titan/dgx-titans-us-cn-v31/v1/semillas-42,43,44/todos-5fee626c|/home/gonzalo/.local/state/mars-titan/campaign-a-v2-views-v31-20261013/views/US+CN|configs/experiments/dgx-us-cn-campaign-v1.json|4 --seed 42 --origin 2022 --no-preflight --tier core --tier cognitive --tier controls
 /home/gpic/TITANS-IA/MARS-TITAN-conjunta-5fee626c|/home/gpic/.local/state/mars-titan/dgx-titans-us-cn-v31/v1/semillas-42,43,44/todos-5fee626c|/home/gonzalo/.local/state/mars-titan/campaign-a-v2-views-v31-20261013/views/US+CN|configs/experiments/dgx-us-cn-campaign-v1.json|3 --seed 42 --origin 2022 --no-preflight --tier networks
 limpia|/home/gpic/.local/state/mars-titan/dgx-titans-us-cn-v31/v1/semillas-42,43,44/todos-5fee626c/packed-inputs/2022
+prepara|/home/gpic/TITANS-IA/MARS-TITAN-campana-10cd0c47|/home/gpic/.local/state/mars-titan/dgx-titans-us-v31/v2/semillas-42,43,44/todos-10cd0c47|configs/titans/dgx-us-core-v1.json|2023
 /home/gpic/TITANS-IA/MARS-TITAN-campana-10cd0c47|/home/gpic/.local/state/mars-titan/dgx-titans-us-v31/v2/semillas-42,43,44/todos-10cd0c47|/home/gonzalo/.local/state/mars-titan/campaign-a-v2-views-v31-20261013/views/US|configs/experiments/dgx-us-campaign-v2.json|4 --seed 42 --origin 2023 --no-preflight --tier refinements --tier bridge
 limpia|/home/gpic/.local/state/mars-titan/dgx-titans-us-v31/v2/semillas-42,43,44/todos-10cd0c47/packed-inputs/2023
+prepara|/home/gpic/TITANS-IA/MARS-TITAN-conjunta-5fee626c|/home/gpic/.local/state/mars-titan/dgx-titans-us-cn-v31/v1/semillas-42,43,44/todos-5fee626c|configs/titans/dgx-us-core-v1.json|2023
 /home/gpic/TITANS-IA/MARS-TITAN-conjunta-5fee626c|/home/gpic/.local/state/mars-titan/dgx-titans-us-cn-v31/v1/semillas-42,43,44/todos-5fee626c|/home/gonzalo/.local/state/mars-titan/campaign-a-v2-views-v31-20261013/views/US+CN|configs/experiments/dgx-us-cn-campaign-v1.json|4 --seed 42 --origin 2023 --no-preflight --tier refinements --tier bridge
 limpia|/home/gpic/.local/state/mars-titan/dgx-titans-us-cn-v31/v1/semillas-42,43,44/todos-5fee626c/packed-inputs/2023
+prepara|/home/gpic/TITANS-IA/MARS-TITAN-conjunta-5fee626c|/home/gpic/.local/state/mars-titan/dgx-titans-us-cn-v31/v1/semillas-42,43,44/todos-5fee626c|configs/titans/dgx-us-core-v1.json|2014
 /home/gpic/TITANS-IA/MARS-TITAN-conjunta-5fee626c|/home/gpic/.local/state/mars-titan/dgx-titans-us-cn-v31/v1/semillas-42,43,44/todos-5fee626c|/home/gonzalo/.local/state/mars-titan/campaign-a-v2-views-v31-20261013/views/US+CN|configs/experiments/dgx-us-cn-campaign-v1.json|4 --seed 42 --origin 2014 --no-preflight --tier refinements --tier bridge
 /home/gpic/TITANS-IA/MARS-TITAN-conjunta-5fee626c|/home/gpic/.local/state/mars-titan/dgx-titans-us-cn-v31/v1/semillas-42,43,44/todos-5fee626c|/home/gonzalo/.local/state/mars-titan/campaign-a-v2-views-v31-20261013/views/US+CN|configs/experiments/dgx-us-cn-campaign-v1.json|3 --seed 42 --origin 2014 --no-preflight --tier networks
 limpia|/home/gpic/.local/state/mars-titan/dgx-titans-us-cn-v31/v1/semillas-42,43,44/todos-5fee626c/packed-inputs/2014
+prepara|/home/gpic/TITANS-IA/MARS-TITAN-conjunta-5fee626c|/home/gpic/.local/state/mars-titan/dgx-titans-us-cn-v31/v1/semillas-42,43,44/todos-5fee626c|configs/titans/dgx-us-core-v1.json|2015
 /home/gpic/TITANS-IA/MARS-TITAN-conjunta-5fee626c|/home/gpic/.local/state/mars-titan/dgx-titans-us-cn-v31/v1/semillas-42,43,44/todos-5fee626c|/home/gonzalo/.local/state/mars-titan/campaign-a-v2-views-v31-20261013/views/US+CN|configs/experiments/dgx-us-cn-campaign-v1.json|4 --seed 42 --origin 2015 --no-preflight --tier refinements --tier bridge
 /home/gpic/TITANS-IA/MARS-TITAN-conjunta-5fee626c|/home/gpic/.local/state/mars-titan/dgx-titans-us-cn-v31/v1/semillas-42,43,44/todos-5fee626c|/home/gonzalo/.local/state/mars-titan/campaign-a-v2-views-v31-20261013/views/US+CN|configs/experiments/dgx-us-cn-campaign-v1.json|3 --seed 42 --origin 2015 --no-preflight --tier networks
 limpia|/home/gpic/.local/state/mars-titan/dgx-titans-us-cn-v31/v1/semillas-42,43,44/todos-5fee626c/packed-inputs/2015
+prepara|/home/gpic/TITANS-IA/MARS-TITAN-conjunta-5fee626c|/home/gpic/.local/state/mars-titan/dgx-titans-us-cn-v31/v1/semillas-42,43,44/todos-5fee626c|configs/titans/dgx-us-core-v1.json|2016
 /home/gpic/TITANS-IA/MARS-TITAN-conjunta-5fee626c|/home/gpic/.local/state/mars-titan/dgx-titans-us-cn-v31/v1/semillas-42,43,44/todos-5fee626c|/home/gonzalo/.local/state/mars-titan/campaign-a-v2-views-v31-20261013/views/US+CN|configs/experiments/dgx-us-cn-campaign-v1.json|4 --seed 42 --origin 2016 --no-preflight --tier refinements --tier bridge
 /home/gpic/TITANS-IA/MARS-TITAN-conjunta-5fee626c|/home/gpic/.local/state/mars-titan/dgx-titans-us-cn-v31/v1/semillas-42,43,44/todos-5fee626c|/home/gonzalo/.local/state/mars-titan/campaign-a-v2-views-v31-20261013/views/US+CN|configs/experiments/dgx-us-cn-campaign-v1.json|3 --seed 42 --origin 2016 --no-preflight --tier networks
 limpia|/home/gpic/.local/state/mars-titan/dgx-titans-us-cn-v31/v1/semillas-42,43,44/todos-5fee626c/packed-inputs/2016
+prepara|/home/gpic/TITANS-IA/MARS-TITAN-campana-10cd0c47|/home/gpic/.local/state/mars-titan/dgx-titans-us-v31/v2/semillas-42,43,44/todos-10cd0c47|configs/titans/dgx-us-core-v1.json|2021
 /home/gpic/TITANS-IA/MARS-TITAN-campana-10cd0c47|/home/gpic/.local/state/mars-titan/dgx-titans-us-v31/v2/semillas-42,43,44/todos-10cd0c47|/home/gonzalo/.local/state/mars-titan/campaign-a-v2-views-v31-20261013/views/US|configs/experiments/dgx-us-campaign-v2.json|4 --seed 42 --origin 2021 --no-preflight --tier core --tier cognitive --tier controls --tier networks
 limpia|/home/gpic/.local/state/mars-titan/dgx-titans-us-v31/v2/semillas-42,43,44/todos-10cd0c47/packed-inputs/2021
+prepara|/home/gpic/TITANS-IA/MARS-TITAN-conjunta-5fee626c|/home/gpic/.local/state/mars-titan/dgx-titans-us-cn-v31/v1/semillas-42,43,44/todos-5fee626c|configs/titans/dgx-us-core-v1.json|2021
 /home/gpic/TITANS-IA/MARS-TITAN-conjunta-5fee626c|/home/gpic/.local/state/mars-titan/dgx-titans-us-cn-v31/v1/semillas-42,43,44/todos-5fee626c|/home/gonzalo/.local/state/mars-titan/campaign-a-v2-views-v31-20261013/views/US+CN|configs/experiments/dgx-us-cn-campaign-v1.json|4 --seed 42 --origin 2021 --no-preflight --tier core --tier cognitive --tier controls
 /home/gpic/TITANS-IA/MARS-TITAN-conjunta-5fee626c|/home/gpic/.local/state/mars-titan/dgx-titans-us-cn-v31/v1/semillas-42,43,44/todos-5fee626c|/home/gonzalo/.local/state/mars-titan/campaign-a-v2-views-v31-20261013/views/US+CN|configs/experiments/dgx-us-cn-campaign-v1.json|3 --seed 42 --origin 2021 --no-preflight --tier networks
 limpia|/home/gpic/.local/state/mars-titan/dgx-titans-us-cn-v31/v1/semillas-42,43,44/todos-5fee626c/packed-inputs/2021
+prepara|/home/gpic/TITANS-IA/MARS-TITAN-campana-10cd0c47|/home/gpic/.local/state/mars-titan/dgx-titans-us-v31/v2/semillas-42,43,44/todos-10cd0c47|configs/titans/dgx-us-core-v1.json|2020
 /home/gpic/TITANS-IA/MARS-TITAN-campana-10cd0c47|/home/gpic/.local/state/mars-titan/dgx-titans-us-v31/v2/semillas-42,43,44/todos-10cd0c47|/home/gonzalo/.local/state/mars-titan/campaign-a-v2-views-v31-20261013/views/US|configs/experiments/dgx-us-campaign-v2.json|4 --seed 42 --origin 2020 --no-preflight --tier core --tier cognitive --tier controls --tier networks
 limpia|/home/gpic/.local/state/mars-titan/dgx-titans-us-v31/v2/semillas-42,43,44/todos-10cd0c47/packed-inputs/2020
+prepara|/home/gpic/TITANS-IA/MARS-TITAN-conjunta-5fee626c|/home/gpic/.local/state/mars-titan/dgx-titans-us-cn-v31/v1/semillas-42,43,44/todos-5fee626c|configs/titans/dgx-us-core-v1.json|2020
 /home/gpic/TITANS-IA/MARS-TITAN-conjunta-5fee626c|/home/gpic/.local/state/mars-titan/dgx-titans-us-cn-v31/v1/semillas-42,43,44/todos-5fee626c|/home/gonzalo/.local/state/mars-titan/campaign-a-v2-views-v31-20261013/views/US+CN|configs/experiments/dgx-us-cn-campaign-v1.json|4 --seed 42 --origin 2020 --no-preflight --tier core --tier cognitive --tier controls
 /home/gpic/TITANS-IA/MARS-TITAN-conjunta-5fee626c|/home/gpic/.local/state/mars-titan/dgx-titans-us-cn-v31/v1/semillas-42,43,44/todos-5fee626c|/home/gonzalo/.local/state/mars-titan/campaign-a-v2-views-v31-20261013/views/US+CN|configs/experiments/dgx-us-cn-campaign-v1.json|3 --seed 42 --origin 2020 --no-preflight --tier networks
 limpia|/home/gpic/.local/state/mars-titan/dgx-titans-us-cn-v31/v1/semillas-42,43,44/todos-5fee626c/packed-inputs/2020
+prepara|/home/gpic/TITANS-IA/MARS-TITAN-campana-10cd0c47|/home/gpic/.local/state/mars-titan/dgx-titans-us-v31/v2/semillas-42,43,44/todos-10cd0c47|configs/titans/dgx-us-core-v1.json|2019
 /home/gpic/TITANS-IA/MARS-TITAN-campana-10cd0c47|/home/gpic/.local/state/mars-titan/dgx-titans-us-v31/v2/semillas-42,43,44/todos-10cd0c47|/home/gonzalo/.local/state/mars-titan/campaign-a-v2-views-v31-20261013/views/US|configs/experiments/dgx-us-campaign-v2.json|4 --seed 42 --origin 2019 --no-preflight --tier core --tier cognitive --tier controls --tier networks
 limpia|/home/gpic/.local/state/mars-titan/dgx-titans-us-v31/v2/semillas-42,43,44/todos-10cd0c47/packed-inputs/2019
+prepara|/home/gpic/TITANS-IA/MARS-TITAN-conjunta-5fee626c|/home/gpic/.local/state/mars-titan/dgx-titans-us-cn-v31/v1/semillas-42,43,44/todos-5fee626c|configs/titans/dgx-us-core-v1.json|2019
 /home/gpic/TITANS-IA/MARS-TITAN-conjunta-5fee626c|/home/gpic/.local/state/mars-titan/dgx-titans-us-cn-v31/v1/semillas-42,43,44/todos-5fee626c|/home/gonzalo/.local/state/mars-titan/campaign-a-v2-views-v31-20261013/views/US+CN|configs/experiments/dgx-us-cn-campaign-v1.json|4 --seed 42 --origin 2019 --no-preflight --tier core --tier cognitive --tier controls
 /home/gpic/TITANS-IA/MARS-TITAN-conjunta-5fee626c|/home/gpic/.local/state/mars-titan/dgx-titans-us-cn-v31/v1/semillas-42,43,44/todos-5fee626c|/home/gonzalo/.local/state/mars-titan/campaign-a-v2-views-v31-20261013/views/US+CN|configs/experiments/dgx-us-cn-campaign-v1.json|3 --seed 42 --origin 2019 --no-preflight --tier networks
 limpia|/home/gpic/.local/state/mars-titan/dgx-titans-us-cn-v31/v1/semillas-42,43,44/todos-5fee626c/packed-inputs/2019
+prepara|/home/gpic/TITANS-IA/MARS-TITAN-campana-10cd0c47|/home/gpic/.local/state/mars-titan/dgx-titans-us-v31/v2/semillas-42,43,44/todos-10cd0c47|configs/titans/dgx-us-core-v1.json|2018
 /home/gpic/TITANS-IA/MARS-TITAN-campana-10cd0c47|/home/gpic/.local/state/mars-titan/dgx-titans-us-v31/v2/semillas-42,43,44/todos-10cd0c47|/home/gonzalo/.local/state/mars-titan/campaign-a-v2-views-v31-20261013/views/US|configs/experiments/dgx-us-campaign-v2.json|4 --seed 42 --origin 2018 --no-preflight --tier core --tier cognitive --tier controls --tier networks
 limpia|/home/gpic/.local/state/mars-titan/dgx-titans-us-v31/v2/semillas-42,43,44/todos-10cd0c47/packed-inputs/2018
+prepara|/home/gpic/TITANS-IA/MARS-TITAN-conjunta-5fee626c|/home/gpic/.local/state/mars-titan/dgx-titans-us-cn-v31/v1/semillas-42,43,44/todos-5fee626c|configs/titans/dgx-us-core-v1.json|2018
 /home/gpic/TITANS-IA/MARS-TITAN-conjunta-5fee626c|/home/gpic/.local/state/mars-titan/dgx-titans-us-cn-v31/v1/semillas-42,43,44/todos-5fee626c|/home/gonzalo/.local/state/mars-titan/campaign-a-v2-views-v31-20261013/views/US+CN|configs/experiments/dgx-us-cn-campaign-v1.json|4 --seed 42 --origin 2018 --no-preflight --tier core --tier cognitive --tier controls
 /home/gpic/TITANS-IA/MARS-TITAN-conjunta-5fee626c|/home/gpic/.local/state/mars-titan/dgx-titans-us-cn-v31/v1/semillas-42,43,44/todos-5fee626c|/home/gonzalo/.local/state/mars-titan/campaign-a-v2-views-v31-20261013/views/US+CN|configs/experiments/dgx-us-cn-campaign-v1.json|3 --seed 42 --origin 2018 --no-preflight --tier networks
 limpia|/home/gpic/.local/state/mars-titan/dgx-titans-us-cn-v31/v1/semillas-42,43,44/todos-5fee626c/packed-inputs/2018
+prepara|/home/gpic/TITANS-IA/MARS-TITAN-campana-10cd0c47|/home/gpic/.local/state/mars-titan/dgx-titans-us-v31/v2/semillas-42,43,44/todos-10cd0c47|configs/titans/dgx-us-core-v1.json|2017
 /home/gpic/TITANS-IA/MARS-TITAN-campana-10cd0c47|/home/gpic/.local/state/mars-titan/dgx-titans-us-v31/v2/semillas-42,43,44/todos-10cd0c47|/home/gonzalo/.local/state/mars-titan/campaign-a-v2-views-v31-20261013/views/US|configs/experiments/dgx-us-campaign-v2.json|4 --seed 42 --origin 2017 --no-preflight --tier core --tier cognitive --tier controls --tier networks
 limpia|/home/gpic/.local/state/mars-titan/dgx-titans-us-v31/v2/semillas-42,43,44/todos-10cd0c47/packed-inputs/2017
+prepara|/home/gpic/TITANS-IA/MARS-TITAN-conjunta-5fee626c|/home/gpic/.local/state/mars-titan/dgx-titans-us-cn-v31/v1/semillas-42,43,44/todos-5fee626c|configs/titans/dgx-us-core-v1.json|2017
 /home/gpic/TITANS-IA/MARS-TITAN-conjunta-5fee626c|/home/gpic/.local/state/mars-titan/dgx-titans-us-cn-v31/v1/semillas-42,43,44/todos-5fee626c|/home/gonzalo/.local/state/mars-titan/campaign-a-v2-views-v31-20261013/views/US+CN|configs/experiments/dgx-us-cn-campaign-v1.json|4 --seed 42 --origin 2017 --no-preflight --tier core --tier cognitive --tier controls
 /home/gpic/TITANS-IA/MARS-TITAN-conjunta-5fee626c|/home/gpic/.local/state/mars-titan/dgx-titans-us-cn-v31/v1/semillas-42,43,44/todos-5fee626c|/home/gonzalo/.local/state/mars-titan/campaign-a-v2-views-v31-20261013/views/US+CN|configs/experiments/dgx-us-cn-campaign-v1.json|3 --seed 42 --origin 2017 --no-preflight --tier networks
 limpia|/home/gpic/.local/state/mars-titan/dgx-titans-us-cn-v31/v1/semillas-42,43,44/todos-5fee626c/packed-inputs/2017

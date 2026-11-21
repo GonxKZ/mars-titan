@@ -610,7 +610,10 @@ con cuatro trabajos de EE. UU. en marcha provocaba intercambio a disco.
 una con la copia fija de su commit autorizado: las dos campañas se alternan en lugar de competir
 por la GPU, la memoria unificada y la caché de página de sus orígenes. El avance se guarda junto
 al plan, que se puede ampliar por el final. Una línea `limpia|<estado>/packed-inputs/<año>`
-retira las copias empaquetadas de un origen cuando sus fases terminan. La guardia de producción
+retira las copias empaquetadas de un origen cuando sus fases terminan, y una línea
+`prepara|<copia fija>|<estado>|<receta>|<año>` las construye antes de su primera fase con un solo
+proceso (`scripts/dgx_prepare_inputs.py origin --archive` de la copia fija, con las rutas de
+índices, copias y huellas que usa la cola de ese estado). La guardia de producción
 ya no para el relevo: crea un archivo de pausa, los trabajos paran en su siguiente barrera y, con
 diez lecturas seguidas de memoria y disco recuperados, la pausa se retira y la fase se repite
 desde sus checkpoints. Una fase que falla nada más arrancar detiene el relevo sin consumir el
@@ -676,7 +679,15 @@ su punto guardado, con la copia ya hecha, vuelven a 2,5–3 GiB. Con tres redes 
 (35,4 GiB), así que sus redes van en una fase propia con 3 trabajadores, después de los demás
 niveles con 4; en 2014–2016 quedan para el bloque 5. Cuesta unas 2 horas en 2013 y unas 9 en
 2023, y se puede relajar cuando el monitor, que ahora muestrea también la unidad del relevo,
-tenga la GPU real de esas redes. La guardia guarda además una lectura por minuto de memoria
+tenga la GPU real de esas redes.
+
+Los 6 GiB por trabajo del primer arranque crecen con las filas del origen: quien construye la
+copia llegó a 9,2 GiB y los tres que esperaban a 6, con 6,08 millones de filas. Con los 16,2
+millones de la conjunta de 2023 y cuatro trabajos, la suma rondaría el tope de 72 GiB del grupo.
+Por eso el plan prepara las copias de cada origen antes de su primera fase: un solo proceso las
+construye, los trabajos las encuentran hechas y arrancan con 2,5–3 GiB. La preparación se
+comprobó en seco con la vista conjunta de 2013: reutiliza los mismos índices que los trabajos
+(`indices/4429006f47ecff46`) sin crear ninguno. La guardia guarda además una lectura por minuto de memoria
 disponible, disco libre y presión de memoria de producción (`guardia/historia.log`).
 
 **Modalidades por mercado.** Presencia medida en las muestras codificadas de la edición v3.1

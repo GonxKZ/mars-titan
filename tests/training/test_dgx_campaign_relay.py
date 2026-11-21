@@ -244,3 +244,112 @@ def test_a_cleaning_line_refuses_any_other_folder(tmp_path, target):
     assert done.returncode == 2 and "mal escrita" in done.stdout
     assert (kept / "a.bin").exists() and (tmp_path / "estado/runs/resultado.json").exists()
     assert not Path(f"{plan}.hecho").exists()
+
+
+PREPARER = """#!/usr/bin/env bash
+# Intérprete sustituto: anota la orden de preparación y las rutas que recibe por el entorno.
+trap 'echo parada >> llamadas.txt; exit 143' TERM
+rutas="$MARS_TITAN_SHARED_INDICES | $MARS_TITAN_TRAIN_ARCHIVE | $MARS_TITAN_DIGEST_CACHE"
+echo "$* | $rutas | $PYTHONPATH" >> llamadas.txt
+conducta="$(cat conducta 2>/dev/null || echo bien)"
+case "$conducta" in
+  bien) exit 0 ;;
+  rota) exit 1 ;;
+  larga)
+    for _ in $(seq 1 300); do sleep 0.1 & wait $!; [ -e termina ] && exit 0; done
+    exit 0 ;;
+esac
+"""
+
+
+def preparer(tmp_path, folder):
+    """Copia con el preparador de entradas y un intérprete sustituto que anota su llamada."""
+    (folder / "scripts/dgx_prepare_inputs.py").write_text("")
+    interpreter = tmp_path / "python-sustituto"
+    interpreter.write_text(PREPARER)
+    interpreter.chmod(0o755)
+    return dict(MARS_TITAN_DGX_PYTHON=str(interpreter), PYTHONPATH="")
+
+
+def test_a_preparation_line_builds_the_inputs_of_one_origin_before_its_phase(tmp_path):
+    folder = copy(tmp_path, "us")
+    plan = tmp_path / "plan.txt"
+    plan.write_text(
+        f"prepara|{folder}|{folder}/estado|configs/receta.json|2023\n"
+        + line(folder, "4 --origin 2023")
+        + "\n"
+    )
+    done = run(tmp_path, plan, **preparer(tmp_path, folder))
+    assert done.returncode == 0 and "plan terminado tras 2 fases" in done.stdout
+    state = f"{folder}/estado"
+    # Un solo proceso, con las rutas de índices, copias y huellas que usa la cola de ese estado.
+    assert calls(folder) == [
+        f"scripts/dgx_prepare_inputs.py origin --view {state}/cohorts/2023/manifest.json "
+        f"--fold fold-018 --recipe configs/receta.json --archive | {state}/indices | "
+        f"{state}/packed-inputs/2023 | {state}/file-digests.json | {folder}/src",
+        f"run --machine mars_titan --declaration declaracion.json --state {state} "
+        f"--views {folder}/vistas --workers 4 --origin 2023",
+    ]
+    assert Path(f"{plan}.hecho").read_text().strip() == "2"
+
+
+def test_a_preparation_that_fails_at_once_stops_the_relay_and_a_late_failure_does_not(tmp_path):
+    folder = copy(tmp_path, "us", "rota")
+    plan = tmp_path / "plan.txt"
+    plan.write_text(f"prepara|{folder}|{folder}/estado|configs/receta.json|2013\n")
+    settings = preparer(tmp_path, folder)
+    done = run(tmp_path, plan, **settings)
+    assert done.returncode == 1 and "falló al arrancar" in done.stdout
+    assert not Path(f"{plan}.hecho").exists()
+    # Pasado el margen de arranque se anota: la fase siguiente construye lo que falte.
+    late = run(tmp_path, plan, MARS_TITAN_RELAY_MIN_SECONDS="0", **settings)
+    assert late.returncode == 0 and "se anota y el plan sigue" in late.stdout
+    assert Path(f"{plan}.hecho").read_text().strip() == "1"
+
+
+@pytest.mark.parametrize(
+    "text",
+    [
+        "prepara|{copia}|{copia}/estado|configs/receta.json|23",
+        "prepara|{copia}|{copia}/estado|configs/receta.json|2004",
+        "prepara|{copia}|{copia}/estado|configs/receta.json|2013|otra",
+        "prepara|{copia}|{copia}/estado||2013",
+        "prepara|{copia}||configs/receta.json|2013",
+        "prepara|{copia}/no-existe|{copia}/estado|configs/receta.json|2013",
+        "prepara|{copia}|{copia}/estado|configs/receta.json",
+    ],
+)
+def test_a_badly_written_preparation_stops_the_relay(tmp_path, text):
+    folder = copy(tmp_path, "copia")
+    plan = tmp_path / "plan.txt"
+    plan.write_text(text.format(copia=folder) + "\n")
+    done = run(tmp_path, plan, **preparer(tmp_path, folder))
+    assert done.returncode == 2 and "mal escrita" in done.stdout
+    assert calls(folder) == [] and not Path(f"{plan}.hecho").exists()
+
+
+def test_the_pause_stops_a_preparation_and_repeats_it_when_lifted(tmp_path):
+    folder = copy(tmp_path, "larga", "larga")
+    plan = tmp_path / "plan.txt"
+    plan.write_text(f"prepara|{folder}|{folder}/estado|configs/receta.json|2013\n")
+    pause = tmp_path / "relevo/pausa"
+    process = subprocess.Popen(
+        ["bash", str(RELAY), str(plan)],
+        stdout=subprocess.PIPE,
+        text=True,
+        env=environment(tmp_path, **preparer(tmp_path, folder)),
+    )
+    try:
+        assert wait_for(lambda: len(calls(folder)) == 1)
+        pause.touch()
+        assert wait_for(lambda: "parada" in calls(folder))
+        time.sleep(0.5)
+        assert not Path(f"{plan}.hecho").exists() and len(calls(folder)) == 2
+        pause.unlink()
+        assert wait_for(lambda: len(calls(folder)) == 3)
+        (folder / "termina").touch()
+        assert process.wait(timeout=30) == 0
+    finally:
+        process.kill()
+    assert "plan terminado tras 1 fases" in process.stdout.read()
+    assert Path(f"{plan}.hecho").read_text().strip() == "1"
