@@ -217,3 +217,68 @@ def test_a_failure_leaves_the_plan_untouched_and_recorded(campaign, tmp_path):
 )
 def test_the_phase_forms_are_the_ones_the_relay_accepts(line, accepted):
     assert promotion.valid(line) is accepted
+
+
+def test_another_group_of_tiers_is_assessed_with_its_own_prefix():
+    models = dict(
+        base=dict(tier="core"),
+        congelada=dict(tier="controls"),
+        base_rama=dict(tier="r3_branch"),
+        congelada_rama=dict(tier="r3_branch"),
+        lector_rama=dict(tier="r3_branch_more"),
+        v_buena=dict(tier="v_buena"),
+    )
+    controls = dict(
+        base_rama="base", congelada_rama="congelada", lector_rama="base", v_buena="base"
+    )
+    rows = dict(
+        base_rama=(0.012, 4.0),
+        congelada_rama=(0.001, 0.4),
+        lector_rama=(0.002, 0.9),
+        v_buena=(0.010, 3.5),
+    )
+    contrasts = [
+        dict(
+            model=name,
+            control=controls[name],
+            decision=dict(mean=mean, t=t),
+            evaluation=dict(mean=mean, t=t),
+        )
+        for name, (mean, t) in rows.items()
+    ]
+    report = dict(models=models, contrasts=contrasts)
+    options = dict(keep=12, gain=0.003, t_value=2.0)
+    decision = promotion.decide(report, controls, [], prefixes=("r3_",), **options)
+    # Solo se valoran los niveles del prefijo; basta un modelo que gane para promover su nivel.
+    assert decision["assessed_tiers"] == ["r3_branch", "r3_branch_more"]
+    assert decision["promoted_models"] == ["base_rama"] and decision["promoted_tiers"] == [
+        "r3_branch"
+    ]
+    assert promotion.decide(report, controls, [], **options)["promoted_tiers"] == ["v_buena"]
+    one = "/copia|/estado/us|/vistas|d.json|"
+    lines = [
+        f"{one}4 --seed 42 --origin 2013 --no-preflight --tier core --tier r3_branch",
+        "orden|/herramientas/promocion|--state /estado/us",
+        f"{one}4 --seed 42 --origin 2014 --no-preflight --tier core --tier controls --tier v_buena",
+        f"{one}3 --seed 42 --origin 2014 --no-preflight --tier networks",
+    ]
+    edited, changes = promotion.edit_plan(lines, 2, decision, {}, {"/estado/us": {2014}}, ("r3_",))
+    assert edited[2].endswith("--tier core --tier controls --tier v_buena --tier r3_branch")
+    assert edited[:2] == lines[:2] and edited[3] == lines[3]
+    assert changes == [
+        dict(phase=3, state="/estado/us", origin=2014, removed=[], added=["r3_branch"])
+    ]
+    # La poda con ese prefijo deja el nivel mejor valorado y no toca las variantes de la criba.
+    best = promotion.decide(
+        report, controls, [], prefixes=("r3_",), keep=1, gain=0.003, t_value=2.0
+    )
+    assert best["kept_tiers"] == ["r3_branch"]
+    pruned, _ = promotion.edit_plan(
+        [lines[0], lines[1], lines[2] + " --tier r3_branch_more"],
+        2,
+        best,
+        {"/estado/us": {2014}},
+        {},
+        ("r3_",),
+    )
+    assert pruned[2].endswith("--tier core --tier controls --tier v_buena")
