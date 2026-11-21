@@ -6,7 +6,9 @@
 # orden|<ejecutable>|<argumentos> escribe un informe, promueve la criba o lanza la referencia tabular de un origen.
 #
 # Cuatro campañas: EE. UU. v3 y conjunta v2, sin rasgos técnicos (commit 5dd2b3f3), y EE. UU. v7 y conjunta v6 (commit
-# 7f3ffe16), con los 46 rasgos long_horizon_v2 y, como variante de un solo cambio, la rama de rasgos técnicos. La
+# f37cf055), con los 46 rasgos long_horizon_v2 sobre la receta con una actualización del optimizador cada 2 instantes de
+# decisión (antes 8: el núcleo alcanza en una época lo que necesitaba cinco) y, como variantes de un solo cambio, la
+# rama de rasgos técnicos y los controles de esa cadencia (niveles r3_). La
 # etiqueta resta el alfa de las 252 sesiones anteriores, que se conoce al predecir: -alfa solo tiene un IC de 0,081 en la
 # evaluación de 2013, el mejor modelo sin rasgos 0,053 y un modelo de árboles con los rasgos 0,112. Los modelos con
 # rasgos son los candidatos finales y van primero, con todas las experimentaciones previstas: criba de las 31 variantes,
