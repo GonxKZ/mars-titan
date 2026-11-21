@@ -34,7 +34,7 @@ from mars_titan.learning_traces.hooks import observing, traced_update
 from mars_titan.memory import training_event_cache
 from mars_titan.memory.mature_reliability import ReliabilitySignal
 from mars_titan.models.predictive_adaptation import is_adapter_name
-from mars_titan.models.quantile_head import PINBALL, QUANTILE_HEAD, pinball_loss
+from mars_titan.models.quantile_head import PINBALL, QUANTILE_HEAD, median, pinball_loss
 from mars_titan.models.titans.auxiliary_horizons import auxiliary_errors
 from mars_titan.models.titans.axial_time_region import join_history_rows, map_history_rows
 from mars_titan.models.titans.config import MAX_BLOCK_ROWS, canonical
@@ -49,6 +49,7 @@ from mars_titan.models.titans.frozen_financial import (
     _numerics,
     declared_sources,
 )
+from mars_titan.models.titans.session_ic_objective import parse_session_ic_term
 from mars_titan.models.titans.state import (
     deferred_checks,
     join_mac_rows,
@@ -179,6 +180,9 @@ class ChronologicalRecipe:
     # modo determinista de PyTorch y de cuDNN al construir el recorrido y entra en su
     # identidad (#794).
     determinism: str | None = None
+    # None ajusta con la pérdida declarada. Un objeto le suma el IC por sesión del punto
+    # emitido, con su peso y signo contrario (`session_ic_term_v1`), sin cambiar la cabeza.
+    session_ic_term: dict | None = None
 
     def __post_init__(self):
         # Los controles puntuales conservan la cabeza y validan los mismos hiperparámetros.
@@ -219,7 +223,15 @@ class ChronologicalRecipe:
             )
         if not valid_determinism(self.determinism):
             raise ValueError("El determinismo de la receta es None o una política admitida")
+        if self.session_ic() is not None and self.distillation_weight is not None:
+            raise ValueError("El término de IC por sesión no se combina con la destilación")
         self.weight_options()
+
+    def session_ic(self):
+        """Término de IC por sesión de la receta, o None si no lo declara."""
+        if self.session_ic_term is not None and type(self.session_ic_term) is not dict:
+            raise ValueError("session_ic_term debe declarar weight y minimum_rows, o ser None")
+        return parse_session_ic_term(self.session_ic_term)
 
     def weight_options(self):
         """Configuraciones de F2 y F3 sobre los pesos del ajuste, o None si no se declaran."""
@@ -262,6 +274,12 @@ class ChronologicalRecipe:
             fields.pop("distillation_weight")
         else:
             fields["distillation_distance"] = distillation.DISTANCE
+        # El término de IC por sesión solo aparece si se declara, con su identidad.
+        term = self.session_ic()
+        if term is None:
+            fields.pop("session_ic_term")
+        else:
+            fields["session_ic_term"] = term.identity()
         # F2 y F3 solo aparecen si se declaran, con la identidad de su configuración.
         options = self.weight_options()
         for name, option in options.items():
@@ -536,6 +554,11 @@ class ChronologicalInference:
             recipe.loss != "mae" or recipe.distillation_weight is not None
         ):
             raise ValueError("El objetivo de salida sustituye la pérdida mae sin destilación")
+        # El término de IC por sesión se suma a la pérdida declarada de la cabeza, que un
+        # objetivo de salida ya sustituye por la suya.
+        self.session_ic = recipe.session_ic()
+        if self.session_ic is not None and self.objective is not None:
+            raise ValueError("El término de IC por sesión no se combina con un objetivo de salida")
         # F1 y A4 son otros objetivos de salida. Solo se distinguen para rechazar el
         # postentrenamiento, que todavía no tiene un contraste declarado para ellos.
         self.undeclared_posttraining = (
@@ -1156,7 +1179,13 @@ class ChronologicalTrainer(ChronologicalInference):
         if self.objective is not None:
             sessions = [(flow.split("/", 1)[0], at) for flow, at in keys]
             return self.objective.loss(prediction, target, sessions)
-        return self._loss(prediction, target)
+        loss = self._loss(prediction, target)
+        if self.session_ic is not None:
+            # El punto es el que se emite: la mediana con cuantiles o la salida escalar.
+            sessions = [(flow.split("/", 1)[0], at) for flow, at in keys]
+            point = median(prediction) if self.quantiles else prediction
+            loss = loss + self.session_ic.term(point, target, sessions)
+        return loss
 
     def _loss(self, prediction, target):
         """Pérdida anterior sin objetivo por sesión, con su interfaz de dos tensores."""
@@ -1218,8 +1247,11 @@ class ChronologicalTrainer(ChronologicalInference):
         }
         controlled = [flow for flows in run.penalties for flow in flows]
         order = list(dict.fromkeys([*(flow for flow, _, _ in run.used), *controlled]))
-        sessions = predictor.session_level or (
-            self.objective is not None and not self.objective.row_decomposable
+        sessions = (
+            predictor.session_level
+            or (self.objective is not None and not self.objective.row_decomposable)
+            # El término de IC por sesión necesita todas las etiquetas de cada sesión en un bloque.
+            or self.session_ic is not None
         )
         if sessions:
             # Las operaciones por sesión repiten cada instante entero, también las filas sin
