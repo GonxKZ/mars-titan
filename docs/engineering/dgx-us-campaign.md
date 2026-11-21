@@ -404,7 +404,7 @@ cuando hay datos, la entrada no limita.
 ## Campaña v2: selección por IC de rangos y numérica declarada (20 de noviembre de 2026)
 
 `configs/experiments/dgx-us-campaign-v2.json` sustituye a la v1, que se detuvo con 41 trabajos
-completados. La v1 queda como registro del brazo «selección por MAE»; su estado no se borra.
+completados. La v1 queda como registro de la variante «selección por MAE»; su estado no se borra.
 
 ### Por qué se detuvo la v1
 
@@ -617,19 +617,76 @@ desde sus checkpoints. Una fase que falla nada más arrancar detiene el relevo s
 plan. Tras un reinicio del equipo, `mars-titan-arranque.service` vuelve a crear MPS, la guardia,
 la afinidad y el relevo, que continúa por la fase que tocaba.
 
-El plan (`configs/experiments/phases/dgx-relay-plan-20261120.txt`), en orden de prioridad:
+El plan del día 20 alternaba la criba de EE. UU. y la conjunta en 2013–2016, seguía con los 22
+modelos principales de 2023 a 2017 y terminaba con las semillas 43 y 44 de 2021–2023: 692
+trabajos, con una estimación de unos 3 por hora. No llegó a anotar ninguna fase: la revisión del
+día 21 lo reordena con el coste ya medido.
 
-| Bloque | Campaña | Orígenes | Semillas | Modelos |
-| --- | --- | --- | --- | --- |
-| A | EE. UU. | 2013–2016 | 42 | los 53 (criba) |
-| B | conjunta | 2013–2016 | 42 | los 22 principales |
-| C | las dos | 2023 → 2017 | 42 | los 22 principales |
-| D | las dos | 2021–2023 | 43 y 44 | núcleo, sus lectores y sus controles |
+### Revisión del 21 de noviembre: coste medido, orden del plan, modalidades y disco
 
-A y B se alternan origen a origen. Las variantes que promueva la criba se añaden a C y D al
-analizar A y B. Son 692 trabajos; con unos 3 trabajos por hora en los orígenes pequeños y menos
-en los grandes, el plazo del 2 de diciembre puede cortar el final del plan, que por eso está
-ordenado por prioridad.
+**Coste medido.** Con los 20 primeros trabajos de EE. UU. terminados (origen 2013, semilla 42,
+cuatro en paralelo, todos al primer intento), un trabajo ocupa de media 1,8 horas de un
+trabajador, no la hora de `titans_mac`:
+
+| Nivel | Modelos y horas de cada uno | Horas de trabajador |
+| --- | --- | --- |
+| núcleo | `titans_mac` 1,25; `m0` 0,63; `m1` 8,30; `m2` 2,35; `m3` 2,54 | 15,1 |
+| cognitivos | `m3_k4` 2,15; puerta constante 2,02; cognitivo 2,01 | 6,2 |
+| controles | desactivado 0,70; congelado 0,92 | 1,6 |
+| redes entre activos | ocho modelos, de 0,70 a 1,58 | 8,9 |
+| refinamientos | `m3_k2` 2,09 | 2,1 |
+| puentes | anillo 2,59; completo y propio, en pausa tras 3,2 y 2,3 horas | unas 9 |
+
+`mars_titan_m1` es el caso aparte: 45,8 horas de CPU en 8,3 de reloj (cinco o seis núcleos
+ocupados de continuo), cuando `m2` y `m3` gastan 1,7. No se ha perfilado todavía; mientras
+tanto es el camino crítico de cada fase, porque empieza cuando termina el ajuste de su padre.
+
+El coste crece con las filas de ajuste del origen: 5,35 millones en 2013 y 13,78 en 2023 en
+EE. UU.; 6,08 y 16,20 en la conjunta. Con esa escala el plan del día 20 pedía unas 2.400 horas
+de trabajador y hasta el plazo caben unas 1.100 (281 horas de reloj con cuatro trabajadores, sin
+descontar pausas ni la construcción de las copias).
+
+**Orden nuevo** (`configs/experiments/phases/dgx-relay-plan-20261121.txt`). El plazo corta por el
+final, así que el orden es el valor de cada bloque:
+
+| Bloque | Campaña | Origen | Semillas | Modelos | Horas de reloj estimadas |
+| --- | --- | --- | --- | --- | --- |
+| 1 | conjunta, después EE. UU. | 2013 | 42 | 22 principales; el resto de los 53 de EE. UU. | 21 |
+| 2 | EE. UU., después conjunta | 2023 | 42 | núcleo, cognitivos, controles y redes | 55 |
+| 3 | EE. UU. y conjunta, origen a origen | 2014–2016 | 42 | los 53 de EE. UU.; en la conjunta, como en el bloque 2 | 113 |
+| 4 | EE. UU., después conjunta | 2023 | 43 y 44 | núcleo, sus lectores y sus controles | 54 |
+| 5 | las dos, si queda plazo | 2022; después 2021 → 2017 | 42 | como en el bloque 2; y los refinamientos y puentes aplazados | — |
+
+Los bloques 1 a 4 suman unas 245 horas de reloj más unas 10 de construcción de copias, contra
+281 hasta el plazo. El origen 2023 es el modelo que se ajusta con todos los datos, así que su
+base va delante del resto de la criba; las semillas van detrás de la criba para poder dedicar
+ese tiempo a las variantes que la criba promueva, que se añaden delante del bloque 4. Los
+refinamientos y los puentes del lector, que en 2013 empatan con `m3` (menos de 0,0005 de IC de
+rangos de validación), solo se ajustan con la conjunta en 2013 y quedan para el bloque 5 en lo
+demás. La primera fase conjunta a tamaño completo arrancó el 21 de noviembre a las 00:49 UTC,
+tras pausar en su barrera los cuatro trabajos de EE. UU. que estaban en marcha.
+
+**Modalidades por mercado.** Presencia medida en las muestras codificadas de la edición v3.1
+(columna `presence`, orden del contrato de máscaras):
+
+| Modalidad | EE. UU. (15.874.289 muestras) | China (2.824.687 muestras) |
+| --- | --- | --- |
+| precios, gráficos y macro | 100 % | 100 % |
+| noticias | 17,5 % (ninguna en 2008, 13,2 % en 2012, 35,4 % en 2023) | 13,1 % (ninguna hasta 2018, 34,1 % en 2020, 54,6 % en 2023) |
+| fundamentales | 38,1 % (ninguno en 2008, 54 % desde 2012; 2.264 activos) | 0,7 % (49 activos; 4,5 % en 2022 y 6,0 % en 2023) |
+
+La campaña conjunta es multimodal con los mismos cinco bloques y sus bits de presencia, pero en
+los orígenes 2013–2016 China aporta precios, gráficos y macro: sus noticias solo entran en el
+ajuste de los orígenes cuyo tramo de ajuste alcanza 2019–2020, y sus fundamentales casi no
+existen en la edición.
+
+**Disco.** Entre las 16:20 y las 00:30 UTC el disco libre bajó de 274 a 95 GiB sin que el
+entrenamiento creciera: otra sesión de trabajo del equipo escribió 238 GiB de compilaciones bajo
+`~/.claude/jobs` y la caché de construcción de Docker llegó a 107 GB. Nada de eso se ha tocado.
+Se retiraron las copias empaquetadas de EE. UU. de 2015 a 2017 (94 GiB; se reconstruyen cuando
+llegue su fase) y la guardia de producción tiene ahora una válvula: con el entrenamiento ya
+parado y menos de 35 GiB libres retira las copias empaquetadas de los estados que nombra el
+plan, y después pide 110 GiB libres, en lugar de 70, para retirar la pausa.
 
 ## Agente cognitivo con herramientas
 

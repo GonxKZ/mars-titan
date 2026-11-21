@@ -1,3 +1,3 @@
 # Fases que recorre scripts/dgx_campaign_phases.sh con la campaña v2 de EE. UU. relanzada en 10cd0c47.
-# El resto del plan lo recorre el relevo de campañas: dgx-relay-plan-20261120.txt.
+# El resto del plan lo recorre el relevo de campañas: dgx-relay-plan-20261121.txt.
 4 --seed 42 --origin 2013 --no-preflight
