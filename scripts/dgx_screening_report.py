@@ -26,6 +26,12 @@ menos alfa, la predicción de un modelo para ella es la suya más alfa, en unida
 ese es el «IC sin alfa». Las dos medidas se dan también en el tercio más líquido de cada sesión
 (volumen medio en dólares de 21 sesiones), y los IC de evaluación llevan su t de Newey-West.
 
+Con `--inference MODELO` escribe `sessions.csv`, el IC de evaluación de cada modelo en cada
+sesión, y añade la inferencia de `dgx_ic_inference.py` frente a ese modelo de referencia:
+intervalos por bootstrap estacionario, Diebold-Mariano, el contraste SPA de Hansen (¿supera
+algún modelo a la referencia una vez descontado que se han probado todos?) y el conjunto de
+confianza de modelos de Hansen, Lunde y Nason.
+
 Solo lee: no toca los estados ni abre ningún tramo que la campaña no haya emitido.
 
 Uso:
@@ -292,6 +298,51 @@ def offset_report(reports, provider, year, seed):
             combined=summary(ics("evaluation", weight, False).values()),
         )
     return dict(baseline=baseline, models=models) if baseline is not None else None
+
+
+def _inference_module():
+    """`dgx_ic_inference`, junto a esta herramienta instalada o en el repositorio."""
+    path = Path(__file__).resolve().with_name("dgx_ic_inference.py")
+    if not path.is_file():
+        raise ValueError("Falta dgx_ic_inference.py para la inferencia entre modelos")
+    spec = importlib.util.spec_from_file_location("dgx_ic_inference", path)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+def session_table(origins, benchmark):
+    """IC de evaluación por sesión de los modelos que comparten las sesiones de la referencia.
+
+    Devuelve las sesiones (origen, instante y mercado) en orden temporal, los nombres de los
+    modelos y la matriz [sesiones, modelos], o None si la referencia no está en los orígenes.
+    """
+    series = {}
+    for origin in origins:
+        for name, report in origin["reports"].items():
+            values = series.setdefault(name, {})
+            for (market, instant), value in report["_ics"]["evaluation"].items():
+                values[(origin["year"], instant, market)] = value
+    if benchmark not in series or len(series[benchmark]) < 2:
+        return None
+    keys = sorted(series[benchmark])
+    names = sorted(
+        name
+        for name, values in series.items()
+        if len(values) == len(keys) and all(key in values for key in keys)
+    )
+    if len(names) < 2:
+        return None
+    matrix = np.array([[series[name][key] for name in names] for key in keys], dtype=np.float64)
+    return keys, names, matrix
+
+
+def write_sessions(path, table):
+    keys, names, matrix = table
+    lines = [",".join(["session", *names])]
+    for (year, instant, market), row in zip(keys, matrix, strict=True):
+        lines.append(",".join([f"{year}:{market}:{instant}", *(repr(float(v)) for v in row)]))
+    path.write_text("\n".join(lines) + "\n")
 
 
 def sample_digest(column):
@@ -634,11 +685,13 @@ def build(
     compare=None,
     ensemble_limit=6,
     offset=False,
+    inference=None,
 ):
     origins = [
         origin_report(state, year, seed, controls, groups, references, ensemble_limit, offset)
         for year in years
     ]
+    sessions = session_table(origins, inference) if inference else None
     document = dict(
         schema_version=1,
         kind="dgx_screening_report",
@@ -665,7 +718,11 @@ def build(
         comparison=dict(state=str(compare), rows=comparison(origins, compare, seed))
         if compare
         else None,
+        inference=None,
     )
+    if inference:
+        # La tabla de sesiones no se guarda en el informe: `main` la escribe en su propio archivo.
+        document["_sessions"] = sessions
     return document
 
 
@@ -778,6 +835,37 @@ def markdown(report):
                     f"{_f(item['weight'], 1)} | {_f(item['combined']['mean'])} |"
                 )
             lines.append("")
+    inference = report.get("inference")
+    if inference:
+        meta, spa, mcs = inference["metadata"], inference["spa"], inference["mcs"]
+        lines += [
+            f"## Inferencia entre modelos frente a `{meta['benchmark']}`",
+            "",
+            f"IC de evaluación de {meta['n_models']} modelos en {meta['n_sessions']} sesiones "
+            f"comunes (`sessions.csv`). Bootstrap estacionario con {meta['bootstrap']} réplicas y "
+            f"bloque medio de {_f(meta['bootstrap_block'], 1)} sesiones, las mismas para todos "
+            "los modelos.",
+            "",
+            f"- Contraste SPA de Hansen: p = {_f(spa['p_consistent'], 3)} (entre "
+            f"{_f(spa['p_lower'], 3)} y {_f(spa['p_upper'], 3)}) de que ningún modelo supera a "
+            f"la referencia. El de mayor IC es `{spa['best_candidate']}`.",
+            f"- Conjunto de confianza de modelos al {round(100 * (1 - mcs['alpha']))} %: "
+            f"{len(mcs['included'])} de {meta['n_models']} modelos no se distinguen del mejor.",
+            "",
+            "| Modelo | IC de evaluación | t NW | Intervalo al 95 % | Diferencia con la "
+            "referencia | p DM | p MCS |",
+            "| --- | --- | --- | --- | --- | --- | --- |",
+        ]
+        ordered_models = sorted(inference["models"].items(), key=lambda item: -item[1]["mean"])
+        for name, item in ordered_models:
+            interval, test = item["bootstrap_ci_95"], item["diebold_mariano"]
+            mark = "" if name in mcs["included"] else " (fuera)"
+            lines.append(
+                f"| `{name}` | {_f(item['mean'])} | {_f(item['t_newey_west'], 1)} | "
+                f"{_f(interval['low'])} a {_f(interval['high'])} | {_f(test['mean'])} | "
+                f"{_f(test['p_value'], 3)} | {_f(mcs['p_values'][name], 3)}{mark} |"
+            )
+        lines.append("")
     if report["comparison"]:
         lines += [
             f"## Este estado frente a `{report['comparison']['state']}` en sus sesiones comunes",
@@ -808,6 +896,10 @@ def main(argv=None):
     parser.add_argument(
         "--offset", action="store_true", help="Medir el alfa conocido de la etiqueta"
     )
+    parser.add_argument(
+        "--inference", metavar="MODELO", help="Inferencia entre modelos frente a esta referencia"
+    )
+    parser.add_argument("--bootstrap", type=int, default=2000)
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args(argv)
     declared = json.loads(args.controls.read_text()) if args.controls else {}
@@ -820,8 +912,15 @@ def main(argv=None):
         references=args.reference,
         compare=args.compare,
         offset=args.offset,
+        inference=args.inference,
     )
     args.output.mkdir(parents=True, exist_ok=True)
+    sessions = report.pop("_sessions", None)
+    if sessions is not None:
+        write_sessions(args.output / "sessions.csv", sessions)
+        report["inference"] = _inference_module().analizar_tabla_ic(
+            args.output / "sessions.csv", args.inference, bootstrap=args.bootstrap, seed=0
+        )
     (args.output / "report.json").write_text(
         json.dumps(report, ensure_ascii=False, indent=1) + "\n"
     )

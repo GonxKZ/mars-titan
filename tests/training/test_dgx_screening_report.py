@@ -237,3 +237,41 @@ def test_the_newey_west_t_discounts_the_dependence_between_sessions():
     assert report.newey_west_t(independent[:20]) is None
     assert report.summary(independent)["t_nw"] == report.newey_west_t(independent)
     assert report.summary([])["t_nw"] is None
+
+
+def test_the_inference_writes_the_sessions_and_tests_every_model_against_the_reference(
+    state, tmp_path
+):
+    output = tmp_path / "informe"
+    arguments = ["--state", str(state), "--year", "2013", "--output", str(output)]
+    assert report.main([*arguments, "--inference", "control", "--bootstrap", "300"]) == 0
+    lines = (output / "sessions.csv").read_text().splitlines()
+    # Las sesiones de evaluación de los modelos que comparten las de la referencia.
+    assert (
+        lines[0] == "session,control,mejor,otra_vista,ruido"
+        and len(lines) == 1 + states.SESSIONS["evaluation"]
+    )
+    assert lines[1].startswith("2013:US:")
+    document = json.loads((output / "report.json").read_text())
+    inference = document["inference"]
+    assert (
+        inference["metadata"]["benchmark"] == "control" and inference["metadata"]["n_models"] == 4
+    )
+    assert inference["metadata"]["n_sessions"] == states.SESSIONS["evaluation"]
+    for name, item in inference["models"].items():
+        mean = document["origins"][0]["models"][name]["ic"]["evaluation"]["mean"]
+        assert item["mean"] == pytest.approx(mean, abs=1e-12)
+    # El modelo con más señal supera a la referencia aunque se hayan probado todos.
+    assert inference["spa"]["best_candidate"] == "mejor" and inference["spa"]["p_consistent"] < 0.05
+    assert "mejor" in inference["mcs"]["included"] and "ruido" not in inference["mcs"]["included"]
+    assert inference["models"]["mejor"]["diebold_mariano"]["p_value"] < 0.05
+    text = (output / "report.md").read_text()
+    assert "## Inferencia entre modelos frente a `control`" in text and "(fuera)" in text
+    # Sin la opción no se escribe nada más, y una referencia que no está no rompe el informe.
+    plain = tmp_path / "sin"
+    assert report.main(["--state", str(state), "--year", "2013", "--output", str(plain)]) == 0
+    assert not (plain / "sessions.csv").exists()
+    assert json.loads((plain / "report.json").read_text())["inference"] is None
+    absent = tmp_path / "ausente"
+    assert report.main([*arguments[:4], "--output", str(absent), "--inference", "no_esta"]) == 0
+    assert json.loads((absent / "report.json").read_text())["inference"] is None

@@ -239,3 +239,36 @@ def test_the_added_price_features_have_their_known_values():
     assert features[100, names.index("intraday_mean_252_percent")] == 0
     assert features[3, names.index("close_location_5")] == 0
     assert features[61, names.index("untraded_63")] == 0
+
+
+def test_an_independent_implementation_gives_the_same_features():
+    import importlib.util
+    from pathlib import Path
+
+    path = Path(__file__).with_name("technical_features_reference.py")
+    spec = importlib.util.spec_from_file_location("technical_features_reference", path)
+    reference = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(reference)
+    names = technical.VERSIONS[technical.NAME_V2]
+    assert tuple(reference.NOMBRES) == names
+    worst = np.zeros(len(names))
+    for seed in range(4):
+        _, sessions, table, market = market_prices(seed=20 + seed)
+        random = np.random.default_rng(seed)
+        # Sesiones sin cotizar, volumen nulo y sesiones sin rango: los casos de los datos reales.
+        kept = np.ones(len(sessions), dtype=bool)
+        kept[random.choice(len(sessions), size=25, replace=False)] = False
+        prices = table[kept].copy()
+        still = random.choice(len(prices), size=15, replace=False)
+        prices[still, 4] = 0.0
+        prices[still[:5], :4] = prices[still[:5], 3:4]
+        factor = market.copy()
+        factor[random.choice(len(factor), size=6, replace=False)] = np.nan
+        for calendar, values in ((sessions, factor), (None, None)):
+            mine = technical.technical_features(
+                prices, sessions[kept], calendar, values, version=technical.NAME_V2
+            )
+            other = reference.rasgos(prices, sessions[kept], calendar, values)
+            assert other.shape == mine.shape and other.dtype == np.float32
+            worst = np.maximum(worst, np.abs(mine.astype(float) - other.astype(float)).max(axis=0))
+    assert worst.max() < 2e-4, dict(zip(names, worst.round(6).tolist(), strict=True))
