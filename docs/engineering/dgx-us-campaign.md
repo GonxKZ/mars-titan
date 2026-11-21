@@ -1139,19 +1139,35 @@ actualización cada 2 instantes; estado `piloto-v8`, commit 8eb43edd):
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | Sin memoria, receta anterior | 0,091 | 0,093 | | | | | |
 | Sin memoria, rama a trozos | 0,091 | 0,094 | 0,095 | 0,097 | 0,096 | 0,098 | 0,101 |
-| Sin memoria, rama densa | 0,094 | 0,096 | 0,098 | | | | |
-| Sin memoria, término de peso 3 | 0,100 | 0,103 | 0,104 | | | | |
-| Sin memoria, término y rama a trozos | 0,101 | 0,105 | 0,106 | | | | |
-| **Sin memoria, término y rama densa** | **0,104** | **0,107** | **0,109** | | | | |
-| Memoria activa, término y rama densa | 0,103 | 0,106 | | | | | |
-| Memoria congelada, término y rama densa | 0,104 | | | | | | |
+| Sin memoria, rama densa | 0,094 | 0,096 | 0,098 | 0,100 | | | |
+| Sin memoria, término de peso 3 | 0,100 | 0,103 | 0,104 | 0,104 | | | |
+| Sin memoria, término y rama a trozos | 0,101 | 0,105 | 0,106 | 0,107 | | | |
+| **Sin memoria, término y rama densa** | **0,104** | **0,107** | **0,109** | **0,109** | | | |
+| Memoria activa, término y rama densa | 0,103 | 0,106 | 0,108 | | | | |
+| Memoria congelada, término y rama densa | 0,104 | 0,106 | | | | | |
 | Sin memoria, objetivo de salida de IC (sin escala ni rama) | 0,097 | 0,096 | 0,098 | | | | |
 | Su control con cabeza escalar | 0,092 | 0,093 | 0,092 | | | | |
 
 En su primera época, el núcleo con el término y la rama densa supera a todo lo anterior en
 todas sus épocas. Las dos piezas suman: el término da 0,009 y la rama densa 0,004 más, y la
-densa mejora a la de tramos. El piloto se paró cuando el relevo necesitó el estado; sus
-cifras completas las repite la campaña con los nombres de sus niveles.
+densa mejora a la de tramos. El piloto se paró para dar paso a la campaña, que repite estos
+modelos con los nombres de sus niveles: sus primeras épocas coinciden con las del piloto hasta
+el cuarto decimal (0,1044 sin memoria, 0,1034 con memoria activa y 0,1039 congelada).
+
+Medidas posteriores con los rasgos solos, que no cambian la base y quedan como variantes o
+como trabajo siguiente:
+
+- Con la pérdida mixta, los rangos por sesión junto a los valores dan 0,116 / 0,122 / 0,114 de
+  media en tres semillas frente a 0,115 / 0,123 / 0,111, y en el tercio más líquido 0,074
+  frente a 0,068 en evaluación. Es el nivel `r4_ranks`.
+- El término sube también el IC del tercio más líquido: de 0,051 / 0,068 / 0,060 con la
+  pérdida de la mediana a 0,071 / 0,085 / 0,068.
+- Ponderar la correlación por liquidez con exponente 0,5 a 1 sube el tercio líquido otros
+  0,003 a 0,005 sin apenas coste en el conjunto; con exponente 2 lo pierde todo (0,107). No
+  está en la campaña: hay que llevar la liquidez de cada fila hasta la pérdida.
+- Los 43 rasgos de más que no aportaban a los árboles dan a la red 0,002 en validación y
+  calibración y 0,003 a 0,004 en evaluación (0,116 / 0,125 / 0,117). No justifican por ahora
+  otra versión de los rasgos, que obligaría a preparar de nuevo todas las copias.
 
 Las campañas vigentes, `dgx-us-campaign-v8.json` y `dgx-us-cn-campaign-v7.json`
 (commit 114bcf4e), ponen el término de peso 3 en todos los ajustes y la rama densa en los que
@@ -1242,7 +1258,7 @@ decidido con su validación y su calibración, y su evaluación se ha mirado. Lo
 2023 no tienen todavía ningún resultado con rasgos: son la evidencia fuera de muestra y se leen
 con el diseño ya fijado. El test final de 2024 sigue cerrado.
 
-### Plan vigente (decimocuarta revisión del 21 de noviembre)
+### Plan vigente (decimoquinta revisión del 21 de noviembre)
 
 Las campañas con rasgos son `dgx-us-campaign-v8.json` y `dgx-us-cn-campaign-v7.json`, en el
 commit 114bcf4e. El plan recorre, con una fase cada vez y la preparación de la siguiente
@@ -1266,7 +1282,20 @@ origen más reciente. La misma regla, con las variantes de la criba, decide cuá
 orígenes 2018 y 2023.
 
 Antes de preparar el origen 2013 con rasgos, una orden detiene el piloto y otra trae sus
-copias empaquetadas al estado de la campaña, que tiene la misma cohorte. Cada origen lanza
+copias empaquetadas al estado de la campaña, que tiene la misma cohorte. Las copias y los
+índices viajan juntos: la huella del índice forma parte de la identidad de cada copia, y un
+índice construido de nuevo, aunque sea idéntico en contenido, obliga a empaquetarla otra vez
+(17 GiB en el ajuste de 2013). La campaña con rasgos va la primera; lo que faltaba sin rasgos
+en 2013 va detrás de sus modelos secundarios.
+
+Dos comprobaciones antes de entrenar. `scripts` no las automatiza todavía:
+
+- Una fase que elige niveles con lectores debe incluir el nivel de sus padres, aunque ya estén
+  ajustados: si no, la cola se niega a arrancar y el relevo se detiene. Pasó con la fase de la
+  atención entre activos sin rasgos, y otra fase del plan tenía el mismo defecto.
+- La comprobación inicial de la cola (`run` sin `--no-preflight`) arranca cada modelo hasta
+  su primera barrera. Lanzada aparte para todos los niveles del origen 2013, las 72
+  configuraciones que aún no habían arrancado lo hicieron sin error. Cada origen lanza
 antes su referencia tabular en segundo plano, y cada informe lleva las dos medidas (etiqueta y
 `z`), el tercio más líquido, la t de Newey-West y la inferencia frente a
 `lightgbm_technical`. El plan está en `configs/experiments/phases/dgx-relay-plan-20261121.txt`.
