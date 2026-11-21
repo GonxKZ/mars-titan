@@ -27,6 +27,12 @@
 # suma supera el tope del grupo. Lo ya construido se reutiliza. Si la preparación falla después
 # del margen de arranque, se anota y la fase siguiente construye lo que falte, como antes.
 #
+# Una línea «orden|<ejecutable>|<argumentos>» ejecuta entre dos fases una herramienta de la campaña:
+# el informe de un origen o la promoción de la criba. Recibe la ruta del plan y su número de fase
+# (MARS_TITAN_RELAY_PLAN y MARS_TITAN_RELAY_PHASE) y puede editar las fases posteriores a la suya,
+# porque el relevo vuelve a leer el plan antes de cada fase. Una orden nunca detiene el relevo:
+# acabe como acabe, o aunque falte su ejecutable, se anota y el plan sigue con el entrenamiento.
+#
 # Una fase que falla nada más arrancar (antes de MARS_TITAN_RELAY_MIN_SECONDS, 60 s) detiene el
 # relevo sin anotarla: un permiso que falta o una copia rota no deben consumir el plan.
 set -u
@@ -71,7 +77,25 @@ while [ "$parar" = 0 ]; do
     echo $((terminadas + 1)) > "$hecho.tmp" && mv "$hecho.tmp" "$hecho"
     continue
   fi
-  if [[ "$linea" == prepara\|* ]]; then
+  orden=0
+  if [[ "$linea" == orden\|* ]]; then
+    IFS='|' read -r _ herramienta argumentos <<< "$linea"
+    if [[ "$herramienta" != /* ]]; then
+      nota "fase $((terminadas + 1)) mal escrita: $linea"
+      exit 2
+    fi
+    if [ ! -x "$herramienta" ]; then
+      nota "fase $((terminadas + 1)): falta la herramienta $herramienta; se anota y el plan sigue"
+      echo $((terminadas + 1)) > "$hecho.tmp" && mv "$hecho.tmp" "$hecho"
+      continue
+    fi
+    nota "fase $((terminadas + 1)): $linea"
+    inicio=$(date +%s)
+    orden=1
+    # shellcheck disable=SC2086
+    ( export MARS_TITAN_RELAY_PLAN="$plan" MARS_TITAN_RELAY_PHASE="$((terminadas + 1))"
+      exec "$herramienta" $argumentos ) &
+  elif [[ "$linea" == prepara\|* ]]; then
     IFS='|' read -r _ copia estado receta origen <<< "$linea"
     if ! [[ "$origen" =~ ^20[0-9]{2}$ ]] || [ "$origen" -lt 2005 ] || [ -z "$estado" ] || [ -z "$receta" ] ||
        [ ! -f "$copia/scripts/dgx_prepare_inputs.py" ]; then
@@ -116,7 +140,9 @@ while [ "$parar" = 0 ]; do
   wait "$hijo"; codigo=$?; hijo=""
   [ "$parar" = 1 ] && break
   [ "$pausada" = 1 ] && continue
-  if [ "$codigo" != 0 ] && [ "$codigo" != 3 ]; then
+  if [ "$orden" = 1 ]; then
+    [ "$codigo" = 0 ] || nota "la orden terminó con código $codigo: se anota y el plan sigue"
+  elif [ "$codigo" != 0 ] && [ "$codigo" != 3 ]; then
     if [ $(( $(date +%s) - inicio )) -lt "$minimo" ]; then
       nota "la fase falló al arrancar (código $codigo): el relevo se detiene sin anotarla"
       exit 1
