@@ -177,7 +177,8 @@ def model_report(state, record, year, seed):
     ics = {split: session_ic(data) for split, data in splits.items()}
     curve = epoch_curve(run)
     late = [value for epoch, value in curve if epoch >= 2]
-    attempt = (record.get("attempts") or [{}])[-1]
+    # Un trabajo reanudado reparte su tiempo entre varios intentos: se suman todos.
+    seconds = [item["seconds"] for item in record.get("attempts") or [] if item.get("seconds")]
     result = record.get("result") or {}
     markets = sorted({key[0] for values in ics.values() for key in values})
     by_market = {
@@ -194,7 +195,7 @@ def model_report(state, record, year, seed):
         state=str(state),
         best_epoch=result.get("best_epoch"),
         selected_validation_ic=None if score is None else 1 - 2 * score,
-        hours=None if attempt.get("seconds") is None else attempt["seconds"] / 3600,
+        hours=sum(seconds) / 3600 if seconds else None,
         epochs=curve,
         epoch_std=float(np.std(late, ddof=1)) if len(late) > 1 else None,
         ic={split: summary(values.values()) for split, values in ics.items()},

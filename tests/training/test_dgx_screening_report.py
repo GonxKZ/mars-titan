@@ -67,6 +67,13 @@ def test_the_paired_contrast_separates_a_better_model_from_noise(state):
     assert rows["ruido"]["decision"]["mean"] < 0 and rows["ruido"]["decision"]["t"] < -2
     model = origin["models"]["control"]
     assert model["hours"] == 1.0 and model["selected_validation_ic"] == pytest.approx(0.04)
+    # Un trabajo reanudado suma el tiempo de todos sus intentos.
+    path = state / "queue/control--2013--seed-42.json"
+    record = json.loads(path.read_text())
+    record["attempts"] = [dict(seconds=1800.0, status="interrupted"), dict(seconds=5400.0)]
+    path.write_text(json.dumps(record))
+    again = report.build(state, [2013], 42, {}, {})
+    assert again["origins"][0]["models"]["control"]["hours"] == 2.0
     assert model["epoch_std"] == pytest.approx(np.std([0.02, 0.03, 0.04], ddof=1))
     assert model["ic"]["evaluation"]["sessions"] == 60 and model["ic_by_market"] == {}
 

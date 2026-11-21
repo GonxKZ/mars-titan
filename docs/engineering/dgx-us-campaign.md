@@ -649,37 +649,23 @@ EE. UU.; 6,08 y 16,20 en la conjunta. Con esa escala el plan del día 20 pedía 
 de trabajador y hasta el plazo caben unas 1.100 (281 horas de reloj con cuatro trabajadores, sin
 descontar pausas ni la construcción de las copias).
 
-**Orden nuevo** (`configs/experiments/phases/dgx-relay-plan-20261121.txt`). El plazo corta por el
-final, así que el orden es el valor de cada bloque:
-
-| Bloque | Campaña | Origen | Semillas | Modelos | Horas de reloj estimadas |
-| --- | --- | --- | --- | --- | --- |
-| 1 | conjunta, EE. UU. y redes de la conjunta | 2013 | 42 | 22 principales; el resto de los 53 de EE. UU. (31 variantes) | 23 |
-| 2 | EE. UU., después conjunta | 2023 | 42 | núcleo, cognitivos, controles y redes | 64 |
-| 3 | EE. UU. y conjunta, origen a origen | 2014–2016 | 42 | los 53 de EE. UU.; en la conjunta, núcleo, cognitivos y controles | 113 |
-| 4 | EE. UU., después conjunta | 2023 | 43 y 44 | núcleo, sus lectores y sus controles | 54 |
-| 5 | las dos, si queda plazo | 2022; después 2021 → 2017 | 42 | como en el bloque 2; y los refinamientos, puentes y redes aplazados | — |
-
-Los bloques 1 a 4 suman unas 254 horas de reloj más unas 10 de construcción de copias, contra
-281 hasta el plazo. El origen 2023 es el modelo que se ajusta con todos los datos, así que su
-base va delante del resto de la criba; las semillas van detrás de la criba para poder dedicar
-ese tiempo a las variantes que la criba promueva, que se añaden delante del bloque 4. Los
-refinamientos y los puentes del lector, que en 2013 empatan con `m3` (menos de 0,0005 de IC de
-rangos de validación), solo se ajustan con la conjunta en 2013 y quedan para el bloque 5 en lo
-demás. La primera fase conjunta a tamaño completo arrancó el 21 de noviembre a las 00:49 UTC,
-tras pausar en su barrera los cuatro trabajos de EE. UU. que estaban en marcha: su copia
-empaquetada de 2013 se construyó en 15 minutos (19,1 GiB de ajuste y 3,7 de validación) y una
-época de `titans_mac` son 552 pasos y unos 8 minutos, frente a 371 pasos en EE. UU.
+**Orden.** El plan se reordenó ese día con el coste ya medido y, tras leer el origen 2013, se
+sustituyó por el de las campañas v3 y conjunta v2 (sección siguiente), que es el vigente
+(`configs/experiments/phases/dgx-relay-plan-20261121.txt`). La primera fase conjunta a tamaño
+completo arrancó el 21 de noviembre a las 00:49 UTC, tras pausar en su barrera los cuatro
+trabajos de EE. UU. que estaban en marcha: su copia empaquetada de 2013 se construyó en 15
+minutos (19,1 GiB de ajuste y 3,7 de validación) y una época de `titans_mac` son 552 pasos y
+unos 8 minutos, frente a 371 pasos en EE. UU.
 
 **Memoria de la conjunta.** En esa primera media hora `area_network` ocupó 12,9 GiB de GPU
 (7,9 a 8,7 en EE. UU.) y cada trabajo 6 GiB de memoria de proceso (2,5 a 3 en EE. UU.): los
 cuatro arrancaron sin copia empaquetada y esperaron a que uno la construyera. Al continuar desde
-su punto guardado, con la copia ya hecha, vuelven a 2,5–3 GiB. Con tres redes entre activos y
-`titans_mac` a la vez, la conjunta pediría 15 GiB más de GPU que el peor rato medido en EE. UU.
-(35,4 GiB), así que sus redes van en una fase propia con 3 trabajadores, después de los demás
-niveles con 4; en 2014–2016 quedan para el bloque 5. Cuesta unas 2 horas en 2013 y unas 9 en
-2023, y se puede relajar cuando el monitor, que ahora muestrea también la unidad del relevo,
-tenga la GPU real de esas redes.
+su punto guardado, con la copia ya hecha, vuelven a 2,5–3 GiB, y los trabajos nuevos arrancan con
+esa cifra. Con tres redes entre activos y `titans_mac` a la vez, la conjunta pediría 15 GiB más
+de GPU que el peor rato medido en EE. UU. (35,4 GiB), así que sus niveles con atención entre
+activos van en una fase propia con 3 trabajadores, después de los demás con 4. Se puede relajar
+cuando el monitor, que ahora muestrea también la unidad del relevo, tenga la GPU real de esos
+modelos.
 
 Los 6 GiB por trabajo del primer arranque crecen con las filas del origen: quien construye la
 copia llegó a 9,2 GiB y los tres que esperaban a 6, con 6,08 millones de filas. Con los 16,2
@@ -687,8 +673,8 @@ millones de la conjunta de 2023 y cuatro trabajos, la suma rondaría el tope de 
 Por eso el plan prepara las copias de cada origen antes de su primera fase: un solo proceso las
 construye, los trabajos las encuentran hechas y arrancan con 2,5–3 GiB. La preparación se
 comprobó en seco con la vista conjunta de 2013: reutiliza los mismos índices que los trabajos
-(`indices/4429006f47ecff46`) sin crear ninguno. La guardia guarda además una lectura por minuto de memoria
-disponible, disco libre y presión de memoria de producción (`guardia/historia.log`).
+(`indices/4429006f47ecff46`) sin crear ninguno. La guardia guarda además una lectura por minuto
+de memoria disponible, disco libre y presión de memoria de producción (`guardia/historia.log`).
 
 **Modalidades por mercado.** Presencia medida en las muestras codificadas de la edición v3.1
 (columna `presence`, orden del contrato de máscaras):
@@ -733,6 +719,117 @@ Se retiraron las copias empaquetadas de EE. UU. de 2015 a 2017 (94 GiB; se recon
 llegue su fase) y la guardia de producción tiene ahora una válvula: con el entrenamiento ya
 parado y menos de 35 GiB libres retira las copias empaquetadas de los estados que nombra el
 plan, y después pide 110 GiB libres, en lugar de 70, para retirar la pausa.
+
+## Campañas v3 y conjunta v2: segunda ronda programada (21 de noviembre de 2026)
+
+`configs/experiments/dgx-us-campaign-v3.json` y `configs/experiments/dgx-us-cn-campaign-v2.json`
+continúan las dos campañas por herencia (`inherit`): ninguna receta cambia, los trabajos
+terminados se enlazan y los pausados se trasladan. Cambian los niveles, para poder dejar fuera
+de una fase los modelos que no aportan, y se añaden los 18 modelos de la segunda ronda, fijados
+antes de leer la criba de variantes. El relevo recorre el plan sin supervisión y deja un informe
+por origen.
+
+### Qué enseñó el origen 2013
+
+Contrastes pareados por sesión de EE. UU. con la semilla 42 (`scripts/dgx_screening_report.py`).
+La diferencia de decisión reúne validación y calibración (187 sesiones); la de evaluación, las 251
+sesiones de 2013, que no deciden.
+
+| Modelo | Control | Decisión | t | Evaluación | t |
+| --- | --- | --- | --- | --- | --- |
+| `mars_titan_m0` (lector sin banco) | `titans_mac_frozen` | +0,0068 | 4,2 | +0,0055 | 4,0 |
+| `mars_titan_m1`, `m2` y `m3` | `mars_titan_m0` | −0,0003 a −0,0001 | −1,9 a −0,3 | hasta +0,0002 | menos de 1 |
+| `mars_titan_cognitive` | `mars_titan_m3` | −0,0016 | −1,4 | −0,0005 | −0,5 |
+| `cross_asset_attention` | `titans_mac` | +0,0083 | 1,6 | +0,0178 | 3,2 |
+| `cross_asset_attention_self` | `cross_asset_attention` | −0,0220 | −2,5 | −0,0311 | −4,3 |
+| `titans_mac_disabled` | `titans_mac` | +0,0053 | 1,4 | +0,0139 | 4,0 |
+| `titans_mac_frozen` | `titans_mac` | +0,0032 | 0,5 | +0,0163 | 2,9 |
+
+Tres lecturas. El lector supera a los controles con margen estadístico, pero sus niveles de
+memoria episódica no cambian las predicciones: `m3` admite menos del 0,5 % de las muestras y `m1`,
+que cuesta 8,3 horas de un trabajador por origen, coincide con el lector sin banco. La atención
+entre activos sí aporta (su control que solo se atiende a sí mismo se hunde). Y la escritura en
+línea de la memoria del núcleo empeora la evaluación frente a desactivarla o congelarla. La
+media de rangos de dos modelos ya ajustados, `mars_titan_m0` y `titans_mac_disabled`, elegida
+solo con validación y calibración, sube el IC de evaluación de 0,0530 a 0,0591 y su ICIR de 0,78
+a 0,87: las combinaciones de modelos distintos son la mejora más segura.
+
+### Niveles y herencia
+
+Pasan a niveles propios, sin cambiar de receta: `mars_titan_m1` (`ladder_m1`), `mars_titan_m2`
+(`ladder`), `mars_titan_m3_k4` y el control de puerta constante (`cognitive_controls`) y las
+seis redes de áreas y de grupos, que no superan a sus controles (`networks_area`). Quedan en
+`core` el núcleo, el lector sin banco y `m3`; en `cognitive`, el cognitivo; en `networks`, la
+atención entre activos y su control. La herencia solo traslada los modelos cuya declaración no
+cambia: en EE. UU. pasaron 10 terminados y 4 pausados y en la conjunta 1 y 2; los resultados de
+los modelos movidos siguen en los estados anteriores, que quedan cerrados y se conservan porque
+los nuevos los enlazan. Un origen cuesta así unas 11 horas de trabajador en sus niveles
+principales en lugar de 42.
+
+### Segunda ronda
+
+| Nivel | Modelos | Control | Pregunta |
+| --- | --- | --- | --- |
+| `r2_xattn` | atención entre activos con la memoria desactivada y congelada | los controles del núcleo | ¿se suman las dos mejoras del núcleo? |
+| `r2_reader_xattn` | `mars_titan_m0_xattn` | `mars_titan_m0` | ¿mejora el lector sobre un núcleo con atención entre activos? |
+| `r2_disabled` | sobre la memoria desactivada: objetivo de IC por sesión, entradas en rangos, macro como condicionante y media exponencial de pesos, con sus controles de cabeza escalar y sin escalas | cadena hasta `titans_mac_disabled` | ¿qué cambios de la criba sirven sin la memoria en línea? |
+| `r2_capacity` | tamaño oculto de 128 y de 32 | el de 64 con el mismo gradiente por autograd | ¿sobra o falta capacidad? |
+| `ventana_2016`, `ventana_2023` | el núcleo y sus dos controles ajustados desde abril de 2009 | los mismos con el ajuste desde 2000 | ¿ayudan los años sin noticias ni fundamentales? |
+
+Cada modelo nuevo de ajuste se construyó en CPU con su receta antes de declararlo; el lector
+sobre la atención entre activos se valida al ejecutarse. La escritura fusionada solo cubre la
+dimensión 64, así que los tamaños 128 y 32 usan el gradiente por autograd y su control también.
+
+### Ajustar desde 2000
+
+Se mantiene el ajuste desde 2000 como base: son el 23 % de las muestras de EE. UU., traen dos
+regímenes que no vuelven a aparecer (2000–2002 y 2008) y en este problema, con IC de pocas
+centésimas, la varianza pesa más que el sesgo. Las modalidades ausentes van enmascaradas, así
+que el modelo aprende a predecir con precios, gráficos y macro cuando no hay más. El riesgo es
+que el mercado de 2000–2008 ya no se parezca al de hoy. No se supone: `walk_forward.fit_months`
+acota el ajuste a los meses finales del tramo, y los niveles `ventana_2016` y `ventana_2023`
+comparan el núcleo y sus controles ajustados desde abril de 2009 con los ajustados desde 2000,
+con la misma validación. Van en una fase propia al final de su origen porque su tramo de ajuste
+tiene otra copia empaquetada.
+
+### Informes y promoción sin supervisión
+
+El relevo admite una línea `orden|<ejecutable>|<argumentos>`, que ejecuta una herramienta entre
+dos fases y nunca detiene el entrenamiento. Con ella el plan llama a dos herramientas, instaladas
+en `~/.local/share/mars-titan/herramientas`:
+
+- `dgx_screening_report.py` escribe `report.md` y `report.json` por origen y campaña en
+  `~/.local/state/mars-titan/informes`: IC por sesión de cada modelo y mercado, contrastes
+  pareados con el control declarado en `configs/experiments/dgx-us-campaign-v3-contrasts.json`,
+  combinaciones por media de rangos elegidas con validación y calibración, el agregado de los
+  orígenes de la criba y la comparación de la conjunta con EE. UU. en las sesiones comunes.
+- `dgx_campaign_promotion.py` aplica, al terminar el origen 2013 de EE. UU., la regla fijada de
+  antemano y edita solo las fases posteriores a la suya: en 2014–2016 siguen las 12 variantes con
+  mayor t pareada, los contrastes de modalidades y los controles que necesitan; a los orígenes
+  finales de las dos campañas pasan las que superan a su control en al menos 0,003 con t de al
+  menos 2. Si falla, no toca el plan, que es válido sin promoción, y deja el error registrado.
+
+El veredicto de la criba sigue siendo la media de los orígenes 2013–2016: lo da el informe
+agregado de 2016.
+
+### Plan vigente
+
+| Bloque | Qué recorre | Fin estimado |
+| --- | --- | --- |
+| 1 | Origen 2013: la conjunta termina sus niveles y la segunda ronda; EE. UU. termina sus puentes, la segunda ronda y las 31 variantes; promoción e informes | 22 de noviembre |
+| 2 | Origen 2023 de las dos campañas: niveles principales, segunda ronda, variantes promovidas, semillas 43 y 44 de los modelos que entran en las combinaciones y contraste de la ventana | 25 de noviembre |
+| 3 | Orígenes 2014–2016: resto de la criba de EE. UU. y conjunta emparejada | 28 de noviembre |
+| 4 | Orígenes 2022 → 2017 con los niveles del 2023, hasta donde llegue el plazo | 2 de diciembre |
+
+### Primeras lecturas de la conjunta
+
+Con los tres primeros modelos del origen 2013 (semilla 42), la escritura en línea vuelve a
+perder: desactivar la memoria da +0,0172 de IC de decisión (t = 4,0) y congelarla +0,0134
+(t = 4,1). En las sesiones de EE. UU., los modelos ajustados con EE. UU. y China mejoran a los
+ajustados solo con EE. UU.: +0,0080 de decisión con la memoria congelada (t = 2,1; +0,0066 en
+evaluación) y +0,0111 en evaluación con el núcleo (t = 2,9). El IC de evaluación de China es
+menor que el de EE. UU. (0,028 frente a 0,054 con la memoria congelada), con 810 activos por
+sesión y sin noticias ni fundamentales en ese origen. Son tres modelos y una semilla.
 
 ## Agente cognitivo con herramientas
 
