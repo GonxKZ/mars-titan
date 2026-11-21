@@ -215,3 +215,25 @@ def test_the_contrasts_give_every_model_a_control_that_ends_in_the_core(document
         assert controls[name] == control
     assert set(declared["always_kept"]) <= set(models)
     assert all(models[name]["tier"].startswith("v_") for name in declared["always_kept"])
+
+
+@pytest.mark.parametrize(
+    ("name", "origin"),
+    [
+        ("dgx-us-campaign-v4.json", "dgx-us-campaign-v3.json"),
+        ("dgx-us-cn-campaign-v3.json", "dgx-us-cn-campaign-v2.json"),
+    ],
+)
+def test_the_campaigns_with_technical_inputs_only_add_the_declared_extension(name, origin):
+    path, source = ROOT / "configs/experiments" / name, ROOT / "configs/experiments" / origin
+    document, previous = campaign.load_declaration(path)[0], json.loads(source.read_text())
+    assert document["inputs"] == dict(technical="long_horizon_v1") and "inputs" not in previous
+    own = {"inputs", "description", "source_declaration_sha256"}
+    assert set(document) == set(previous) | {"inputs"}
+    for key in set(previous) - own:
+        assert document[key] == previous[key], key
+    assert document["source_declaration_sha256"] == hashlib.sha256(source.read_bytes()).hexdigest()
+    assert document["final_test_access"] is False
+    wrong = dict(json.loads(path.read_text()), inputs=dict(technical="otra"))
+    with pytest.raises(ValueError, match="extensión de entradas"):
+        campaign.checked_declaration(wrong, root=ROOT)

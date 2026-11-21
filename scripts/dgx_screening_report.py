@@ -17,6 +17,12 @@ JSON y otro Markdown con:
 - con `--compare`, la diferencia entre cada modelo de este estado y el mismo modelo de otro (la
   campaña conjunta frente a la de EE. UU.) en sus sesiones comunes.
 
+Con `--offset` mide además el desplazamiento conocido de la etiqueta. La etiqueta es
+`r(t+1) - alfa(t) - beta(t) * m(t+1)` y alfa se conoce al predecir (`data.technical_features`):
+el informe da el IC de `-alfa` por sí solo, el de cada modelo con la etiqueta sin alfa (su
+habilidad para anticipar `r - beta * m`) y el de su combinación con `-alfa`, con el peso elegido
+en validación y calibración.
+
 Solo lee: no toca los estados ni abre ningún tramo que la campaña no haya emitido.
 
 Uso:
@@ -27,6 +33,7 @@ Uso:
 
 import argparse
 import hashlib
+import importlib.util
 import json
 import math
 import sys
@@ -60,6 +67,161 @@ def correlation(left, right):
     right = right - right.mean()
     scale = math.sqrt(float(left @ left) * float(right @ right))
     return float(left @ right) / scale if scale > 0 else float("nan")
+
+
+def _technical_module():
+    """`technical_features`, junto a esta herramienta instalada o en el repositorio."""
+    here = Path(__file__).resolve()
+    for path in (
+        here.with_name("technical_features.py"),
+        here.parents[1] / "src/mars_titan/data/technical_features.py",
+    ):
+        if path.is_file():
+            spec = importlib.util.spec_from_file_location("technical_features", path)
+            module = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(module)
+            return module
+    raise ValueError("Falta technical_features.py para medir el desplazamiento de la etiqueta")
+
+
+class KnownOffset:
+    """Alfa de la etiqueta de cada fila, calculado con los precios preparados de la cohorte."""
+
+    def __init__(self, state, year):
+        manifest = json.loads((state / "cohorts" / str(year) / "manifest.json").read_text())
+        self.prepared = Path(manifest["roots"]["prepared"])
+        self.module = _technical_module()
+        self.factors, self.assets = {}, {}
+        for market, declared in (manifest.get("market_factors") or {}).items():
+            path = Path(declared.get("prices_path", ""))
+            if path.is_file():
+                self.factors[market] = self._intraday(path)
+
+    @staticmethod
+    def _table(path):
+        table = pq.read_table(
+            path, columns=["open", "high", "low", "close", "volume", "available_at"]
+        )
+        days = table.column("available_at").cast("int64").to_numpy().astype("datetime64[us]")
+        columns = ("open", "high", "low", "close", "volume")
+        return np.column_stack([table.column(c).to_numpy() for c in columns]), days.astype(
+            "datetime64[D]"
+        )
+
+    def _intraday(self, path):
+        prices, days = self._table(path)
+        with np.errstate(divide="ignore", invalid="ignore"):
+            valid = (prices[:, 0] > 0) & (prices[:, 3] > 0)
+            return days, np.where(valid, prices[:, 3] / prices[:, 0] - 1, np.nan)
+
+    def alpha(self, asset, instants):
+        """Alfa de un activo en cada instante de predicción, o NaN sin modelo de mercado."""
+        if asset not in self.assets:
+            market, symbol = asset.split("/", 1)
+            prices, days = self._table(self.prepared / market / symbol / "prices.parquet")
+            features = self.module.technical_features(
+                prices, days, *self.factors.get(market, (None, None))
+            )
+            names = self.module.NAMES
+            known = features[:, names.index("has_market_model")] > 0
+            values = features[:, names.index("alpha_percent")].astype(np.float64) / 100
+            self.assets[asset] = days, np.where(known, values, np.nan)
+        days, values = self.assets[asset]
+        wanted = instants.astype("datetime64[us]").astype("datetime64[D]")
+        position = np.searchsorted(days, wanted)
+        inside = position < len(days)
+        inside[inside] = days[position[inside]] == wanted[inside]
+        result = np.full(len(instants), np.nan)
+        result[inside] = values[position[inside]]
+        return result
+
+    def rows(self, run, split):
+        """Alfa de las filas de un tramo, en el orden de `load_split`."""
+        table = pq.read_table(
+            run / f"{split}-predictions.parquet",
+            columns=["sample_id", "asset_id", "market", "prediction_at"],
+        ).sort_by(
+            [("market", "ascending"), ("prediction_at", "ascending"), ("sample_id", "ascending")]
+        )
+        assets = np.asarray(table.column("asset_id").to_pylist())
+        instants = table.column("prediction_at").cast("int64").to_numpy()
+        result = np.full(len(assets), np.nan)
+        order = np.argsort(assets, kind="mergesort")
+        bounds = np.r_[0, np.flatnonzero(assets[order][1:] != assets[order][:-1]) + 1, len(assets)]
+        for start, end in zip(bounds[:-1], bounds[1:], strict=True):
+            rows = order[start:end]
+            result[rows] = self.alpha(str(assets[rows[0]]), instants[rows])
+        return result
+
+
+def _z(values):
+    ranks = average_ranks(values)
+    scale = ranks.std()
+    return (ranks - ranks.mean()) / scale if scale > 0 else ranks * 0
+
+
+def offset_sessions(data, alpha, weight, *, free, prediction=None):
+    """IC por sesión de la mezcla de rangos del modelo con el desplazamiento conocido.
+
+    Con `free` la etiqueta es la que no resta alfa y el desplazamiento entra con signo positivo.
+    Sin `prediction` es el desplazamiento solo. Solo cuentan las filas con alfa conocido.
+    """
+    result = {}
+    for market, instant, start, end in data["sessions"]:
+        known = np.isfinite(alpha[start:end])
+        if known.sum() < MIN_ASSETS:
+            continue
+        offset = alpha[start:end][known]
+        target = data["target"][start:end][known]
+        truth = _z(target + offset if free else target)
+        signal = _z(offset if free else -offset)
+        if prediction is not None:
+            signal = _z(weight * _z(prediction[start:end][known]) + (1 - weight) * signal)
+        result[(market, instant)] = float(np.mean(signal * truth))
+    return result
+
+
+WEIGHTS = tuple(round(0.1 * step, 1) for step in range(11))
+
+
+def offset_report(reports, provider, year, seed):
+    """Desplazamiento conocido: su IC, la habilidad sin él y la combinación de cada modelo."""
+    alphas, baseline = {}, None
+    models = {}
+    for name, report in sorted(reports.items()):
+        run = Path(report["state"]) / "runs" / name / str(year) / f"seed-{seed}"
+        per_split = {}
+        for split in SPLITS:
+            digest = report["_splits"][split]["sample"]
+            if (split, digest) not in alphas:
+                alphas[split, digest] = provider.rows(run, split)
+            per_split[split] = alphas[split, digest]
+        if not any(np.isfinite(values).any() for values in per_split.values()):
+            continue
+
+        def ics(split, weight, free, model=True, report=report, per_split=per_split):
+            data = report["_splits"][split]
+            prediction = data["prediction"] if model else None
+            return offset_sessions(data, per_split[split], weight, free=free, prediction=prediction)
+
+        if baseline is None:
+            baseline = dict(
+                label={s: summary(ics(s, 0.0, False, model=False).values()) for s in SPLITS},
+                free={s: summary(ics(s, 0.0, True, model=False).values()) for s in SPLITS},
+            )
+
+        def decision(weight, ics=ics):
+            values = [v for s in DECISION for v in ics(s, weight, False).values()]
+            return float(np.mean(values)) if values else -1.0
+
+        weight = max(WEIGHTS, key=decision)
+        models[name] = dict(
+            label=summary(ics("evaluation", 1.0, False).values()),
+            free={s: summary(ics(s, 1.0, True).values()) for s in SPLITS},
+            weight=weight,
+            combined=summary(ics("evaluation", weight, False).values()),
+        )
+    return dict(baseline=baseline, models=models) if baseline is not None else None
 
 
 def sample_digest(column):
@@ -270,7 +432,7 @@ def contrast(name, control, group, candidate, base):
     )
 
 
-def origin_report(state, year, seed, controls, groups, references, ensemble_limit):
+def origin_report(state, year, seed, controls, groups, references, ensemble_limit, offset=False):
     records = completed(state, year, seed)
     reports = {}
     for name, record in records.items():
@@ -289,6 +451,7 @@ def origin_report(state, year, seed, controls, groups, references, ensemble_limi
         if name in reports and control in reports
     ]
     ensembles = forward_selection(reports, ensemble_limit) if len(reports) > 1 else []
+    known = offset_report(reports, KnownOffset(state, year), year, seed) if offset else None
     for report in reports.values():
         # Los contrastes entre orígenes solo necesitan el IC por sesión: se liberan las filas.
         report["_splits"], report["_ranks"] = None, None
@@ -298,6 +461,7 @@ def origin_report(state, year, seed, controls, groups, references, ensemble_limi
         reports=reports,
         contrasts=contrasts,
         ensembles=ensembles,
+        offset=known,
     )
 
 
@@ -367,9 +531,19 @@ def comparison(origins, other, seed):
     return rows
 
 
-def build(state, years, seed, controls, groups, references=(), compare=None, ensemble_limit=6):
+def build(
+    state,
+    years,
+    seed,
+    controls,
+    groups,
+    references=(),
+    compare=None,
+    ensemble_limit=6,
+    offset=False,
+):
     origins = [
-        origin_report(state, year, seed, controls, groups, references, ensemble_limit)
+        origin_report(state, year, seed, controls, groups, references, ensemble_limit, offset)
         for year in years
     ]
     document = dict(
@@ -390,6 +564,7 @@ def build(state, years, seed, controls, groups, references=(), compare=None, ens
                 },
                 contrasts=origin["contrasts"],
                 ensembles=origin["ensembles"],
+                offset=origin["offset"],
             )
             for origin in origins
         ],
@@ -479,6 +654,30 @@ def markdown(report):
                 f"{_f(evaluation.get('icir'), 2)} |"
             )
         lines.append("")
+        known = origin.get("offset")
+        if known:
+            base = known["baseline"]
+            lines += [
+                f"### Desplazamiento conocido de la etiqueta en el origen {origin['year']}",
+                "",
+                "La etiqueta resta el alfa de las 252 sesiones anteriores, que se conoce al "
+                "predecir. `-alfa` por sí solo tiene un IC de evaluación de "
+                f"{_f(base['label']['evaluation']['mean'])}; con la etiqueta sin alfa, `+alfa` "
+                f"tiene {_f(base['free']['evaluation']['mean'])}.",
+                "",
+                "| Modelo | IC de evaluación | IC sin alfa | Peso del modelo | Con -alfa |",
+                "| --- | --- | --- | --- | --- |",
+            ]
+            ordered_known = sorted(
+                known["models"].items(), key=lambda item: -(item[1]["combined"]["mean"] or -9)
+            )
+            for name, item in ordered_known:
+                lines.append(
+                    f"| `{name}` | {_f(item['label']['mean'])} | "
+                    f"{_f(item['free']['evaluation']['mean'])} | {_f(item['weight'], 1)} | "
+                    f"{_f(item['combined']['mean'])} |"
+                )
+            lines.append("")
     if report["comparison"]:
         lines += [
             f"## Este estado frente a `{report['comparison']['state']}` en sus sesiones comunes",
@@ -506,6 +705,9 @@ def main(argv=None):
     )
     parser.add_argument("--reference", type=Path, action="append", default=[])
     parser.add_argument("--compare", type=Path)
+    parser.add_argument(
+        "--offset", action="store_true", help="Medir el alfa conocido de la etiqueta"
+    )
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args(argv)
     declared = json.loads(args.controls.read_text()) if args.controls else {}
@@ -517,6 +719,7 @@ def main(argv=None):
         declared.get("groups", {}),
         references=args.reference,
         compare=args.compare,
+        offset=args.offset,
     )
     args.output.mkdir(parents=True, exist_ok=True)
     (args.output / "report.json").write_text(
