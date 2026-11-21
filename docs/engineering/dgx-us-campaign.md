@@ -1190,6 +1190,12 @@ y se compara con el núcleo sin rama.
   propias: tamaño del SPA y de Diebold-Mariano bajo la nula al 5 %, 5,5 % y 5,3 %; el mejor
   modelo queda en el conjunto y el peor sale en 100 de 100 simulaciones; la t de Newey-West
   coincide con un cálculo directo.
+- `scripts/dgx_ic_stability.py` mide con esa misma tabla cómo se reparte el acierto en el
+  tiempo: ICIR, sesiones y meses con IC positivo, peor mes, caída máxima del IC acumulado,
+  racha más larga sin acierto, peor ventana de 21 sesiones y diferencia entre las dos mitades,
+  por mercado cuando hay más de uno. El informe añade su tabla junto a la inferencia. También
+  lo escribió Gemini desde una especificación, con 83 pruebas, y se comprobó aquí con 400
+  series aleatorias contra cálculos directos de cada medida, sin ninguna diferencia.
 - El relevo construye por adelantado, mientras entrena una fase, las copias de la siguiente
   línea «prepara» (`MARS_TITAN_RELAY_AHEAD`, `scripts/dgx_campaign_ahead.sh`). Cada
   preparación dejaba la GPU parada unos 40 minutos en el origen 2013 y más en los posteriores,
