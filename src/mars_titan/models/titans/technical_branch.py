@@ -36,9 +36,23 @@ EE. UU. con los 46 rasgos solos (IC de validación): con la pérdida de la media
 densa y 0,101 con la codificación a trozos; con la pérdida de IC por sesión, 0,115 y 0,109. Un
 modelo lineal con las mismas columnas se queda en 0,090.
 
-Las ramas no tienen estado, no mezclan filas y solo leen entradas disponibles en la emisión. El
-residuo queda en la representación de trabajo, así que un lector ajustado sobre el núcleo lo
-recibe sin cambios.
+Con `session_ranks` la red recibe además, junto a cada rasgo, la puntuación normal de su rango
+entre las filas de su sesión, es decir, del mismo mercado y del mismo instante de decisión:
+
+    h_0 = [x, g],   g_f = Φ⁻¹((r_f − 1/2) / n)
+
+con r_f el rango de la fila en el rasgo f entre las n filas del bloque de su mercado, con los
+empates promediados (`session_ranks.gaussian_ranks`). El valor normalizado conserva el nivel
+del rasgo en la historia y el rango, su posición frente a los demás activos ese día. Con los
+46 rasgos solos y la pérdida de IC, la red con ambos llega a 0,118 de IC de validación y 0,117
+de evaluación, frente a 0,115 y 0,113 sin los rangos; solo con los rangos se queda en 0,111.
+La transformación solo lee filas del bloque, que tiene un único instante y entradas disponibles
+en él. Como los rangos de un subconjunto serían otros, el predictor la exige con la sesión
+completa, igual que `session_rank_inputs_v1`.
+
+Las ramas no tienen estado y solo leen entradas disponibles en la emisión. Sin `session_ranks`
+no mezclan filas. El residuo queda en la representación de trabajo, así que un lector ajustado
+sobre el núcleo lo recibe sin cambios.
 """
 
 import hashlib
@@ -48,6 +62,7 @@ import torch
 from torch import nn
 
 from .config import bounded_integer, require_identity
+from .session_ranks import gaussian_ranks
 from .state import check_finite
 
 TECHNICAL_BRANCH = "technical_branch_v1"
@@ -94,14 +109,18 @@ class TechnicalDenseConfig:
     columns: int
     hidden: int = 128
     depth: int = 2
+    # Añadir a cada rasgo la puntuación normal de su rango entre las filas de su sesión.
+    session_ranks: bool = False
 
     def __post_init__(self):
         bounded_integer(self.columns, "columnas de la rama técnica", 1, 512)
         bounded_integer(self.hidden, "capa oculta de la rama técnica", 1, 1024)
         bounded_integer(self.depth, "capas ocultas de la rama técnica", 1, 8)
+        if type(self.session_ranks) is not bool:
+            raise ValueError("session_ranks de la rama técnica debe ser un booleano")
 
     def identity(self):
-        return dict(
+        result = dict(
             schema_version=1,
             kind=TECHNICAL_DENSE,
             columns=self.columns,
@@ -115,6 +134,14 @@ class TechnicalDenseConfig:
             state="none",
             parameter_updates="none_in_forward",
         )
+        # Sin los rangos se conserva literalmente la identidad anterior.
+        if self.session_ranks:
+            result.update(
+                encoding="normalized_features_then_their_session_normal_scores",
+                session="rows_of_one_market_and_decision_instant_in_one_complete_block",
+                normal_scores="inverse_normal_of_average_rank_minus_half_over_the_rows",
+            )
+        return result
 
 
 def parse_technical_branch(raw):
@@ -126,11 +153,14 @@ def parse_technical_branch(raw):
         return raw
     if isinstance(raw, dict) and set(raw) == {"columns", "bins", "embedding", "hidden"}:
         return TechnicalBranchConfig(**raw)
-    if isinstance(raw, dict) and set(raw) == {"columns", "hidden", "depth"}:
+    if isinstance(raw, dict) and set(raw) in (
+        {"columns", "hidden", "depth"},
+        {"columns", "hidden", "depth", "session_ranks"},
+    ):
         return TechnicalDenseConfig(**raw)
     raise ValueError(
         "technical_branch debe declarar columns, bins, embedding y hidden, o columns, hidden y "
-        "depth, o ser None"
+        "depth (y session_ranks), o ser None"
     )
 
 
@@ -154,6 +184,9 @@ def normal_edges(bins, clip, dtype=torch.float32):
 
 class TechnicalBranch(nn.Module):
     """Residuo de la representación de cada flujo calculado con sus rasgos técnicos."""
+
+    # No mezcla filas: no necesita la sesión completa en un bloque.
+    session_level = False
 
     def __init__(self, hidden_size, config, *, clip, seed, dtype=torch.float32):
         super().__init__()
@@ -234,7 +267,8 @@ class TechnicalDense(nn.Module):
             raise ValueError("La rama técnica necesita el recorte de learning_scale")
         self.config, self.hidden_size, self.clip = config, hidden_size, float(clip)
         derived = hashlib.sha256(f"{TECHNICAL_DENSE}/{seed}".encode()).digest()
-        widths = [config.columns, *([config.hidden] * config.depth)]
+        first = config.columns * (2 if config.session_ranks else 1)
+        widths = [first, *([config.hidden] * config.depth)]
         with torch.device("cpu"), torch.random.fork_rng(devices=[]):
             torch.random.default_generator.manual_seed(int.from_bytes(derived[:7], "little"))
             self.layers = nn.ModuleList(
@@ -256,8 +290,32 @@ class TechnicalDense(nn.Module):
     def set_extra_state(self, state):
         require_identity(state, self.get_extra_state())
 
-    def forward(self, charts):
-        """Residuo [filas, dimensión] a partir del bloque del gráfico ya normalizado."""
+    @property
+    def session_level(self):
+        """Si la rama necesita todas las filas de la sesión en el mismo bloque."""
+        return self.config.session_ranks
+
+    def ranks(self, features, markets):
+        """Puntuaciones normales del rango de cada rasgo entre las filas de su mercado."""
+        if markets is None or len(markets) != len(features):
+            raise ValueError("Los rangos de la rama técnica necesitan el mercado de cada fila")
+        result = torch.zeros_like(features)
+        for market in sorted(set(markets)):
+            rows = torch.tensor(
+                [index for index, value in enumerate(markets) if value == market],
+                dtype=torch.int64,
+                device=features.device,
+            )
+            values = features.index_select(0, rows)
+            present = torch.ones_like(values, dtype=torch.bool)
+            result = result.index_copy(0, rows, gaussian_ranks(values, present))
+        return result
+
+    def forward(self, charts, markets=None):
+        """Residuo [filas, dimensión] a partir del bloque del gráfico ya normalizado.
+
+        `markets` es el mercado de cada fila del bloque y solo se usa con `session_ranks`.
+        """
         config = self.config
         if (
             not isinstance(charts, torch.Tensor)
@@ -267,6 +325,9 @@ class TechnicalDense(nn.Module):
         ):
             raise ValueError("La rama técnica necesita el bloque del gráfico con sus columnas")
         hidden = charts[:, charts.shape[1] - config.columns :]
+        if config.session_ranks:
+            # Los rangos no llevan gradiente hacia las entradas: son una función a trozos constante.
+            hidden = torch.cat((hidden, self.ranks(hidden.detach(), markets)), dim=1)
         for layer in self.layers:
             hidden = nn.functional.silu(layer(hidden))
         residual = self.outer(hidden)

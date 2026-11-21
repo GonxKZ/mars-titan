@@ -1342,6 +1342,7 @@ class FinancialPredictor(nn.Module):
             or self.asset_groups is not None
             or self.fractal_shared_operator is not None
             or (objective is not None and objective.session_level)
+            or (self.technical_branch is not None and self.technical_branch.session_level)
         )
 
     def _signature(self):
@@ -2283,7 +2284,11 @@ class FinancialPredictor(nn.Module):
                 )
             if self.technical_branch is not None:
                 # Los rasgos técnicos ya normalizados suman su residuo a la representación.
-                encoded = encoded + self.technical_branch(batch.inputs["charts"])
+                branch = self.technical_branch
+                charts = batch.inputs["charts"]
+                # Con rangos por sesión, entre las filas del bloque de cada mercado.
+                residual = branch(charts, markets) if branch.session_level else branch(charts)
+                encoded = encoded + residual
             if self.local_control is not None:
                 local_result = self.local_control(
                     self.mac,
