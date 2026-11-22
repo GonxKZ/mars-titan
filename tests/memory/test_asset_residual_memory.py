@@ -333,3 +333,24 @@ def test_the_final_test_stays_closed():
 def test_an_invalid_configuration_is_rejected(config):
     with pytest.raises(ValueError):
         arm.AssetMemoryConfig(**config)
+
+
+def test_the_mean_of_an_asset_absent_for_many_half_lives_is_its_exact_ewma_ratio():
+    """S_a/W_a se conserva aunque el peso haya decaído por debajo de 1e-12 (H03 de la auditoría).
+
+    Con h = 1 y 45 cohortes maduras sin el activo, su peso es 2^-45 y su media no cambia.
+    """
+    memory = arm.AssetResidualMemory(arm.AssetMemoryConfig(half_life=1.0))
+    assets = np.array(["US/A", "US/B", "US/C"])
+    memory.emit("US", START, assets, np.zeros(3), kappas=(0.1,), matures_at=START + DAY)
+    memory.mature("US", START, np.array([3.0, 1.0, 2.0]), at=START + DAY)
+    before, weight = memory.read("US", assets[:1])
+    assert weight[0] == 1.0 and before[0] != 0.0
+    others = np.array(["US/D", "US/E", "US/F"])
+    for s in range(1, 46):
+        at = START + 2 * s * DAY
+        memory.emit("US", at, others, np.zeros(3), kappas=(0.1,), matures_at=at + DAY)
+        memory.mature("US", at, np.array([1.0, 2.0, 3.0]), at=at + DAY)
+    after, weight = memory.read("US", assets[:1])
+    assert 0 < weight[0] < 1e-12
+    assert after[0] == pytest.approx(before[0], rel=1e-12)

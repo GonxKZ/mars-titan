@@ -195,7 +195,9 @@ class AssetResidualMemory:
         known = positions >= 0
         weight = np.where(known, state.weight[np.maximum(positions, 0)], 0.0)
         total = np.where(known, state.memory[np.maximum(positions, 0)], 0.0)
-        mean = np.where(weight > 0, total / np.maximum(weight, 1e-12), 0.0)
+        # S_a/W_a exacta para todo peso positivo: un activo ausente muchas semividas conserva su
+        # media (el divisor mínimo de 1e-12 la llevaba hacia cero; H03 de la auditoría).
+        mean = np.divide(total, weight, out=np.zeros(len(assets)), where=weight > 0)
         return mean, weight
 
     def matured(self, market):
