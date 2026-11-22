@@ -1,0 +1,74 @@
+{
+  "schema_version": 1,
+  "recipe_name": "titans_financial_chronological_v1",
+  "status": "declared_not_executed",
+  "variants": [
+    "transformer_direct",
+    "mac_disabled",
+    "mac_frozen",
+    "mac_online"
+  ],
+  "pairing_source": "mac_online",
+  "predictor": {
+    "hidden_size": 128,
+    "layers": 1,
+    "persistent_tokens": 4,
+    "dtype": "float32",
+    "bank_policy": "disabled",
+    "refinements": 1,
+    "head": "quantile_head_v1",
+    "gate_bias": {
+      "alpha_half_life": 256,
+      "eta": 0.5,
+      "theta": 0.05
+    },
+    "memory_residual_layer_norm": true,
+    "max_batch": 8192,
+    "max_state_bytes": 1073741824,
+    "attention_layout": "sequence_contiguous_v1",
+    "learning_scale": {
+      "clip": 5,
+      "price_returns": true,
+      "zero_median": true
+    },
+    "memory_inner_gradient": "autograd_v1",
+    "technical_branch": {
+      "columns": 46,
+      "hidden": 128,
+      "depth": 2,
+      "session_ranks": true
+    },
+    "median_gain": "learned_median_gain_v1"
+  },
+  "recipe": {
+    "truncation": 2,
+    "loss": "pinball",
+    "huber_delta": 0.01,
+    "weight_decay": 0,
+    "max_grad_norm": 1,
+    "epochs": 30,
+    "selection": {
+      "metric": "session_mae",
+      "patience": 5,
+      "min_delta": 1e-05,
+      "stopping": "fixed_budget"
+    },
+    "block_rows": 8192,
+    "checkpoint_updates": 256,
+    "checkpoint_seconds": 900,
+    "precision": "fp32_ieee_attention_v1",
+    "learning_rate": 0.001,
+    "determinism": "torch_deterministic_algorithms_v2",
+    "session_ic_term": {
+      "weight": 3.0,
+      "minimum_rows": 8
+    }
+  },
+  "walk_forward": {
+    "warmup_months": 12
+  },
+  "pending": [
+    "Es dgx-us-core-autograd-h128-u2-ic3-dense-gr-v9.json sin accumulation_rows: el gradiente de cada tramo sale del grafo de la emisión en lugar de repetir el tramo. Es su única diferencia y el gradiente es el mismo.",
+    "Sin resultados publicados. El test final de 2024 permanece cerrado."
+  ]
+}
