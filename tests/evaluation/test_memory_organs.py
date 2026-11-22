@@ -542,6 +542,24 @@ def test_the_v2_organs_add_the_nogain_trio_to_the_models_of_v1():
     assert set(v2) == set(v1)
 
 
+def test_the_v11_organs_add_the_attention_on_the_nogain_trio_to_the_models_of_v2():
+    folder = HERE.parents[2] / "configs" / "experiments"
+    v2 = json.loads((folder / "posttraining-memory-organs-v2.json").read_text())
+    v11 = json.loads((folder / "posttraining-memory-organs-v11.json").read_text())
+    organs.checked_organs(v11)
+    attention = [
+        "cross_asset_attention_nogain",
+        "cross_asset_attention_nogain_self",
+        "cross_asset_attention_frozen_nogain",
+        "cross_asset_attention_disabled_nogain",
+    ]
+    assert v11["models"] == [*v2["models"], *attention]
+    assert v11["description"] != v2["description"]
+    same = {key for key in v2 if key not in {"models", "description"}}
+    assert {key: v11[key] for key in same} == {key: v2[key] for key in same}
+    assert set(v11) == set(v2)
+
+
 def test_the_relay_line_starts_the_emission_in_its_own_unit_without_waiting(capsys):
     options = dict(
         label="v11",
