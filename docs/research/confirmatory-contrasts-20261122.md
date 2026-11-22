@@ -65,3 +65,32 @@ En 2013 se compararon 25 variantes con su control. El mayor de 25 estadísticos 
 en torno a 2,0 desviaciones. La ventaja del modelo sin ganancia sobre el núcleo de la v10 (t = 3,0)
 supera ese listón, pero con una sola semilla. Por eso el trío sin ganancia se ajusta también con las
 semillas 43 y 44 en 2013 y en 2023 y entra en todos los orígenes limpios.
+
+## Añadido del 22 de noviembre, 20:05Z: secundarios nuevos y una limitación, antes de ajustar ningún origen limpio
+
+No cambia la familia primaria. Lo que sigue se informa aparte, con su error entre orígenes (8 grados
+de libertad) y con Holm al 5 % entre los cuatro contrastes de este añadido en cada medida.
+
+- **S1, conjunto.** La media de rangos de `titans_mac_nogain` y `lightgbm_technical` frente al mejor
+  de los dos, elegido con la decisión de cada origen. En 2013 la media de rangos de tres modelos
+  (con `cross_asset_attention`) dio 0,1185 en la etiqueta (+0,0022 sobre el mejor, t = 3,3) y 0,0877 en
+  lo operable. La atención entre activos no está en los orígenes limpios; si la criba de la base v11
+  lleva a ajustarla allí, su conjunto se declarará antes de ajustarla.
+- **S2, órganos como componente.** Regresión contraída con covarianza y conjunto activo, con sus
+  hiperparámetros elegidos en calibración y la madurez exacta de la vista, sobre los dos modelos de S1
+  y la señal del brazo combinado de los órganos de `titans_mac_nogain`, frente a la media de rangos de
+  S1. Placebo: la misma señal barajada entre activos en cada sesión. En 2013, con tres modelos, sumó
+  +0,0011 (t = 2,1), en el listón del máximo de sus 24 ensayos (1,98).
+- **S3 y S4, memoria con el mejor control de cada modo.** `titans_mac_nogain` frente a
+  `titans_mac_frozen` (S3) y frente a `titans_mac_disabled` (S4), los dos con la ganancia de la
+  mediana, que es la receta con la que la memoria congelada y la red sin memoria rinden más en 2013
+  (0,1117 y 0,1100, frente a 0,1098 y 0,1059 sin ganancia). C2 y C3 comparan a igual receta; S3 y S4
+  comparan cada modo en su mejor receta, que es la pregunta de quien no quiera dar ventaja a la memoria.
+
+**Limitación que se informará siempre: el universo es de supervivientes.** De los 4.202 activos de
+EE. UU. con precios, 4.200 llegan al final de 2023; solo dos acaban antes. Ningún rasgo puede
+distinguir a un superviviente dentro del universo, pero cualquier modelo, también los árboles, puede
+aprovechar la deriva de los que eran pequeños y sobrevivieron. La etiqueta resta el alfa de 252
+sesiones de cada activo y con él la mayor parte de esa deriva; el rendimiento operable no la resta.
+Por eso el IC operable está más expuesto a este sesgo que el de la etiqueta, y los contrastes entre
+modelos, que comparten universo, lo están menos que los niveles.
