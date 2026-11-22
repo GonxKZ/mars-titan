@@ -333,7 +333,13 @@ class NeighbourMemory:
         Con la exclusión del propio activo, `assets` es el código entero del activo de cada fila.
         """
         prediction_at = _instant(prediction_at, "La fecha de decisión")
-        matures_at = _instant(matures_at, "La madurez")
+        _require(
+            isinstance(matures_at, (int, np.integer)) and not isinstance(matures_at, bool),
+            "La madurez debe ser un entero de microsegundos UTC",
+        )
+        # Una decisión de 2023 puede madurar en el test final: se emite y no se escribe nunca,
+        # porque ni mature() ni el vaciado final llegan a 2024 (como en la memoria por activo).
+        matures_at = int(matures_at)
         _require(matures_at > prediction_at, "Cada etiqueta madura después de su decisión")
         keys = np.asarray(keys)
         predictions = np.asarray(predictions)

@@ -226,6 +226,29 @@ def test_the_final_test_stays_closed():
         run(data)
 
 
+def test_a_decision_of_2023_whose_label_matures_in_2024_is_read_but_never_written():
+    """H01 de la auditoría de Gemini.
+
+    La etiqueta de la última sesión de 2023 pertenece a 2023 por su decisión, pero madura en el
+    test final. Su cohorte se emite y ninguna escritura la usa, igual que en la memoria por
+    activo. Con datos de la campaña no llega a ocurrir: la vista excluye esas etiquetas
+    (target_after_cutoff).
+    """
+    data = panel(sessions=3, assets=30, seed=9)
+    shift = FINAL_TEST_START_US - START - 2 * DAY - DAY // 2
+    data["prediction_at"] = data["prediction_at"] + shift
+    data["matures_at"] = data["matures_at"] + shift
+    last, matures = int(data["prediction_at"][-1]), int(data["matures_at"][-1])
+    assert last < FINAL_TEST_START_US <= matures
+    reads, _, memory = run(data)
+    first_two = {key: value[:60] for key, value in data.items()}
+    np.testing.assert_array_equal(reads[:60], run(first_two)[0])
+    assert memory.pending("US") == [(last, matures)]
+    assert nrm.NeighbourMemory.restore(memory.export()).pending("US") == [(last, matures)]
+    with pytest.raises(ValueError, match="desarrollo"):
+        memory.mature("US", last, data["target"][-30:], at=matures)
+
+
 def test_projection_keys_are_unit_rows_and_reproducible():
     rng = np.random.default_rng(10)
     raw = rng.normal(size=(20, 6)).astype(np.float32)
