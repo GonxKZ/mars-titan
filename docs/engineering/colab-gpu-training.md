@@ -38,6 +38,7 @@ declaración de la campaña no admite orígenes posteriores a 2023.
 | `scripts/colab_site.py` | Ficha del equipo: máquina, GPU, controlador, CUDA, cuDNN y versiones. Compara dos fichas y dice en qué difieren |
 | `scripts/colab_sync.py` | Copia coherente del estado de la campaña a Drive mientras los trabajos escriben, y su vuelta a una máquina nueva |
 | `scripts/colab_parity.py` | Puerta de paridad entre equipos: mismas filas y etiquetas, y equivalencia del IC por sesión dentro de un margen |
+| `scripts/colab_origin.sh` | Un origen paso a paso con las órdenes del relevo de la DGX: cohortes y comprobaciones, copia empaquetada de las entradas, permiso, cola y estado. Con `--ensayo` imprime cada orden sin ejecutarla |
 | `scripts/campaign_search.py` | Búsqueda de hiperparámetros con Optuna en la que cada ensayo es un modelo más de una campaña. Sirve en cualquier equipo; en Colab necesita el paso `busqueda` del arranque |
 
 El motor ya sabía trabajar en dos equipos
@@ -83,6 +84,51 @@ equipos en un mismo análisis:
 Si el veredicto no es «equivalente», los resultados de Colab se analizan aparte y cada origen
 se ajusta entero en un solo equipo, con sus controles, para que ningún contraste pareado cruce
 máquinas.
+
+## Guion del primer día
+
+Con Drive montado, `P` la carpeta del paquete de datos, `B` el bundle de código, `K` una copia
+del kit (los guiones de `scripts/` de la rama de trabajo) y `T=/content/mars-titan`. Cada
+orden se puede repetir: conserva lo ya hecho.
+
+```bash
+export MARS_TITAN_SITE=google-colab-rtx-pro-6000
+# 1. Máquina: herramientas, código de la campaña v10, entorno, datos de EE. UU. y comprobaciones.
+bash $K/colab_bootstrap.sh sistema
+bash $K/colab_bootstrap.sh codigo  --bundle $B --commit 3d10a30fcf8124a19b4aae74e9bb06e589e10986 --trabajo $T
+bash $K/colab_bootstrap.sh entorno --trabajo $T
+bash $K/colab_bootstrap.sh datos   --paquete $P --trabajo $T \
+     --grupos "A00-macroeconomia A01-preparados-v31 A02-etiquetas-v31 A04-vistas-US Etiquetas-US Muestras-US Precios-US Ventanas-US"
+bash $K/colab_bootstrap.sh nativo  --trabajo $T
+bash $K/colab_bootstrap.sh comprobar --trabajo $T
+# 2. Puerta de paridad: el núcleo en 2013 con las tres semillas, en el commit de la campaña.
+origen=(--repo $T/repo --estado $T/estado/v10 --origen 2013
+        --vistas /home/gonzalo/.local/state/mars-titan/campaign-a-v2-views-v31-20261013/views/US
+        --declaracion configs/experiments/dgx-us-campaign-v10.json)
+bash $K/colab_origin.sh cohortes "${origen[@]}"
+bash $K/colab_origin.sh entradas "${origen[@]}" --receta configs/titans/dgx-us-core-v2.json
+bash $K/colab_origin.sh permiso  "${origen[@]}" --nota "Puerta de paridad en Colab"
+tmux new-session -d -s campana "bash $K/colab_origin.sh lanza ${origen[*]} --semillas '42 43 44' --niveles core --trabajadores 3"
+# 3. Mientras corre: copia coherente a Drive cada pocos minutos y estado de la cola.
+python3 $K/colab_sync.py push --state $T/estado/v10 --mirror $P/../estado-colab/v10
+bash $K/colab_origin.sh estado "${origen[@]}"
+```
+
+De vuelta en la DGX, `colab_sync.py pull` deja el estado de Colab en una carpeta y
+`colab_parity.py --a <estado de la DGX> --b <estado de Colab> --model titans_mac --origin 2013
+--seed 42` (y las otras dos semillas) decide la puerta. El nivel `core` de la v10 lleva también
+el lector `mars_titan_m3`, que necesita el enlace nativo: si el paso `nativo` no compila en
+Colab, ese trabajo falla y el núcleo termina igual.
+
+El número de trabajadores del primer lanzamiento es prudente. La prueba de concurrencia lo
+sube: se relanza con cuatro y con seis mirando la memoria del anfitrión y de la GPU en
+`equipo.json` y los pasos por minuto de la telemetría; un trabajo del núcleo usa en la DGX
+hasta 20 GiB de memoria del anfitrión y 7,4 GiB de la GPU.
+
+La copia empaquetada de las entradas de 2013 ocupa 27 GiB, además de los datos restaurados.
+Para la criba de la base nueva se repite el paso `codigo` con el commit de `v11-candidatos`
+en otra carpeta de trabajo (`--trabajo $T-v11`), que comparte los datos restaurados, y se usa
+su declaración `configs/experiments/us-campaign-v11-screen1.json` con otro estado.
 
 ## Búsqueda de hiperparámetros
 
