@@ -18,17 +18,19 @@ conservan. El detalle de la campaña DGX está en
 - Lo que propone un modelo externo se anota como propuesta hasta que una medida propia lo
   confirme.
 
-## Estado medido (22 de noviembre de 2026, origen 2013, semilla 42, IC de evaluación)
+## Estado medido (22 de noviembre de 2026, tarde; origen 2013, semilla 42, IC de evaluación)
 
 | Pieza | Medida | Lectura |
 | --- | --- | --- |
-| Receta original con rasgos | 0,0776 | Punto de partida |
-| Base con término de IC y rama densa | 0,1107 | El término aporta 0,007 y la rama 0,008 |
-| Base con rangos por sesión en la rama | 0,1163 | +0,0055 (t = 4,4); supera a los árboles (0,1122; p = 0,017) |
-| Memoria: sin ella, congelada, en línea | 0,1049, 0,1094, 0,1107 | La memoria aporta 0,006, pero aprender en línea solo 0,0013 (t = 1,2) |
-| Lectores episódicos y núcleo cognitivo | igual que su núcleo | Con el término de IC en su pérdida, +0,0008 a +0,0012 |
-| Atención entre activos | +0,0002 | Sin efecto |
-| Escala de la predicción | dispersión 1,1 a 1,9 frente a 0,14 | El término infla la mediana; la ganancia aprendida la corrige (tabular) |
+| Mejor núcleo: memoria en línea, rangos por sesión, sin ganancia de la mediana | 0,1163 | +0,0041 sobre los árboles (0,1122). Es el mismo ajuste que `titans_mac_xrank` de la v8, bit a bit |
+| Núcleo de la v10 (con ganancia de la mediana) | 0,1132 | −0,0031 respecto al anterior (t = −3,0); +0,0009 sobre los árboles (t = 0,4) |
+| Memoria en el mejor núcleo: congelada, sin memoria | 0,1098, 0,1059 | Escribir en línea suma 0,0065 (t = 5,2); un 17 % viene de escribir en evaluación (gemelos, N = +0,0011, t = 3,5) |
+| Término de IC, rama densa | −0,0054, −0,0137 al quitarlos | Las dos piezas que más suman |
+| Atención entre activos | +0,0021 (t = 2,3) | Su control que no lee a los demás queda a 0,0007: es sobre todo la capa residual |
+| Órganos de memoria con etiquetas maduras | +0,0023 a +0,0031 (t = 2,5 a 2,8) | Sobre el núcleo, la congelada y la atención; con la atención llega a 0,1175 |
+| Lectores episódicos y núcleo cognitivo | igual que su núcleo | No añaden |
+| Rendimiento operable (etiqueta más alfa) | núcleo v10 0,0787, árboles 0,0837 | El alfa conocido explica 0,0813 del IC de la etiqueta. Medido sobre lo operable, el núcleo v10 queda por debajo de los árboles (t = −2,1) |
+| Objetivo operable en la red tabular | +0,0040 a +0,0063 de IC operable (tres semillas) | Opción nueva en la base v11, en la cola de la DGX |
 
 ## Hipótesis abiertas
 
@@ -229,6 +231,9 @@ desacoplado de 0,01: −0,0001 (t = −1,20). Se conserva la configuración base
 | C5-p | 22-11 | ¿La atención entre activos aporta información de los demás activos, o es el efecto de añadir una capa? | v10, origen 2013, semilla 42: `cross_asset_attention` frente al núcleo y frente a su control `self_only`, que tiene los mismos parámetros y solo se lee a sí mismo | `titans_mac`; `cross_asset_attention_self`; sin memoria, `titans_mac_disabled` | Frente al núcleo: +0,0021 en evaluación (t 2,3) y +0,0005 en decisión (t 0,3). Frente a su control: +0,0007 en evaluación (t 1,0) y 0,0000 en decisión. Sin memoria resta: −0,0019 en evaluación (t −2,4) y −0,0039 en decisión (t −3,8) | Con una semilla, la mayor parte de la ganancia es de la capa residual y no de leer a los otros activos. La mezcla ocurre antes de que la rama técnica sume su residuo, así que no ve la señal que más ordena. La base v11 añade la posición después de la rama (`position="after_technical"`), apagada por defecto y con su control; entra en la criba v11 (`y1_xattn`). Falta repetir el contraste con las semillas 43 y 44 |
 | I-1 | 22-11 | ¿Valen los supuestos del error estándar de los contrastes: mercados independientes y rezago fijo de Newey-West? | Emisiones reales: campaña conjunta v2 (16 modelos, origen 2013, semilla 42, 404 días con los dos mercados) y v10 (7 contrastes en sus tres tramos) | — | Correlación entre EE. UU. y China del IC del mismo día UTC: de +0,01 a +0,09 en niveles; en las diferencias pareadas entre modelos (120 pares), mediana +0,008, con p10 −0,033 y p90 +0,084 (el error de muestreo de una correlación con 404 días es 0,05). Autocorrelación de las diferencias pareadas: −0,03 de mediana en el rezago 1 (de −0,09 a +0,16) y ±0,02 en los rezagos 2 a 5; el error con el rezago automático es 0,98 veces el i.i.d. de mediana y con rezago 20 sube como mucho un 18 % | Los dos supuestos se sostienen: tratar los mercados como bloques independientes subestima el error en torno a un 1 %, y un ancho de banda dependiente de los datos no cambiaría las conclusiones. La correlación de 0,75 y el AR(1) de 0,75 que suponía la auditoría externa no se dan en estos datos. El resumen entre orígenes (`dgx_seed_contrasts.py` con varios `--year`) añade la prueba que no depende de ninguno de los dos: cada origen como réplica, con t de K − 1 grados |
 | O-1 | 22-11 | ¿Lo ganado en la etiqueta se conserva en el rendimiento que se puede operar? | v10, origen 2013, semilla 42: IC por sesión de la etiqueta sin alfa con la predicción, por un factor elegido en calibración, más alfa; con todas las filas y en el tercio más líquido de cada sesión | Cada modelo con su control; el núcleo con `lightgbm_technical` | En lo operable el núcleo queda 0,0050 por debajo de los árboles (t −2,1; 0,0787 frente a 0,0837) y 0,0036 por encima en el tercio líquido (t 1,0). Escribir en memoria en línea suma +0,0056 frente a la memoria congelada (t 3,5) y +0,0072 frente a no tener memoria (t 4,1), más que en la etiqueta (+0,0014 y +0,0032). El término de IC, que suma 0,0054 en la etiqueta, suma +0,0002 (t 0,1). La atención entre activos, +0,0013 (t 1,3). En la v8, la receta con rangos y sin ganancia de la mediana daba 0,0830 con la regla de escala anterior | Lo que gana el término de IC está en la parte de la etiqueta que ya se conoce al predecir; lo que aporta la memoria en línea está en la parte operable. Los contrastes de semillas y de orígenes miden desde ahora las dos (`dgx_seed_contrasts.py --offset`). La receta final se elige mirando las dos, con el trío sin ganancia de la mediana en las tres semillas y en los orígenes limpios |
+| H6-a | 22-11 | ¿Entrenar el término de IC sobre lo operable mejora el IC operable? | Red tabular (92 → 128 → 128 → 1, sin memoria), tres semillas, cuatro objetivos: IC, IC operable, MAE + 3·IC y MAE + 3·IC operable. El IC operable correlaciona predicción más alfa con los rangos normales de etiqueta más alfa | El mismo objetivo sobre la etiqueta, pareado por sesión | MAE + 3·IC reproduce al núcleo (etiqueta 0,1132, 0,1136 y 0,1112; operable 0,0806, 0,0798 y 0,0791). Con el término sobre lo operable: operable 0,0847, 0,0861 y 0,0846 (+0,0040, +0,0063 y +0,0054; t de 3,5 a 4,6) a su escala natural, y etiqueta 0,098. Devuelta a la etiqueta como k·(p + alfa) − alfa recupera 0,1117 y 0,1103 frente a 0,1136 y 0,1112. Como único objetivo: operable 0,0877, 0,0877 y 0,0892 (t de 5,6 a 6,4) | Opción `offset_column` y `offset_scale` del término de IC en la base v11, apagada por defecto (68 pruebas, 7 mutantes). Se mide en los Titans en la DGX con y sin ganancia de la mediana y en los tres modos de memoria |
+| F-3 | 22-11 | ¿Aporta escribir en la memoria durante la evaluación, o la ventaja viene de haberse ajustado con ella? | Gemelos de escritura: la misma red ajustada en línea, evaluada escribiendo y sin escribir (paridad bit a bit en las anclas). Par sin rangos y par con rangos de la v8, origen 2013, semilla 42 | La red ajustada con memoria congelada | Sin rangos: escribir suma +0,00003 (t = 0,6). Con rangos, que es el mejor núcleo: +0,0011 (t = 3,5; pasa Holm entre los dos pares), sin decaer por trimestres (+0,0008, +0,0016, +0,0015, +0,0006), el 17 % de la ventaja sobre la congelada (intervalo de Fieller 8 % a 31 %); en calibración +0,0021 (t = 5,6), el 30 % | En el mejor núcleo la memoria aprende en evaluación, poco y de forma estable; la mayor parte de su ventaja está en el ajuste. Siguen el par de la v10 y el brazo que reinicia el estado al empezar la evaluación |
+| M-1 | 22-11 | ¿Suman los órganos de memoria con etiquetas maduras sobre los Titans de la v10? | Memoria por activo y por vecinos emitidas fila a fila sobre cuatro modelos de la v10, con pesos elegidos en calibración | Su padre; placebos | Las dos juntas: +0,0023 (t = 2,8) al núcleo, +0,0031 (t = 2,5) a la congelada, +0,0029 (t = 1,6) a sin memoria y +0,0023 (t = 2,5) a la atención entre activos, que llega a 0,1175 (+0,0053 sobre los árboles, t = 3,0). Los ocho contrastes son positivos; tres pasan Holm | En el plan del relevo tras cada origen. Falta sobre el trío sin ganancia y sobre lo operable |
 
 ## Interacción observada: rangos por sesión y memoria en línea
 
@@ -236,6 +241,24 @@ Con una semilla, los rangos por sesión suman 0,0055 al núcleo con memoria en l
 de memoria congelada y 0,0010 al núcleo sin memoria. Con los rangos, aprender en línea queda
 0,0065 por encima de la memoria congelada (0,0013 sin ellos). Puede ser una semilla afortunada:
 la campaña v10 lo repite con tres semillas en los tres núcleos antes de darlo por cierto.
+
+**Tabla completa de la v10 (22 de noviembre, tarde).** Ganancia de la mediana, rangos por sesión y
+modo de memoria, IC de evaluación con la semilla 42:
+
+| Receta | En línea | Congelada | Sin memoria |
+| --- | ---: | ---: | ---: |
+| Sin ganancia, sin rangos | 0,1107 | 0,1094 | 0,1049 |
+| Sin ganancia, con rangos | 0,1163 | 0,1098 | 0,1059 |
+| Con ganancia, sin rangos | 0,1126 | 0,1068 | 0,1057 |
+| Con ganancia, con rangos (núcleo v10) | 0,1132 | 0,1117 | 0,1100 |
+
+Quitar la ganancia al núcleo v10 suma 0,0031 en línea (t = 3,0) y resta 0,0020 con memoria congelada
+(t = −2,8) y 0,0041 sin memoria (t = −4,3). Quitar los rangos resta 0,0006 en línea (t = −0,5), 0,0050
+con memoria congelada y 0,0043 sin memoria. La ganancia ayuda a los modelos que no escriben y perjudica
+al que escribe, y los rangos al revés según haya ganancia. El trío sin ganancia de la v10 es, tensor a
+tensor, el trío con rangos de la v8 (misma receta y misma vista): no es una réplica independiente. No
+hay explicación medida de la interacción; está encargada a Gemini y la acotan las semillas 43 y 44, que
+ya incluyen el trío sin ganancia.
 
 **La v10 no lo repite con la semilla 42 (22 de noviembre).** El núcleo de la v10 es la receta
 con rangos de la v8 más la ganancia aprendida de la mediana, con otra versión del código y un
