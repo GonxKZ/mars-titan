@@ -512,6 +512,23 @@ def test_the_declaration_is_checked_before_reading_anything(changes, message):
         organs.checked_organs(declaration(**changes))
 
 
+def test_the_nogain_organs_differ_from_v1_only_in_their_models_and_description():
+    folder = HERE.parents[2] / "configs" / "experiments"
+    v1 = json.loads((folder / "posttraining-memory-organs-v1.json").read_text())
+    nogain = organs.checked_organs(
+        json.loads((folder / "posttraining-memory-organs-nogain-v1.json").read_text())
+    )
+    assert nogain["models"] == [
+        "titans_mac_nogain",
+        "titans_mac_frozen_nogain",
+        "titans_mac_disabled_nogain",
+    ]
+    assert nogain["description"] != v1["description"]
+    same = {key for key in v1 if key not in {"models", "description"}}
+    assert {key: nogain[key] for key in same} == {key: v1[key] for key in same}
+    assert set(nogain) == set(v1)
+
+
 def test_the_relay_line_starts_the_emission_in_its_own_unit_without_waiting(capsys):
     options = dict(
         label="v11",
