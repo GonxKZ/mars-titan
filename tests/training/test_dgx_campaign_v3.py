@@ -1198,3 +1198,112 @@ def test_the_second_screen_of_the_new_base_adds_the_two_terms_and_the_weight_dec
     assert by_tier["y2_wd"] == {"titans_mac_wd1e2", "titans_mac_nogain_wd1e2"}
     assert len(by_tier["y2_both_controls"]) == 4 and len(by_tier["y2_wd_controls"]) == 2
     assert by_tier["y2_combo"] == {combo}
+
+
+INPUT_TRIO = ("titans_mac_nogain", "titans_mac_frozen_nogain", "titans_mac_disabled_nogain")
+
+
+def test_the_joint_input_arms_differ_only_in_the_technical_version():
+    experiments = ROOT / "configs/experiments"
+    source_path = experiments / "dgx-us-cn-campaign-v9.json"
+    control_path = experiments / "us-cn-campaign-v11-inputs-v2.json"
+    control = campaign.load_declaration(control_path)[0]
+    wide = campaign.load_declaration(experiments / "us-cn-campaign-v11-inputs-v3.json")[0]
+    source = json.loads(source_path.read_text())
+    assert control["inputs"] == dict(technical=technical_features.NAME_V2)
+    assert wide["inputs"] == dict(technical=technical_features.NAME_V3)
+    assert control["final_test_access"] is False and wide["final_test_access"] is False
+    # El control es la conjunta v9 con solo el trío sin ganancia de la mediana.
+    assert set(control) == set(source)
+    assert control["models"] == {name: source["models"][name] for name in INPUT_TRIO}
+    assert control["tiers"] == ["r4_nogain"] and list(control["recipes"]) == ["core_nogain"]
+    assert control["recipes"]["core_nogain"] == source["recipes"]["core_nogain"]
+    own = {"models", "recipes", "tiers", "description", "source_declaration_sha256"}
+    for key in set(source) - own:
+        assert control[key] == source[key], key
+    digest = hashlib.sha256(source_path.read_bytes()).hexdigest()
+    assert control["source_declaration_sha256"] == digest
+    # La candidata solo cambia la versión de rasgos y el ancho que lee la rama técnica.
+    assert set(wide) == set(control)
+    for key in set(control) - {"inputs", "models", "description", "source_declaration_sha256"}:
+        assert wide[key] == control[key], key
+    digest = hashlib.sha256(control_path.read_bytes()).hexdigest()
+    assert wide["source_declaration_sha256"] == digest
+    assert list(wide["models"]) == [f"{name}_v3" for name in INPUT_TRIO]
+    recipe = json.loads((ROOT / control["recipes"]["core_nogain"]).read_text())
+    branch = recipe["predictor"]["technical_branch"]
+    assert branch["columns"] == len(technical_features.NAMES_V2) == 46
+    assert "offset_column" not in recipe["recipe"]["session_ic_term"]
+    for name in INPUT_TRIO:
+        model, base = wide["models"][f"{name}_v3"], control["models"][name]
+        assert {key: value for key, value in model.items() if key != "predictor_changes"} == base
+        assert model["predictor_changes"] == dict(
+            technical_branch=dict(branch, columns=len(technical_features.NAMES_V3))
+        )
+    # Los contrastes declarados: cada modelo con su pareja de la otra versión, la memoria dentro
+    # de cada brazo y el modelo en línea frente a los árboles con sus mismos rasgos.
+    read = {
+        tag: json.loads((experiments / f"us-cn-campaign-v11-inputs-{tag}.json").read_text())
+        for tag in ("contrasts", "memory", "trees")
+    }
+    assert all(item["kind"] == "dgx_campaign_contrasts" for item in read.values())
+    assert read["contrasts"]["controls"] == {f"{name}_v3": name for name in INPUT_TRIO} | {
+        "lightgbm_technical_v3": "lightgbm_technical"
+    }
+    online = INPUT_TRIO[0]
+    assert read["memory"]["controls"] == {
+        f"{other}{tag}": f"{online}{tag}" for tag in ("", "_v3") for other in INPUT_TRIO[1:]
+    }
+    assert read["trees"]["controls"] == {
+        online: "lightgbm_technical",
+        f"{online}_v3": "lightgbm_technical_v3",
+    }
+
+
+def test_the_branch_and_the_known_offset_follow_the_declared_technical_version():
+    experiments = ROOT / "configs/experiments"
+    wide = json.loads((experiments / "us-cn-campaign-v11-inputs-v3.json").read_text())
+    campaign.checked_declaration(wide, root=ROOT)
+    # La rama lee las últimas columnas del bloque: con otra versión leería otras sin avisar.
+    for inputs in (dict(technical=technical_features.NAME_V2), None):
+        changed = {key: value for key, value in wide.items() if key != "inputs"}
+        if inputs is not None:
+            changed["inputs"] = inputs
+        with pytest.raises(ValueError, match="rama técnica"):
+            campaign.checked_declaration(changed, root=ROOT)
+    # Sin leer las recetas no se puede comprobar, y la declaración sigue siendo válida.
+    narrow = dict(wide, inputs=dict(technical=technical_features.NAME_V2))
+    campaign.checked_declaration(narrow, root=ROOT, check_recipe_files=False)
+    # El desplazamiento conocido es la columna del alfa, la primera de los rasgos técnicos: al
+    # añadir columnas detrás, su posición contada desde el final cambia.
+    screen = json.loads((experiments / "us-campaign-v11-screen2.json").read_text())
+    campaign.checked_declaration(screen, root=ROOT)
+    branch = dict(columns=62, hidden=128, depth=2, session_ranks=True)
+    moved = dict(
+        screen,
+        inputs=dict(technical=technical_features.NAME_V3),
+        models={
+            name: dict(
+                model,
+                predictor_changes=dict(
+                    model.get("predictor_changes") or {}, technical_branch=branch
+                ),
+            )
+            for name, model in screen["models"].items()
+        },
+    )
+    with pytest.raises(ValueError, match="desplazamiento conocido"):
+        campaign.checked_declaration(moved, root=ROOT)
+    plain = {
+        name: model
+        for name, model in moved["models"].items()
+        if "offset_column"
+        not in json.loads((ROOT / screen["recipes"][model["recipe"]]).read_text())["recipe"][
+            "session_ic_term"
+        ]
+    }
+    assert 0 < len(plain) < len(moved["models"])
+    campaign.checked_declaration(
+        dict(moved, models=plain, tiers=sorted({model["tier"] for model in plain.values()})),
+        root=ROOT,
+    )

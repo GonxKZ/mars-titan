@@ -1,0 +1,9 @@
+{
+  "schema_version": 1,
+  "kind": "dgx_campaign_contrasts",
+  "description": "Prueba de los rasgos v3 en la conjunta: el modelo en línea de cada brazo frente a los árboles con sus mismos rasgos.",
+  "controls": {
+    "titans_mac_nogain": "lightgbm_technical",
+    "titans_mac_nogain_v3": "lightgbm_technical_v3"
+  }
+}

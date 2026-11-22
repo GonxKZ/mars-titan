@@ -44,6 +44,7 @@ from mars_titan.data.storage import atomic_json
 
 from .comparison_cohorts import (
     FULL_VIEW_RULE,
+    TECHNICAL,
     checked_extensions,
     write_cohort,
     write_full_view,
@@ -152,6 +153,29 @@ def _checked_rule(rule, runner):
         initial_reported=runner == "fit",
     )
     return rule
+
+
+# Columna de los rasgos técnicos con el alfa conocido de la fila, que suma el término de IC de
+# lo operable (`offset_column`).
+KNOWN_ALPHA = "alpha_percent"
+
+
+def _technical_reading(root, path, model, read):
+    """Columnas que lee la rama técnica de un modelo y columna de su desplazamiento conocido.
+
+    Las dos se cuentan desde el final del bloque del gráfico, así que dependen de cuántas
+    columnas añade la versión de rasgos de la campaña. `read` guarda las recetas ya leídas.
+    """
+    if path not in read:
+        read[path] = json.loads((Path(root) / path).read_text(encoding="utf-8"))
+    recipe = read[path]
+    predictor = dict(recipe.get("predictor") or {}) | dict(model.get("predictor_changes") or {})
+    branch = predictor.get("technical_branch")
+    term = (recipe.get("recipe") or {}).get("session_ic_term")
+    return (
+        branch.get("columns") if isinstance(branch, dict) else None,
+        term.get("offset_column") if isinstance(term, dict) else None,
+    )
 
 
 def job_rule(declaration, model):
@@ -377,7 +401,9 @@ def checked_declaration(document, *, root=ROOT, check_recipe_files=True):
     )
     # Extensión de entradas de toda la campaña: la declaran sus cohortes, no cada modelo, para
     # que todos sus trabajos compartan índices y copias empaquetadas.
-    checked_extensions(document.get("inputs"))
+    inputs = checked_extensions(document.get("inputs"))
+    technical = () if inputs is None else TECHNICAL[inputs["technical"]]
+    read = {}
     if "analysis" in document:
         from mars_titan.evaluation.comparison_protocol import checked
 
@@ -397,6 +423,24 @@ def checked_declaration(document, *, root=ROOT, check_recipe_files=True):
         )
         if runner in GPU_RUNNERS:
             job_rule(document, model)
+        if runner in GPU_RUNNERS and check_recipe_files:
+            # La rama y el desplazamiento se cuentan desde el final del bloque: con otra
+            # versión de rasgos leerían otras columnas sin que nada fallara.
+            columns, offset = _technical_reading(root, recipes[model["recipe"]], model, read)
+            _require(
+                columns is None or columns == len(technical),
+                f"La rama técnica del modelo {name} lee {columns} columnas y los rasgos "
+                f"declarados por la campaña tienen {len(technical)}",
+            )
+            _require(
+                offset is None
+                or (
+                    KNOWN_ALPHA in technical
+                    and offset == technical.index(KNOWN_ALPHA) - len(technical)
+                ),
+                f"El desplazamiento conocido del modelo {name} lee la columna {offset} y la del "
+                f"alfa ({KNOWN_ALPHA}) es otra con los rasgos declarados por la campaña",
+            )
         if "continuation" in model:
             _require(
                 model["continuation"] == CONTINUATION,
