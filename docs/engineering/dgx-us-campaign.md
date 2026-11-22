@@ -1455,47 +1455,52 @@ decidido con su validación y su calibración, y su evaluación se ha mirado. Lo
 2023 no tienen todavía ningún resultado con rasgos: son la evidencia fuera de muestra y se leen
 con el diseño ya fijado. El test final de 2024 sigue cerrado.
 
-### Plan vigente (decimosexta revisión del 21 de noviembre)
+### Plan vigente (vigésima revisión del 22 de noviembre)
 
-Las campañas con rasgos son `dgx-us-campaign-v8.json` y `dgx-us-cn-campaign-v7.json`, en el
-commit 114bcf4e. El plan recorre, con una fase cada vez y la preparación de la siguiente
-adelantada:
+Las campañas vigentes son `dgx-us-campaign-v10.json` y `dgx-us-cn-campaign-v9.json`, en el
+commit 3d10a30f. El cambio se hizo el 22 de noviembre a las 03:31 UTC: la fase de criba de la
+v8 se pausó en su siguiente barrera (sus trabajos conservan sus checkpoints), las copias
+empaquetadas de 2013 y sus índices pasaron al estado de la v10 y la primera fase arrancó con
+la comprobación inicial de la cola: los 19 modelos de ajuste llegaron a su primera barrera sin
+error. El plan recorre, con una fase cada vez y la preparación de la siguiente adelantada:
 
-| Bloque | Qué recorre |
-| --- | --- |
-| 1 | Origen 2013. Con rasgos: modelos principales con los controles de la base (niveles `r4_`), criba de las variantes y de la segunda ronda, promoción, semillas 43 y 44 y modelos secundarios; lo que faltaba sin rasgos; la extensión, y la conjunta |
-| 2 | Origen 2023, los modelos ajustados con todos los datos: con rasgos en EE. UU. y en la conjunta (más las variantes promovidas), su pareja sin rasgos en EE. UU. y la ventana desde 2009 |
-| 3 | Orígenes 2014 a 2022 con rasgos en EE. UU., con un informe que reúne los orígenes recorridos |
-| 4 | Semillas 43 y 44 del origen 2023 con rasgos y la pareja conjunta sin rasgos |
-| 5 | Si queda plazo: orígenes 2014 a 2022 de la conjunta con rasgos y la ventana en 2016 |
+| Bloque | Qué recorre | Trabajos |
+| --- | --- | ---: |
+| 1 | Origen 2013 de la v10. Principales con sus controles, las cuatro piezas de la base (`r4_noranks`, `r4_nogain`, `r4_noic`, `r4_nobranch`), redes entre activos y lectores; informe y promoción; semillas 43 y 44 de núcleos, lectores y `r4_noranks`; criba completa en dos partes (memoria, modalidades y redes; pérdidas, optimización y pesos), cada una con su informe y su promoción | 28 + 18 + 36 + 55 |
+| 2 | Origen 2023: principales, controles, `r4_noranks` y `r4_nogain`, más lo promovido; semillas 43 y 44 de núcleos y controles | 12 + 10 |
+| 3 | Conjunta (5.008 activos), origen 2013: principales, controles y `r4_noranks` | 9 |
+| 4 | Orígenes 2018, 2021, 2015, 2020, 2016, 2022, 2014, 2019 y 2017 de la v10, intercalados para que un corte deje años repartidos: los niveles del 2023 (y la ventana desde 2009 en 2016) | 12 por origen |
+| 5 | Conjunta, origen 2023 | 9 |
+| 6 | Resto del origen 2023: redes, lector sobre la atención, ventana desde 2009, piezas de la v8 y lectores con el término | 22 |
+| 7 | Conjunta, origen 2013: el resto de los modelos y la criba completa, para que todas las variantes queden entrenadas también con todos los activos | ≈ 100 |
 
-Los niveles `r4_` entran en el origen 2013 de EE. UU. La orden de promoción que sigue al
-primer informe con rasgos (`dgx_campaign_promotion.py --candidates r4_`) solo lleva uno a los
-demás orígenes y a la conjunta si supera a la base en validación y calibración de 2013 por
-0,003 de IC con t de 2: así, un control que resultara mejor que la base tendría evidencia en
-todos los orígenes. El origen 2023 lleva además `r4_original`, `r4_noic` y `r4_nobranch`,
-para emparejar con la campaña sin rasgos a igual receta y repetir la descomposición en el
-origen más reciente. La misma regla, con las variantes de la criba, decide cuáles pasan a los
-orígenes 2018 y 2023.
+- **Informes en segundo plano.** Cada informe se lanza como una unidad acotada
+  (`mars-titan-informe-*`) y el relevo sigue entrenando; antes paraba la GPU unos ocho minutos
+  por informe. La promoción sí espera, porque edita las fases posteriores.
+- **Promoción.** `--candidates r4_` tras la primera fase, y los prefijos de sus niveles tras
+  cada parte de la criba. Un nivel pasa a los orígenes 2014 a 2023 y a la conjunta si supera a
+  su control en validación y calibración de 2013 por 0,003 de IC con t de 2. `r4_noranks` y
+  `r4_nogain` van en todos los orígenes sin esperar a la promoción: los rangos son la
+  afirmación central de la v10 y la ganancia se juzga por la calibración, que la regla de
+  promoción no mira.
+- **Referencia tabular.** Cada origen lanza antes la suya en segundo plano, y cada informe
+  lleva las dos medidas (etiqueta y `z`), el tercio más líquido, la t de Newey-West y la
+  inferencia frente a `lightgbm_technical`.
+- **Coste.** Con las duraciones medidas en el origen 2013 de la v8 (mediana de 1,2 horas por
+  trabajo con seis a la vez; 2,1 horas el núcleo en línea), el bloque 1 son unas 31 horas y
+  los bloques 1 a 6 unas 125 a 150 de las 255 que quedaban hasta el plazo. El margen es para
+  las etapas de post-entrenamiento que necesiten GPU, los órganos de memoria que salgan de la
+  investigación y las repeticiones.
+- **Producción.** El 22 de noviembre a las 03:12 UTC la presión de memoria de producción subió
+  a 13–23 durante tres minutos, con la otra sesión compilando y dos informes y un experimento
+  en GPU míos encima de los seis trabajadores. Se pararon los auxiliares y volvió a cero.
+  Desde entonces, con la campaña en marcha no se lanza ningún trabajo auxiliar en GPU y los de
+  CPU van de uno en uno.
 
-Antes de preparar el origen 2013 con rasgos, una orden detiene el piloto y otra trae sus
-copias empaquetadas al estado de la campaña, que tiene la misma cohorte. Las copias y los
-índices viajan juntos: la huella del índice forma parte de la identidad de cada copia, y un
-índice construido de nuevo, aunque sea idéntico en contenido, obliga a empaquetarla otra vez
-(17 GiB en el ajuste de 2013). La campaña con rasgos va la primera; lo que faltaba sin rasgos
-en 2013 va detrás de sus modelos secundarios.
-
-Dos comprobaciones antes de entrenar. `scripts` no las automatiza todavía:
-
-- Una fase que elige niveles con lectores debe incluir el nivel de sus padres, aunque ya estén
-  ajustados: si no, la cola se niega a arrancar y el relevo se detiene. Pasó con la fase de la
-  atención entre activos sin rasgos, y otra fase del plan tenía el mismo defecto.
-- La comprobación inicial de la cola (`run` sin `--no-preflight`) arranca cada modelo hasta
-  su primera barrera. Lanzada aparte para todos los niveles del origen 2013, las 72
-  configuraciones que aún no habían arrancado lo hicieron sin error. Cada origen lanza
-antes su referencia tabular en segundo plano, y cada informe lleva las dos medidas (etiqueta y
-`z`), el tercio más líquido, la t de Newey-West y la inferencia frente a
-`lightgbm_technical`. El plan está en `configs/experiments/phases/dgx-relay-plan-20261121.txt`.
+Las dos comprobaciones previas siguen valiendo: cada fase incluye el nivel de los padres de
+sus lectores (`revisa_plan.py` lo comprueba con el código de cada copia fija) y la primera
+fase de una base nueva arranca cada modelo hasta su primera barrera. El plan instalado está
+en `configs/experiments/phases/dgx-relay-plan-20261122.txt`.
 
 ## Agente cognitivo con herramientas
 

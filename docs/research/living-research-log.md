@@ -96,8 +96,10 @@ misma red estática que H1-a; semivida 21 sesiones y peso 0,1, elegidos con cali
   de cada activo (`realized_label_21`) y las rentabilidades de apertura a cierre a cinco
   horizontes. La memoria añade lo que la red, ajustada hasta 2010, pondera de menos en 2011 a
   2013: la persistencia propia de cada activo.
-- **Sigue siendo frágil:** en calibración gana la mitad y sin significación. Falta repetirla
-  con las semillas 43 y 44 y medirla sobre las predicciones de los Titans.
+- **Se repite con tres semillas.** Con el residuo, semivida 21 y peso 0,1 (los mismos
+  elegidos por calibración en las tres): +0,0017, +0,0018 y +0,0015 en evaluación (t = 2,4,
+  2,7 y 2,1) y +0,0007, +0,0010 y +0,0009 en calibración. El placebo resta entre 0,0007 y
+  0,0013 (t entre −3,9 y −5,9). Falta medirla sobre las predicciones de los Titans.
 
 ### H2. Dos años de obsolescencia de los pesos externos cuestan orden
 
@@ -159,8 +161,24 @@ de mayor coseno. Placebo: los valores del banco permutados.
 - **Lo que cambia respecto a los lectores de la campaña es el banco y su contenido:** 63
   sesiones enteras (unas 250.000 filas, frente a 1.024 entradas), admisión de todo lo reciente
   en lugar de las sorpresas, y como valor el residuo madurado.
-- **Pendiente (H4-b):** si esta lectura y la memoria por activo son la misma información (los
-  vecinos de un activo son sobre todo él mismo en sesiones recientes) o se suman.
+- **Se repite:** con la proyección aleatoria, +0,0016 en las semillas 42 y 43 (t = 2,8 y 2,9;
+  +0,0021 y +0,0020 en calibración), con placebos de −0,0006 y −0,0014. Con el estado oculto,
+  +0,0007, +0,0006 y +0,0011 en las tres semillas.
+
+**Experimento H4-b (22 de noviembre, dos semillas): se suman en parte.** Las dos lecturas con
+la configuración que eligió cada una, y sus dos pesos elegidos a la vez con calibración.
+
+| Semilla | Las dos (evaluación, t) | En calibración | Sobre solo activo | Sobre solo vecinos | Acuerdo entre lecturas |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| 42 | +0,0024 (2,67) | +0,0025 (1,69) | +0,0007 (1,79) | +0,0008 (2,15) | 0,16 a 0,32 |
+| 43 | +0,0029 (2,41) | +0,0028 (1,57) | +0,0011 (1,86) | +0,0012 (1,77) | 0,15 a 0,34 |
+
+El acuerdo es la correlación de rangos entre las dos lecturas dentro de cada sesión: baja, así
+que no leen lo mismo. Juntas valen unos 0,0025 de IC sobre una red estática, la mitad de lo
+que dieron los rangos por sesión. Es la primera memoria con etiquetas maduras que se separa de
+su placebo en todas las réplicas. Siguiente paso: medirla sobre las predicciones emitidas de
+los Titans (el padre ya tiene memoria en línea) y, si sobrevive, convertirla en un órgano
+lector de la campaña con sus controles.
 
 ### H5. Optimización en un recorrido cronológico no estacionario
 
@@ -183,6 +201,7 @@ desacoplado de 0,01: −0,0001 (t = −1,20). Se conserva la configuración base
 | H3-a | 22-11 | ¿La variación diaria de la macro, cruzada con la sensibilidad de cada activo, añade orden? | Sensibilidad por activo; interacciones rasgo × choque | Red estática; choques barajados | −0,0002, −0,0001 y −0,0014 | No, con el único indicador diario; falta la prueba por publicaciones (H3-b) |
 | H4-a | 22-11 | ¿Qué limita a la memoria episódica: las claves o el banco? | Claves (estado oculto, proyección aleatoria) con banco de sesiones enteras | Red estática; valores permutados | +0,0007 (t 1,5) y +0,0016 (t 2,8); placebo −0,0006 | El banco y lo que guarda; las claves aleatorias bastan |
 | H5-a | 22-11 | ¿Ayuda cambiar el optimizador? | Segundo momento 0,95; 5 sesiones por paso; AdamW 0,01 | Configuración base | −0,0000, −0,0011, −0,0001 | Se conserva la base |
+| H4-b | 22-11 | ¿La memoria por activo y la de vecinos son la misma información? | Las dos lecturas a la vez, con sus pesos | Cada una sola | +0,0024 y +0,0029 juntas; +0,0007 a +0,0012 sobre cada una | Son complementarias en parte; pasan a medirse sobre los Titans |
 | F-1 | 22-11 | ¿Qué hace la memoria por dentro al entrenar? | Trazas de `titans_mac` | `titans_mac_frozen` | Tasa de escritura 0,049 a 0,025; olvido 0,003 a 0,02; momento 0,50 a 0,2; pérdida asociativa entre 16 y 48 sin converger | La memoria está viva, pero no resuelve su objetivo interno |
 
 ## Interacción observada: rangos por sesión y memoria en línea
