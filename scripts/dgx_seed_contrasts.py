@@ -62,18 +62,21 @@ def _report_module():
     return module
 
 
-def _home(state, model, year, references, reference_seed):
+def _home(state, model, year, references, reference_seed, paired=()):
     """Dónde vive un modelo y qué semilla se lee allí para cada semilla pedida.
 
-    Se busca en el estado de la campaña y después en los de referencia, y todas sus semillas se
-    leen del mismo sitio. Una referencia ajustada una sola vez se lee siempre con su semilla.
+    Se busca en el estado de la campaña, después en los otros estados de campaña (`paired`),
+    que se leen semilla a semilla como el primero, y por último en los de referencia. Todas
+    sus semillas se leen del mismo sitio. Una referencia ajustada una sola vez se lee siempre
+    con su semilla.
     """
-    place = Path(state)
-    if not (place / "runs" / model / str(year)).is_dir():
-        for other in references:
-            if (Path(other) / "runs" / model / str(year)).is_dir():
-                return Path(other), reference_seed
-    return place, None
+    for place in (Path(state), *map(Path, paired)):
+        if (place / "runs" / model / str(year)).is_dir():
+            return place, None
+    for other in references:
+        if (Path(other) / "runs" / model / str(year)).is_dir():
+            return Path(other), reference_seed
+    return Path(state), None
 
 
 def _run(place, model, year, seed):
@@ -264,18 +267,37 @@ def _level(sessions, per_seed, combined):
 
 
 def build(
-    state, year, seeds, controls, references=(), reference_seed=None, offset=None, market=None
+    state,
+    year,
+    seeds,
+    controls,
+    references=(),
+    reference_seed=None,
+    offset=None,
+    market=None,
+    paired=(),
 ):
     """Niveles de cada modelo y contraste de cada uno con su control.
 
     Con `offset` (el alfa conocido de cada fila) se mide además el rendimiento operable. Con
-    `market` todo se mide solo en las sesiones de ese mercado.
+    `market` todo se mide solo en las sesiones de ese mercado. `paired` son otros estados de
+    campaña, cuyos modelos se leen semilla a semilla.
     """
-    return _origin(state, year, seeds, controls, references, reference_seed, offset, market)[0]
+    return _origin(
+        state, year, seeds, controls, references, reference_seed, offset, market, paired
+    )[0]
 
 
 def _origin(
-    state, year, seeds, controls, references=(), reference_seed=None, offset=None, market=None
+    state,
+    year,
+    seeds,
+    controls,
+    references=(),
+    reference_seed=None,
+    offset=None,
+    market=None,
+    paired=(),
 ):
     """El documento de un origen y sus series de IC por sesión, una por clase de medida."""
     report = _report_module()
@@ -285,7 +307,7 @@ def _origin(
     known, measured_seed, measured_mean = {}, {}, {}
     for name in names:
         # Las emisiones de un modelo se sueltan al pasar al siguiente: solo queda el IC.
-        place, fixed = _home(state, name, year, references, reference_seed)
+        place, fixed = _home(state, name, year, references, reference_seed, paired)
         if fixed is None:
             runs = [seed_splits(place, name, year, seed, market) for seed in seeds]
         else:
@@ -405,7 +427,15 @@ def _split(sessions, split):
 
 
 def build_origins(
-    state, years, seeds, controls, references=(), reference_seed=None, offsets=None, market=None
+    state,
+    years,
+    seeds,
+    controls,
+    references=(),
+    reference_seed=None,
+    offsets=None,
+    market=None,
+    paired=(),
 ):
     """Los contrastes de cada origen y su resumen entre orígenes.
 
@@ -424,6 +454,7 @@ def build_origins(
             reference_seed,
             None if offsets is None else offsets(year),
             market,
+            paired,
         )
         for year in years
     ]
@@ -694,6 +725,13 @@ def main(argv=None):
         help="Otro estado donde buscar los modelos que no están en el de la campaña",
     )
     parser.add_argument(
+        "--also",
+        type=Path,
+        action="append",
+        default=[],
+        help="Otro estado de campaña, cuyos modelos se leen semilla a semilla",
+    )
+    parser.add_argument(
         "--reference-seed",
         type=int,
         help="Semilla con la que se lee una referencia ajustada una sola vez",
@@ -726,7 +764,10 @@ def main(argv=None):
             parser.error(f"{name} ya tiene declarado otro control: {controls[name]}")
         controls[name] = control
     sources = dict(
-        references=args.reference, reference_seed=args.reference_seed, market=args.market
+        references=args.reference,
+        reference_seed=args.reference_seed,
+        market=args.market,
+        paired=args.also,
     )
 
     def known(year):

@@ -840,3 +840,64 @@ def test_the_market_filter_also_reads_a_reference_fitted_once(tmp_path):
     whole = contrasts.seed_sessions(contrasts.seed_splits(other, "arboles", 2013, 42))
     assert abs(float(np.mean(list(whole["evaluation"].values()))) - expected) > 1e-4
     assert report["contrasts"]["mejor"]["evaluation"]["sessions"] == SESSIONS["evaluation"]
+
+
+def test_another_campaign_state_is_read_seed_by_seed(tmp_path):
+    state, other, trees = tmp_path / "state", tmp_path / "other", tmp_path / "trees"
+    seeds = [42, 43, 44]
+    for seed in seeds:
+        write_model(state, "mejor", seed, signal=0.6, noise_seed=seed)
+        write_model(other, "base", seed, signal=0.3, noise_seed=seed + 300)
+    write_model(trees, "arboles", 42, signal=0.3, noise_seed=9)
+    controls = {"mejor": "base", "base": "arboles"}
+    report = contrasts.build(
+        state, 2013, seeds, controls, references=[trees], reference_seed=42, paired=[other]
+    )
+    assert not report["incomplete"]
+    # El otro estado se lee semilla a semilla: su nivel es el de sus tres ajustes.
+    levels = [
+        contrasts.seed_sessions(contrasts.seed_splits(other, "base", 2013, seed))["evaluation"]
+        for seed in seeds
+    ]
+    expected = float(np.mean([np.mean(list(level.values())) for level in levels]))
+    assert report["models"]["base"]["evaluation"]["mean"] == pytest.approx(expected, abs=1e-12)
+    # Como referencia de una sola semilla, las tres parejas usarían su semilla 42.
+    fixed = contrasts.build(
+        state, 2013, seeds, controls, references=[other, trees], reference_seed=42
+    )
+    assert abs(fixed["models"]["base"]["evaluation"]["mean"] - expected) > 1e-6
+    # Los árboles siguen leyéndose con su única semilla.
+    assert report["models"]["arboles"] == fixed["models"]["arboles"]
+    # Sin alguna de sus semillas, el contraste queda incompleto en vez de emparejarse mal.
+    short = tmp_path / "short"
+    write_model(short, "base", 42, signal=0.3, noise_seed=342)
+    partial = contrasts.build(state, 2013, seeds, {"mejor": "base"}, paired=[short])
+    assert partial["incomplete"] == {"mejor": [43, 44]}
+    # El estado de la campaña manda sobre los demás.
+    write_model(other, "mejor", 42, signal=0.0, noise_seed=1)
+    again = contrasts.build(
+        state, 2013, seeds, controls, references=[trees], reference_seed=42, paired=[other]
+    )
+    assert again["models"]["mejor"] == report["models"]["mejor"]
+
+
+def test_the_command_line_reads_one_market_and_another_state(tmp_path, capsys):
+    state, other = tmp_path / "state", tmp_path / "other"
+    both = ("US", "CN")
+    for seed in (42, 43):
+        write_model(
+            state, "mejor", seed, signal={"US": 0.3, "CN": 0.6}, noise_seed=seed, markets=both
+        )
+        write_model(other, "base", seed, signal=0.3, noise_seed=seed + 300, markets=both)
+    declared, output = tmp_path / "contrasts.json", tmp_path / "out"
+    declared.write_text(json.dumps({"controls": {"mejor": "base"}}), encoding="utf-8")
+    arguments = ["--state", str(state), "--year", "2013", "--seed", "42", "--seed", "43"]
+    arguments += ["--contrasts", str(declared), "--output", str(output)]
+    arguments += ["--also", str(other), "--market", "CN"]
+    assert contrasts.main(arguments) == 0
+    document = json.loads((output / "seed-contrasts.json").read_text(encoding="utf-8"))
+    assert document["market"] == "CN" and not document["incomplete"]
+    entry = document["contrasts"]["mejor"]
+    assert entry["evaluation"]["sessions"] == SESSIONS["evaluation"]
+    assert entry["evaluation"]["mean"] > 0.1
+    assert "Solo las sesiones de CN" in capsys.readouterr().out
