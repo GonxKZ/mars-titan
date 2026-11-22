@@ -525,11 +525,7 @@ def calibration_pilot(splits, section, regime=False):
     methods["cqr_static"] = (evaluation.prediction, quantiles)
     shifted_cal = recenter(calibration.quantiles, center_cal)
     shifted_eval = recenter(evaluation.quantiles, center_eval)
-    record = cqr.fit_conformal_quantiles(
-        calibration.target, shifted_cal, calibration.market,
-        levels=list(levels), nominals=list(nominals), min_rows=min_rows,
-    )
-    quantiles, _ = cqr.apply_conformal_quantiles(record, shifted_eval, evaluation.market)
+    _, _, quantiles = _scale_cqr_static(calibration, evaluation, levels, nominals, min_rows)
     methods["scale_cqr_static"] = (center_eval, quantiles)
     margins = np.array(
         [
@@ -730,7 +726,10 @@ def checked_study(document):
         document.get("kind") == STUDY_KIND and document.get("schema_version") == SCHEMA_VERSION,
         f"La declaración debe ser {STUDY_KIND} con schema_version {SCHEMA_VERSION}",
     )
-    _require(set(document) == _STUDY, f"El estudio tiene exactamente los campos {sorted(_STUDY)}")
+    _require(
+        _STUDY <= set(document) <= _STUDY | {"addendum"},
+        f"El estudio tiene exactamente los campos {sorted(_STUDY)} y, si acaso, addendum",
+    )
     _require(document["final_test_access"] is False, "El estudio no abre el test final")
     _require(
         document["min_assets"] == screening().MIN_ASSETS,
@@ -804,7 +803,34 @@ def checked_study(document):
         type(document["placebo_seed"]) is int and document["placebo_seed"] >= 0,
         "La semilla del placebo es un entero no negativo",
     )
+    _checked_addendum(document.get("addendum"))
     return document
+
+
+_ADDENDUM = {"exclude_own", "quantile_shift", "cold_start"}
+
+
+def _checked_addendum(addendum):
+    """Mediciones añadidas: vecinos de otros activos, cuantiles movidos y arranque en frío."""
+    if addendum is None:
+        return None
+    shift = addendum.get("quantile_shift") if isinstance(addendum, dict) else None
+    _require(
+        isinstance(addendum, dict)
+        and set(addendum) <= _ADDENDUM
+        and all(type(addendum.get(key, False)) is bool for key in ("exclude_own", "cold_start"))
+        and (
+            shift is None
+            or (
+                isinstance(shift, dict)
+                and set(shift) == {"min_rows"}
+                and type(shift["min_rows"]) is int
+                and shift["min_rows"] >= 1
+            )
+        ),
+        "addendum declara exclude_own y cold_start como booleanos y quantile_shift con min_rows",
+    )
+    return addendum
 
 
 def lab_inputs(cache, names, assets, days):
@@ -865,6 +891,94 @@ def _zscore_sessions(values, slices):
     return result
 
 
+def _session_dispersion(values, slices):
+    """Desviación poblacional de cada sesión, repetida en sus filas: la de `arm.zscore`."""
+    result = np.empty(len(values))
+    for _, _, _, start, end in slices:
+        result[start:end] = np.asarray(values[start:end], dtype=np.float64).std()
+    return result
+
+
+def shift_quantiles(quantiles, dispersion, signal):
+    """Los cinco cuantiles movidos juntos por la lectura en unidades de retorno.
+
+    La memoria suma κ por su lectura tipificada a la puntuación tipificada de la predicción.
+    En unidades de retorno es sumar la dispersión de la sesión por esa misma cantidad a cada
+    cuantil: el orden de la sesión es el de la puntuación combinada y los cuantiles no se
+    cruzan porque todos se mueven lo mismo.
+    """
+    quantiles = np.asarray(quantiles, dtype=np.float64)
+    dispersion = np.asarray(dispersion, dtype=np.float64)
+    signal = np.asarray(signal, dtype=np.float64)
+    _require(
+        quantiles.ndim == 2
+        and dispersion.shape == signal.shape == (len(quantiles),)
+        and bool(np.all(np.isfinite(dispersion)) and np.all(dispersion >= 0))
+        and bool(np.all(np.isfinite(signal))),
+        "La dispersión por sesión es finita y no negativa y la lectura es finita en cada fila",
+    )
+    return quantiles + (dispersion * signal)[:, None]
+
+
+def _scale_cqr_static(calibration, evaluation, levels, nominals, min_rows):
+    """Escala LAD y CQR estáticas ajustadas en calibración y aplicadas a la evaluación."""
+    factor = float(screening()._lad_scale(calibration.prediction, calibration.target))
+    center_cal, center_eval = factor * calibration.prediction, factor * evaluation.prediction
+    record = cqr.fit_conformal_quantiles(
+        calibration.target,
+        recenter(calibration.quantiles, center_cal),
+        calibration.market,
+        levels=list(levels),
+        nominals=list(nominals),
+        min_rows=min_rows,
+    )
+    quantiles, _ = cqr.apply_conformal_quantiles(
+        record, recenter(evaluation.quantiles, center_eval), evaluation.market
+    )
+    return factor, center_eval, quantiles
+
+
+def _shift_report(splits, prediction, quantiles, dispersion, signal, min_rows):
+    """La memoria como corrección de los cinco cuantiles frente al padre en la evaluación.
+
+    En bruto y con escala y CQR estáticas ajustadas en calibración (cada versión con su propio
+    ajuste). Los contrastes son pareados por sesión: movida menos padre.
+    """
+    parts, offset = {}, 0
+    for name in SPLITS:
+        rows = slice(offset, offset + splits[name].rows)
+        offset += splits[name].rows
+        parent = replace(splits[name], prediction=prediction[rows], quantiles=quantiles[rows])
+        moved = replace(
+            splits[name],
+            prediction=prediction[rows] + dispersion[rows] * signal[rows],
+            quantiles=shift_quantiles(quantiles[rows], dispersion[rows], signal[rows]),
+        )
+        parts[name] = dict(parent=parent, shifted=moved)
+    report = {}
+    for label in ("raw", "scale_cqr_static"):
+        metrics, sessions = {}, {}
+        for side in ("parent", "shifted"):
+            calibration, evaluation = parts["calibration"][side], parts["evaluation"][side]
+            point, emitted = evaluation.prediction, evaluation.quantiles
+            if label == "scale_cqr_static":
+                _, point, emitted = _scale_cqr_static(
+                    calibration, evaluation, LEVELS, NOMINALS, min_rows
+                )
+            metrics[side], sessions[side] = calibration_metrics(evaluation, point, emitted)
+        report[label] = dict(
+            parent=metrics["parent"],
+            shifted=metrics["shifted"],
+            contrasts={
+                metric: _contrast(sessions["shifted"][metric], sessions["parent"][metric])
+                for metric in sessions["shifted"]
+            },
+        )
+    moved = parts["evaluation"]["shifted"]
+    report["evaluation_ic"] = float(np.mean(list(session_ic(moved, moved.prediction).values())))
+    return report
+
+
 def _agreement(left, right, slices, min_assets):
     module = screening()
     found = {}
@@ -888,13 +1002,21 @@ def _best(grid, keys):
     return sorted(keys, key=lambda key: (-score(key), key))[0]
 
 
-def memory_study(splits, predictions, keys, section, *, log=print):
+def memory_study(splits, predictions, keys, section, *, quantiles=None, log=print):
     """Memoria por activo, memoria por vecinos y su combinación sobre varios modelos.
 
     `splits` son los tramos de referencia (las filas son las mismas para todos los modelos),
     `predictions` {modelo: predicción de las filas unidas en el orden validación, calibración
     y evaluación} y `keys` las claves FP32 de esas filas. Toda elección usa el IC de calibración.
+    Con `addendum` en la sección se miden además los vecinos de otros activos, la memoria como
+    corrección de los cinco cuantiles (`quantiles` {modelo: cuantiles de las filas unidas}) y
+    la memoria por activo que empieza vacía en la evaluación.
     """
+    addendum = _checked_addendum(section.get("addendum")) or {}
+    _require(
+        not addendum.get("quantile_shift") or set(quantiles or {}) == set(predictions),
+        "Los cuantiles movidos necesitan los cuantiles de cada modelo",
+    )
     parts = [splits[name] for name in SPLITS]
     joined = dict(
         markets=np.concatenate([p.market for p in parts]),
@@ -928,6 +1050,22 @@ def memory_study(splits, predictions, keys, section, *, log=print):
         placebo_seed=section["placebo_seed"],
     )
     log(f"vecinos de {len(models)} modelos: {time.monotonic() - started:.0f} s")
+    other_reads = other_placebo = None
+    if addendum.get("exclude_own"):
+        started = time.monotonic()
+        codes = np.unique(joined["assets"], return_inverse=True)[1].astype(np.int64)
+        other_reads, other_placebo = nrm.replay(
+            nrm.NeighbourMemory(replace(config, exclude_own=True), models=len(models)),
+            markets=joined["markets"],
+            prediction_at=joined["prediction_at"],
+            matures_at=joined["matures_at"],
+            keys=keys,
+            predictions=matrix,
+            target=joined["target"],
+            placebo_seed=section["placebo_seed"],
+            assets=codes,
+        )
+        log(f"vecinos de otros activos: {time.monotonic() - started:.0f} s")
     read_map = derangement(joined["assets"].tolist(), section["placebo_seed"])
 
     def ics(values):
@@ -985,6 +1123,67 @@ def memory_study(splits, predictions, keys, section, *, log=print):
         variants["combined"] = combo[both]
         variants["combined_asset_only"] = combo[only_asset]
         variants["combined_neighbours_only"] = combo[only_near]
+        extra_selection, extra_pairs, extra = {}, [], {}
+        if other_reads is not None:
+            other = _zscore_sessions(other_reads[:, j], slices)
+            fake_other = _zscore_sessions(other_placebo[:, j], slices)
+            other_grid = {k: ics(z + k * other) for k in section["neighbours"]["kappas"] if k > 0}
+            chosen_other = _best(other_grid, list(other_grid))
+            variants["neighbours_other_selected"] = other_grid[chosen_other]
+            variants["neighbours_other_placebo"] = ics(z + chosen_other * fake_other)
+            combo_other = {
+                (a, b): ics(z + a * own + b * other) for a in weights for b in weights if a and b
+            }
+            both_other = _best(combo_other, list(combo_other))
+            variants["combined_other"] = combo_other[both_other]
+            extra_selection = dict(
+                neighbours_other=dict(kappa=chosen_other),
+                combined_other=dict(kappa_asset=both_other[0], kappa_neighbours=both_other[1]),
+            )
+            extra_pairs = [
+                ("neighbours_other_selected", "parent"),
+                ("neighbours_other_placebo", "parent"),
+                ("neighbours_selected", "neighbours_other_selected"),
+                ("combined_other", "combined_asset_only"),
+            ]
+            extra["agreement_other"] = _agreement(own, other, slices, screening().MIN_ASSETS)
+        if addendum.get("cold_start"):
+            start, end = bounds[SPLITS.index("evaluation")], bounds[-1]
+            half_life, kappa = chosen_asset
+            memory = arm.AssetResidualMemory(arm.AssetMemoryConfig(half_life=float(half_life)))
+            cold = arm.replay(
+                memory,
+                kappas=(0.0, 1.0),
+                prediction=prediction[start:end],
+                **{key: value[start:end] for key, value in joined.items()},
+            )
+            values = session_ic(splits["evaluation"], cold[0.0] + kappa * (cold[1.0] - cold[0.0]))
+            extra["cold_start"] = dict(
+                evaluation=float(np.mean(list(values.values()))),
+                contrast=_contrast(values, variants["asset_selected"]["evaluation"]),
+            )
+            series += [
+                (model, "evaluation", market, instant, "asset_selected_cold", value)
+                for (market, instant), value in values.items()
+            ]
+        if addendum.get("quantile_shift"):
+            dispersion = _session_dispersion(prediction, slices)
+            signals = dict(
+                asset_selected=chosen_asset[1] * asset[chosen_asset[0]],
+                neighbours_selected=chosen_knn * near,
+                combined=both[0] * own + both[1] * near,
+            )
+            extra["quantile_shift"] = {
+                name: _shift_report(
+                    splits,
+                    prediction,
+                    np.asarray(quantiles[model], dtype=np.float64),
+                    dispersion,
+                    signal,
+                    addendum["quantile_shift"]["min_rows"],
+                )
+                for name, signal in signals.items()
+            }
         pairs = [
             ("asset_lab", "parent"),
             ("asset_selected", "parent"),
@@ -995,6 +1194,7 @@ def memory_study(splits, predictions, keys, section, *, log=print):
             ("combined", "parent"),
             ("combined", "combined_asset_only"),
             ("combined", "combined_neighbours_only"),
+            *extra_pairs,
         ]
         results[model] = dict(
             selection=dict(
@@ -1003,6 +1203,7 @@ def memory_study(splits, predictions, keys, section, *, log=print):
                 combined=dict(kappa_asset=both[0], kappa_neighbours=both[1]),
                 asset_only=dict(kappa=only_asset[0]),
                 neighbours_only=dict(kappa=only_near[1]),
+                **extra_selection,
             ),
             calibration={
                 name: float(np.mean(list(v["calibration"].values())))
@@ -1022,6 +1223,7 @@ def memory_study(splits, predictions, keys, section, *, log=print):
                 for a, b in pairs
             },
             agreement=_agreement(own, near, slices, screening().MIN_ASSETS),
+            **extra,
         )
         series += [
             (model, split, market, instant, name, value)
@@ -1074,6 +1276,8 @@ def run_memory_study(study, states, cache, names, output, *, log=print):
         view_sha256 = first["request"]["view_sha256"]
         maturity = _maturity(root / "cohorts" / str(run["origin"]) / "manifest.json", view_sha256)
         reference, predictions, inputs_sha = None, {}, {}
+        shifted = bool((study.get("addendum") or {}).get("quantile_shift"))
+        quantiles = {} if shifted else None
         for model, folder in folders.items():
             record = json.loads((folder / "run.json").read_text(encoding="utf-8"))
             _require(record.get("status") == "completed", f"El trabajo {folder} no está terminado")
@@ -1095,6 +1299,8 @@ def run_memory_study(study, states, cache, names, output, *, log=print):
                 )
                 _require(same, f"Las filas de {name} de {model} no son las de {study['models'][0]}")
             predictions[model] = np.concatenate([splits[name].prediction for name in SPLITS])
+            if shifted:
+                quantiles[model] = np.concatenate([splits[name].quantiles for name in SPLITS])
             log(f"cargado {model}")
         del maturity
         assets = np.concatenate([reference[name].asset for name in SPLITS])
@@ -1108,7 +1314,9 @@ def run_memory_study(study, states, cache, names, output, *, log=print):
         keys = nrm.keys_from_inputs(raw, matrix)
         del raw
         log(f"claves: {time.monotonic() - started:.0f} s")
-        results, table = memory_study(reference, predictions, keys, study, log=log)
+        results, table = memory_study(
+            reference, predictions, keys, study, quantiles=quantiles, log=log
+        )
         report = dict(
             kind=f"{STUDY_KIND}_report",
             final_test_opened=False,

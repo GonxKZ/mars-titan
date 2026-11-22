@@ -402,3 +402,164 @@ def test_the_study_declaration_is_checked_before_reading_anything(changes, messa
     pilots.checked_study(study_declaration())
     with pytest.raises(ValueError, match=message):
         pilots.checked_study(study_declaration(**changes))
+
+
+ADDENDUM = {"exclude_own": True, "quantile_shift": {"min_rows": 50}, "cold_start": True}
+
+
+def study_quantiles(predictions, width=0.01):
+    """Cinco cuantiles ordenados alrededor de cada predicción, con anchuras fijas."""
+    offsets = np.array([-2.0, -1.0, 0.0, 1.0, 2.0]) * width
+    return {name: value[:, None] + offsets[None, :] for name, value in predictions.items()}
+
+
+def test_the_addendum_declaration_is_optional_and_checked():
+    pilots.checked_study(study_declaration())
+    pilots.checked_study(study_declaration(addendum=ADDENDUM))
+    for wrong in (
+        {"exclude_own": 1},
+        {"cold_start": "yes"},
+        {"quantile_shift": {"min_rows": 0}},
+        {"quantile_shift": {}},
+        {"other": True},
+    ):
+        with pytest.raises(ValueError, match="addendum"):
+            pilots.checked_study(study_declaration(addendum=dict(ADDENDUM) | wrong))
+
+
+def test_the_addendum_reads_neighbours_of_other_assets_with_their_placebo():
+    splits, predictions, keys = study_data(seed=2)
+    section = study_section(addendum=ADDENDUM)
+    quantiles = study_quantiles(predictions)
+    results, table = pilots.memory_study(
+        splits, predictions, keys, section, quantiles=quantiles, log=lambda _: None
+    )
+    for model in ("a", "b"):
+        contrasts = results[model]["contrasts"]
+        assert contrasts["neighbours_other_selected-parent"]["mean"] > 0.02
+        assert contrasts["neighbours_other_selected-parent"]["t"] > 3
+        assert contrasts["neighbours_other_placebo-parent"]["mean"] < 0.01
+        assert "neighbours_selected-neighbours_other_selected" in contrasts
+        assert "combined_other-combined_asset_only" in contrasts
+        assert "neighbours_other" in results[model]["selection"]
+        assert set(results[model]["agreement_other"]) == set(SPLITS)
+    variants = set(table.column("variant").to_pylist())
+    assert {"neighbours_other_selected", "combined_other", "asset_selected_cold"} <= variants
+
+
+def test_the_shift_moves_the_five_quantiles_together_in_return_units():
+    rng = np.random.default_rng(4)
+    quantiles = np.sort(rng.normal(size=(40, 5)), axis=1)
+    dispersion, signal = rng.uniform(0.5, 2.0, size=40), rng.normal(size=40)
+    shifted = pilots.shift_quantiles(quantiles, dispersion, signal)
+    np.testing.assert_array_equal(shifted, quantiles + (dispersion * signal)[:, None])
+    assert np.all(np.diff(shifted, axis=1) >= 0)
+    with pytest.raises(ValueError, match="dispersión"):
+        pilots.shift_quantiles(quantiles, -dispersion, signal)
+    # El IC de la mediana movida es el de la puntuación combinada de la memoria.
+    splits, predictions, keys = study_data(seed=3)
+    section = study_section(addendum=ADDENDUM)
+    results, _ = pilots.memory_study(
+        splits, predictions, keys, section, quantiles=study_quantiles(predictions),
+        log=lambda _: None,
+    )
+    for model in ("a", "b"):
+        report = results[model]["quantile_shift"]
+        assert set(report) == {"asset_selected", "neighbours_selected", "combined"}
+        combined = report["combined"]
+        assert abs(combined["evaluation_ic"] - results[model]["evaluation"]["combined"]) < 1e-6
+        for name in ("raw", "scale_cqr_static"):
+            assert {"parent", "shifted", "contrasts"} <= set(combined[name])
+            assert {"pinball", "cov80", "cov95", "is80", "is95", "mae_ratio"} <= set(
+                combined[name]["shifted"]
+            )
+            assert {"pinball", "is80", "is95", "mae"} <= set(combined[name]["contrasts"])
+
+
+def test_the_cold_start_forgets_what_matured_before_the_evaluation():
+    splits, predictions, keys = study_data(seed=5, effect=1.0)
+    section = study_section(addendum=ADDENDUM)
+    results, _ = pilots.memory_study(
+        splits, predictions, keys, section, quantiles=study_quantiles(predictions),
+        log=lambda _: None,
+    )
+    for model in ("a", "b"):
+        cold = results[model]["cold_start"]
+        # La memoria caliente ya conoce los efectos por activo al empezar la evaluación.
+        assert cold["contrast"]["mean"] < 0
+        half_life, kappa = (
+            results[model]["selection"]["asset"]["half_life"],
+            results[model]["selection"]["asset"]["kappa"],
+        )
+        evaluation = splits["evaluation"]
+        start = splits["validation"].rows + splits["calibration"].rows
+        prediction = predictions[model][start:]
+        memory = pilots.arm.AssetResidualMemory(
+            pilots.arm.AssetMemoryConfig(half_life=float(half_life))
+        )
+        out = pilots.arm.replay(
+            memory,
+            kappas=(0.0, 1.0),
+            markets=evaluation.market,
+            assets=evaluation.asset,
+            prediction_at=evaluation.prediction_at,
+            matures_at=evaluation.matures_at,
+            prediction=prediction,
+            target=evaluation.target,
+        )
+        expected = pilots.session_ic(evaluation, out[0.0] + kappa * (out[1.0] - out[0.0]))
+        assert cold["evaluation"] == pytest.approx(float(np.mean(list(expected.values()))))
+
+
+def test_the_addendum_chooses_without_reading_the_evaluation():
+    splits, predictions, keys = study_data(seed=6)
+    section = study_section(addendum=ADDENDUM)
+    quantiles = study_quantiles(predictions)
+    first, _ = pilots.memory_study(
+        splits, predictions, keys, section, quantiles=quantiles, log=lambda _: None
+    )
+    # Las etiquetas de la evaluación se barajan dentro de cada sesión: cambia todo lo que la
+    # evaluación mide (también lo que las memorias aprenden en ella), nada de lo elegido.
+    evaluation = splits["evaluation"]
+    rng = np.random.default_rng(0)
+    target = evaluation.target.copy()
+    for _, _, start, end in evaluation.sessions:
+        target[start:end] = target[start:end][rng.permutation(end - start)]
+    shuffled = dict(splits, evaluation=pilots.replace_target(evaluation, target))
+    again, _ = pilots.memory_study(
+        shuffled, predictions, keys, section, quantiles=quantiles, log=lambda _: None
+    )
+    for model in predictions:
+        assert again[model]["selection"] == first[model]["selection"]
+        assert again[model]["calibration"] == first[model]["calibration"]
+        assert again[model]["evaluation"] != first[model]["evaluation"]
+
+
+def test_without_its_own_rows_a_neighbour_read_loses_what_belongs_to_the_asset():
+    """Con claves que identifican al activo, el efecto por activo llega por sus propias filas."""
+    splits, predictions, _ = study_data(seed=7, effect=1.0, near=0.0)
+    assets = np.concatenate([splits[name].asset for name in SPLITS])
+    codes = np.unique(assets, return_inverse=True)[1]
+    rng = np.random.default_rng(7)
+    embedding = rng.normal(size=(codes.max() + 1, 3))[codes]
+    inputs = (embedding + rng.normal(scale=0.05, size=embedding.shape)).astype(np.float32)
+    keys = pilots.nrm.keys_from_inputs(inputs, pilots.nrm.projection(3, 4, seed=1))
+    section = study_section(addendum={"exclude_own": True})
+    results, _ = pilots.memory_study(splits, predictions, keys, section, log=lambda _: None)
+    for model in ("a", "b"):
+        contrasts = results[model]["contrasts"]
+        assert contrasts["neighbours_selected-parent"]["mean"] > 0.02
+        assert contrasts["neighbours_selected-neighbours_other_selected"]["mean"] > 0.02
+        assert contrasts["neighbours_selected-neighbours_other_selected"]["t"] > 3
+
+
+def test_the_static_recalibration_reads_only_the_calibration():
+    tables, maturity = synthetic(sessions=(30, 30, 50), assets=60, seed=8, effect=0.8)
+    splits = splits_of(tables, maturity)
+    calibration, evaluation = splits["calibration"], splits["evaluation"]
+    flipped = pilots.replace_target(evaluation, -evaluation.target)
+    first = pilots._scale_cqr_static(calibration, evaluation, pilots.LEVELS, pilots.NOMINALS, 50)
+    again = pilots._scale_cqr_static(calibration, flipped, pilots.LEVELS, pilots.NOMINALS, 50)
+    assert first[0] == again[0]
+    np.testing.assert_array_equal(first[1], again[1])
+    np.testing.assert_array_equal(first[2], again[2])
