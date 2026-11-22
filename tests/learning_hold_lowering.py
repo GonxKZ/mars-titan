@@ -500,6 +500,8 @@ DOUBLES = {
     "tests/training/test_tabular_retention.py": (2, _ESTIMATOR),
     "tests/training/test_titans_campaign.py": (1, _RECORDER),
     "tests/training/test_titans_walk_forward.py": (6, _RECORDER),
+    "tests/training/test_write_policy_twin.py": (1, _RECORDER),
+    "tests/training/test_write_twins.py": (1, _RECORDER),
 }
 REDIRECTIONS = {
     "tests/memory/test_lesion_inference.py": (1, _CLOSES),
