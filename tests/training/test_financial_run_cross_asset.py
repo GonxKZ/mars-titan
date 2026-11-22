@@ -80,24 +80,49 @@ def test_replay_by_flow_blocks_reproduces_the_direct_gradients(shared, tmp_path)
         split.run()
 
 
-def test_the_frozen_loader_refuses_c5_before_build_or_read(tmp_path, monkeypatch):
+def test_the_frozen_loader_builds_a_c5_parent_and_still_refuses_what_it_does_not_register(
+    tmp_path, monkeypatch
+):
     document = dict(predictor=dict(hidden_size=32, dtype="float64"))
-    changes = dict(cross_asset_attention=asdict(CrossAssetAttentionConfig()))
-    report = dict(request=dict(predictor_changes=changes))
+
+    class Reached(Exception):
+        pass
+
+    def reached(*_args, **_options):
+        raise Reached
 
     def forbidden(*_args, **_options):
-        pytest.fail("Se construyó o leyó un padre con C5 sin registro congelado")
+        pytest.fail("Se construyó o leyó un padre con una pieza sin registro congelado")
 
+    # Con C5 el cargador supera las comprobaciones de la declaración y llega a construir.
+    changes = dict(cross_asset_attention=asdict(CrossAssetAttentionConfig()))
+    monkeypatch.setattr(mars_titan_walk_forward, "FinancialPredictor", reached)
+    monkeypatch.setattr(mars_titan_walk_forward, "read_manifest", reached)
+    with pytest.raises(Reached):
+        mars_titan_walk_forward._frozen_parent(
+            document,
+            specification(),
+            42,
+            "cpu",
+            tmp_path,
+            dict(request=dict(predictor_changes=changes)),
+        )
+    # La red holográfica sigue sin registro: se rechaza antes de construir o leer nada.
     monkeypatch.setattr(mars_titan_walk_forward, "FinancialPredictor", forbidden)
     monkeypatch.setattr(mars_titan_walk_forward, "read_manifest", forbidden)
-    with pytest.raises(ValueError, match="atención entre activos"):
+    monkeypatch.setattr(
+        mars_titan_walk_forward,
+        "predictor_options",
+        lambda *_a, **_k: dict(holographic_network=dict(declared=True)),
+    )
+    with pytest.raises(ValueError, match="red holográfica"):
         mars_titan_walk_forward._frozen_parent(
-            document, specification(), 42, "cpu", tmp_path, report
+            document, specification(), 42, "cpu", tmp_path, dict(request={})
         )
 
 
 @pytest.mark.parametrize("in_recipe", (False, True))
-def test_a_c5_parent_is_refused_before_checkpoint_verification(tmp_path, monkeypatch, in_recipe):
+def test_a_c5_parent_reaches_checkpoint_verification(tmp_path, monkeypatch, in_recipe):
     view = tmp_path / "view.json"
     view.write_text("{}\n")
     declared = asdict(CrossAssetAttentionConfig())
@@ -118,10 +143,13 @@ def test_a_c5_parent_is_refused_before_checkpoint_verification(tmp_path, monkeyp
         identity=dict(recipe=dict(predictor=predictor)),
     )
     (tmp_path / "run.json").write_text(json.dumps(report))
-    monkeypatch.setattr(
-        mars_titan_walk_forward,
-        "_verify",
-        lambda *_a: pytest.fail("Se verificó el checkpoint de un padre con C5 sin registrar"),
-    )
-    with pytest.raises(ValueError, match="atención entre activos"):
+    verified = []
+    monkeypatch.setattr(mars_titan_walk_forward, "_verify", lambda *a: verified.append(a))
+    accepted, _ = mars_titan_walk_forward._parent(tmp_path, view, 42)
+    assert accepted["request"] == request and len(verified) == 1
+    # Un padre con la red holográfica se sigue rechazando antes de verificar su checkpoint.
+    predictor["holographic_network"] = dict(declared=True)
+    (tmp_path / "run.json").write_text(json.dumps(report))
+    with pytest.raises(ValueError, match="red holográfica"):
         mars_titan_walk_forward._parent(tmp_path, view, 42)
+    assert len(verified) == 1

@@ -19,7 +19,8 @@ import torch
 
 from mars_titan.data.storage import atomic_json, sha256
 
-MAX_STATE_BYTES = 512 * 1024**2
+# Un núcleo de anchura 128 con el universo completo de EE. UU. guarda más de 512 MiB de estado.
+MAX_STATE_BYTES = 2 * 1024**3
 
 
 def _json(path):
@@ -213,7 +214,7 @@ def save_training_state(
         raise ValueError("El estado necesita un contador de pasos confirmado")
     estimated = _tensor_bytes(state) + 1024**2
     if estimated > MAX_STATE_BYTES:
-        raise ValueError("El estado excede el presupuesto de 512 MiB")
+        raise ValueError(f"El estado excede el presupuesto de {MAX_STATE_BYTES // 1024**2} MiB")
     with _locked(directory, identity, create=True) as (directory, canonical):
         index = _index(directory)
         previous = [r for r in index["latest"] if _intact(directory, r)]

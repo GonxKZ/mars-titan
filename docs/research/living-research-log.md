@@ -52,17 +52,63 @@ original no aisló la aportación de las actualizaciones en evaluación
 predictor congelado en evaluación con la verdad parcialmente observada y un módulo de
 calibración con puerta ([Kim et al., 2025](https://arxiv.org/abs/2501.04970)).
 
-**Experimento H1-a (en curso).** Con los 46 rasgos y una red congelada: reestimar en línea la
-última capa por mínimos cuadrados con olvido exponencial y contracción hacia los pesos
-ajustados, con las etiquetas maduras; lo mismo sobre las entradas; una memoria por activo del
-residuo maduro; el placebo de etiquetas barajadas, y el reajuste de la red con datos más
-recientes como referencia. Guion: `tab_mem.py` en los registros de la investigación.
+**Experimento H1-a (medido el 22 de noviembre, una semilla).** Con los 46 rasgos y una red
+congelada ajustada hasta 2010 (validación 0,1157, calibración 0,1242, evaluación 0,1147), que
+después recorre 2011 a 2013 en orden. Los hiperparámetros de cada memoria se eligen con el IC
+de calibración y se informa la evaluación. Guion: `tab_mem.py` en los registros.
+
+| Memoria | Evaluación | Frente a la estática | t |
+| --- | ---: | ---: | ---: |
+| Cabeza reestimada en línea, retardo de una sesión (semivida 63, contracción 0,3) | 0,1148 | +0,0001 | 0,05 |
+| La misma con retardo de dos sesiones | 0,1144 | −0,0004 | −0,26 |
+| Entradas en línea (92 entradas y la predicción) | 0,1153 | +0,0005 | 0,23 |
+| Memoria por activo del residuo maduro (semivida 21, peso 0,1) | 0,1165 | +0,0017 | 2,42 |
+| Placebo: cabeza en línea con etiquetas barajadas | −0,0190 | −0,1337 | −22,4 |
+
+- **Aprender del mercado en línea no añade orden.** Reestimar la cabeza con las etiquetas
+  maduras gana 0,003 en calibración, el tramo con el que se eligió, y nada en evaluación. Toda
+  la rejilla queda entre 0,095 y 0,1155: las semividas cortas con poca contracción empeoran y
+  las largas igualan a la red estática. El placebo confirma que la memoria usa las etiquetas.
+- **La memoria por activo sí añade, poco:** +0,0017 en evaluación (t = 2,4), +0,0007 en
+  calibración y −0,0004 en validación. Es frágil: falta repetirla con semillas.
+- **Conclusión provisional.** En este origen la relación entre rasgos y retornos no deriva lo
+  bastante como para que seguirla en línea rinda. Si la memoria aporta aprendiendo en
+  evaluación, es por activo: lo que cada activo se desvía de forma persistente de lo que el
+  modelo espera de él. Coincide con lo medido en los Titans (aprender en línea, +0,0013).
+
+**Experimento H1-b (22 de noviembre, una semilla).** La memoria por activo con tres valores
+guardados y su placebo, que lee la memoria de otro activo (permutación fija). Mismos datos y
+misma red estática que H1-a; semivida 21 sesiones y peso 0,1, elegidos con calibración. Guion:
+`tab_lab.py`.
+
+| Valor guardado | Evaluación | Frente a la estática | t | En calibración (t) |
+| --- | ---: | ---: | ---: | ---: |
+| Residuo madurado | 0,1165 | +0,0017 | 2,42 | +0,0007 (0,67) |
+| Placebo del residuo | 0,1137 | −0,0010 | −4,53 | −0,0018 (−4,34) |
+| Etiqueta madurada sola | 0,1162 | +0,0015 | 3,02 | +0,0009 (1,06) |
+| Placebo de la etiqueta | 0,1138 | −0,0009 | −4,76 | −0,0022 (−5,03) |
+| Signo del residuo | 0,1165 | +0,0017 | 2,70 | +0,0007 (0,74) |
+| Placebo del signo | 0,1136 | −0,0011 | −4,90 | −0,0023 (−5,20) |
+
+- **Las tres variantes dan lo mismo** (+0,0015 a +0,0017) y la memoria de otro activo resta
+  0,001: la información es del propio activo, no de la sesión ni de la escala.
+- **No es un rasgo que falte.** La red ya recibe la media de las últimas 21 etiquetas maduras
+  de cada activo (`realized_label_21`) y las rentabilidades de apertura a cierre a cinco
+  horizontes. La memoria añade lo que la red, ajustada hasta 2010, pondera de menos en 2011 a
+  2013: la persistencia propia de cada activo.
+- **Sigue siendo frágil:** en calibración gana la mitad y sin significación. Falta repetirla
+  con las semillas 43 y 44 y medirla sobre las predicciones de los Titans.
 
 ### H2. Dos años de obsolescencia de los pesos externos cuestan orden
 
 **Hipótesis.** Reajustar con datos hasta el año anterior, a épocas fijas, o continuar en
-línea con etiquetas maduras, recupera varios milésimos de IC. Se mide con H1-a (referencia de
-reajuste) y, en los Titans, comparando en un mismo año las predicciones de orígenes distintos.
+línea con etiquetas maduras, recupera varios milésimos de IC.
+
+**Medido (H1-a, una semilla, ocho épocas fijas): no.** La misma red ajustada también con 2011
+da 0,1143 en 2013 (−0,0005, t = −0,9) y ajustada también con 2011 y 2012, 0,1128 (−0,0019,
+t = −1,5). Con los rasgos solos, dos años de obsolescencia no cuestan orden en este origen.
+Queda por medir en los Titans, comparando en un mismo año las predicciones de orígenes
+distintos, y en años de ruptura (2008, 2020, 2022).
 
 ### H3. La macro solo puede ordenar a través de la sensibilidad de cada activo
 
@@ -70,7 +116,23 @@ reajuste) y, en los Titans, comparando en un mismo año las predicciones de orí
 cambian el orden si se cruzan con la sensibilidad de cada activo a sus variaciones. Una
 herramienta que calcule esas sensibilidades con datos pasados (o una memoria por activo que
 las aprenda de las etiquetas maduras) es la forma de que el modelo aprenda cómo se relacionan.
-Sin medir todavía.
+
+**Experimento H3-a (22 de noviembre, una semilla): la variación diaria no añade orden.** El
+choque de cada sesión es la diferencia de un indicador respecto a la sesión anterior, entre su
+desviación en el ajuste. Solo **uno** de los 140 indicadores cambia en más de la mitad de las
+sesiones; los demás se publican por semanas o meses y quedan fuera de este diseño.
+
+| Variante | Evaluación | Frente a la estática | t | Placebo (choques barajados) |
+| --- | ---: | ---: | ---: | ---: |
+| Sensibilidad por activo con olvido (semivida 63, contracción 1, peso 0,03) | 0,1145 | −0,0002 | −1,80 | −0,0001 |
+| Regresión lineal con interacciones rasgo × choque, frente a la lineal sin ellas | 0,0967 | −0,0001 | −0,51 | −0,0004 |
+| Red más la parte de interacción (peso 0,1) | 0,1133 | −0,0014 | −1,86 | −0,0003 |
+
+La parte de interacción gana 0,0010 en calibración y pierde 0,0014 en evaluación: ruido. La
+hipótesis queda **sin contrastar para los 139 indicadores de publicación espaciada**, que son
+casi toda la macro. Su prueba es por eventos: la sorpresa del día de publicación (el valor
+nuevo menos el anterior, cuando la edad del dato vuelve a cero) cruzada con la sensibilidad de
+cada activo estimada solo con publicaciones pasadas (H3-b, pendiente).
 
 ### H4. Los lectores no aportan por sus claves y por lo que guardan
 
@@ -80,17 +142,55 @@ saltos irrepetibles. Claves desde el estado del núcleo, valor igual al residuo 
 padre y admisión de lo reciente deberían cambiarlo. Antes hay que separar cuánto de la mejora
 de los lectores con el término de IC viene del banco y cuánto de sus capas ajustadas.
 
+**Experimento H4-a (22 de noviembre, una semilla).** Banco con todas las filas de las últimas
+sesiones maduras, valor igual al residuo madurado recortado a ±3 y lectura de los 256 vecinos
+de mayor coseno. Placebo: los valores del banco permutados.
+
+| Claves | Evaluación | Frente a la estática | t | En calibración (t) | IC de la lectura sola |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| Activaciones de la última capa oculta (21 sesiones) | 0,1154 | +0,0007 | 1,50 | +0,0010 (1,20) | 0,016 |
+| Su placebo | 0,1141 | −0,0006 | −2,31 | −0,0009 (−1,87) | |
+| Proyección aleatoria de las entradas (63 sesiones) | 0,1164 | +0,0016 | 2,78 | +0,0021 (2,00) | 0,019 |
+| Su placebo | 0,1141 | −0,0006 | −2,42 | −0,0025 (−5,87) | |
+
+- **Las claves no eran el problema.** La proyección aleatoria de las entradas rinde más que el
+  estado de la red: el estado se parece entre activos que la red ya trata igual, y las
+  entradas conservan qué activo es y cómo está.
+- **Lo que cambia respecto a los lectores de la campaña es el banco y su contenido:** 63
+  sesiones enteras (unas 250.000 filas, frente a 1.024 entradas), admisión de todo lo reciente
+  en lugar de las sorpresas, y como valor el residuo madurado.
+- **Pendiente (H4-b):** si esta lectura y la memoria por activo son la misma información (los
+  vecinos de un activo son sobre todo él mismo en sesiones recientes) o se suman.
+
 ### H5. Optimización en un recorrido cronológico no estacionario
 
 **Hipótesis.** Con 400 a 1.000 actualizaciones por época, el segundo momento de Adam
 (0,999) tarda de una a dos épocas en adaptarse; 0,95 lo haría seguir el régimen. Acumular
 sesiones enteras en lugar de 8.192 filas daría pasos más estables.
 
+**Experimento H5-a (22 de noviembre, una semilla, red tabular): ninguna ayuda.** Segundo
+momento de 0,95: evaluación −0,0000 (t = −0,05) y calibración −0,0018 (t = −1,76). Cinco
+sesiones por actualización en lugar de dos: −0,0011 (t = −1,39). Decaimiento de pesos
+desacoplado de 0,01: −0,0001 (t = −1,20). Se conserva la configuración base.
+
 ## Registro de experimentos
 
 | Id | Fecha | Pregunta | Variable | Control | Resultado | Decisión |
 | --- | --- | --- | --- | --- | --- | --- |
-| H1-a | 22-11 | ¿Aprender de las etiquetas maduras añade orden sobre una red congelada? | Cabeza reestimada en línea | Red estática; placebo | En curso | — |
+| H1-a | 22-11 | ¿Aprender de las etiquetas maduras añade orden sobre una red congelada? | Cabeza reestimada en línea | Red estática; placebo | +0,0001 (t 0,05); por activo +0,0017 (t 2,4) | La memoria compartida en línea no se persigue; se sigue la memoria por activo |
+| H2-a | 22-11 | ¿Reajustar con datos más recientes mejora la evaluación? | Fin del tramo de ajuste (2010, 2011, 2012) | Red ajustada hasta 2010 | −0,0005 y −0,0019 | Sin evidencia de coste por obsolescencia en 2013 |
+| H1-b | 22-11 | ¿Qué debe guardar la memoria por activo y es propia de cada activo? | Valor guardado (residuo, etiqueta, signo) | Red estática; memoria de otro activo | +0,0015 a +0,0017 (t 2,4 a 3,0); placebo −0,0010 (t −4,5) | Es información del activo; repetir con semillas y medir sobre los Titans |
+| H3-a | 22-11 | ¿La variación diaria de la macro, cruzada con la sensibilidad de cada activo, añade orden? | Sensibilidad por activo; interacciones rasgo × choque | Red estática; choques barajados | −0,0002, −0,0001 y −0,0014 | No, con el único indicador diario; falta la prueba por publicaciones (H3-b) |
+| H4-a | 22-11 | ¿Qué limita a la memoria episódica: las claves o el banco? | Claves (estado oculto, proyección aleatoria) con banco de sesiones enteras | Red estática; valores permutados | +0,0007 (t 1,5) y +0,0016 (t 2,8); placebo −0,0006 | El banco y lo que guarda; las claves aleatorias bastan |
+| H5-a | 22-11 | ¿Ayuda cambiar el optimizador? | Segundo momento 0,95; 5 sesiones por paso; AdamW 0,01 | Configuración base | −0,0000, −0,0011, −0,0001 | Se conserva la base |
+| F-1 | 22-11 | ¿Qué hace la memoria por dentro al entrenar? | Trazas de `titans_mac` | `titans_mac_frozen` | Tasa de escritura 0,049 a 0,025; olvido 0,003 a 0,02; momento 0,50 a 0,2; pérdida asociativa entre 16 y 48 sin converger | La memoria está viva, pero no resuelve su objetivo interno |
+
+## Interacción observada: rangos por sesión y memoria en línea
+
+Con una semilla, los rangos por sesión suman 0,0055 al núcleo con memoria en línea, 0,0004 al
+de memoria congelada y 0,0010 al núcleo sin memoria. Con los rangos, aprender en línea queda
+0,0065 por encima de la memoria congelada (0,0013 sin ellos). Puede ser una semilla afortunada:
+la campaña v10 lo repite con tres semillas en los tres núcleos antes de darlo por cierto.
 
 ## Propuestas externas pendientes de medir
 

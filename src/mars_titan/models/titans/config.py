@@ -87,8 +87,10 @@ PAPER_PROJECTIONS = "titans_mac_paper_projections_v2"
 # de filas sube a 8.192 para la vista completa de EE. UU. en la DGX: su sesión mayor tiene
 # 4.193 activos y las variantes por sesión necesitan la sesión entera en un único bloque.
 # Con 8.192 flujos, los pesos y el momentum de MAC ocupan 512 MiB, dentro de MAX_STATE_BYTES.
+# Un lector con cuatro refinamientos que repite una sesión entera de 4.193 activos con grafo
+# estima 1.034 MiB de trabajo: por eso el tope es de 2 GiB y no de 1.
 MAX_BLOCK_ROWS = 8192
-MAX_STATE_BYTES = 1024**3
+MAX_STATE_BYTES = 2 * 1024**3
 
 
 @dataclass(frozen=True)

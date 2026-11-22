@@ -1307,6 +1307,50 @@ calibración igual. Los 43 rasgos adicionales no ayudan (validación 0,1139, 0,1
 frente a 0,1152, 0,1150 y 0,1139), así que la versión de los rasgos no cambia.
 
 
+#### Campañas v10 y conjunta v9: rangos por sesión en la base
+
+El informe del origen 2013 de la v8 (41 modelos, semilla 42) dejó una sola variante por encima
+de su control con la regla declarada: los rangos gaussianos por sesión de los rasgos junto a
+sus valores en la rama densa (`titans_mac_xrank`).
+
+| Modelo | Decisión | Validación | Calibración | Evaluación |
+| --- | ---: | ---: | ---: | ---: |
+| `titans_mac_xrank` | 0,1201 | 0,1180 | 0,1245 | 0,1163 |
+| `titans_mac` (base de la v8) | 0,1160 | 0,1134 | 0,1213 | 0,1107 |
+| `lightgbm_technical` | 0,1133 | 0,1099 | 0,1201 | 0,1122 |
+
+- Frente a su control gana 0,0042 en la decisión (t de Newey-West 2,65) y 0,0055 en la
+  evaluación (t = 4,86). Es el único modelo que supera a los árboles en evaluación (0,0040,
+  p de Diebold-Mariano 0,017; contraste SPA 0,025). Con los rasgos solos y tres semillas
+  pareadas, los rangos suben la evaluación en las tres.
+- Es una semilla. Con ella, los rangos suman 0,0055 al núcleo con memoria en línea y 0,0004 al
+  de memoria congelada: la campaña nueva repite los tres núcleos con tres semillas antes de
+  dar esa interacción por cierta.
+
+`dgx-us-campaign-v10.json` y `dgx-us-cn-campaign-v9.json` son la v9 y la conjunta v8 con
+`session_ranks` en toda receta de ajuste con rama densa. Cada modelo conserva su nombre, su
+nivel y el resto de su definición. `r4_noranks` quita los rangos al núcleo (es campo a campo el
+de la v9) y `r4_nogain` quita la ganancia de la mediana a la base nueva.
+
+Tres cambios acompañan a la base, porque sin ellos habría modelos declarados que no pueden
+ejecutarse:
+
+- **Lectores con la sesión entera en un bloque.** Con los rangos, el núcleo necesita la sesión
+  completa en una llamada. Los lectores repiten los bloques de su padre y sus recetas partían
+  cada sesión en bloques de 3.584 filas: con sesiones de hasta 4.193 activos, el padre habría
+  rechazado el segundo bloque años después de empezar el recorrido, cuando el universo crece,
+  y la comprobación inicial de la cola no lo habría visto. Las recetas de lector de estas
+  campañas llevan bloques de 8.192 filas y 2 GiB de presupuesto de trabajo (el lector con
+  cuatro refinamientos estima 1.056 MiB con la sesión mayor y los puentes 1.138 MiB), y el
+  tope de ese presupuesto sube de 1 a 2 GiB. Una prueba recorre un lector sobre un padre por
+  sesión con la sesión entera y comprueba que con la sesión partida se rechaza.
+- **Lector sobre un padre con atención entre activos.** `mars_titan_m0_xattn` fallaba porque
+  el consumidor congelado y el recorrido de los lectores rechazaban ese padre. Ahora el
+  consumidor registra el código y la configuración de la atención en su identidad solo cuando
+  el padre la declara (sin ella, la identidad es la de antes) y exige la sesión completa.
+- **Estado del punto de control.** `titans_mac_disabled_h128` fallaba al guardar su estado por
+  el tope de 512 MiB, que sube a 2 GiB.
+
 ### Herramientas nuevas
 
 - `scripts/dgx_tabular_reference.py` ajusta los árboles con los rasgos que declara la cohorte
@@ -1328,6 +1372,27 @@ frente a 0,1152, 0,1150 y 0,1139), así que la versión de los rasgos no cambia.
   por mercado cuando hay más de uno. El informe añade su tabla junto a la inferencia. También
   lo escribió Gemini desde una especificación, con 83 pruebas, y se comprobó aquí con 400
   series aleatorias contra cálculos directos de cada medida, sin ninguna diferencia.
+- **Correcciones tras una auditoría de las herramientas (22 de noviembre).** Los meses de la
+  tabla de estabilidad salían todos como enero de 1970, porque los instantes de las sesiones
+  van en microsegundos y se leían como nanosegundos. La t del contraste pareado suponía
+  sesiones independientes: ahora es la de Newey-West con rezago automático, calculada dentro de
+  cada origen y mercado, y conserva al lado la independiente (en 2013 cambia poco: 2,65 frente
+  a 2,68 en la variante con rangos). La inferencia, el bootstrap y las medidas secuenciales de
+  estabilidad ya no cruzan orígenes ni mercados. El factor de escala, el peso de `−alfa` y los
+  márgenes de los intervalos se ajustan solo con calibración. Un mercado sin alfa conocido se
+  nombra en un aviso. Cada modelo lleva además su error absoluto frente a predecir cero, su
+  factor de escala, la cobertura de sus intervalos tal como los emite y recalibrados, el error
+  de los signos comprometidos y el error de calibración. La decisión entre modelos conserva la
+  regla declarada (validación y calibración juntas); decidir con un solo tramo o exigir un
+  umbral de Benjamini-Hochberg son opciones, porque exigidos por defecto bajarían de un 70 % a
+  un 10 % la potencia para detectar una mejora de 0,004 de IC. Los rangos de cada sesión se
+  calculan de una pasada: recorrer los grupos de empates uno a uno era la mitad del tiempo del
+  informe, y una prueba exige que el resultado sea idéntico bit a bit al del recorrido.
+- `scripts/dgx_campaign_monitor.py` escribe cada cinco minutos un panel de solo lectura
+  (`panel.html`, `panel.md` y `panel.json`): salud de producción, fase del relevo, cola de cada
+  estado, curvas de validación, fisiología de la memoria por época a partir de las trazas
+  (tasa de escritura, olvido, momento, pérdida asociativa y norma de los pesos rápidos) y
+  anomalías, como trabajos estancados o variantes fallidas.
 - El relevo construye por adelantado, mientras entrena una fase, las copias de la siguiente
   línea «prepara» (`MARS_TITAN_RELAY_AHEAD`, `scripts/dgx_campaign_ahead.sh`). Cada
   preparación dejaba la GPU parada unos 40 minutos en el origen 2013 y más en los posteriores,

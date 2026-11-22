@@ -749,6 +749,92 @@ def test_the_campaigns_with_the_median_gain_only_add_it_and_their_controls(name,
     assert len(added) == 3 + 4 + 3
 
 
+@pytest.mark.parametrize(
+    ("name", "origin"),
+    [
+        ("dgx-us-campaign-v10.json", "dgx-us-campaign-v9.json"),
+        ("dgx-us-cn-campaign-v9.json", "dgx-us-cn-campaign-v8.json"),
+    ],
+)
+def test_the_campaigns_with_session_ranks_in_the_base_keep_each_contrast(name, origin):
+    path, source = ROOT / "configs/experiments" / name, ROOT / "configs/experiments" / origin
+    document, previous = campaign.load_declaration(path)[0], json.loads(source.read_text())
+    own = {"description", "source_declaration_sha256", "models", "tiers", "recipes"}
+    assert set(document) == set(previous)
+    for key in set(previous) - own:
+        assert document[key] == previous[key], key
+    assert document["source_declaration_sha256"] == hashlib.sha256(source.read_bytes()).hexdigest()
+    assert document["tiers"] == [
+        "r4_noranks" if tier == "r4_ranks" else tier for tier in previous["tiers"]
+    ]
+    branch, gain, term = (
+        "predictor.technical_branch",
+        "predictor.median_gain",
+        "recipe.session_ic_term",
+    )
+    dense = {"columns", "hidden", "depth"}
+    cores = ("titans_mac", "titans_mac_frozen", "titans_mac_disabled")
+
+    def changed(left, right, other=None):
+        one, two = flat_specification(document, left), flat_specification(other or document, right)
+        keys = (one.keys() | two.keys()) - {"predictor_changes"}
+        return {key for key in keys if one.get(key) != two.get(key)}
+
+    carried = {model for model in previous["models"] if not model.endswith("_xrank")}
+    assert carried | {f"{core}_noranks" for core in cores} == set(document["models"])
+    ranked = 0
+    for model in sorted(carried):
+        entry, before = document["models"][model], previous["models"][model]
+        assert entry == before, model
+        was, now = flat_specification(previous, model), flat_specification(document, model)
+        if before["runner"] == "reader":
+            # Los lectores solo cambian el bloque, para que cada sesión llegue entera al padre.
+            assert changed(model, model, previous) == {
+                "recipe.block_rows",
+                "recipe.max_working_bytes",
+            }, model
+            assert now["recipe.block_rows"] == 8192
+            assert now["recipe.max_working_bytes"] == 2 * 1024**3
+        elif isinstance(was.get(branch), dict) and set(was[branch]) == dense:
+            assert changed(model, model, previous) == {branch}, model
+            assert now[branch] == {**was[branch], "session_ranks": True}
+            ranked += 1
+        else:
+            assert changed(model, model, previous) == set(), model
+    assert ranked > 60
+    for core in cores:
+        # Sin los rangos, el núcleo es el de la campaña anterior, campo a campo.
+        assert changed(f"{core}_noranks", core) == {branch}
+        assert changed(f"{core}_noranks", core, previous) == set()
+        assert document["models"][f"{core}_noranks"]["tier"] == "r4_noranks"
+        assert changed(f"{core}_nogain", core) == {gain}
+        assert changed(f"{core}_noic", core) == {term}
+        assert changed(f"{core}_nobranch", core) == {branch}
+    # Todo lector tiene un padre que necesita la sesión entera, y su bloque la contiene.
+    for model, entry in document["models"].items():
+        if entry["runner"] != "reader":
+            continue
+        parent = flat_specification(document, entry["parent"])
+        whole = (parent.get(branch) or {}).get("session_ranks") is True
+        assert whole or parent.get("predictor.cross_asset_attention") is not None, model
+        assert (
+            flat_specification(document, model)["recipe.block_rows"] >= document["cohort"]["size"]
+        )
+        reader = readout.ReadoutRecipe(**_recipe(document, model))
+        assert reader.block_rows == 8192
+    declared = json.loads(
+        (ROOT / "configs/experiments/dgx-us-campaign-v10-contrasts.json").read_text()
+    )["controls"]
+    assert set(declared) == set(document["models"]) - {"titans_mac"}
+    assert set(declared.values()) <= set(document["models"])
+    assert declared["titans_mac_disabled_noranks"] == "titans_mac_disabled"
+    assert not any(model.endswith("_xrank") for model in declared)
+    jobs = campaign.plan(document, "mars_titan")
+    assert {job.model for job in jobs if job.tier == "r4_noranks"} == {
+        f"{core}_noranks" for core in cores
+    }
+
+
 def _recipe(document, model):
     name = document["models"][model]["recipe"]
     return json.loads((ROOT / document["recipes"][name]).read_text())["recipe"]

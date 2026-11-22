@@ -896,7 +896,10 @@ def test_queue_stops_without_claiming_when_the_disk_runs_out(tmp_path, monkeypat
 def test_the_declared_budget_sets_the_free_disk_margin(tmp_path):
     document = campaign.checked_declaration(declaration(budget=dict(min_free_gib=2.5)))
     assert campaign.Queue(document, layout(tmp_path), "references").min_free_gib == 2.5
-    assert campaign._free_gib(tmp_path / "does" / "not" / "exist") == campaign._free_gib(tmp_path)
+    # Una ruta que aún no existe se mide en su antecesor más cercano. Entre las dos lecturas
+    # otros procesos de la máquina pueden escribir, así que se compara con margen.
+    missing = campaign._free_gib(tmp_path / "does" / "not" / "exist")
+    assert missing == pytest.approx(campaign._free_gib(tmp_path), abs=0.5)
     assert campaign._free_gib(tmp_path) > 0
     for budget in (
         [],

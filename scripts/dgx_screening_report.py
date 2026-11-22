@@ -75,16 +75,25 @@ QUANTILE_LEVELS = (0.025, 0.1, 0.5, 0.9, 0.975)
 
 
 def average_ranks(values):
-    """Rangos medios (los empates comparten el rango medio), como en la correlación de Spearman."""
+    """Rangos medios (los empates comparten el rango medio), como en la correlación de Spearman.
+
+    Cada grupo de valores iguales ocupa las posiciones `start + 1 … end` del orden y recibe su
+    media, `(start + 1 + end) / 2`, que para un valor sin empate es su propia posición. Se
+    calcula de una vez para todos los grupos: recorrerlos uno a uno era la mitad del tiempo del
+    informe.
+    """
+    count = len(values)
     order = np.argsort(values, kind="mergesort")
-    ranks = np.empty(len(values), dtype=np.float64)
-    ranks[order] = np.arange(1, len(values) + 1, dtype=np.float64)
     ordered = values[order]
-    starts = np.flatnonzero(np.r_[True, ordered[1:] != ordered[:-1]])
-    ends = np.r_[starts[1:], len(values)]
-    for start, end in zip(starts, ends, strict=True):
-        if end - start > 1:
-            ranks[order[start:end]] = (start + 1 + end) / 2
+    first = np.empty(count, dtype=bool)
+    first[:1] = True
+    first[1:] = ordered[1:] != ordered[:-1]
+    starts = np.flatnonzero(first)
+    ends = np.empty(len(starts), dtype=np.int64)
+    ends[:-1] = starts[1:]
+    ends[-1:] = count
+    ranks = np.empty(count, dtype=np.float64)
+    ranks[order] = ((starts + 1 + ends) / 2)[np.cumsum(first) - 1]
     return ranks
 
 

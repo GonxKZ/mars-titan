@@ -40,6 +40,48 @@ def spearman(left, right):
     return float(np.corrcoef(order(left), order(right))[0, 1])
 
 
+def _ranks_group_by_group(values):
+    """La definición recorrida grupo a grupo, con la que se compara la versión de una pasada."""
+    order = np.argsort(values, kind="mergesort")
+    ranks = np.empty(len(values), dtype=np.float64)
+    ranks[order] = np.arange(1, len(values) + 1, dtype=np.float64)
+    ordered = values[order]
+    starts = np.flatnonzero(np.r_[True, ordered[1:] != ordered[:-1]])
+    ends = np.r_[starts[1:], len(values)]
+    for start, end in zip(starts, ends, strict=True):
+        if end - start > 1:
+            ranks[order[start:end]] = (start + 1 + end) / 2
+    return ranks
+
+
+def test_the_ranks_in_one_pass_equal_the_group_by_group_definition_bit_for_bit():
+    rng = np.random.default_rng(7)
+    cases = [
+        np.empty(0),
+        np.array([3.0]),
+        np.array([2.0, 2.0]),
+        np.array([np.nan, 1.0, np.nan, 1.0, 0.0]),
+        np.array([np.inf, -np.inf, 0.0, np.inf]),
+    ]
+    for size in (2, 5, 30, 417, 4193):
+        missing = rng.normal(size=size)
+        missing[rng.random(size) < 0.1] = np.nan
+        cases += [
+            rng.normal(size=size),
+            np.round(rng.normal(size=size), 1),
+            rng.integers(0, 3, size=size).astype(np.float64),
+            np.zeros(size),
+            missing,
+            rng.normal(size=size).astype(np.float32),
+            np.where(rng.random(size) < 0.5, 0.0, -0.0),
+        ]
+    for values in cases:
+        ranks, expected = report.average_ranks(values), _ranks_group_by_group(values)
+        assert ranks.dtype == expected.dtype == np.float64
+        assert np.array_equal(ranks, expected, equal_nan=True)
+    assert report.average_ranks(np.zeros(4)).tolist() == [2.5, 2.5, 2.5, 2.5]
+
+
 def test_the_ranks_average_ties_and_the_session_ic_is_the_spearman_of_each_session(state):
     assert report.average_ranks(np.array([2.0, 1.0, 2.0, 5.0])).tolist() == [2.5, 1.0, 2.5, 4.0]
     data = report.load_split(state / "runs/mejor/2013/seed-42", "validation")

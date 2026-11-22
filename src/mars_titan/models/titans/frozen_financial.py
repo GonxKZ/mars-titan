@@ -14,6 +14,7 @@ from mars_titan.models.quantile_routing import QuantileRouting
 
 from .bank_readout import BankReadout
 from .config import canonical
+from .cross_asset_attention import CrossAssetAttention, CrossAssetAttentionConfig
 from .episodic_readout import EpisodicReadout, apply_episodic_readout
 from .episodic_snapshot import EpisodeSnapshot
 from .evidence_bridge import SharedEvidenceBridge
@@ -87,9 +88,12 @@ _KRON_MODULES = (
 
 def declared_sources(config):
     """Módulos de mecanismos del predictor que solo entran en la identidad si se declaran."""
+    sources = []
     if getattr(config, "technical_branch", None) is not None:
-        return ("mars_titan.models.titans.technical_branch",)
-    return ()
+        sources.append("mars_titan.models.titans.technical_branch")
+    if getattr(config, "cross_asset_attention", None) is not None:
+        sources.append("mars_titan.models.titans.cross_asset_attention")
+    return tuple(sources)
 
 
 def _implementation(*, hierarchy=False, kronlstm=False, declared=()):
@@ -185,6 +189,12 @@ def _module_settings(module):
         fields = ("inplace",)
     elif type(module) is FinancialPredictor:
         fields = ("masked",)
+    elif type(module) is CrossAssetAttention:
+        if type(module.config) is not CrossAssetAttentionConfig:
+            raise ValueError("La atención entre activos no conserva su configuración identificada")
+        module.config.__post_init__()
+        fields = ("hidden_size", "head_dim")
+        settings["cross_asset_attention"] = module.config.identity()
     elif type(module) in (SessionScale, LaplaceScale, OpponentSpread):
         settings["output_objective"] = module.config.identity()
     elif type(module) is RegionalFusion:
@@ -202,6 +212,34 @@ def _module_settings(module):
         settings["kronlstm"] = module.configuration
     settings.update((name, getattr(module, name)) for name in fields)
     return settings
+
+
+def _validate_cross_asset_attention(predictor):
+    """Comprobar que el módulo de atención entre activos coincide con su configuración."""
+    declared, module = predictor.config.cross_asset_attention, predictor.cross_asset_attention
+    if declared is None and module is None:
+        return
+    if (
+        type(declared) is not CrossAssetAttentionConfig
+        or type(module) is not CrossAssetAttention
+        or type(module.config) is not CrossAssetAttentionConfig
+    ):
+        raise ValueError("La atención entre activos no corresponde a la configuración declarada")
+    declared.__post_init__()
+    module.config.__post_init__()
+    if (
+        module.config != declared
+        or module.hidden_size != predictor.config.hidden_size
+        or predictor.config.hidden_size % declared.heads != 0
+        or module.head_dim != predictor.config.hidden_size // declared.heads
+        or not isinstance(getattr(module, "out", None), torch.nn.Linear)
+        or any(
+            parameter.device != predictor.head.weight.device
+            or parameter.dtype != predictor.head.weight.dtype
+            for parameter in module.parameters()
+        )
+    ):
+        raise ValueError("La atención entre activos no corresponde a la configuración declarada")
 
 
 def _validate_intervention(readout):
@@ -375,10 +413,7 @@ class FrozenFinancialConsumer:
             )
         if readout is not None and not reads_scalar_point(predictor.output_objective):
             raise ValueError("El lector necesita una integración propia del objetivo de salida")
-        # Este consumidor aún no registra la fuente ni la configuración de C5 (#751).
-        if predictor.cross_asset_attention is not None:
-            raise ValueError("El consumidor congelado aún no registra la atención entre activos")
-        # Tampoco registra la red holográfica de #783.
+        # Este consumidor aún no registra la red holográfica de #783.
         if predictor.holographic_network is not None:
             raise ValueError("El consumidor congelado aún no registra la red holográfica")
         # Tampoco el historial de regiones de C2 en el estado de cada flujo.
@@ -402,6 +437,7 @@ class FrozenFinancialConsumer:
                 "El lector y predictor no comparten dimensión, precisión y dispositivo"
             )
         self.predictor, self.readout = predictor, readout
+        _validate_cross_asset_attention(predictor)
         _validate_intervention(readout)
         self._models = (("predictor", predictor),) + ((("readout", readout),) if readout else ())
         self._signature, modes = _execution_signature(self._models)
@@ -484,6 +520,11 @@ class FrozenFinancialConsumer:
             raise ValueError("La preparación necesita un evento y corte únicos")
         if warmup and snapshot is not None:
             raise ValueError("El calentamiento no consulta un banco episódico")
+        if self.predictor.cross_asset_attention is not None and session_complete is not True:
+            raise ValueError(
+                "La atención entre activos necesita la sesión completa en un bloque "
+                "(session_complete=True)"
+            )
         options = {}
         if self.predictor.local_control is not None:
             options.update(control_selection=selection, control_context_id=context_id)

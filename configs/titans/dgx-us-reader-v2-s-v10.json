@@ -1,0 +1,45 @@
+{
+  "schema_version": 1,
+  "recipe_name": "mars_titan_episodic_readout_chronological_v1",
+  "status": "declared_not_executed",
+  "recipe": {
+    "update_instants": 8,
+    "loss": "pinball",
+    "weight_decay": 0,
+    "max_grad_norm": 1,
+    "epochs": 30,
+    "selection": {
+      "metric": "session_mae",
+      "patience": 5,
+      "min_delta": 1e-05,
+      "stopping": "fixed_budget"
+    },
+    "block_rows": 8192,
+    "neighbors": 8,
+    "temperature": 1,
+    "bank_capacity": 1024,
+    "bank_seed": 73,
+    "max_working_bytes": 2147483648,
+    "checkpoint_updates": 256,
+    "checkpoint_seconds": 900,
+    "precision": "fp32_ieee_attention_v1",
+    "determinism": "torch_deterministic_algorithms_v2"
+  },
+  "walk_forward": {
+    "search_cases": {
+      "lr3e-4": {
+        "learning_rate": 0.0003
+      },
+      "lr1e-3": {
+        "learning_rate": 0.001
+      },
+      "lr3e-3": {
+        "learning_rate": 0.003
+      }
+    }
+  },
+  "pending": [
+    "Es dgx-us-reader-v2.json con bloques de 8.192 filas y 2 GiB de presupuesto de trabajo, para que cada sesión llegue entera al padre: es su única diferencia.",
+    "Sin resultados publicados. El test final de 2024 permanece cerrado."
+  ]
+}

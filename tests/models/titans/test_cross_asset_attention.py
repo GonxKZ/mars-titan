@@ -322,8 +322,22 @@ def test_declared_configurations_build_with_their_controls():
         assert {contrast["variant"], contrast["control"]} <= set(declaration["arms"])
 
 
-def test_the_frozen_consumer_rejects_c5_until_it_registers_it():
-    from mars_titan.models.titans.frozen_financial import FrozenFinancialConsumer
+def test_the_frozen_consumer_registers_c5_in_its_identity():
+    from mars_titan.models.titans.frozen_financial import (
+        FrozenFinancialConsumer,
+        declared_sources,
+    )
 
-    with pytest.raises(ValueError, match="atención entre activos"):
-        FrozenFinancialConsumer(model(cross_asset_attention=VARIANT))
+    previous = torch.backends.mha.get_fastpath_enabled()
+    torch.backends.mha.set_fastpath_enabled(False)
+    try:
+        predictor = model(cross_asset_attention=VARIANT).eval().requires_grad_(False)
+        engine = FrozenFinancialConsumer(predictor)
+        plain = FrozenFinancialConsumer(model().eval().requires_grad_(False))
+    finally:
+        torch.backends.mha.set_fastpath_enabled(previous)
+    module = "mars_titan.models.titans.cross_asset_attention"
+    assert declared_sources(predictor.config) == (module,)
+    assert module in engine.identity()["implementation"]
+    assert module not in plain.identity()["implementation"]
+    assert engine.model_id != plain.model_id
