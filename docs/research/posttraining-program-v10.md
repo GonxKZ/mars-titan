@@ -24,7 +24,11 @@ laboratorio tabular y el plan del relevo del coordinador) se citan como suyas y 
   - par base: N = +0,00003 (t 0,6);
   - par con rangos: N = +0,00113 (t 3,5), el 17 % de la ventaja, sin decaer en 2013. Es también el par sin ganancia de la v10.
 - **Medido (órganos, v10, 2013, semilla 42; sección 5.4).** Los 8 brazos mejoran a su padre en evaluación: de +0,0014 a +0,0031 (t 1,6–2,9); 3 de 8 pasan Holm.
-- **En curso.** El par de la v10 en GPU; en CPU, el trío sin ganancia y lo operable.
+- **Medido (2013; secciones 5.5 a 5.7).**
+  - Los órganos como componente de ridge_cov_active suman +0,0011 sobre la media de rangos (t 2,1 en la exploración; 1,7 en la prueba de S2).
+  - La memoria con el residuo operable gana en lo operable (+0,0011 a +0,0014) y pierde en la etiqueta.
+  - D1 es la memoria por activo con otro nombre.
+- **En curso.** El par de la v10 en GPU; S2 en los orígenes limpios, por el relevo.
 - **Hipótesis, no medido.**
   - El coste de las memorias por origen en la campaña (≈ 1 h 20 min de CPU).
   - Cualquier efecto en otros orígenes, semillas o en la v10.
@@ -282,6 +286,54 @@ Lectura:
 - **Coste.** 32 min 14 s, con la GPU y pruebas en paralelo. La pasada por vecinos son 1.583 s y el RSS máximo 2,6 GiB. La pasada por vecinos bajó de 691 a 242 s, medido en validación con 3 modelos.
 - **Relevo.** Lo lanza la línea `orden|…` de `memory_organs linea`. La declaración v2 (55cfc250) añade el trío sin ganancia en la misma pasada.
 
+### 5.5 Órganos como componente del agregador causal (medido en 2013; S2 confirmatorio)
+
+El agregador en línea del tercer enjambre (`evaluation/online_aggregator.py`) se adoptó con sus 22 pruebas y 3 nuevas.
+- Las pruebas nuevas matan mutantes que sobrevivían. Hay además una prueba de la rejilla operable declarada.
+- No se adoptan la abstención ni los pesos por régimen.
+- La barrera causal usa la madurez exacta de la vista.
+- Los hiperparámetros, el mejor componente y los factores de lo operable se eligen solo en calibración.
+
+**Exploratorio** (v10, 2013, semilla 42, evaluación). El listón del máximo de 24 ensayos es t ≈ 1,98.
+- **Etiqueta.** ridge_cov_active con {titans_mac_nogain, cross_asset_attention, lightgbm_technical, señal del brazo combinado} da 0,1196.
+  - Frente a la media de rangos de los tres modelos (0,1185): +0,0011 (t 2,1).
+  - Frente al brazo combinado solo: +0,0014 (t 1,7).
+  - Señal − placebo: +0,0012 (t 2,1).
+  - La señal recibe un 10 % del peso en ridge y un 1 % en hedge.
+- **Operable.** Frente a la media de rangos (0,0877): +0,0012 (t 1,2). Frente al brazo combinado solo: +0,0031 (t 3,7).
+
+**S2 (registro confirmatorio, añadido de las 20:05Z).** En los orígenes limpios no hay atención entre activos, así que S2 es ridge_cov_active sobre {titans_mac_nogain, lightgbm_technical, señal}, frente a la media de rangos de los dos modelos (S1).
+- La orden es `organ_aggregation agregar`, con la declaración `posttraining-aggregator-s2.json`.
+  - La exige por su huella; con ella van la rejilla y los factores (0,001–100) y la semilla del placebo, 20261122.
+  - Espera las entradas del relevo o sale con el código 75.
+- Prueba con 2013 (desarrollo, no confirmatoria):
+
+| Evaluación | Etiqueta | Operable |
+|---|---|---|
+| S1: media de rangos − el mejor por decisión (titans_mac_nogain) | +0,0017 (t 2,0) | +0,0056 (t 5,3) |
+| S2 − S1 | +0,0011 (t 1,7) | +0,0004 (t 0,3) |
+| S2 − su placebo | +0,0010 (t 1,6) | +0,0010 (t 1,3) |
+
+### 5.6 Memoria por activo con el residuo operable; rejilla ancha (medido en 2013)
+
+- **Rejilla ancha.** Con factores de 0,001 a 100, la tabla operable de 2013 sale idéntica byte a byte a la de 0,01–3. Ningún factor cae en un borde.
+- **Memoria con el residuo operable (O) frente al de la etiqueta (L).** Con los parámetros del laboratorio (h 21, κ 0,1), en los 7 modelos:
+  - en lo operable, O gana de +0,0011 a +0,0014 (t de 4,3 a 5,3; pasa Holm en los 7);
+  - en la etiqueta, O pierde de −0,0006 a −0,0009 (t de −1,8 a −2,8).
+- **titans_mac_nogain.** En lo operable, O da 0,0864 y L 0,0852.
+  - Con h y κ elegidos en calibración (5; 0,05) baja a 0,0845, +0,0008 sobre lightgbm_technical (t 0,4).
+  - En calibración, sus variantes O quedan fuera de la frontera de Pareto de los dos IC.
+
+### 5.7 D1, la memoria supervisada del tercer enjambre (medido en 2013)
+
+- **Comparación (P1).** D1 con r = 0 (semivida 28, de calendario 84) frente a la memoria por activo (h 21), en los tres modelos.
+- **Diferencia D1 − memoria por activo.** Como mucho +0,0001 (t ≤ 1,5), con κ fijo o elegido en calibración.
+- **Lecturas.** Las dos correlacionan entre 0,982 y 0,983. Las dos superan a sus placebos (etiquetas barajadas y mapa de lectura) por +0,0022 a +0,0027 (t 3,2–4,2).
+- **Ablación L = 2** (esperar una sesión más): +0,0001 (t ≤ 1,1).
+- **Veredicto.** Es la misma media exponencial del residuo maduro con otro nombre.
+  - Solo cambia que no normaliza por el peso, que decae por calendario y que recorta en 3.
+  - No se adopta. P2 (r = 4) queda aparcado por decisión del coordinador.
+
 ## 6. Etapas con GPU (fase 4)
 
 ### 6.1 Qué queda preparado
@@ -486,8 +538,32 @@ Cada afirmación se contrastó con el código. Si era un defecto, con una prueba
 | H-12 | (b) Real; (a), (c) y (d), diseño; (e) menor, sin llamadas en producción | 803f6c7e: la calibración de cada ventana madura, por mercado, antes de su primera decisión evaluada |
 
 
+### 7.3 Tercer enjambre: entregas y auditoría de código
+
+Cada hallazgo se reprodujo con una prueba que fallaba antes del arreglo.
+
+| Hallazgo | Veredicto | Commit |
+|---|---|---|
+| H03: `read()` de la memoria por activo con un divisor mínimo de 1e-12 | Real. Tras 45 semividas daba 0,0275 en vez de 0,9674. Sin efecto en 2013: el hueco máximo es de 126 sesiones | e72f82cc |
+| H14: una semilla emitida a medias no se rehacía; temporales con nombre fijo | Real | b872cc88 |
+| H01: los vecinos rechazaban una madurez en 2024 | Real en sintético. No ocurre con la vista (`target_after_cutoff`) | dbdf70a0 |
+| H04: `emit()` y `restore()` de la memoria por activo | Real. Un rechazo dejaba rastro y se aceptaban estados firmados inválidos | 23ac080b |
+| H15: el análisis de los gemelos puntuaba todos los mercados; la paridad fallaba con NaN idénticos | Real. Sin efecto en el par de la v10, que solo tiene US | 8c89db99 |
+| H02: claves de vecinos fuera del rango de FP32; `restore()` de vecinos | Real. Las filas nominales no cambian bit a bit | 9577db90 |
+
+Las siete carencias que el informe del agregador atribuye a los árbitros (f611f7a5):
+- **Pérdida lineal ciega a la covarianza.** Límite de diseño, que cubre el agregador adoptado.
+- **Árbitro con Pearson.** Es coherente con su métrica `session_ic`. Los agentes declaran el IC de rangos y aprenden con rangos.
+- **`mature_mixture`.** O(T·N); solo `_reliability` es cuadrática, y con T ≈ 437 no pesa.
+- **`regimes()` sin filtrar las sesiones puntuadas.** Sin efecto: ninguna sesión de 2013 tiene menos de 30 filas.
+- **Las otras tres.** Son el alcance declarado o las cubre el agregador.
+
 ## 8. Limitaciones y riesgos
 
+- **Universo de supervivientes (D-2 del cuaderno del coordinador).** De los 4.202 activos de EE. UU.,
+  4.200 llegan al final de 2023. La etiqueta resta el alfa de cada activo y lo operable no, así que
+  el IC operable es la medida más expuesta al sesgo; los contrastes entre modelos, que comparten
+  universo, lo están menos que los niveles.
 - **Un origen y una semilla.** Todo lo medido en CPU sobre Titans es la v8 en 2013 con la semilla
   42 (y, para la memoria por activo, la réplica entre orígenes del estado antiguo sin rasgos, también
   con la semilla 42). Ninguna cifra se generaliza sin más orígenes ni semillas.
