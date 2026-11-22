@@ -61,6 +61,8 @@ def test_the_paired_contrast_separates_a_better_model_from_noise(state):
     rows = {row["model"]: row for row in origin["contrasts"]}
     assert rows["mejor"]["group"] == "grupo" and rows["mejor"]["control"] == "control"
     assert rows["mejor"]["decision"]["sessions"] == 60 and rows["mejor"]["decision"]["t"] > 4
+    assert rows["mejor"]["calibration"]["sessions"] == 20
+    assert rows["mejor"]["validation"]["sessions"] == 40
     assert (
         rows["mejor"]["evaluation"]["sessions"] == 60 and rows["mejor"]["evaluation"]["mean"] > 0.1
     )
@@ -143,6 +145,15 @@ def test_the_command_writes_both_reports(state, tmp_path):
         "validation",
         "calibration",
     ]
+    # Con un solo tramo declarado, la decisión usa solo sus sesiones.
+    single = tmp_path / "solo-calibracion"
+    assert (
+        report.main([*arguments, "--decision-split", "calibration", "--output", str(single)]) == 0
+    )
+    alone = json.loads((single / "report.json").read_text())
+    assert alone["decision_splits"] == ["calibration"]
+    pooled_ic = document["origins"][0]["models"]["mejor"]["decision_ic"]
+    assert alone["origins"][0]["models"]["mejor"]["decision_ic"] != pooled_ic
     text = (output / "report.md").read_text()
     assert "## Origen 2013: 4 modelos" in text and "| `mejor` | `control` |" in text
     assert "### Combinaciones por media de rangos del origen 2013" in text
@@ -288,7 +299,8 @@ def test_the_newey_west_t_discounts_the_dependence_between_sessions():
     persistent += 0.05
     naive = persistent.mean() / (persistent.std(ddof=1) / np.sqrt(len(persistent)))
     assert abs(report.newey_west_t(persistent)) < 0.6 * abs(naive)
-    assert report.newey_west_t(independent[:20]) is None
+    assert report.newey_west_t(independent[:1]) is None
+    assert report.newey_west_t(independent[:20]) is not None
     assert report.summary(independent)["t_nw"] == report.newey_west_t(independent)
     assert report.summary([])["t_nw"] is None
 
@@ -341,6 +353,8 @@ def test_the_inference_writes_the_sessions_and_tests_every_model_against_the_ref
             depth = max(depth, peak - accumulated)
         assert item["max_drawdown"]["depth"] == pytest.approx(depth, abs=1e-12)
         assert sum(month["sessions"] for month in item["monthly"]) == item["sessions"]
+        assert all(month["month"].startswith("2012-") for month in item["monthly"])
+        assert not any(month["month"] == "1970-01" for month in item["monthly"])
     assert stability["mejor"]["all"]["icir"] > stability["ruido"]["all"]["icir"]
     assert "## Estabilidad del IC de evaluación" in text and "| `mejor` | todos |" in text
     # Sin la opción no se escribe nada más, y una referencia que no está no rompe el informe.
@@ -352,3 +366,193 @@ def test_the_inference_writes_the_sessions_and_tests_every_model_against_the_ref
     absent = tmp_path / "ausente"
     assert report.main([*arguments[:4], "--output", str(absent), "--inference", "no_esta"]) == 0
     assert json.loads((absent / "report.json").read_text())["inference"] is None
+
+
+def test_paired_uses_hac_t_smaller_than_iid_under_ar1_autocorrelation():
+    """Bajo autocorrelación AR(1) phi=0.8, paired()['t'] (HAC) es estrictamente menor que t_iid."""
+    rng = np.random.default_rng(19)
+    n = 200
+    noise = rng.normal(0.0, 0.05, size=n)
+    diff = np.empty(n, dtype=np.float64)
+    diff[0] = noise[0]
+    for i in range(1, n):
+        diff[i] = 0.8 * diff[i - 1] + noise[i]
+    diff += 0.04
+    base = {("US", i): 0.02 for i in range(n)}
+    cand = {("US", i): 0.02 + float(diff[i]) for i in range(n)}
+
+    res = report.paired(cand, base)
+    assert res["t"] is not None and res["t_iid"] is not None
+    assert res["se_hac"] is not None and res["hac_lags"] > 0
+    assert res["t"] < res["t_iid"]
+    assert res["se_hac"] > res["se_iid"]
+
+
+def test_offset_reports_dropped_market_when_has_market_model_zero(tmp_path):
+    """En US+CN cuando CN tiene has_market_model=0, offset_coverage y Markdown lo avisan."""
+    folder = tmp_path / "joint"
+    write_model(folder, "modelo_a", 2013, 0.3, seed=1, markets=("US", "CN"))
+    records = report.completed(folder, 2013, 42)
+    rep = report.model_report(folder, records["modelo_a"], 2013, 42)
+    reports = {"modelo_a": rep}
+
+    class StubProvider:
+        def rows(self, run, split):
+            data = rep["_splits"][split]
+            n_rows = len(data["target"])
+            alpha = np.full(n_rows, np.nan, dtype=np.float64)
+            vol = np.full(n_rows, 10.0, dtype=np.float64)
+            rng = np.random.default_rng(7)
+            for market, _, start, end in data["sessions"]:
+                if market == "US":
+                    alpha[start:end] = rng.normal(0.0, 0.01, size=end - start)
+            return alpha, vol
+
+    known = report.offset_report(reports, StubProvider(), 2013, 42)
+    assert known is not None
+    cov = known["offset_coverage"]
+    assert cov["dropped_markets"] == ["CN"]
+    assert cov["covered_markets"] == ["US"]
+    assert cov["by_market"]["CN"]["known_alpha_sessions"] == 0
+    assert cov["by_market"]["CN"]["total_sessions"] == SESSIONS["evaluation"]
+    assert cov["by_market"]["US"]["known_alpha_sessions"] == SESSIONS["evaluation"]
+
+    document = dict(
+        schema_version=1,
+        kind="dgx_screening_report",
+        state=str(folder),
+        references=[],
+        seed=42,
+        min_assets=report.MIN_ASSETS,
+        decision_splits=["calibration"],
+        origins=[
+            dict(
+                year=2013,
+                completed=["modelo_a"],
+                missing_splits=[],
+                models={"modelo_a": {k: v for k, v in rep.items() if not k.startswith("_")}},
+                contrasts=[],
+                ensembles=[],
+                offset=known,
+                offset_coverage=cov,
+            )
+        ],
+        aggregate=[],
+        comparison=None,
+        inference=None,
+        dropped_from_inference=[],
+        stability=None,
+    )
+    md = report.markdown(document)
+    assert "AVISO" in md and "`CN`" in md and "has_market_model == 0" in md
+
+
+def test_best_scale_fits_calibration_only_not_validation():
+    """Perturbar validation sin tocar calibration deja best_scale exactamente igual."""
+    rng = np.random.default_rng(17)
+    sessions, assets = 30, 60
+    count = sessions * assets
+
+    def make_split():
+        alpha = rng.normal(0.0, 1.0, count)
+        skill = rng.normal(0.0, 1.0, count)
+        free = 0.5 * alpha + 0.4 * skill + rng.normal(0.0, 1.0, count)
+        pred = 10.0 * (0.5 * alpha + 0.4 * skill - alpha)
+        return (
+            dict(
+                target=free - alpha,
+                prediction=pred,
+                sessions=[("US", s, s * assets, (s + 1) * assets) for s in range(sessions)],
+            ),
+            alpha,
+        )
+
+    splits, alphas = {}, {}
+    for name in report.SPLITS:
+        splits[name], alphas[name] = make_split()
+
+    base_scale = report.best_scale(splits, alphas)
+    perturbed = dict(
+        splits,
+        validation=dict(
+            splits["validation"], prediction=-1000.0 * splits["validation"]["prediction"]
+        ),
+    )
+    assert report.best_scale(perturbed, alphas) == base_scale
+
+
+def test_dropped_from_inference_explicitly_reported(state, tmp_path):
+    """Un modelo al que le falta 1 sesión aparece en dropped_from_inference, nunca desaparece."""
+    import pyarrow.parquet as pq
+
+    path = state / "runs/ruido/2013/seed-42/evaluation-predictions.parquet"
+    table = pq.read_table(path)
+    first_ts = table.column("prediction_at")[0].as_py()
+    mask = table.column("prediction_at").to_pylist()
+    keep_indices = [idx for idx, val in enumerate(mask) if val != first_ts]
+    pq.write_table(table.take(keep_indices), path)
+
+    output = tmp_path / "drop_check"
+    assert (
+        report.main(
+            [
+                "--state",
+                str(state),
+                "--year",
+                "2013",
+                "--output",
+                str(output),
+                "--inference",
+                "control",
+                "--bootstrap",
+                "200",
+            ]
+        )
+        == 0
+    )
+    doc = json.loads((output / "report.json").read_text())
+    dropped = doc["dropped_from_inference"]
+    assert any(item["model"] == "ruido" and item["missing_sessions"] == 1 for item in dropped)
+    assert "ruido" not in doc["inference"]["models"]
+    md = (output / "report.md").read_text()
+    assert "`ruido`" in md and "excluidos de la inferencia" in md
+
+
+def test_the_implied_probability_matches_the_row_by_row_interpolation():
+    """La versión vectorizada da lo mismo, bit a bit, que la interpolación fila a fila."""
+    levels = np.asarray(report.QUANTILE_LEVELS, dtype=np.float64)
+
+    def reference(row):
+        if 0.0 <= row[0]:
+            below = levels[0]
+        elif 0.0 >= row[-1]:
+            below = levels[-1]
+        else:
+            high = int(np.searchsorted(row, 0.0, side="right"))
+            high = min(max(high, 1), len(levels) - 1)
+            low = high - 1
+            width = row[high] - row[low]
+            if width <= 0.0:
+                below = 0.5 * (levels[low] + levels[high])
+            else:
+                below = levels[low] + (0.0 - row[low]) / width * (levels[high] - levels[low])
+        return float(np.clip(1.0 - below, 0.025, 0.975))
+
+    rng = np.random.default_rng(23)
+    rows = np.sort(rng.normal(0.0, 0.02, size=(4000, 5)) + rng.normal(0.0, 0.03, size=(4000, 1)))
+    # Casos de borde: todo por encima, todo por debajo, ceros exactos y empates.
+    edge = np.array(
+        [
+            [0.0, 0.01, 0.02, 0.03, 0.04],
+            [-0.04, -0.03, -0.02, -0.01, 0.0],
+            [-0.02, 0.0, 0.0, 0.01, 0.02],
+            [-0.02, -0.01, -0.01, -0.01, 0.03],
+            [0.0, 0.0, 0.0, 0.0, 0.0],
+            [-0.01, -0.01, 0.02, 0.02, 0.02],
+        ]
+    )
+    rows = np.vstack([rows, edge])
+    expected = np.array([reference(row) for row in rows])
+    actual = report._implied_up_probability(rows)
+    np.testing.assert_array_equal(actual, expected)
+    assert report._implied_up_probability(np.empty((0, 5))).shape == (0,)

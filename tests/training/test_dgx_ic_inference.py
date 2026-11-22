@@ -451,3 +451,92 @@ def test_casos_borde_y_errores_csv(tmp_path: Path) -> None:
     )
     with pytest.raises(ValueError):
         ic.analizar_tabla_ic(csv_ok, benchmark="inexistente", bootstrap=100, seed=0)
+
+
+def test_hac_and_stationary_bootstrap_stratified_by_origin_and_market(tmp_path: Path) -> None:
+    """HAC y bootstrap estacionario no cruzan fronteras 2014->2023 ni CN<->US y emiten by_market."""
+    # Serie de 2 bloques alternados +1/-1 separados por bloque: si se cruza la frontera entre
+    # bloques habría covarianza cruzada; al estratificar, cada bloque es independiente.
+    b1 = np.array([0.2, 0.4, 0.6, 0.8, 1.0, 1.2], dtype=np.float64)
+    b2 = np.array([-1.0, -0.8, -0.6, -0.4, -0.2, 0.0], dtype=np.float64)
+    combined = np.concatenate([b1, b2])
+    blocks = [("2014", "US")] * len(b1) + [("2023", "US")] * len(b2)
+
+    # Cálculo exacto manual sin productos cruzados entre bloques (lags=2).
+    mean = float(np.mean(combined))
+    u1, u2 = b1 - mean, b2 - mean
+    v_manual = 0.0
+    for u in (u1, u2):
+        v_b = float(np.dot(u, u))
+        for k in (1, 2):
+            v_b += 2.0 * (1.0 - k / 3.0) * float(np.dot(u[k:], u[:-k]))
+        v_manual += max(v_b, 0.0)
+    t_manual = mean / math.sqrt((v_manual / len(combined)) / len(combined))
+    t_strat = ic.newey_west_t(combined, lags=2, blocks=blocks)
+    t_flat = ic.newey_west_t(combined, lags=2)
+    assert math.isclose(t_strat, t_manual, rel_tol=1e-12, abs_tol=1e-12)
+    assert not math.isclose(t_strat, t_flat, rel_tol=1e-3)
+
+    # Bootstrap estratificado: cada réplica mantiene exactamente el recuento de cada estrato
+    # y jamás mezcla índices del estrato 0 con los del estrato 1.
+    rng = np.random.default_rng(77)
+    idx = ic.stratified_stationary_bootstrap_indices(blocks, 3.0, 200, rng)
+    assert idx.shape == (200, len(combined))
+    assert np.all(idx[:, : len(b1)] < len(b1))
+    assert np.all(idx[:, len(b1) :] >= len(b1))
+
+    # CSV conjunto US+CN con salto 2014->2023 produce clave `by_market` con US y CN.
+    rng_csv = np.random.default_rng(314)
+    ruta_csv = tmp_path / "us_cn.csv"
+    with ruta_csv.open("w", encoding="utf-8", newline="") as fh:
+        writer = csv.writer(fh)
+        writer.writerow(["session", "ref", "cand"])
+        for year, base_us in ((2014, 1388620800000000), (2023, 1672617600000000)):
+            for step in range(25):
+                ts = base_us + step * 86_400_000_000
+                for market, edge in (("CN", 0.02), ("US", 0.05)):
+                    base_val = float(rng_csv.normal(0.02, 0.03))
+                    writer.writerow(
+                        [
+                            f"{year}:{market}:{ts}",
+                            f"{base_val:.8f}",
+                            f"{base_val + edge + float(rng_csv.normal(0, 0.01)):.8f}",
+                        ]
+                    )
+
+    res = ic.analizar_tabla_ic(ruta_csv, benchmark="ref", bootstrap=300, seed=1)
+    assert res["metadata"]["stratified"] is True
+    assert res["metadata"]["n_strata"] == 4
+    assert set(res["by_market"].keys()) == {"CN", "US"}
+    assert res["by_market"]["CN"]["metadata"]["n_sessions"] == 50
+    assert res["by_market"]["US"]["metadata"]["n_sessions"] == 50
+    assert (
+        res["by_market"]["US"]["models"]["cand"]["mean"]
+        > (res["by_market"]["CN"]["models"]["cand"]["mean"])
+    )
+
+
+def test_newey_west_t_matches_screening_report() -> None:
+    """Acuerdo numérico exacto (rtol=1e-12) entre dgx_screening_report y dgx_ic_inference."""
+    sr_path = SCRIPT.with_name("dgx_screening_report.py")
+    sr_spec = importlib.util.spec_from_file_location("dgx_screening_report_check", sr_path)
+    sr = importlib.util.module_from_spec(sr_spec)
+    sr_spec.loader.exec_module(sr)
+
+    rng = np.random.default_rng(2026)
+    for length in (15, 60, 250):
+        series = _simular_ar1(length, phi=0.7, media=0.04, desv_innov=0.05, rng=rng)
+        t_inf = ic.newey_west_t(series)
+        t_rep = sr.newey_west_t(series)
+        assert t_rep is not None
+        assert math.isclose(t_rep, t_inf, rel_tol=1e-12, abs_tol=1e-12)
+
+    # También con estratos explícitos.
+    blocks = [("2014", "US")] * 30 + [("2023", "US")] * 30
+    series = _simular_ar1(60, phi=0.6, media=0.03, desv_innov=0.05, rng=rng)
+    assert math.isclose(
+        sr.newey_west_t(series, blocks=blocks),
+        ic.newey_west_t(series, blocks=blocks),
+        rel_tol=1e-12,
+        abs_tol=1e-12,
+    )

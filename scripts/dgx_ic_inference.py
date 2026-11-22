@@ -18,13 +18,81 @@ import argparse
 import csv
 import json
 import math
+import re
 from collections.abc import Sequence
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
 import numpy as np
 
 _CHUNK_BOOTSTRAP = 512
+_EPOCH_UTC = datetime(1970, 1, 1, tzinfo=UTC)
+_NS_PER_SECOND = 1_000_000_000
+_INT_RE = re.compile(r"^[+-]?\d+$")
+_FRAC_SEC_RE = re.compile(r"[Tt ]\d{2}:\d{2}:\d{2}[.,](\d+)")
+
+
+def automatic_newey_west_lags(n_obs: int) -> int:
+    """Regla automática de Newey y West (1994): ``floor(4 * (T / 100) ** (2 / 9))``."""
+    return min(int(math.floor(4.0 * (n_obs / 100.0) ** (2.0 / 9.0))), n_obs - 1)
+
+
+def _parse_instant_ns(instant: str) -> int:
+    """Convierte un instante textual (ISO 8601 o época en s/ms/us/ns) a nanosegundos UTC."""
+    text = instant.strip()
+    if not text:
+        raise ValueError("El instante no puede estar vacío.")
+    if _INT_RE.fullmatch(text):
+        raw = int(text)
+        magnitude = abs(raw)
+        if magnitude >= 10**17:
+            return raw
+        if magnitude >= 10**14:
+            return raw * 1_000
+        if magnitude >= 10**11:
+            return raw * 1_000_000
+        if magnitude >= 10**8:
+            return raw * _NS_PER_SECOND
+        return raw
+    dt = datetime.fromisoformat(text)
+    dt_utc = dt.replace(tzinfo=UTC) if dt.tzinfo is None else dt.astimezone(UTC)
+    extra_ns = 0
+    frac_match = _FRAC_SEC_RE.search(text)
+    if frac_match is not None:
+        sub_micro = frac_match.group(1)[6:9]
+        if sub_micro:
+            extra_ns = int(sub_micro.ljust(3, "0"))
+    delta = dt_utc - _EPOCH_UTC
+    total_seconds = delta.days * 86_400 + delta.seconds
+    return total_seconds * _NS_PER_SECOND + delta.microseconds * 1_000 + extra_ns
+
+
+def _parse_session_stratum(session: str) -> tuple[int, str, int] | None:
+    """Extrae ``(origin_year, market, instant_ns)`` si ``session`` sigue ``year:market:instant``."""
+    parts = session.split(":", 2)
+    if len(parts) != 3:
+        return None
+    year_str, market, instant_str = parts
+    if not year_str.isdigit() or not market.strip():
+        return None
+    try:
+        instant_ns = _parse_instant_ns(instant_str)
+    except ValueError:
+        return None
+    return int(year_str), market.strip(), instant_ns
+
+
+def _partition_blocks(n_obs: int, blocks: Sequence[Any] | None) -> list[np.ndarray]:
+    """Agrupa los índices ``0..n_obs-1`` por estrato preservando el orden dentro de cada bloque."""
+    if blocks is None:
+        return [np.arange(n_obs, dtype=np.int64)]
+    if isinstance(blocks, (str, bytes)) or len(blocks) != n_obs:
+        raise ValueError(f"blocks debe tener longitud {n_obs}.")
+    grouped: dict[Any, list[int]] = {}
+    for idx, blk in enumerate(blocks):
+        grouped.setdefault(blk, []).append(idx)
+    return [np.asarray(idxs, dtype=np.int64) for idxs in grouped.values()]
 
 
 def _validar_entero(valor: Any, nombre: str, minimo: int) -> int:
@@ -154,7 +222,71 @@ def _t_simple(x: np.ndarray) -> float:
     return float(media / (desv / math.sqrt(x.size)))
 
 
-def newey_west_t(x: Sequence[float] | np.ndarray, lags: int | None = None) -> float:
+def newey_west_hac(
+    x: Sequence[float] | np.ndarray,
+    lags: int | None = None,
+    *,
+    blocks: Sequence[Any] | None = None,
+) -> tuple[float, float, int]:
+    """Calcula ``(t_hac, se_hac, max_lags)`` de la media con varianza HAC de Newey-West.
+
+    Si se pasa ``blocks`` (p. ej. ``(origin_year, market)`` por observación), las
+    autocovarianzas de rezago ``k >= 1`` se suman estrictamente dentro de cada bloque
+    contiguo sin cruzar fronteras entre orígenes no contiguos ni entre mercados.
+    """
+    arr = _validar_serie_1d(x, nombre="x", min_len=2)
+    n_obs = arr.size
+
+    rezagos_fijos: int | None
+    if lags is None:
+        rezagos_fijos = None
+    else:
+        rezagos_fijos = _validar_entero(lags, "lags", minimo=0)
+        if rezagos_fijos >= n_obs:
+            raise ValueError(f"lags debe ser menor que T ({n_obs}); se recibió {rezagos_fijos}.")
+
+    media = float(np.mean(arr))
+    if _es_constante(arr):
+        if media == 0.0:
+            return 0.0, 0.0, 0
+        return math.copysign(math.inf, media), 0.0, 0
+
+    centrada = arr - media
+    particiones = _partition_blocks(n_obs, blocks)
+    suma_varianzas = 0.0
+    max_rezagos = 0
+    for idxs in particiones:
+        u = centrada[idxs]
+        tb = u.size
+        if tb == 0:
+            continue
+        if rezagos_fijos is None:
+            l_b = automatic_newey_west_lags(tb) if tb > 1 else 0
+        else:
+            l_b = min(rezagos_fijos, tb - 1)
+        max_rezagos = max(max_rezagos, l_b)
+        v_b = float(np.dot(u, u))
+        for k in range(1, l_b + 1):
+            peso = 1.0 - k / (l_b + 1.0)
+            v_b += 2.0 * peso * float(np.dot(u[k:], u[:-k]))
+        suma_varianzas += max(v_b, 0.0)
+
+    lrv = suma_varianzas / n_obs
+    if lrv <= 0.0:
+        if media == 0.0:
+            return 0.0, 0.0, max_rezagos
+        return math.copysign(math.inf, media), 0.0, max_rezagos
+
+    error_estandar = math.sqrt(lrv / n_obs)
+    return float(media / error_estandar), float(error_estandar), int(max_rezagos)
+
+
+def newey_west_t(
+    x: Sequence[float] | np.ndarray,
+    lags: int | None = None,
+    *,
+    blocks: Sequence[Any] | None = None,
+) -> float:
     """Calcula el estadístico t de la media con varianza HAC de Newey-West.
 
     Emplea el núcleo de Bartlett:
@@ -162,49 +294,11 @@ def newey_west_t(x: Sequence[float] | np.ndarray, lags: int | None = None) -> fl
     donde ``gamma_k = (1 / T) * sum_{t=k}^{T-1} (x_t - x_bar) * (x_{t-k} - x_bar)``.
     Si ``lags`` es ``None``, aplica la regla de Newey y West (1994):
     ``L = floor(4 * (T / 100) ** (2 / 9))``.
-
-    Parámetros
-    ----------
-    x : array_like
-        Serie temporal 1D de longitud ``T >= 2``.
-    lags : int o None, opcional
-        Número máximo de rezagos ``L`` en ``[0, T - 1]``. Por defecto ``None``.
-
-    Devuelve
-    --------
-    float
-        Estadístico t robusto ``x_bar / sqrt(omega_hat / T)``.
+    Si se proporciona ``blocks``, las autocovarianzas se calculan por bloque sin
+    cruzar fronteras entre estratos.
     """
-    arr = _validar_serie_1d(x, nombre="x", min_len=2)
-    n_obs = arr.size
-
-    if lags is None:
-        rezagos = min(int(math.floor(4.0 * (n_obs / 100.0) ** (2.0 / 9.0))), n_obs - 1)
-    else:
-        rezagos = _validar_entero(lags, "lags", minimo=0)
-        if rezagos >= n_obs:
-            raise ValueError(f"lags debe ser menor que T ({n_obs}); se recibió {rezagos}.")
-
-    media = float(np.mean(arr))
-    if _es_constante(arr):
-        if media == 0.0:
-            return 0.0
-        return math.copysign(math.inf, media)
-
-    centrada = arr - media
-    lrv = float(np.dot(centrada, centrada) / n_obs)
-    for k in range(1, rezagos + 1):
-        peso = 1.0 - k / (rezagos + 1.0)
-        gamma_k = float(np.dot(centrada[k:], centrada[:-k]) / n_obs)
-        lrv += 2.0 * peso * gamma_k
-
-    if lrv <= 0.0:
-        if media == 0.0:
-            return 0.0
-        return math.copysign(math.inf, media)
-
-    error_estandar = math.sqrt(lrv / n_obs)
-    return float(media / error_estandar)
+    t_stat, _, _ = newey_west_hac(x, lags=lags, blocks=blocks)
+    return t_stat
 
 
 def optimal_block_length(x: Sequence[float] | np.ndarray) -> float:
@@ -346,35 +440,80 @@ def stationary_bootstrap_indices(
     return (inicio_bloque + desplazamiento) % n_obs
 
 
+def stratified_stationary_bootstrap_indices(
+    blocks: Sequence[Any],
+    block_lengths: float | Sequence[float],
+    B: int,
+    rng: np.random.Generator,
+) -> np.ndarray:
+    """Genera índices ``[B, T]`` de bootstrap estacionario estratificado por bloque.
+
+    Remuestrea independientemente cada estrato ``(origin_year, market)`` con envoltura
+    circular estrictamente interna, de modo que nunca se enlazan orígenes no contiguos
+    ni mercados distintos.
+    """
+    n_obs = len(blocks)
+    if n_obs < 1:
+        raise ValueError("blocks no puede estar vacío.")
+    n_boot = _validar_entero(B, "B", minimo=1)
+    if not isinstance(rng, np.random.Generator):
+        raise ValueError("rng debe ser una instancia de numpy.random.Generator.")
+
+    particiones = _partition_blocks(n_obs, blocks)
+    if isinstance(block_lengths, (int, float, np.number)) and not isinstance(block_lengths, bool):
+        longitudes = [_validar_bloque(block_lengths)] * len(particiones)
+    else:
+        longitudes = [_validar_bloque(b) for b in block_lengths]
+        if len(longitudes) != len(particiones):
+            raise ValueError("block_lengths debe coincidir con el número de estratos.")
+
+    partes: list[np.ndarray] = []
+    for idxs, longitud in zip(particiones, longitudes, strict=True):
+        tb = idxs.size
+        if tb == 1:
+            partes.append(np.full((n_boot, 1), int(idxs[0]), dtype=np.int64))
+        else:
+            locales = stationary_bootstrap_indices(tb, longitud, n_boot, rng)
+            partes.append(idxs[locales])
+    return np.concatenate(partes, axis=1)
+
+
+def _resolver_bloques_bootstrap(
+    datos: np.ndarray,
+    blocks: Sequence[Any] | None,
+    block: float | None,
+) -> tuple[list[np.ndarray], list[float], float]:
+    """Calcula particiones, longitudes por estrato y bloque medio ponderado."""
+    n_obs = datos.shape[0]
+    particiones = _partition_blocks(n_obs, blocks)
+    longitudes: list[float] = []
+    for idxs in particiones:
+        if block is not None:
+            longitudes.append(_validar_bloque(block))
+        elif idxs.size < 4:
+            longitudes.append(1.0)
+        elif datos.ndim == 1:
+            longitudes.append(optimal_block_length(datos[idxs]))
+        else:
+            longitudes.append(_longitud_bloque_multivariante(datos[idxs]))
+    bloque_medio = float(
+        sum(idxs.size * longitud for idxs, longitud in zip(particiones, longitudes, strict=True))
+        / n_obs
+    )
+    return particiones, longitudes, bloque_medio
+
+
 def bootstrap_mean_interval(
     x: Sequence[float] | np.ndarray,
     level: float = 0.95,
     B: int = 5000,
     block: float | None = None,
     seed: int = 0,
+    *,
+    blocks: Sequence[Any] | None = None,
 ) -> dict[str, float]:
-    """Calcula el intervalo percentil de la media mediante bootstrap estacionario.
-
-    Parámetros
-    ----------
-    x : array_like
-        Serie temporal 1D finita (``T >= 4`` si ``block`` es ``None``, ``T >= 2`` si se
-        suministra ``block``).
-    level : float, opcional
-        Nivel de confianza en ``(0, 1)``. Por defecto ``0.95``.
-    B : int, opcional
-        Número de réplicas bootstrap (``B >= 1``). Por defecto ``5000``.
-    block : float o None, opcional
-        Longitud media de bloque (``>= 1``). Si es ``None``, usa ``optimal_block_length(x)``.
-    seed : int, opcional
-        Semilla del generador pseudoaleatorio. Por defecto ``0``.
-
-    Devuelve
-    --------
-    dict[str, float]
-        Diccionario con las claves ``mean``, ``low``, ``high`` y ``block``.
-    """
-    min_len = 4 if block is None else 2
+    """Calcula el intervalo percentil de la media mediante bootstrap estacionario."""
+    min_len = 4 if (block is None and blocks is None) else 2
     arr = _validar_serie_1d(x, nombre="x", min_len=min_len)
     nivel = _validar_flotante_finito(level, "level")
     if not (0.0 < nivel < 1.0):
@@ -382,9 +521,13 @@ def bootstrap_mean_interval(
     n_boot = _validar_entero(B, "B", minimo=1)
     semilla = _validar_entero(seed, "seed", minimo=0)
 
-    bloque = optimal_block_length(arr) if block is None else _validar_bloque(block)
     rng = np.random.default_rng(semilla)
-    indices = stationary_bootstrap_indices(arr.size, bloque, n_boot, rng)
+    if blocks is None:
+        bloque = optimal_block_length(arr) if block is None else _validar_bloque(block)
+        indices = stationary_bootstrap_indices(arr.size, bloque, n_boot, rng)
+    else:
+        _, longitudes, bloque = _resolver_bloques_bootstrap(arr, blocks, block)
+        indices = stratified_stationary_bootstrap_indices(blocks, longitudes, n_boot, rng)
     medias_boot = _medias_bootstrap(arr, indices)
 
     alfa = 1.0 - nivel
@@ -401,27 +544,10 @@ def diebold_mariano(
     a: Sequence[float] | np.ndarray,
     b: Sequence[float] | np.ndarray,
     lags: int | None = None,
+    *,
+    blocks: Sequence[Any] | None = None,
 ) -> dict[str, float]:
-    """Contraste de Diebold y Mariano (1995) de igualdad de medias pareadas con HAC.
-
-    Evalúa ``H0: E[a_t - b_t] = 0`` frente a ``H1: E[a_t - b_t] != 0`` sobre el
-    diferencial ``d = a - b`` utilizando el estadístico t de Newey-West y p-valor
-    bilateral bajo aproximación normal estándar.
-
-    Parámetros
-    ----------
-    a : array_like
-        Primera serie temporal 1D de longitud ``T >= 2``.
-    b : array_like
-        Segunda serie temporal 1D de la misma longitud ``T``.
-    lags : int o None, opcional
-        Rezagos para la varianza HAC de Newey-West. Por defecto ``None``.
-
-    Devuelve
-    --------
-    dict[str, float]
-        Diccionario con las claves ``mean``, ``t`` y ``p_value``.
-    """
+    """Contraste de Diebold y Mariano (1995) de igualdad de medias pareadas con HAC."""
     serie_a = _validar_serie_1d(a, nombre="a", min_len=2)
     serie_b = _validar_serie_1d(b, nombre="b", min_len=2)
     if serie_a.size != serie_b.size:
@@ -431,7 +557,7 @@ def diebold_mariano(
 
     diferencia = serie_a - serie_b
     media = float(np.mean(diferencia))
-    estadistico_t = newey_west_t(diferencia, lags=lags)
+    estadistico_t = newey_west_t(diferencia, lags=lags, blocks=blocks)
     if math.isinf(estadistico_t):
         p_valor = 0.0
     else:
@@ -468,44 +594,38 @@ def _varianza_bootstrap_estacionario(diferencias: np.ndarray, bloque: float) -> 
     return np.maximum(omega2, 0.0)
 
 
+def _varianza_bootstrap_estacionario_estratificada(
+    diferencias: np.ndarray,
+    particiones: list[np.ndarray],
+    longitudes: list[float],
+) -> np.ndarray:
+    """Varianza exacta del bootstrap estacionario estratificado por bloques independientes."""
+    n_obs = diferencias.shape[0]
+    omega2 = np.zeros(diferencias.shape[1], dtype=np.float64)
+    for idxs, longitud in zip(particiones, longitudes, strict=True):
+        tb = idxs.size
+        if tb <= 1:
+            continue
+        omega2 += (tb / float(n_obs)) * _varianza_bootstrap_estacionario(
+            diferencias[idxs], longitud
+        )
+    return np.maximum(omega2, 0.0)
+
+
 def spa_test(
     candidates: Sequence[Sequence[float]] | np.ndarray,
     benchmark: Sequence[float] | np.ndarray,
     B: int = 5000,
     block: float | None = None,
     seed: int = 0,
+    *,
+    blocks: Sequence[Any] | None = None,
 ) -> dict[str, Any]:
     """Contraste SPA (Superior Predictive Ability) de Hansen (2005).
 
-    Contrasta la hipótesis nula de que ningún modelo candidato supera al de referencia
-    en IC medio (mayor IC es mejor):
-        H0: max_k E[candidates_{t,k} - benchmark_t] <= 0.
-    Usa el estadístico estudentizado ``T_SPA = max(max_k sqrt(T) * d_bar_k / omega_k, 0)``
-    con varianza analítica del bootstrap estacionario (Hansen 2005, ec. 6) y los tres
-    recentrados (``p_lower``, ``p_consistent`` y ``p_upper``) sobre los mismos índices
-    temporales remuestreados simultáneamente para todos los candidatos.
-
-    Parámetros
-    ----------
-    candidates : array_like
-        Matriz 2D ``[T, M]`` de IC de los ``M >= 1`` candidatos.
-    benchmark : array_like
-        Vector 1D ``[T]`` de IC del modelo de referencia.
-    B : int, opcional
-        Número de réplicas bootstrap (``B >= 1``). Por defecto ``5000``.
-    block : float o None, opcional
-        Longitud media de bloque (``>= 1``). Si es ``None``, se estima automáticamente
-        a partir de los diferenciales ``candidates - benchmark``.
-    seed : int, opcional
-        Semilla del generador pseudoaleatorio. Por defecto ``0``.
-
-    Devuelve
-    --------
-    dict[str, Any]
-        Diccionario con ``statistic``, ``p_lower``, ``p_consistent``, ``p_upper`` y
-        ``best_candidate`` (índice del candidato con mayor media).
+    Soporta remuestreo estratificado opcional por ``blocks`` (p. ej. ``(origin_year, market)``).
     """
-    min_t = 4 if block is None else 2
+    min_t = 4 if (block is None and blocks is None) else 2
     cand = _validar_matriz_2d(candidates, nombre="candidates", min_t=min_t, min_m=1)
     ref = _validar_serie_1d(benchmark, nombre="benchmark", min_len=min_t)
     if cand.shape[0] != ref.size:
@@ -518,13 +638,22 @@ def spa_test(
 
     n_obs, n_mod = cand.shape
     diferencias = cand - ref[:, np.newaxis]
-    bloque = (
-        _longitud_bloque_multivariante(diferencias) if block is None else _validar_bloque(block)
-    )
-
     medias_d = np.mean(diferencias, axis=0)
     mejor_candidato = int(np.argmax(np.mean(cand, axis=0)))
-    omega2 = _varianza_bootstrap_estacionario(diferencias, bloque)
+
+    rng = np.random.default_rng(semilla)
+    if blocks is None:
+        bloque = (
+            _longitud_bloque_multivariante(diferencias) if block is None else _validar_bloque(block)
+        )
+        omega2 = _varianza_bootstrap_estacionario(diferencias, bloque)
+        indices = stationary_bootstrap_indices(n_obs, bloque, n_boot, rng)
+    else:
+        particiones, longitudes, _ = _resolver_bloques_bootstrap(diferencias, blocks, block)
+        omega2 = _varianza_bootstrap_estacionario_estratificada(
+            diferencias, particiones, longitudes
+        )
+        indices = stratified_stationary_bootstrap_indices(blocks, longitudes, n_boot, rng)
 
     # Detección segura de columnas constantes (varianza nula).
     escala_col = np.maximum(1.0, np.mean(diferencias * diferencias, axis=0))
@@ -548,8 +677,6 @@ def spa_test(
     estadistico = float(max(float(np.max(t_obs_col)), 0.0))
 
     # Remuestreo simultáneo de todos los candidatos con los mismos índices temporales.
-    rng = np.random.default_rng(semilla)
-    indices = stationary_bootstrap_indices(n_obs, bloque, n_boot, rng)
     medias_boot = _medias_bootstrap(diferencias, indices)  # [B, M]
     centradas_boot = medias_boot - medias_d  # [B, M]
 
@@ -591,37 +718,14 @@ def model_confidence_set(
     B: int = 5000,
     block: float | None = None,
     seed: int = 0,
+    *,
+    blocks: Sequence[Any] | None = None,
 ) -> dict[str, Any]:
     """Calcula el Model Confidence Set (MCS) de Hansen, Lunde y Nason (2011).
 
-    Utiliza el estadístico ``T_max,M`` y la regla de eliminación ``e_max,M`` sobre pérdidas
-    ``L = -scores`` (donde mayor ``scores`` implica mejor rendimiento). Remuestrea los
-    mismos índices temporales del bootstrap estacionario para todos los modelos a la vez.
-
-    Parámetros
-    ----------
-    scores : array_like
-        Matriz 2D ``[T, M]`` de puntuaciones (IC por sesión y modelo, mayor es mejor).
-    alpha : float, opcional
-        Nivel de significación en ``(0, 1)`` para construir el conjunto ``M*_{1-alpha}``.
-        Por defecto ``0.10``.
-    B : int, opcional
-        Número de réplicas bootstrap (``B >= 1``). Por defecto ``5000``.
-    block : float o None, opcional
-        Longitud media de bloque (``>= 1``). Si es ``None``, se estima automáticamente a
-        partir de las pérdidas relativas respecto a la media transversal.
-    seed : int, opcional
-        Semilla del generador pseudoaleatorio. Por defecto ``0``.
-
-    Devuelve
-    --------
-    dict[str, Any]
-        Diccionario con:
-        - ``included``: lista ordenada de índices de modelos que permanecen (``p >= alpha``).
-        - ``order``: lista de índices en orden de eliminación (del primero eliminado al último).
-        - ``p_values``: lista de p-valores MCS por modelo (índice ``0..M-1``).
+    Soporta remuestreo estratificado opcional por ``blocks`` (p. ej. ``(origin_year, market)``).
     """
-    min_t = 4 if block is None else 2
+    min_t = 4 if (block is None and blocks is None) else 2
     puntuaciones = _validar_matriz_2d(scores, nombre="scores", min_t=min_t, min_m=1)
     nivel_alfa = _validar_flotante_finito(alpha, "alpha")
     if not (0.0 < nivel_alfa < 1.0):
@@ -634,15 +738,19 @@ def model_confidence_set(
         return {"included": [0], "order": [0], "p_values": [1.0]}
 
     perdidas = -puntuaciones
-    if block is None:
-        perdidas_rel = perdidas - np.mean(perdidas, axis=1, keepdims=True)
-        bloque = _longitud_bloque_multivariante(perdidas_rel)
-    else:
-        bloque = _validar_bloque(block)
-
-    # Remuestreo conjunto único para todos los modelos.
+    perdidas_rel = perdidas - np.mean(perdidas, axis=1, keepdims=True)
     rng = np.random.default_rng(semilla)
-    indices = stationary_bootstrap_indices(n_obs, bloque, n_boot, rng)
+    if blocks is None:
+        bloque = (
+            _longitud_bloque_multivariante(perdidas_rel)
+            if block is None
+            else _validar_bloque(block)
+        )
+        indices = stationary_bootstrap_indices(n_obs, bloque, n_boot, rng)
+    else:
+        _, longitudes, _ = _resolver_bloques_bootstrap(perdidas_rel, blocks, block)
+        indices = stratified_stationary_bootstrap_indices(blocks, longitudes, n_boot, rng)
+
     medias_perd = np.mean(perdidas, axis=0)  # [M]
     medias_boot = _medias_bootstrap(perdidas, indices)  # [B, M]
 
@@ -767,6 +875,100 @@ def _cargar_tabla_csv(ruta: Path) -> tuple[list[str], list[str], np.ndarray]:
     return sesiones, nombres_modelos, matriz
 
 
+def _analizar_matriz(
+    nombres_modelos: list[str],
+    matriz: np.ndarray,
+    benchmark: str,
+    nivel_alfa: float,
+    n_boot: int,
+    semilla: int,
+    *,
+    blocks: Sequence[Any] | None = None,
+) -> dict[str, Any]:
+    """Ejecuta intervalos bootstrap, HAC, DM, SPA y MCS sobre una matriz ``[T, M]``."""
+    idx_ref = nombres_modelos.index(benchmark)
+    serie_ref = matriz[:, idx_ref]
+    indices_cand = [i for i in range(len(nombres_modelos)) if i != idx_ref]
+    if not indices_cand:
+        raise ValueError(
+            "El CSV debe contener al menos un modelo candidato además de la referencia."
+        )
+
+    nombres_cand = [nombres_modelos[i] for i in indices_cand]
+    matriz_cand = matriz[:, indices_cand]
+
+    # Intervalos bootstrap al 95 % con remuestreo simultáneo compartido entre modelos.
+    rng_ic = np.random.default_rng(semilla)
+    if blocks is None:
+        bloque_comun = _longitud_bloque_multivariante(matriz)
+        indices_boot = stationary_bootstrap_indices(matriz.shape[0], bloque_comun, n_boot, rng_ic)
+        n_strata = 1
+    else:
+        particiones, longitudes, bloque_comun = _resolver_bloques_bootstrap(matriz, blocks, None)
+        indices_boot = stratified_stationary_bootstrap_indices(blocks, longitudes, n_boot, rng_ic)
+        n_strata = len(particiones)
+    medias_boot = _medias_bootstrap(matriz, indices_boot)  # [B, M]
+    ic_inf = np.quantile(medias_boot, 0.025, axis=0)
+    ic_sup = np.quantile(medias_boot, 0.975, axis=0)
+
+    resumen_modelos: dict[str, dict[str, Any]] = {}
+    for col, nombre in enumerate(nombres_modelos):
+        serie = matriz[:, col]
+        resumen_modelos[nombre] = {
+            "mean": float(np.mean(serie)),
+            "t_simple": _t_simple(serie),
+            "t_newey_west": newey_west_t(serie, blocks=blocks),
+            "bootstrap_ci_95": {
+                "mean": float(np.mean(serie)),
+                "low": float(ic_inf[col]),
+                "high": float(ic_sup[col]),
+                "block": float(bloque_comun),
+            },
+            "diebold_mariano": diebold_mariano(serie, serie_ref, blocks=blocks),
+        }
+
+    res_spa = spa_test(matriz_cand, serie_ref, B=n_boot, block=None, seed=semilla, blocks=blocks)
+    res_spa_salida = {
+        "statistic": res_spa["statistic"],
+        "p_lower": res_spa["p_lower"],
+        "p_consistent": res_spa["p_consistent"],
+        "p_upper": res_spa["p_upper"],
+        "best_candidate": nombres_cand[res_spa["best_candidate"]],
+        "best_candidate_index": res_spa["best_candidate"],
+    }
+
+    res_mcs = model_confidence_set(
+        matriz, alpha=nivel_alfa, B=n_boot, block=None, seed=semilla, blocks=blocks
+    )
+    res_mcs_salida = {
+        "alpha": nivel_alfa,
+        "included": [nombres_modelos[i] for i in res_mcs["included"]],
+        "included_indices": res_mcs["included"],
+        "order": [nombres_modelos[i] for i in res_mcs["order"]],
+        "order_indices": res_mcs["order"],
+        "p_values": {
+            nombres_modelos[i]: res_mcs["p_values"][i] for i in range(len(nombres_modelos))
+        },
+    }
+
+    return {
+        "metadata": {
+            "n_sessions": int(matriz.shape[0]),
+            "n_models": len(nombres_modelos),
+            "benchmark": benchmark,
+            "alpha": nivel_alfa,
+            "bootstrap": n_boot,
+            "seed": semilla,
+            "bootstrap_block": float(bloque_comun),
+            "stratified": blocks is not None,
+            "n_strata": n_strata,
+        },
+        "models": resumen_modelos,
+        "spa": res_spa_salida,
+        "mcs": res_mcs_salida,
+    }
+
+
 def analizar_tabla_ic(
     csv_path: str | Path,
     benchmark: str,
@@ -776,9 +978,9 @@ def analizar_tabla_ic(
 ) -> dict[str, Any]:
     """Ejecuta el análisis completo de inferencia IC sobre un archivo CSV.
 
-    Remuestrea los mismos índices temporales del bootstrap estacionario para todos los
-    modelos a la vez en los intervalos al 95 %, y ejecuta globalmente el contraste SPA
-    frente a la referencia y el Model Confidence Set (MCS).
+    Si las sesiones siguen ``<year>:<market>:<instant>``, estratifica HAC, bootstrap
+    estacionario, SPA y MCS por ``(origin_year, market)`` en orden cronológico y,
+    cuando hay más de un mercado, añade la clave ``by_market`` con inferencia por mercado.
     """
     nivel_alfa = _validar_flotante_finito(alpha, "alpha")
     if not (0.0 < nivel_alfa < 1.0):
@@ -793,77 +995,55 @@ def analizar_tabla_ic(
             f"Modelos disponibles: {', '.join(nombres_modelos)}."
         )
 
-    idx_ref = nombres_modelos.index(benchmark)
-    serie_ref = matriz[:, idx_ref]
-    indices_cand = [i for i in range(len(nombres_modelos)) if i != idx_ref]
-    if not indices_cand:
-        raise ValueError(
-            "El CSV debe contener al menos un modelo candidato además de la referencia."
+    parsed = [_parse_session_stratum(s) for s in sesiones]
+    if all(item is not None for item in parsed):
+        parsed_typed = [item for item in parsed if item is not None]
+        order = sorted(range(len(parsed_typed)), key=lambda idx: parsed_typed[idx])
+        matriz_ord = matriz[order]
+        parsed_ord = [parsed_typed[idx] for idx in order]
+        blocks = [(year, market) for year, market, _ in parsed_ord]
+        resultado = _analizar_matriz(
+            nombres_modelos,
+            matriz_ord,
+            benchmark,
+            nivel_alfa,
+            n_boot,
+            semilla,
+            blocks=blocks,
         )
+        unique_markets = sorted({market for _, market, _ in parsed_ord})
+        if len(unique_markets) > 1:
+            by_market: dict[str, Any] = {}
+            for market in unique_markets:
+                m_indices = [i for i, (_, m, _) in enumerate(parsed_ord) if m == market]
+                if len(m_indices) < 2:
+                    by_market[market] = {
+                        "metadata": {"n_sessions": len(m_indices), "market": market},
+                        "error": "Menos de 2 sesiones en el mercado.",
+                    }
+                    continue
+                m_blocks = [(parsed_ord[i][0], market) for i in m_indices]
+                by_market[market] = _analizar_matriz(
+                    nombres_modelos,
+                    matriz_ord[m_indices],
+                    benchmark,
+                    nivel_alfa,
+                    n_boot,
+                    semilla,
+                    blocks=m_blocks,
+                )
+            resultado["by_market"] = by_market
+        return resultado
 
-    nombres_cand = [nombres_modelos[i] for i in indices_cand]
-    matriz_cand = matriz[:, indices_cand]
-
-    # Intervalos bootstrap al 95 % con remuestreo simultáneo compartido entre modelos.
-    bloque_comun = _longitud_bloque_multivariante(matriz)
-    rng_ic = np.random.default_rng(semilla)
-    indices_boot = stationary_bootstrap_indices(matriz.shape[0], bloque_comun, n_boot, rng_ic)
-    medias_boot = _medias_bootstrap(matriz, indices_boot)  # [B, M]
-    ic_inf = np.quantile(medias_boot, 0.025, axis=0)
-    ic_sup = np.quantile(medias_boot, 0.975, axis=0)
-
-    resumen_modelos: dict[str, dict[str, Any]] = {}
-    for col, nombre in enumerate(nombres_modelos):
-        serie = matriz[:, col]
-        resumen_modelos[nombre] = {
-            "mean": float(np.mean(serie)),
-            "t_simple": _t_simple(serie),
-            "t_newey_west": newey_west_t(serie),
-            "bootstrap_ci_95": {
-                "mean": float(np.mean(serie)),
-                "low": float(ic_inf[col]),
-                "high": float(ic_sup[col]),
-                "block": float(bloque_comun),
-            },
-            "diebold_mariano": diebold_mariano(serie, serie_ref),
-        }
-
-    res_spa = spa_test(matriz_cand, serie_ref, B=n_boot, block=None, seed=semilla)
-    res_spa_salida = {
-        "statistic": res_spa["statistic"],
-        "p_lower": res_spa["p_lower"],
-        "p_consistent": res_spa["p_consistent"],
-        "p_upper": res_spa["p_upper"],
-        "best_candidate": nombres_cand[res_spa["best_candidate"]],
-        "best_candidate_index": res_spa["best_candidate"],
-    }
-
-    res_mcs = model_confidence_set(matriz, alpha=nivel_alfa, B=n_boot, block=None, seed=semilla)
-    res_mcs_salida = {
-        "alpha": nivel_alfa,
-        "included": [nombres_modelos[i] for i in res_mcs["included"]],
-        "included_indices": res_mcs["included"],
-        "order": [nombres_modelos[i] for i in res_mcs["order"]],
-        "order_indices": res_mcs["order"],
-        "p_values": {
-            nombres_modelos[i]: res_mcs["p_values"][i] for i in range(len(nombres_modelos))
-        },
-    }
-
-    return {
-        "metadata": {
-            "n_sessions": len(sesiones),
-            "n_models": len(nombres_modelos),
-            "benchmark": benchmark,
-            "alpha": nivel_alfa,
-            "bootstrap": n_boot,
-            "seed": semilla,
-            "bootstrap_block": float(bloque_comun),
-        },
-        "models": resumen_modelos,
-        "spa": res_spa_salida,
-        "mcs": res_mcs_salida,
-    }
+    return _analizar_matriz(
+        nombres_modelos,
+        matriz,
+        benchmark,
+        nivel_alfa,
+        n_boot,
+        semilla,
+        blocks=None,
+    )
 
 
 def _construir_parser() -> argparse.ArgumentParser:

@@ -793,3 +793,80 @@ class TestMarkdownAndMain:
         assert proc.stderr == ""
         assert "| m1 | all | 2 | 0,5000 |" in proc.stdout
         assert json.loads(json_path.read_text(encoding="utf-8"))["m1"]["all"]["mean"] == 0.5
+
+
+def test_parse_instant_microseconds_maps_to_real_months_not_1970(tmp_path: Path) -> None:
+    """Los enteros de microsegundos de PyArrow se mapean a meses reales 2013-01..2013-12."""
+    # 12 sesiones mensuales en microsegundos UTC (2013-01-02 .. 2013-12-31).
+    us_stamps = [
+        1357160700000000,  # 2013-01-02
+        1359839100000000,  # 2013-02-02
+        1362258300000000,  # 2013-03-02
+        1364936700000000,  # 2013-04-02
+        1367528700000000,  # 2013-05-02
+        1370207100000000,  # 2013-06-02
+        1372799100000000,  # 2013-07-02
+        1375477500000000,  # 2013-08-02
+        1378155900000000,  # 2013-09-02
+        1380747900000000,  # 2013-10-02
+        1383426300000000,  # 2013-11-02
+        1388448000000000,  # 2013-12-31
+    ]
+    rows = ["session,m1"] + [f"2013:US:{ts},0.05" for ts in us_stamps]
+    csv_path = tmp_path / "us_micro.csv"
+    csv_path.write_text("\n".join(rows) + "\n", encoding="utf-8")
+
+    table = ics.stability_table(csv_path, window=3)
+    months = [entry["month"] for entry in table["m1"]["all"]["monthly"]]
+    assert months == [f"2013-{m:02d}" for m in range(1, 13)]
+    assert "1970-01" not in months
+
+    # Nanosegundos, milisegundos y segundos siguen funcionando igual.
+    assert ics.month_of("1362430500000000000") == "2013-03"
+    assert ics.month_of("1362430500000000") == "2013-03"
+    assert ics.month_of("1362430500000") == "2013-03"
+    assert ics.month_of("1362430500") == "2013-03"
+
+
+def test_rolling_window_and_drawdown_do_not_bridge_multi_year_gap_or_markets(
+    tmp_path: Path,
+) -> None:
+    """worst_window, longest_negative_run y max_drawdown no cruzan saltos de año ni mercados."""
+    # Caso 1: salto de 9 años (2014:US con 3 sesiones + 2023:US con 3 sesiones).
+    # Sin acotar por bloque, las 2 negativas del final de 2014 y las 2 negativas del inicio de
+    # 2023 formarían una racha de 4, una caída acumulada de 0.8 y una ventana de 4 de media -0.2.
+    csv_gap = tmp_path / "gap.csv"
+    csv_gap.write_text(
+        "session,m1\n"
+        "2014:US:2014-01-02,0.5\n"
+        "2014:US:2014-01-03,-0.2\n"
+        "2014:US:2014-01-04,-0.2\n"
+        "2023:US:2023-01-02,-0.2\n"
+        "2023:US:2023-01-03,-0.2\n"
+        "2023:US:2023-01-04,0.5\n",
+        encoding="utf-8",
+    )
+    tab_gap = ics.stability_table(csv_gap, window=4)
+    st_gap = tab_gap["m1"]["all"]
+    # Ningún bloque tiene 4 sesiones -> worst_window(4) debe ser None.
+    assert st_gap["worst_window"] is None
+    assert st_gap["longest_negative_run"] == 2
+    assert st_gap["max_drawdown"]["depth"] == pytest.approx(0.4)
+
+    # Caso 2: mercados intercalados 2013:CN y 2013:US.
+    # CN: [-0.3, -0.3], US: [0.5, -0.1]; intercalados darían racha de 3 y ventana de 3.
+    csv_mkts = tmp_path / "mkts.csv"
+    csv_mkts.write_text(
+        "session,m1\n"
+        "2013:CN:2013-01-02,-0.3\n"
+        "2013:US:2013-01-03,-0.1\n"
+        "2013:CN:2013-01-04,-0.3\n"
+        "2013:US:2013-01-05,0.5\n",
+        encoding="utf-8",
+    )
+    tab_mkts = ics.stability_table(csv_mkts, window=3)
+    assert tab_mkts["m1"]["all"]["worst_window"] is None
+    assert tab_mkts["m1"]["all"]["longest_negative_run"] == 2
+    assert tab_mkts["m1"]["all"]["max_drawdown"]["depth"] == pytest.approx(0.6)
+    assert tab_mkts["m1"]["CN"]["max_drawdown"]["depth"] == pytest.approx(0.6)
+    assert tab_mkts["m1"]["US"]["max_drawdown"]["depth"] == pytest.approx(0.1)

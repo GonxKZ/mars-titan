@@ -116,7 +116,7 @@ def test_turnover_zero_when_extreme_groups_unchanged() -> None:
         )
     df = pd.concat(frames, ignore_index=True)
 
-    to = cd.turnover(df, groups=10)
+    to = cd.turnover(df, groups=10, holding="overnight")
     assert math.isnan(to.iloc[0]["long"])
     assert math.isnan(to.iloc[0]["short"])
     assert math.isnan(to.iloc[0]["mean"])
@@ -124,7 +124,7 @@ def test_turnover_zero_when_extreme_groups_unchanged() -> None:
     assert (to.iloc[1:]["short"] == 0.0).all()
     assert (to.iloc[1:]["mean"] == 0.0).all()
 
-    res = cd.summary(df, groups=10)
+    res = cd.summary(df, groups=10, holding="overnight")
     assert res["turnover_mean"] == pytest.approx(0.0)
     assert res["two_leg_turnover_mean"] == pytest.approx(0.0)
     assert res["breakeven_cost_bps"] is None
@@ -133,7 +133,7 @@ def test_turnover_zero_when_extreme_groups_unchanged() -> None:
 def test_turnover_random_independent_near_0_9() -> None:
     """Con predicciones independientes entre sesiones y 10 grupos, rotación ~ 0,9."""
     df = _make_panel(n_sessions=160, n_assets=100, seed=31415)
-    to = cd.turnover(df, groups=10)
+    to = cd.turnover(df, groups=10, holding="overnight")
 
     assert len(to) == 160
     assert to.iloc[0].isna().all()
@@ -160,7 +160,7 @@ def test_turnover_matches_direct_l1_weights_with_varying_universe() -> None:
         )
     df = pd.concat(frames, ignore_index=True)
     grouped = cd.deciles(df, groups=10)
-    to = cd.turnover(df, groups=10)
+    to = cd.turnover(df, groups=10, holding="overnight")
 
     sessions = [1, 2, 3, 4]
     for idx in range(1, len(sessions)):
@@ -234,7 +234,7 @@ def test_breakeven_cost_and_net_sharpe_hand_calculation() -> None:
     df = pd.concat(frames, ignore_index=True)
 
     costs = (0, 5, 10, 20)
-    res = cd.summary(df, groups=10, costs_bps=costs, lags=2)
+    res = cd.summary(df, groups=10, costs_bps=costs, lags=2, holding="overnight")
 
     gross = np.array(ls_targets, dtype=np.float64)
     mean_gross = float(np.mean(gross))  # 0.0020 (20 bps)
@@ -548,15 +548,19 @@ def test_edge_cases_small_and_degenerate_inputs(tmp_path: Path) -> None:
     assert res_empty["breakeven_cost_bps"] is None
     assert res_empty["liquid_top_third"]["sessions"] == 0
 
-    # Una única sesión válida: media y monotonía definidas; std y rotación son None.
+    # Una única sesión válida: media y monotonía definidas; std es None; rotación intraday = 2.0,
+    # overnight = None.
     one = _make_panel(n_sessions=1, n_assets=30, seed=13)
     one["prediction"] = one["target"]
-    res_one = cd.summary(one)
+    res_one = cd.summary(one, holding="overnight")
     assert res_one["sessions"] == 1
     assert res_one["mean"] > 0.0
     assert res_one["std"] is None
     assert res_one["turnover_mean"] is None
     assert res_one["monotonicity"] == pytest.approx(1.0)
+    res_one_intraday = cd.summary(one, holding="intraday")
+    assert res_one_intraday["turnover_mean"] == pytest.approx(2.0)
+    assert res_one_intraday["two_leg_turnover_mean"] == pytest.approx(4.0)
 
     # Predicciones todas empatadas: todos los activos van al mismo grupo intermedio.
     tied = _make_panel(n_sessions=2, n_assets=30, seed=17)
@@ -565,6 +569,7 @@ def test_edge_cases_small_and_degenerate_inputs(tmp_path: Path) -> None:
     assert dec_tied["group"].nunique() == 1
     res_tied = cd.summary(tied, groups=10)
     assert res_tied["sessions"] == 0
+    assert res_tied["dropped_sessions_ties"] == 2
 
     # Tipos inválidos de session y asset.
     bad_sess = one.copy()
@@ -592,3 +597,87 @@ def test_edge_cases_small_and_degenerate_inputs(tmp_path: Path) -> None:
     assert proc.returncode != 0
     assert "Error:" in proc.stderr
     assert not out_json.exists()
+
+
+def test_intraday_turnover_is_roundtrip_and_markets_separated() -> None:
+    """intraday da rotación 2.0 por pata, separa US y CN sin cruces y cuenta empates."""
+    us = _make_panel(n_sessions=6, n_assets=30, seed=11)
+    us["market"] = "US"
+    # Activos fijos en los extremos para que overnight sea 0.0 dentro de cada mercado.
+    us["prediction"] = np.tile(np.arange(30, dtype=np.float64), 6)
+    us["z_return"] = us["target"] + 0.002
+
+    cn = _make_panel(n_sessions=6, n_assets=30, seed=22)
+    cn["market"] = "CN"
+    cn["asset"] = "CN_" + cn["asset"]
+    cn["prediction"] = np.tile(np.arange(30, dtype=np.float64), 6)
+    cn["z_return"] = cn["target"] - 0.001
+
+    joint = pd.concat([us, cn], ignore_index=True)
+
+    # Por defecto holding='intraday': cada sesión paga ida y vuelta (2.0 por pata, 4.0 dos patas).
+    to_intra = cd.turnover(joint, groups=10)
+    assert (to_intra["long"] == 2.0).all()
+    assert (to_intra["short"] == 2.0).all()
+    assert (to_intra["mean"] == 2.0).all()
+
+    res_intra = cd.summary(joint, groups=10, return_col="z_return")
+    assert res_intra["holding"] == "intraday"
+    assert res_intra["return_col"] == "z_return"
+    assert res_intra["turnover_mean"] == pytest.approx(2.0)
+    assert res_intra["two_leg_turnover_mean"] == pytest.approx(4.0)
+    assert set(res_intra["by_market"].keys()) == {"CN", "US"}
+    assert res_intra["dropped_sessions_ties"] == 0
+
+    # En overnight con mercados US+CN, la primera sesión de CN y la primera de US son NaN
+    # (nunca se calcula transición CN -> US) y el resto tiene rotación 0.0.
+    to_over = cd.turnover(joint, groups=10, holding="overnight")
+    assert math.isnan(to_over.loc[("CN", 1), "mean"])
+    assert math.isnan(to_over.loc[("US", 1), "mean"])
+    assert (to_over.loc[("CN", slice(2, 6)), "mean"] == 0.0).all()
+    assert (to_over.loc[("US", slice(2, 6)), "mean"] == 0.0).all()
+
+    # Empates que colapsan un decil extremo incrementan dropped_sessions_ties explícitamente.
+    tied_panel = us.copy()
+    tied_panel.loc[tied_panel["session"] == 3, "prediction"] = 0.0
+    res_tie = cd.summary(tied_panel, groups=10)
+    assert res_tie["sessions"] == 5
+    assert res_tie["dropped_sessions_ties"] == 1
+    assert res_tie["dropped_sessions_nan"] == 0
+
+    # Pesos de Bartlett cuando lags >= n: usa max_lag = n - 1 -> 1 - lag / (max_lag + 1).
+    vals = np.array([0.01, 0.02, 0.03, 0.015], dtype=np.float64)
+    t_got = cd._newey_west_t_stat(vals, lags=10)
+    u = vals - np.mean(vals)
+    max_lag = 3
+    lrv = float(np.dot(u, u)) / 4.0 + sum(
+        2.0 * (1.0 - k / (max_lag + 1)) * float(np.dot(u[k:], u[:-k])) / 4.0
+        for k in range(1, max_lag + 1)
+    )
+    t_exp = float(np.mean(vals)) / math.sqrt(lrv / 3.0)
+    assert t_got == pytest.approx(t_exp, rel=1e-12, abs=1e-12)
+
+
+def test_survivorship_delisting_stress_test_grid_and_gate() -> None:
+    """Verifica la prueba de estrés de sesgo de supervivencia (2/5/8 % x 0/-30/-100 %, Gate 4.4)."""
+    df = _make_panel(n_sessions=60, n_assets=50, seed=2025)
+    # Señal fuerte para que supere el umbral de 5 % de bajas anuales con choque de -30 %.
+    df["prediction"] = df["target"] + 0.005
+    df["target"] = df["target"] + 0.004
+
+    stress = cd.survivorship_stress_test(
+        df,
+        annual_hazards=(0.02, 0.05, 0.08),
+        terminal_returns=(0.0, -0.30, -1.00),
+        groups=10,
+        costs_bps=(5, 10, 20),
+        seed=42,
+    )
+    assert "baseline" in stress and "scenarios" in stress
+    assert len(stress["scenarios"]) == 9
+    s_5_30 = stress["scenarios"]["hazard_0.05_return_-0.30"]
+    s_8_100 = stress["scenarios"]["hazard_0.08_return_-1.00"]
+    assert s_5_30["delisted_assets"] > 0
+    assert s_5_30["surviving_rows_fraction"] < 1.0
+    assert s_8_100["surviving_rows_fraction"] <= s_5_30["surviving_rows_fraction"]
+    assert isinstance(stress["passes_5pct_minus30pct_gate"], bool)

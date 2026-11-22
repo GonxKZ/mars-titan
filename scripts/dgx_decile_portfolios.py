@@ -22,11 +22,13 @@ import numpy as np
 import pandas as pd
 
 REQUIRED_COLUMNS: tuple[str, ...] = ("session", "asset", "prediction", "target")
-OPTIONAL_COLUMNS: tuple[str, ...] = ("liquidity",)
+OPTIONAL_COLUMNS: tuple[str, ...] = ("liquidity", "market")
 MIN_ASSETS_PER_SESSION: int = 30
 TRADING_DAYS_PER_YEAR: float = 252.0
 BPS_PER_UNIT: float = 10_000.0
 VALID_WEIGHTINGS: tuple[str, ...] = ("equal", "liquidity")
+VALID_HOLDINGS: tuple[str, ...] = ("intraday", "overnight")
+INTRADAY_LEG_TURNOVER: float = 2.0
 
 
 def _validate_int_param(value: Any, name: str, minimum: int) -> int:
@@ -170,27 +172,63 @@ def _validate_float_column(series: pd.Series, name: str) -> pd.Series:
     return numeric
 
 
+def _validate_holding(holding: str) -> str:
+    """Valida el régimen de tenencia ('intraday' u 'overnight')."""
+    if holding not in VALID_HOLDINGS:
+        raise ValueError(
+            f"El parámetro 'holding' debe ser 'intraday' u 'overnight', recibido: {holding!r}."
+        )
+    return holding
+
+
+def _validate_text_column(series: pd.Series, name: str) -> pd.Series:
+    """Valida que una columna textual no contenga nulos ni cadenas vacías."""
+    if series.isna().any():
+        raise ValueError(f"La columna '{name}' contiene valores nulos.")
+    if len(series) == 0:
+        return series.astype("string")
+    if pd.api.types.is_bool_dtype(series) or pd.api.types.is_numeric_dtype(series):
+        raise ValueError(f"La columna '{name}' debe contener texto (cadenas de caracteres).")
+    if not isinstance(series.dtype, pd.StringDtype):
+        values = series.tolist()
+        if not all(isinstance(v, str) for v in values):
+            raise ValueError(f"Todos los valores de la columna '{name}' deben ser texto (str).")
+    as_str = series.astype("string")
+    if (as_str == "").any():
+        raise ValueError(f"La columna '{name}' no puede contener cadenas vacías.")
+    return as_str
+
+
 def _prepare_frame(
     frame: pd.DataFrame | str | Path,
     require_positive_liquidity: bool = False,
+    return_col: str = "target",
 ) -> pd.DataFrame:
     """Carga, valida y ordena canónicamente el DataFrame de entrada."""
     df = _load_source(frame)
 
-    missing = [col for col in REQUIRED_COLUMNS if col not in df.columns]
+    required = ("session", "asset", "prediction", return_col)
+    missing = [col for col in required if col not in df.columns]
     if missing:
         raise ValueError(f"Faltan columnas obligatorias en los datos: {', '.join(missing)}.")
 
     has_liquidity = "liquidity" in df.columns
     if require_positive_liquidity and not has_liquidity:
         raise ValueError("La ponderación por liquidez exige que exista la columna 'liquidity'.")
+    has_market = "market" in df.columns
 
-    cols = list(REQUIRED_COLUMNS) + (["liquidity"] if has_liquidity else [])
+    cols = (
+        (["market"] if has_market else [])
+        + ["session", "asset", "prediction", "target"]
+        + (["liquidity"] if has_liquidity else [])
+    )
     clean = pd.DataFrame(index=df.index)
+    if has_market:
+        clean["market"] = _validate_text_column(df["market"], "market")
     clean["session"] = _validate_session_column(df["session"])
     clean["asset"] = _validate_asset_column(df["asset"])
     clean["prediction"] = _validate_float_column(df["prediction"], "prediction")
-    clean["target"] = _validate_float_column(df["target"], "target")
+    clean["target"] = _validate_float_column(df[return_col], return_col)
     if has_liquidity:
         clean["liquidity"] = _validate_float_column(df["liquidity"], "liquidity")
         if require_positive_liquidity and (clean["liquidity"] <= 0.0).any():
@@ -198,16 +236,23 @@ def _prepare_frame(
                 "La ponderación por liquidez exige valores estrictamente positivos (liquidity > 0)."
             )
 
-    if clean.duplicated(subset=["session", "asset"]).any():
+    dup_subset = ["market", "session", "asset"] if has_market else ["session", "asset"]
+    if clean.duplicated(subset=dup_subset).any():
         raise ValueError(
             "Existen activos duplicados ('asset') dentro de una misma sesión ('session')."
         )
 
-    # Orden canónico determinista por sesión y activo (sin información futura).
+    # Orden canónico determinista por (mercado,) sesión y activo (sin información futura).
+    sort_cols = ["market", "session", "asset"] if has_market else ["session", "asset"]
     clean = clean[cols].sort_values(
-        by=["session", "asset"], ascending=[True, True], kind="mergesort"
+        by=sort_cols, ascending=[True] * len(sort_cols), kind="mergesort"
     )
     return clean.reset_index(drop=True)
+
+
+def _session_group_cols(df: pd.DataFrame) -> list[str]:
+    """Columnas que identifican una sesión única: ['market', 'session'] o ['session']."""
+    return ["market", "session"] if "market" in df.columns else ["session"]
 
 
 def _assign_rank_groups(df: pd.DataFrame, groups: int) -> pd.DataFrame:
@@ -218,7 +263,8 @@ def _assign_rank_groups(df: pd.DataFrame, groups: int) -> pd.DataFrame:
         out["group"] = pd.Series(dtype="int64")
         return out
 
-    counts = df.groupby("session", sort=False)["asset"].transform("size")
+    key_cols = _session_group_cols(df)
+    counts = df.groupby(key_cols, sort=False)["asset"].transform("size")
     valid = df.loc[counts >= min_assets].copy()
     if valid.empty:
         valid["group"] = pd.Series(dtype="int64")
@@ -227,73 +273,70 @@ def _assign_rank_groups(df: pd.DataFrame, groups: int) -> pd.DataFrame:
     # El rango medio de enteros es siempre un semientero: 2*r es un entero exacto.
     # Grupo = floor(((2*r - 1) * G) / (2*N)) + 1 en {1, ..., G}.
     # Garantiza grupos de tamaño floor(N/G) o ceil(N/G) y evita redondeos flotantes.
-    ranks = valid.groupby("session", sort=False)["prediction"].rank(
-        method="average", ascending=True
-    )
+    ranks = valid.groupby(key_cols, sort=False)["prediction"].rank(method="average", ascending=True)
     double_ranks = np.rint(2.0 * ranks.to_numpy(dtype=np.float64)).astype(np.int64)
-    sizes = valid.groupby("session", sort=False)["asset"].transform("size").to_numpy(dtype=np.int64)
+    sizes = valid.groupby(key_cols, sort=False)["asset"].transform("size").to_numpy(dtype=np.int64)
     group_ids = ((double_ranks - 1) * groups) // (2 * sizes) + 1
     valid["group"] = group_ids.astype(np.int64)
     return valid.reset_index(drop=True)
 
 
-def deciles(frame: pd.DataFrame | str | Path, groups: int = 10) -> pd.DataFrame:
-    """Asigna cada activo a un grupo transversal (1..groups) por sesión.
-
-    Para cada sesión con al menos ``max(30, groups)`` activos, ordena las predicciones
-    con rango medio en caso de empate y asigna cada activo al grupo:
-
-        grupo = floor(((2 * rango - 1) * groups) / (2 * N)) + 1
-
-    donde ``rango`` pertenece a ``[1, N]`` y ``N`` es el número de activos de la sesión.
-    Las sesiones con menos de 30 activos (o menos de ``groups``) se excluyen.
-
-    Args:
-        frame: DataFrame o ruta a archivo ``.parquet`` o ``.csv``.
-        groups: Número de grupos (por defecto 10).
-
-    Returns:
-        DataFrame ordenado por ``(session, asset)`` con las sesiones válidas y la
-        columna entera ``group`` (de ``1`` a ``groups``).
-    """
+def deciles(
+    frame: pd.DataFrame | str | Path,
+    groups: int = 10,
+    *,
+    return_col: str = "target",
+) -> pd.DataFrame:
+    """Asigna cada activo a un grupo transversal (1..groups) por (mercado,) sesión."""
     n_groups = _validate_int_param(groups, "groups", minimum=2)
-    clean = _prepare_frame(frame, require_positive_liquidity=False)
+    clean = _prepare_frame(frame, require_positive_liquidity=False, return_col=return_col)
     return _assign_rank_groups(clean, n_groups)
+
+
+def _session_index(grouped: pd.DataFrame) -> pd.Index:
+    """Índice de sesiones únicas en orden canónico: Index(session) o MultiIndex(market, session)."""
+    key_cols = _session_group_cols(grouped)
+    if len(key_cols) == 1:
+        return pd.Index(grouped["session"].drop_duplicates(), name="session")
+    unique_pairs = grouped[key_cols].drop_duplicates()
+    return pd.MultiIndex.from_frame(unique_pairs, names=key_cols)
 
 
 def _compute_long_short_from_grouped(
     grouped: pd.DataFrame, groups: int, weighting: str
 ) -> pd.Series:
     """Calcula el rendimiento largo-corto diario a partir de un DataFrame ya agrupado."""
+    key_cols = _session_group_cols(grouped)
     if grouped.empty:
-        return pd.Series(
-            dtype="float64",
-            index=pd.Index([], name="session"),
-            name="long_short",
+        empty_index = (
+            pd.MultiIndex.from_arrays([[], []], names=key_cols)
+            if len(key_cols) == 2
+            else pd.Index([], name="session")
         )
+        return pd.Series(dtype="float64", index=empty_index, name="long_short")
 
-    sessions = pd.Index(grouped["session"].drop_duplicates(), name="session")
+    sessions = _session_index(grouped)
     long_leg = grouped.loc[grouped["group"] == groups]
     short_leg = grouped.loc[grouped["group"] == 1]
 
     if weighting == "equal":
-        long_ret = long_leg.groupby("session", sort=True)["target"].mean()
-        short_ret = short_leg.groupby("session", sort=True)["target"].mean()
+        long_ret = long_leg.groupby(key_cols, sort=True)["target"].mean()
+        short_ret = short_leg.groupby(key_cols, sort=True)["target"].mean()
     else:
         long_num = (
             (long_leg["target"] * long_leg["liquidity"])
-            .groupby(long_leg["session"], sort=True)
+            .groupby([long_leg[col] for col in key_cols], sort=True)
             .sum()
         )
-        long_den = long_leg.groupby("session", sort=True)["liquidity"].sum()
+        long_den = long_leg.groupby(key_cols, sort=True)["liquidity"].sum()
         long_ret = long_num / long_den
 
         short_num = (
             (short_leg["target"] * short_leg["liquidity"])
-            .groupby(short_leg["session"], sort=True)
+            .groupby([short_leg[col] for col in key_cols], sort=True)
             .sum()
         )
-        short_den = short_leg.groupby("session", sort=True)["liquidity"].sum()
+        short_den = short_leg.groupby(key_cols, sort=True)["liquidity"].sum()
         short_ret = short_num / short_den
 
     ls = long_ret.reindex(sessions) - short_ret.reindex(sessions)
@@ -305,35 +348,24 @@ def long_short(
     frame: pd.DataFrame | str | Path,
     groups: int = 10,
     weighting: str = "equal",
+    *,
+    return_col: str = "target",
 ) -> pd.Series:
-    """Calcula el rendimiento diario del grupo más alto menos el del más bajo.
-
-    Args:
-        frame: DataFrame o ruta a archivo ``.parquet`` o ``.csv``.
-        groups: Número de grupos (por defecto 10).
-        weighting: ``"equal"`` para pesos iguales o ``"liquidity"`` para pesos
-            proporcionales a la columna ``liquidity`` (exige ``liquidity > 0``).
-
-    Returns:
-        Serie indexada por ``session`` (en orden temporal) con el rendimiento
-        largo-corto de cada sesión válida.
-    """
+    """Calcula el rendimiento diario del grupo más alto menos el del más bajo."""
     n_groups = _validate_int_param(groups, "groups", minimum=2)
     if weighting not in VALID_WEIGHTINGS:
         raise ValueError(
             f"El parámetro 'weighting' debe ser 'equal' o 'liquidity', recibido: {weighting!r}."
         )
-    clean = _prepare_frame(frame, require_positive_liquidity=(weighting == "liquidity"))
+    clean = _prepare_frame(
+        frame, require_positive_liquidity=(weighting == "liquidity"), return_col=return_col
+    )
     grouped = _assign_rank_groups(clean, n_groups)
     return _compute_long_short_from_grouped(grouped, n_groups, weighting)
 
 
 def _equal_weight_leg_turnover(prev_assets: set[str], curr_assets: set[str]) -> float:
-    """Calcula 0.5 * suma(|w_t - w_{t-1}|) para una pata con pesos iguales.
-
-    Si una pata tiene a > 0 activos en t-1 y b > 0 activos en t con c activos en común,
-    entonces 0.5 * suma(|w_t - w_{t-1}|) = 1 - c / max(a, b).
-    """
+    """Calcula 0.5 * suma(|w_t - w_{t-1}|) para una pata con pesos iguales."""
     n_prev = len(prev_assets)
     n_curr = len(curr_assets)
     if n_prev == 0 or n_curr == 0:
@@ -342,93 +374,135 @@ def _equal_weight_leg_turnover(prev_assets: set[str], curr_assets: set[str]) -> 
     return 1.0 - (overlap / max(n_prev, n_curr))
 
 
-def _leg_sets_by_session(leg_df: pd.DataFrame) -> dict[Any, set[str]]:
-    """Construye el conjunto de activos de una pata para cada sesión."""
+def _leg_sets_by_session(leg_df: pd.DataFrame, key_cols: list[str]) -> dict[Any, set[str]]:
+    """Construye el conjunto de activos de una pata para cada (mercado,) sesión."""
     sets_by_session: dict[Any, set[str]] = {}
-    for sess, asset in zip(leg_df["session"].tolist(), leg_df["asset"].tolist(), strict=True):
-        sets_by_session.setdefault(sess, set()).add(asset)
+    if len(key_cols) == 1:
+        keys = leg_df["session"].tolist()
+    else:
+        keys = list(zip(leg_df["market"].tolist(), leg_df["session"].tolist(), strict=True))
+    for key, asset in zip(keys, leg_df["asset"].tolist(), strict=True):
+        sets_by_session.setdefault(key, set()).add(asset)
     return sets_by_session
 
 
-def _compute_turnover_from_grouped(grouped: pd.DataFrame, groups: int) -> pd.DataFrame:
-    """Calcula la rotación por pata y su media a partir de un DataFrame ya agrupado."""
+def _compute_turnover_from_grouped(
+    grouped: pd.DataFrame,
+    groups: int,
+    *,
+    holding: str = "intraday",
+) -> pd.DataFrame:
+    """Calcula la rotación por pata y su media por (mercado,) sesión.
+
+    Con ``holding="intraday"`` (apertura a cierre desde efectivo) cada pata completa
+    entrada y salida diaria (rotación = 2,0 por pata, 4,0 entre ambas patas).
+    Con ``holding="overnight"`` calcula el solapamiento entre sesiones consecutivas
+    estrictamente dentro de cada mercado (nunca entre mercados distintos).
+    """
+    _validate_holding(holding)
+    key_cols = _session_group_cols(grouped)
     if grouped.empty:
+        empty_index = (
+            pd.MultiIndex.from_arrays([[], []], names=key_cols)
+            if len(key_cols) == 2
+            else pd.Index([], name="session")
+        )
         return pd.DataFrame(
             columns=["long", "short", "mean"],
-            index=pd.Index([], name="session"),
+            index=empty_index,
             dtype="float64",
         )
 
-    sessions = grouped["session"].drop_duplicates().tolist()
-    long_sets = _leg_sets_by_session(grouped.loc[grouped["group"] == groups])
-    short_sets = _leg_sets_by_session(grouped.loc[grouped["group"] == 1])
+    sessions_index = _session_index(grouped)
+    sessions = list(sessions_index)
+    long_sets = _leg_sets_by_session(grouped.loc[grouped["group"] == groups], key_cols)
+    short_sets = _leg_sets_by_session(grouped.loc[grouped["group"] == 1], key_cols)
 
     n_sessions = len(sessions)
     long_to = np.full(n_sessions, np.nan, dtype=np.float64)
     short_to = np.full(n_sessions, np.nan, dtype=np.float64)
 
-    prev_long = long_sets.get(sessions[0], set())
-    prev_short = short_sets.get(sessions[0], set())
-    for idx in range(1, n_sessions):
-        sess = sessions[idx]
-        curr_long = long_sets.get(sess, set())
-        curr_short = short_sets.get(sess, set())
-        long_to[idx] = _equal_weight_leg_turnover(prev_long, curr_long)
-        short_to[idx] = _equal_weight_leg_turnover(prev_short, curr_short)
-        prev_long = curr_long
-        prev_short = curr_short
+    if holding == "intraday":
+        for idx, sess_key in enumerate(sessions):
+            if long_sets.get(sess_key):
+                long_to[idx] = INTRADAY_LEG_TURNOVER
+            if short_sets.get(sess_key):
+                short_to[idx] = INTRADAY_LEG_TURNOVER
+    else:
+        prev_by_market: dict[Any, tuple[set[str], set[str]]] = {}
+        for idx, sess_key in enumerate(sessions):
+            market_key = sess_key[0] if len(key_cols) == 2 else None
+            curr_long = long_sets.get(sess_key, set())
+            curr_short = short_sets.get(sess_key, set())
+            if market_key in prev_by_market:
+                prev_long, prev_short = prev_by_market[market_key]
+                long_to[idx] = _equal_weight_leg_turnover(prev_long, curr_long)
+                short_to[idx] = _equal_weight_leg_turnover(prev_short, curr_short)
+            prev_by_market[market_key] = (curr_long, curr_short)
 
     mean_to = 0.5 * (long_to + short_to)
     return pd.DataFrame(
         {"long": long_to, "short": short_to, "mean": mean_to},
-        index=pd.Index(sessions, name="session"),
+        index=sessions_index,
         dtype="float64",
     )
 
 
-def turnover(frame: pd.DataFrame | str | Path, groups: int = 10) -> pd.DataFrame:
-    """Calcula la rotación diaria por pata (con pesos iguales) y su media.
-
-    Para cada sesión válida ``t`` posterior a la primera, la rotación de cada pata es:
-
-        rotación_pata(t) = 0,5 * suma_i |peso_{t,i} - peso_{t-1,i}|
-
-    La primera sesión válida devuelve ``NaN`` al no existir sesión anterior.
-
-    Args:
-        frame: DataFrame o ruta a archivo ``.parquet`` o ``.csv``.
-        groups: Número de grupos (por defecto 10).
-
-    Returns:
-        DataFrame indexado por ``session`` con columnas ``long``, ``short`` y ``mean``.
-    """
+def turnover(
+    frame: pd.DataFrame | str | Path,
+    groups: int = 10,
+    *,
+    holding: str = "intraday",
+    return_col: str = "target",
+) -> pd.DataFrame:
+    """Calcula la rotación diaria por pata y su media."""
     n_groups = _validate_int_param(groups, "groups", minimum=2)
-    clean = _prepare_frame(frame, require_positive_liquidity=False)
+    _validate_holding(holding)
+    clean = _prepare_frame(frame, require_positive_liquidity=False, return_col=return_col)
     grouped = _assign_rank_groups(clean, n_groups)
-    return _compute_turnover_from_grouped(grouped, n_groups)
+    return _compute_turnover_from_grouped(grouped, n_groups, holding=holding)
 
 
-def _newey_west_t_stat(values: np.ndarray, lags: int) -> float | None:
+def _newey_west_t_stat(
+    values: np.ndarray,
+    lags: int,
+    *,
+    blocks: Sequence[Any] | None = None,
+) -> float | None:
     """Calcula el estadístico t de Newey-West (núcleo de Bartlett) de la media.
 
-    Usa el estimador de varianza de largo plazo con pesos de Bartlett
-    ``w_l = 1 - l / (lags + 1)`` y corrección de muestra finita ``T / (T - 1)``,
-    de modo que con ``lags = 0`` coincide exactamente con el estadístico t simple.
+    Usa ``max_lag = min(lags, T_b - 1)`` y pesos ``w_l = 1 - l / (max_lag + 1)``
+    con corrección de muestra finita ``T / (T - 1)``. Si se suministran ``blocks``,
+    las autocovarianzas se calculan estrictamente dentro de cada bloque.
     """
     n = len(values)
     if n < 2:
         return None
     mean = float(np.mean(values))
     residuals = values - mean
-    gamma_0 = float(np.dot(residuals, residuals)) / n
-    long_run_var = gamma_0
 
-    max_lag = min(lags, n - 1)
-    for lag in range(1, max_lag + 1):
-        weight = 1.0 - (lag / (lags + 1))
-        gamma_lag = float(np.dot(residuals[lag:], residuals[:-lag])) / n
-        long_run_var += 2.0 * weight * gamma_lag
+    if blocks is None:
+        partitions = [np.arange(n, dtype=np.int64)]
+    else:
+        grouped_idx: dict[Any, list[int]] = {}
+        for idx, blk in enumerate(blocks):
+            grouped_idx.setdefault(blk, []).append(idx)
+        partitions = [np.asarray(idxs, dtype=np.int64) for idxs in grouped_idx.values()]
 
+    total_v = 0.0
+    for idxs in partitions:
+        u = residuals[idxs]
+        tb = len(u)
+        if tb == 0:
+            continue
+        v_b = float(np.dot(u, u))
+        max_lag = min(lags, tb - 1)
+        for lag in range(1, max_lag + 1):
+            weight = 1.0 - (lag / (max_lag + 1))
+            v_b += 2.0 * weight * float(np.dot(u[lag:], u[:-lag]))
+        total_v += max(v_b, 0.0)
+
+    long_run_var = total_v / n
     if long_run_var <= 0.0 or not math.isfinite(long_run_var):
         return None
     # Con factor T/(T-1), Var(media) = (long_run_var / T) * (T / (T - 1)) = long_run_var / (T - 1).
@@ -464,13 +538,7 @@ def _annualized_sharpe(values: np.ndarray) -> float | None:
 
 
 def _filter_top_third_liquidity(clean: pd.DataFrame) -> pd.DataFrame:
-    """Restringe cada sesión al tercio más líquido sin usar información futura.
-
-    En una sesión con N activos, toma el umbral igual al elemento en posición
-    ``(2 * N) // 3`` de las liquideces ordenadas de menor a mayor, y conserva los
-    activos con ``liquidity >= umbral`` (exactamente ceil(N / 3) activos sin empates,
-    y de forma determinista si existen empates en el umbral).
-    """
+    """Restringe cada (mercado,) sesión al tercio más líquido sin usar información futura."""
     if clean.empty:
         return clean.copy()
 
@@ -479,7 +547,8 @@ def _filter_top_third_liquidity(clean: pd.DataFrame) -> pd.DataFrame:
         idx = (2 * len(arr)) // 3
         return float(arr[idx])
 
-    thresholds = clean.groupby("session", sort=False)["liquidity"].transform(_session_threshold)
+    key_cols = _session_group_cols(clean)
+    thresholds = clean.groupby(key_cols, sort=False)["liquidity"].transform(_session_threshold)
     return clean.loc[clean["liquidity"] >= thresholds].reset_index(drop=True)
 
 
@@ -488,11 +557,23 @@ def _summarize_clean_frame(
     groups: int,
     costs_bps: tuple[float, ...],
     lags: int,
+    *,
+    holding: str = "intraday",
+    return_col: str = "target",
 ) -> dict[str, Any]:
     """Calcula el diccionario de métricas económicas sobre un DataFrame validado."""
     grouped = _assign_rank_groups(clean, groups)
+    key_cols = _session_group_cols(grouped)
     ls_series = _compute_long_short_from_grouped(grouped, groups, weighting="equal")
-    to_df = _compute_turnover_from_grouped(grouped, groups)
+    to_df = _compute_turnover_from_grouped(grouped, groups, holding=holding)
+
+    long_sets = _leg_sets_by_session(grouped.loc[grouped["group"] == groups], key_cols)
+    short_sets = _leg_sets_by_session(grouped.loc[grouped["group"] == 1], key_cols)
+    dropped_ties = sum(
+        1 for key in ls_series.index if not long_sets.get(key) or not short_sets.get(key)
+    )
+    total_nan = int(ls_series.isna().sum())
+    dropped_nan = max(0, total_nan - dropped_ties)
 
     valid_ls = ls_series.dropna()
     n_sessions = int(len(valid_ls))
@@ -502,7 +583,7 @@ def _summarize_clean_frame(
     group_means: dict[int, float] = {}
     if not grouped.empty:
         session_group_means = (
-            grouped.groupby(["session", "group"], sort=True)["target"]
+            grouped.groupby([*key_cols, "group"], sort=True)["target"]
             .mean()
             .groupby("group", sort=True)
             .mean()
@@ -518,6 +599,10 @@ def _summarize_clean_frame(
     if n_sessions == 0:
         return {
             "sessions": 0,
+            "holding": holding,
+            "return_col": return_col,
+            "dropped_sessions_ties": int(dropped_ties),
+            "dropped_sessions_nan": int(dropped_nan),
             "mean": None,
             "std": None,
             "t_stat": None,
@@ -539,7 +624,10 @@ def _summarize_clean_frame(
     if std_ret is not None and std_ret > 0.0 and math.isfinite(std_ret):
         t_stat = (mean_ret / std_ret) * math.sqrt(n_sessions)
 
-    t_nw = _newey_west_t_stat(ls_vals, lags=lags)
+    nw_blocks = (
+        [key[0] for key in valid_ls.index] if isinstance(valid_ls.index, pd.MultiIndex) else None
+    )
+    t_nw = _newey_west_t_stat(ls_vals, lags=lags, blocks=nw_blocks)
     sharpe_gross = _annualized_sharpe(ls_vals)
     hit_rate = float(np.mean(ls_vals > 0.0))
 
@@ -560,7 +648,8 @@ def _summarize_clean_frame(
     if two_leg_turnover_mean is not None and two_leg_turnover_mean > 0.0:
         breakeven_cost_bps = (mean_ret / two_leg_turnover_mean) * BPS_PER_UNIT
 
-    # En la primera sesión no hay rebalanceo previo, por lo que el coste pagado es 0.
+    # En overnight la primera sesión de cada mercado no tiene rebalanceo previo (coste 0);
+    # en intraday cada sesión paga apertura + cierre (2,0 por pata, 4,0 dos patas).
     paid_two_leg_to = two_leg_to.fillna(0.0).to_numpy(dtype=np.float64)
     for cost_bps in costs_bps:
         cost_rate = cost_bps / BPS_PER_UNIT
@@ -569,6 +658,10 @@ def _summarize_clean_frame(
 
     return {
         "sessions": n_sessions,
+        "holding": holding,
+        "return_col": return_col,
+        "dropped_sessions_ties": int(dropped_ties),
+        "dropped_sessions_nan": int(dropped_nan),
         "mean": mean_ret,
         "std": std_ret,
         "t_stat": t_stat,
@@ -589,44 +682,160 @@ def summary(
     groups: int = 10,
     costs_bps: Sequence[float] = (5, 10, 20),
     lags: int = 10,
+    *,
+    holding: str = "intraday",
+    return_col: str = "target",
 ) -> dict[str, Any]:
-    """Evalúa económicamente las predicciones con carteras por grupos y costes.
-
-    Devuelve un diccionario con métricas de la estrategia largo-corto diaria con
-    pesos iguales: número de sesiones, media, desviación muestral, t simple, t de
-    Newey-West (núcleo de Bartlett), Sharpe bruto anualizado (raíz de 252), tasa de
-    acierto, rotación media diaria (por pata y suma de las dos patas), coste de
-    equilibrio en puntos básicos por unidad de rotación de las dos patas, Sharpe neto
-    para cada nivel de coste, media de ``target`` por grupo y monotonía (correlación
-    de Spearman).
-
-    Si la entrada incluye la columna ``liquidity``, añade la clave
-    ``"liquid_top_third"`` con el mismo conjunto de métricas restringido al tercio más
-    líquido de cada sesión.
-
-    Args:
-        frame: DataFrame o ruta a archivo ``.parquet`` o ``.csv``.
-        groups: Número de grupos (por defecto 10).
-        costs_bps: Niveles de coste en puntos básicos (por defecto ``(5, 10, 20)``).
-        lags: Número de retardos del núcleo de Bartlett para Newey-West (por defecto 10).
-
-    Returns:
-        Diccionario serializable en JSON con los resultados de la evaluación.
-    """
+    """Evalúa económicamente las predicciones con carteras por grupos y costes."""
     n_groups = _validate_int_param(groups, "groups", minimum=2)
     n_lags = _validate_int_param(lags, "lags", minimum=0)
     validated_costs = _validate_costs_bps(costs_bps)
+    _validate_holding(holding)
 
-    clean = _prepare_frame(frame, require_positive_liquidity=False)
-    result = _summarize_clean_frame(clean, n_groups, validated_costs, n_lags)
+    clean = _prepare_frame(frame, require_positive_liquidity=False, return_col=return_col)
+    result = _summarize_clean_frame(
+        clean, n_groups, validated_costs, n_lags, holding=holding, return_col=return_col
+    )
+
+    if "market" in clean.columns:
+        markets = sorted(clean["market"].unique().tolist())
+        if len(markets) > 1:
+            result["by_market"] = {
+                market: _summarize_clean_frame(
+                    clean.loc[clean["market"] == market].reset_index(drop=True),
+                    n_groups,
+                    validated_costs,
+                    n_lags,
+                    holding=holding,
+                    return_col=return_col,
+                )
+                for market in markets
+            }
 
     if "liquidity" in clean.columns:
         liquid_clean = _filter_top_third_liquidity(clean)
         result["liquid_top_third"] = _summarize_clean_frame(
-            liquid_clean, n_groups, validated_costs, n_lags
+            liquid_clean, n_groups, validated_costs, n_lags, holding=holding, return_col=return_col
         )
 
     return result
+
+
+def survivorship_stress_test(
+    frame: pd.DataFrame | str | Path,
+    *,
+    annual_hazards: Sequence[float] = (0.02, 0.05, 0.08),
+    terminal_returns: Sequence[float] = (0.0, -0.30, -1.00),
+    groups: int = 10,
+    costs_bps: Sequence[float] = (5, 10, 20),
+    lags: int = 10,
+    holding: str = "intraday",
+    return_col: str = "target",
+    seed: int = 42,
+) -> dict[str, Any]:
+    """Prueba de estrés de sesgo de supervivencia con inyección sintética de bajas (Gate 4.4).
+
+    Para cada tasa anual de baja ``h in {2 %, 5 %, 8 %}`` (probabilidad diaria por sesión
+    ``p_daily = 1 - (1 - h) ** (1 / 252)``) y cada retorno terminal de salida
+    ``r_term in {0 %, -30 %, -100 %}``:
+    - En la sesión en que un activo sufre baja sintética, su rendimiento observado pasa a
+      ser ``r_term`` y el activo desaparece de todas las sesiones posteriores.
+    - Devuelve el resumen económico bajo cada escenario y la bandera
+      ``passes_5pct_minus30pct_gate`` (rendimiento medio positivo y Sharpe neto positivo a
+      5 bps bajo ``5 %`` de bajas anuales y choque terminal de ``-30 %``).
+    """
+    n_groups = _validate_int_param(groups, "groups", minimum=2)
+    n_lags = _validate_int_param(lags, "lags", minimum=0)
+    n_seed = _validate_int_param(seed, "seed", minimum=0)
+    validated_costs = _validate_costs_bps(costs_bps)
+    _validate_holding(holding)
+
+    hazards = tuple(float(h) for h in annual_hazards)
+    if not hazards or any(not (0.0 <= h < 1.0) or not math.isfinite(h) for h in hazards):
+        raise ValueError("annual_hazards debe contener tasas anuales finitas en [0, 1).")
+    terminals = tuple(float(r) for r in terminal_returns)
+    if not terminals or any(not math.isfinite(r) or r < -1.0 for r in terminals):
+        raise ValueError("terminal_returns debe contener retornos finitos >= -1.0.")
+
+    clean = _prepare_frame(frame, require_positive_liquidity=False, return_col=return_col)
+    baseline = _summarize_clean_frame(
+        clean, n_groups, validated_costs, n_lags, holding=holding, return_col="target"
+    )
+
+    key_cols = _session_group_cols(clean)
+    asset_keys = (
+        list(zip(clean["market"].tolist(), clean["asset"].tolist(), strict=True))
+        if "market" in clean.columns
+        else clean["asset"].tolist()
+    )
+    rows_by_asset: dict[Any, list[int]] = {}
+    for row_idx, a_key in enumerate(asset_keys):
+        rows_by_asset.setdefault(a_key, []).append(row_idx)
+
+    scenarios: dict[str, dict[str, Any]] = {}
+    for h_idx, hazard in enumerate(hazards):
+        daily_prob = (
+            0.0 if hazard == 0.0 else 1.0 - math.pow(1.0 - hazard, 1.0 / TRADING_DAYS_PER_YEAR)
+        )
+        rng = np.random.default_rng(n_seed + h_idx * 1009)
+        keep_mask = np.ones(len(clean), dtype=bool)
+        terminal_indices: list[int] = []
+        delisted_assets = 0
+
+        for idxs in rows_by_asset.values():
+            n_obs = len(idxs)
+            draws = rng.random(n_obs) < daily_prob
+            if np.any(draws):
+                first_hit = int(np.flatnonzero(draws)[0])
+                terminal_indices.append(idxs[first_hit])
+                delisted_assets += 1
+                for dropped_row in idxs[first_hit + 1 :]:
+                    keep_mask[dropped_row] = False
+
+        for r_term in terminals:
+            stressed = clean.copy()
+            if terminal_indices:
+                stressed.loc[terminal_indices, "target"] = float(r_term)
+            stressed = stressed.loc[keep_mask].reset_index(drop=True)
+            stats = _summarize_clean_frame(
+                stressed,
+                n_groups,
+                validated_costs,
+                n_lags,
+                holding=holding,
+                return_col="target",
+            )
+            key = f"hazard_{hazard:.2f}_return_{r_term:.2f}"
+            scenarios[key] = {
+                "annual_hazard": hazard,
+                "daily_hazard": daily_prob,
+                "terminal_return": r_term,
+                "delisted_assets": delisted_assets,
+                "surviving_rows_fraction": float(len(stressed) / max(len(clean), 1)),
+                "summary": stats,
+            }
+
+    gate_scenario = scenarios.get("hazard_0.05_return_-0.30")
+    if gate_scenario is None and scenarios:
+        gate_scenario = next(iter(scenarios.values()))
+    gate_summary = (gate_scenario or {}).get("summary") or {}
+    gate_mean = gate_summary.get("mean")
+    first_cost = _cost_key(validated_costs[0]) if validated_costs else None
+    gate_net_sharpe = (
+        gate_summary.get("net_sharpe", {}).get(first_cost) if first_cost is not None else None
+    )
+    passes_gate = bool(
+        gate_mean is not None
+        and gate_mean > 0.0
+        and (gate_net_sharpe is None or gate_net_sharpe > 0.0)
+    )
+    _ = key_cols
+
+    return {
+        "baseline": baseline,
+        "scenarios": scenarios,
+        "passes_5pct_minus30pct_gate": passes_gate,
+    }
 
 
 def _build_parser() -> argparse.ArgumentParser:
@@ -665,6 +874,17 @@ def _build_parser() -> argparse.ArgumentParser:
         default=10,
         help="Retardos de Bartlett para el t de Newey-West (por defecto: 10).",
     )
+    parser.add_argument(
+        "--holding",
+        choices=VALID_HOLDINGS,
+        default="intraday",
+        help="Régimen de tenencia: intraday (2,0 por pata) u overnight (solapamiento).",
+    )
+    parser.add_argument(
+        "--return-col",
+        default="target",
+        help="Nombre de la columna de rendimiento a evaluar (por defecto: target).",
+    )
     return parser
 
 
@@ -679,6 +899,8 @@ def main(argv: Sequence[str] | None = None) -> int:
             groups=args.groups,
             costs_bps=tuple(args.costs),
             lags=args.lags,
+            holding=args.holding,
+            return_col=args.return_col,
         )
     except (ValueError, FileNotFoundError) as exc:
         print(f"Error: {exc}", file=sys.stderr)

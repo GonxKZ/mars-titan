@@ -387,3 +387,24 @@ def test_every_scalar_metric_of_each_job_partition_and_view_is_in_one_table(tmp_
     )
     assert float(raw["point.mae"]) == first_job["partitions"]["evaluation"]["raw"]["point"]["mae"]
     assert not {"schema_version", "kind"} & columns
+
+
+def test_panel_from_table_supports_joint_us_cn_markets():
+    from datetime import UTC, datetime
+
+    from mars_titan.evaluation import comparison_metrics as metrics
+
+    at = datetime(2019, 1, 2, tzinfo=UTC)
+    table = pa.table(
+        dict(
+            sample_id=["US/A/1", "US/B/1", "US/C/1", "CN/D/1", "CN/E/1", "CN/F/1"],
+            market=["US", "US", "US", "CN", "CN", "CN"],
+            prediction_at=pa.array([at] * 6, pa.timestamp("us", tz="UTC")),
+            target=[0.01, -0.01, 0.02, 0.015, -0.005, 0.008],
+            prediction=[0.005, -0.005, 0.01, 0.01, -0.002, 0.004],
+        )
+    )
+    panel = metrics.panel_from_table(table)
+    assert panel.markets == ("CN", "US")
+    us_only = metrics.panel_from_table(table.slice(0, 3))
+    assert us_only.markets == ("US",)

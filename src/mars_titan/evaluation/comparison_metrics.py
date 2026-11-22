@@ -19,7 +19,7 @@ def _require(condition, message):
         raise ValueError(message)
 
 
-def panel_from_table(table):
+def panel_from_table(table, *, markets=None):
     """Leer puntos y cuantiles sin construir ningún modelo."""
     names = table.column_names
     _require(len(names) == len(set(names)), "La tabla repite columnas")
@@ -30,11 +30,23 @@ def panel_from_table(table):
             _require(match is not None, "Un nivel de cuantil no tiene el formato declarado")
             quantiles.append((int(match.group(1)) / 1000, name))
     quantiles.sort()
+    if markets is None:
+        _require("market" in names, "La tabla debe incluir la columna market")
+        raw_markets = table.column("market").to_pylist()
+        unique_markets = sorted(set(raw_markets))
+        _require(
+            bool(unique_markets)
+            and all(isinstance(value, str) and bool(value) for value in unique_markets),
+            "La columna market debe contener nombres de mercado no vacíos",
+        )
+        markets = tuple(unique_markets)
+    else:
+        markets = tuple(markets)
     return ForecastPanel.from_arrow(
         table,
         quantile_columns=[name for _, name in quantiles] if quantiles else None,
         levels=[level for level, _ in quantiles] if quantiles else None,
-        markets=("US",),
+        markets=markets,
     )
 
 

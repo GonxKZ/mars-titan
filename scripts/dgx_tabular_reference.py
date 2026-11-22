@@ -94,7 +94,16 @@ def load_rows(manifest, technical):
     prepared, labels = Path(manifest["roots"]["prepared"]), Path(manifest["roots"]["labels"])
     markets = sorted({asset["market"] for asset in manifest["assets"]})
     factors = {market: market_factor(manifest, market) for market in markets}
-    parts = dict(features=[], target=[], alpha=[], instant=[], market=[], partition=[], asset=[])
+    parts = dict(
+        features=[],
+        target=[],
+        alpha=[],
+        has_market_model=[],
+        instant=[],
+        market=[],
+        partition=[],
+        asset=[],
+    )
     assets = []
     for asset in manifest["assets"]:
         market, symbol = asset["market"], asset["symbol"]
@@ -125,6 +134,7 @@ def load_rows(manifest, technical):
         parts["features"].append(rows)
         parts["target"].append(target)
         parts["alpha"].append(alpha)
+        parts["has_market_model"].append(known.astype(np.bool_))
         parts["instant"].append(instants)
         parts["market"].append(np.full(len(target), markets.index(market), dtype=np.int8))
         parts["partition"].append(codes[keep])
@@ -159,13 +169,31 @@ def session_ic(prediction, target, bounds, partition, code):
     return float(np.mean(values)) if values else float("nan")
 
 
-def fit(data, names, bounds, *, trees, threads, seed, alpha_free, min_leaf=None):
+def fit(data, names, bounds, *, trees, threads, seed, alpha_free, min_leaf=None, markets=None):
     """Ajustar con el tramo de ajuste y elegir el número de árboles en validación.
 
     El objetivo va en unidades de retorno (en porcentaje y acotado a ±CLIP), con pérdida de
     Huber: así la predicción es comparable con el alfa conocido, que también es un retorno. Con
     `alpha_free` se ajusta la etiqueta sin alfa y la predicción de la etiqueta le resta el alfa.
     """
+    if alpha_free:
+        has_mm = data.get("has_market_model")
+        if has_mm is None:
+            has_mm = data["features"][:, names.index("has_market_model")] > 0
+        for market_code in np.unique(data["market"]):
+            mask = data["market"] == market_code
+            coverage = float(np.mean(has_mm[mask]))
+            if coverage < 0.5:
+                market_name = (
+                    markets[int(market_code)]
+                    if markets is not None and 0 <= int(market_code) < len(markets)
+                    else str(int(market_code))
+                )
+                raise ValueError(
+                    f"El objetivo alpha_free requiere modelo de mercado; el mercado {market_name} "
+                    f"solo tiene has_market_model en {coverage:.1%} de las filas."
+                )
+
     import lightgbm
 
     label = (data["target"] + data["alpha"] if alpha_free else data["target"]) * 100
@@ -257,6 +285,7 @@ def build(state, year, output, *, name, seed, trees, threads, alpha_free, min_le
         seed=seed,
         alpha_free=alpha_free,
         min_leaf=min_leaf,
+        markets=markets,
     )
     receipt = dict(
         kind="dgx_tabular_reference",

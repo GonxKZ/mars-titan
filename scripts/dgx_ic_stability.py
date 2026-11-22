@@ -44,6 +44,10 @@ __all__: Final[tuple[str, ...]] = (
 
 _EPOCH_UTC: Final[datetime] = datetime(1970, 1, 1, tzinfo=UTC)
 _NS_PER_SECOND: Final[int] = 1_000_000_000
+_US_THRESHOLD: Final[int] = 10**14
+_MS_THRESHOLD: Final[int] = 10**11
+_SEC_THRESHOLD: Final[int] = 10**8
+_NS_THRESHOLD: Final[int] = 10**17
 _INT_RE: Final[re.Pattern[str]] = re.compile(r"^[+-]?\d+$")
 _MONTH_RE: Final[re.Pattern[str]] = re.compile(r"^\d{4}-(?:0[1-9]|1[0-2])$")
 _FRAC_SEC_RE: Final[re.Pattern[str]] = re.compile(r"[Tt ]\d{2}:\d{2}:\d{2}[.,](\d+)")
@@ -85,7 +89,18 @@ def _parse_instant(instant: str) -> tuple[int, str]:
         raise ValueError("El instante no puede estar vacío.")
 
     if _INT_RE.fullmatch(text):
-        ns = int(text)
+        raw = int(text)
+        magnitude = abs(raw)
+        if magnitude >= _NS_THRESHOLD:
+            ns = raw
+        elif magnitude >= _US_THRESHOLD:
+            ns = raw * 1_000
+        elif magnitude >= _MS_THRESHOLD:
+            ns = raw * 1_000_000
+        elif magnitude >= _SEC_THRESHOLD:
+            ns = raw * _NS_PER_SECOND
+        else:
+            ns = raw
         seconds, _ = divmod(ns, _NS_PER_SECOND)
         try:
             dt_utc = _EPOCH_UTC + timedelta(seconds=seconds)
@@ -269,15 +284,29 @@ def stability(
     values: Sequence[float] | np.ndarray,
     months: Sequence[str] | None = None,
     window: int = 21,
+    *,
+    blocks: Sequence[Any] | None = None,
 ) -> dict[str, Any]:
     """Calcula el conjunto completo de métricas de estabilidad para una serie de IC.
 
+    Si se suministra ``blocks`` (uno por sesión, p. ej. ``(origin_year, market)``),
+    ``max_drawdown``, ``longest_negative_run`` y ``worst_window`` se calculan
+    estrictamente dentro de cada bloque contiguo sin cruzar saltos de origen ni mercados.
+
     Lanza ValueError si values no es una secuencia o array 1D no vacío de reales finitos,
-    si window no es un entero positivo o si months no coincide en longitud o formato.
+    si window no es un entero positivo o si months/blocks no coinciden en longitud o formato.
     """
     arr = _as_1d_finite_array(values, allow_empty=False)
     win = _validate_window(window)
     validated_months = _validate_months(months, arr.size) if months is not None else None
+    if blocks is not None:
+        if isinstance(blocks, (str, bytes, bytearray)) or not isinstance(blocks, Sequence):
+            raise ValueError("blocks debe ser una secuencia con la misma longitud que values.")
+        if len(blocks) != arr.size:
+            raise ValueError(
+                f"blocks debe tener la misma longitud que values ({arr.size}), "
+                f"pero tiene {len(blocks)}."
+            )
 
     n = int(arr.size)
     mean_val = float(np.mean(arr, dtype=np.float64))
@@ -296,9 +325,33 @@ def stability(
         icir_val = None if std_val == 0.0 else float(mean_val / std_val)
 
     positive_fraction = float(np.sum(arr > 0.0) / n)
-    dd = max_drawdown(arr)
-    neg_run = longest_negative_run(arr)
-    w_win = worst_window(arr, win)
+    if blocks is None:
+        dd = max_drawdown(arr)
+        neg_run = longest_negative_run(arr)
+        w_win = worst_window(arr, win)
+    else:
+        block_indices: dict[Any, list[int]] = {}
+        for idx, blk in enumerate(blocks):
+            block_indices.setdefault(blk, []).append(idx)
+        dd = {"depth": 0.0, "start": 0, "end": 0}
+        neg_run = 0
+        w_win = None
+        for idxs in block_indices.values():
+            block_arr = arr[idxs]
+            block_dd = max_drawdown(block_arr)
+            if block_dd["depth"] > dd["depth"]:
+                dd = block_dd
+            block_run = longest_negative_run(block_arr)
+            if block_run > neg_run:
+                neg_run = block_run
+            block_win = worst_window(block_arr, win)
+            if block_win is not None:
+                candidate = {
+                    "mean": block_win["mean"],
+                    "start": int(idxs[int(block_win["start"])]),
+                }
+                if w_win is None or candidate["mean"] < w_win["mean"]:
+                    w_win = candidate
 
     halves: dict[str, float] | None
     if n < 2:
@@ -458,10 +511,14 @@ def stability_table(
     """Calcula la tabla de estabilidad por modelo y ámbito a partir de un CSV.
 
     Con un único mercado solo se incluye el ámbito «all». Con varios mercados se
-    calculan «all» y cada mercado por separado en orden alfabético.
+    calculan «all» y cada mercado por separado en orden alfabético. Las métricas
+    secuenciales (caída máxima, racha negativa y peor ventana) se acotan siempre
+    a cada bloque ``(origin_year, market)`` para no cruzar saltos de origen ni mercados.
     """
     win = _validate_window(window)
-    _, months, markets, names, matrix = read_sessions(path)
+    sessions, months, markets, names, matrix = read_sessions(path)
+    years = [sess.split(":", 2)[0] for sess in sessions]
+    all_blocks = list(zip(years, markets, strict=True))
 
     unique_markets = sorted(set(markets))
     if len(unique_markets) > 1 and "all" in unique_markets:
@@ -477,13 +534,16 @@ def stability_table(
     for col_idx, model_name in enumerate(names):
         column = matrix[:, col_idx]
         model_scopes: dict[str, dict[str, Any]] = {
-            "all": stability(column, months=months, window=win)
+            "all": stability(column, months=months, window=win, blocks=all_blocks)
         }
         if len(unique_markets) > 1:
             for market in unique_markets:
                 indices = market_indices[market]
                 scope_months = [months[i] for i in indices]
-                model_scopes[market] = stability(column[indices], months=scope_months, window=win)
+                scope_blocks = [(years[i], market) for i in indices]
+                model_scopes[market] = stability(
+                    column[indices], months=scope_months, window=win, blocks=scope_blocks
+                )
         table[model_name] = model_scopes
 
     return table

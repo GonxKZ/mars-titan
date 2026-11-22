@@ -108,3 +108,30 @@ def test_malformed_quantile_levels_are_not_silently_ignored(tmp_path):
     names = ["quantile_bad" if n == "quantile_0025" else n for n in table.column_names]
     with pytest.raises(ValueError, match="cuantil"):
         metrics.panel_from_table(table.rename_columns(names))
+
+
+def test_panel_from_table_supports_joint_us_cn_markets(tmp_path):
+    import pyarrow as pa
+    import pyarrow.parquet as pq
+
+    path = tmp_path / "us_only.parquet"
+    prediction_table(path, ["A", "B", "C"], 2019, "evaluation", 1)
+    us_table = pq.read_table(path)
+
+    # US-only sigue devolviendo ("US",).
+    us_panel = metrics.panel_from_table(us_table)
+    assert us_panel.markets == ("US",)
+
+    # Tabla conjunta US+CN carga limpiamente con markets == ("CN", "US").
+    cn_ids = pa.array([f"CN/{sid}" for sid in us_table.column("sample_id").to_pylist()])
+    cn_markets = pa.array(["CN"] * us_table.num_rows)
+    cn_table = us_table.set_column(
+        us_table.schema.get_field_index("sample_id"), "sample_id", cn_ids
+    ).set_column(us_table.schema.get_field_index("market"), "market", cn_markets)
+    joint_table = pa.concat_tables([us_table, cn_table])
+
+    joint_panel = metrics.panel_from_table(joint_table)
+    assert joint_panel.markets == ("CN", "US")
+    assert joint_panel.rows == 2 * us_table.num_rows
+    measured = metrics.measure(joint_panel, magnitude=True)
+    assert set(measured.summary["by_market"].keys()) == {"CN", "US"}

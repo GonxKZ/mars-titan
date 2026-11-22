@@ -282,3 +282,153 @@ def test_another_group_of_tiers_is_assessed_with_its_own_prefix():
         ("r3_",),
     )
     assert pruned[2].endswith("--tier core --tier controls --tier v_buena")
+
+
+def test_promotion_uses_hac_t_and_preserves_plan_cli_flags(tmp_path):
+    """Preserva banderas CLI (Fase 11 y 17) y rechaza ruido AR(1) bajo t HAC."""
+    from datetime import UTC, datetime, timedelta
+
+    import numpy as np
+    import pyarrow as pa
+    import pyarrow.parquet as pq
+
+    state = tmp_path / "estado_hac"
+    rng = np.random.default_rng(123)
+    # Construimos un control y una variante r4_ruido_ar1 cuyas diferencias de IC en calibración
+    # son un proceso AR(1) con phi=0.85 que supera t_iid >= 2.5 pero cae por debajo de t_hac < 2.0.
+    screening = load("dgx_screening_report", ROOT / "scripts/dgx_screening_report.py")
+    n_cal = 120
+    n_assets = 40
+    # Buscamos una serie AR(1) determinista que cumpla t_iid > 2.5 y t_hac < 2.0.
+    ar_diff = None
+    for trial in range(500):
+        gen = np.random.default_rng(1000 + trial)
+        eps = gen.normal(0.0, 0.05, size=n_cal)
+        s = np.empty(n_cal, dtype=np.float64)
+        s[0] = eps[0]
+        for i in range(1, n_cal):
+            s[i] = 0.85 * s[i - 1] + eps[i]
+        s += 0.025
+        m = float(np.mean(s))
+        t_iid_val = m / (float(np.std(s, ddof=1)) / (n_cal**0.5))
+        t_hac_val = screening.newey_west_t(s)
+        if m >= 0.003 and t_iid_val >= 2.5 and t_hac_val is not None and 0.0 < t_hac_val < 2.0:
+            ar_diff = s
+            break
+    assert ar_diff is not None
+
+    # Escribimos predicciones sintéticas donde el IC de r4_ruido_ar1 - control reproduce ar_diff.
+    def _write_exact_ic(model_name, tier, ic_by_split):
+        run = state / "runs" / model_name / "2013" / "seed-42"
+        run.mkdir(parents=True, exist_ok=True)
+        for split_idx, (split, ics) in enumerate(ic_by_split.items()):
+            rows = dict(sample_id=[], market=[], prediction_at=[], target=[], prediction=[])
+            for sess_i, target_ic in enumerate(ics):
+                instant = datetime(2012, 1, 1, 20, 5, tzinfo=UTC) + timedelta(
+                    days=split_idx * 150 + sess_i
+                )
+                # Objetivo determinista creciente 0..n_assets-1; mezclamos con ruido ortogonal para
+                # lograr correlación de rangos controlada.
+                x = np.linspace(-1.0, 1.0, n_assets)
+                orth = np.sin(np.arange(n_assets) * 1.7 + sess_i)
+                orth = orth - (np.dot(orth, x) / np.dot(x, x)) * x
+                orth = orth / np.linalg.norm(orth)
+                x_u = x / np.linalg.norm(x)
+                r = float(np.clip(target_ic, -0.95, 0.95))
+                pred = r * x_u + ((1.0 - r * r) ** 0.5) * orth
+                for a in range(n_assets):
+                    rows["sample_id"].append(f"US/A{a:03d}/{instant.timestamp():.0f}")
+                    rows["market"].append("US")
+                    rows["prediction_at"].append(instant)
+                    rows["target"].append(float(x[a]))
+                    rows["prediction"].append(float(pred[a]))
+            table = pa.table(rows).cast(
+                pa.schema(
+                    [
+                        ("sample_id", pa.string()),
+                        ("market", pa.string()),
+                        ("prediction_at", pa.timestamp("us", tz="UTC")),
+                        ("target", pa.float64()),
+                        ("prediction", pa.float64()),
+                    ]
+                )
+            )
+            pq.write_table(table, run / f"{split}-predictions.parquet")
+        queue = state / "queue"
+        queue.mkdir(exist_ok=True)
+        (queue / f"{model_name}--2013--seed-42.json").write_text(
+            json.dumps(
+                dict(
+                    status="completed",
+                    model=model_name,
+                    tier=tier,
+                    year=2013,
+                    seed=42,
+                    attempts=[dict(seconds=60.0)],
+                    result=dict(best_epoch=1, best_score=0.49),
+                )
+            )
+        )
+
+    base_cal = np.full(n_cal, 0.10)
+    base_val = np.full(20, 0.10)
+    base_eval = np.full(20, 0.10)
+    _write_exact_ic(
+        "control", "core", dict(validation=base_val, calibration=base_cal, evaluation=base_eval)
+    )
+    _write_exact_ic(
+        "r4_ruido_ar1",
+        "r4_ruido",
+        dict(validation=base_val, calibration=base_cal + ar_diff, evaluation=base_eval),
+    )
+
+    contrasts = tmp_path / "r4_contrasts.json"
+    contrasts.write_text(json.dumps(dict(controls=dict(r4_ruido_ar1="control"), always_kept=[])))
+    plan = tmp_path / "plan_r4.txt"
+    run_line = f"/copia|{state}|/vistas|d.json|4 --seed 42"
+    plan.write_text(
+        "\n".join(
+            [
+                f"{run_line} --origin 2013 --no-preflight --tier core --tier r4_ruido",
+                f"orden|/herramientas/promocion|--state {state}",
+                f"{run_line} --origin 2014 --no-preflight --tier core",
+                "",
+            ]
+        )
+    )
+    out_r4 = tmp_path / "out_r4"
+    # Invocación exacta de Fase 11 con --candidates r4_ y --promote.
+    rc = promotion.main(
+        [
+            "--state",
+            str(state),
+            "--year",
+            "2013",
+            "--contrasts",
+            str(contrasts),
+            "--output",
+            str(out_r4),
+            "--plan",
+            str(plan),
+            "--phase",
+            "2",
+            "--promote",
+            f"{state}:2014",
+            "--candidates",
+            "r4_",
+            "--decision-split",
+            "calibration",
+        ]
+    )
+    assert rc == 0
+    doc = json.loads((out_r4 / "promotion.json").read_text())
+    row = doc["decision"]["ranked"][0]
+    assert row["model"] == "r4_ruido_ar1"
+    assert row["decision_t_iid"] >= 2.5
+    assert row["decision_t"] < 2.0
+    assert row["p_bh"] is not None
+    # Rechazada por HAC t < 2.0 aunque habría pasado con t_iid >= 2.5.
+    assert doc["decision"]["promoted_models"] == []
+    assert doc["rule"]["decision_splits"] == ["calibration"]
+    assert doc["rule"]["candidates"] == ["r4_"]
+    _ = rng

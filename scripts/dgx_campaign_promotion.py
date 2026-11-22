@@ -20,6 +20,7 @@ válidas sin promoción, y el error queda en `promotion.json`.
 import argparse
 import importlib.util
 import json
+import math
 import os
 import re
 import shutil
@@ -89,11 +90,44 @@ def with_tiers(run, tiers):
     return run["prefix"] + "|" + " ".join(kept)
 
 
-def decide(origin, controls, always, *, keep, gain, t_value, prefixes=("v_",)):
+def _one_sided_p(t_value):
+    """P-valor unilateral de superioridad H1: media > 0 bajo aproximación normal estándar."""
+    if t_value is None or math.isnan(t_value):
+        return None
+    if math.isinf(t_value):
+        return 0.0 if t_value > 0 else 1.0
+    return float(0.5 * math.erfc(t_value / math.sqrt(2.0)))
+
+
+def _benjamini_hochberg(p_values):
+    """Ajuste Benjamini-Hochberg (FDR) sobre todos los candidatos evaluados del grupo."""
+    count = len(p_values)
+    if count == 0:
+        return {}
+    ordered = sorted(
+        ((1.0 if value is None else float(value), name) for name, value in p_values.items()),
+        key=lambda item: (item[0], item[1]),
+    )
+    adjusted = [0.0] * count
+    running = 1.0
+    for rank in range(count, 0, -1):
+        p_raw = ordered[rank - 1][0]
+        running = min(running, min(1.0, p_raw * count / rank))
+        adjusted[rank - 1] = float(running)
+    return {
+        name: (None if p_values[name] is None else adjusted[idx])
+        for idx, (_, name) in enumerate(ordered)
+    }
+
+
+def decide(origin, controls, always, *, keep, gain, t_value, prefixes=("v_",), fdr=None):
     """Aplicar la regla al informe del origen de criba. Devuelve niveles y su justificación.
 
-    `prefixes` son los prefijos de los niveles que se valoran: las variantes de la criba (`v_`)
-    o, en otra orden, otro grupo de modelos con sus controles declarados.
+    Usa la ``t`` de Newey-West del contraste pareado. Calcula siempre el valor p ajustado de
+    Benjamini-Hochberg entre los candidatos valorados y lo deja en la tabla. Solo lo exige para
+    promover si se declara ``fdr``: promover no es afirmar una mejora, sino decidir qué
+    variantes reciben más evidencia en otros orígenes, y con una diferencia de 0,004 de IC la
+    exigencia baja la potencia de la criba de un 70 % a un 10 %.
     """
     models = origin["models"]
     tier = {name: model["tier"] for name, model in models.items()}
@@ -112,12 +146,17 @@ def decide(origin, controls, always, *, keep, gain, t_value, prefixes=("v_",)):
         value = rows[name]["decision"]["t"]
         return -1e9 if value is None else value
 
+    p_raw = {name: _one_sided_p(rows[name]["decision"]["t"]) for name in variants}
+    p_bh = _benjamini_hochberg(p_raw)
+
     ranked = sorted(variants, key=lambda name: (-score(name), name))
     top = ranked[:keep]
     promoted = [
         name
         for name in ranked
-        if (rows[name]["decision"]["mean"] or 0) >= gain and score(name) >= t_value
+        if (rows[name]["decision"]["mean"] or 0) >= gain
+        and score(name) >= t_value
+        and (fdr is None or (p_bh[name] is not None and p_bh[name] <= fdr))
     ]
     kept = set(top) | {name for name in always if name in models}
     for name in list(kept):
@@ -133,6 +172,10 @@ def decide(origin, controls, always, *, keep, gain, t_value, prefixes=("v_",)):
                 control=rows[name]["control"],
                 decision_mean=rows[name]["decision"]["mean"],
                 decision_t=rows[name]["decision"]["t"],
+                decision_t_iid=rows[name]["decision"].get("t_iid"),
+                p_bh=p_bh[name],
+                dispersion=models[name].get("dispersion"),
+                mae_ratio=models[name].get("mae_ratio"),
                 evaluation_mean=rows[name]["evaluation"]["mean"],
             )
             for name in ranked
@@ -205,8 +248,9 @@ def _markdown(document):
     lines += [
         f"Promovidas a los orígenes finales: {promoted}.",
         "",
-        "| Variante | Control | Diferencia de decisión | t | Diferencia en evaluación | Sigue |",
-        "| --- | --- | --- | --- | --- | --- |",
+        "| Variante | Control | Diferencia de decisión | t HAC | p BH | Dispersión | MAE/cero | "
+        "Diferencia en evaluación | Sigue |",
+        "| --- | --- | --- | --- | --- | --- | --- | --- | --- |",
     ]
 
     def cell(value, digits=4):
@@ -216,7 +260,9 @@ def _markdown(document):
         follows = "sí" if row["tier"] in decision["kept_tiers"] else "no"
         lines.append(
             f"| `{row['model']}` | `{row['control']}` | {cell(row['decision_mean'])} | "
-            f"{cell(row['decision_t'], 2)} | {cell(row['evaluation_mean'])} | {follows} |"
+            f"{cell(row['decision_t'], 2)} | {cell(row.get('p_bh'), 4)} | "
+            f"{cell(row.get('dispersion'), 2)} | {cell(row.get('mae_ratio'), 3)} | "
+            f"{cell(row['evaluation_mean'])} | {follows} |"
         )
     lines += ["", "## Fases cambiadas", ""]
     for change in document["changes"]:
@@ -251,8 +297,23 @@ def main(argv=None):
     parser.add_argument("--keep", type=int, default=12)
     parser.add_argument("--gain", type=float, default=0.003)
     parser.add_argument("--t", type=float, default=2.0)
+    parser.add_argument(
+        "--fdr",
+        type=float,
+        default=None,
+        help="Si se declara, exige además p de Benjamini-Hochberg por debajo de este umbral.",
+    )
+    parser.add_argument(
+        "--decision-split",
+        choices=("pooled", "calibration", "validation"),
+        default="pooled",
+        help="Tramos de decisión: validación y calibración juntas (por defecto) o uno solo.",
+    )
     args = parser.parse_args(argv)
     prefixes = tuple(args.candidates or ["v_"])
+    decision_splits = (
+        ("validation", "calibration") if args.decision_split == "pooled" else (args.decision_split,)
+    )
     args.output.mkdir(parents=True, exist_ok=True)
     document = dict(
         schema_version=1,
@@ -264,7 +325,9 @@ def main(argv=None):
             keep=args.keep,
             gain=args.gain,
             t=args.t,
-            decision_splits=["validation", "calibration"],
+            fdr=args.fdr,
+            decision_splits=list(decision_splits),
+            calibration_used_for_selection="calibration" in decision_splits,
             candidates=list(prefixes),
         ),
         created_at_utc=datetime.now(UTC).isoformat(),
@@ -275,7 +338,13 @@ def main(argv=None):
         declared = json.loads(args.contrasts.read_text())
         screening = report_module()
         report = screening.build(
-            args.state, [args.year], args.seed, declared["controls"], {}, references=args.reference
+            args.state,
+            [args.year],
+            args.seed,
+            declared["controls"],
+            {},
+            references=args.reference,
+            decision_splits=decision_splits,
         )
         (args.output / "report.json").write_text(
             json.dumps(report, ensure_ascii=False, indent=1) + "\n"
@@ -289,6 +358,7 @@ def main(argv=None):
             gain=args.gain,
             t_value=args.t,
             prefixes=prefixes,
+            fdr=args.fdr,
         )
         document["decision"] = decision
         if not decision["assessed_tiers"]:

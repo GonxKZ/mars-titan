@@ -171,3 +171,42 @@ def test_the_reference_needs_the_declared_features_and_a_closed_final_test(state
     assert not (tmp_path / "salida").exists()
     with pytest.raises(SystemExit):
         tabular.main(["--state", str(state), "--year", "2013", "--output", "x", "--threads", "0"])
+
+
+def test_alpha_free_fails_closed_when_market_model_missing(state, tmp_path):
+    """Bajo --target alpha_free, un mercado sin factor (has_market_model=0) lanza ValueError."""
+    manifest = json.loads((state / "cohorts/2013/manifest.json").read_text())
+    # Añadimos un activo CN sin factor de mercado declarado -> has_market_model == 0 para CN.
+    cn_root = tmp_path / "no_factor"
+    prepared = Path(manifest["roots"]["prepared"])
+    labels = Path(manifest["roots"]["labels"])
+    cn_prices = cn_root / "prepared/CN/C00/prices.parquet"
+    cn_labels = cn_root / "labels/CN/C00/labels.parquet"
+    cn_prices.parent.mkdir(parents=True)
+    cn_labels.parent.mkdir(parents=True)
+    pq.write_table(pq.read_table(prepared / "US/A00/prices.parquet"), cn_prices)
+    pq.write_table(pq.read_table(labels / "US/A00/labels.parquet"), cn_labels)
+
+    # Creamos un estado con US (con factor) y CN (sin factor).
+    merged_prepared = cn_root / "prepared"
+    merged_labels = cn_root / "labels"
+    for sym in [a["symbol"] for a in manifest["assets"][:4]]:
+        dst_p = merged_prepared / "US" / sym / "prices.parquet"
+        dst_l = merged_labels / "US" / sym / "labels.parquet"
+        dst_p.parent.mkdir(parents=True, exist_ok=True)
+        dst_l.parent.mkdir(parents=True, exist_ok=True)
+        pq.write_table(pq.read_table(prepared / "US" / sym / "prices.parquet"), dst_p)
+        pq.write_table(pq.read_table(labels / "US" / sym / "labels.parquet"), dst_l)
+
+    joint_manifest = dict(
+        manifest,
+        roots=dict(prepared=str(merged_prepared), labels=str(merged_labels), samples=""),
+        assets=[*manifest["assets"][:4], dict(market="CN", symbol="C00")],
+        market_factors=dict(US=manifest["market_factors"]["US"]),
+    )
+    cohort_dir = cn_root / "estado/cohorts/2013"
+    cohort_dir.mkdir(parents=True)
+    (cohort_dir / "manifest.json").write_text(json.dumps(joint_manifest))
+
+    with pytest.raises(ValueError, match="alpha_free.*CN|has_market_model"):
+        build(cn_root / "estado", tmp_path / "out_fail", alpha_free=True)
