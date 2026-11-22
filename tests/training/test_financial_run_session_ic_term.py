@@ -1,5 +1,6 @@
 """Recorrido cronológico con el término de IC por sesión en la pérdida, sin pasos."""
 
+import math
 from collections import Counter
 
 import pytest
@@ -106,8 +107,8 @@ class Spy:
         # El recorrido lee del término su columna de liquidez.
         return getattr(self.inner, name)
 
-    def term(self, point, target, sessions, liquidity=None):
-        value = self.inner.term(point, target, sessions, liquidity)
+    def term(self, point, target, sessions, liquidity=None, offset=None):
+        value = self.inner.term(point, target, sessions, liquidity, offset)
         self.calls.append(
             (point.detach().clone(), target.detach().clone(), list(sessions), value.detach())
         )
@@ -463,3 +464,136 @@ def test_the_gain_of_the_median_is_trained_by_the_quantile_loss_and_not_by_the_t
         for first, second in zip(left, right, strict=True)
     )
     assert with_term.identity["predictor"]["median_gain"]["name"] == MEDIAN_GAIN
+
+
+SHIFTED = dict(weight=2.0, minimum_rows=3, offset_column=-2, offset_scale=0.5)
+
+
+def spied(engine):
+    """Espía las salidas que van a la pérdida y cada pérdida de tramo, sin cambiarlas."""
+    charts, losses = {}, []
+    graphs, task = engine._graphs, engine._task_loss
+
+    def spy_graphs(prepared, batch):
+        for row, key in enumerate(zip(batch.flow_ids, batch.prediction_at, strict=True)):
+            charts[key] = batch.inputs["charts"][row].tolist()
+        outputs = graphs(prepared, batch)
+        torch.testing.assert_close(outputs[:, :5], prepared.quantiles, rtol=0, atol=0)
+        return outputs
+
+    def spy_task(prediction, target, keys):
+        losses.append((prediction.detach().clone(), target.clone(), list(keys)))
+        return task(prediction, target, keys)
+
+    engine._graphs, engine._task_loss = spy_graphs, spy_task
+    return charts, losses, task
+
+
+def test_the_shifted_term_receives_the_known_offset_of_each_labelled_row(shared, tmp_path):
+    engine = trainer(shared, tmp_path / "run", session_ic_term=SHIFTED)
+    assert engine.offset and not engine.liquidity
+    charts, losses, task = spied(engine)
+    assert engine.run()["status"] == "completed"
+    assert len(losses) > 2
+    seen = set()
+    for prediction, target, keys in losses:
+        # Cinco cuantiles y, al final, el desplazamiento conocido de la fila.
+        assert prediction.shape == (len(keys), 6)
+        expected_offset = [
+            0.5 * charts[key][-2] if math.isfinite(charts[key][-2]) else 0.0 for key in keys
+        ]
+        assert prediction[:, -1].tolist() == expected_offset
+        seen.update(expected_offset)
+        sessions = [(flow.split("/", 1)[0], at) for flow, at in keys]
+        offset = prediction[:, -1]
+        expected = pinball_loss(prediction[:, :5], target).item() + reference(
+            (median(prediction[:, :5]) + offset).tolist(),
+            (target + offset).tolist(),
+            sessions,
+            SHIFTED["weight"],
+            SHIFTED["minimum_rows"],
+        )
+        assert task(prediction, target, keys).item() == pytest.approx(expected, rel=1e-7, abs=1e-12)
+    # El desplazamiento distingue filas en el corpus de prueba.
+    assert len(seen) > 1
+    identity = engine.identity["recipe"]["session_ic_term"]
+    assert identity["offset_column"] == -2 and identity["offset_scale"] == 0.5
+
+
+def test_the_liquidity_and_the_offset_travel_together(shared, tmp_path):
+    both = dict(LIQUID, offset_column=-2, offset_scale=0.5)
+    engine = trainer(shared, tmp_path / "run", session_ic_term=both)
+    assert engine.offset and engine.liquidity
+    charts, losses, task = spied(engine)
+    assert engine.run()["status"] == "completed"
+    for prediction, target, keys in losses:
+        assert prediction.shape == (len(keys), 7)
+        assert prediction[:, 5].tolist() == [charts[key][-1] for key in keys]
+        assert prediction[:, 6].tolist() == [0.5 * charts[key][-2] for key in keys]
+        sessions = [(flow.split("/", 1)[0], at) for flow, at in keys]
+        offset = prediction[:, 6]
+        expected = pinball_loss(prediction[:, :5], target).item() + weighted_reference(
+            (median(prediction[:, :5]) + offset).tolist(),
+            (target + offset).tolist(),
+            sessions,
+            prediction[:, 5].tolist(),
+            LIQUID["weight"],
+            LIQUID["minimum_rows"],
+            LIQUID["liquidity_power"],
+        )
+        assert task(prediction, target, keys).item() == pytest.approx(expected, rel=1e-7, abs=1e-12)
+
+
+@pytest.mark.parametrize("truncation", [3, 1])
+def test_replay_reproduces_the_gradients_of_the_shifted_term(shared, tmp_path, truncation):
+    direct = trainer(shared, tmp_path / "direct", truncation=truncation, session_ic_term=SHIFTED)
+    direct.run()
+    replayed = trainer(
+        shared,
+        tmp_path / "replayed",
+        truncation=truncation,
+        accumulation_rows=8,
+        session_ic_term=SHIFTED,
+    )
+    replayed.run()
+    left, right = records(direct), records(replayed)
+    assert len(left) == len(right) > 2
+    for first, second in zip(left, right, strict=True):
+        for name, value in first.items():
+            torch.testing.assert_close(second[name], value, rtol=1e-9, atol=1e-12)
+    # Y el desplazamiento cambia los gradientes respecto del término de siempre.
+    plain = trainer(shared, tmp_path / "plain", truncation=truncation)
+    plain.run()
+    assert any(
+        not torch.equal(first["head.weight"], second["head.weight"])
+        for first, second in zip(left, records(plain), strict=True)
+    )
+
+
+def test_the_shifted_term_also_trains_the_gain_of_the_median(shared, tmp_path):
+    def model():
+        return predictor(shared, median_gain=MEDIAN_GAIN)
+
+    shifted = trainer(
+        shared, tmp_path / "with", model=model(), max_grad_norm=None, session_ic_term=SHIFTED
+    )
+    shifted.run()
+    without = trainer(
+        shared, tmp_path / "without", model=model(), max_grad_norm=None, session_ic_term=None
+    )
+    without.run()
+    left, right = records(shifted), records(without)
+    assert len(left) == len(right) > 2
+    # Sumado al alfa conocido, el orden depende de la escala de la mediana: el término la ajusta.
+    assert any(
+        not torch.allclose(first["head.median_gain"], second["head.median_gain"], rtol=1e-6)
+        for first, second in zip(left, right, strict=True)
+    )
+
+
+def test_the_offset_column_belongs_to_the_chart_block(shared, tmp_path):
+    width = shared["train"].specification().dimensions["charts"]
+    beyond = dict(SHIFTED, offset_column=-(width + 1))
+    with pytest.raises(ValueError, match="bloque del gráfico"):
+        trainer(shared, tmp_path / "beyond", session_ic_term=beyond)
+    assert trainer(shared, tmp_path / "edge", session_ic_term=dict(SHIFTED, offset_column=-width))

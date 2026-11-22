@@ -50,7 +50,7 @@ from mars_titan.models.titans.frozen_financial import (
     _numerics,
     declared_sources,
 )
-from mars_titan.models.titans.session_ic_objective import parse_session_ic_term
+from mars_titan.models.titans.session_ic_objective import known_offset, parse_session_ic_term
 from mars_titan.models.titans.state import (
     deferred_checks,
     join_mac_rows,
@@ -695,6 +695,14 @@ class ChronologicalInference:
             -self.session_ic.liquidity_column > predictor.config.inputs.dimensions["charts"]
         ):
             raise ValueError("La columna de liquidez no pertenece al bloque del gráfico")
+        # Con el desplazamiento conocido, cada fila lleva además el suyo a la pérdida.
+        self.offset = self.session_ic is not None and self.session_ic.shifted
+        if self.offset and "charts" in (predictor.config.removed_modalities or ()):
+            raise ValueError("El desplazamiento conocido requiere la modalidad charts sin retirar")
+        if self.offset and (
+            -self.session_ic.offset_column > predictor.config.inputs.dimensions["charts"]
+        ):
+            raise ValueError("La columna del desplazamiento no pertenece al bloque del gráfico")
         # F1 y A4 son otros objetivos de salida. Solo se distinguen para rechazar el
         # postentrenamiento, que todavía no tiene un contraste declarado para ellos.
         self.undeclared_posttraining = (
@@ -857,7 +865,8 @@ class ChronologicalInference:
 
         Con el término ponderado por liquidez, cada fila añade al final su liquidez recibida,
         sin gradiente: así llega a la pérdida con su predicción, también en la repetición por
-        bloques, sin más estado que guardar.
+        bloques, sin más estado que guardar. Con el desplazamiento conocido de la etiqueta,
+        añade después el suyo, de la misma forma.
         """
         if self.quantiles:
             outputs = prepared.quantiles
@@ -865,11 +874,17 @@ class ChronologicalInference:
             return prepared.outputs
         else:
             outputs = prepared.point_predictions
-        if not self.liquidity:
+        if not self.liquidity and not self.offset:
             return outputs
-        liquidity = batch.inputs["charts"][:, self.session_ic.liquidity_column].detach()
-        outputs = outputs if outputs.ndim == 2 else outputs.unsqueeze(1)
-        return torch.cat((outputs, liquidity.to(outputs.dtype).unsqueeze(1)), dim=1)
+        charts = batch.inputs["charts"]
+        columns = [outputs if outputs.ndim == 2 else outputs.unsqueeze(1)]
+        if self.liquidity:
+            columns.append(charts[:, self.session_ic.liquidity_column].detach())
+        if self.offset:
+            term = self.session_ic
+            columns.append(known_offset(charts[:, term.offset_column], term.offset_scale))
+        columns[1:] = [column.to(outputs.dtype).unsqueeze(1) for column in columns[1:]]
+        return torch.cat(columns, dim=1)
 
     def _levels(self, prepared):
         if self.quantiles:
@@ -1345,18 +1360,21 @@ class ChronologicalTrainer(ChronologicalInference):
         if self.objective is not None:
             sessions = [(flow.split("/", 1)[0], at) for flow, at in keys]
             return self.objective.loss(prediction, target, sessions)
-        liquidity = None
+        liquidity = offset = None
+        if self.offset:
+            # La última columna es el desplazamiento conocido de la fila.
+            offset, prediction = prediction[:, -1], prediction[:, :-1]
         if self.liquidity:
-            # La última columna es la liquidez de la fila; el resto, sus salidas.
+            # La última que queda es la liquidez de la fila; el resto, sus salidas.
             liquidity, prediction = prediction[:, -1], prediction[:, :-1]
-            if not self.quantiles:
-                prediction = prediction.squeeze(1)
+        if (self.offset or self.liquidity) and not self.quantiles:
+            prediction = prediction.squeeze(1)
         loss = self._loss(prediction, target)
         if self.session_ic is not None:
             # El punto es el que se emite: la mediana con cuantiles o la salida escalar.
             sessions = [(flow.split("/", 1)[0], at) for flow, at in keys]
             point = median(prediction) if self.quantiles else prediction
-            loss = loss + self.session_ic.term(point, target, sessions, liquidity)
+            loss = loss + self.session_ic.term(point, target, sessions, liquidity, offset)
         return loss
 
     def _loss(self, prediction, target):

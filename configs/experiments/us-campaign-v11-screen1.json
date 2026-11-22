@@ -3,7 +3,7 @@
   "kind": "comparison_campaign_v1",
   "market": "US",
   "final_test_access": false,
-  "description": "Primera criba de la base nueva (v11) en EE. UU.: el núcleo de la v10 y sus dos controles, campo a campo, y diez variantes de una sola variable que la rama v11 permite medir. La normalización por capa de la rama densa, el recorte de gradiente por grupo funcional y el recorte global en 10, la recencia por tasa de aprendizaje con semividas de 5 y 10 años, el recorte suave de las entradas escaladas, la escala aprendida por entrada en la rama densa, y la emisión sin grafo de los tramos que se repiten en los tres modos de memoria, que no debe cambiar ningún resultado y mide tiempo. Además, la atención entre activos en sus dos posiciones, antes y después de la rama técnica, cada una con su control self_only.",
+  "description": "Primera criba de la base nueva (v11) en EE. UU.: el núcleo de la v10 y sus dos controles, campo a campo, y diez variantes de una sola variable que la rama v11 permite medir. La normalización por capa de la rama densa, el recorte de gradiente por grupo funcional y el recorte global en 10, la recencia por tasa de aprendizaje con semividas de 5 y 10 años, el recorte suave de las entradas escaladas, la escala aprendida por entrada en la rama densa, y la emisión sin grafo de los tramos que se repiten en los tres modos de memoria, que no debe cambiar ningún resultado y mide tiempo. El término de IC medido sobre lo operable, con la predicción y la etiqueta más el alfa conocido, en los tres modos de memoria. Además, la atención entre activos en sus dos posiciones, antes y después de la rama técnica, cada una con su control self_only.",
   "source_declaration_sha256": "836c79a6122fc14a1566826ece99f3708849a7d481361c334acd693383c88716",
   "cohort": {
     "size": 4198,
@@ -119,6 +119,7 @@
     "y1_recency",
     "y1_scale",
     "y1_speed",
+    "y1_operable",
     "y1_xattn"
   ],
   "recipes": {
@@ -130,7 +131,8 @@
     "core_rec10": "configs/titans/dgx-us-core-u2-ic3-dense-gr-v9-rec10-v11.json",
     "core_smooth": "configs/titans/dgx-us-core-u2-ic3-dense-gr-v9-smooth-v11.json",
     "core_fscale": "configs/titans/dgx-us-core-u2-ic3-dense-gr-v9-fscale-v11.json",
-    "core_nograph": "configs/titans/dgx-us-core-u2-ic3-dense-gr-v9-nograph-v11.json"
+    "core_nograph": "configs/titans/dgx-us-core-u2-ic3-dense-gr-v9-nograph-v11.json",
+    "core_icop": "configs/titans/dgx-us-core-u2-ic3-dense-gr-v9-icop-v11.json"
   },
   "stopping": {
     "fit": {
@@ -272,6 +274,27 @@
       "recipe": "core_nograph",
       "runner": "fit",
       "tier": "y1_speed",
+      "variant": "mac_disabled"
+    },
+    "titans_mac_icop": {
+      "machine": "mars_titan",
+      "recipe": "core_icop",
+      "runner": "fit",
+      "tier": "y1_operable",
+      "variant": "mac_online"
+    },
+    "titans_mac_frozen_icop": {
+      "machine": "mars_titan",
+      "recipe": "core_icop",
+      "runner": "fit",
+      "tier": "y1_operable",
+      "variant": "mac_frozen"
+    },
+    "titans_mac_disabled_icop": {
+      "machine": "mars_titan",
+      "recipe": "core_icop",
+      "runner": "fit",
+      "tier": "y1_operable",
       "variant": "mac_disabled"
     },
     "cross_asset_attention": {

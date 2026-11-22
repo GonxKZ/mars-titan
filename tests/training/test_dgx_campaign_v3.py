@@ -934,7 +934,7 @@ def test_the_first_screen_of_the_new_base_changes_one_recipe_field_per_model():
         assert document[key] == previous[key], key
     assert document["source_declaration_sha256"] == hashlib.sha256(source.read_bytes()).hexdigest()
     tiers = ["core", "controls", "y1_norm", "y1_clip", "y1_recency", "y1_scale", "y1_speed"]
-    assert document["tiers"] == [*tiers, "y1_xattn"]
+    assert document["tiers"] == [*tiers, "y1_operable", "y1_xattn"]
     # El núcleo y sus controles son los de la v10, campo a campo: la base nueva los reproduce.
     cores = ("titans_mac", "titans_mac_frozen", "titans_mac_disabled")
     for model in cores:
@@ -986,6 +986,13 @@ def test_the_first_screen_of_the_new_base_changes_one_recipe_field_per_model():
             True,
         ),
     }
+    # El término de IC sobre lo operable, en los tres modos de memoria: el alfa conocido es la
+    # primera de las 46 columnas técnicas del bloque del gráfico, en tanto por ciento.
+    assert branch["columns"] == 46 and technical_features.NAMES[0] == "alpha_percent"
+    operable = {**base["recipe.session_ic_term"], "offset_column": -46, "offset_scale": 0.01}
+    assert set(base["recipe.session_ic_term"]) == {"weight", "minimum_rows"}
+    for parent in cores:
+        expected[f"{parent}_icop"] = (parent, "y1_operable", "recipe.session_ic_term", operable)
     # La atención entre activos en sus dos posiciones, cada una con su control self_only. Las
     # dos de la v10 se declaran como allí; las tardías solo añaden la posición.
     late = dict(position="after_technical")
@@ -1034,4 +1041,4 @@ def test_the_first_screen_of_the_new_base_changes_one_recipe_field_per_model():
     controls.update({model: control for model, (_declared, control) in mixers.items()})
     assert declared == controls
     jobs = campaign.plan(document, "mars_titan")
-    assert len({job.model for job in jobs if job.tier.startswith("y1_")}) == 14
+    assert len({job.model for job in jobs if job.tier.startswith("y1_")}) == 17

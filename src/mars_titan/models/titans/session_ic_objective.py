@@ -126,6 +126,18 @@ class SessionICTerm:
     correlación son los ponderados. Los rangos del objetivo no cambian. Así el término cuenta
     más el orden entre los activos que se pueden operar. Con p = 0 sería la correlación sin
     ponderar. La columna es una entrada disponible al emitir y no lleva gradiente.
+
+    Con `offset_column` y `offset_scale` el término mide el orden de lo que se puede operar.
+    La etiqueta resta un desplazamiento a_i que se conoce al predecir (el alfa del modelo de
+    mercado, una columna del bloque del gráfico por su escala). El rendimiento operable es
+    y_i + a_i y la predicción del modelo para él es p_i + a_i, así que el término pasa a ser
+
+        −w · (1/|T|) Σ_{t∈T} ρ_t(p + a, g(y + a))
+
+    con g las puntuaciones normales de los rangos de y + a. A diferencia del término sin
+    desplazamiento, depende de la escala de p: sumada a a, una predicción con otra escala
+    ordena de otra forma. Por eso también ajusta la escala de la mediana. Donde la columna no
+    es finita (un activo sin modelo de mercado) el desplazamiento vale cero. No lleva gradiente.
     """
 
     weight: float = 1.0
@@ -133,6 +145,10 @@ class SessionICTerm:
     # Columna del bloque del gráfico con la liquidez de cada fila, contada desde el final.
     liquidity_column: int | None = None
     liquidity_power: float | None = None
+    # Columna del bloque del gráfico con el desplazamiento conocido de la etiqueta, contada
+    # desde el final, y el factor que la lleva a las unidades de la etiqueta.
+    offset_column: int | None = None
+    offset_scale: float | None = None
 
     def __post_init__(self):
         if type(self.minimum_rows) is not int or not 3 <= self.minimum_rows <= 4096:
@@ -150,11 +166,25 @@ class SessionICTerm:
             if not 0 < power <= 8:
                 raise ValueError("liquidity_power debe estar entre 0 y 8")
             object.__setattr__(self, "liquidity_power", power)
+        if (self.offset_column is None) != (self.offset_scale is None):
+            raise ValueError("El desplazamiento del término declara su columna y su escala")
+        if self.offset_column is not None:
+            if type(self.offset_column) is not int or not -4096 <= self.offset_column < 0:
+                raise ValueError("offset_column cuenta desde el final del bloque: es negativa")
+            scale = _number(self.offset_scale, "offset_scale")
+            if not 0 < scale <= 1e3:
+                raise ValueError("offset_scale debe ser positiva y acotada")
+            object.__setattr__(self, "offset_scale", scale)
 
     @property
     def weighted(self):
         """Si la correlación pondera las filas por liquidez."""
         return self.liquidity_column is not None
+
+    @property
+    def shifted(self):
+        """Si el término suma al punto y al objetivo el desplazamiento conocido de la etiqueta."""
+        return self.offset_column is not None
 
     def identity(self):
         result = dict(
@@ -181,12 +211,31 @@ class SessionICTerm:
                 ),
                 liquidity_source="chart_block_column_counted_from_the_end_as_received",
             )
+        # Y sin el desplazamiento, también.
+        if self.shifted:
+            result.update(
+                offset_column=self.offset_column,
+                offset_scale=self.offset_scale,
+                offset="known_label_offset_added_to_point_and_target_before_the_correlation",
+                offset_source=(
+                    "chart_block_column_counted_from_the_end_as_received_times_the_scale_"
+                    "with_zero_where_it_is_not_finite"
+                ),
+            )
         return result
 
-    def term(self, point, target, sessions, liquidity=None):
+    def term(self, point, target, sessions, liquidity=None, offset=None):
         """−w por la correlación media de las sesiones del tramo, o cero si no hay ninguna."""
         if self.weighted != (liquidity is not None):
             raise ValueError("El término recibe la liquidez de cada fila solo si la declara")
+        if self.shifted != (offset is not None) or (
+            offset is not None and offset.shape != point.shape
+        ):
+            raise ValueError("El término recibe el desplazamiento de cada fila solo si lo declara")
+        if offset is not None:
+            # Lo operable: la etiqueta y su predicción con el desplazamiento conocido sumado.
+            offset = offset.detach().to(point.dtype)
+            point, target = point + offset, target + offset
         correlations = session_correlations(
             point,
             target,
@@ -207,15 +256,24 @@ def parse_session_ic_term(raw):
     if type(raw) is SessionICTerm:
         raw.__post_init__()
         return raw
-    if type(raw) is dict and set(raw) in (
-        {"weight", "minimum_rows"},
-        {"weight", "minimum_rows", "liquidity_column", "liquidity_power"},
-    ):
-        return SessionICTerm(**raw)
+    if type(raw) is dict and {"weight", "minimum_rows"} <= set(raw):
+        extra = set(raw) - {"weight", "minimum_rows"}
+        liquidity, offset = (
+            {"liquidity_column", "liquidity_power"},
+            {"offset_column", "offset_scale"},
+        )
+        if extra in (set(), liquidity, offset, liquidity | offset):
+            return SessionICTerm(**raw)
     raise ValueError(
         "session_ic_term debe declarar weight y minimum_rows (y liquidity_column con "
-        "liquidity_power), o ser None"
+        "liquidity_power, u offset_column con offset_scale), o ser None"
     )
+
+
+def known_offset(values, scale):
+    """Desplazamiento conocido de cada fila: su columna por la escala, y cero si no es finita."""
+    values = values.detach()
+    return torch.where(torch.isfinite(values), values * scale, torch.zeros_like(values))
 
 
 def liquidity_weights(values, power):

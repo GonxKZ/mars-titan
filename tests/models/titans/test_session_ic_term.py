@@ -12,6 +12,7 @@ import torch
 from mars_titan.models.titans.session_ic_objective import (
     SESSION_IC_TERM,
     SessionICTerm,
+    known_offset,
     liquidity_weights,
     parse_session_ic_term,
     session_correlations,
@@ -320,3 +321,102 @@ def test_the_liquidity_is_declared_whole_and_enters_the_identity_only_then():
     ):
         with pytest.raises(ValueError):
             parse_session_ic_term(dict(weight=3.0, minimum_rows=8, **changes))
+
+
+SHIFT = dict(offset_column=-3, offset_scale=0.01)
+
+
+def offsets(rows=40, seed=11):
+    generator = torch.Generator().manual_seed(seed)
+    return 0.8 * torch.randn(rows, dtype=torch.float64, generator=generator)
+
+
+def test_the_shifted_term_correlates_point_and_target_after_adding_the_known_offset():
+    point, target, sessions = sample()
+    offset = offsets()
+    term = SessionICTerm(weight=2.5, minimum_rows=5, **SHIFT)
+    expected = reference((point + offset).tolist(), (target + offset).tolist(), sessions, 2.5, 5)
+    value = term.term(point, target, sessions, offset=offset)
+    assert value.item() == pytest.approx(expected, rel=1e-8)
+    # Con desplazamiento cero es el término de siempre, bit a bit.
+    plain = SessionICTerm(weight=2.5, minimum_rows=5)
+    zero = torch.zeros_like(offset)
+    torch.testing.assert_close(
+        term.term(point, target, sessions, offset=zero),
+        plain.term(point, target, sessions),
+        rtol=0,
+        atol=0,
+    )
+
+
+def test_the_shifted_term_depends_on_the_scale_of_the_point_and_the_offset_has_no_gradient():
+    point, target, sessions = sample()
+    offset = offsets().requires_grad_()
+    shifted, plain = SessionICTerm(minimum_rows=5, **SHIFT), SessionICTerm(minimum_rows=5)
+    scale = torch.ones((), dtype=torch.float64, requires_grad=True)
+    # La escala del punto no mueve el término de siempre y sí el desplazado: sumado al alfa
+    # conocido, un punto con otra escala ordena de otra forma.
+    (moved,) = torch.autograd.grad(
+        shifted.term(scale * point, target, sessions, offset=offset), scale
+    )
+    (still,) = torch.autograd.grad(plain.term(scale * point, target, sessions), scale)
+    assert abs(moved.item()) > 1e-4 and abs(still.item()) < 1e-9
+    leaf = point.clone().requires_grad_()
+    value = shifted.term(leaf, target, sessions, offset=offset)
+    gradient, through = torch.autograd.grad(value, (leaf, offset), allow_unused=True)
+    assert gradient.abs().sum() > 0 and through is None
+
+
+def test_the_offset_is_declared_whole_and_enters_the_identity_only_then():
+    plain = SessionICTerm(weight=3.0, minimum_rows=8)
+    shifted = SessionICTerm(weight=3.0, minimum_rows=8, **SHIFT)
+    assert not plain.shifted and shifted.shifted
+    identity, before = shifted.identity(), plain.identity()
+    assert {key: identity[key] for key in before} == before
+    assert set(identity) - set(before) == {
+        "offset_column",
+        "offset_scale",
+        "offset",
+        "offset_source",
+    }
+    assert identity["offset_column"] == -3 and identity["offset_scale"] == 0.01
+    assert parse_session_ic_term(dict(weight=3.0, minimum_rows=8, **SHIFT)) == shifted
+    both = dict(weight=3.0, minimum_rows=8, liquidity_column=-1, liquidity_power=1.0, **SHIFT)
+    parsed = parse_session_ic_term(both)
+    assert parsed.weighted and parsed.shifted
+    point, target, sessions = sample()
+    with pytest.raises(ValueError, match="desplazamiento"):
+        shifted.term(point, target, sessions)
+    with pytest.raises(ValueError, match="desplazamiento"):
+        plain.term(point, target, sessions, offset=offsets())
+    with pytest.raises(ValueError, match="desplazamiento"):
+        shifted.term(point, target, sessions, offset=offsets()[:-1])
+
+
+@pytest.mark.parametrize(
+    "wrong",
+    [
+        dict(offset_column=-3),
+        dict(offset_scale=0.01),
+        dict(offset_column=0, offset_scale=0.01),
+        dict(offset_column=3, offset_scale=0.01),
+        dict(offset_column=True, offset_scale=0.01),
+        dict(offset_column=-3, offset_scale=0.0),
+        dict(offset_column=-3, offset_scale=-1.0),
+        dict(offset_column=-3, offset_scale=float("nan")),
+        dict(offset_column=-3, offset_scale="0.01"),
+    ],
+)
+def test_invalid_offsets_are_rejected(wrong):
+    with pytest.raises(ValueError):
+        SessionICTerm(**wrong)
+    with pytest.raises(ValueError):
+        parse_session_ic_term(dict(weight=1.0, minimum_rows=8, **wrong))
+
+
+def test_the_known_offset_is_the_column_times_its_scale_and_zero_where_it_is_unknown():
+    column = torch.tensor([1.5, float("nan"), -2.0, float("inf"), 0.0], dtype=torch.float64)
+    result = known_offset(column.requires_grad_(), 0.01)
+    assert result.tolist() == [0.015, 0.0, -0.02, 0.0, 0.0]
+    assert not result.requires_grad
+    assert known_offset(column.float(), 0.01).dtype == torch.float32
