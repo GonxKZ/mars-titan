@@ -114,7 +114,9 @@ def checked_declaration(document):
         f"La declaración de los gemelos tiene exactamente {sorted(_DECLARATION)}",
     )
     _require(
-        document["schema_version"] == 1 and document["kind"] == KIND,
+        type(document["schema_version"]) is int
+        and document["schema_version"] == 1
+        and document["kind"] == KIND,
         f"La declaración debe ser {KIND} con schema_version 1",
     )
     _require(document["final_test_access"] is False, "Los gemelos no abren el test final")
@@ -258,6 +260,9 @@ def first_difference(original, regenerated):
         a, b = left[name], right[name]
         if a.equals(b):
             continue
+        if a.type != b.type:
+            reason = f"La columna {name} cambia de tipo: {a.type} → {b.type}"
+            return dict(column=name, reason=reason)
         try:
             differ = np.flatnonzero(_bits(a.to_numpy()) != _bits(b.to_numpy()))
         except (TypeError, ValueError):
@@ -266,6 +271,9 @@ def first_difference(original, regenerated):
                 for i, (x, y) in enumerate(zip(a.to_pylist(), b.to_pylist(), strict=True))
                 if x != y
             ]
+        if len(differ) == 0:
+            # Iguales bit a bit aunque Arrow las dé por distintas (NaN idénticos).
+            continue
         row = int(differ[0])
         return dict(
             column=name,
@@ -586,21 +594,30 @@ def _screening():
     return screening()
 
 
-def session_ics(folder, partition, min_assets):
-    """IC de rangos por sesión de un tramo, con las funciones de la criba, y sus filas."""
+def session_ics(folder, partition, min_assets, *, market):
+    """IC de rangos por sesión de un tramo y mercado, con las funciones de la criba, y sus filas.
+
+    Solo cuentan las sesiones del mercado declarado (un estado conjunto trae también las de
+    otros). Una predicción o un objetivo no finitos fallan con su sesión en lugar de puntuarla.
+    """
     module = _screening()
     data = module.load_split(Path(folder), partition)
     _require(data is not None, f"Faltan las predicciones de {partition} en {folder}")
     ics = {}
-    for market, instant, start, end in data["sessions"]:
-        if end - start < min_assets:
+    for name, instant, start, end in data["sessions"]:
+        if name != market or end - start < min_assets:
             continue
+        _require(
+            np.isfinite(data["prediction"][start:end]).all()
+            and np.isfinite(data["target"][start:end]).all(),
+            f"La sesión {name} {instant} de {partition} en {folder} tiene valores no finitos",
+        )
         value = module.correlation(
             module.average_ranks(data["prediction"][start:end]),
             module.average_ranks(data["target"][start:end]),
         )
         if not math.isnan(value):
-            ics[(market, instant)] = value
+            ics[(name, instant)] = value
     return ics, data["sample"], data["target"]
 
 
@@ -823,7 +840,10 @@ def analyze(declaration, states, output):
                     values, reference = {}, None
                     for cell, folder in cells.items():
                         ics, sample, target = session_ics(
-                            folder, partition, declaration["min_assets"]
+                            folder,
+                            partition,
+                            declaration["min_assets"],
+                            market=declaration["market"],
                         )
                         if reference is None:
                             reference = (sample, target)
@@ -899,7 +919,9 @@ def analyze_resets(declaration, states, output, online):
             )
             values, reference = {}, None
             for name, source in columns.items():
-                ics, sample, target = session_ics(source, "evaluation", declaration["min_assets"])
+                ics, sample, target = session_ics(
+                    source, "evaluation", declaration["min_assets"], market=declaration["market"]
+                )
                 if reference is None:
                     reference = (sample, target)
                 _require(

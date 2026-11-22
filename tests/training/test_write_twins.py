@@ -75,6 +75,7 @@ def campaign_state(base, root):  # noqa: F811
         dict(analysis=dict(primary="evaluation", secondary=["evaluation"], confidence=0.95)),
         dict(analysis=dict(primary="evaluation", secondary=[], confidence=1.0)),
         dict(extra=True),
+        dict(schema_version=True),
     ],
 )
 def test_the_declaration_is_checked_before_opening_any_state(changes):
@@ -221,7 +222,7 @@ def test_reset_arms_follow_the_twins_and_a_bit_exact_parity_without_reset(
     run, pair = declaration()["runs"][0], declaration()["pairs"][0]
     cells = twins._cells(states, output, run, 42, pair)
     for name, source in dict(oo=cells["oo"], of=cells["of"], R0=folder / "reset_R0").items():
-        ics, _, _ = twins.session_ics(source, "evaluation", 3)
+        ics, _, _ = twins.session_ics(source, "evaluation", 3, market="US")
         assert ic[name] == pytest.approx(np.mean(list(ics.values())))
     # La orden repite sin rehacer los trabajos terminados.
     path = tmp_path / "declaration.json"
@@ -372,11 +373,62 @@ def test_session_ics_are_those_of_the_screening_with_its_thirty_assets(tmp_path)
         2, "prediction_at", pa.array([r["prediction_at"] for r in rows], pa.timestamp("us", "UTC"))
     )
     pq.write_table(table, tmp_path / "evaluation-predictions.parquet")
-    ics, _, _ = twins.session_ics(tmp_path, "evaluation", 30)
+    ics, _, _ = twins.session_ics(tmp_path, "evaluation", 30, market="US")
     screening = twins._screening()
     assert ics == screening.session_ic(screening.load_split(tmp_path, "evaluation"))
     assert len(ics) == 5
-    assert len(twins.session_ics(tmp_path, "evaluation", 20)[0]) == 6
+    assert len(twins.session_ics(tmp_path, "evaluation", 20, market="US")[0]) == 6
+
+
+def _two_markets(tmp_path, *, nan_at=None):
+    rng = np.random.default_rng(11)
+    rows = []
+    for market in ("US", "CN"):
+        for session in range(3):
+            target = rng.standard_normal(35)
+            for asset in range(35):
+                prediction = float(target[asset] + rng.standard_normal())
+                if nan_at == (market, session) and asset == 0:
+                    prediction = float("nan")
+                rows.append(
+                    dict(
+                        sample_id=f"{market}{session}-{asset:02d}",
+                        market=market,
+                        prediction_at=1_700_000_000_000_000 + session * 86_400_000_000,
+                        target=float(target[asset]),
+                        prediction=prediction,
+                    )
+                )
+    table = pa.Table.from_pylist(rows).set_column(
+        2, "prediction_at", pa.array([r["prediction_at"] for r in rows], pa.timestamp("us", "UTC"))
+    )
+    pq.write_table(table, tmp_path / "evaluation-predictions.parquet")
+
+
+def test_session_ics_keep_only_the_declared_market(tmp_path):
+    """H15 de la auditoría: un estado conjunto no mezcla sesiones de CN en un informe de US."""
+    _two_markets(tmp_path)
+    ics, _, _ = twins.session_ics(tmp_path, "evaluation", 30, market="US")
+    assert len(ics) == 3 and {market for market, _ in ics} == {"US"}
+
+
+def test_a_session_with_a_non_finite_prediction_fails_with_its_coordinates(tmp_path):
+    """H15 de la auditoría: una predicción NaN no puntúa una sesión con IC = 1."""
+    _two_markets(tmp_path, nan_at=("US", 1))
+    with pytest.raises(ValueError, match="US 1700086400000000"):
+        twins.session_ics(tmp_path, "evaluation", 30, market="US")
+
+
+def test_the_first_difference_ignores_identical_nan_and_names_a_change_of_type(tmp_path):
+    """H15 de la auditoría: sin IndexError con NaN idénticos ni con columnas de otro tipo."""
+    table = pa.table(dict(sample_id=["a", "b"], prediction=[0.5, float("nan")]))
+    pq.write_table(table, tmp_path / "left.parquet")
+    pq.write_table(table, tmp_path / "same.parquet")
+    assert twins.first_difference(tmp_path / "left.parquet", tmp_path / "same.parquet") is None
+    narrow = table.set_column(1, "prediction", pa.array([0.5, float("nan")], pa.float32()))
+    pq.write_table(narrow, tmp_path / "narrow.parquet")
+    found = twins.first_difference(tmp_path / "left.parquet", tmp_path / "narrow.parquet")
+    assert found["column"] == "prediction" and "tipo" in found["reason"]
 
 
 def test_the_first_difference_names_its_row_sample_and_values(tmp_path):
