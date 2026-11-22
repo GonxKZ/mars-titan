@@ -140,7 +140,7 @@ from .regional_variants import (
 from .reliability_gates import MatureReliability, ReliabilityGates
 from .scale_invariant_time import ScaleInvariantTime
 from .session_context import SECTOR_MEAN, SESSION_CONTEXTS, SessionContext
-from .session_ic_objective import SessionICObjective
+from .session_ic_objective import SessionICObjective, known_offset
 from .session_ranks import SESSION_RANK_INPUTS, rank_session_inputs
 from .session_ranks import identity as session_rank_identity
 from .state import (
@@ -172,6 +172,7 @@ FUSION_DROPOUTS = (0.1, 0.2)
 # Nombre de la transformación de ModDrop en la huella del lote derivado y propósitos de las
 # claves de las máscaras.
 MODALITY_DROPOUT = "modality_dropout_v1"
+KNOWN_OFFSET = "known_label_offset_v1"
 # Transformación de una modalidad retirada del predictor, en el ajuste y al emitir.
 REMOVED_MODALITIES = "removed_modalities_v1"
 FUSION_DROPOUT = "fusion_dropout_v1"
@@ -304,6 +305,11 @@ class FinancialConfig:
     # multiplica por exp de un escalar aprendido, que absorbe la escala cuando otra parte de
     # la pérdida no depende de ella.
     median_gain: str | None = None
+    # Desplazamiento conocido de la etiqueta (`known_label_offset_v1`). La etiqueta resta una
+    # cantidad que se conoce al predecir: una columna del bloque del gráfico, contada desde el
+    # final, por su escala. Con él la cabeza predice lo operable y el predictor emite la
+    # predicción de la etiqueta restando ese desplazamiento, exacto, a sus cinco cuantiles.
+    known_offset: dict | None = None
 
     def __post_init__(self):
         if self.memory_inner_gradient not in INNER_GRADIENTS:
@@ -348,6 +354,7 @@ class FinancialConfig:
         self._check_learning_scale()
         self._check_technical_branch()
         self._check_median_gain()
+        self._check_known_offset()
         self._check_memory_projections()
         self._check_runtime_limits()
 
@@ -658,6 +665,32 @@ class FinancialConfig:
         if self.head != QUANTILE_HEAD:
             raise ValueError("median_gain necesita la cabeza quantile_head_v1")
 
+    def _check_known_offset(self):
+        """El desplazamiento conocido es una columna del bloque del gráfico y va con cuantiles."""
+        declared = self.known_offset
+        if declared is None:
+            return
+        if type(declared) is not dict or set(declared) != {"column", "scale"}:
+            raise ValueError("known_offset debe declarar column y scale, o ser None")
+        column, scale = declared["column"], declared["scale"]
+        if type(column) is not int or not -self.inputs.dimensions["charts"] <= column < 0:
+            raise ValueError(
+                "known_offset.column cuenta desde el final del bloque del gráfico: es negativa "
+                "y pertenece a él"
+            )
+        if (
+            isinstance(scale, bool)
+            or not isinstance(scale, (int, float))
+            or not math.isfinite(scale)
+            or not 0 < scale <= 1e3
+        ):
+            raise ValueError("known_offset.scale debe ser positiva y acotada")
+        if self.head != QUANTILE_HEAD:
+            raise ValueError("known_offset necesita la cabeza de cuantiles quantile_head_v1")
+        if self.removed_modalities is not None and "charts" in self.removed_modalities:
+            raise ValueError("known_offset lee el bloque del gráfico y no admite retirarlo")
+        object.__setattr__(self, "known_offset", dict(column=column, scale=float(scale)))
+
     def _check_technical_branch(self):
         """La rama técnica lee columnas normalizadas del bloque del gráfico."""
         object.__setattr__(self, "technical_branch", parse_technical_branch(self.technical_branch))
@@ -877,6 +910,21 @@ class FinancialConfig:
             result.update(output=QUANTILE_HEAD, output_head=dict(CONTRACT))
         if self.quantile_routing is not None:
             result.update(quantile_routing=self.quantile_routing.identity())
+        if self.known_offset is not None:
+            result.update(
+                known_offset=dict(
+                    schema_version=1,
+                    name=KNOWN_OFFSET,
+                    column=self.known_offset["column"],
+                    scale=self.known_offset["scale"],
+                    source=(
+                        "chart_block_column_counted_from_the_end_as_received_times_the_scale_"
+                        "with_zero_where_it_is_not_finite"
+                    ),
+                    applied="subtracted_from_the_five_quantiles_after_the_head",
+                    gradient="none",
+                )
+            )
         if self.median_gain is not None:
             result.update(
                 median_gain=dict(
@@ -2198,6 +2246,11 @@ class FinancialPredictor(nn.Module):
         if self.session_level and session_complete is not True:
             raise ValueError("Las operaciones por sesión necesitan la sesión completa en un bloque")
         markets = tuple(flow.split("/", 1)[0] for flow in batch.flow_ids)
+        offset = None
+        if self.config.known_offset is not None:
+            # De lo recibido, antes de cualquier ausencia añadida, rango o escala.
+            declared = self.config.known_offset
+            offset = known_offset(batch.inputs["charts"][:, declared["column"]], declared["scale"])
         if self.config.removed_modalities is not None:
             # Antes de cualquier otra transformación: el predictor no ve nunca la modalidad.
             keep = torch.ones_like(batch.presence)
@@ -2359,6 +2412,9 @@ class FinancialPredictor(nn.Module):
             quantiles = outputs = None
             if self.config.head == QUANTILE_HEAD:
                 quantiles = self.head(encoded)
+                if offset is not None:
+                    # La cabeza predice lo operable; la etiqueta es eso menos el desplazamiento.
+                    quantiles = quantiles - offset.to(quantiles.dtype).unsqueeze(1)
                 check_finite(quantiles, "Los cuantiles")
                 point = median(quantiles)
             else:

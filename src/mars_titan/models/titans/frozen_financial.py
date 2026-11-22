@@ -449,6 +449,12 @@ class FrozenFinancialConsumer:
             )
         self.predictor, self.readout = predictor, readout
         _validate_cross_asset_attention(predictor)
+        if getattr(predictor.config, "known_offset", None) is not None:
+            # Los lectores aplican la cabeza a estados refinados sin restar el desplazamiento.
+            raise ValueError(
+                "Los lectores todavía no admiten un padre con desplazamiento conocido de la "
+                "etiqueta"
+            )
         _validate_intervention(readout)
         self._models = (("predictor", predictor),) + ((("readout", readout),) if readout else ())
         self._signature, modes = _execution_signature(self._models)
