@@ -1051,7 +1051,7 @@ def measure(declaration, state, reference, organs, origin, output, *, wait_hours
         views = {}
         factors = {}
         for mode in modes:
-            everyone, systems = None, {}
+            everyone, systems, rows_of = None, {}, {}
             for coalition in coalitions:
                 members = [p for p in players if p in coalition]
                 result = oa.run_aggregation(
@@ -1072,11 +1072,13 @@ def measure(declaration, state, reference, organs, origin, output, *, wait_hours
                     ]
                 if coalition == frozenset(("parent", "tree")):
                     systems["s1"] = result["aggregators"]["rank_average"]["split_predictions"]
+                    rows_of["s1"] = result["aligned"]
                     (work / "informes" / f"{mode}-s1.md").write_text(
                         oa.render_markdown(oa._json_safe_report(result)), encoding="utf-8"
                     )
                 if coalition == frozenset(("parent", "tree", "signal")):
                     systems["s2"] = result["aggregators"]["ridge_cov_active"]["split_predictions"]
+                    rows_of["s2"] = result["aligned"]
                     (work / "informes" / f"{mode}-s2.md").write_text(
                         oa.render_markdown(oa._json_safe_report(result)), encoding="utf-8"
                     )
@@ -1084,6 +1086,14 @@ def measure(declaration, state, reference, organs, origin, output, *, wait_hours
                     everyone = result["aligned"]
                     factors[mode] = (result["operable"] or {}).get("scales")
             say(f"{mode}: {len(coalitions)} conjuntos agregados")
+            for system, aligned in rows_of.items():
+                for split in AGGREGATED:
+                    _require(
+                        list(aligned[split]["sample_id"]) == list(everyone[split]["sample_id"])
+                        and len(systems[system][split]) == len(everyone[split]["sample_id"]),
+                        f"{system} en {mode}/{split} no tiene las filas alineadas de todos los "
+                        "componentes",
+                    )
             positions = {
                 player_of[n]: i for i, n in enumerate(everyone["evaluation"]["model_names"])
             }
