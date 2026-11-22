@@ -115,6 +115,46 @@ def test_the_campaign_section_follows_the_pt2_declaration():
     )
 
 
+def test_calibration_labels_that_mature_after_the_first_evaluated_decision_are_rejected(
+    studies, monkeypatch
+):
+    """H-12(b) del segundo enjambre: la CQR estática y el arranque en línea usan toda la
+    calibración, así que cada etiqueta de calibración debe haber madurado como mucho en la
+    primera decisión evaluada de su mercado. Una sola fila de CN que madura después se rechaza
+    con su mercado."""
+
+    def late(partition, table):
+        if partition != "calibration":
+            return table
+        matures = np.asarray(table["matures_at"]).copy()
+        first_cn = np.flatnonzero(np.asarray(table["market"].to_pylist()) == "CN")[0]
+        matures[first_cn] += 60 * DAY
+        position = table.schema.get_field_index("matures_at")
+        return table.set_column(position, "matures_at", pa.array(matures))
+
+    monkeypatch.setattr(online, "view_maturity", provider(studies.study, DAY, edit=late))
+    with pytest.raises(ValueError, match="calibración de CN"):
+        window_results(studies.study, "fold-000")
+
+
+def test_the_causal_frontier_is_per_market_and_admits_a_label_that_matures_at_the_decision():
+    """China decide antes que EE. UU. el mismo día: una etiqueta de EE. UU. que madura en su
+    propia primera decisión evaluada es válida aunque llegue después de la primera de China."""
+    us_first, cn_first = 10 * DAY + 21, 10 * DAY + 7
+    calibration = dict(
+        groups=np.array(["US", "US", "CN"]),
+        matures_at=np.array([9 * DAY + 21, us_first, cn_first], dtype=np.int64),
+    )
+    evaluation = dict(
+        groups=np.array(["CN", "US", "US"]),
+        prediction_at=np.array([cn_first, us_first, us_first + DAY], dtype=np.int64),
+    )
+    online._calibration_frontier(calibration, evaluation)
+    calibration["matures_at"][2] = cn_first + 1
+    with pytest.raises(ValueError, match="calibración de CN"):
+        online._calibration_frontier(calibration, evaluation)
+
+
 @pytest.mark.parametrize(
     ("edit", "message"),
     [
@@ -182,9 +222,17 @@ def test_a_cohort_matures_before_the_emission_at_its_label_instant(
 
 
 def test_labels_that_never_mature_leave_every_variant_equal_to_the_static_cqr(studies, monkeypatch):
-    # Con 40 días, la calibración de octubre madura después de la última sesión evaluada de
-    # noviembre y la evaluación antes de 2024, que el calibrador no admite.
-    monkeypatch.setattr(online, "view_maturity", provider(studies.study, 40 * DAY))
+    # La calibración madura a un día, antes de la primera decisión evaluada (la frontera causal
+    # de calibrate_window); la evaluación, a 40 días: después de su última sesión de noviembre y
+    # antes de 2024, que el calibrador no admite.
+    def never(partition, table):
+        if partition != "evaluation":
+            return table
+        matures = np.asarray(table["matures_at"]) + 39 * DAY
+        position = table.schema.get_field_index("matures_at")
+        return table.set_column(position, "matures_at", pa.array(matures))
+
+    monkeypatch.setattr(online, "view_maturity", provider(studies.study, DAY, edit=never))
     results, config, _ = window_results(studies.study, "fold-000")
     quantile = [key for key in results if config["arms"][key[0]]["output"] == "quantile_head_v1"]
     assert quantile

@@ -211,6 +211,22 @@ def _columns(panel, matures_at):
     )
 
 
+def _calibration_frontier(calibration, evaluation):
+    """Frontera causal de una ventana: la CQR estática y el arranque en línea usan toda la
+    calibración, así que cada etiqueta de calibración madura como mucho en la primera decisión
+    evaluada de su mercado. Cada mercado tiene su reloj y su corrección: una etiqueta de EE. UU.
+    puede madurar después de la primera decisión evaluada de China, que cierra antes.
+    """
+    for group in np.unique(evaluation["groups"]):
+        matured = calibration["matures_at"][calibration["groups"] == group]
+        first = np.min(evaluation["prediction_at"][evaluation["groups"] == group])
+        _require(
+            matured.size == 0 or int(matured.max()) <= int(first),
+            f"La calibración de {group} tiene etiquetas que maduran después de su primera "
+            "decisión evaluada",
+        )
+
+
 def calibrate_window(section, record, fitted, panel, maturity, *, rank_ic_min_assets):
     """Puntuar por sesión las variantes de una ventana con su CQR estática ya fijada.
 
@@ -220,6 +236,7 @@ def calibrate_window(section, record, fitted, panel, maturity, *, rank_ic_min_as
     """
     calibration = _columns(fitted, maturity["calibration"])
     evaluation = _columns(panel, maturity["evaluation"])
+    _calibration_frontier(calibration, evaluation)
     scores, records = {}, {}
 
     def scored(quantiles):
