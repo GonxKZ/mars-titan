@@ -1,0 +1,31 @@
+{
+  "schema_version": 1,
+  "kind": "posttraining_write_twins_v1",
+  "final_test_access": false,
+  "description": "Segundo par de la prueba causal «misma red, evaluada sin escribir» sobre la v8 (fold-008, origen 2013, semilla 42), declarado el 22 de noviembre de 2026 a las 07:25 UTC, antes de que exista ningún gemelo de este par y antes de ver los del par base (encargo del coordinador de las 07:15 UTC: es el par en que la validación daba más ventaja a la escritura). Pregunta, celdas, paridad, estadísticos y lecturas: los de posttraining-write-twins-v8.json, con titans_mac_xrank (mac_online, rangos por sesión de los rasgos) y su control titans_mac_frozen_xrank. Potencia, medida antes de declarar solo con validación y calibración: D = +0,00412 en validación (EE HAC 0,00237, t 1,74, 125 sesiones) y +0,00680 en calibración (EE 0,00216, t 3,15, 61 sesiones); con 251 sesiones de evaluación se espera EE ≈ 0,0017 y MDE ≈ 0,0047 para D, y del mismo orden para N (supuesto, no medido). Lectura conjunta con el par base: las dos N de evaluación se contrastan con Holm al 5 % (dos contrastes); cada par conserva por separado su lectura declarada. Se lanza solo si el par base pasa la paridad bit a bit y su coste real es de minutos. Con un solo origen y una sola semilla la inferencia es dentro de la red ajustada, no entre ajustes. Código: el del modelo de 114bcf4e (el que ajustó los estados) más los commits de los gemelos; en GPU, CUBLAS_WORKSPACE_CONFIG=:4096:8, FP32 estricto y el entorno de MPS de la campaña.",
+  "market": "US",
+  "min_assets": 30,
+  "pairs": [
+    {
+      "online": "titans_mac_xrank",
+      "frozen": "titans_mac_frozen_xrank"
+    }
+  ],
+  "runs": [
+    {
+      "state": "v8",
+      "origin": 2013,
+      "seeds": [
+        42
+      ]
+    }
+  ],
+  "analysis": {
+    "primary": "evaluation",
+    "secondary": [
+      "validation",
+      "calibration"
+    ],
+    "confidence": 0.95
+  }
+}
