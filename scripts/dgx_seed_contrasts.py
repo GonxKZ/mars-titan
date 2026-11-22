@@ -38,6 +38,15 @@ import numpy as np
 
 SPLITS = ("validation", "calibration", "evaluation")
 DECISION = ("validation", "calibration")
+# Las series que se miden con el alfa conocido, y el nivel del documento que lleva cada una con
+# la clave del factor que la acompaña.
+OPERABLE_KINDS = ("free", "liquid", "known", "returned")
+OPERABLE_LEVELS = (
+    ("free", "operable", "factor"),
+    ("liquid", "operable_liquid", None),
+    ("known", "label_known", None),
+    ("returned", "label_returned", "back_factor"),
+)
 
 
 def _report_module():
@@ -150,6 +159,10 @@ def _operable(offset, known, run, splits):
     del modelo, por un factor, más alfa. El factor se elige con el IC sin alfa de calibración y
     con él se miden los tres tramos. El alfa de las filas no depende del modelo ni de la
     semilla: se lee una vez por tramo y se reutiliza mientras las muestras sean las mismas.
+
+    Un modelo ajustado para lo operable se lee además de vuelta en la etiqueta: su predicción
+    de la etiqueta es factor·(p + alfa) − alfa, con otro factor elegido igual, y se mide en las
+    filas con alfa conocido junto a la etiqueta con la predicción tal cual.
     """
     report = _report_module()
     alphas, volumes = {}, {}
@@ -172,7 +185,24 @@ def _operable(offset, known, run, splits):
             for split in SPLITS
         }
 
-    return factor, measure(None), measure(volumes)
+    # La etiqueta en las mismas filas con alfa conocido: con la predicción tal cual, y con la
+    # predicción de lo operable devuelta a la etiqueta por el factor que elige la calibración.
+    back = report.best_return_scale(splits, alphas)
+    return dict(
+        factor=factor,
+        free=measure(None),
+        liquid=measure(volumes),
+        known={
+            split: report.implied_sessions(
+                splits[split], alphas[split], free=False, prediction=splits[split]["prediction"]
+            )
+            for split in SPLITS
+        },
+        back_factor=back,
+        returned={
+            split: report.returned_sessions(splits[split], alphas[split], back) for split in SPLITS
+        },
+    )
 
 
 def _operable_level(sessions, per_seed, factors=None):
@@ -188,6 +218,9 @@ def _operable_level(sessions, per_seed, factors=None):
     }
     if factors is not None:
         entry["factors"] = factors
+        # En un borde de la rejilla la búsqueda quedó truncada y el factor es una cota.
+        edges = (min(report.SCALES), max(report.SCALES))
+        entry["factor_at_edge"] = any(factor in edges for factor in factors)
     return entry
 
 
@@ -207,8 +240,12 @@ def _level(sessions, per_seed, combined):
     report = _report_module()
     entry = {split: report.summary(sessions[split]) for split in SPLITS}
     entry["decision"] = report.summary(_pooled(sessions, DECISION))
+    # Un universo sin ninguna sesión válida no tiene media: se dice con None y no con NaN.
     entry["per_seed"] = {
-        split: [float(np.mean(list(one[split].values()))) for one in per_seed] for split in SPLITS
+        split: [
+            float(np.mean(list(one[split].values()))) if one[split] else None for one in per_seed
+        ]
+        for split in SPLITS
     }
     entry["ensemble"] = {split: report.summary(combined[split]) for split in SPLITS}
     entry["ensemble"]["decision"] = report.summary(_pooled(combined, DECISION))
@@ -231,7 +268,7 @@ def _origin(state, year, seeds, controls, references=(), reference_seed=None, of
     seeds = list(dict.fromkeys(seeds))
     names = sorted(set(controls) | set(controls.values()))
     per_seed, mean, combined, missing, where = {}, {}, {}, {}, {}
-    known, factors, free_seed, liquid_seed, free, liquid = {}, {}, {}, {}, {}, {}
+    known, measured_seed, measured_mean = {}, {}, {}
     for name in names:
         # Las emisiones de un modelo se sueltan al pasar al siguiente: solo queda el IC.
         place, fixed = _home(state, name, year, references, reference_seed)
@@ -257,11 +294,10 @@ def _origin(state, year, seeds, controls, references=(), reference_seed=None, of
             else:
                 measured = [_operable(offset, known, _run(place, name, year, fixed), runs[0])]
                 measured = measured * len(seeds)
-            factors[name] = [item[0] for item in measured]
-            free_seed[name] = [item[1] for item in measured]
-            liquid_seed[name] = [item[2] for item in measured]
-            free[name] = averaged(free_seed[name], name)
-            liquid[name] = averaged(liquid_seed[name], name)
+            measured_seed[name] = measured
+            measured_mean[name] = {
+                kind: averaged([item[kind] for item in measured], name) for kind in OPERABLE_KINDS
+            }
     document = dict(
         schema_version=1,
         kind="dgx_seed_contrasts_v1",
@@ -275,13 +311,14 @@ def _origin(state, year, seeds, controls, references=(), reference_seed=None, of
         contrasts={},
         incomplete={},
     )
-    for name in free:
-        document["models"][name]["operable"] = _operable_level(
-            free[name], free_seed[name], factors[name]
-        )
-        document["models"][name]["operable_liquid"] = _operable_level(
-            liquid[name], liquid_seed[name]
-        )
+    for name, per_kind in measured_mean.items():
+        seeds_of = measured_seed[name]
+        for kind, key, factor in OPERABLE_LEVELS:
+            document["models"][name][key] = _operable_level(
+                per_kind[kind],
+                [item[kind] for item in seeds_of],
+                None if factor is None else [item[factor] for item in seeds_of],
+            )
     for name, control in sorted(controls.items()):
         if name in missing or control in missing:
             document["incomplete"][name] = sorted(
@@ -296,18 +333,26 @@ def _origin(state, year, seeds, controls, references=(), reference_seed=None, of
                 for one, other in zip(per_seed[name], per_seed[control], strict=True)
             ]
             entry["per_seed"][split] = differences
-            entry["signs"][split] = "".join("+" if value > 0 else "-" for value in differences)
+            entry["signs"][split] = "".join(
+                "?" if value is None else "+" if value > 0 else "-" for value in differences
+            )
         entry["decision"] = report.paired(
             _pooled(mean[name], DECISION), _pooled(mean[control], DECISION)
         )
         entry["ensemble"] = _paired(combined[name], combined[control])
         if offset is not None:
-            entry["operable"] = _paired(free[name], free[control])
-            entry["operable_liquid"] = _paired(liquid[name], liquid[control])
+            one, other = measured_mean[name], measured_mean[control]
+            entry["operable"] = _paired(one["free"], other["free"])
+            entry["operable_liquid"] = _paired(one["liquid"], other["liquid"])
+            # La etiqueta devuelta del modelo frente a la etiqueta tal cual de su control.
+            entry["label_returned"] = _paired(one["returned"], other["known"])
         document["contrasts"][name] = entry
     series = dict(seeds=mean, ensemble=combined)
     if offset is not None:
-        series.update(operable=free, operable_liquid=liquid)
+        series.update(
+            operable={name: per_kind["free"] for name, per_kind in measured_mean.items()},
+            operable_liquid={name: per_kind["liquid"] for name, per_kind in measured_mean.items()},
+        )
     return document, series
 
 
@@ -439,11 +484,14 @@ def _operable_table(document):
         "",
         "IC de la etiqueta sin alfa con la predicción más alfa: lo que se puede operar. El factor",
         "de escala de cada semilla se elige con la calibración. El tercio líquido son las filas",
-        "con más volumen en dólares de cada sesión.",
+        "con más volumen en dólares de cada sesión. La etiqueta devuelta es el IC de la etiqueta",
+        "con factor·(p + alfa) − alfa, lo que conserva de la etiqueta un modelo ajustado para lo",
+        "operable; se compara con la etiqueta tal cual de su control en las filas con alfa.",
         "",
         "| Modelo | Control | IC operable de evaluación | Δ decisión (t) | Δ evaluación (t) "
-        "| Tercio líquido | Δ evaluación en el tercio líquido (t) |",
-        "| --- | --- | --- | --- | --- | --- | --- |",
+        "| Tercio líquido | Δ evaluación en el tercio líquido (t) | Etiqueta devuelta "
+        "| Δ frente a la etiqueta del control (t) |",
+        "| --- | --- | --- | --- | --- | --- | --- | --- | --- |",
     ]
     for name, entry in rows.items():
         model = document["models"][name]
@@ -453,8 +501,25 @@ def _operable_table(document):
             f"| {_difference(entry['operable']['decision'])} "
             f"| {_difference(entry['operable']['evaluation'])} "
             f"| {_number(model['operable_liquid']['evaluation']['mean'])} "
-            f"| {_difference(entry['operable_liquid']['evaluation'])} |"
+            f"| {_difference(entry['operable_liquid']['evaluation'])} "
+            f"| {_number(model['label_returned']['evaluation']['mean'])} "
+            f"| {_difference(entry['label_returned']['evaluation'])} |"
         )
+    edged = sorted(
+        name
+        for name in {*rows, *(entry["control"] for entry in rows.values())}
+        if any(
+            document["models"][name][level].get("factor_at_edge")
+            for level in ("operable", "label_returned")
+        )
+    )
+    if edged:
+        lines += [
+            "",
+            "Factor en el borde de la rejilla (la búsqueda quedó truncada y el valor es una cota): "
+            + ", ".join(edged)
+            + ".",
+        ]
     return lines
 
 

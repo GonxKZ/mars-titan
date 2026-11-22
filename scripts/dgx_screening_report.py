@@ -258,7 +258,29 @@ def implied_sessions(data, alpha, liquidity=None, *, free, prediction=None):
 
 WEIGHTS = tuple(round(0.1 * step, 1) for step in range(11))
 # Factores que se prueban para la predicción de lo operable, k·p + alfa.
-SCALES = (0.01, 0.02, 0.03, 0.05, 0.07, 0.1, 0.15, 0.2, 0.3, 0.5, 0.7, 1.0, 1.5, 2.0, 3.0)
+# Factores de la predicción al medir lo operable. Los de 0,01 a 3 son los de siempre; los de
+# fuera dejan ver cuándo el mejor factor cae en un borde de la rejilla.
+SCALES = (
+    *(0.001, 0.002, 0.005),
+    *(0.01, 0.02, 0.03, 0.05, 0.07, 0.1, 0.15, 0.2, 0.3, 0.5, 0.7, 1.0, 1.5, 2.0, 3.0),
+    *(5.0, 10.0, 30.0, 100.0),
+)
+
+
+def _chosen(scales, sessions):
+    """El factor con más IC medio en calibración. Sin sesiones con alfa conocido no hay factor."""
+
+    def decision(factor):
+        values = [
+            value for split in CALIBRATION_SPLIT for value in sessions(split, factor).values()
+        ]
+        if not values:
+            raise ValueError(
+                "No hay sesiones de calibración con alfa conocido para elegir el factor"
+            )
+        return float(np.mean(values))
+
+    return max(scales, key=decision)
 
 
 def best_scale(splits, alphas, scales=SCALES):
@@ -269,20 +291,30 @@ def best_scale(splits, alphas, scales=SCALES):
     mezclar validación, que tiene sesgo de selección de época), y la evaluación se mide con él.
     """
 
-    def decision(factor):
-        values = [
-            value
-            for split in CALIBRATION_SPLIT
-            for value in implied_sessions(
-                splits[split],
-                alphas[split],
-                free=True,
-                prediction=factor * splits[split]["prediction"],
-            ).values()
-        ]
-        return float(np.mean(values)) if values else -1.0
+    return _chosen(
+        scales,
+        lambda split, factor: implied_sessions(
+            splits[split], alphas[split], free=True, prediction=factor * splits[split]["prediction"]
+        ),
+    )
 
-    return max(scales, key=decision)
+
+def returned_sessions(data, alpha, factor):
+    """IC de la etiqueta por sesión con la predicción de lo operable devuelta a la etiqueta.
+
+    Un modelo ajustado para lo operable ordena la etiqueta sin alfa con su predicción más alfa.
+    Su predicción de la etiqueta es entonces factor·(p + alfa) − alfa. Solo cuentan las filas
+    con alfa conocido.
+    """
+    returned = factor * (data["prediction"] + alpha) - alpha
+    return implied_sessions(data, alpha, free=False, prediction=returned)
+
+
+def best_return_scale(splits, alphas, scales=SCALES):
+    """Factor con más IC de la etiqueta devuelta, estrictamente en calibración."""
+    return _chosen(
+        scales, lambda split, factor: returned_sessions(splits[split], alphas[split], factor)
+    )
 
 
 def dispersion(data, alpha=None):
@@ -716,6 +748,13 @@ def load_split(run, split):
     table = pq.read_table(path, columns=read_cols).sort_by(
         [("market", "ascending"), ("prediction_at", "ascending"), ("sample_id", "ascending")]
     )
+    if table.num_rows == 0:
+        raise ValueError(f"{path}: la emisión no tiene filas")
+    # Un valor no finito recibiría un rango y entraría en el IC como si fuera una predicción.
+    for column in ("target", "prediction"):
+        broken = int((~np.isfinite(table.column(column).to_numpy())).sum())
+        if broken:
+            raise ValueError(f"{path}: {broken} valores de {column} no finitos")
     market = table.column("market").combine_chunks().dictionary_encode()
     codes = market.indices.to_numpy(zero_copy_only=False)
     instant = table.column("prediction_at").cast("int64").to_numpy()

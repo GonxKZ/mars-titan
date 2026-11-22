@@ -483,6 +483,190 @@ def test_the_summary_between_origins_carries_the_operable_return(tmp_path):
     assert "## Entre orígenes: rendimiento operable" in text
 
 
+def known_rows(state, model, seed, split):
+    """Las filas con alfa de una emisión, con el alfa que les da `FakeOffset`."""
+    path = state / "runs" / model / "2013" / f"seed-{seed}" / f"{split}-predictions.parquet"
+    table = pq.read_table(path).to_pandas()
+    table["asset"] = table["sample_id"].str.split("/").str[1].str[1:].astype(int)
+    table["session"] = (table["sample_id"].str.split("/").str[2].astype("int64") - START) // DAY
+    table["alpha"] = 0.8 * np.sin(0.7 * table["asset"] + 0.3 * table["session"])
+    return table[table["asset"] != 0]
+
+
+def label_by_hand(state, model, seed, split, factor=None):
+    """IC de la etiqueta por sesión en las filas con alfa, calculado aparte con pandas.
+
+    Sin factor, con la predicción tal cual. Con él, con la predicción de lo operable devuelta a
+    la etiqueta: factor·(p + alfa) − alfa.
+    """
+    values = {}
+    for instant, rows in known_rows(state, model, seed, split).groupby("prediction_at"):
+        signal = rows["prediction"]
+        if factor is not None:
+            signal = factor * (rows["prediction"] + rows["alpha"]) - rows["alpha"]
+        values[instant] = signal.rank().corr(rows["target"].rank())
+    return values
+
+
+def rewrite_predictions(state, model, change):
+    """Cambia las predicciones emitidas de un modelo con `change(predicción, alfa)`."""
+    for path in (state / "runs" / model).rglob("*.parquet"):
+        table = pq.read_table(path)
+        names = table.column("sample_id").to_pylist()
+        assets = np.array([int(name.split("/")[1][1:]) for name in names])
+        sessions = (np.array([int(name.split("/")[2]) for name in names]) - START) // DAY
+        alpha = 0.8 * np.sin(0.7 * assets + 0.3 * sessions)
+        changed = pa.array(change(table.column("prediction").to_numpy(), alpha))
+        index = table.schema.get_field_index("prediction")
+        pq.write_table(table.set_column(index, "prediction", changed), path)
+
+
+def operable_state(tmp_path, seeds=(42, 43, 44)):
+    """Dos emisiones del mismo ajuste: tal cual, y como predicción de lo operable a otra escala."""
+    state = tmp_path / "state"
+    for seed in seeds:
+        write_model(state, "base", seed, signal=0.5, noise_seed=seed, assets=100)
+        write_model(state, "operable", seed, signal=0.5, noise_seed=seed, assets=100)
+    # 5·(p + alfa) − alfa: ordena lo operable, y con el factor 0,2 se devuelve exacta.
+    rewrite_predictions(
+        state, "operable", lambda prediction, alpha: 5.0 * (prediction + alpha) - alpha
+    )
+    return state
+
+
+def test_a_model_fitted_for_the_operable_return_is_read_back_on_the_label(tmp_path):
+    state = operable_state(tmp_path)
+    report = contrasts.build(state, 2013, [42, 43, 44], {"operable": "base"}, offset=FakeOffset())
+    module = contrasts._report_module()
+    entry = report["models"]["operable"]["label_returned"]
+    assert len(entry["factors"]) == 3
+    per_seed = []
+    for seed, factor in zip((42, 43, 44), entry["factors"], strict=True):
+        # El factor es el que da más IC de la etiqueta en calibración, y solo en ella.
+        calibration = {
+            scale: np.mean(
+                list(label_by_hand(state, "operable", seed, "calibration", scale).values())
+            )
+            for scale in module.SCALES
+        }
+        assert factor == max(module.SCALES, key=calibration.get)
+        per_seed.append(label_by_hand(state, "operable", seed, "evaluation", factor))
+    expected = np.mean([np.mean([one[key] for one in per_seed]) for key in per_seed[0]])
+    assert entry["evaluation"]["sessions"] == 40
+    assert entry["evaluation"]["mean"] == pytest.approx(expected, rel=1e-9)
+    # La etiqueta con la predicción tal cual, en las mismas filas con alfa conocido.
+    known = {}
+    for model in ("base", "operable"):
+        plain = [label_by_hand(state, model, seed, "evaluation") for seed in (42, 43, 44)]
+        known[model] = np.mean([np.mean([one[key] for one in plain]) for key in plain[0]])
+        level = report["models"][model]["label_known"]
+        assert level["evaluation"]["mean"] == pytest.approx(known[model], rel=1e-9)
+        assert "factors" not in level
+    # Devolverla recupera lo que la inclinación hacia el alfa le quita en la etiqueta.
+    assert entry["evaluation"]["mean"] > known["operable"] + 0.01
+    # El contraste: la etiqueta devuelta del modelo frente a la etiqueta tal cual de su control.
+    row = report["contrasts"]["operable"]["label_returned"]
+    assert row["evaluation"]["mean"] == pytest.approx(
+        entry["evaluation"]["mean"] - known["base"], rel=1e-9, abs=1e-12
+    )
+    assert row["evaluation"]["sessions"] == 40 and row["decision"]["sessions"] == 50
+    text = contrasts.markdown(report)
+    assert "Etiqueta devuelta" in text and "frente a la etiqueta del control" in text
+    # Sin el desplazamiento no hay nada que devolver.
+    plain = contrasts.build(state, 2013, [42, 43, 44], {"operable": "base"})
+    assert "label_returned" not in plain["models"]["operable"]
+    assert "label_returned" not in plain["contrasts"]["operable"]
+
+
+def test_reading_back_with_the_exact_factor_recovers_the_prediction_of_the_label(tmp_path):
+    state = operable_state(tmp_path, seeds=(42,))
+    module = contrasts._report_module()
+    provider = FakeOffset()
+    base, tilted = (state / "runs" / name / "2013" / "seed-42" for name in ("base", "operable"))
+    for split in ("calibration", "evaluation"):
+        alpha, _ = provider.rows(base, split)
+        emitted = module.load_split(base, split)
+        plain = module.implied_sessions(
+            emitted, alpha, free=False, prediction=emitted["prediction"]
+        )
+        back = module.returned_sessions(module.load_split(tilted, split), alpha, 0.2)
+        assert back.keys() == plain.keys() and len(back) == SESSIONS[split]
+        assert all(back[key] == pytest.approx(plain[key], abs=1e-9) for key in back)
+        # Con otro factor queda parte del alfa y el IC de la etiqueta baja.
+        worse = module.returned_sessions(module.load_split(tilted, split), alpha, 1.0)
+        assert np.mean(list(worse.values())) < np.mean(list(plain.values())) - 0.01
+
+
+def test_the_factor_needs_calibration_sessions_with_a_known_offset(tmp_path):
+    state = tmp_path / "state"
+    write_model(state, "base", 42, signal=0.5, noise_seed=42, assets=100)
+    module = contrasts._report_module()
+    run = state / "runs" / "base" / "2013" / "seed-42"
+    splits = {split: module.load_split(run, split) for split in contrasts.SPLITS}
+    unknown = {split: np.full(len(splits[split]["target"]), np.nan) for split in contrasts.SPLITS}
+    for choose in (module.best_scale, module.best_return_scale):
+        # Antes devolvía el primer factor de la rejilla sin avisar.
+        with pytest.raises(ValueError, match="calibración"):
+            choose(splits, unknown)
+
+
+def test_the_grid_of_factors_keeps_its_old_points_and_reaches_further():
+    module = contrasts._report_module()
+    old = (0.01, 0.02, 0.03, 0.05, 0.07, 0.1, 0.15, 0.2, 0.3, 0.5, 0.7, 1.0, 1.5, 2.0, 3.0)
+    assert set(old) < set(module.SCALES) and list(module.SCALES) == sorted(module.SCALES)
+    assert min(module.SCALES) <= 0.001 and max(module.SCALES) >= 100.0
+
+
+def test_a_factor_at_the_edge_of_the_grid_is_flagged(tmp_path):
+    state = tmp_path / "state"
+    for seed in (42, 43, 44):
+        write_model(state, "base", seed, signal=0.5, noise_seed=seed, assets=100)
+        write_model(state, "enorme", seed, signal=0.5, noise_seed=seed, assets=100)
+    # Predicciones un millón de veces mayores: el mejor factor queda fuera de la rejilla.
+    rewrite_predictions(state, "enorme", lambda prediction, alpha: 1e6 * prediction)
+    report = contrasts.build(state, 2013, [42, 43, 44], {"enorme": "base"}, offset=FakeOffset())
+    module = contrasts._report_module()
+    assert report["models"]["enorme"]["operable"]["factors"] == [min(module.SCALES)] * 3
+    assert report["models"]["enorme"]["operable"]["factor_at_edge"] is True
+    assert report["models"]["base"]["operable"]["factor_at_edge"] is False
+    assert "factor_at_edge" not in report["models"]["base"]["operable_liquid"]
+    lines = [
+        line for line in contrasts.markdown(report).split("\n") if "borde de la rejilla" in line
+    ]
+    assert len(lines) == 1 and "enorme" in lines[0] and "base" not in lines[0]
+    # Sin ningún factor en el borde no se dice nada.
+    inside = contrasts.build(state, 2013, [42, 43, 44], {"base": "base"}, offset=FakeOffset())
+    assert "borde de la rejilla" not in contrasts.markdown(inside)
+
+
+@pytest.mark.parametrize("column", ["prediction", "target"])
+def test_an_emission_with_a_value_that_is_not_finite_is_refused(tmp_path, column):
+    state = build_state(tmp_path)
+    path = state / "runs" / "mejor" / "2013" / "seed-43" / "evaluation-predictions.parquet"
+    table = pq.read_table(path)
+    values = table.column(column).to_numpy().copy()
+    values[7] = np.nan
+    index = table.schema.get_field_index(column)
+    pq.write_table(table.set_column(index, column, pa.array(values)), path)
+    # Antes un NaN recibía el rango más alto de su sesión y entraba en el IC.
+    with pytest.raises(ValueError, match="no finito"):
+        contrasts.build(state, 2013, [42, 43, 44], {"mejor": "base"})
+
+
+def test_a_universe_too_small_for_any_session_gives_no_numbers(tmp_path):
+    state = tmp_path / "state"
+    for seed in (42, 43, 44):
+        write_model(state, "base", seed, signal=0.3, noise_seed=seed, assets=20)
+        write_model(state, "mejor", seed, signal=0.6, noise_seed=seed, assets=20)
+    # Veinte activos: ninguna sesión llega al mínimo de 30.
+    report = contrasts.build(state, 2013, [42, 43, 44], {"mejor": "base"})
+    level = report["models"]["base"]
+    assert level["evaluation"]["sessions"] == 0 and level["per_seed"]["evaluation"] == [None] * 3
+    row = report["contrasts"]["mejor"]
+    assert row["per_seed"]["evaluation"] == [None] * 3 and row["signs"]["evaluation"] == "???"
+    assert "| mejor | base |" in contrasts.markdown(report)
+
+
 def write_record(state, model, seed, attempts, year=2013):
     queue = state / "queue"
     queue.mkdir(exist_ok=True)
