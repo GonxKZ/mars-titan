@@ -1002,7 +1002,7 @@ def _best(grid, keys):
     return sorted(keys, key=lambda key: (-score(key), key))[0]
 
 
-def memory_study(splits, predictions, keys, section, *, quantiles=None, log=print):
+def memory_study(splits, predictions, keys, section, *, quantiles=None, threads=1, log=print):
     """Memoria por activo, memoria por vecinos y su combinación sobre varios modelos.
 
     `splits` son los tramos de referencia (las filas son las mismas para todos los modelos),
@@ -1040,7 +1040,7 @@ def memory_study(splits, predictions, keys, section, *, quantiles=None, log=prin
     )
     started = time.monotonic()
     reads, placebo_reads = nrm.replay(
-        nrm.NeighbourMemory(config, models=len(models)),
+        nrm.NeighbourMemory(config, models=len(models), threads=threads),
         markets=joined["markets"],
         prediction_at=joined["prediction_at"],
         matures_at=joined["matures_at"],
@@ -1055,7 +1055,9 @@ def memory_study(splits, predictions, keys, section, *, quantiles=None, log=prin
         started = time.monotonic()
         codes = np.unique(joined["assets"], return_inverse=True)[1].astype(np.int64)
         other_reads, other_placebo = nrm.replay(
-            nrm.NeighbourMemory(replace(config, exclude_own=True), models=len(models)),
+            nrm.NeighbourMemory(
+                replace(config, exclude_own=True), models=len(models), threads=threads
+            ),
             markets=joined["markets"],
             prediction_at=joined["prediction_at"],
             matures_at=joined["matures_at"],
@@ -1246,7 +1248,7 @@ def memory_study(splits, predictions, keys, section, *, quantiles=None, log=prin
     return results, table
 
 
-def run_memory_study(study, states, cache, names, output, *, log=print):
+def run_memory_study(study, states, cache, names, output, *, threads=1, log=print):
     """Cargar los modelos de cada ejecución de uno en uno y medir las memorias sobre ellos."""
     output = Path(output)
     output.mkdir(parents=True, exist_ok=True)
@@ -1315,7 +1317,7 @@ def run_memory_study(study, states, cache, names, output, *, log=print):
         del raw
         log(f"claves: {time.monotonic() - started:.0f} s")
         results, table = memory_study(
-            reference, predictions, keys, study, quantiles=quantiles, log=log
+            reference, predictions, keys, study, quantiles=quantiles, threads=threads, log=log
         )
         report = dict(
             kind=f"{STUDY_KIND}_report",
@@ -1537,6 +1539,10 @@ def main(argv=None):
     memories.add_argument(
         "--inputs-names", type=Path, required=True, help="names.json del laboratorio"
     )
+    memories.add_argument(
+        "--threads", type=int, default=1,
+        help="Hilos de la lectura por vecinos (no cambian el resultado)",
+    )
     args = parser.parse_args(argv)
     document = json.loads(args.declaration.read_text(encoding="utf-8"))
     states = _states(args.state)
@@ -1559,7 +1565,10 @@ def main(argv=None):
             "Falta la ruta de algún estado declarado",
         )
         _private_cache(args.digest_cache, states)
-        run_memory_study(study, states, args.inputs_cache, args.inputs_names, args.output, log=log)
+        run_memory_study(
+            study, states, args.inputs_cache, args.inputs_names, args.output,
+            threads=args.threads, log=log,
+        )
     return 0
 
 

@@ -263,6 +263,60 @@ def asset_codes(data, assets):
 EXCLUDING = nrm.NeighbourConfig(window=3, k=7, tau=0.2, clip=3.0, exclude_own=True)
 
 
+@pytest.mark.parametrize("exclude_own", [False, True])
+def test_ties_at_the_kth_neighbour_go_to_the_oldest_rows_as_in_the_stable_lab_order(exclude_own):
+    data = panel(sessions=6, assets=30, seed=4)
+    # Claves canónicas: los cosenos valen 0 o 1 exactos y cada consulta empata con decenas de
+    # filas del banco (las de los activos que comparten su clave), más de las k que lee.
+    keys = np.zeros_like(data["keys"])
+    keys[np.arange(len(keys)), np.arange(len(keys)) % 3] = 1.0
+    data["keys"] = keys
+    config = EXCLUDING if exclude_own else CONFIG
+    options = dict(assets=asset_codes(data, 30)) if exclude_own else {}
+    reads, _, _ = run(data, config, **options)
+    expected = lab_reference(data, config, 30, exclude_own=exclude_own)
+    np.testing.assert_allclose(reads, expected, rtol=0, atol=2e-5)
+
+
+@pytest.mark.parametrize(
+    ("size", "k", "levels"),
+    [(10, 7, None), (600, 256, None), (1003, 7, None), (1003, 7, 3), (5000, 256, 4)],
+)
+def test_the_selection_of_neighbours_is_exactly_the_stable_order_of_the_lab(size, k, levels):
+    rng = np.random.default_rng(size + k)
+    sims = rng.normal(size=(6, size)).astype(np.float32)
+    if levels is not None:
+        # Pocos valores distintos: empates en el k-ésimo coseno.
+        sims = np.round(sims * levels / 3).astype(np.float32)
+    sims[1, : size // 2] = -np.inf  # filas del propio activo excluidas
+    sims[2, : size - 3] = -np.inf  # menos de k candidatas finitas
+    expected = np.argsort(-sims, axis=1, kind="stable")[:, :k]
+    np.testing.assert_array_equal(nrm._top(sims, k), expected)
+
+
+@pytest.mark.parametrize("exclude_own", [False, True])
+def test_reads_do_not_depend_on_the_number_of_reading_threads(exclude_own):
+    # 300 activos: tres bloques de consultas por cohorte, que se reparten entre los hilos.
+    data = panel(sessions=6, assets=300, seed=8)
+    config = EXCLUDING if exclude_own else CONFIG
+    options = dict(assets=asset_codes(data, 300)) if exclude_own else {}
+    single, single_placebo, plain = run(data, config, placebo_seed=4, **options)
+    memory = nrm.NeighbourMemory(config, models=2, threads=3)
+    threaded, threaded_placebo = nrm.replay(memory, **data, placebo_seed=4, **options)
+    np.testing.assert_array_equal(threaded, single)
+    np.testing.assert_array_equal(threaded_placebo, single_placebo)
+    # Los hilos no forman parte del estado.
+    assert memory.export()["state_sha256"] == plain.export()["state_sha256"]
+
+
+def test_the_reading_threads_are_a_small_positive_integer():
+    for threads in (0, 1.5, True, nrm.MAX_THREADS + 1):
+        with pytest.raises(ValueError, match="hilos"):
+            nrm.NeighbourMemory(CONFIG, models=2, threads=threads)
+    saved = nrm.NeighbourMemory(CONFIG, models=2).export()
+    assert nrm.NeighbourMemory.restore(saved, threads=2).threads == 2
+
+
 def test_excluding_the_own_asset_reads_only_the_rows_of_other_assets():
     data = panel(sessions=8, assets=30, seed=11)
     reads, placebo, _ = run(data, EXCLUDING, assets=asset_codes(data, 30), placebo_seed=2)

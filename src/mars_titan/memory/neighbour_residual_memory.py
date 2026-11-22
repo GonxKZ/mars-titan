@@ -12,8 +12,9 @@ Para una cohorte (mercado g, instante de decisión t) con n filas y M modelos:
   en t, con su clave y su valor v_jm = recorte_c(E_jm), donde E = G − (z_m·G/n) z_m es el residuo
   de los rangos gaussianos centrados de la etiqueta frente a la predicción tipificada que emitió
   el modelo m en esa cohorte (la misma definición que la memoria por activo);
-- lectura: N_k(i) = los k vecinos de mayor coseno q_i·q_j en B_t, w_ij = softmax_j(q_i·q_j / τ)
-  sobre N_k(i) y r_im = Σ_j w_ij v_jm; con el banco vacío r = 0;
+- lectura: N_k(i) = los k vecinos de mayor coseno q_i·q_j en B_t (a igual coseno, primero la fila
+  más antigua del banco), w_ij = softmax_j(q_i·q_j / τ) sobre N_k(i) y r_im = Σ_j w_ij v_jm,
+  sumada de mayor a menor coseno; con el banco vacío r = 0;
 - placebo: la misma lectura con los valores del banco permutados entre sus filas, con una
   permutación propia de cada cohorte derivada de la semilla declarada, del mercado y del instante.
 
@@ -32,6 +33,7 @@ from __future__ import annotations
 import hashlib
 import json
 import math
+from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
 
 import numpy as np
@@ -40,13 +42,42 @@ from mars_titan.environments.cohorts import FINAL_TEST_START_US
 from mars_titan.memory import asset_residual_memory as arm
 
 KIND = "neighbour_residual_memory"
-METHOD = "cosine_topk_softmax_matured_rank_residual_v1"
+# v2: los empates en el k-ésimo coseno van a la fila más antigua del banco y la suma ponderada
+# sigue el orden de la definición (v1 dejaba ambos al orden interno de np.argpartition).
+METHOD = "cosine_topk_softmax_matured_rank_residual_v2"
 SCHEMA_VERSION = 1
 MAX_WINDOW = 512
 MAX_K = 4096
 MAX_MODELS = 64
 MAX_PENDING = 64
 CHUNK = 128
+MAX_THREADS = 16
+
+
+def _top(sims, k):
+    """Posiciones de las k mayores similitudes de cada fila, en el orden estable del laboratorio.
+
+    El orden es el de `np.argsort(-sims, kind="stable")[:, :k]`: de mayor a menor coseno y, a
+    igual coseno, primero la fila más antigua del banco. Es exacto sin ordenar la fila entera: el
+    k-ésimo mayor de los máximos de bloques consecutivos es una cota inferior del k-ésimo mayor
+    valor de la fila (al menos k bloques tienen un elemento que la alcanza), así que las filas que
+    la alcanzan contienen a las k mayores. Con unos 2k bloques quedan del orden de 1,4k
+    candidatas por fila, que se ordenan; el resultado no depende del tamaño de los bloques.
+    """
+    rows, size = sims.shape
+    width = max(1, size // (2 * k))
+    whole = size // width * width
+    maxima = sims[:, :whole].reshape(rows, whole // width, width).max(axis=2)
+    if whole < size:
+        maxima = np.concatenate([maxima, sims[:, whole:].max(axis=1, keepdims=True)], axis=1)
+    blocks = maxima.shape[1]
+    low = np.partition(maxima, blocks - k, axis=1)[:, blocks - k]
+    row, column = np.nonzero(sims >= low[:, None])
+    counts = np.bincount(row, minlength=rows)
+    _require(bool(np.all(counts >= k)), "La cota de los k vecinos dejó una fila sin k candidatas")
+    order = np.lexsort((column, -sims[row, column], row))
+    first = np.concatenate([[0], np.cumsum(counts)[:-1]])
+    return column[order][first[:, None] + np.arange(k)]
 
 
 def _require(condition, message):
@@ -151,14 +182,21 @@ class _Market:
 class NeighbourMemory:
     """Banco causal por mercado y lectura por vecinos para M modelos a la vez."""
 
-    def __init__(self, config, models):
+    def __init__(self, config, models, *, threads=1):
         _require(isinstance(config, NeighbourConfig), "La configuración es NeighbourConfig")
         _require(
             type(models) is int and 1 <= models <= MAX_MODELS,
             f"El número de modelos es un entero entre 1 y {MAX_MODELS}",
         )
+        # Los hilos reparten los bloques de consultas de una cohorte; no cambian el resultado ni
+        # forman parte del estado.
+        _require(
+            type(threads) is int and 1 <= threads <= MAX_THREADS,
+            f"Los hilos de la lectura son un entero entre 1 y {MAX_THREADS}",
+        )
         self.config = config
         self.models = models
+        self.threads = threads
         self._markets = {}
 
     def _market(self, market, create=False):
@@ -190,12 +228,13 @@ class NeighbourMemory:
         size = len(bank_keys)
         k = min(self.config.k, size)
         tau = float(self.config.tau)
-        for start in range(0, rows, CHUNK):
+
+        def read(start):
             sims = keys[start : start + CHUNK] @ bank_keys.T
             if bank_assets is not None:
                 sims[assets[start : start + CHUNK, None] == bank_assets[None, :]] = -np.inf
             if k < size:
-                index = np.argpartition(-sims, k - 1, axis=1)[:, :k]
+                index = _top(sims, k)
             else:
                 index = np.broadcast_to(np.arange(size), sims.shape)
             top = np.take_along_axis(sims, index, axis=1).astype(np.float64)
@@ -215,6 +254,17 @@ class NeighbourMemory:
             reads[start : start + CHUNK] = np.einsum("ik,ikm->im", weights, values[index])
             if shuffled is not None:
                 placebo[start : start + CHUNK] = np.einsum("ik,ikm->im", weights, shuffled[index])
+
+        starts = range(0, rows, CHUNK)
+        if self.threads == 1 or len(starts) == 1:
+            for start in starts:
+                read(start)
+        else:
+            # Cada bloque escribe solo sus filas y no depende de los demás, así que el resultado
+            # es el mismo con cualquier número de hilos (NumPy suelta el GIL en el trabajo pesado).
+            with ThreadPoolExecutor(min(self.threads, len(starts))) as pool:
+                for _ in pool.map(read, starts):
+                    pass
         return reads, placebo
 
     def emit(
@@ -370,7 +420,7 @@ class NeighbourMemory:
         return payload
 
     @classmethod
-    def restore(cls, payload):
+    def restore(cls, payload, *, threads=1):
         """Reconstruir la memoria tras validar sus campos y su huella."""
         _require(
             isinstance(payload, dict)
@@ -385,7 +435,7 @@ class NeighbourMemory:
             _state_sha256(payload) == payload["state_sha256"],
             "El estado exportado no coincide con su huella",
         )
-        memory = cls(NeighbourConfig(**payload["config"]), payload["models"])
+        memory = cls(NeighbourConfig(**payload["config"]), payload["models"], threads=threads)
         for name, saved in payload["markets"].items():
             state = memory._market(name, create=True)
             state.clock, state.matured = saved["clock"], saved["matured"]

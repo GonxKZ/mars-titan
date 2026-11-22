@@ -319,6 +319,23 @@ def test_the_memory_study_finds_both_planted_effects_and_their_placebos_do_not()
     assert set(table.column_names) == {"model", "split", "market", "instant", "variant", "value"}
 
 
+def test_the_memory_study_does_not_depend_on_its_reading_threads():
+    # 300 activos por sesión: varios bloques de consultas en cada cohorte.
+    splits, predictions, keys = study_data(seed=5, assets=300)
+    section = study_section(addendum=ADDENDUM)
+    quantiles = study_quantiles(predictions)
+    outcomes = [
+        pilots.memory_study(
+            splits, predictions, keys, section, quantiles=quantiles, threads=threads,
+            log=lambda _: None,
+        )
+        for threads in (1, 3)
+    ]
+    (single, single_table), (threaded, threaded_table) = outcomes
+    assert json.dumps(threaded, sort_keys=True) == json.dumps(single, sort_keys=True)
+    assert threaded_table.equals(single_table)
+
+
 def test_the_memory_study_chooses_without_reading_the_evaluation():
     splits, predictions, keys = study_data(seed=1)
     section = study_section()
