@@ -921,3 +921,83 @@ def test_the_extension_of_v10_changes_one_recipe_field_per_model():
     assert set(declared.values()) == {"titans_mac"}
     jobs = campaign.plan(document, "mars_titan")
     assert len({job.model for job in jobs if job.tier.startswith("x1_")}) == 7
+
+
+def test_the_first_screen_of_the_new_base_changes_one_recipe_field_per_model():
+    path = ROOT / "configs/experiments/us-campaign-v11-screen1.json"
+    source = ROOT / "configs/experiments/dgx-us-campaign-v10.json"
+    document, previous = campaign.load_declaration(path)[0], json.loads(source.read_text())
+    own = {"description", "source_declaration_sha256", "models", "tiers", "recipes"}
+    assert set(document) == set(previous)
+    for key in set(previous) - own:
+        assert document[key] == previous[key], key
+    assert document["source_declaration_sha256"] == hashlib.sha256(source.read_bytes()).hexdigest()
+    tiers = ["core", "controls", "y1_norm", "y1_clip", "y1_recency", "y1_scale", "y1_speed"]
+    assert document["tiers"] == tiers
+    # El núcleo y sus controles son los de la v10, campo a campo: la base nueva los reproduce.
+    cores = ("titans_mac", "titans_mac_frozen", "titans_mac_disabled")
+    for model in cores:
+        assert document["models"][model] == previous["models"][model]
+    assert document["recipes"]["core"] == previous["recipes"]["core"]
+
+    def changed(left, right):
+        one, two = flat_specification(document, left), flat_specification(document, right)
+        keys = (one.keys() | two.keys()) - {"predictor_changes"}
+        return {key for key in keys if one.get(key) != two.get(key)}
+
+    base = flat_specification(document, "titans_mac")
+    branch, scale = base["predictor.technical_branch"], base["predictor.learning_scale"]
+    assert base["recipe.max_grad_norm"] == 1.0 and base["recipe.accumulation_rows"] == 8192
+    expected = {
+        "titans_mac_ln": (
+            "titans_mac",
+            "y1_norm",
+            "predictor.technical_branch",
+            {**branch, "layer_norm": True},
+        ),
+        "titans_mac_cliprole": ("titans_mac", "y1_clip", "recipe.grad_clip_by_role", True),
+        "titans_mac_clip10": ("titans_mac", "y1_clip", "recipe.max_grad_norm", 10.0),
+        "titans_mac_rec5": ("titans_mac", "y1_recency", "recipe.recency_half_life_years", 5.0),
+        "titans_mac_rec10": ("titans_mac", "y1_recency", "recipe.recency_half_life_years", 10.0),
+        "titans_mac_smooth": (
+            "titans_mac",
+            "y1_scale",
+            "predictor.learning_scale",
+            {**scale, "smooth_clip": True},
+        ),
+        "titans_mac_fscale": (
+            "titans_mac",
+            "y1_scale",
+            "predictor.technical_branch",
+            {**branch, "feature_scaling": True},
+        ),
+        "titans_mac_nograph": ("titans_mac", "y1_speed", "recipe.observe_without_graph", True),
+        "titans_mac_frozen_nograph": (
+            "titans_mac_frozen",
+            "y1_speed",
+            "recipe.observe_without_graph",
+            True,
+        ),
+        "titans_mac_disabled_nograph": (
+            "titans_mac_disabled",
+            "y1_speed",
+            "recipe.observe_without_graph",
+            True,
+        ),
+    }
+    assert set(document["models"]) == set(cores) | set(expected)
+    for model, (parent, tier, field, value) in expected.items():
+        entry = document["models"][model]
+        assert entry == {**previous["models"][parent], "recipe": entry["recipe"], "tier": tier}
+        assert changed(model, parent) == {field}, model
+        assert flat_specification(document, model)[field] == value
+        # La receta de cada variante se construye con el código de esta rama.
+        ChronologicalRecipe(**_recipe(document, model))
+    declared = json.loads(
+        (ROOT / "configs/experiments/us-campaign-v11-screen1-contrasts.json").read_text()
+    )["controls"]
+    controls = {model: parent for model, (parent, *_rest) in expected.items()}
+    controls.update(titans_mac_frozen="titans_mac", titans_mac_disabled="titans_mac")
+    assert declared == controls
+    jobs = campaign.plan(document, "mars_titan")
+    assert len({job.model for job in jobs if job.tier.startswith("y1_")}) == 10

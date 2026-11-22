@@ -61,7 +61,7 @@ from dataclasses import dataclass
 import torch
 from torch import nn
 
-from .config import bounded_integer, require_identity
+from .config import LAYER_NORM_EPS, bounded_integer, require_identity
 from .session_ranks import gaussian_ranks
 from .state import check_finite
 
@@ -111,6 +111,10 @@ class TechnicalDenseConfig:
     depth: int = 2
     # Añadir a cada rasgo la puntuación normal de su rango entre las filas de su sesión.
     session_ranks: bool = False
+    # Aplicar LayerNorm antes de SiLU en cada capa oculta (desactivado por defecto).
+    layer_norm: bool = False
+    # Multiplicar cada entrada de la red por una escala aprendida que empieza en uno.
+    feature_scaling: bool = False
 
     def __post_init__(self):
         bounded_integer(self.columns, "columnas de la rama técnica", 1, 512)
@@ -118,6 +122,12 @@ class TechnicalDenseConfig:
         bounded_integer(self.depth, "capas ocultas de la rama técnica", 1, 8)
         if type(self.session_ranks) is not bool:
             raise ValueError("session_ranks de la rama técnica debe ser un booleano")
+        if type(self.layer_norm) is not bool:
+            raise ValueError("layer_norm de la rama técnica debe ser un booleano")
+        if type(self.feature_scaling) is not bool:
+            raise ValueError("feature_scaling de la rama técnica debe ser un booleano")
+        if self.layer_norm and self.hidden < 2:
+            raise ValueError("LayerNorm en la rama técnica necesita hidden >= 2")
 
     def identity(self):
         result = dict(
@@ -141,6 +151,17 @@ class TechnicalDenseConfig:
                 session="rows_of_one_market_and_decision_instant_in_one_complete_block",
                 normal_scores="inverse_normal_of_average_rank_minus_half_over_the_rows",
             )
+        # Sin LayerNorm se conserva literalmente la identidad anterior.
+        if self.layer_norm:
+            result.update(
+                layer_norm=True,
+                normalization="layer_norm_before_silu_on_each_hidden_layer",
+                layer_norm_eps=LAYER_NORM_EPS,
+                layer_norm_affine=True,
+            )
+        # Sin la escala por entrada se conserva literalmente la identidad anterior.
+        if self.feature_scaling:
+            result["feature_scaling"] = "learned_scale_per_input_initialized_at_one_v1"
         return result
 
 
@@ -153,14 +174,18 @@ def parse_technical_branch(raw):
         return raw
     if isinstance(raw, dict) and set(raw) == {"columns", "bins", "embedding", "hidden"}:
         return TechnicalBranchConfig(**raw)
-    if isinstance(raw, dict) and set(raw) in (
-        {"columns", "hidden", "depth"},
-        {"columns", "hidden", "depth", "session_ranks"},
-    ):
+    if isinstance(raw, dict) and {"columns", "hidden", "depth"} <= set(raw) <= {
+        "columns",
+        "hidden",
+        "depth",
+        "session_ranks",
+        "layer_norm",
+        "feature_scaling",
+    }:
         return TechnicalDenseConfig(**raw)
     raise ValueError(
         "technical_branch debe declarar columns, bins, embedding y hidden, o columns, hidden y "
-        "depth (y session_ranks), o ser None"
+        "depth (y opcionalmente session_ranks, layer_norm y feature_scaling), o ser None"
     )
 
 
@@ -281,6 +306,19 @@ class TechnicalDense(nn.Module):
         with torch.no_grad():
             self.outer.weight.zero_()
             self.outer.bias.zero_()
+        # LayerNorm se construye fuera del generador derivado (pesos 1, sesgo 0, sin consumo RNG).
+        self.norms = (
+            nn.ModuleList(
+                nn.LayerNorm(config.hidden, eps=LAYER_NORM_EPS, dtype=dtype)
+                for _ in range(config.depth)
+            )
+            if config.layer_norm
+            else None
+        )
+        # La escala por entrada empieza en uno: la rama calcula lo mismo hasta que se ajusta.
+        self.input_scale = (
+            nn.Parameter(torch.ones(first, dtype=dtype)) if config.feature_scaling else None
+        )
 
     def get_extra_state(self):
         return dict(
@@ -324,12 +362,20 @@ class TechnicalDense(nn.Module):
             or charts.dtype != self.outer.weight.dtype
         ):
             raise ValueError("La rama técnica necesita el bloque del gráfico con sus columnas")
+        if bool(config.layer_norm) != (self.norms is not None):
+            raise ValueError("La normalización de la rama técnica no coincide con su configuración")
         hidden = charts[:, charts.shape[1] - config.columns :]
         if config.session_ranks:
             # Los rangos no llevan gradiente hacia las entradas: son una función a trozos constante.
             hidden = torch.cat((hidden, self.ranks(hidden.detach(), markets)), dim=1)
-        for layer in self.layers:
-            hidden = nn.functional.silu(layer(hidden))
+        if self.input_scale is not None:
+            hidden = hidden * self.input_scale
+        if self.norms is not None:
+            for layer, norm in zip(self.layers, self.norms, strict=True):
+                hidden = nn.functional.silu(norm(layer(hidden)))
+        else:
+            for layer in self.layers:
+                hidden = nn.functional.silu(layer(hidden))
         residual = self.outer(hidden)
         check_finite(residual, "El residuo de la rama técnica")
         return residual

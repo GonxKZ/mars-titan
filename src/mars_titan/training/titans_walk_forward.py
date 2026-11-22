@@ -924,7 +924,7 @@ def carry_titans(
     _verify(anchor, report)
     identity = report["identity"]
     document, request = identity["recipe"], identity["request"]
-    options = walk_forward_options(document)
+    options = walk_forward_options(document, bounded_fit=True)
     # El recorrido congelado usa el truncamiento y los bloques del caso elegido en el ancla.
     chronological = case_recipe(document, request.get("search_case"))
     anchor_manifest, _ = read_manifest(anchor_view, 64 * 1024**2)

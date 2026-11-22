@@ -85,6 +85,7 @@ def _index(directory):
     if (
         not isinstance(index, dict)
         or set(index) != {"schema_version", "latest", "best", "pinned"}
+        or type(index["schema_version"]) is not int
         or index["schema_version"] != 1
         or not isinstance(index["latest"], list)
         or not 1 <= len(index["latest"]) <= 2
@@ -166,6 +167,7 @@ def _read_payload(path, identity, step):
         raise ValueError("El estado no admite una carga restringida íntegra") from error
     if (
         not isinstance(payload, dict)
+        or type(payload.get("schema_version")) is not int
         or payload.get("schema_version") != 1
         or payload.get("identity") != identity
         or not isinstance(payload.get("state"), dict)
@@ -248,14 +250,14 @@ def save_training_state(
                 size=size,
                 global_step=state["global_step"],
             )
+            if pin and record not in index["pinned"] and len(index["pinned"]) >= 64:
+                raise ValueError("Se ha alcanzado el límite de estados referenciados")
             destination = directory / record["name"]
             os.replace(pending, destination)
             index["latest"] = [record] + [r for r in previous if r["name"] != record["name"]][:1]
             if best:
                 index["best"] = record
             if pin and record not in index["pinned"]:
-                if len(index["pinned"]) >= 64:
-                    raise ValueError("Se ha alcanzado el límite de estados referenciados")
                 index["pinned"].append(record)
             atomic_json(directory / "latest.json", index)
             keep = {r["name"] for r in index["latest"] + index["pinned"]}

@@ -1,0 +1,26 @@
+{
+  "schema_version": 1,
+  "kind": "dgx_campaign_contrasts",
+  "description": "Control de cada modelo de la primera criba de la base nueva para el contraste pareado: cada variante se compara con el modelo del que solo la separa un campo de la receta.",
+  "controls": {
+    "titans_mac_frozen": "titans_mac",
+    "titans_mac_disabled": "titans_mac",
+    "titans_mac_ln": "titans_mac",
+    "titans_mac_cliprole": "titans_mac",
+    "titans_mac_clip10": "titans_mac",
+    "titans_mac_rec5": "titans_mac",
+    "titans_mac_rec10": "titans_mac",
+    "titans_mac_smooth": "titans_mac",
+    "titans_mac_fscale": "titans_mac",
+    "titans_mac_nograph": "titans_mac",
+    "titans_mac_frozen_nograph": "titans_mac_frozen",
+    "titans_mac_disabled_nograph": "titans_mac_disabled"
+  },
+  "always_kept": [
+    "titans_mac_macro",
+    "titans_mac_no_charts",
+    "titans_mac_no_macro",
+    "titans_mac_no_news",
+    "titans_mac_no_fundamentals"
+  ]
+}

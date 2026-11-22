@@ -363,3 +363,76 @@ def test_statistics_travel_in_the_state_of_the_scaler():
     assert bool(twin.fitted)
     for name, value in module(tensors, presence).items():
         assert torch.equal(value, twin(tensors, presence)[name])
+
+
+def smooth_scaler(clip=2.0):
+    config = LearningScale(clip=clip, smooth_clip=True)
+    inputs, presence, targets = fit_rows()
+    module = LearningScaler(config, DIMENSIONS, dtype=torch.float64)
+    module.load(fit_statistics(config, inputs, presence, targets))
+    tensors = {name: torch.tensor(value, dtype=torch.float64) for name, value in inputs.items()}
+    return module, tensors, torch.tensor(presence)
+
+
+def test_the_smooth_clip_is_declared_only_when_it_is_on():
+    assert "clip_shape" not in LearningScale().identity()
+    assert LearningScale(smooth_clip=False).identity() == LearningScale().identity()
+    identity = LearningScale(smooth_clip=True).identity()
+    assert identity["clip_shape"] == "z_over_sqrt_of_one_plus_z_over_clip_squared_v1"
+    assert {k: v for k, v in identity.items() if k != "clip_shape"} == LearningScale().identity()
+    for value in (1, None, "true"):
+        with pytest.raises(ValueError, match="clip entre 1 y 100"):
+            LearningScale(smooth_clip=value)
+    declared = dict(clip=5.0, price_returns=True, zero_median=True)
+    assert parse_learning_scale(declared) == LearningScale()
+    assert parse_learning_scale({**declared, "smooth_clip": True}) == LearningScale(
+        smooth_clip=True
+    )
+    for value in ({"smooth_clip": True}, {**declared, "smooth_clip": True, "extra": 1}):
+        with pytest.raises(ValueError, match="clip, price_returns y zero_median"):
+            parse_learning_scale(value)
+
+
+def test_the_smooth_clip_follows_its_formula_keeps_the_order_and_stays_inside_the_bound():
+    module, tensors, presence = smooth_scaler(clip=2.0)
+    grid = torch.linspace(-60.0, 60.0, len(tensors["charts"]), dtype=torch.float64)
+    # Filas cuya escala robusta es exactamente la rejilla, de muy dentro a muy fuera del recorte.
+    drifted = {name: value.clone() for name, value in tensors.items()}
+    drifted["charts"] = module.charts_center + grid.unsqueeze(1) / module.charts_inverse
+    result = module(drifted, presence)["charts"]
+    expected = (grid / torch.sqrt(1 + (grid / 2.0) ** 2)).unsqueeze(1).expand_as(result)
+    torch.testing.assert_close(result, expected, rtol=1e-9, atol=1e-12)
+    assert (result[1:] > result[:-1]).all() and float(result.abs().max()) < 2.0
+    # El recorte duro empata todas las filas lejanas, que el suave sigue ordenando.
+    hard, statistics, _, _ = scaler(LearningScale(clip=2.0))
+    hard.load(statistics)
+    clipped = hard(drifted, presence)["charts"]
+    assert int((clipped[1:] == clipped[:-1]).all(dim=1).sum()) > len(grid) // 2
+
+
+def test_the_smooth_clip_stays_close_to_the_hard_one_near_the_centre_and_keeps_absences():
+    module, tensors, presence = smooth_scaler(clip=5.0)
+    hard, statistics, _, _ = scaler(LearningScale(clip=5.0))
+    hard.load(statistics)
+    soft, clipped = module(tensors, presence), hard(tensors, presence)
+    for name in MODALITIES:
+        inside = clipped[name].abs() < 5.0
+        difference = (soft[name] - clipped[name]).abs()[inside]
+        # z / sqrt(1 + (z / c)^2) se separa de z en menos de |z|^3 / (2 c^2).
+        assert (difference <= clipped[name].abs()[inside] ** 3 / 50 + 1e-12).all(), name
+        assert torch.equal(soft[name] == 0, clipped[name] == 0), name
+    assert torch.equal(
+        soft["news"][~presence[:, 1]], torch.zeros_like(soft["news"][~presence[:, 1]])
+    )
+
+
+def test_the_smooth_clip_saturates_at_the_bound_for_values_that_would_overflow_the_square():
+    module, tensors, presence = smooth_scaler(clip=2.0)
+    module = module.to(torch.float32)
+    drifted = {name: value.to(torch.float32).clone() for name, value in tensors.items()}
+    drifted["charts"] = torch.full_like(drifted["charts"], 1e30)
+    drifted["charts"][::2] = -1e30
+    result = module(drifted, presence)["charts"]
+    assert torch.isfinite(result).all()
+    torch.testing.assert_close(result.abs(), torch.full_like(result, 2.0), rtol=1e-6, atol=0)
+    assert (result[::2] < 0).all() and (result[1::2] > 0).all()

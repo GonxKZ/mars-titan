@@ -89,18 +89,29 @@ class ShadowWeights:
     def load_state_dict(self, state):
         if (
             type(state) is not dict
+            or type(state.get("schema_version")) is not int
             or state.get("schema_version") != 1
             or state.get("configuration") != self.config.identity()
             or state.get("names") != self.names
             or type(state.get("updates")) is not int
             or state["updates"] < 0
-            or len(state.get("shadow", ())) != len(self.shadow)
+            or not isinstance(state.get("shadow"), (list, tuple))
+            or len(state["shadow"]) != len(self.shadow)
         ):
             raise ValueError("Las sombras guardadas no corresponden a este ajuste")
         for target, value in zip(self.shadow, state["shadow"], strict=True):
-            if value.shape != target.shape or value.dtype != target.dtype:
+            if (
+                not isinstance(value, torch.Tensor)
+                or value.layout != torch.strided
+                or value.shape != target.shape
+                or value.dtype != target.dtype
+            ):
                 raise ValueError("Una sombra guardada no conserva su forma o su tipo")
-            target.copy_(value)
+            if not torch.isfinite(value).all():
+                raise ValueError("Una sombra guardada contiene valores no finitos")
+        with torch.no_grad():
+            for target, value in zip(self.shadow, state["shadow"], strict=True):
+                target.copy_(value)
         self.updates = state["updates"]
 
 

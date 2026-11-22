@@ -9,7 +9,8 @@ from pathlib import Path
 
 import torch
 
-from mars_titan.models.quantile_head import QuantileHead
+from mars_titan.models.learning_scale import LearningScaler
+from mars_titan.models.quantile_head import QuantileHead, ScaledLinear
 from mars_titan.models.quantile_routing import QuantileRouting
 
 from .bank_readout import BankReadout
@@ -93,6 +94,10 @@ def declared_sources(config):
         sources.append("mars_titan.models.titans.technical_branch")
     if getattr(config, "cross_asset_attention", None) is not None:
         sources.append("mars_titan.models.titans.cross_asset_attention")
+    if getattr(config, "learning_scale", None) is not None:
+        sources.append("mars_titan.models.learning_scale")
+    if getattr(config, "reference_encoder", None) == "dlinear":
+        sources.append("mars_titan.models.baselines.dlinear")
     return tuple(sources)
 
 
@@ -142,6 +147,10 @@ def _module_settings(module):
             settings["quantile_routing"] = module.routing.identity()
         if isinstance(module, QuantileHead) and module.median_gain is not None:
             settings["median_gain"] = "learned_median_gain_v1"
+        if isinstance(module, QuantileHead) and module.scaled:
+            settings["scaled"] = True
+        elif isinstance(module, ScaledLinear):
+            settings["scaled"] = True
     elif isinstance(module, nn.LayerNorm):
         fields = ("normalized_shape", "eps", "elementwise_affine")
         settings["bias"] = module.bias is not None
@@ -208,6 +217,8 @@ def _module_settings(module):
         settings["bank_readout"] = module.config.identity()
     elif type(module) is SharedEvidenceBridge:
         settings["evidence_bridge"] = module.config.identity()
+    elif type(module) is LearningScaler:
+        settings["learning_scale"] = module.config.identity()
     elif type(module).__module__ in _KRON_MODULES:
         settings["kronlstm"] = module.configuration
     settings.update((name, getattr(module, name)) for name in fields)

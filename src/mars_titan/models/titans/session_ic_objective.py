@@ -39,7 +39,7 @@ from torch import nn
 from torch.nn import functional
 
 from .session_ranks import gaussian_ranks
-from .state import require_finite
+from .state import require_finite, require_true
 
 SESSION_IC_OBJECTIVE = "session_ic_objective_v1"
 SESSION_IC_TERM = "session_ic_term_v1"
@@ -236,13 +236,21 @@ def weighted_standardized(values, weights):
     """Como `standardized`, con la media y la dispersión ponderadas. Los pesos suman uno."""
     if (
         not isinstance(values, torch.Tensor)
+        or not isinstance(weights, torch.Tensor)
         or values.ndim != 1
         or values.numel() == 0
         or values.dtype not in (torch.float32, torch.float64)
         or weights.shape != values.shape
+        or weights.dtype != values.dtype
+        or weights.device != values.device
     ):
         raise ValueError("La normalización ponderada necesita un peso por valor en FP32 o FP64")
     require_finite(values, "Las puntuaciones de la sesión deben ser finitas")
+    require_finite(weights, "Los pesos de la sesión deben ser finitos")
+    require_true(
+        (weights >= 0).all() & (weights.sum() > 0),
+        "Los pesos de la sesión deben ser no negativos y sumar positivo",
+    )
     epsilon = torch.finfo(values.dtype).eps
     maximum = values.detach().abs().amax().clamp_min(epsilon)
     _, exponent = torch.frexp(maximum)

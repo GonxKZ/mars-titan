@@ -461,6 +461,10 @@ class MarsTitanInference:
         config = predictor.config
         if not reads_scalar_point(predictor.output_objective):
             raise ValueError("El lector necesita una integración propia del objetivo de salida")
+        if predictor.regional_execution is not None:
+            raise ValueError("El lector aún no admite el programa regional")
+        if predictor.reliability_gates is not None:
+            raise ValueError("El lector aún no recibe la fiabilidad madura")
         self.uses_context = config.session_context is not None
         self._check_parent(predictor)
         if torch.backends.mha.get_fastpath_enabled() or torch.is_inference_mode_enabled():

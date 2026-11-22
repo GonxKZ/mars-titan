@@ -247,3 +247,67 @@ def test_flows_born_in_the_segment_send_gradient_to_the_initial_fast_weights(tmp
                 assert left[key] is None, key
             else:
                 torch.testing.assert_close(left[key], value, rtol=1e-10, atol=1e-13)
+
+
+def test_emitting_without_graph_is_declared_and_needs_the_replay():
+    assert "emission" not in ChronologicalRecipe().identity()
+    assert "emission" not in ChronologicalRecipe(accumulation_rows=64).identity()
+    identity = ChronologicalRecipe(accumulation_rows=64, observe_without_graph=True).identity()
+    assert identity["emission"] == "without_graph_when_the_segment_is_replayed_v1"
+    assert "observe_without_graph" not in identity
+    assert "observe_without_graph" not in ChronologicalRecipe(accumulation_rows=64).identity()
+    with pytest.raises(ValueError, match="observe_without_graph"):
+        ChronologicalRecipe(observe_without_graph=True)
+    for value in (1, "true", None):
+        with pytest.raises(ValueError, match="observe_without_graph"):
+            ChronologicalRecipe(accumulation_rows=64, observe_without_graph=value)
+
+
+@pytest.mark.parametrize("head", [SCALAR_HEAD, QUANTILE_HEAD])
+@pytest.mark.parametrize("variant", VARIANTS)
+def test_emitting_without_graph_keeps_predictions_and_gradients_bit_for_bit(
+    shared,  # noqa: F811
+    tmp_path,
+    monkeypatch,
+    variant,
+    head,
+):
+    _, streams = shared
+    base = engine_for(streams, tmp_path / "base", variant, head, accumulation_rows=2)
+    expected = base.run()
+    light = engine_for(
+        streams, tmp_path / "light", variant, head, accumulation_rows=2, observe_without_graph=True
+    )
+    emitted, inside = [], []
+    replay, prepare = light._replay, light.predictor.prepare
+
+    def replay_spy(current):
+        inside.append(True)
+        try:
+            return replay(current)
+        finally:
+            inside.pop()
+
+    def prepare_spy(batch, state, **options):
+        if not inside:
+            emitted.append((options["differentiable"], torch.is_grad_enabled()))
+        return prepare(batch, state, **options)
+
+    monkeypatch.setattr(light, "_replay", replay_spy)
+    monkeypatch.setattr(light.predictor, "prepare", prepare_spy)
+    report = light.run()
+    assert expected["status"] == report["status"] == "completed"
+    # Ninguna emisión del ajuste construye grafo: ni lo pide ni lo tiene activo.
+    training = [flags for flags in emitted if flags != (False, False)]
+    assert emitted and not training
+    # Predicciones, etiquetas, métricas y gradientes de cada actualización, bit a bit.
+    assert light.audit == base.audit
+    assert report["history"] == expected["history"]
+    assert light.optimizer.calls == base.optimizer.calls > 0
+    for left, right in zip(named_records(light), named_records(base), strict=True):
+        assert left.keys() == right.keys()
+        for key, value in right.items():
+            if value is None:
+                assert left[key] is None, key
+            else:
+                torch.testing.assert_close(left[key], value, rtol=0, atol=0)

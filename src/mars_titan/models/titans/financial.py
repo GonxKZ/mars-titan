@@ -727,6 +727,13 @@ class FinancialConfig:
                 raise ValueError(
                     "Las cabezas auxiliares con operaciones por sesión necesitan otro contraste"
                 )
+            # F5 recalcula el token fuera de `_dropout_masks`: el dropout de fusión tocaría el
+            # generador global y el de modalidades no se aplicaría en `fused_tokens`.
+            if self.fusion_dropout is not None or self.modality_dropout is not None:
+                raise ValueError(
+                    "Las cabezas auxiliares con dropout de fusión o modalidades necesitan "
+                    "otro contraste"
+                )
 
     def _check_mature_reliability(self):
         """Señal de fiabilidad y núcleo que la admite."""
@@ -2090,6 +2097,13 @@ class FinancialPredictor(nn.Module):
             raise ValueError(
                 "Los horizontes auxiliares con modalidades retiradas necesitan otro contraste"
             )
+        if self.training and (
+            self.config.fusion_dropout is not None or self.config.modality_dropout is not None
+        ):
+            raise ValueError(
+                "Los horizontes auxiliares con dropout de fusión o modalidades no se calculan "
+                "fila a fila"
+            )
         if self.learning_scaler is not None:
             inputs = self.learning_scaler(inputs, presence)
         price, checks = self.price_encoder.encode_last(gate_price_window(inputs["prices"]))
@@ -2378,6 +2392,11 @@ class FinancialPredictor(nn.Module):
         scale = statistics.get("label_scale") if isinstance(statistics, dict) else None
         if type(scale) is not float or not math.isfinite(scale) or scale <= 0:
             raise ValueError("Las estadísticas necesitan una escala positiva de la etiqueta")
+        scaled_value = torch.tensor(scale, dtype=self.head.output_scale.dtype)
+        if not torch.isfinite(scaled_value) or not (scaled_value > 0):
+            raise ValueError(
+                "La escala de la etiqueta desborda o se anula en la precisión del predictor"
+            )
         self.learning_scaler.load(statistics)
         with torch.no_grad():
             self.head.output_scale.fill_(scale)
@@ -2485,9 +2504,35 @@ def copy_paired_parameters(source, target):
             raise ValueError("Los parámetros emparejados tienen formas o precisiones diferentes")
         check_finite(original[name], "Los parámetros de origen")
     before = target._parameter_id
+    scale_buffers = []
+    if source.learning_scaler is not None:
+        if bool(source.learning_scaler.fitted):
+            src_buffers = dict(source.named_buffers())
+            dst_buffers = dict(target.named_buffers())
+            scale_buffers = sorted(
+                name
+                for name in (src_buffers.keys() & dst_buffers.keys())
+                if name.startswith("learning_scaler.") or name == "head.output_scale"
+            )
+            for name in scale_buffers:
+                if (
+                    src_buffers[name].shape != dst_buffers[name].shape
+                    or src_buffers[name].dtype != dst_buffers[name].dtype
+                ):
+                    raise ValueError(
+                        "Los buffers de escala emparejados tienen formas o precisiones diferentes"
+                    )
+                if src_buffers[name].is_floating_point():
+                    check_finite(src_buffers[name], "Los buffers de escala de origen")
+        elif bool(target.learning_scaler.fitted):
+            raise ValueError(
+                "El predictor de origen no tiene estadísticas de learning_scale cargadas"
+            )
     with torch.no_grad():
         for name in copied:
             destination[name].copy_(original[name])
+        for name in scale_buffers:
+            dst_buffers[name].copy_(src_buffers[name])
     transfers = {
         name: dict(
             source_sha256=_tensor_digest(original[name]),
@@ -2499,6 +2544,9 @@ def copy_paired_parameters(source, target):
     }
     if any(record["source_sha256"] != record["target_sha256"] for record in transfers.values()):
         raise ValueError("La copia emparejada no conserva los bytes de origen")
+    for name in scale_buffers:
+        if _tensor_digest(src_buffers[name]) != _tensor_digest(dst_buffers[name]):
+            raise ValueError("La copia emparejada no conserva los buffers de escala de origen")
     target._seal_parameters()
     receipt = dict(
         schema_version=1,

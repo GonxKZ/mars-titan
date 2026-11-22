@@ -130,7 +130,8 @@ def test_disabled_field_keeps_identity_parameters_and_predictions():
     explicit, _ = build(technical_branch=None)
     assert explicit.config.identity() == base.config.identity()
     assert "technical_branch" not in base.config.identity() and base.technical_branch is None
-    assert declared_sources(base.config) == ()
+    # La base de estas pruebas declara learning_scale, cuyo módulo entra en la huella de código.
+    assert declared_sources(base.config) == ("mars_titan.models.learning_scale",)
     expected, actual = emit(base, batch), emit(explicit, batch)
     torch.testing.assert_close(actual.point_predictions, expected.point_predictions, rtol=0, atol=0)
 
@@ -159,7 +160,10 @@ def test_the_predictor_with_the_branch_starts_as_the_reference(variant):
     identity = predictor.config.identity()["technical_branch"]
     assert identity["kind"] == TECHNICAL_BRANCH and identity["columns"] == COLUMNS
     assert identity["position"] == "after_mac_and_session_mixers_before_head"
-    assert declared_sources(predictor.config) == ("mars_titan.models.titans.technical_branch",)
+    assert declared_sources(predictor.config) == (
+        "mars_titan.models.titans.technical_branch",
+        "mars_titan.models.learning_scale",
+    )
 
 
 def test_the_predictor_adds_the_residual_of_its_normalized_features():

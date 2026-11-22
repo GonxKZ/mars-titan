@@ -215,6 +215,14 @@ def _parent(folder, view, seed, control=None):
         changes.get("asset_groups", predictor.get("asset_groups")) is None,
         "El consumidor congelado aún no registra los grupos de activos de H4",
     )
+    _require(
+        changes.get("regional_execution", predictor.get("regional_execution")) is None,
+        "El consumidor congelado aún no admite el programa regional",
+    )
+    _require(
+        changes.get("mature_reliability", predictor.get("mature_reliability")) is None,
+        "El consumidor congelado aún no recibe la fiabilidad madura",
+    )
     _verify(folder, report)
     return report, digest
 
@@ -247,6 +255,14 @@ def _frozen_parent(
     _require(
         options.get("asset_groups") is None,
         "El consumidor congelado aún no registra los grupos de activos de H4",
+    )
+    _require(
+        options.get("regional_execution") is None,
+        "El consumidor congelado aún no admite el programa regional",
+    )
+    _require(
+        options.get("mature_reliability") is None,
+        "El consumidor congelado aún no recibe la fiabilidad madura",
     )
     _require(
         allow_context or options.get("session_context") is None,
@@ -843,7 +859,7 @@ def carry_readout(
         "El padre del ancla ha cambiado",
     )
     titans = parent_report["identity"]["recipe"]
-    options = walk_forward_options(titans)
+    options = walk_forward_options(titans, bounded_fit=True)
     readout_recipe = case_recipe(identity["recipe"], request["search_case"])
     anchor_manifest, _ = read_manifest(anchor_view, 64 * 1024**2)
     partitions = predicted_partitions(modality_ablation, regenerate)

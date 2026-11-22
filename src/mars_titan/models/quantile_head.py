@@ -170,7 +170,9 @@ class QuantileHead(nn.Linear):
         # etiquetas del ajuste. Sin ella no existe el buffer y el estado conserva sus nombres.
         self.scaled = scaled
         if scaled:
-            self.register_buffer("output_scale", torch.ones((), dtype=self.weight.dtype))
+            self.register_buffer(
+                "output_scale", torch.ones((), device=self.weight.device, dtype=self.weight.dtype)
+            )
 
     def forward(self, value):
         quantiles = self._quantiles(value)
@@ -204,7 +206,9 @@ class ScaledLinear(nn.Linear):
 
     def __init__(self, in_features, *, device=None, dtype=None):
         super().__init__(in_features, 1, device=device, dtype=dtype)
-        self.register_buffer("output_scale", torch.ones((), dtype=self.weight.dtype))
+        self.register_buffer(
+            "output_scale", torch.ones((), device=self.weight.device, dtype=self.weight.dtype)
+        )
 
     def forward(self, value):
         return super().forward(value) * self.output_scale

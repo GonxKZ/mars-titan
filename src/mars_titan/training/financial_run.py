@@ -40,6 +40,7 @@ from mars_titan.models.titans.axial_time_region import join_history_rows, map_hi
 from mars_titan.models.titans.config import MAX_BLOCK_ROWS, canonical
 from mars_titan.models.titans.financial import VARIANTS, FinancialPredictor, FinancialState
 from mars_titan.models.titans.financial_inputs import (
+    FINAL_TEST_US,
     DecisionBatch,
     device_tensor,
     validated_cpu_batches,
@@ -135,6 +136,12 @@ _AUXILIARY_COUNTERS = (
     "auxiliary_labels_discarded",
     "auxiliary_loss_sum",
 )
+# Año juliano exacto en microsegundos (365,25 días) y cotas de la semivida causal por recencia.
+RECENCY_YEAR_US = 31_557_600_000_000
+MIN_RECENCY_HALF_LIFE_YEARS = 0.25
+MAX_RECENCY_HALF_LIFE_YEARS = 100.0
+# Orden canónico de los grupos funcionales para el recorte de gradiente por rol.
+CLIP_GROUP_ORDER = ("technical_head", "mac", "backbone_fusion")
 
 
 def _default_selection():
@@ -183,6 +190,15 @@ class ChronologicalRecipe:
     # None ajusta con la pérdida declarada. Un objeto le suma el IC por sesión del punto
     # emitido, con su peso y signo contrario (`session_ic_term_v1`), sin cambiar la cabeza.
     session_ic_term: dict | None = None
+    # False conserva el recorte global único. True recorta por separado cada grupo funcional
+    # (`technical_head`, `mac`, `backbone_fusion`) al umbral `max_grad_norm`.
+    grad_clip_by_role: bool = False
+    # None pondera por igual todos los segmentos. Un positivo H (en años) modula el paso efectivo
+    # del optimizador con semivida causal H anclada en `train.phase.decision_end`.
+    recency_half_life_years: float | None = None
+    # False emite cada tramo con el grafo que la repetición descarta. True lo emite sin grafo
+    # cuando el tramo se repite (`accumulation_rows`): mismos valores con menos trabajo.
+    observe_without_graph: bool = False
 
     def __post_init__(self):
         # Los controles puntuales conservan la cabeza y validan los mismos hiperparámetros.
@@ -193,6 +209,27 @@ class ChronologicalRecipe:
         distillation.checked_weight(self.distillation_weight)
         if self.loss in POINT_OBJECTIVES and self.distillation_weight is not None:
             raise ValueError("El control de solo mediana no admite destilación de las colas")
+        if type(self.grad_clip_by_role) is not bool:
+            raise ValueError("grad_clip_by_role debe ser un booleano")
+        if self.grad_clip_by_role and self.max_grad_norm is None:
+            raise ValueError("grad_clip_by_role necesita un max_grad_norm positivo")
+        if type(self.observe_without_graph) is not bool:
+            raise ValueError("observe_without_graph debe ser un booleano")
+        if self.observe_without_graph and self.accumulation_rows is None:
+            raise ValueError("observe_without_graph solo se aplica con accumulation_rows")
+        if self.recency_half_life_years is not None:
+            if (
+                isinstance(self.recency_half_life_years, bool)
+                or not isinstance(self.recency_half_life_years, (int, float))
+                or not math.isfinite(self.recency_half_life_years)
+                or not MIN_RECENCY_HALF_LIFE_YEARS
+                <= self.recency_half_life_years
+                <= MAX_RECENCY_HALF_LIFE_YEARS
+            ):
+                raise ValueError(
+                    "recency_half_life_years debe ser None o un número finito en [0.25, 100]"
+                )
+            object.__setattr__(self, "recency_half_life_years", float(self.recency_half_life_years))
         numbers = (self.learning_rate, self.weight_decay, self.checkpoint_seconds)
         if (
             any(type(v) is not int or not 1 <= v <= m for v, m in self._bounded())
@@ -225,7 +262,9 @@ class ChronologicalRecipe:
             raise ValueError("El determinismo de la receta es None o una política admitida")
         if self.session_ic() is not None and self.distillation_weight is not None:
             raise ValueError("El término de IC por sesión no se combina con la destilación")
-        self.weight_options()
+        options = self.weight_options()
+        if self.recency_half_life_years is not None and options["schedule_free"] is not None:
+            raise ValueError("La recencia por tasa efectiva no se combina con schedule_free")
 
     def session_ic(self):
         """Término de IC por sesión de la receta, o None si no lo declara."""
@@ -264,6 +303,9 @@ class ChronologicalRecipe:
             fields.pop("accumulation_rows")
         else:
             fields["gradient_accumulation"] = "flow_blocks_replayed_from_segment_start_v1"
+        # Sin la opción no aparece ningún campo nuevo y la identidad anterior se conserva.
+        if fields.pop("observe_without_graph"):
+            fields["emission"] = "without_graph_when_the_segment_is_replayed_v1"
         if fields["precision"] is None:
             fields.pop("precision")
         if fields["determinism"] is None:
@@ -287,6 +329,25 @@ class ChronologicalRecipe:
                 fields.pop(name)
             else:
                 fields[name] = option.identity()
+        # Sin recorte por grupo ni recencia se conserva literalmente la identidad anterior.
+        if not fields["grad_clip_by_role"]:
+            fields.pop("grad_clip_by_role")
+        else:
+            fields["grad_clip_rule"] = (
+                "independent_l2_per_component_group_technical_head_mac_backbone_fusion_v1"
+            )
+        if fields["recency_half_life_years"] is None:
+            fields.pop("recency_half_life_years")
+        else:
+            fields["recency_weighting"] = dict(
+                schema_version=1,
+                half_life_years=float(self.recency_half_life_years),
+                year_microseconds=RECENCY_YEAR_US,
+                anchor="train_phase_decision_end",
+                normalization="closed_form_continuous_mean_over_train_phase_v1",
+                segment_timestamp="mean_weight_over_matured_label_decision_at_v1",
+                application="effective_learning_rate_after_clip_v1",
+            )
         return dict(
             schema_version=1,
             recipe=RECIPE,
@@ -339,6 +400,73 @@ def parameter_roles(predictor):
         else:
             roles["shared"].append(name)
     return roles
+
+
+def clip_parameter_groups(predictor, trainable=None):
+    """Particionar los parámetros ajustables en grupos funcionales disjuntos y exhaustivos.
+
+    Orden determinista heredado de `predictor.named_parameters()`:
+    - `technical_head`: rama técnica, cabeza y objetivos o cabezas de salida.
+    - `mac`: memoria rápida, atención MAC y puertas de fiabilidad.
+    - `backbone_fusion`: codificadores multimodales, fusión y operadores de entrada/sesión.
+    """
+    allowed = None if trainable is None else set(trainable)
+    buckets = {group: [] for group in CLIP_GROUP_ORDER}
+    for name, _ in predictor.named_parameters():
+        if allowed is not None and name not in allowed:
+            continue
+        if name.startswith(("technical_branch.", "head.", "output_objective.", "auxiliary_heads.")):
+            buckets["technical_head"].append(name)
+        elif name.startswith(("mac.", "reliability_gates.")):
+            buckets["mac"].append(name)
+        else:
+            buckets["backbone_fusion"].append(name)
+    groups = {group: names for group, names in buckets.items() if names}
+    expected = {name for name, _ in predictor.named_parameters()} if allowed is None else allowed
+    assigned = [name for names in groups.values() for name in names]
+    if len(assigned) != len(set(assigned)) or set(assigned) != expected:
+        raise ValueError("La partición de recorte por grupo debe cubrir cada parámetro una vez")
+    return groups
+
+
+def recency_segment_weight(decision_timestamps, *, decision_start, decision_end, half_life_years):
+    """Peso causal por recencia del segmento normalizado a media continua 1 en el tramo de ajuste.
+
+    Ancla estrictamente en `decision_end` del tramo de ajuste (nunca en validación, calibración
+    ni evaluación) y rechaza cualquier fecha fuera de `[decision_start, decision_end)` o en 2024+.
+    """
+    if (
+        isinstance(half_life_years, bool)
+        or not isinstance(half_life_years, (int, float))
+        or not math.isfinite(half_life_years)
+        or not MIN_RECENCY_HALF_LIFE_YEARS <= half_life_years <= MAX_RECENCY_HALF_LIFE_YEARS
+    ):
+        raise ValueError("half_life_years debe ser un número finito en [0.25, 100]")
+    if (
+        type(decision_start) is not int
+        or type(decision_end) is not int
+        or not 0 < decision_start < decision_end <= FINAL_TEST_US
+    ):
+        raise ValueError("Los límites del tramo de ajuste deben ser causales y anteriores a 2024")
+    timestamps = list(decision_timestamps)
+    if not timestamps:
+        raise ValueError("El segmento necesita al menos una etiqueta madura con fecha")
+    rate = math.log(2.0) / float(half_life_years)
+    span_years = (decision_end - decision_start) / RECENCY_YEAR_US
+    decay_span = rate * span_years
+    mean_weight = -math.expm1(-decay_span) / decay_span if decay_span > 0.0 else 1.0
+    total = 0.0
+    for at in timestamps:
+        if type(at) is not int or not decision_start <= at < decision_end or at >= FINAL_TEST_US:
+            raise ValueError(
+                "La fecha de decisión queda fuera del tramo causal de ajuste o abre 2024"
+            )
+        age_years = (decision_end - at) / RECENCY_YEAR_US
+        total += math.exp(-rate * age_years)
+    weight = (total / len(timestamps)) / mean_weight
+    if not math.isfinite(weight) or weight <= 0.0:
+        raise ValueError("El peso por recencia calculado no es finito y positivo")
+    return float(weight)
 
 
 class _Block:
@@ -561,6 +689,8 @@ class ChronologicalInference:
             raise ValueError("El término de IC por sesión no se combina con un objetivo de salida")
         # Con liquidez, cada fila lleva a la pérdida su columna del bloque del gráfico.
         self.liquidity = self.session_ic is not None and self.session_ic.weighted
+        if self.liquidity and "charts" in (predictor.config.removed_modalities or ()):
+            raise ValueError("La ponderación por liquidez requiere la modalidad charts sin retirar")
         if self.liquidity and (
             -self.session_ic.liquidity_column > predictor.config.inputs.dimensions["charts"]
         ):
@@ -611,8 +741,9 @@ class ChronologicalInference:
         grad = differentiable and not warmup
         # La acumulación emite con el mismo cálculo y corta el grafo tras cada bloque.
         accumulate = grad and self.recipe.accumulation_rows is not None
-        if grad and run.instants == 0 and predictor.config.variant == "mac_frozen":
-            self._anchor_frozen(run.flows)
+        # Con `observe_without_graph`, la emisión de un tramo que se repite no construye el
+        # grafo que la repetición descartaría. Los valores emitidos y los estados no cambian.
+        graph = grad and not (accumulate and self.recipe.observe_without_graph)
         with nvtx_ranges.phase("titans.validate"):
             if blocks is None:
                 validated = validated_cpu_batches(event.inputs, specification)
@@ -632,7 +763,7 @@ class ChronologicalInference:
         # Las operaciones por sesión solo admiten el instante completo en un único bloque.
         complete = len(validated) == 1
         if self.uses_context and run.context is None:
-            run.context = predictor.initial_context(differentiable=grad)
+            run.context = predictor.initial_context(differentiable=graph)
         context = dict(context=run.context) if self.uses_context else {}
         signal, surprises = self._signal(run), []
         # Las comprobaciones de finitud de todos los bloques del evento se resuelven juntas
@@ -653,7 +784,7 @@ class ChronologicalInference:
                     )
                 new = tuple(flow for flow in batch.flow_ids if flow not in run.flows)
                 if new:
-                    run.flows.put(predictor.initial_state(new, differentiable=grad))
+                    run.flows.put(predictor.initial_state(new, differentiable=graph))
                 if accumulate:
                     for flow in batch.flow_ids:
                         if flow not in run.starts:
@@ -661,11 +792,18 @@ class ChronologicalInference:
                             run.starts[flow] = None if flow in new else run.flows.handle(flow)
                     run.segment.append((batch, options, complete))
                 state = run.flows.gather(batch.flow_ids)
-                with nvtx_ranges.phase("titans.prepare"), torch.set_grad_enabled(grad):
+                if grad and predictor.config.variant == "mac_frozen":
+                    # Sin escrituras, cada bloque lee directamente el M0 vigente sin fragmentar
+                    # `run.flows` en cortes `SliceBackward0` de complejidad O(R·F·D²).
+                    memory = predictor.mac.initial_state(
+                        len(batch.flow_ids), differentiable=graph
+                    ).memory
+                    state = replace(state, mac=replace(state.mac, memory=memory))
+                with nvtx_ranges.phase("titans.prepare"), torch.set_grad_enabled(graph):
                     prepared = predictor.prepare(
                         batch,
                         state,
-                        differentiable=grad,
+                        differentiable=graph,
                         session_complete=complete,
                         **options,
                         **context,
@@ -700,8 +838,8 @@ class ChronologicalInference:
                     ledger.remember(cpu)
             if self.uses_context:
                 # La sesión se escribe una vez, después de emitir todas sus predicciones.
-                with nvtx_ranges.phase("titans.context"), torch.set_grad_enabled(grad):
-                    run.context = predictor.commit_context(context["context"], differentiable=grad)
+                with nvtx_ranges.phase("titans.context"), torch.set_grad_enabled(graph):
+                    run.context = predictor.commit_context(context["context"], differentiable=graph)
             with nvtx_ranges.phase("titans.emit"):
                 self._emit(run, source, emitted)
             if surprises:
@@ -1073,6 +1211,14 @@ class ChronologicalTrainer(ChronologicalInference):
         self.averaged_point = (
             None if self.schedule_free is None else AveragedPoint(self.optimizer, self.trainable)
         )
+        self.clip_groups = (
+            clip_parameter_groups(predictor, self.trainable) if recipe.grad_clip_by_role else None
+        )
+        self._clip_param_groups = (
+            None
+            if self.clip_groups is None
+            else [[self.trainable[name] for name in names] for names in self.clip_groups.values()]
+        )
         self.identity = dict(
             schema_version=1,
             recipe=recipe.identity(),
@@ -1132,6 +1278,9 @@ class ChronologicalTrainer(ChronologicalInference):
         if anchored is not None:
             # Solo el decaimiento anclado añade su código. Sin él la identidad no cambia.
             self.identity["anchored_decay"] = anchored
+        if self.clip_groups is not None:
+            # Sin recorte por grupo, la identidad conserva literalmente su forma anterior.
+            self.identity["grad_clip_groups"] = self.clip_groups
         self.run_id = hashlib.sha256(canonical(self.identity).encode()).hexdigest()
         self.global_step, self.selection, self.history, self.train_metrics = 0, None, [], None
 
@@ -1237,15 +1386,15 @@ class ChronologicalTrainer(ChronologicalInference):
         C, el objetivo suma la media de los términos de los grupos medidos en el tramo. La
         pérdida devuelta sigue siendo la de la tarea.
         """
-        prediction = torch.stack(run.predictions)
-        target = torch.tensor(run.targets, dtype=prediction.dtype, device=prediction.device)
-        keys = [(flow, at) for flow, at, _ in run.used]
-        loss = self._task_loss(prediction, target, keys)
-        objective = self._distilled(loss, prediction, keys)
-        if run.penalties:
-            objective = objective + torch.stack(run.penalties).mean()
-        if not torch.isfinite(objective).item():
-            raise ValueError("La pérdida del tramo no es finita")
+        with deferred_checks():
+            prediction = torch.stack(run.predictions)
+            target = torch.tensor(run.targets, dtype=prediction.dtype, device=prediction.device)
+            keys = [(flow, at) for flow, at, _ in run.used]
+            loss = self._task_loss(prediction, target, keys)
+            objective = self._distilled(loss, prediction, keys)
+            if run.penalties:
+                objective = objective + torch.stack(run.penalties).mean()
+            require_true(torch.isfinite(objective), "La pérdida del tramo no es finita")
         objective.backward()
         return loss
 
@@ -1276,14 +1425,21 @@ class ChronologicalTrainer(ChronologicalInference):
             # El término de IC por sesión necesita todas las etiquetas de cada sesión en un bloque.
             or self.session_ic is not None
         )
-        if sessions:
-            # Las operaciones por sesión repiten cada instante entero, también las filas sin
-            # etiqueta en el tramo, y su pérdida no es una suma de términos por bloque.
+        dropout = (
+            predictor.config.modality_dropout is not None
+            or predictor.config.fusion_dropout is not None
+        )
+        if sessions or dropout:
+            # Las operaciones por sesión y el dropout sembrado por lote repiten cada instante
+            # entero en un único bloque para conservar exactamente la huella y sus máscaras.
             order = list(
                 dict.fromkeys([*order, *(f for batch, _, _ in run.segment for f in batch.flow_ids)])
             )
             if len(order) > size:
-                raise ValueError("Las operaciones por sesión necesitan repetir todos los flujos")
+                raise ValueError(
+                    "Las operaciones por sesión y el dropout por lote necesitan repetir "
+                    "todos los flujos"
+                )
         total, replayed = 0.0, 0
         for start in range(0, len(order), size):
             group = order[start : start + size]
@@ -1292,8 +1448,6 @@ class ChronologicalTrainer(ChronologicalInference):
             )
             # Sin grafo: la repetición no reutiliza nada del cálculo emitido.
             states.detach()
-            if predictor.config.variant == "mac_frozen":
-                self._anchor_frozen(states)
             # Las comprobaciones de todos los lotes del grupo y la de su pérdida se resuelven
             # juntas antes de su backward, en lugar de esperar a la GPU tras cada lote.
             with deferred_checks():
@@ -1304,13 +1458,19 @@ class ChronologicalTrainer(ChronologicalInference):
                         continue
                     # Solo la selección de todas las filas de un instante completo lo sigue siendo.
                     complete = whole and len(rows) == len(batch.flow_ids)
-                    batch = batch.select(rows)
+                    if len(rows) != len(batch.flow_ids) or rows != list(range(len(batch.flow_ids))):
+                        batch = batch.select(rows)
                     if "reliability" in plan:
                         plan = dict(plan, reliability=plan["reliability"][rows])
                     new = tuple(flow for flow in batch.flow_ids if flow not in states)
                     if new:
                         states.put(predictor.initial_state(new, differentiable=True))
                     state = states.gather(batch.flow_ids)
+                    if predictor.config.variant == "mac_frozen":
+                        memory = predictor.mac.initial_state(
+                            len(batch.flow_ids), differentiable=True
+                        ).memory
+                        state = replace(state, mac=replace(state.mac, memory=memory))
                     with torch.enable_grad():
                         prepared = predictor.prepare(
                             batch, state, differentiable=True, session_complete=complete, **plan
@@ -1401,6 +1561,52 @@ class ChronologicalTrainer(ChronologicalInference):
             total += float(term.detach())
         run.counters["auxiliary_loss_sum"] += total
 
+    def _clip_gradients(self):
+        """Recortar gradientes de forma global o por grupo funcional con finitud atómica."""
+        if not self.recipe.grad_clip_by_role:
+            return torch.nn.utils.clip_grad_norm_(
+                self.predictor.parameters(),
+                self.recipe.max_grad_norm or math.inf,
+                error_if_nonfinite=True,
+            )
+        # Comprobar finitud en todos los grupos antes de escalar ninguno in-place.
+        norms = [
+            torch.nn.utils.get_total_norm(
+                [p.grad for p in params if p.grad is not None], error_if_nonfinite=True
+            ).to(self.device)
+            for params in self._clip_param_groups
+        ]
+        for params, group_norm in zip(self._clip_param_groups, norms, strict=True):
+            torch.nn.utils.clip_grads_with_norm_(params, self.recipe.max_grad_norm, group_norm)
+        return torch.stack(norms).max()
+
+    def _recency_weight(self, used):
+        """Peso causal por recencia del segmento a partir de `decision_at`, o None si apagado."""
+        half_life = self.recipe.recency_half_life_years
+        if half_life is None:
+            return None
+        phase = self.train.phase
+        return recency_segment_weight(
+            (decision_at for _, decision_at, _ in used),
+            decision_start=phase.decision_start,
+            decision_end=phase.decision_end,
+            half_life_years=half_life,
+        )
+
+    def _step_optimizer(self, recency_weight=None):
+        """Aplicar un paso del optimizador, modulando la tasa efectiva si hay recencia activa."""
+        if recency_weight is None:
+            self.optimizer.step()
+            return
+        base_lrs = [group["lr"] for group in self.optimizer.param_groups]
+        for group, base in zip(self.optimizer.param_groups, base_lrs, strict=True):
+            group["lr"] = base * recency_weight
+        try:
+            self.optimizer.step()
+        finally:
+            for group, base in zip(self.optimizer.param_groups, base_lrs, strict=True):
+                group["lr"] = base
+
     def _update(self, run, at):
         """Un paso con las etiquetas maduras del tramo y truncamiento de todos los flujos."""
         if run.predictions:
@@ -1412,16 +1618,13 @@ class ChronologicalTrainer(ChronologicalInference):
                 run.counters["control_groups_in_objective"] = run.counters.get(
                     "control_groups_in_objective", 0
                 ) + len(run.penalties)
+            recency_weight = self._recency_weight(run.used)
             with traced_update(self.traces, self.global_step + 1, self.optimizer, loss) as probe:
                 with nvtx_ranges.phase("titans.clip"):
-                    norm = torch.nn.utils.clip_grad_norm_(
-                        self.predictor.parameters(),
-                        self.recipe.max_grad_norm or math.inf,
-                        error_if_nonfinite=True,
-                    )
+                    norm = self._clip_gradients()
                     probe.clip(norm, self.recipe.max_grad_norm)
                 with nvtx_ranges.phase("titans.optimizer"):
-                    self.optimizer.step()
+                    self._step_optimizer(recency_weight)
                     self.optimizer.zero_grad(set_to_none=True)
                     if self.shadow is not None:
                         self.shadow.update(self.trainable)

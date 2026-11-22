@@ -21,7 +21,7 @@ Ninguna estadística usa filas de validación, calibración ni evaluación. Sin 
 import hashlib
 import json
 import math
-from dataclasses import asdict, dataclass
+from dataclasses import dataclass
 
 import numpy as np
 import torch
@@ -56,6 +56,9 @@ class LearningScale:
     clip: float = 5.0
     price_returns: bool = True
     zero_median: bool = True
+    # False recorta en seco en ±clip. True usa z / sqrt(1 + (z / clip)^2), que queda dentro
+    # del mismo intervalo y conserva el orden y el gradiente de los valores extremos.
+    smooth_clip: bool = False
 
     def __post_init__(self):
         if (
@@ -64,13 +67,14 @@ class LearningScale:
             or not 1 <= self.clip <= 100
             or type(self.price_returns) is not bool
             or type(self.zero_median) is not bool
+            or type(self.smooth_clip) is not bool
         ):
             raise ValueError(
                 "learning_scale necesita clip entre 1 y 100 y dos opciones booleanas explícitas"
             )
 
     def identity(self):
-        return dict(
+        result = dict(
             name=TRANSFORM,
             clip=float(self.clip),
             price_window="session_returns_v1" if self.price_returns else "anchored_logs",
@@ -82,13 +86,28 @@ class LearningScale:
             absent_values="zero_after_scaling",
             output="head_output_times_the_10_90_interval_of_the_fit_labels_over_2_ln_2",
         )
+        # Sin el recorte suave la identidad anterior se conserva literalmente.
+        if self.smooth_clip:
+            result["clip_shape"] = "z_over_sqrt_of_one_plus_z_over_clip_squared_v1"
+        return result
+
+
+# Campos que toda receta declara y los que puede añadir.
+_REQUIRED_FIELDS = frozenset({"clip", "price_returns", "zero_median"})
+_OPTIONAL_FIELDS = frozenset({"smooth_clip"})
+# Más allá de este múltiplo del recorte, el recorte suave ya vale el propio recorte en FP32.
+# Acotar ahí evita que el cuadrado desborde y anule la salida.
+_SMOOTH_LIMIT = 1e6
 
 
 def parse_learning_scale(value):
     """Aceptar la declaración JSON de una receta, con sus tres campos explícitos."""
     if value is None or isinstance(value, LearningScale):
         return value
-    if not isinstance(value, dict) or set(value) != set(asdict(LearningScale())):
+    if (
+        not isinstance(value, dict)
+        or not _REQUIRED_FIELDS <= set(value) <= _REQUIRED_FIELDS | _OPTIONAL_FIELDS
+    ):
         raise ValueError("learning_scale debe declarar clip, price_returns y zero_median")
     return LearningScale(**value)
 
@@ -142,12 +161,15 @@ def _robust(values):
     return center, np.maximum((upper - lower) / 2, STD_FRACTION * values.std(axis=0))
 
 
+_MIN_FP32_SCALE = float(np.finfo(np.float32).tiny)
+
+
 def _floored(scale):
     """Aplicar el suelo relativo del bloque. Sin ninguna columna con dispersión, la unidad."""
-    positive = scale[scale > 0]
+    positive = scale[scale >= _MIN_FP32_SCALE]
     if not len(positive):
         return np.ones_like(scale)
-    return np.maximum(scale, RELATIVE_FLOOR * np.median(positive))
+    return np.maximum(scale, max(RELATIVE_FLOOR * float(np.median(positive)), _MIN_FP32_SCALE))
 
 
 def _masked_columns(values, observed):
@@ -200,7 +222,7 @@ def fit_statistics(config, inputs, presence, targets):
     )
     # Los canales de precios tienen unidades distintas, así que cada uno es su propio bloque.
     center, scale = _robust(window[..., :channels][present])
-    result["prices"] = center, np.where(scale > 0, scale, 1.0)
+    result["prices"] = center, np.where(scale >= _MIN_FP32_SCALE, scale, 1.0)
     for name in DENSE:
         center, scale = _robust(inputs[name][presence[:, PRESENCE_BIT[name]]])
         result[name] = center, _floored(scale)
@@ -220,21 +242,27 @@ def fit_statistics(config, inputs, presence, targets):
         )
     lower, upper = np.quantile(targets, (0.1, 0.9))
     label = float((upper - lower) / INITIAL_INTERVAL)
-    if not label > 0:
-        raise ValueError("Las etiquetas del ajuste no tienen dispersión")
+    label_f32 = float(np.float32(label))
+    if not label > 0 or not math.isfinite(label_f32) or label_f32 <= 0:
+        raise ValueError("Las etiquetas del ajuste no tienen dispersión representable en FP32")
+    modalities = {}
+    for name, (center, scale) in result.items():
+        center_f32 = np.asarray(center, dtype=np.float32)
+        scale_f32 = np.asarray(scale, dtype=np.float32)
+        if (
+            not np.isfinite(center_f32).all()
+            or not np.isfinite(scale_f32).all()
+            or not (scale_f32 >= _MIN_FP32_SCALE).all()
+        ):
+            raise ValueError(f"Las estadísticas de {name} desbordan FP32")
+        modalities[name] = dict(center=center_f32.tolist(), scale=scale_f32.tolist())
     return dict(
         schema_version=1,
         transform=config.identity(),
         rows=rows,
         labels=len(targets),
         label_scale=label,
-        modalities={
-            name: dict(
-                center=np.asarray(center, dtype=np.float32).tolist(),
-                scale=np.asarray(scale, dtype=np.float32).tolist(),
-            )
-            for name, (center, scale) in result.items()
-        },
+        modalities=modalities,
     )
 
 
@@ -271,24 +299,35 @@ class LearningScaler(nn.Module):
         """Copiar las estadísticas de `fit_statistics` tras comprobar su forma y su rango."""
         if (
             not isinstance(statistics, dict)
+            or type(statistics.get("schema_version")) is not int
             or statistics.get("schema_version") != 1
             or statistics.get("transform") != self.config.identity()
-            or set(statistics.get("modalities", ())) != set(MODALITIES)
+            or not isinstance(statistics.get("modalities"), dict)
+            or set(statistics["modalities"]) != set(MODALITIES)
         ):
             raise ValueError("Las estadísticas no corresponden a esta declaración de escalas")
         values = {}
         for name, width in self.widths.items():
-            center = torch.tensor(statistics["modalities"][name]["center"], dtype=torch.float64)
-            scale = torch.tensor(statistics["modalities"][name]["scale"], dtype=torch.float64)
+            entry = statistics["modalities"][name]
+            if not isinstance(entry, dict) or "center" not in entry or "scale" not in entry:
+                raise ValueError(f"Las estadísticas de {name} no tienen forma o rango válidos")
+            center = torch.tensor(entry["center"], dtype=torch.float64)
+            scale = torch.tensor(entry["scale"], dtype=torch.float64)
+            target_dtype = getattr(self, f"{name}_center").dtype
+            center_cast = center.to(dtype=target_dtype)
+            inverse_cast = scale.reciprocal().to(dtype=target_dtype)
             if (
                 center.shape != (width,)
                 or scale.shape != (width,)
                 or not torch.isfinite(center).all()
                 or not torch.isfinite(scale).all()
                 or not (scale > 0).all()
+                or not torch.isfinite(center_cast).all()
+                or not torch.isfinite(inverse_cast).all()
+                or not (inverse_cast > 0).all()
             ):
                 raise ValueError(f"Las estadísticas de {name} no tienen forma o rango válidos")
-            values[name] = center, scale.reciprocal()
+            values[name] = center_cast, inverse_cast
         with torch.no_grad():
             for name, (center, inverse) in values.items():
                 getattr(self, f"{name}_center").copy_(center)
@@ -297,7 +336,13 @@ class LearningScaler(nn.Module):
 
     def _scale(self, name, values):
         center, inverse = getattr(self, f"{name}_center"), getattr(self, f"{name}_inverse")
-        return ((values - center) * inverse).clamp(-self.config.clip, self.config.clip)
+        clip = self.config.clip
+        if self.config.smooth_clip:
+            scaled = ((values - center) * inverse).clamp(
+                -_SMOOTH_LIMIT * clip, _SMOOTH_LIMIT * clip
+            )
+            return scaled * torch.rsqrt(1.0 + (scaled / clip).square())
+        return ((values - center) * inverse).clamp(-clip, clip)
 
     def forward(self, inputs, presence):
         """Devolver las mismas modalidades, con la misma forma, tipo y dispositivo.

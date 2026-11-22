@@ -698,6 +698,23 @@ class NeuralMemory(nn.Module):
         if torch.is_inference_mode_enabled():
             raise ValueError("inference_mode impide el gradiente interno, utilice no_grad")
         self.validate_input(observed, state)
+        reference = self._reference()
+        if gate_shift is not None:
+            if type(gate_shift) is not dict or not set(gate_shift) <= {"write", "forget"}:
+                raise ValueError("gate_shift debe ser un diccionario con claves write o forget")
+            for key, shift in gate_shift.items():
+                if (
+                    not isinstance(shift, Tensor)
+                    or shift.layout != torch.strided
+                    or shift.shape != (observed.shape[0], 1)
+                    or shift.dtype != reference.dtype
+                    or shift.device != reference.device
+                ):
+                    raise ValueError(
+                        "gate_shift debe aportar tensores [lote, 1] con el tipo y dispositivo "
+                        "de la memoria"
+                    )
+                check_finite(shift, f"gate_shift[{key}]")
         require_true(
             (state.steps <= torch.iinfo(torch.int64).max - observed.shape[1]).all(),
             "El contador de pasos desbordaría int64",

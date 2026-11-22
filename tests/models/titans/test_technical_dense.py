@@ -164,7 +164,10 @@ def test_the_predictor_with_the_dense_branch_starts_as_the_reference(variant):
     identity = predictor.config.identity()["technical_branch"]
     assert identity["kind"] == TECHNICAL_DENSE and identity["columns"] == COLUMNS
     assert identity["output"] == "residual_with_zero_initialized_output_layer"
-    assert declared_sources(predictor.config) == ("mars_titan.models.titans.technical_branch",)
+    assert declared_sources(predictor.config) == (
+        "mars_titan.models.titans.technical_branch",
+        "mars_titan.models.learning_scale",
+    )
 
 
 def test_the_predictor_adds_the_residual_of_its_normalized_features():
@@ -402,4 +405,96 @@ def test_the_predictor_with_session_ranks_needs_the_complete_session(variant):
     assert torch.count_nonzero(residual) > 0
     assert predictor.config.identity()["technical_branch"] == RANKED.identity()
     # El orden de las filas del bloque no cambia lo que recibe cada flujo.
-    assert declared_sources(predictor.config) == ("mars_titan.models.titans.technical_branch",)
+    assert declared_sources(predictor.config) == (
+        "mars_titan.models.titans.technical_branch",
+        "mars_titan.models.learning_scale",
+    )
+
+
+NORMED = replace(DENSE, layer_norm=True)
+SCALED = replace(DENSE, feature_scaling=True)
+
+
+def test_the_identity_only_names_the_options_that_are_declared():
+    base = DENSE.identity()
+    assert "layer_norm" not in base and "feature_scaling" not in base
+    assert replace(DENSE, layer_norm=False, feature_scaling=False).identity() == base
+    normed, scaled = NORMED.identity(), SCALED.identity()
+    assert normed["normalization"] == "layer_norm_before_silu_on_each_hidden_layer"
+    assert scaled["feature_scaling"] == "learned_scale_per_input_initialized_at_one_v1"
+    assert {k: v for k, v in scaled.items() if k != "feature_scaling"} == base
+    declared = dict(columns=COLUMNS, hidden=16, depth=2)
+    assert parse_technical_branch(declared) == DENSE
+    assert parse_technical_branch({**declared, "layer_norm": True}) == NORMED
+    assert parse_technical_branch({**declared, "feature_scaling": True}) == SCALED
+    for value in ({**declared, "feature_scaling": 1}, {**declared, "layer_norm": "si"}):
+        with pytest.raises(ValueError, match="booleano"):
+            parse_technical_branch(value)
+    with pytest.raises(ValueError, match="technical_branch debe declarar"):
+        parse_technical_branch({**declared, "otra": True})
+
+
+@pytest.mark.parametrize("config", [SCALED, replace(RANKED, feature_scaling=True)])
+def test_feature_scaling_starts_as_the_plain_branch_and_scales_one_input(config):
+    plain = dense(replace(config, feature_scaling=False))
+    scaled = dense(config)
+    inputs = COLUMNS * (2 if config.session_ranks else 1)
+    extra = set(dict(scaled.named_parameters())) - set(dict(plain.named_parameters()))
+    assert extra == {"input_scale"} and scaled.input_scale.shape == (inputs,)
+    assert torch.equal(scaled.input_scale, torch.ones(inputs, dtype=torch.float64))
+    for name, value in plain.named_parameters():
+        assert torch.equal(dict(scaled.named_parameters())[name], value), name
+    charts, markets = sample()
+    arguments = (charts, markets) if config.session_ranks else (charts,)
+    # Con la escala en uno, la misma salida bit a bit.
+    assert torch.equal(scaled(*arguments), plain(*arguments))
+    # Duplicar la escala de una entrada equivale a duplicar esa entrada.
+    with torch.no_grad():
+        scaled.input_scale[1] = 2.0
+    doubled = charts.clone()
+    doubled[:, charts.shape[1] - COLUMNS + 1] *= 2.0
+    if not config.session_ranks:
+        torch.testing.assert_close(scaled(charts), plain(doubled), rtol=1e-12, atol=1e-12)
+    assert not torch.equal(scaled(*arguments), plain(*arguments))
+    # La escala recibe gradiente y la rama no consume el generador global al construirse.
+    (gradient,) = torch.autograd.grad(scaled(*arguments).sum(), scaled.input_scale)
+    assert gradient.abs().sum() > 0
+    torch.manual_seed(11)
+    expected = torch.rand(3)
+    torch.manual_seed(11)
+    TechnicalDense(12, config, clip=5.0, seed=3)
+    assert torch.equal(torch.rand(3), expected)
+
+
+def test_layer_norm_normalizes_each_hidden_layer_before_its_activation():
+    plain, normed = dense(DENSE), dense(NORMED)
+    extra = set(dict(normed.named_parameters())) - set(dict(plain.named_parameters()))
+    assert extra == {f"norms.{i}.{name}" for i in range(2) for name in ("weight", "bias")}
+    for name, value in plain.named_parameters():
+        assert torch.equal(dict(normed.named_parameters())[name], value), name
+    charts, _ = sample()
+    hidden = charts[:, charts.shape[1] - COLUMNS :]
+    for layer, norm in zip(normed.layers, normed.norms, strict=True):
+        before = layer(hidden)
+        centred = before - before.mean(dim=1, keepdim=True)
+        scale = torch.sqrt(centred.square().mean(dim=1, keepdim=True) + norm.eps)
+        hidden = torch.nn.functional.silu(centred / scale * norm.weight + norm.bias)
+    torch.testing.assert_close(normed(charts), normed.outer(hidden), rtol=1e-12, atol=1e-12)
+    # Cada fila se normaliza sola: cambiar otra fila no la altera.
+    other = charts.clone()
+    other[0] += 3.0
+    assert torch.equal(normed(other)[1:], normed(charts)[1:])
+    assert not torch.equal(normed(charts), plain(charts))
+
+
+def test_a_state_of_another_option_is_another_identity():
+    for config in (NORMED, SCALED):
+        source, target = dense(config), dense(DENSE)
+        with pytest.raises((ValueError, RuntimeError)):
+            target.load_state_dict(source.state_dict())
+        same = dense(config, seed=5)
+        same.load_state_dict(source.state_dict())
+        charts, _ = sample()
+        assert torch.equal(same(charts), source(charts))
+    with pytest.raises(ValueError, match="hidden"):
+        TechnicalDenseConfig(columns=COLUMNS, hidden=1, depth=1, layer_norm=True)
