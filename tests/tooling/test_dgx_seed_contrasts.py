@@ -5,6 +5,7 @@ import json
 from pathlib import Path
 
 import numpy as np
+import pandas as pd
 import pyarrow as pa
 import pyarrow.parquet as pq
 import pytest
@@ -22,7 +23,9 @@ SESSIONS = {"validation": 30, "calibration": 20, "evaluation": 40}
 ASSETS = 40
 
 
-def write_model(state, model, seed, *, signal, noise_seed, sessions=SESSIONS, year=2013):
+def write_model(
+    state, model, seed, *, signal, noise_seed, sessions=SESSIONS, year=2013, assets=ASSETS
+):
     """Emisiones sintéticas: las etiquetas dependen solo de la sesión y el ruido, de la semilla."""
     folder = state / "runs" / model / str(year) / f"seed-{seed}"
     folder.mkdir(parents=True)
@@ -36,7 +39,7 @@ def write_model(state, model, seed, *, signal, noise_seed, sessions=SESSIONS, ye
             )
             prediction = signal * labels + noise
             instant = START + (offset + session) * DAY
-            for asset in range(ASSETS):
+            for asset in range(assets):
                 rows.append(
                     dict(
                         sample_id=f"US/A{asset:03d}/{instant}",
@@ -122,6 +125,68 @@ def test_seeds_that_do_not_share_sessions_are_rejected(tmp_path):
         contrasts.build(state, 2013, [42, 43, 44], {"mejor": "base"})
 
 
+def _spearman(left, right):
+    # Rangos medios en los empates: la suma de rangos enteros de tres semillas los tiene.
+    return float(np.corrcoef(pd.Series(left).rank(), pd.Series(right).rank())[0, 1])
+
+
+def test_the_ensemble_is_the_ic_of_the_mean_rank_of_the_seeds(tmp_path):
+    state = build_state(tmp_path)
+    report = contrasts.build(state, 2013, [42, 43, 44], {"mejor": "base"})
+    # Recalculado a mano desde los ficheros: media de rangos por sesión y su IC con la etiqueta.
+    tables = [
+        pq.read_table(
+            state / "runs" / "base" / "2013" / f"seed-{seed}" / "evaluation-predictions.parquet"
+        ).to_pandas()
+        for seed in (42, 43, 44)
+    ]
+    values = []
+    for instant, first in tables[0].groupby("prediction_at"):
+        first = first.sort_values("sample_id")
+        total = np.zeros(len(first))
+        for table in tables:
+            rows = table[table["prediction_at"] == instant].sort_values("sample_id")
+            total += np.argsort(np.argsort(rows["prediction"].to_numpy()))
+        values.append(_spearman(total, first["target"].to_numpy()))
+    ensemble = report["models"]["base"]["ensemble"]
+    assert ensemble["evaluation"]["sessions"] == 40
+    assert ensemble["evaluation"]["mean"] == pytest.approx(np.mean(values), rel=1e-9)
+    # Con ruido independiente entre semillas, el conjunto supera a la semilla media.
+    gain = report["models"]["base"]["ensemble_gain"]["evaluation"]
+    single = report["models"]["base"]["evaluation"]["mean"]
+    assert gain["mean"] == pytest.approx(ensemble["evaluation"]["mean"] - single, rel=1e-9)
+    assert gain["mean"] > 0.02 and gain["t"] > 3
+    # El contraste entre conjuntos compara lo que se usaría: el conjunto de cada modelo.
+    between = report["contrasts"]["mejor"]["ensemble"]
+    assert between["evaluation"]["mean"] == pytest.approx(
+        report["models"]["mejor"]["ensemble"]["evaluation"]["mean"]
+        - ensemble["evaluation"]["mean"],
+        rel=1e-9,
+    )
+    assert between["decision"]["sessions"] == 50
+
+
+def test_identical_seeds_gain_nothing_from_the_ensemble(tmp_path):
+    state = tmp_path / "state"
+    for seed in (42, 43, 44):
+        write_model(state, "base", seed, signal=0.3, noise_seed=1)
+        write_model(state, "mejor", seed, signal=0.6, noise_seed=1)
+    report = contrasts.build(state, 2013, [42, 43, 44], {"mejor": "base"})
+    for split in ("validation", "calibration", "evaluation"):
+        assert report["models"]["base"]["ensemble_gain"][split]["mean"] == pytest.approx(
+            0.0, abs=1e-12
+        )
+
+
+def test_seeds_with_other_rows_are_not_combined(tmp_path):
+    state = build_state(tmp_path, seeds=(42, 43))
+    # Las mismas sesiones, pero a la semilla 44 le falta un activo en cada una.
+    write_model(state, "base", 44, signal=0.3, noise_seed=44, assets=ASSETS - 1)
+    write_model(state, "mejor", 44, signal=0.6, noise_seed=44, assets=ASSETS - 1)
+    with pytest.raises(ValueError, match="no comparten muestras"):
+        contrasts.build(state, 2013, [42, 43, 44], {"mejor": "base"})
+
+
 def test_the_command_writes_the_table_and_the_document(tmp_path, capsys):
     state = build_state(tmp_path)
     declared = tmp_path / "contrasts.json"
@@ -136,5 +201,6 @@ def test_the_command_writes_the_table_and_the_document(tmp_path, capsys):
     assert set(document["contrasts"]) == {"mejor", "igual"}
     text = (output / "seed-contrasts.md").read_text(encoding="utf-8")
     assert "| mejor | base | 3 |" in text and "+++" in text
+    assert "Conjunto" in text and "Δ conjunto (t)" in text
     with pytest.raises(SystemExit):
         contrasts.main([*arguments[:-1], str(output), "--seed", "42"])

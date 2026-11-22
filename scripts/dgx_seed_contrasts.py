@@ -6,6 +6,10 @@ independientes de una sesión. El IC de rangos de cada sesión se promedia entre
 contraste pareado con su control se hace sobre esa serie, con error con autocorrelación. La
 diferencia de cada semilla se informa aparte, para ver si el signo se repite.
 
+Además se mide el conjunto de cada modelo: el IC de la media de los rangos de sus semillas, que
+es lo que se usaría al predecir con las tres. Su ganancia sobre la semilla media y el contraste
+entre el conjunto de un modelo y el de su control van pareados por sesión.
+
 Un modelo al que le falta alguna semilla no se contrasta con las que tenga: se anota como
 incompleto.
 
@@ -41,8 +45,8 @@ def _report_module():
     return module
 
 
-def seed_sessions(state, model, year, seed):
-    """IC de rangos por sesión de cada tramo de una ejecución, o None si le falta alguno."""
+def seed_splits(state, model, year, seed):
+    """Emisiones de cada tramo de una ejecución, o None si le falta alguno."""
     report = _report_module()
     run = Path(state) / "runs" / model / str(year) / f"seed-{seed}"
     result = {}
@@ -50,8 +54,14 @@ def seed_sessions(state, model, year, seed):
         data = report.load_split(run, split)
         if data is None:
             return None
-        result[split] = report.session_ic(data)
+        result[split] = data
     return result
+
+
+def seed_sessions(splits):
+    """IC de rangos por sesión de cada tramo de una ejecución."""
+    report = _report_module()
+    return {split: report.session_ic(splits[split]) for split in SPLITS}
 
 
 def averaged(per_seed, model):
@@ -66,17 +76,56 @@ def averaged(per_seed, model):
     return result
 
 
+def _ranks(data):
+    """Rangos medios de la predicción dentro de cada sesión, sin normalizar.
+
+    Son múltiplos de 0,5 y su suma entre semillas es exacta en coma flotante. Normalizados
+    antes de sumar, dos activos con la misma suma de rangos podrían diferir en el último bit y
+    dejar de contar como empate.
+    """
+    report = _report_module()
+    ranks = np.empty(len(data["target"]), dtype=np.float64)
+    for _, _, start, end in data["sessions"]:
+        ranks[start:end] = report.average_ranks(data["prediction"][start:end])
+    return ranks
+
+
+def ensemble(members, model):
+    """IC por sesión de la media de rangos de las semillas: el conjunto de un modelo."""
+    report = _report_module()
+    result = {}
+    for split in SPLITS:
+        base = members[0][split]
+        if any(other[split]["sample"] != base["sample"] for other in members[1:]):
+            raise ValueError(f"Las semillas de {model} no comparten muestras en {split}")
+        # Las semillas comparten filas, así que la suma de rangos ordena igual que su media.
+        result[split] = report.session_ic(base, sum(_ranks(member[split]) for member in members))
+    return result
+
+
 def _pooled(sessions, splits):
     return {(split, *key): value for split in splits for key, value in sessions[split].items()}
 
 
-def _level(sessions, per_seed):
+def _paired(candidate, control):
+    """Contraste pareado en cada tramo y en los dos de decisión juntos."""
+    report = _report_module()
+    entry = {split: report.paired(candidate[split], control[split]) for split in SPLITS}
+    entry["decision"] = report.paired(_pooled(candidate, DECISION), _pooled(control, DECISION))
+    return entry
+
+
+def _level(sessions, per_seed, combined):
     report = _report_module()
     entry = {split: report.summary(sessions[split]) for split in SPLITS}
     entry["decision"] = report.summary(_pooled(sessions, DECISION))
     entry["per_seed"] = {
         split: [float(np.mean(list(one[split].values()))) for one in per_seed] for split in SPLITS
     }
+    entry["ensemble"] = {split: report.summary(combined[split]) for split in SPLITS}
+    entry["ensemble"]["decision"] = report.summary(_pooled(combined, DECISION))
+    # Lo que gana el conjunto sobre la semilla media, sesión a sesión.
+    entry["ensemble_gain"] = _paired(combined, sessions)
     return entry
 
 
@@ -85,22 +134,24 @@ def build(state, year, seeds, controls):
     report = _report_module()
     seeds = list(dict.fromkeys(seeds))
     names = sorted(set(controls) | set(controls.values()))
-    per_seed, missing = {}, {}
+    per_seed, mean, combined, missing = {}, {}, {}, {}
     for name in names:
-        runs = [seed_sessions(state, name, year, seed) for seed in seeds]
+        # Las emisiones de un modelo se sueltan al pasar al siguiente: solo queda el IC.
+        runs = [seed_splits(state, name, year, seed) for seed in seeds]
         absent = [seed for seed, run in zip(seeds, runs, strict=True) if run is None]
         if absent:
             missing[name] = absent
-        else:
-            per_seed[name] = runs
-    mean = {name: averaged(runs, name) for name, runs in per_seed.items()}
+            continue
+        per_seed[name] = [seed_sessions(run) for run in runs]
+        mean[name] = averaged(per_seed[name], name)
+        combined[name] = ensemble(runs, name)
     document = dict(
         schema_version=1,
         kind="dgx_seed_contrasts_v1",
         final_test_opened=False,
         year=year,
         seeds=seeds,
-        models={name: _level(mean[name], per_seed[name]) for name in mean},
+        models={name: _level(mean[name], per_seed[name], combined[name]) for name in mean},
         contrasts={},
         incomplete={},
     )
@@ -122,6 +173,7 @@ def build(state, year, seeds, controls):
         entry["decision"] = report.paired(
             _pooled(mean[name], DECISION), _pooled(mean[control], DECISION)
         )
+        entry["ensemble"] = _paired(combined[name], combined[control])
         document["contrasts"][name] = entry
     return document
 
@@ -137,19 +189,43 @@ def markdown(document):
         f"# Contrastes con {len(document['seeds'])} semillas, origen {document['year']}",
         "",
         "El IC de cada sesión es la media de las semillas. La t usa error con autocorrelación.",
+        "El conjunto es el IC de la media de rangos de las semillas, y su Δ compara el conjunto",
+        "del modelo con el de su control, en evaluación.",
         "",
-        "| Modelo | Control | Semillas | IC de evaluación | Δ decisión (t) | Δ evaluación (t) "
-        "| Signo por semilla |",
-        "| --- | --- | --- | --- | --- | --- | --- |",
+        "| Modelo | Control | Semillas | IC de evaluación | Conjunto | Δ decisión (t) "
+        "| Δ evaluación (t) | Δ conjunto (t) | Signo por semilla |",
+        "| --- | --- | --- | --- | --- | --- | --- | --- | --- |",
     ]
     for name, entry in document["contrasts"].items():
-        level = document["models"][name]["evaluation"]["mean"]
+        model = document["models"][name]
+        level, combined = model["evaluation"]["mean"], model["ensemble"]["evaluation"]["mean"]
         decision, evaluation = entry["decision"], entry["evaluation"]
+        between = entry["ensemble"]["evaluation"]
         lines.append(
             f"| {name} | {entry['control']} | {len(entry['seeds'])} | {_number(level)} "
+            f"| {_number(combined)} "
             f"| {_number(decision['mean'], sign=True)} ({_number(decision['t'], 1, True)}) "
             f"| {_number(evaluation['mean'], sign=True)} ({_number(evaluation['t'], 1, True)}) "
+            f"| {_number(between['mean'], sign=True)} ({_number(between['t'], 1, True)}) "
             f"| {entry['signs']['evaluation']} |"
+        )
+    lines += [
+        "",
+        "## Ganancia del conjunto sobre la semilla media",
+        "",
+        "| Modelo | IC de la semilla media | IC del conjunto | Ganancia en decisión (t) "
+        "| Ganancia en evaluación (t) |",
+        "| --- | --- | --- | --- | --- |",
+    ]
+    for name, model in document["models"].items():
+        gain = model["ensemble_gain"]
+        lines.append(
+            f"| {name} | {_number(model['evaluation']['mean'])} "
+            f"| {_number(model['ensemble']['evaluation']['mean'])} "
+            f"| {_number(gain['decision']['mean'], sign=True)} "
+            f"({_number(gain['decision']['t'], 1, True)}) "
+            f"| {_number(gain['evaluation']['mean'], sign=True)} "
+            f"({_number(gain['evaluation']['t'], 1, True)}) |"
         )
     if document["incomplete"]:
         lines += ["", "Sin contrastar, por semillas que faltan:", ""]

@@ -38,6 +38,7 @@ declaración de la campaña no admite orígenes posteriores a 2023.
 | `scripts/colab_site.py` | Ficha del equipo: máquina, GPU, controlador, CUDA, cuDNN y versiones. Compara dos fichas y dice en qué difieren |
 | `scripts/colab_sync.py` | Copia coherente del estado de la campaña a Drive mientras los trabajos escriben, y su vuelta a una máquina nueva |
 | `scripts/colab_parity.py` | Puerta de paridad entre equipos: mismas filas y etiquetas, y equivalencia del IC por sesión dentro de un margen |
+| `scripts/campaign_search.py` | Búsqueda de hiperparámetros con Optuna en la que cada ensayo es un modelo más de una campaña. Sirve en cualquier equipo; en Colab necesita el paso `busqueda` del arranque |
 
 El motor ya sabía trabajar en dos equipos
 ([guía de la campaña en dos equipos](comparison-campaign-two-machines.md)): `prepare`,
@@ -83,6 +84,40 @@ Si el veredicto no es «equivalente», los resultados de Colab se analizan apart
 se ajusta entero en un solo equipo, con sus controles, para que ningún contraste pareado cruce
 máquinas.
 
+## Búsqueda de hiperparámetros
+
+La criba mide cada campo de uno en uno. `scripts/campaign_search.py` busca varios a la vez:
+Optuna propone los valores y la campaña entrena, así que cada ensayo conserva la identidad, la
+telemetría y la procedencia de cualquier otro trabajo.
+
+- La declaración (`campaign_search_v1`) nombra la campaña de partida, el modelo base, el origen
+  y la semilla que se miran, y el espacio: campos de la receta con un intervalo (`float`, lineal
+  o logarítmico) o con una lista ordenada de valores (`ordinal`). El objetivo no se declara: es
+  siempre el IC de rangos de validación de ese origen. La primera declaración es
+  `configs/experiments/search/us-v11-search1.json`, en la rama `v11-candidatos`.
+- `ask` pide una tanda. Los primeros ensayos (`startup`) son un hipercubo latino del espacio,
+  fijado por la semilla; después propone el estimador de Parzen en árbol multivariante, que
+  cuenta con los ensayos que siguen en marcha. Escribe una receta por ensayo en
+  `configs/titans/search/<búsqueda>/`, y en `configs/experiments/search/` la campaña de la tanda
+  (el modelo base y todos los ensayos vivos hasta ella) y sus controles. Tras el commit, la
+  tanda se ejecuta como cualquier criba: `plan`, `prepare`, `inherit` desde el estado de la
+  tanda anterior y `run --tier search_g<N> --origin <año> --seed <semilla>`.
+- `tell` lee de ese estado los ensayos terminados. A Optuna le da la validación; guarda además
+  la calibración y el contraste pareado por sesión de cada ensayo con el modelo base. El tramo
+  final del origen no se abre en ningún momento. El modelo base entra en el estudio como punto
+  conocido cuando está medido en el mismo estado, es decir, en el mismo equipo que los ensayos.
+- `report` ordena por validación y confirma en calibración a los mejores: un candidato vale si
+  también gana al modelo base en calibración. Informa de la concordancia de rangos entre los
+  dos tramos y de cuánto ganaría por azar el mejor de `n` ensayos sin efecto, para leer la
+  ventaja del ganador contra ese listón. Un candidato confirmado se repite con las otras dos
+  semillas antes de adoptarlo.
+- `fail` da por perdido un ensayo que no va a terminar, para que deje de contar como pendiente
+  y no entre en la tanda siguiente.
+
+La carpeta de la búsqueda (`--study`) guarda el diario de Optuna, la huella de la declaración
+y el registro de ensayos. Cambiar el espacio, la semilla o el modelo base exige otra búsqueda;
+cambiar cuántos se confirman o qué modelos se dan por conocidos, no.
+
 ## Orden previsto
 
 1. Arranque y comprobaciones (`colab_bootstrap.sh`), ficha del equipo y prueba corta de
@@ -91,7 +126,9 @@ máquinas.
 2. Puerta de paridad con el commit de la campaña.
 3. Criba de la base nueva (rama `v11-candidatos`) en el origen 2013 con tres semillas: sus
    opciones nacen apagadas y cada una se mide contra la base en el mismo equipo.
-4. Ajuste final de lo que quede elegido, con todos los activos de EE. UU. y China y todas las
+4. Si quedan unidades de cómputo después de reservar el ajuste final, la búsqueda conjunta
+   `us-v11-search1`: ocho ensayos de arranque y tandas de seis.
+5. Ajuste final de lo que quede elegido, con todos los activos de EE. UU. y China y todas las
    modalidades, en los orígenes limpios.
 
 ## Sin verificar
