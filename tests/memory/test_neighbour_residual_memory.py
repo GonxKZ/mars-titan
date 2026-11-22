@@ -38,8 +38,12 @@ def zscore(v):
     return (v - v.mean()) / s if s > 0 else v * 0.0
 
 
-def lab_reference(data, config, assets):
-    """La lectura del laboratorio tabular escrita a mano: banco de las W sesiones anteriores."""
+def lab_reference(data, config, assets, exclude_own=False):
+    """La lectura del laboratorio tabular escrita a mano: banco de las W sesiones anteriores.
+
+    Con `exclude_own`, cada consulta descarta las filas de su propio activo (la fila r del
+    panel es el activo r % assets).
+    """
     sessions = len(data["target"]) // assets
     models = data["predictions"].shape[1]
     keys, target = data["keys"], data["target"]
@@ -65,6 +69,8 @@ def lab_reference(data, config, assets):
         sims = query @ bank.T
         k = min(config.k, len(bank))
         for i in range(assets):
+            if exclude_own:
+                sims[i, np.arange(len(bank)) % assets == i] = -np.inf
             top = np.argsort(-sims[i], kind="stable")[:k]
             w = np.exp((sims[i, top] - sims[i, top].max()) / config.tau)
             w /= w.sum()
@@ -247,3 +253,103 @@ def test_projection_keys_are_unit_rows_and_reproducible():
 def test_an_invalid_configuration_is_rejected(options):
     with pytest.raises(ValueError):
         nrm.NeighbourConfig(**options)
+
+
+def asset_codes(data, assets):
+    """Código del activo de cada fila del panel: la fila r es el activo r % assets."""
+    return np.tile(np.arange(assets), len(data["target"]) // assets).astype(np.int64)
+
+
+EXCLUDING = nrm.NeighbourConfig(window=3, k=7, tau=0.2, clip=3.0, exclude_own=True)
+
+
+def test_excluding_the_own_asset_reads_only_the_rows_of_other_assets():
+    data = panel(sessions=8, assets=30, seed=11)
+    reads, placebo, _ = run(data, EXCLUDING, assets=asset_codes(data, 30), placebo_seed=2)
+    expected = lab_reference(data, EXCLUDING, 30, exclude_own=True)
+    np.testing.assert_allclose(reads, expected, rtol=0, atol=2e-5)
+    # Con todas las filas el propio activo entra en sus vecinos y la lectura cambia.
+    plain, _, _ = run(data)
+    assert not np.allclose(reads[30:], plain[30:])
+    assert placebo is not None and not np.array_equal(placebo[30:], reads[30:])
+
+
+def test_the_exclusion_needs_the_asset_of_every_row_and_only_with_it():
+    data = panel(sessions=3, assets=5, seed=12)
+    with pytest.raises(ValueError, match="activo de cada fila"):
+        run(data, EXCLUDING)
+    with pytest.raises(ValueError, match="activo de cada fila"):
+        run(data, EXCLUDING, assets=np.zeros(4, dtype=np.int64))
+    with pytest.raises(ValueError, match="activo de cada fila"):
+        run(data, EXCLUDING, assets=asset_codes(data, 5).astype(np.float64))
+    with pytest.raises(ValueError, match="solo con la exclusión"):
+        run(data, assets=asset_codes(data, 5))
+
+
+def test_a_query_whose_bank_holds_only_its_own_asset_reads_zero():
+    config = nrm.NeighbourConfig(window=3, k=2, tau=0.2, clip=3.0, exclude_own=True)
+    memory = nrm.NeighbourMemory(config, models=1)
+    keys = nrm.keys_from_inputs(np.eye(3, dtype=np.float32), np.eye(3, dtype=np.float32))
+    memory.emit(
+        "US",
+        START,
+        keys,
+        np.array([[0.1], [0.2], [0.3]]),
+        matures_at=START + DAY,
+        assets=np.array([7, 7, 7]),
+    )
+    memory.mature("US", START, np.array([0.03, -0.01, 0.02]), at=START + DAY)
+    reads, placebo = memory.emit(
+        "US",
+        START + DAY,
+        keys[:2],
+        np.array([[0.1], [0.2]]),
+        matures_at=START + 2 * DAY,
+        assets=np.array([7, 8]),
+        placebo_seed=1,
+    )
+    assert np.isfinite(reads).all() and np.isfinite(placebo).all()
+    assert reads[0, 0] == 0.0 and placebo[0, 0] == 0.0
+    assert reads[1, 0] != 0.0
+
+
+def test_the_exclusion_survives_a_pause_and_restore():
+    data = panel(sessions=8, assets=30, seed=14)
+    codes = asset_codes(data, 30)
+    whole, _, _ = run(data, EXCLUDING, assets=codes)
+    memory = nrm.NeighbourMemory(EXCLUDING, models=2)
+    head, tail = slice(0, 4 * 30), slice(4 * 30, None)
+    first = {k: v[head] for k, v in data.items()}
+    reads_a, _ = nrm.replay(memory, **first, assets=codes[head], flush=False)
+    restored = nrm.NeighbourMemory.restore(memory.export())
+    rest = {k: v[tail] for k, v in data.items()}
+    reads_b, _ = nrm.replay(
+        restored,
+        **rest,
+        assets=codes[tail],
+        pending_targets=dict(
+            markets=first["markets"], prediction_at=first["prediction_at"], target=first["target"]
+        ),
+    )
+    np.testing.assert_array_equal(np.concatenate([reads_a, reads_b]), whole)
+
+
+def test_the_identity_names_the_exclusion_only_when_it_is_declared():
+    assert CONFIG.identity() == dict(window=3, k=7, tau=0.2, clip=3.0)
+    assert EXCLUDING.identity() == dict(window=3, k=7, tau=0.2, clip=3.0, exclude_own=True)
+    with pytest.raises(ValueError, match="exclude_own"):
+        nrm.NeighbourConfig(window=3, k=7, tau=0.2, exclude_own=1)
+
+
+def test_a_restored_state_of_an_exclusion_needs_the_asset_of_every_row():
+    data = panel(sessions=4, assets=30, seed=15)
+    memory = nrm.NeighbourMemory(EXCLUDING, models=2)
+    nrm.replay(memory, **data, assets=asset_codes(data, 30), flush=False)
+    payload = memory.export()
+    nrm.NeighbourMemory.restore(payload)
+    for part in ("bank", "pending"):
+        broken = memory.export()
+        broken["markets"]["US"][part][0].pop("assets")
+        broken["state_sha256"] = nrm._state_sha256(broken)
+        with pytest.raises(ValueError, match="no es coherente"):
+            nrm.NeighbourMemory.restore(broken)

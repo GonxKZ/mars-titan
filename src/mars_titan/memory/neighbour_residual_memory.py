@@ -72,6 +72,9 @@ class NeighbourConfig:
     k: int
     tau: float
     clip: float = 3.0
+    # Con exclude_own, una consulta no lee las filas de su propio activo: mide la parte de la
+    # lectura que viene de activos parecidos y no de la historia del mismo activo.
+    exclude_own: bool = False
 
     def __post_init__(self):
         _require(
@@ -88,9 +91,14 @@ class NeighbourConfig:
                 type(value) in (int, float) and math.isfinite(value) and value > 0,
                 f"{name} es un número finito y positivo",
             )
+        _require(type(self.exclude_own) is bool, "exclude_own es un booleano")
 
     def identity(self):
-        return dict(window=self.window, k=self.k, tau=float(self.tau), clip=float(self.clip))
+        identity = dict(window=self.window, k=self.k, tau=float(self.tau), clip=float(self.clip))
+        # Sin exclusión la identidad conserva literalmente su forma anterior.
+        if self.exclude_own:
+            identity["exclude_own"] = True
+        return identity
 
 
 def projection(inputs, dim, *, seed):
@@ -160,7 +168,7 @@ class NeighbourMemory:
             self._markets[market] = _Market()
         return self._markets[market]
 
-    def _neighbours(self, state, keys, placebo_seed, market, prediction_at):
+    def _neighbours(self, state, keys, placebo_seed, market, prediction_at, assets=None):
         rows = len(keys)
         reads = np.zeros((rows, self.models))
         placebo = None if placebo_seed is None else np.zeros((rows, self.models))
@@ -168,6 +176,9 @@ class NeighbourMemory:
             return reads, placebo
         bank_keys = np.concatenate([c["keys"] for c in state.bank])
         values = np.concatenate([c["values"] for c in state.bank])
+        bank_assets = None
+        if self.config.exclude_own:
+            bank_assets = np.concatenate([c["assets"] for c in state.bank])
         _require(
             bank_keys.shape[1] == keys.shape[1],
             f"Las claves de {market} en {prediction_at} no tienen la dimensión del banco",
@@ -181,20 +192,46 @@ class NeighbourMemory:
         tau = float(self.config.tau)
         for start in range(0, rows, CHUNK):
             sims = keys[start : start + CHUNK] @ bank_keys.T
+            if bank_assets is not None:
+                sims[assets[start : start + CHUNK, None] == bank_assets[None, :]] = -np.inf
             if k < size:
                 index = np.argpartition(-sims, k - 1, axis=1)[:, :k]
             else:
                 index = np.broadcast_to(np.arange(size), sims.shape)
             top = np.take_along_axis(sims, index, axis=1).astype(np.float64)
-            weights = np.exp((top - top.max(axis=1, keepdims=True)) / tau)
-            weights /= weights.sum(axis=1, keepdims=True)
+            if bank_assets is None:
+                weights = np.exp((top - top.max(axis=1, keepdims=True)) / tau)
+                weights /= weights.sum(axis=1, keepdims=True)
+            else:
+                # Las filas del propio activo pesan cero. Una consulta sin otro activo en el
+                # banco lee cero, como con el banco vacío.
+                best = top.max(axis=1, keepdims=True)
+                found = np.isfinite(best)
+                weights = np.where(
+                    np.isfinite(top), np.exp((top - np.where(found, best, 0.0)) / tau), 0.0
+                )
+                total = weights.sum(axis=1, keepdims=True)
+                weights = np.divide(weights, total, out=np.zeros_like(weights), where=total > 0)
             reads[start : start + CHUNK] = np.einsum("ik,ikm->im", weights, values[index])
             if shuffled is not None:
                 placebo[start : start + CHUNK] = np.einsum("ik,ikm->im", weights, shuffled[index])
         return reads, placebo
 
-    def emit(self, market, prediction_at, keys, predictions, *, matures_at, placebo_seed=None):
-        """Lecturas de una cohorte para cada modelo (y su placebo), sin ver su etiqueta."""
+    def emit(
+        self,
+        market,
+        prediction_at,
+        keys,
+        predictions,
+        *,
+        matures_at,
+        placebo_seed=None,
+        assets=None,
+    ):
+        """Lecturas de una cohorte para cada modelo (y su placebo), sin ver su etiqueta.
+
+        Con la exclusión del propio activo, `assets` es el código entero del activo de cada fila.
+        """
         prediction_at = _instant(prediction_at, "La fecha de decisión")
         matures_at = _instant(matures_at, "La madurez")
         _require(matures_at > prediction_at, "Cada etiqueta madura después de su decisión")
@@ -219,6 +256,17 @@ class NeighbourMemory:
             placebo_seed is None or (type(placebo_seed) is int and placebo_seed >= 0),
             "La semilla del placebo es un entero no negativo",
         )
+        if self.config.exclude_own:
+            assets = None if assets is None else np.asarray(assets)
+            _require(
+                assets is not None and assets.shape == (len(keys),) and assets.dtype.kind in "iu",
+                "La exclusión del propio activo necesita el activo de cada fila como código entero",
+            )
+            assets = assets.astype(np.int64)
+        else:
+            _require(
+                assets is None, "Los activos se declaran solo con la exclusión del propio activo"
+            )
         state = self._markets.get(market)
         if state is not None:
             _require(
@@ -231,7 +279,7 @@ class NeighbourMemory:
             )
             _require(len(state.pending) < MAX_PENDING, "Demasiadas cohortes pendientes")
         state = self._market(market, create=True)
-        reads, placebo = self._neighbours(state, keys, placebo_seed, market, prediction_at)
+        reads, placebo = self._neighbours(state, keys, placebo_seed, market, prediction_at, assets)
         z = np.column_stack(
             [arm.zscore(predictions[:, m].astype(np.float64)) for m in range(self.models)]
         )
@@ -241,6 +289,8 @@ class NeighbourMemory:
             keys=np.array(keys, copy=True),
             z=z,
         )
+        if assets is not None:
+            pending["assets"] = np.array(assets, copy=True)
         state.pending.append(pending)
         state.clock = prediction_at
         return reads, placebo
@@ -287,7 +337,10 @@ class NeighbourMemory:
                 for m in range(self.models)
             ]
         )
-        state.bank.append(dict(prediction_at=prediction_at, keys=oldest["keys"], values=values))
+        cohort = dict(prediction_at=prediction_at, keys=oldest["keys"], values=values)
+        if "assets" in oldest:
+            cohort["assets"] = oldest["assets"]
+        state.bank.append(cohort)
         while len(state.bank) > self.config.window:
             state.bank.pop(0)
         state.pending.pop(0)
@@ -302,23 +355,8 @@ class NeighbourMemory:
             markets[name] = dict(
                 clock=state.clock,
                 matured=state.matured,
-                bank=[
-                    dict(
-                        prediction_at=c["prediction_at"],
-                        keys=c["keys"].copy(),
-                        values=c["values"].copy(),
-                    )
-                    for c in state.bank
-                ],
-                pending=[
-                    dict(
-                        prediction_at=c["prediction_at"],
-                        matures_at=c["matures_at"],
-                        keys=c["keys"].copy(),
-                        z=c["z"].copy(),
-                    )
-                    for c in state.pending
-                ],
+                bank=[{k: _copied(v) for k, v in c.items()} for c in state.bank],
+                pending=[{k: _copied(v) for k, v in c.items()} for c in state.pending],
             )
         payload = dict(
             schema_version=SCHEMA_VERSION,
@@ -354,17 +392,34 @@ class NeighbourMemory:
             for cohort in saved["bank"]:
                 _require(
                     cohort["keys"].dtype == np.float32
-                    and cohort["values"].shape == (len(cohort["keys"]), memory.models),
+                    and cohort["values"].shape == (len(cohort["keys"]), memory.models)
+                    and memory._carries_assets(cohort),
                     f"Una cohorte del banco de {name} no es coherente",
                 )
                 state.bank.append({k: _copied(v) for k, v in cohort.items()})
             for cohort in saved["pending"]:
                 _require(
-                    cohort["z"].shape == (len(cohort["keys"]), memory.models),
+                    cohort["z"].shape == (len(cohort["keys"]), memory.models)
+                    and memory._carries_assets(cohort),
                     f"Una cohorte pendiente de {name} no es coherente",
                 )
                 state.pending.append({k: _copied(v) for k, v in cohort.items()})
         return memory
+
+
+def _carries_assets(self, cohort):
+    """Una cohorte lleva el activo de cada fila si y solo si la memoria excluye el propio."""
+    if not self.config.exclude_own:
+        return "assets" not in cohort
+    assets = cohort.get("assets")
+    return (
+        isinstance(assets, np.ndarray)
+        and assets.dtype == np.int64
+        and assets.shape == (len(cohort["keys"]),)
+    )
+
+
+NeighbourMemory._carries_assets = _carries_assets
 
 
 def _copied(value):
@@ -408,6 +463,7 @@ def replay(
     placebo_seed=None,
     flush=True,
     pending_targets=None,
+    assets=None,
 ):
     """Recorrer un panel en orden de decisión con la memoria por vecinos.
 
@@ -416,7 +472,8 @@ def replay(
     filas) no es posterior a la decisión. Con `flush` se escriben al final las que maduran antes
     del test final; sin él quedan pendientes para una reanudación, cuyas etiquetas se buscan en
     `pending_targets` (mercados, instantes y objetivos en el orden en que se emitieron). Devuelve
-    las lecturas [filas, modelos] y su placebo (None sin semilla) en el orden original.
+    las lecturas [filas, modelos] y su placebo (None sin semilla) en el orden original. Con la
+    exclusión del propio activo, `assets` es el código entero del activo de cada fila.
     """
     markets, prediction_at = np.asarray(markets), np.asarray(prediction_at)
     matures_at, target = np.asarray(matures_at), np.asarray(target)
@@ -434,6 +491,12 @@ def replay(
     _require(
         bool(np.all(matures_at > prediction_at)), "Cada etiqueta madura después de su decisión"
     )
+    if assets is not None:
+        assets = np.asarray(assets)
+        _require(
+            assets.shape == (rows,),
+            "La exclusión del propio activo necesita el activo de cada fila del panel",
+        )
     sources = [(markets, prediction_at, target)]
     if pending_targets is not None:
         sources.append(
@@ -472,6 +535,7 @@ def replay(
             predictions[chosen],
             matures_at=int(matures_at[chosen].max()),
             placebo_seed=placebo_seed,
+            assets=None if assets is None else assets[chosen],
         )
         reads[chosen] = read
         if placebo is not None:
