@@ -27,7 +27,11 @@
     "cross_asset_attention": "titans_mac",
     "cross_asset_attention_self": "cross_asset_attention",
     "cross_asset_attention_late": "cross_asset_attention",
-    "cross_asset_attention_late_self": "cross_asset_attention_late"
+    "cross_asset_attention_late_self": "cross_asset_attention_late",
+    "cross_asset_attention_nogain": "titans_mac_nogain",
+    "cross_asset_attention_nogain_self": "cross_asset_attention_nogain",
+    "cross_asset_attention_frozen_nogain": "cross_asset_attention_nogain",
+    "cross_asset_attention_disabled_nogain": "cross_asset_attention_nogain"
   },
   "always_kept": [
     "titans_mac_macro",

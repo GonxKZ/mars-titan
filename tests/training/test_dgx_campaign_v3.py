@@ -942,6 +942,8 @@ def test_the_first_screen_of_the_new_base_changes_one_recipe_field_per_model():
         "y1_operable_nogain",
         "y1_xattn",
         "y1_xattn_late",
+        "y1_xattn_nogain",
+        "y1_xattn_nogain_controls",
     ]
     # El núcleo y sus controles son los de la v10, campo a campo: la base nueva los reproduce.
     cores = ("titans_mac", "titans_mac_frozen", "titans_mac_disabled")
@@ -1020,32 +1022,69 @@ def test_the_first_screen_of_the_new_base_changes_one_recipe_field_per_model():
     # La atención entre activos en sus dos posiciones, cada una con su control self_only. Las
     # dos de la v10 se declaran como allí; las tardías solo añaden la posición.
     late = dict(position="after_technical")
+    mixed, alone = dict(heads=4, mode="same_session"), dict(heads=4, mode="self_only")
+    # Por modelo: la atención declarada, su control, el modelo del que toma la receta y su nivel.
     mixers = {
-        "cross_asset_attention": (dict(heads=4, mode="same_session"), "titans_mac"),
-        "cross_asset_attention_self": (dict(heads=4, mode="self_only"), "cross_asset_attention"),
+        "cross_asset_attention": (mixed, "titans_mac", "titans_mac", "y1_xattn"),
+        "cross_asset_attention_self": (alone, "cross_asset_attention", "titans_mac", "y1_xattn"),
         "cross_asset_attention_late": (
-            dict(heads=4, mode="same_session", **late),
+            {**mixed, **late},
             "cross_asset_attention",
+            "titans_mac",
+            "y1_xattn_late",
         ),
         "cross_asset_attention_late_self": (
-            dict(heads=4, mode="self_only", **late),
+            {**alone, **late},
             "cross_asset_attention_late",
+            "titans_mac",
+            "y1_xattn_late",
+        ),
+        # La atención sobre el trío sin ganancia de la mediana, el mejor núcleo medido en 2013:
+        # la mezcla y su control self_only, y los dos modos de memoria que la acompañan.
+        "cross_asset_attention_nogain": (
+            mixed,
+            "titans_mac_nogain",
+            "titans_mac_nogain",
+            "y1_xattn_nogain",
+        ),
+        "cross_asset_attention_nogain_self": (
+            alone,
+            "cross_asset_attention_nogain",
+            "titans_mac_nogain",
+            "y1_xattn_nogain",
+        ),
+        "cross_asset_attention_frozen_nogain": (
+            mixed,
+            "cross_asset_attention_nogain",
+            "titans_mac_frozen_nogain",
+            "y1_xattn_nogain_controls",
+        ),
+        "cross_asset_attention_disabled_nogain": (
+            mixed,
+            "cross_asset_attention_nogain",
+            "titans_mac_disabled_nogain",
+            "y1_xattn_nogain_controls",
         ),
     }
     positions = {}
-    for model, (declared, _control) in mixers.items():
+    for model, (declared, _control, parent, tier) in mixers.items():
         entry = document["models"][model]
         assert entry == {
-            **previous["models"]["titans_mac"],
+            **previous["models"][parent],
             "predictor_changes": dict(cross_asset_attention=declared),
-            "tier": "y1_xattn_late" if "position" in declared else "y1_xattn",
+            "tier": tier,
         }
-        if "position" not in declared:
+        if model in previous["models"]:
             assert entry == {**previous["models"][model], "tier": "y1_xattn"}
+        # Fuera de la atención, cada uno es su modelo de origen campo a campo.
+        assert changed(model, parent) <= {"predictor.cross_asset_attention"}, model
         positions[model] = parse_cross_asset_attention(declared).identity()["position"]
+    assert set(previous["models"]) & set(mixers) == {
+        "cross_asset_attention",
+        "cross_asset_attention_self",
+    }
     assert positions == {
-        "cross_asset_attention": "after_mac_before_head",
-        "cross_asset_attention_self": "after_mac_before_head",
+        **{model: "after_mac_before_head" for model in mixers if "_late" not in model},
         "cross_asset_attention_late": "after_technical_branch_before_head",
         "cross_asset_attention_late_self": "after_technical_branch_before_head",
     }
@@ -1063,7 +1102,12 @@ def test_the_first_screen_of_the_new_base_changes_one_recipe_field_per_model():
     controls = {model: parent for model, (parent, *_rest) in expected.items()}
     controls.update(titans_mac_frozen="titans_mac", titans_mac_disabled="titans_mac")
     controls.update(zip(nogain, cores, strict=True))
-    controls.update({model: control for model, (_declared, control) in mixers.items()})
+    controls.update({model: control for model, (_declared, control, *_rest) in mixers.items()})
     assert declared == controls
     jobs = campaign.plan(document, "mars_titan")
-    assert len({job.model for job in jobs if job.tier.startswith("y1_")}) == 20
+    assert len({job.model for job in jobs if job.tier.startswith("y1_")}) == 24
+    # Los modos de memoria de la atención sin ganancia tienen su nivel: se ajustan si esta gana.
+    assert {job.model for job in jobs if job.tier == "y1_xattn_nogain_controls"} == {
+        "cross_asset_attention_frozen_nogain",
+        "cross_asset_attention_disabled_nogain",
+    }

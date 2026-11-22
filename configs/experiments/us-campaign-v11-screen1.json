@@ -3,7 +3,7 @@
   "kind": "comparison_campaign_v1",
   "market": "US",
   "final_test_access": false,
-  "description": "Primera criba de la base nueva (v11) en EE. UU.: el núcleo de la v10 y sus dos controles, campo a campo, y diez variantes de una sola variable que la rama v11 permite medir. La normalización por capa de la rama densa, el recorte de gradiente por grupo funcional y el recorte global en 10, la recencia por tasa de aprendizaje con semividas de 5 y 10 años, el recorte suave de las entradas escaladas, la escala aprendida por entrada en la rama densa, y la emisión sin grafo de los tramos que se repiten en los tres modos de memoria, que no debe cambiar ningún resultado y mide tiempo. El término de IC medido sobre lo operable, con la predicción y la etiqueta más el alfa conocido, en los tres modos de memoria, sobre el núcleo y sobre el trío sin ganancia de la mediana, que entra tal como está en la v10. Además, la atención entre activos en sus dos posiciones, antes y después de la rama técnica, cada una con su control self_only.",
+  "description": "Primera criba de la base nueva (v11) en EE. UU.: el núcleo de la v10 y sus dos controles, campo a campo, y diez variantes de una sola variable que la rama v11 permite medir. La normalización por capa de la rama densa, el recorte de gradiente por grupo funcional y el recorte global en 10, la recencia por tasa de aprendizaje con semividas de 5 y 10 años, el recorte suave de las entradas escaladas, la escala aprendida por entrada en la rama densa, y la emisión sin grafo de los tramos que se repiten en los tres modos de memoria, que no debe cambiar ningún resultado y mide tiempo. El término de IC medido sobre lo operable, con la predicción y la etiqueta más el alfa conocido, en los tres modos de memoria, sobre el núcleo y sobre el trío sin ganancia de la mediana, que entra tal como está en la v10. Además, la atención entre activos en sus dos posiciones, antes y después de la rama técnica, cada una con su control self_only, y la posición de la v10 también sobre el trío sin ganancia de la mediana, con su control self_only y, en un nivel aparte, sus modos de memoria congelada y sin memoria.",
   "source_declaration_sha256": "836c79a6122fc14a1566826ece99f3708849a7d481361c334acd693383c88716",
   "cohort": {
     "size": 4198,
@@ -123,7 +123,9 @@
     "y1_operable",
     "y1_operable_nogain",
     "y1_xattn",
-    "y1_xattn_late"
+    "y1_xattn_late",
+    "y1_xattn_nogain",
+    "y1_xattn_nogain_controls"
   ],
   "recipes": {
     "core": "configs/titans/dgx-us-core-u2-ic3-dense-gr-v9.json",
@@ -395,6 +397,58 @@
           "heads": 4,
           "mode": "self_only",
           "position": "after_technical"
+        }
+      }
+    },
+    "cross_asset_attention_nogain": {
+      "machine": "mars_titan",
+      "recipe": "core_nogain",
+      "runner": "fit",
+      "tier": "y1_xattn_nogain",
+      "variant": "mac_online",
+      "predictor_changes": {
+        "cross_asset_attention": {
+          "heads": 4,
+          "mode": "same_session"
+        }
+      }
+    },
+    "cross_asset_attention_nogain_self": {
+      "machine": "mars_titan",
+      "recipe": "core_nogain",
+      "runner": "fit",
+      "tier": "y1_xattn_nogain",
+      "variant": "mac_online",
+      "predictor_changes": {
+        "cross_asset_attention": {
+          "heads": 4,
+          "mode": "self_only"
+        }
+      }
+    },
+    "cross_asset_attention_frozen_nogain": {
+      "machine": "mars_titan",
+      "recipe": "core_nogain",
+      "runner": "fit",
+      "tier": "y1_xattn_nogain_controls",
+      "variant": "mac_frozen",
+      "predictor_changes": {
+        "cross_asset_attention": {
+          "heads": 4,
+          "mode": "same_session"
+        }
+      }
+    },
+    "cross_asset_attention_disabled_nogain": {
+      "machine": "mars_titan",
+      "recipe": "core_nogain",
+      "runner": "fit",
+      "tier": "y1_xattn_nogain_controls",
+      "variant": "mac_disabled",
+      "predictor_changes": {
+        "cross_asset_attention": {
+          "heads": 4,
+          "mode": "same_session"
         }
       }
     }
