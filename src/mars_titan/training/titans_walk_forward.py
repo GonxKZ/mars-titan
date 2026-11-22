@@ -980,6 +980,8 @@ def carry_titans(
     modality_ablation=None,
     regenerate=False,
     evaluated_variant=None,
+    partitions=None,
+    memory_reset=None,
 ):
     """Predecir una ventana posterior con el estado elegido en la ventana ancla.
 
@@ -991,6 +993,10 @@ def carry_titans(
     la evaluación de la propia ventana del ancla. Con `evaluated_variant`, solo junto a
     `regenerate`, esa repetición usa la otra política de escritura (el gemelo `mac_frozen` de un
     ajuste `mac_online` o al revés) con todos los tensores del estado elegido sin cambios.
+    Con `partitions` y `memory_reset`, solo junto a `regenerate` y sin ablación, la repetición se
+    limita a esos tramos, en su orden, y cada uno empieza su decisión desde el estado inicial de
+    la memoria rápida sin calcular el calentamiento y vuelve a él cada `memory_reset.every`
+    instantes medidos (`financial_run.MemoryReset`, brazos R0 y R63 de los gemelos).
     """
     require_learning_allowed("la predicción trasladada de Titans-MAC")
     from .carried_predictions import (
@@ -1001,7 +1007,7 @@ def carry_titans(
         same_view,
     )
     from .checkpoints import load_training_state
-    from .financial_run import ChronologicalInference
+    from .financial_run import ChronologicalInference, MemoryReset
 
     started = time.perf_counter()
     anchor, anchor_view, view, output = (Path(v) for v in (anchor, anchor_view, view, output))
@@ -1009,6 +1015,15 @@ def carry_titans(
     _require(
         evaluated_variant is None or (regenerate and modality_ablation is None),
         "El gemelo de escritura solo repite la propia ventana del ancla, sin ablación",
+    )
+    _require(
+        (partitions is None and memory_reset is None) or (regenerate and modality_ablation is None),
+        "Solo una regeneración de la propia ventana, sin ablación, elige tramos o reinicia "
+        "la memoria",
+    )
+    _require(
+        memory_reset is None or type(memory_reset) is MemoryReset,
+        "El reinicio de la memoria se declara con MemoryReset",
     )
     report, report_sha = read_manifest(anchor / "run.json", 16 * 1024**2)
     _require(
@@ -1046,7 +1061,16 @@ def carry_titans(
             os.environ.get("CUBLAS_WORKSPACE_CONFIG") in {":4096:8", ":16:8"},
             "Configura CUBLAS_WORKSPACE_CONFIG antes de iniciar PyTorch",
         )
-    partitions = predicted_partitions(modality_ablation, regenerate)
+    predicted = predicted_partitions(modality_ablation, regenerate)
+    if partitions is None:
+        partitions = predicted
+    else:
+        _require(
+            type(partitions) is tuple
+            and partitions
+            and tuple(name for name in predicted if name in partitions) == partitions,
+            f"Los tramos elegidos son tramos distintos de {predicted}, en su orden",
+        )
     dataset = CorpusDataset(
         view, input_policy=HISTORICAL_MASKED, modality_ablation=modality_ablation
     )
@@ -1087,7 +1111,7 @@ def carry_titans(
         switch = None
     else:
         switch = _switched_parameters(state["model"], predictor, request["variant"])
-    inference = ChronologicalInference(predictor, chronological)
+    inference = ChronologicalInference(predictor, chronological, memory_reset=memory_reset)
     predictions = {}
     for name in partitions:
         rows = PredictionRows(inference.emits_levels)
@@ -1132,6 +1156,7 @@ def carry_titans(
         **ablation_record(modality_ablation),
         **regeneration_record(regenerate),
         **({} if switch is None else dict(write_policy=switch)),
+        **({} if memory_reset is None else dict(memory_reset=memory_reset.record())),
     )
     atomic_json(output / "carry.json", receipt)
     return receipt

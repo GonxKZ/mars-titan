@@ -490,6 +490,7 @@ DOUBLES = {
     "tests/training/test_masked_reference_cuda.py": (1, _RECORDER),
     "tests/training/test_masked_reference_run.py": (2, _RECORDER),
     "tests/training/test_masked_tabular.py": (2, _ESTIMATOR),
+    "tests/training/test_memory_reset.py": (1, _RECORDER),
     "tests/training/test_modality_ablation_carry.py": (1, _RECORDER),
     "tests/training/test_modality_ablation_native.py": (1, _RECORDER),
     "tests/training/test_modality_ablation_stage.py": (1, _CAMPAIGN),
