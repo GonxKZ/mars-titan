@@ -253,7 +253,8 @@ memoria en línea menos memoria congelada:
   memoria congelada y sin memoria suben 0,0019 y 0,0041. O la ganancia de la mediana ayuda a
   los controles y perjudica al que escribe, o es la variación de un ajuste a otro. Lo separa el
   trío sin ganancia de la v10 (`r4_nogain`, en la cola del origen 2013) y lo acotan las semillas
-  43 y 44.
+  43 y 44. Decidido antes de ver ese resultado: el trío sin ganancia se ajusta también con las
+  semillas 43 y 44, porque es la única diferencia de receta con el mejor núcleo medido.
 - En la v10 la ventaja decae a lo largo del año de evaluación (pendiente de −0,012 por año,
   t = −3,1) y acaba negativa en el último trimestre; en los dos pares de la v8 no decae. Es una
   observación hecha después de mirar, sobre una semilla. **Comprobación fijada antes de tener
