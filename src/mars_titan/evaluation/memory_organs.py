@@ -32,6 +32,7 @@ import shutil
 import subprocess
 import sys
 import time
+import uuid
 from pathlib import Path
 
 import numpy as np
@@ -120,10 +121,13 @@ def save_state(payload, path):
     structure = json.dumps(_plain(payload, arrays), sort_keys=True, allow_nan=False)
     arrays["structure"] = np.frombuffer(structure.encode(), dtype=np.uint8)
     path.parent.mkdir(parents=True, exist_ok=True)
-    temporary = path.with_name(path.name + ".tmp")
-    with open(temporary, "wb") as handle:
-        np.savez(handle, **arrays)
-    os.replace(temporary, path)
+    temporary = _temporary(path)
+    try:
+        with open(temporary, "wb") as handle:
+            np.savez(handle, **arrays)
+        os.replace(temporary, path)
+    finally:
+        temporary.unlink(missing_ok=True)
 
 
 def load_state(path):
@@ -164,17 +168,36 @@ def shifted(sessions, prediction, quantiles, dispersion, signal):
     return prediction + dispersion * signal, pilots.shift_quantiles(quantiles, dispersion, signal)
 
 
+def _temporary(path):
+    """Un temporal propio junto a su destino: dos procesos no comparten nunca el mismo nombre."""
+    return path.with_name(f".{path.name}.{os.getpid()}.{uuid.uuid4().hex}.tmp")
+
+
 def _atomic_json(path, document):
     path.parent.mkdir(parents=True, exist_ok=True)
-    temporary = path.with_name(path.name + ".tmp")
-    temporary.write_text(
-        json.dumps(document, indent=2, ensure_ascii=False) + "\n", encoding="utf-8"
-    )
-    os.replace(temporary, path)
+    temporary = _temporary(path)
+    try:
+        temporary.write_text(
+            json.dumps(document, indent=2, ensure_ascii=False) + "\n", encoding="utf-8"
+        )
+        os.replace(temporary, path)
+    finally:
+        temporary.unlink(missing_ok=True)
 
 
 def _parent(state, model, origin, seed):
     return state / "runs" / model / str(origin) / f"seed-{seed}"
+
+
+def _finished(folder):
+    """El recibo de un trabajo terminado con sus tres tramos emitidos, o None."""
+    complete = (folder / "run.json").is_file() and all(
+        (folder / f"{name}-predictions.parquet").is_file() for name in pilots.SPLITS
+    )
+    if not complete:
+        return None
+    record = json.loads((folder / "run.json").read_text(encoding="utf-8"))
+    return record if record.get("status") == "completed" else None
 
 
 def _claim(output, declaration, digest):
@@ -226,7 +249,8 @@ def emit(declaration, state, origin, seeds, keys, output, *, threads=1, log=prin
 
     `keys` es la carpeta de claves por vista y `output` la raíz propia de los órganos; ninguna
     puede estar dentro del estado. Un modelo sin trabajo terminado se anota y se emiten los demás.
-    Una semilla ya emitida (con su informe en `studies/`) no se rehace. `maturity` lee la
+    Una semilla ya emitida (con su informe en `studies/`) no se rehace, salvo que haya terminado
+    un modelo que faltaba: entonces se emite entera otra vez. `maturity` lee la
     madurez de las etiquetas de la vista (por omisión, el lector de la campaña).
     """
     declaration = checked_organs(declaration)
@@ -268,26 +292,28 @@ def _emit_seed(context, seed):
     output, log = context["output"], context["log"]
     stem = f"{origin}--seed-{seed}"
     report_path = output / "studies" / f"{stem}.json"
-    if report_path.is_file():
-        log(f"{stem}: ya emitido")
-        done = json.loads(report_path.read_text(encoding="utf-8"))
-        return dict(
-            seed=seed,
-            models=list(done["models"]),
-            missing=done["missing_models"],
-            skipped=True,
-            seconds=0.0,
-        )
-    present, missing, records = [], [], {}
+    records = {}
     for model in declaration["models"]:
-        folder = _parent(state, model, origin, seed)
-        complete = (folder / "run.json").is_file() and all(
-            (folder / f"{name}-predictions.parquet").is_file() for name in pilots.SPLITS
-        )
-        if complete:
-            records[model] = json.loads((folder / "run.json").read_text(encoding="utf-8"))
-            complete = records[model].get("status") == "completed"
-        (present if complete else missing).append(model)
+        record = _finished(_parent(state, model, origin, seed))
+        if record is not None:
+            records[model] = record
+    if report_path.is_file():
+        done = json.loads(report_path.read_text(encoding="utf-8"))
+        finished = [model for model in done["missing_models"] if model in records]
+        if not finished:
+            log(f"{stem}: ya emitido")
+            return dict(
+                seed=seed,
+                models=list(done["models"]),
+                missing=done["missing_models"],
+                skipped=True,
+                seconds=0.0,
+            )
+        # Una semilla emitida a medias se emite entera otra vez en cuanto termina un modelo que
+        # faltaba: la lectura por vecinos es conjunta y el informe nuevo sustituye al anterior.
+        log(f"{stem}: ya terminó {', '.join(finished)}, que faltaba; se emite de nuevo")
+    present = [model for model in declaration["models"] if model in records]
+    missing = [model for model in declaration["models"] if model not in records]
     _require(
         present,
         f"Ningún modelo declarado tiene terminado su trabajo de {origin} con la semilla {seed}"

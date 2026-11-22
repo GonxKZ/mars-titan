@@ -573,3 +573,44 @@ def test_the_relay_line_starts_the_emission_in_its_own_unit_without_waiting(caps
     arguments += ["--seed", "42", "--seed", "43", "--tree", "/t", "--python", "/p/bin/python"]
     assert organs.main([*arguments, "--keys", "/k", "--output", "/o"]) == 0
     assert capsys.readouterr().out.strip() == line
+
+
+def test_a_seed_emitted_without_a_model_is_emitted_again_once_that_model_finishes(tmp_path):
+    """H14 de la auditoría: el relevo puede emitir un origen antes de que acabe un modelo."""
+    data = campaign(tmp_path, models=("a", "b", "c"))
+    keys = tmp_path / "claves"
+    vk.build(data["manifest"], keys / data["view"], log=quiet)
+    receipt = data["state"] / "runs" / "c" / str(ORIGIN) / f"seed-{SEED}" / "run.json"
+    hidden = receipt.with_name("run.json.oculto")
+    receipt.rename(hidden)
+    output, document = tmp_path / "organos", declaration(models=["a", "b", "c"])
+    assert emit(data, keys, output, document)["runs"][0]["missing"] == ["c"]
+    first = {name: (run(output, "a", name) / "run.json").read_text() for name in organs.ARMS}
+    hidden.rename(receipt)
+    (seed,) = emit(data, keys, output, document)["runs"]
+    assert not seed["skipped"] and seed["models"] == ["a", "b", "c"] and seed["missing"] == []
+    written = json.loads((output / "studies" / f"{ORIGIN}--seed-{SEED}.json").read_text())
+    assert written["missing_models"] == [] and sorted(written["models"]) == ["a", "b", "c"]
+    for name in organs.ARMS:
+        assert (run(output, "c", name) / "run.json").is_file()
+        again = json.loads((run(output, "a", name) / "run.json").read_text())
+        assert again["selection"] == json.loads(first[name])["selection"]
+    # Sin nada nuevo terminado, la semilla ya emitida no se rehace.
+    before = snapshot(output)
+    assert emit(data, keys, output, document)["runs"][0]["skipped"]
+    assert snapshot(output) == before
+
+
+def test_a_temporary_left_by_another_writer_does_not_break_an_atomic_write(tmp_path):
+    """H14 de la auditoría: dos líneas del relevo pueden escribir a la vez en la misma raíz."""
+    target = tmp_path / "declaration.json"
+    (tmp_path / "declaration.json.tmp").mkdir()
+    organs._atomic_json(target, {"a": 1})
+    organs._atomic_json(target, {"a": 2})
+    assert json.loads(target.read_text()) == {"a": 2}
+    saved = tmp_path / "estado.npz"
+    (tmp_path / "estado.npz.tmp").mkdir()
+    organs.save_state({"x": [1.0, 2.0]}, saved)
+    assert organs.load_state(saved) == {"x": [1.0, 2.0]}
+    leftovers = sorted(p.name for p in tmp_path.iterdir())
+    assert leftovers == ["declaration.json", "declaration.json.tmp", "estado.npz", "estado.npz.tmp"]
