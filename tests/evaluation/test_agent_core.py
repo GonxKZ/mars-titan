@@ -435,3 +435,19 @@ def test_known_rows_reads_the_screening_features_of_the_decision_day(tmp_path, m
     del maturity["evaluation"]
     with pytest.raises(ValueError, match="no da la madurez de evaluation"):
         ac.known_rows(tmp_path, YEAR, tables, "v" * 64)
+
+
+def test_gross_and_net_risk_use_the_same_days():
+    settings = dict(annualization=252, cvar=0.2, base_cost_bps=5.0, multipliers=[1.0, 2.0])
+    # El primer día no tiene cartera anterior ni rotación: queda fuera de las dos cuentas.
+    gross = np.array([0.5, 0.01, -0.02, 0.01, 0.03, -0.01])
+    idle = ac.cost_table(gross, np.r_[np.nan, np.zeros(5)], settings)
+    assert idle["mean_bps"] == pytest.approx(40.0)
+    assert idle["net_sharpe"]["1.0"] == pytest.approx(idle["risk"]["sharpe"])
+    busy = ac.cost_table(gross, np.r_[np.nan, np.full(5, 2.0)], settings)
+    assert busy["turnover"] == pytest.approx(2.0)
+    assert busy["breakeven_bps"] == pytest.approx(20.0)
+    assert busy["safety_margin"] == pytest.approx(4.0)
+    net = ac.risk_metrics(gross[1:] - 5e-4 * 2.0, annualization=252, cvar=0.2)["sharpe"]
+    assert busy["net_sharpe"]["1.0"] == pytest.approx(net)
+    assert busy["net_sharpe"]["2.0"] < busy["net_sharpe"]["1.0"] < busy["risk"]["sharpe"]

@@ -849,6 +849,36 @@ def _a3(tool, games, players, modes):
     return summary, rows
 
 
+def cost_table(gross, turnover, settings):
+    """Riesgo bruto y neto de una cartera en los mismos días: los que tienen rotación.
+
+    El primer día no tiene cartera anterior; queda fuera del bruto y del neto, así que el
+    Sharpe neto solo se separa del bruto por el coste.
+    """
+    days = np.isfinite(np.asarray(turnover, dtype=np.float64))
+    gross = np.asarray(gross, dtype=np.float64)[days]
+    turnover = np.asarray(turnover, dtype=np.float64)[days]
+    traded = float(turnover.mean())
+    risk = risk_metrics(gross, annualization=settings["annualization"], cvar=settings["cvar"])
+    breakeven = float(gross.mean() / traded) * 1e4 if traded > 0 else None
+    net = {
+        str(multiplier): risk_metrics(
+            gross - settings["base_cost_bps"] * multiplier / 1e4 * turnover,
+            annualization=settings["annualization"],
+            cvar=settings["cvar"],
+        )["sharpe"]
+        for multiplier in settings["multipliers"]
+    }
+    return dict(
+        risk=risk,
+        mean_bps=risk["mean"] * 1e4,
+        turnover=traded,
+        breakeven_bps=breakeven,
+        safety_margin=None if breakeven is None else breakeven / settings["base_cost_bps"],
+        net_sharpe=net,
+    )
+
+
 def _a4(declaration, tool, views):
     settings = declaration["costs"]
     books, rows = {}, []
@@ -868,20 +898,13 @@ def _a4(declaration, tool, views):
         book = tail_book(view["score"], assets, bounds, settings["tail"])
         gross, turnover = book_series(book, returns)
         series[name] = (view["keys"], gross, turnover, book, view)
-    sharpes = [series[n][1].mean() / series[n][1].std(ddof=1) for n in series]
+    traded_days = {n: np.isfinite(series[n][2]) for n in series}
+    sharpes = [
+        series[n][1][traded_days[n]].mean() / series[n][1][traded_days[n]].std(ddof=1)
+        for n in series
+    ]
     for name, (keys, gross, turnover, book, view) in series.items():
-        traded = np.nanmean(turnover)
-        metrics = risk_metrics(
-            gross, annualization=settings["annualization"], cvar=settings["cvar"]
-        )
-        breakeven = float(gross[1:].mean() / traded) * 1e4 if traded > 0 else None
-        net = {}
-        for multiplier in settings["multipliers"]:
-            cost = settings["base_cost_bps"] * multiplier / 1e4
-            daily = gross[1:] - cost * turnover[1:]
-            net[str(multiplier)] = risk_metrics(
-                daily, annualization=settings["annualization"], cvar=settings["cvar"]
-            )["sharpe"]
+        table = cost_table(gross, turnover, settings)
         deciles = within_session_groups(view["score"], view["bounds"], 10)
         by_decile = [
             float(
@@ -901,13 +924,8 @@ def _a4(declaration, tool, views):
             for (s, e), b in zip(view["bounds"], book, strict=True)
         ]
         books[name] = dict(
-            risk=metrics,
-            mean_bps=metrics["mean"] * 1e4,
-            turnover=float(traded),
-            breakeven_bps=breakeven,
-            safety_margin=breakeven / settings["base_cost_bps"] if breakeven else None,
-            net_sharpe=net,
-            deflated_sharpe=deflated_sharpe(gross, sharpes, trials=len(series)),
+            **table,
+            deflated_sharpe=deflated_sharpe(gross[traded_days[name]], sharpes, trials=len(series)),
             deciles_bps=[v * 1e4 for v in by_decile],
             monotonicity=rank_ic(np.arange(10.0), np.array(by_decile)),
             median_log_dollar_volume=float(np.nanmedian(np.concatenate(legs))) if legs else None,
