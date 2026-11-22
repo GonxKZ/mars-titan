@@ -33,9 +33,9 @@ def write_model(
     for split, count in sessions.items():
         rows = []
         for session in range(count):
-            labels = np.random.default_rng(10_000 + offset + session).standard_normal(ASSETS)
+            labels = np.random.default_rng(10_000 + offset + session).standard_normal(assets)
             noise = np.random.default_rng(noise_seed * 1000 + offset + session).standard_normal(
-                ASSETS
+                assets
             )
             prediction = signal * labels + noise
             instant = START + (offset + session) * DAY
@@ -73,11 +73,21 @@ def build_state(tmp_path, seeds=(42, 43, 44)):
     return state
 
 
-def add_origin(state, year, seeds=(42, 43, 44), better=0.6):
+def add_origin(state, year, seeds=(42, 43, 44), better=0.6, assets=ASSETS):
     """Otro origen del mismo estado, con su propio ruido."""
     for seed in seeds:
-        write_model(state, "base", seed, signal=0.3, noise_seed=seed + year, year=year)
-        write_model(state, "mejor", seed, signal=better, noise_seed=seed + 7 * year, year=year)
+        write_model(
+            state, "base", seed, signal=0.3, noise_seed=seed + year, year=year, assets=assets
+        )
+        write_model(
+            state,
+            "mejor",
+            seed,
+            signal=better,
+            noise_seed=seed + 7 * year,
+            year=year,
+            assets=assets,
+        )
     return state
 
 
@@ -330,6 +340,209 @@ def test_the_command_takes_references_and_extra_pairs(tmp_path, capsys):
         with pytest.raises(SystemExit):
             contrasts.main([*arguments, "--pair", pair, "--output", str(tmp_path / "otra")])
     assert not (tmp_path / "otra").exists()
+
+
+class FakeOffset:
+    """Alfa y liquidez conocidos de cada fila, función del activo y de la sesión."""
+
+    def __init__(self):
+        self.calls = 0
+
+    def rows(self, run, split):
+        self.calls += 1
+        table = pq.read_table(run / f"{split}-predictions.parquet").sort_by(
+            [("market", "ascending"), ("prediction_at", "ascending"), ("sample_id", "ascending")]
+        )
+        names = table.column("sample_id").to_pylist()
+        assets = np.array([int(name.split("/")[1][1:]) for name in names])
+        sessions = (np.array([int(name.split("/")[2]) for name in names]) - START) // DAY
+        alpha = 0.8 * np.sin(0.7 * assets + 0.3 * sessions)
+        # Un activo sin modelo de mercado: su alfa no se conoce y sus filas no cuentan.
+        alpha[assets == 0] = np.nan
+        return alpha, assets.astype(np.float64)
+
+
+def operable_by_hand(state, model, seed, split, factor, liquid=False):
+    """IC sin alfa por sesión de una semilla, calculado aparte con pandas."""
+    path = state / "runs" / model / "2013" / f"seed-{seed}" / f"{split}-predictions.parquet"
+    table = pq.read_table(path).to_pandas()
+    table["asset"] = table["sample_id"].str.split("/").str[1].str[1:].astype(int)
+    table["session"] = (table["sample_id"].str.split("/").str[2].astype("int64") - START) // DAY
+    table["alpha"] = 0.8 * np.sin(0.7 * table["asset"] + 0.3 * table["session"])
+    table = table[table["asset"] != 0]
+    values = {}
+    for instant, rows in table.groupby("prediction_at"):
+        if liquid:
+            rows = rows.sort_values("asset").iloc[len(rows) - len(rows) // 3 :]
+        signal = factor * rows["prediction"] + rows["alpha"]
+        values[instant] = signal.rank().corr((rows["target"] + rows["alpha"]).rank())
+    return values
+
+
+def test_the_operable_return_uses_the_scale_chosen_in_calibration(tmp_path):
+    state = tmp_path / "state"
+    for seed in (42, 43, 44):
+        # Cien activos: el tercio líquido de los 99 con alfa pasa del mínimo de 30.
+        write_model(state, "base", seed, signal=0.3, noise_seed=seed, assets=100)
+        write_model(state, "mejor", seed, signal=0.6, noise_seed=seed, assets=100)
+    # Las predicciones de un modelo, veinte veces mayores: sin factor, taparían al alfa.
+    for path in (state / "runs" / "mejor").rglob("*.parquet"):
+        table = pq.read_table(path)
+        scaled = pa.array(table.column("prediction").to_numpy() * 20.0)
+        pq.write_table(
+            table.set_column(table.schema.get_field_index("prediction"), "prediction", scaled), path
+        )
+    provider = FakeOffset()
+    report = contrasts.build(state, 2013, [42, 43, 44], {"mejor": "base"}, offset=provider)
+    module = contrasts._report_module()
+    for model in ("base", "mejor"):
+        entry = report["models"][model]["operable"]
+        assert len(entry["factors"]) == 3 and set(entry["factors"]) <= set(module.SCALES)
+        per_seed = []
+        for seed, factor in zip((42, 43, 44), entry["factors"], strict=True):
+            # El factor es el que da más IC sin alfa en calibración, y solo en ella.
+            calibration = {
+                scale: np.mean(
+                    list(operable_by_hand(state, model, seed, "calibration", scale).values())
+                )
+                for scale in module.SCALES
+            }
+            assert factor == max(module.SCALES, key=calibration.get)
+            per_seed.append(operable_by_hand(state, model, seed, "evaluation", factor))
+        expected = np.mean([np.mean([one[key] for one in per_seed]) for key in per_seed[0]])
+        assert entry["evaluation"]["sessions"] == 40
+        assert entry["evaluation"]["mean"] == pytest.approx(expected, rel=1e-9)
+    assert report["models"]["mejor"]["operable"]["factors"][0] < 0.2
+    row = report["contrasts"]["mejor"]["operable"]
+    assert row["evaluation"]["mean"] == pytest.approx(
+        report["models"]["mejor"]["operable"]["evaluation"]["mean"]
+        - report["models"]["base"]["operable"]["evaluation"]["mean"],
+        rel=1e-9,
+    )
+    assert row["decision"]["sessions"] == 50 and row["evaluation"]["mean"] > 0
+    # El tercio más líquido de cada sesión, con el mismo factor.
+    liquid = report["models"]["base"]["operable_liquid"]
+    factor = report["models"]["base"]["operable"]["factors"][0]
+    hand = operable_by_hand(state, "base", 42, "evaluation", factor, liquid=True)
+    assert liquid["per_seed"]["evaluation"][0] == pytest.approx(
+        np.mean(list(hand.values())), rel=1e-9
+    )
+    # El alfa de las filas es el mismo para todas las semillas y modelos: se lee una vez por tramo.
+    assert provider.calls == 3
+    text = contrasts.markdown(report)
+    assert "## Rendimiento operable" in text and "| mejor | base |" in text
+    # Sin el desplazamiento no se informa de lo operable.
+    plain = contrasts.build(state, 2013, [42, 43, 44], {"mejor": "base"})
+    assert (
+        "operable" not in plain["models"]["base"] and "operable" not in plain["contrasts"]["mejor"]
+    )
+    assert "Rendimiento operable" not in contrasts.markdown(plain)
+
+
+def test_a_small_universe_has_no_liquid_third_and_says_so_without_numbers(tmp_path):
+    state = tmp_path / "state"
+    for year in (2014, 2015):
+        add_origin(state, year)
+    # Cuarenta activos: el tercio líquido no llega a los 30 de una sesión válida.
+    document = contrasts.build_origins(
+        state, [2014, 2015], [42, 43, 44], {"mejor": "base"}, offsets=lambda year: FakeOffset()
+    )
+    entry = document["across"]["mejor"]
+    assert entry["operable"]["evaluation"]["between"]["origins"] == 2
+    liquid = entry["operable_liquid"]["evaluation"]
+    assert liquid["origin_means"] == [None, None] and liquid["pooled"]["sessions"] == 0
+    assert liquid["between"] == dict(
+        origins=0, mean=None, se=None, t=None, df=0, p=None, positive=0
+    )
+    level = document["origins"][0]["models"]["base"]["operable_liquid"]
+    assert level["evaluation"]["sessions"] == 0 and level["per_seed"]["evaluation"] == [None] * 3
+    assert "— (—)" in contrasts.markdown_origins(document)
+
+
+def test_the_summary_between_origins_carries_the_operable_return(tmp_path):
+    state = tmp_path / "state"
+    for year in (2014, 2015, 2016):
+        add_origin(state, year, assets=100)
+    document = contrasts.build_origins(
+        state,
+        [2014, 2015, 2016],
+        [42, 43, 44],
+        {"mejor": "base"},
+        offsets=lambda year: FakeOffset(),
+    )
+    entry = document["across"]["mejor"]
+    for kind in ("operable", "operable_liquid"):
+        block = entry[kind]["evaluation"]
+        means = [
+            origin["contrasts"]["mejor"][kind]["evaluation"]["mean"]
+            for origin in document["origins"]
+        ]
+        assert block["origin_means"] == means and block["between"]["origins"] == 3
+        assert block["pooled"]["sessions"] == 120
+    text = contrasts.markdown_origins(document)
+    assert "## Entre orígenes: rendimiento operable" in text
+
+
+def write_record(state, model, seed, attempts, year=2013):
+    queue = state / "queue"
+    queue.mkdir(exist_ok=True)
+    record = dict(status="completed", model=model, year=year, seed=seed, attempts=attempts)
+    (queue / f"{model}--{year}--seed-{seed}.json").write_text(json.dumps(record))
+
+
+def place(site, gpu, machine):
+    return dict(
+        execution=dict(code_commit="a" * 40),
+        resources=dict(
+            site=site,
+            gpu_name=gpu,
+            platform=dict(system="Linux", machine=machine),
+            versions=dict(torch="2.14.0+cu130"),
+        ),
+    )
+
+
+def test_the_document_says_where_each_model_was_fitted(tmp_path):
+    state = build_state(tmp_path)
+    dgx = place(None, "NVIDIA GB10", "aarch64")
+    colab = place("google-colab-rtx-pro-6000", "NVIDIA RTX PRO 6000", "x86_64")
+    for seed in (42, 43, 44):
+        write_record(state, "base", seed, [dgx])
+    # Un modelo con una semilla ajustada aquí y dos en Colab lleva los dos sitios.
+    write_record(state, "mejor", 42, [dgx])
+    write_record(state, "mejor", 43, [colab])
+    write_record(state, "mejor", 44, [colab])
+    report = contrasts.build(state, 2013, [42, 43, 44], {"mejor": "base", "igual": "base"})
+    assert [item["site"] for item in report["models"]["base"]["provenance"]] == [None]
+    assert [item["site"] for item in report["models"]["mejor"]["provenance"]] == [
+        None,
+        "google-colab-rtx-pro-6000",
+    ]
+    assert report["models"]["igual"]["provenance"] == []
+    lines = contrasts.markdown(report).splitlines()
+    section = lines[lines.index("## Procedencia de los ajustes") :]
+    assert [line for line in section if line.startswith("- ")] == [
+        "- NVIDIA GB10 (aarch64), sin etiqueta de equipo: `base`, `mejor`",
+        "- NVIDIA RTX PRO 6000 (x86_64), equipo google-colab-rtx-pro-6000: `mejor`",
+        "- sin telemetría del equipo: `igual`",
+    ]
+
+
+def test_the_summary_between_origins_says_the_place_of_each_origin(tmp_path):
+    state = tmp_path / "state"
+    for year in (2014, 2015):
+        add_origin(state, year)
+    for seed in (42, 43, 44):
+        for model in ("base", "mejor"):
+            write_record(state, model, seed, [place(None, "NVIDIA GB10", "aarch64")], year=2014)
+            write_record(state, model, seed, [place("colab-a", "RTX", "x86_64")], year=2015)
+    document = contrasts.build_origins(state, [2014, 2015], [42, 43, 44], {"mejor": "base"})
+    lines = contrasts.markdown_origins(document).splitlines()
+    section = lines[lines.index("## Procedencia de los ajustes") :]
+    assert [line for line in section if line.startswith("- ")] == [
+        "- Origen 2014, NVIDIA GB10 (aarch64), sin etiqueta de equipo: los 2 modelos",
+        "- Origen 2015, RTX (x86_64), equipo colab-a: los 2 modelos",
+    ]
 
 
 def test_the_command_writes_the_table_and_the_document(tmp_path, capsys):

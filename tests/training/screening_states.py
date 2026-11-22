@@ -11,7 +11,23 @@ SESSIONS = dict(validation=40, calibration=20, evaluation=60)
 FIRST = dict(validation=0, calibration=100, evaluation=200)
 
 
-def write_model(state, name, year, signal, *, seed, markets=("US",), assets=40, tier="core"):
+def attempt(site, gpu, *, machine="x86_64", commit="a" * 40, seconds=3600.0):
+    """Un intento con la telemetría del equipo en el que corrió."""
+    return dict(
+        seconds=seconds,
+        execution=dict(code_commit=commit),
+        resources=dict(
+            site=site,
+            gpu_name=gpu,
+            platform=dict(system="Linux", machine=machine),
+            versions=dict(torch="2.14.0+cu130"),
+        ),
+    )
+
+
+def write_model(
+    state, name, year, signal, *, seed, markets=("US",), assets=40, tier="core", attempts=None
+):
     """Un modelo terminado cuyo acierto es `signal` veces el objetivo más un ruido propio."""
     run = state / "runs" / name / str(year) / "seed-42"
     run.mkdir(parents=True)
@@ -58,7 +74,7 @@ def write_model(state, name, year, signal, *, seed, markets=("US",), assets=40, 
         tier=tier,
         year=year,
         seed=42,
-        attempts=[dict(seconds=3600.0)],
+        attempts=[dict(seconds=3600.0)] if attempts is None else attempts,
         result=dict(best_epoch=2, best_score=0.48),
     )
     (queue / f"{name}--{year}--seed-42.json").write_text(json.dumps(record))
