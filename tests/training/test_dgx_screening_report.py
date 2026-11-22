@@ -598,3 +598,44 @@ def test_the_implied_probability_matches_the_row_by_row_interpolation():
     actual = report._implied_up_probability(rows)
     np.testing.assert_array_equal(actual, expected)
     assert report._implied_up_probability(np.empty((0, 5))).shape == (0,)
+
+
+def test_a_state_without_validation_is_read_when_validation_does_not_decide(tmp_path):
+    """Los órganos de memoria emiten calibración y evaluación: cuentan si decide la calibración."""
+    state, organs = tmp_path / "estado", tmp_path / "organos"
+    write_model(state, "control", 2013, 0.15, seed=1)
+    write_model(organs, "memoria", 2013, 0.3, seed=2)
+    (organs / "runs/memoria/2013/seed-42/validation-predictions.parquet").unlink()
+    controls = dict(memoria="control")
+    pooled = report.build(state, [2013], 42, controls, {}, references=[organs])
+    assert pooled["origins"][0]["missing_splits"] == [
+        dict(model="memoria", state=str(organs), missing=["validation"])
+    ]
+    single = report.build(
+        state, [2013], 42, controls, {}, references=[organs], decision_splits=("calibration",)
+    )
+    origin = single["origins"][0]
+    assert sorted(origin["models"]) == ["control", "memoria"] and origin["missing_splits"] == []
+    ic = origin["models"]["memoria"]["ic"]
+    assert ic["validation"]["sessions"] == 0
+    assert ic["evaluation"]["sessions"] == SESSIONS["evaluation"]
+    (row,) = origin["contrasts"]
+    assert row["validation"]["sessions"] == 0
+    assert row["decision"]["sessions"] == SESSIONS["calibration"] and row["evaluation"]["mean"] > 0
+    assert origin["ensembles"][0]["members"] == ["memoria"]
+    assert "| `memoria` | `control` |" in report.markdown(single)
+    # El desplazamiento conocido mide solo los tramos que hay.
+    reports = {
+        name: report.model_report(folder, record, 2013, 42, decision_splits=("calibration",))
+        for folder in (state, organs)
+        for name, record in report.completed(folder, 2013, 42).items()
+    }
+
+    class Provider:
+        def rows(self, run, split):
+            rows = len(reports[run.parts[-3]]["_splits"][split]["target"])
+            return np.random.default_rng(rows).normal(0, 0.01, rows), np.full(rows, 10.0)
+
+    known = report.offset_report(reports, Provider(), 2013, 42)
+    assert set(known["models"]["memoria"]["free"]) == {"calibration", "evaluation"}
+    assert set(known["models"]["control"]["free"]) == set(report.SPLITS)

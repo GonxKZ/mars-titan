@@ -468,7 +468,8 @@ def offset_report(reports, provider, year, seed):
     for name, report in sorted(reports.items()):
         run = Path(report["state"]) / "runs" / name / str(year) / f"seed-{seed}"
         per_split, volumes = {}, {}
-        for split in SPLITS:
+        present = [split for split in SPLITS if report["_splits"][split] is not None]
+        for split in present:
             digest = report["_splits"][split]["sample"]
             if (split, digest) not in alphas:
                 alphas[split, digest] = provider.rows(run, split)
@@ -514,8 +515,8 @@ def offset_report(reports, provider, year, seed):
 
         if baseline is None:
             baseline = dict(
-                label={s: summary(ics(s, 0.0, False, model=False)) for s in SPLITS},
-                free={s: summary(ics(s, 0.0, True, model=False)) for s in SPLITS},
+                label={s: summary(ics(s, 0.0, False, model=False)) for s in present},
+                free={s: summary(ics(s, 0.0, True, model=False)) for s in present},
                 liquid_label=units("evaluation", False, liquid=True, model=False),
                 liquid_free=units("evaluation", True, liquid=True, model=False),
             )
@@ -549,14 +550,14 @@ def offset_report(reports, provider, year, seed):
         models[name] = dict(
             label=summary(ics("evaluation", 1.0, False)),
             # La predicción del modelo para la etiqueta sin alfa es la suya más alfa.
-            free={s: units(s, True) for s in SPLITS},
+            free={s: units(s, True) for s in present},
             # Los rangos de la predicción tal cual frente a la etiqueta sin alfa.
-            free_ranks={s: summary(ics(s, 1.0, True)) for s in SPLITS},
+            free_ranks={s: summary(ics(s, 1.0, True)) for s in present},
             liquid_label=units("evaluation", False, liquid=True),
             liquid_free=units("evaluation", True, liquid=True),
             # Lo mismo con la predicción multiplicada por el factor elegido en calibración.
             scale=scale,
-            free_scaled={s: scaled(s) for s in SPLITS},
+            free_scaled={s: scaled(s) for s in present},
             liquid_free_scaled=scaled("evaluation", liquid=True),
             dispersion=dispersion(report["_splits"]["calibration"], per_split["calibration"]),
             weight=weight,
@@ -911,9 +912,12 @@ def completed(state, year, seed):
 def model_report(state, record, year, seed, decision_splits=DECISION):
     run = state / "runs" / record["model"] / str(year) / f"seed-{seed}"
     splits = {split: load_split(run, split) for split in SPLITS}
-    if any(data is None for data in splits.values()):
+    # La validación solo hace falta si decide: los órganos de memoria emiten calibración y
+    # evaluación, y su κ se elige en la calibración.
+    needed = [split for split in SPLITS if split != "validation" or split in decision_splits]
+    if any(splits[split] is None for split in needed):
         return None
-    ics = {split: session_ic(data) for split, data in splits.items()}
+    ics = {split: {} if data is None else session_ic(data) for split, data in splits.items()}
     curve = epoch_curve(run)
     late = [value for epoch, value in curve if epoch >= 2]
     # Un trabajo reanudado reparte su tiempo entre varios intentos: se suman todos.
