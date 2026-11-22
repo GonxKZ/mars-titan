@@ -529,6 +529,19 @@ def test_the_nogain_organs_differ_from_v1_only_in_their_models_and_description()
     assert set(nogain) == set(v1)
 
 
+def test_the_v2_organs_add_the_nogain_trio_to_the_models_of_v1():
+    folder = HERE.parents[2] / "configs" / "experiments"
+    v1 = json.loads((folder / "posttraining-memory-organs-v1.json").read_text())
+    v2 = json.loads((folder / "posttraining-memory-organs-v2.json").read_text())
+    organs.checked_organs(v2)
+    trio = ["titans_mac_nogain", "titans_mac_frozen_nogain", "titans_mac_disabled_nogain"]
+    assert v2["models"] == [*v1["models"], *trio]
+    assert v2["description"] != v1["description"]
+    same = {key for key in v1 if key not in {"models", "description"}}
+    assert {key: v2[key] for key in same} == {key: v1[key] for key in same}
+    assert set(v2) == set(v1)
+
+
 def test_the_relay_line_starts_the_emission_in_its_own_unit_without_waiting(capsys):
     options = dict(
         label="v11",
