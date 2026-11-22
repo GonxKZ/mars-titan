@@ -136,3 +136,98 @@ def test_missing_gpu_measurement_remains_unknown(monkeypatch):
     assert result["gpu_memory_peak_sampled_bytes"] is None
     assert result["gpu_memory_samples"] == 0
     assert result["gpu_memory_reason"]
+
+
+def test_the_site_label_is_read_once_at_the_start_and_recorded(monkeypatch):
+    monkeypatch.setenv("MARS_TITAN_SITE", "google-colab-rtx-pro-6000")
+    measurement = telemetry.AttemptMetrics()
+    monkeypatch.setenv("MARS_TITAN_SITE", "otro-equipo")
+
+    assert measurement.finish("cpu")["site"] == "google-colab-rtx-pro-6000"
+
+
+def test_without_a_site_label_the_attempt_says_so(monkeypatch):
+    monkeypatch.delenv("MARS_TITAN_SITE", raising=False)
+    assert telemetry.AttemptMetrics().finish("cpu")["site"] is None
+
+
+@pytest.mark.parametrize("label", ["", "Con Espacios", "a" * 65, "MAYUSCULAS", "ruta/../x"])
+def test_an_invalid_site_label_stops_the_attempt_before_any_work(monkeypatch, label):
+    monkeypatch.setenv("MARS_TITAN_SITE", label)
+    with pytest.raises(ValueError, match="MARS_TITAN_SITE"):
+        telemetry.AttemptMetrics()
+
+
+def test_cuda_records_the_driver_the_runtime_and_the_architecture(monkeypatch):
+    cuda = SimpleNamespace(
+        is_initialized=lambda: True,
+        max_memory_allocated=lambda device: 1,
+        max_memory_reserved=lambda device: 2,
+        get_device_name=lambda device: "NVIDIA RTX PRO 6000 Blackwell",
+        get_device_capability=lambda device: (12, 0),
+        get_device_properties=lambda device: SimpleNamespace(total_memory=96 * 1024**3),
+    )
+    torch = SimpleNamespace(
+        cuda=cuda,
+        version=SimpleNamespace(cuda="13.0"),
+        backends=SimpleNamespace(cudnn=SimpleNamespace(version=lambda: 92400)),
+    )
+    monkeypatch.setitem(sys.modules, "torch", torch)
+    monkeypatch.setattr(telemetry, "_gpu_driver", lambda: "590.48.01")
+
+    result = telemetry.AttemptMetrics().finish("cuda:0")
+
+    assert result["gpu_name"] == "NVIDIA RTX PRO 6000 Blackwell"
+    assert result["gpu_capability"] == [12, 0]
+    assert result["gpu_total_bytes"] == 96 * 1024**3
+    assert result["cuda_runtime"] == "13.0"
+    assert result["cudnn"] == 92400
+    assert result["gpu_driver"] == "590.48.01"
+
+
+def test_unknown_cuda_details_stay_unknown_without_losing_the_peaks(monkeypatch):
+    cuda = SimpleNamespace(
+        is_initialized=lambda: True,
+        max_memory_allocated=lambda device: 1234,
+        max_memory_reserved=lambda device: 2048,
+        get_device_name=lambda device: "GPU de prueba",
+    )
+    monkeypatch.setitem(sys.modules, "torch", SimpleNamespace(cuda=cuda))
+
+    def failing():
+        raise OSError("nvidia-smi no está")
+
+    monkeypatch.setattr(telemetry.subprocess, "run", lambda *a, **k: failing())
+
+    result = telemetry.AttemptMetrics().finish("cuda:0")
+
+    assert result["cuda_allocated_peak_bytes"] == 1234 and result["cuda_reason"] is None
+    for name in ("gpu_capability", "gpu_total_bytes", "cuda_runtime", "cudnn", "gpu_driver"):
+        assert result[name] is None
+
+
+def test_a_cpu_attempt_does_not_ask_for_the_driver(monkeypatch):
+    def forbidden(*_, **__):
+        raise AssertionError("un intento en CPU no consulta la GPU")
+
+    monkeypatch.setattr(telemetry.subprocess, "run", forbidden)
+    result = telemetry.AttemptMetrics().finish("cpu")
+    assert result["gpu_driver"] is None and result["gpu_capability"] is None
+
+
+def test_the_driver_query_is_bounded_and_reads_one_line(monkeypatch):
+    calls = []
+
+    def run(command, **options):
+        calls.append((command, options))
+        return SimpleNamespace(stdout="590.48.01\n")
+
+    monkeypatch.setattr(telemetry.subprocess, "run", run)
+    assert telemetry._gpu_driver() == "590.48.01"
+    command, options = calls[0]
+    assert command[0] == "nvidia-smi" and "--query-gpu=driver_version" in command
+    assert options["timeout"] == 2 and options["check"] is True
+    monkeypatch.setattr(
+        telemetry.subprocess, "run", lambda *a, **k: SimpleNamespace(stdout="x" * 500)
+    )
+    assert telemetry._gpu_driver() is None

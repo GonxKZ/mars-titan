@@ -242,6 +242,13 @@ def _signal_ceiling_script(tmp_path, monkeypatch):
     return lambda: main([*arguments, "--output", str(tmp_path / "out")]), double
 
 
+def _dgx_tabular_reference_script(tmp_path, monkeypatch):
+    # Tras la guarda, el script construye la referencia leyendo el estado de la campaña.
+    main, double = _script("dgx_tabular_reference.py", "build", monkeypatch)
+    arguments = ["--state", str(tmp_path / "state"), "--year", "2013"]
+    return lambda: main([*arguments, "--output", str(tmp_path / "out")]), double
+
+
 def _qlib_native_validation(tmp_path, monkeypatch):
     module = importlib.import_module("mars_titan.models.baselines.qlib_lightgbm")
     double = Double()
@@ -333,6 +340,7 @@ ENTRY_POINTS = {
         ),
     ),
     "run_signal_ceiling": _signal_ceiling_script,
+    "dgx_tabular_reference": _dgx_tabular_reference_script,
     "external_corpus": _simple(
         "mars_titan.training.external_corpus",
         "CorpusDataset",

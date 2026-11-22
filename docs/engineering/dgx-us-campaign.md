@@ -1522,6 +1522,18 @@ error. El plan recorre, con una fase cada vez y la preparación de la siguiente 
   05:13 y reanudó a las 05:25), y la campaña baja a cinco trabajadores en EE. UU. y cuatro en
   la conjunta. Con la campaña en marcha no se lanza ningún trabajo auxiliar en GPU y los de
   CPU van de uno en uno.
+- **Qué mide la guardia.** La presión de `system.slice` no es la de producción: suma los 83
+  contenedores del equipo, entre ellos las pilas de pruebas de extremo a extremo de la otra
+  sesión, que arrancan y paran a menudo. Volvió a pedir la pausa a las 06:34 y a las 06:52 UTC
+  (hasta 43), esta última cinco minutos después de reanudar y sin ningún trabajo auxiliar, y
+  en ese momento ningún contenedor de producción pasaba del 2 % en cinco minutos y la web
+  respondía en 0,2 a 0,7 s. Cada pausa falsa cuesta un cuarto de hora de todos los
+  trabajadores y deja la campaña en un bucle de arranques. Desde las 06:58 UTC la guardia
+  mide la mayor presión de los contenedores de producción (los `gaia-gpic-*`) y pide la pausa
+  si pasa de 5 tres minutos seguidos. La de `system.slice` queda como red de seguridad (60,
+  tres minutos) y como respaldo, con su umbral de 10, si no se puede leer Docker. El
+  historial anota las dos. La fase del origen 2013 sigue con cuatro trabajadores mientras
+  dure el trabajo de ingeniería del día.
 
 Las dos comprobaciones previas siguen valiendo: cada fase incluye el nivel de los padres de
 sus lectores (`revisa_plan.py` lo comprueba con el código de cada copia fija) y la primera

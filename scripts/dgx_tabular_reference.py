@@ -28,6 +28,8 @@ import numpy as np
 import pyarrow as pa
 import pyarrow.parquet as pq
 
+from mars_titan.training.learning_hold import require_learning_allowed
+
 SPLITS = ("validation", "calibration", "evaluation")
 PARTITIONS = {"train": 0, "validation": 1, "calibration": 2, "evaluation": 3}
 MIN_ASSETS = 30
@@ -329,6 +331,8 @@ def main(argv=None):
     args = parser.parse_args(argv)
     if not 1 <= args.threads <= 32 or any(not 1 <= count <= 5000 for count in args.trees):
         parser.error("Los hilos van de 1 a 32 y los árboles de 1 a 5000")
+    # El guion ajusta un modelo: respeta la protección local antes de leer el estado.
+    require_learning_allowed("la referencia tabular de la campaña DGX")
     alpha_free = args.target == "alpha_free"
     name = args.name or ("lightgbm_technical_free" if alpha_free else "lightgbm_technical")
     run, receipt = build(
