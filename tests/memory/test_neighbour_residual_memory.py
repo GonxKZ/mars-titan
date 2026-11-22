@@ -1,5 +1,7 @@
 """Memoria por vecinos del residuo maduro: definición del laboratorio, causalidad y contratos."""
 
+import warnings
+
 import numpy as np
 import pytest
 from scipy.special import ndtri
@@ -141,7 +143,10 @@ def test_pause_and_restore_mid_stream_change_nothing():
     restored = nrm.NeighbourMemory.restore(memory.export())
     rest = {k: v[4 * 30 :] for k, v in data.items()}
     reads_b, placebo_b = nrm.replay(
-        restored, **rest, placebo_seed=4, pending_targets=dict(
+        restored,
+        **rest,
+        placebo_seed=4,
+        pending_targets=dict(
             markets=first["markets"], prediction_at=first["prediction_at"], target=first["target"]
         ),
     )
@@ -175,7 +180,10 @@ def test_cohorts_mature_in_order_and_the_clock_never_goes_back():
     for s in range(2):
         rows = slice(s * 30, (s + 1) * 30)
         memory.emit(
-            "US", START + s * DAY, data["keys"][rows], data["predictions"][rows],
+            "US",
+            START + s * DAY,
+            data["keys"][rows],
+            data["predictions"][rows],
             matures_at=START + (s + 1) * DAY,
         )
     with pytest.raises(ValueError, match="fuera de orden"):
@@ -188,7 +196,10 @@ def test_cohorts_mature_in_order_and_the_clock_never_goes_back():
         )
     with pytest.raises(ValueError, match="después de su decisión"):
         memory.emit(
-            "US", START + 2 * DAY, data["keys"][60:], data["predictions"][60:],
+            "US",
+            START + 2 * DAY,
+            data["keys"][60:],
+            data["predictions"][60:],
             matures_at=START + 2 * DAY,
         )
 
@@ -208,7 +219,10 @@ def test_a_cohort_cannot_mature_before_the_last_emission_of_its_market():
     for s in range(3):
         rows = slice(s * 30, (s + 1) * 30)
         memory.emit(
-            "US", START + s * DAY, data["keys"][rows], data["predictions"][rows],
+            "US",
+            START + s * DAY,
+            data["keys"][rows],
+            data["predictions"][rows],
             matures_at=START + (s + 1) * DAY,
         )
     before = memory.export()["state_sha256"]
@@ -463,3 +477,67 @@ def test_reading_a_cohort_reuses_the_buffers_of_the_earlier_ones():
     assert peak < similarities / 2, f"{peak} bytes nuevos al leer una cohorte"
     whole, _, _ = run(data)
     np.testing.assert_array_equal(reads, whole[(sessions - 1) * assets :])
+
+
+def test_keys_beyond_the_fp32_range_of_their_squares_are_still_unit_rows():
+    """H02 (a) de la auditoría: una fila no nula no se queda en cero por desbordar su norma."""
+    rng = np.random.default_rng(12)
+    raw = rng.normal(size=(6, 4)).astype(np.float32)
+    raw[1] = 1e20
+    raw[4] = 1e-25
+    matrix = np.eye(4, dtype=np.float32)
+    nominal = raw @ matrix
+    with warnings.catch_warnings():
+        warnings.simplefilter("error")
+        keys = nrm.keys_from_inputs(raw, matrix)
+    np.testing.assert_allclose(keys[[1, 4]], np.full((2, 4), 0.5, np.float32), rtol=1e-6)
+    rows = [0, 2, 3, 5]
+    expected = nominal[rows] / np.linalg.norm(nominal[rows], axis=1, keepdims=True)
+    np.testing.assert_array_equal(keys[rows], expected.astype(np.float32))
+
+
+@pytest.mark.parametrize(
+    "tamper",
+    [
+        lambda p, m: p.update(schema_version=True),
+        lambda p, m: m["bank"][0]["keys"].__setitem__((0, 0), np.nan),
+        lambda p, m: m["bank"][0]["values"].__setitem__((0, 0), np.inf),
+        lambda p, m: m["bank"][0]["values"].__setitem__((0, 0), 10.0),
+        lambda p, m: m["pending"][0]["z"].__setitem__((0, 0), np.nan),
+        lambda p, m: m["bank"].extend(m["bank"][:1]),
+        lambda p, m: m.update(clock=FINAL_TEST_START_US),
+        lambda p, m: m.update(matured=True),
+        lambda p, m: m["pending"][0].update(matures_at=m["pending"][0]["prediction_at"]),
+    ],
+    ids=[
+        "version-booleana",
+        "clave-nan",
+        "valor-infinito",
+        "valor-sin-recortar",
+        "z-nan",
+        "banco-mayor-que-la-ventana",
+        "reloj-2024",
+        "maduradas-booleano",
+        "madura-al-decidir",
+    ],
+)
+def test_restore_rejects_a_state_that_breaks_an_invariant_even_with_a_valid_hash(tamper):
+    """H02 (b) de la auditoría: la huella no basta, se comprueban los invariantes."""
+    _, _, memory = run(panel(sessions=5, assets=30, seed=6), flush=False)
+    payload = memory.export()
+    market = payload["markets"]["US"]
+    assert len(market["bank"]) == CONFIG.window and market["pending"]
+    nrm.NeighbourMemory.restore(payload)
+    tamper(payload, market)
+    payload["state_sha256"] = nrm._state_sha256(payload)
+    with pytest.raises(ValueError):
+        nrm.NeighbourMemory.restore(payload)
+
+
+def test_restore_rejects_more_pending_cohorts_than_an_emission_allows(monkeypatch):
+    _, _, memory = run(panel(sessions=5, assets=30, seed=6), flush=False)
+    assert memory.export()["markets"]["US"]["pending"]
+    payload = memory.export()
+    monkeypatch.setattr(nrm, "MAX_PENDING", 0)
+    with pytest.raises(ValueError, match="pendientes"):
+        nrm.NeighbourMemory.restore(payload)

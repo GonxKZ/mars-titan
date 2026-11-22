@@ -89,6 +89,15 @@ def _require(condition, message):
         raise ValueError(message)
 
 
+def _is_instant(value):
+    """Un instante de desarrollo: entero (no booleano) de microsegundos UTC anterior a 2024."""
+    return (
+        isinstance(value, (int, np.integer))
+        and not isinstance(value, bool)
+        and 0 <= int(value) < FINAL_TEST_START_US
+    )
+
+
 def _instant(value, name):
     _require(
         isinstance(value, (int, np.integer)) and not isinstance(value, bool),
@@ -159,9 +168,20 @@ def keys_from_inputs(inputs, matrix):
     bad = np.flatnonzero(~np.isfinite(inputs).all(axis=1))
     _require(bad.size == 0, f"Entradas no finitas en {bad.size} filas; la primera es {bad[:1]}")
     keys = inputs @ matrix
-    norms = np.linalg.norm(keys, axis=1, keepdims=True)
+    _require(np.isfinite(keys).all(), "La proyección de las entradas desborda FP32")
+    with np.errstate(over="ignore", under="ignore"):
+        norms = np.linalg.norm(keys, axis=1, keepdims=True)
     safe = np.where(norms > 0, norms, np.float32(1.0))
-    return np.where(norms > 0, keys / safe, np.float32(0.0)).astype(np.float32)
+    result = np.where(norms > 0, keys / safe, np.float32(0.0)).astype(np.float32)
+    # Una fila no nula cuya norma FP32 desborda o se anula (sus cuadrados salen del rango de FP32)
+    # se normaliza escalada por su máximo absoluto. Las demás filas no cambian (H02 de la
+    # auditoría): antes quedaban en cero, como si su proyección fuera nula.
+    peak = np.abs(keys).max(axis=1)
+    odd = (~np.isfinite(norms[:, 0]) | (norms[:, 0] == 0)) & (peak > 0)
+    if odd.any():
+        scaled = keys[odd] / peak[odd, None]
+        result[odd] = scaled / np.linalg.norm(scaled, axis=1, keepdims=True)
+    return result
 
 
 def _array_sha256(array):
@@ -477,11 +497,12 @@ class NeighbourMemory:
 
     @classmethod
     def restore(cls, payload, *, threads=1):
-        """Reconstruir la memoria tras validar sus campos y su huella."""
+        """Reconstruir la memoria tras validar sus campos, sus invariantes y su huella."""
         _require(
             isinstance(payload, dict)
             and set(payload)
             == {"schema_version", "kind", "method", "config", "models", "markets", "state_sha256"}
+            and type(payload["schema_version"]) is int
             and payload["schema_version"] == SCHEMA_VERSION
             and payload["kind"] == KIND
             and payload["method"] == METHOD,
@@ -492,23 +513,48 @@ class NeighbourMemory:
             "El estado exportado no coincide con su huella",
         )
         memory = cls(NeighbourConfig(**payload["config"]), payload["models"], threads=threads)
+        clip = float(memory.config.clip)
         for name, saved in payload["markets"].items():
+            # La huella no basta: un estado firmado debe cumplir también los invariantes (H02).
+            _require(
+                isinstance(name, str)
+                and name
+                and isinstance(saved, dict)
+                and set(saved) == {"clock", "matured", "bank", "pending"},
+                f"El estado guardado del mercado {name!r} no es coherente",
+            )
+            clock, matured = saved["clock"], saved["matured"]
+            bank, pending = saved["bank"], saved["pending"]
+            _require(
+                (clock is None or _is_instant(clock))
+                and (clock is not None or not (bank or pending))
+                and type(matured) is int
+                and matured >= 0
+                and len(bank) <= memory.config.window,
+                f"El reloj, las maduradas o el banco guardados de {name} no son coherentes",
+            )
+            _require(len(pending) <= MAX_PENDING, f"Demasiadas cohortes pendientes en {name}")
             state = memory._market(name, create=True)
-            state.clock, state.matured = saved["clock"], saved["matured"]
-            for cohort in saved["bank"]:
+            state.clock, state.matured = clock, matured
+            previous = None
+            for cohort in bank:
                 _require(
-                    cohort["keys"].dtype == np.float32
-                    and cohort["values"].shape == (len(cohort["keys"]), memory.models)
-                    and memory._carries_assets(cohort),
+                    memory._valid_cohort(cohort, "values", clock, previous)
+                    and np.all(np.abs(cohort["values"]) <= clip),
                     f"Una cohorte del banco de {name} no es coherente",
                 )
+                previous = cohort["prediction_at"]
                 state.bank.append({k: _copied(v) for k, v in cohort.items()})
-            for cohort in saved["pending"]:
+            for cohort in pending:
+                matures = cohort.get("matures_at")
                 _require(
-                    cohort["z"].shape == (len(cohort["keys"]), memory.models)
-                    and memory._carries_assets(cohort),
+                    memory._valid_cohort(cohort, "z", clock, previous)
+                    and isinstance(matures, (int, np.integer))
+                    and not isinstance(matures, bool)
+                    and matures > cohort["prediction_at"],
                     f"Una cohorte pendiente de {name} no es coherente",
                 )
+                previous = cohort["prediction_at"]
                 state.pending.append({k: _copied(v) for k, v in cohort.items()})
         return memory
 
@@ -528,6 +574,33 @@ def _carries_assets(self, cohort):
 NeighbourMemory._carries_assets = _carries_assets
 
 
+def _valid_cohort(self, cohort, field, clock, previous):
+    """Una cohorte guardada: instante de desarrollo en orden, y claves y tabla finitas."""
+    if not isinstance(cohort, dict):
+        return False
+    expected = {"prediction_at", "keys", field}
+    expected |= {"matures_at"} if field == "z" else set()
+    expected |= {"assets"} if self.config.exclude_own else set()
+    keys, table, decided = cohort.get("keys"), cohort.get(field), cohort.get("prediction_at")
+    return (
+        set(cohort) == expected
+        and _is_instant(decided)
+        and decided <= clock
+        and (previous is None or decided > previous)
+        and isinstance(keys, np.ndarray)
+        and keys.dtype == np.float32
+        and keys.ndim == 2
+        and np.isfinite(keys).all()
+        and isinstance(table, np.ndarray)
+        and table.shape == (len(keys), self.models)
+        and np.isfinite(table).all()
+        and self._carries_assets(cohort)
+    )
+
+
+NeighbourMemory._valid_cohort = _valid_cohort
+
+
 def _copied(value):
     return value.copy() if isinstance(value, np.ndarray) else value
 
@@ -542,7 +615,7 @@ def _state_sha256(payload):
             return [plain(v) for v in value]
         return value
 
-    text = json.dumps(plain(payload), sort_keys=True, separators=(",", ":"))
+    text = json.dumps(plain(payload), sort_keys=True, separators=(",", ":"), allow_nan=False)
     return hashlib.sha256(text.encode()).hexdigest()
 
 
