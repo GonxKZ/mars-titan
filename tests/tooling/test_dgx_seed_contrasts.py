@@ -73,6 +73,14 @@ def build_state(tmp_path, seeds=(42, 43, 44)):
     return state
 
 
+def add_origin(state, year, seeds=(42, 43, 44), better=0.6):
+    """Otro origen del mismo estado, con su propio ruido."""
+    for seed in seeds:
+        write_model(state, "base", seed, signal=0.3, noise_seed=seed + year, year=year)
+        write_model(state, "mejor", seed, signal=better, noise_seed=seed + 7 * year, year=year)
+    return state
+
+
 def test_the_seeds_are_averaged_per_session_before_the_contrast(tmp_path):
     state = build_state(tmp_path)
     report = contrasts.build(state, 2013, [42, 43, 44], {"mejor": "base", "igual": "base"})
@@ -185,6 +193,84 @@ def test_seeds_with_other_rows_are_not_combined(tmp_path):
     write_model(state, "mejor", 44, signal=0.6, noise_seed=44, assets=ASSETS - 1)
     with pytest.raises(ValueError, match="no comparten muestras"):
         contrasts.build(state, 2013, [42, 43, 44], {"mejor": "base"})
+
+
+def test_several_origins_are_summarised_between_origins(tmp_path):
+    from scipy import stats
+
+    state = tmp_path / "state"
+    years = [2014, 2015, 2016, 2017]
+    for year, better in zip(years, (0.6, 0.5, 0.7, 0.45), strict=True):
+        add_origin(state, year, better=better)
+    document = contrasts.build_origins(state, years, [42, 43, 44], {"mejor": "base"})
+    assert document["years"] == years and document["final_test_opened"] is False
+    assert [origin["year"] for origin in document["origins"]] == years
+    entry = document["across"]["mejor"]
+    assert entry["control"] == "base" and entry["years"] == years and entry["missing"] == []
+    for kind, read in (
+        ("seeds", lambda origin, split: origin["contrasts"]["mejor"][split]["mean"]),
+        ("ensemble", lambda origin, split: origin["contrasts"]["mejor"]["ensemble"][split]["mean"]),
+    ):
+        for split, sessions in (("evaluation", 40), ("decision", 50)):
+            block = entry[kind][split]
+            means = [read(origin, split) for origin in document["origins"]]
+            assert block["origin_means"] == means
+            # Cada origen es una réplica: media, error entre orígenes y t con K - 1 grados.
+            between = block["between"]
+            error = np.std(means, ddof=1) / np.sqrt(4)
+            assert between["origins"] == 4 and between["df"] == 3 and between["positive"] == 4
+            assert between["mean"] == pytest.approx(np.mean(means), rel=1e-12)
+            assert between["se"] == pytest.approx(error, rel=1e-12)
+            assert between["t"] == pytest.approx(np.mean(means) / error, rel=1e-12)
+            assert between["p"] == pytest.approx(2 * stats.t.sf(between["t"], 3), rel=1e-9)
+            # Y todas las sesiones juntas, sin cruzar orígenes en la autocorrelación.
+            assert block["pooled"]["sessions"] == 4 * sessions
+            assert block["pooled"]["mean"] == pytest.approx(np.mean(means), rel=1e-9)
+    text = contrasts.markdown_origins(document)
+    assert "## Entre orígenes" in text and "| mejor | base | 4 |" in text and "4 de 4" in text
+    assert "| Modelo | 2014 | 2015 | 2016 | 2017 |" in text
+
+
+def test_an_origin_without_every_seed_is_left_out_and_named(tmp_path):
+    state = tmp_path / "state"
+    for year in (2014, 2015, 2016):
+        add_origin(state, year)
+    # En 2015 al modelo le falta la semilla 44: ese origen no entra en su contraste.
+    lost = state / "runs" / "mejor" / "2015" / "seed-44"
+    for path in lost.iterdir():
+        path.unlink()
+    document = contrasts.build_origins(state, [2014, 2015, 2016], [42, 43, 44], {"mejor": "base"})
+    entry = document["across"]["mejor"]
+    assert entry["years"] == [2014, 2016] and entry["missing"] == [2015]
+    assert entry["seeds"]["evaluation"]["between"]["origins"] == 2
+    assert entry["seeds"]["evaluation"]["pooled"]["sessions"] == 80
+    assert "sin 2015" in contrasts.markdown_origins(document)
+
+
+def test_one_origin_has_no_error_between_origins(tmp_path):
+    state = add_origin(tmp_path / "state", 2014)
+    document = contrasts.build_origins(state, [2014], [42, 43, 44], {"mejor": "base"})
+    between = document["across"]["mejor"]["seeds"]["evaluation"]["between"]
+    assert between["origins"] == 1 and between["df"] == 0
+    assert between["se"] is None and between["t"] is None and between["p"] is None
+
+
+def test_the_command_with_several_years_writes_the_summary_between_origins(tmp_path, capsys):
+    state = tmp_path / "state"
+    for year in (2014, 2015, 2016):
+        add_origin(state, year)
+    declared = tmp_path / "contrasts.json"
+    declared.write_text(json.dumps(dict(controls={"mejor": "base"})))
+    output = tmp_path / "out"
+    arguments = ["--state", str(state), "--contrasts", str(declared), "--output", str(output)]
+    arguments += ["--seed", "42", "--seed", "43", "--seed", "44"]
+    arguments += ["--year", "2014", "--year", "2015", "--year", "2016"]
+    assert contrasts.main(arguments) == 0
+    capsys.readouterr()
+    document = json.loads((output / "seed-contrasts.json").read_text(encoding="utf-8"))
+    assert document["years"] == [2014, 2015, 2016] and set(document["across"]) == {"mejor"}
+    text = (output / "seed-contrasts.md").read_text(encoding="utf-8")
+    assert "## Entre orígenes" in text and "| mejor | base | 3 |" in text
 
 
 def test_the_command_writes_the_table_and_the_document(tmp_path, capsys):
