@@ -1130,6 +1130,7 @@ def test_the_second_screen_of_the_new_base_adds_the_two_terms_and_the_weight_dec
         "y2_both_controls",
         "y2_wd",
         "y2_wd_controls",
+        "y2_combo",
     ]
     cores = ("titans_mac", "titans_mac_frozen", "titans_mac_disabled")
     nogain = ("titans_mac_nogain", "titans_mac_frozen_nogain", "titans_mac_disabled_nogain")
@@ -1141,7 +1142,8 @@ def test_the_second_screen_of_the_new_base_adds_the_two_terms_and_the_weight_dec
 
     def changed(left, right):
         one, two = flat_specification(document, left), flat_specification(document, right)
-        return {key for key in one.keys() | two.keys() if one.get(key) != two.get(key)}
+        keys = (one.keys() | two.keys()) - {"predictor_changes"}
+        return {key for key in keys if one.get(key) != two.get(key)}
 
     base = flat_specification(document, "titans_mac")
     assert set(base["recipe.session_ic_term"]) == {"weight", "minimum_rows"}
@@ -1164,7 +1166,16 @@ def test_the_second_screen_of_the_new_base_adds_the_two_terms_and_the_weight_dec
         online = parent in ("titans_mac", "titans_mac_nogain")
         tier = "y2_wd" if online else "y2_wd_controls"
         expected[f"{parent}_wd1e2"] = (parent, tier, "recipe.weight_decay", 0.01)
-    assert set(document["models"]) == set(cores) | set(nogain) | set(expected)
+    # La candidata a receta final de un solo modelo: sin ganancia, con los dos términos y con la
+    # atención entre activos de la v10. De su control solo la separa la atención.
+    combo, mixed = "cross_asset_attention_nogain_icboth", dict(heads=4, mode="same_session")
+    assert set(document["models"]) == set(cores) | set(nogain) | set(expected) | {combo}
+    assert document["models"][combo] == {
+        **document["models"]["titans_mac_nogain_icboth"],
+        "predictor_changes": dict(cross_asset_attention=mixed),
+        "tier": "y2_combo",
+    }
+    assert changed(combo, "titans_mac_nogain_icboth") == {"predictor.cross_asset_attention"}
     for model, (parent, tier, field, value) in expected.items():
         entry = document["models"][model]
         assert entry == {**previous["models"][parent], "recipe": entry["recipe"], "tier": tier}
@@ -1175,6 +1186,7 @@ def test_the_second_screen_of_the_new_base_adds_the_two_terms_and_the_weight_dec
         (ROOT / "configs/experiments/us-campaign-v11-screen2-contrasts.json").read_text()
     )["controls"]
     controls = {model: parent for model, (parent, *_rest) in expected.items()}
+    controls[combo] = "titans_mac_nogain_icboth"
     controls.update(titans_mac_frozen="titans_mac", titans_mac_disabled="titans_mac")
     controls.update(zip(nogain, cores, strict=True))
     assert declared == controls
@@ -1185,3 +1197,4 @@ def test_the_second_screen_of_the_new_base_adds_the_two_terms_and_the_weight_dec
     assert by_tier["y2_both"] == {"titans_mac_icboth", "titans_mac_nogain_icboth"}
     assert by_tier["y2_wd"] == {"titans_mac_wd1e2", "titans_mac_nogain_wd1e2"}
     assert len(by_tier["y2_both_controls"]) == 4 and len(by_tier["y2_wd_controls"]) == 2
+    assert by_tier["y2_combo"] == {combo}

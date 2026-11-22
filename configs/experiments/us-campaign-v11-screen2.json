@@ -3,7 +3,7 @@
   "kind": "comparison_campaign_v1",
   "market": "US",
   "final_test_access": false,
-  "description": "Segunda criba de la base nueva (v11) en EE. UU.: el núcleo de la v10 y el trío sin ganancia de la mediana, campo a campo, como controles, y dos variantes de una sola variable sobre cada uno. Los dos términos de IC a la vez, el de lo operable con el alfa conocido y el de la etiqueta con el mismo peso, en los tres modos de memoria de cada base. Y el decaimiento de pesos de 0,01, con la ganancia en los tres modos y sin ella en línea. Los modos congelado y sin memoria de cada variante van en un nivel aparte.",
+  "description": "Segunda criba de la base nueva (v11) en EE. UU.: el núcleo de la v10 y el trío sin ganancia de la mediana, campo a campo, como controles, y dos variantes de una sola variable sobre cada uno. Los dos términos de IC a la vez, el de lo operable con el alfa conocido y el de la etiqueta con el mismo peso, en los tres modos de memoria de cada base. Y el decaimiento de pesos de 0,01, con la ganancia en los tres modos y sin ella en línea. Los modos congelado y sin memoria de cada variante van en un nivel aparte. Además, la candidata a receta final de un solo modelo: sin ganancia, con los dos términos y con la atención entre activos.",
   "source_declaration_sha256": "836c79a6122fc14a1566826ece99f3708849a7d481361c334acd693383c88716",
   "cohort": {
     "size": 4198,
@@ -118,7 +118,8 @@
     "y2_both",
     "y2_both_controls",
     "y2_wd",
-    "y2_wd_controls"
+    "y2_wd_controls",
+    "y2_combo"
   ],
   "recipes": {
     "core": "configs/titans/dgx-us-core-u2-ic3-dense-gr-v9.json",
@@ -290,6 +291,19 @@
       "runner": "fit",
       "tier": "y2_wd",
       "variant": "mac_online"
+    },
+    "cross_asset_attention_nogain_icboth": {
+      "machine": "mars_titan",
+      "recipe": "core_nogain_icboth",
+      "runner": "fit",
+      "tier": "y2_combo",
+      "variant": "mac_online",
+      "predictor_changes": {
+        "cross_asset_attention": {
+          "heads": 4,
+          "mode": "same_session"
+        }
+      }
     }
   },
   "inputs": {

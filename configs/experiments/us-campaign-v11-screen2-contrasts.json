@@ -17,7 +17,8 @@
     "titans_mac_wd1e2": "titans_mac",
     "titans_mac_frozen_wd1e2": "titans_mac_frozen",
     "titans_mac_disabled_wd1e2": "titans_mac_disabled",
-    "titans_mac_nogain_wd1e2": "titans_mac_nogain"
+    "titans_mac_nogain_wd1e2": "titans_mac_nogain",
+    "cross_asset_attention_nogain_icboth": "titans_mac_nogain_icboth"
   },
   "always_kept": [
     "titans_mac_macro",
