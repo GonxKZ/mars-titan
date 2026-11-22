@@ -1482,6 +1482,7 @@ error. El plan recorre, con una fase cada vez y la preparación de la siguiente 
 | Bloque | Qué recorre | Trabajos |
 | --- | --- | ---: |
 | 1 | Origen 2013 de la v10. Principales con sus controles, las cuatro piezas de la base (`r4_noranks`, `r4_nogain`, `r4_noic`, `r4_nobranch`), redes entre activos y lectores; informe y promoción; semillas 43 y 44 de núcleos, lectores y `r4_noranks`; criba completa en dos partes (memoria, modalidades y redes; pérdidas, optimización y pesos), cada una con su informe y su promoción | 28 + 18 + 36 + 55 |
+| 1b | Extensión de la v10 en el origen 2013 (`dgx-us-campaign-v10-ext1.json`, commit 030d6299, mismo código): siete variantes de un solo campo de la receta del núcleo que la campaña no medía, con el núcleo y sus controles heredados. Entra tras la primera promoción | 7 |
 | 2 | Origen 2023: principales, controles, `r4_noranks` y `r4_nogain`, más lo promovido; semillas 43 y 44 de núcleos y controles | 12 + 10 |
 | 3 | Conjunta (5.008 activos), origen 2013: principales, controles y `r4_noranks` | 9 |
 | 4 | Orígenes 2018, 2021, 2015, 2020, 2016, 2022, 2014, 2019 y 2017 de la v10, intercalados para que un corte deje años repartidos: los niveles del 2023 (y la ventana desde 2009 en 2016) | 12 por origen |
@@ -1506,10 +1507,20 @@ error. El plan recorre, con una fase cada vez y la preparación de la siguiente 
   los bloques 1 a 6 unas 125 a 150 de las 255 que quedaban hasta el plazo. El margen es para
   las etapas de post-entrenamiento que necesiten GPU, los órganos de memoria que salgan de la
   investigación y las repeticiones.
-- **Producción.** El 22 de noviembre a las 03:12 UTC la presión de memoria de producción subió
-  a 13–23 durante tres minutos, con la otra sesión compilando y dos informes y un experimento
-  en GPU míos encima de los seis trabajadores. Se pararon los auxiliares y volvió a cero.
-  Desde entonces, con la campaña en marcha no se lanza ningún trabajo auxiliar en GPU y los de
+- **Extensión.** Las siete variantes salen de una auditoría de la receta: el promedio
+  exponencial de pesos con retención 0,999 y 0,9998 (la de 0,995 de la v10 tiene una semivida
+  de una décima de época), el encaminamiento de cuantiles en sus tres combinaciones, la mediana
+  inicial sorteada en lugar del cero exacto y la memoria sin la normalización de su residuo.
+  Una orden hereda el núcleo y sus controles, otra trae las copias empaquetadas y otra las
+  devuelve al terminar.
+- **Producción.** La memoria de la GPU es unificada y no se puede reclamar: cuando falta, es
+  producción la que espera. El 22 de noviembre la presión de memoria de `system.slice` subió
+  tres veces (03:12, 04:41 y 05:04–05:13 UTC, hasta 47), siempre con la otra sesión del equipo
+  compilando y un arranque de la campaña o un trabajo auxiliar mío encima de los seis
+  trabajadores. Dos cambios: la guardia pide la pausa del relevo si esa presión pasa de 10
+  tres minutos seguidos y no la retira hasta que lleva diez por debajo de 2 (actuó sola a las
+  05:13 y reanudó a las 05:25), y la campaña baja a cinco trabajadores en EE. UU. y cuatro en
+  la conjunta. Con la campaña en marcha no se lanza ningún trabajo auxiliar en GPU y los de
   CPU van de uno en uno.
 
 Las dos comprobaciones previas siguen valiendo: cada fase incluye el nivel de los padres de
