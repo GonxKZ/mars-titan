@@ -53,10 +53,24 @@ def _report_module():
     return module
 
 
-def seed_splits(state, model, year, seed):
+def _home(state, model, year, references, reference_seed):
+    """Dónde vive un modelo y qué semilla se lee allí para cada semilla pedida.
+
+    Se busca en el estado de la campaña y después en los de referencia, y todas sus semillas se
+    leen del mismo sitio. Una referencia ajustada una sola vez se lee siempre con su semilla.
+    """
+    place = Path(state)
+    if not (place / "runs" / model / str(year)).is_dir():
+        for other in references:
+            if (Path(other) / "runs" / model / str(year)).is_dir():
+                return Path(other), reference_seed
+    return place, None
+
+
+def seed_splits(place, model, year, seed):
     """Emisiones de cada tramo de una ejecución, o None si le falta alguno."""
     report = _report_module()
-    run = Path(state) / "runs" / model / str(year) / f"seed-{seed}"
+    run = Path(place) / "runs" / model / str(year) / f"seed-{seed}"
     result = {}
     for split in SPLITS:
         data = report.load_split(run, split)
@@ -137,12 +151,12 @@ def _level(sessions, per_seed, combined):
     return entry
 
 
-def build(state, year, seeds, controls):
+def build(state, year, seeds, controls, references=(), reference_seed=None):
     """Niveles de cada modelo y contraste de cada uno con su control."""
-    return _origin(state, year, seeds, controls)[0]
+    return _origin(state, year, seeds, controls, references, reference_seed)[0]
 
 
-def _origin(state, year, seeds, controls):
+def _origin(state, year, seeds, controls, references=(), reference_seed=None):
     """El documento de un origen y el IC por sesión de la semilla media y del conjunto."""
     report = _report_module()
     seeds = list(dict.fromkeys(seeds))
@@ -150,7 +164,12 @@ def _origin(state, year, seeds, controls):
     per_seed, mean, combined, missing = {}, {}, {}, {}
     for name in names:
         # Las emisiones de un modelo se sueltan al pasar al siguiente: solo queda el IC.
-        runs = [seed_splits(state, name, year, seed) for seed in seeds]
+        place, fixed = _home(state, name, year, references, reference_seed)
+        if fixed is None:
+            runs = [seed_splits(place, name, year, seed) for seed in seeds]
+        else:
+            # Un solo ajuste: se lee una vez y hace de pareja de todas las semillas.
+            runs = [seed_splits(place, name, year, fixed)] * len(seeds)
         absent = [seed for seed, run in zip(seeds, runs, strict=True) if run is None]
         if absent:
             missing[name] = absent
@@ -220,11 +239,11 @@ def _split(sessions, split):
     return _pooled(sessions, DECISION) if split == "decision" else sessions[split]
 
 
-def build_origins(state, years, seeds, controls):
+def build_origins(state, years, seeds, controls, references=(), reference_seed=None):
     """Los contrastes de cada origen y su resumen entre orígenes."""
     report = _report_module()
     years = list(dict.fromkeys(years))
-    parts = [_origin(state, year, seeds, controls) for year in years]
+    parts = [_origin(state, year, seeds, controls, references, reference_seed) for year in years]
     document = dict(
         schema_version=1,
         kind="dgx_seed_contrasts_v1",
@@ -377,15 +396,42 @@ def main(argv=None):
     parser.add_argument("--seed", type=int, action="append", required=True)
     parser.add_argument("--contrasts", type=Path, required=True, help="JSON con 'controls'")
     parser.add_argument("--output", type=Path, required=True, help="Carpeta nueva")
+    parser.add_argument(
+        "--reference",
+        type=Path,
+        action="append",
+        default=[],
+        help="Otro estado donde buscar los modelos que no están en el de la campaña",
+    )
+    parser.add_argument(
+        "--reference-seed",
+        type=int,
+        help="Semilla con la que se lee una referencia ajustada una sola vez",
+    )
+    parser.add_argument(
+        "--pair",
+        action="append",
+        default=[],
+        metavar="MODELO:CONTROL",
+        help="Contraste que se añade a los declarados",
+    )
     args = parser.parse_args(argv)
     if args.output.exists():
         parser.error("La carpeta de salida ya existe")
-    controls = json.loads(args.contrasts.read_text(encoding="utf-8"))["controls"]
+    controls = dict(json.loads(args.contrasts.read_text(encoding="utf-8"))["controls"])
+    for pair in args.pair:
+        name, _, control = pair.partition(":")
+        if not name or not control:
+            parser.error(f"--pair se escribe MODELO:CONTROL y se recibió {pair!r}")
+        if controls.get(name, control) != control:
+            parser.error(f"{name} ya tiene declarado otro control: {controls[name]}")
+        controls[name] = control
+    sources = dict(references=args.reference, reference_seed=args.reference_seed)
     if len(args.year) == 1:
-        document = build(args.state, args.year[0], args.seed, controls)
+        document = build(args.state, args.year[0], args.seed, controls, **sources)
         table = markdown(document)
     else:
-        document = build_origins(args.state, args.year, args.seed, controls)
+        document = build_origins(args.state, args.year, args.seed, controls, **sources)
         table = markdown_origins(document)
     args.output.mkdir(parents=True)
     text = json.dumps(document, ensure_ascii=False, indent=2, default=str) + "\n"

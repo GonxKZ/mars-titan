@@ -273,6 +273,65 @@ def test_the_command_with_several_years_writes_the_summary_between_origins(tmp_p
     assert "## Entre orígenes" in text and "| mejor | base | 3 |" in text
 
 
+def test_a_reference_fitted_once_pairs_with_every_seed(tmp_path):
+    state, other = build_state(tmp_path), tmp_path / "referencias"
+    # La referencia vive en otro estado y solo tiene un ajuste, con la semilla 42.
+    write_model(other, "arboles", 42, signal=0.2, noise_seed=900)
+    controls = {"mejor": "base", "base": "arboles"}
+    report = contrasts.build(
+        state, 2013, [42, 43, 44], controls, references=[other], reference_seed=42
+    )
+    assert report["incomplete"] == {} and set(report["contrasts"]) == {"mejor", "base"}
+    row = report["contrasts"]["base"]
+    assert row["control"] == "arboles" and row["evaluation"]["sessions"] == 40
+    assert row["evaluation"]["mean"] == pytest.approx(
+        report["models"]["base"]["evaluation"]["mean"]
+        - report["models"]["arboles"]["evaluation"]["mean"],
+        rel=1e-9,
+    )
+    # Un solo ajuste: sus tres lecturas son la misma y su conjunto no gana nada.
+    level = report["models"]["arboles"]
+    assert len(set(level["per_seed"]["evaluation"])) == 1
+    assert level["ensemble_gain"]["evaluation"]["mean"] == pytest.approx(0.0, abs=1e-12)
+    # Sin decir qué semilla tiene la referencia, le faltan las otras dos y se nombra.
+    strict = contrasts.build(state, 2013, [42, 43, 44], controls, references=[other])
+    assert strict["incomplete"] == {"base": [43, 44]} and set(strict["contrasts"]) == {"mejor"}
+    # Sin el estado de la referencia, el modelo no existe.
+    alone = contrasts.build(state, 2013, [42, 43, 44], controls)
+    assert alone["incomplete"] == {"base": [42, 43, 44]}
+
+
+def test_the_campaign_state_wins_over_a_reference_with_the_same_model(tmp_path):
+    state, other = build_state(tmp_path), tmp_path / "referencias"
+    write_model(other, "base", 42, signal=0.9, noise_seed=901)
+    plain = contrasts.build(state, 2013, [42, 43, 44], {"mejor": "base"})
+    mixed = contrasts.build(
+        state, 2013, [42, 43, 44], {"mejor": "base"}, references=[other], reference_seed=42
+    )
+    assert mixed["models"]["base"] == plain["models"]["base"]
+
+
+def test_the_command_takes_references_and_extra_pairs(tmp_path, capsys):
+    state, other = build_state(tmp_path), tmp_path / "referencias"
+    write_model(other, "arboles", 42, signal=0.2, noise_seed=900)
+    declared = tmp_path / "contrasts.json"
+    declared.write_text(json.dumps(dict(controls={"mejor": "base"})))
+    output = tmp_path / "out"
+    arguments = ["--state", str(state), "--year", "2013", "--contrasts", str(declared)]
+    arguments += ["--seed", "42", "--seed", "43", "--seed", "44"]
+    arguments += ["--reference", str(other), "--reference-seed", "42"]
+    assert contrasts.main([*arguments, "--pair", "base:arboles", "--output", str(output)]) == 0
+    capsys.readouterr()
+    document = json.loads((output / "seed-contrasts.json").read_text(encoding="utf-8"))
+    assert set(document["contrasts"]) == {"mejor", "base"}
+    assert document["contrasts"]["base"]["control"] == "arboles"
+    # Un par que contradice al control declarado se rechaza, y uno mal escrito también.
+    for pair in ("mejor:arboles", "base", "base:"):
+        with pytest.raises(SystemExit):
+            contrasts.main([*arguments, "--pair", pair, "--output", str(tmp_path / "otra")])
+    assert not (tmp_path / "otra").exists()
+
+
 def test_the_command_writes_the_table_and_the_document(tmp_path, capsys):
     state = build_state(tmp_path)
     declared = tmp_path / "contrasts.json"

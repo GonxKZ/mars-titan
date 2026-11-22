@@ -87,12 +87,15 @@ máquinas.
 
 ## Guion del primer día
 
-Con Drive montado, `P` la carpeta del paquete de datos, `B` el bundle de código, `K` una copia
-del kit (los guiones de `scripts/` de la rama de trabajo) y `T=/content/mars-titan`. Cada
-orden se puede repetir: conserva lo ya hecho.
+Con Drive montado, `P` es la carpeta del paquete de datos, `B` el bundle de código y
+`T=/content/mars-titan`. El kit (`K`) son los guiones de `scripts/` de la rama de trabajo, que
+salen del mismo bundle. Cada orden se puede repetir: conserva lo ya hecho.
 
 ```bash
 export MARS_TITAN_SITE=google-colab-rtx-pro-6000
+# 0. El kit: la rama de trabajo del bundle, aparte de la copia fija que ejecuta la campaña.
+[ -d $T/kit ] || git clone --quiet --branch dgx-trainning $B $T/kit
+K=$T/kit/scripts
 # 1. Máquina: herramientas, código de la campaña v10, entorno, datos de EE. UU. y comprobaciones.
 bash $K/colab_bootstrap.sh sistema
 bash $K/colab_bootstrap.sh codigo  --bundle $B --commit 3d10a30fcf8124a19b4aae74e9bb06e589e10986 --trabajo $T

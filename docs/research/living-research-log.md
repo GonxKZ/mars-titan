@@ -236,6 +236,33 @@ de memoria congelada y 0,0010 al núcleo sin memoria. Con los rangos, aprender e
 0,0065 por encima de la memoria congelada (0,0013 sin ellos). Puede ser una semilla afortunada:
 la campaña v10 lo repite con tres semillas en los tres núcleos antes de darlo por cierto.
 
+**La v10 no lo repite con la semilla 42 (22 de noviembre).** El núcleo de la v10 es la receta
+con rangos de la v8 más la ganancia aprendida de la mediana, con otra versión del código y un
+tope de épocas más alto que ninguno de los dos alcanza. Diferencia pareada del IC por sesión,
+memoria en línea menos memoria congelada:
+
+| Par | Validación | Calibración (t) | Evaluación (t) | Evaluación por trimestres |
+| --- | ---: | ---: | ---: | --- |
+| v8 sin rangos | +0,0013 | +0,0052 (2,8) | +0,0013 (1,2) | +0,0012, −0,0013, +0,0042, +0,0012 |
+| v8 con rangos | +0,0041 | +0,0068 (3,1) | +0,0065 (5,4) | +0,0064, +0,0090, +0,0069, +0,0037 |
+| v10 (rangos y ganancia de la mediana) | +0,0010 | +0,0070 (2,1) | +0,0014 (1,2) | +0,0050, +0,0047, +0,0001, −0,0041 |
+
+- En los tres pares la ventaja de escribir en línea es mayor en calibración, las 61 sesiones
+  que siguen a la validación, que en la evaluación del año siguiente.
+- De la v8 con rangos a la v10, el núcleo en línea baja 0,0031 (0,1163 a 0,1132) y los de
+  memoria congelada y sin memoria suben 0,0019 y 0,0041. O la ganancia de la mediana ayuda a
+  los controles y perjudica al que escribe, o es la variación de un ajuste a otro. Lo separa el
+  trío sin ganancia de la v10 (`r4_nogain`, en la cola del origen 2013) y lo acotan las semillas
+  43 y 44. Decidido antes de ver ese resultado: el trío sin ganancia se ajusta también con las
+  semillas 43 y 44, porque es la única diferencia de receta con el mejor núcleo medido.
+- En la v10 la ventaja decae a lo largo del año de evaluación (pendiente de −0,012 por año,
+  t = −3,1) y acaba negativa en el último trimestre; en los dos pares de la v8 no decae. Es una
+  observación hecha después de mirar, sobre una semilla. **Comprobación fijada antes de tener
+  los datos:** con las semillas 43 y 44 de la v10, la pendiente de esa diferencia dentro del año
+  de evaluación será negativa en las dos. Si lo es, la memoria que escribe se degrada con el
+  recorrido y procede medir un reinicio periódico de su estado con la herramienta de los gemelos
+  de escritura, sin reajustar. Si no lo es, se descarta como ruido.
+
 ## Propuestas externas pendientes de medir
 
 La cuarta ronda de Gemini (22 de noviembre) propone, por orden de ganancia esperada: reajuste
@@ -258,10 +285,10 @@ Lo que sigue separa lo que una medida propia ha confirmado de lo que queda como 
 | Subir la paciencia de la parada | Refutada su urgencia (P-1) | Se conserva la paciencia de 3 |
 | La memoria en línea no aprende asociaciones, acumula | Coherente con las trazas (F-2) | Prueba causal encargada al programa de post-entrenamiento: la misma red evaluada sin escribir |
 | Escritura supervisada dentro del núcleo (M4 del primer enjambre) | El enjambre afirma que colapsa a cero; sin medida propia | No se implementa. Las memorias supervisadas van como lectores (H1-b, H4-a, H4-b) |
-| Diez cambios de arquitectura (recorte suave, escala por rasgo, rangos de fundamentales, conjunto implícito, separar gráficos y rasgos técnicos, incrustaciones periódicas, precios por parches, atención por factores, fichas de ausencia, tronco ancho) | Propuestas con su control y su criterio de abandono | Candidatas a la criba en Colab, de una en una |
-| Iliquidez de Amihud con días sin volumen | Confirmado en el código y en los datos (D-1) | Versión nueva de los rasgos, fuera de la campaña en curso |
-| Error típico con bloques centrado en la media global | Confirmado en el código; infla el error cuando los bloques tienen medias distintas (conservador) | Corregir al escribir el informe de varios orígenes, con el error entre orígenes aparte |
-| EE. UU. y China como bloques independientes en la conjunta | Confirmado en el código; su efecto depende de una correlación que no se ha medido | Medir la correlación diaria entre mercados con los resultados de la conjunta |
+| Diez cambios de arquitectura (recorte suave, escala por rasgo, rangos de fundamentales, conjunto implícito, separar gráficos y rasgos técnicos, incrustaciones periódicas, precios por parches, atención por factores, fichas de ausencia, tronco ancho) | Propuestas con su control y su criterio de abandono. Su diagnóstico de la atención entre activos coincide en parte con lo medido (C5-p) | Tres ya están en la criba de la base nueva, apagadas por defecto: el recorte suave, la escala por rasgo y la atención después de la rama técnica. El resto, candidatas de una en una si la criba deja unidades de cómputo |
+| Rasgos técnicos: iliquidez de Amihud con días sin volumen, precio de cierre cero y medias diluidas al empezar | La iliquidez queda sesgada en las filas sin volumen (2,6 % en EE. UU. y 3,9 % en China, D-1); el modelo recibe aparte la fracción de días sin negociar. El cierre cero no ocurre en estos datos (D-1) y la dilución afecta a los dos primeros meses de cada activo con modelo de mercado, un 1,6 % de las filas | Versión nueva de los rasgos, fuera de la campaña en curso: exige volver a preparar las entradas de cada origen y su efecto esperado es pequeño |
+| Error típico con bloques centrado en la media global | Medido con los contrastes de la v10: infla el error entre un 0 % y un 4,7 % (mediana 1,8 %) respecto a centrar en cada bloque, y un 0,7 % en el nivel del núcleo. No se dan el 18 % ni el 86 % de su ejemplo | Se deja como está: es conservador y pequeño. El resumen entre orígenes lleva aparte el error entre orígenes (I-1) |
+| EE. UU. y China como bloques independientes en la conjunta | Medido (I-1): la correlación del mismo día entre mercados es de +0,008 de mediana en las diferencias pareadas y de +0,01 a +0,09 en niveles | Los bloques independientes valen: el error queda subestimado en torno a un 1 % |
 | Promoción con una semilla y sin corrección múltiple | Cierto; la criba solo decide qué se sigue midiendo | La evidencia sale de los orígenes limpios, con sus contrastes pareados |
-| Doce hallazgos en el núcleo agéntico | Sin medida propia | Los comprueba el programa de post-entrenamiento con una prueba por hallazgo |
+| Doce hallazgos en el núcleo agéntico | Comprobados uno a uno por el programa de post-entrenamiento: cinco son reales y están corregidos con una prueba que antes fallaba (la realimentación usaba otra correlación que la métrica declarada, un eje mal documentado, el orden de las semillas sin validar, un contexto que no cabía en la mezcla y la frontera causal por mercado); el resto son propiedades declaradas del diseño o no se reproducen | Los arreglos están en la rama `postentrenamiento-v10` y entran en la base nueva con ella |
 | Kit de Colab | Suponía subir las copias empaquetadas; su verificador dejó objeciones | No se usa. El kit propio se apoya en el flujo de segundo equipo ([guía](../engineering/colab-gpu-training.md)) |
