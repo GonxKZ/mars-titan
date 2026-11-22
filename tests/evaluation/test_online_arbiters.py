@@ -437,14 +437,26 @@ def test_each_session_is_standardized_and_a_constant_one_is_zero():
     assert not arbiters.standardized(panel, np.ones(panel.rows)).any()
 
 
-def test_the_loss_is_half_of_one_minus_the_session_ic():
+@pytest.mark.parametrize("rank", [False, True])
+def test_the_loss_is_half_of_one_minus_the_session_ic(rank):
     panel, predictions, _ = version_inputs(version_table(thin=4))
-    losses, scored = arbiters.session_losses(panel, predictions, min_assets=3)
+    losses, scored = arbiters.session_losses(panel, predictions, min_assets=3, rank=rank)
     for option in range(predictions.shape[1]):
-        values, _ = sd.session_correlations(panel, predictions[:, option], min_assets=3)
+        values, _ = sd.session_correlations(
+            panel, predictions[:, option], rank=rank, min_assets=3
+        )
         np.testing.assert_allclose(losses[:, option], (1 - values) / 2)
     # La sesión con dos activos no puntúa y las demás sí.
     assert not scored[4] and scored[np.arange(panel.sessions) != 4].all()
+
+
+@pytest.mark.parametrize("rank", [False, True])
+def test_a_constant_option_loses_one_half_and_never_yields_nan(rank):
+    panel, predictions, _ = version_inputs(version_table(thin=4))
+    predictions = np.column_stack([predictions[:, 0], np.full(panel.rows, 3.0)])
+    losses, scored = arbiters.session_losses(panel, predictions, min_assets=3, rank=rank)
+    assert np.isfinite(losses).all()
+    assert (losses[scored, 1] == 0.5).all()
 
 
 def test_the_arbiter_moves_to_the_version_that_ranks_the_assets():

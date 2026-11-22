@@ -326,11 +326,12 @@ def standardized(panel, prediction):
     return result
 
 
-def session_losses(panel, predictions, *, min_assets):
+def session_losses(panel, predictions, *, min_assets, rank=False):
     """Pérdida (1 − IC)/2 de cada opción en cada sesión y las sesiones que puntúan.
 
     Puntúa una sesión con al menos `min_assets` filas y objetivo no constante. Una opción
-    constante en una sesión que puntúa no ordena los activos: su IC vale 0 y pierde 1/2.
+    constante en una sesión que puntúa no ordena los activos: su IC vale 0 y pierde 1/2. El IC
+    es de Pearson o, con `rank`, de rangos, para que el bucle aprenda con la métrica que se mide.
     """
     starts, counts = panel.session_starts, panel.session_samples
     spread = np.array(
@@ -339,7 +340,9 @@ def session_losses(panel, predictions, *, min_assets):
     scored = (counts >= min_assets) & (spread > 0)
     values = np.column_stack(
         [
-            sd.session_correlations(panel, predictions[:, option], min_assets=min_assets)[0]
+            sd.session_correlations(
+                panel, predictions[:, option], rank=rank, min_assets=min_assets
+            )[0]
             for option in range(predictions.shape[1])
         ]
     )

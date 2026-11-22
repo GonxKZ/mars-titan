@@ -422,7 +422,7 @@ class Options:
     operaciones que `online_arbiters.online_mixture`.
     """
 
-    def __init__(self, named, maturity, min_assets):
+    def __init__(self, named, maturity, min_assets, *, rank=False):
         names = [name for name, _ in named]
         _require(len(set(names)) == len(names), "Cada opción tiene un nombre distinto")
         emissions = [emission for _, emission in named]
@@ -449,8 +449,9 @@ class Options:
                 for column in range(len(names))
             ]
         )
+        # La realimentación usa la misma correlación que la métrica declarada.
         self.losses, self.scored = arbiters.session_losses(
-            self.panel, predictions, min_assets=min_assets
+            self.panel, predictions, min_assets=min_assets, rank=rank
         )
         self.ic = 1.0 - 2.0 * self.losses
         self.session_matures = np.maximum.reduceat(matures_at, self.panel.session_starts)
@@ -646,7 +647,9 @@ def variants(declaration, emissions, maturity):
     named += [(model, emissions[model]) for models in tools.values() for model in models]
     if declaration["placebo"] is not None:
         named.append((PLACEBO_OPTION, permuted(emissions[core], declaration["placebo"]["seed"])))
-    options = Options(named, maturity, feedback["min_assets"])
+    options = Options(
+        named, maturity, feedback["min_assets"], rank=declaration["metric"] == "session_rank_ic"
+    )
     cache = {}
 
     def chosen(selected, extra=()):
