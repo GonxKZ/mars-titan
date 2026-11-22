@@ -97,8 +97,7 @@ export MARS_TITAN_SITE=google-colab-rtx-pro-6000
 bash $K/colab_bootstrap.sh sistema
 bash $K/colab_bootstrap.sh codigo  --bundle $B --commit 3d10a30fcf8124a19b4aae74e9bb06e589e10986 --trabajo $T
 bash $K/colab_bootstrap.sh entorno --trabajo $T
-bash $K/colab_bootstrap.sh datos   --paquete $P --trabajo $T \
-     --grupos "A00-macroeconomia A01-preparados-v31 A02-etiquetas-v31 A04-vistas-US Etiquetas-US Muestras-US Precios-US Ventanas-US"
+bash $K/colab_bootstrap.sh datos   --paquete $P --trabajo $T
 bash $K/colab_bootstrap.sh nativo  --trabajo $T
 bash $K/colab_bootstrap.sh comprobar --trabajo $T
 # 2. Puerta de paridad: el núcleo en 2013 con las tres semillas, en el commit de la campaña.
@@ -124,6 +123,15 @@ El número de trabajadores del primer lanzamiento es prudente. La prueba de conc
 sube: se relanza con cuatro y con seis mirando la memoria del anfitrión y de la GPU en
 `equipo.json` y los pasos por minuto de la telemetría; un trabajo del núcleo usa en la DGX
 hasta 20 GiB de memoria del anfitrión y 7,4 GiB de la GPU.
+
+El paso `datos` restaura los once grupos que entrenan: unos 90 GB. Las tres familias de vistas
+comparten las carpetas de datos preparados y de muestras codificadas, y cada una de esas
+carpetas se reparte entre dos grupos (`A01` y `Precios-US`; `A03` y `Muestras-US`; las
+etiquetas, entre `A02` y `Etiquetas-US`). Si el disco de Colab no da para todo, EE. UU. solo
+necesita `--grupos "A00-macroeconomia A01-preparados-v31 A02-etiquetas-v31
+A03-muestras-codificadas-v31 A04-vistas-US Etiquetas-US Muestras-US Precios-US Ventanas-US"`,
+unos 80 GB: quedan fuera las vistas de China y las conjuntas. La orden `doctor` del paso
+`cohortes` marca `FALTA` si a una cohorte le faltan datos.
 
 La copia empaquetada de las entradas de 2013 ocupa 27 GiB, además de los datos restaurados.
 Para la criba de la base nueva se repite el paso `codigo` con el commit de `v11-candidatos`
