@@ -290,6 +290,19 @@ def _finished(destination, evaluated):
     return receipt
 
 
+def _reset_peak(device):
+    """Pone a cero los máximos de memoria de la GPU antes de un recorrido.
+
+    El asignador de PyTorch no los admite antes de inicializar CUDA («Invalid device argument»)
+    y el primer recorrido de la orden empieza sin contexto.
+    """
+    if device.startswith("cuda"):
+        import torch
+
+        torch.cuda.init()
+        torch.cuda.reset_peak_memory_stats(0)
+
+
 def _peak(device):
     """Memoria máxima del proceso: residente en el anfitrión y reservada en la GPU."""
     peak = dict(host_max_rss_bytes=resource.getrusage(resource.RUSAGE_SELF).ru_maxrss * 1024)
@@ -344,10 +357,7 @@ def _twins(declaration, states, output, digest, numerics, device, log, carry):
                     if computed:
                         if destination.exists():
                             log(f"{folder.name}/{name}: apartado en {_aside(destination).name}")
-                        if device.startswith("cuda"):
-                            import torch
-
-                            torch.cuda.reset_peak_memory_stats(0)
+                        _reset_peak(device)
                         with wf.unfused_attention():
                             receipt = carry(
                                 folders[role],

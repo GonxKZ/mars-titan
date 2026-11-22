@@ -170,6 +170,53 @@ def test_a_parity_that_is_not_bit_exact_stops_before_any_twin(
         twins.analyze(declaration(), states, output)
 
 
+class _CudaAllocator:
+    """El contrato del asignador de PyTorch en la GPU, comprobado en la GB10 con torch 2.14: sus
+    máximos no se pueden poner a cero antes de inicializar CUDA («Invalid device argument»), y
+    el primer recorrido de la orden empieza sin contexto."""
+
+    def __init__(self):
+        self.started = False
+        self.resets = 0
+
+    def init(self):
+        self.started = True
+
+    def reset_peak_memory_stats(self, device):
+        if not self.started:
+            raise RuntimeError("Invalid device argument ")
+        self.resets += 1
+
+    def max_memory_allocated(self, device):
+        return 3 * 1024**2
+
+    def max_memory_reserved(self, device):
+        return 5 * 1024**2
+
+
+def test_on_the_gpu_each_run_resets_its_peaks_once_cuda_has_started(
+    base,  # noqa: F811
+    tmp_path,
+    monkeypatch,
+):
+    import torch
+
+    allocator = _CudaAllocator()
+    for name in ("init", "reset_peak_memory_stats", "max_memory_allocated", "max_memory_reserved"):
+        monkeypatch.setattr(torch.cuda, name, getattr(allocator, name))
+    states = dict(t=campaign_state(base, tmp_path / "state"))
+
+    def on_cpu(anchor, anchor_view, view, output, **options):
+        return wf.carry_titans(anchor, anchor_view, view, output, **dict(options, device="cpu"))
+
+    (summary,) = twins.run_twins(
+        declaration(), states, tmp_path / "twins", device="cuda:0", carry=on_cpu
+    )
+    assert allocator.resets == len(twins.JOBS)
+    reserved = {job["peak"]["cuda_max_reserved_bytes"] for job in summary["jobs"].values()}
+    assert reserved == {5 * 1024**2}
+
+
 # --- Estadística de los gemelos ---------------------------------------------------------------
 
 
