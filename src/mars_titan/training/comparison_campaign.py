@@ -112,14 +112,17 @@ _MODEL_FIELDS = {
 }
 # Continuación encadenada de un ajuste (DGX): cada origen parte del estado elegido del mismo
 # modelo y semilla en el origen anterior de su etapa, con run_titans_window(initial=...). El
-# ejecutor exige que la validación del padre acabe antes que la de la continuación.
+# ejecutor exige que la validación del padre acabe antes que la de la continuación. Con
+# `continues`, el padre es otro ajuste mac_online de la campaña, como las continuaciones de F3
+# (#749): en el origen k parte del estado que ese padre eligió en el origen k − 1 con la misma
+# semilla, y en el primer origen de cada etapa no hay trabajo porque no hay de qué partir.
 CONTINUATION = "previous_origin"
 # Orden del plan dentro de cada etapa: nivel antes que semilla (por defecto) o semilla antes que
 # nivel, para que un plazo agotado recorte semillas de todos los modelos y no niveles enteros.
 TIER_SEED, SEED_TIER = "tier_seed", "seed_tier"
 ORDERS = (TIER_SEED, SEED_TIER)
 _OPTIONAL = {
-    "fit": {"predictor_changes", "epochs", "continuation", "stopping"},
+    "fit": {"predictor_changes", "epochs", "continuation", "continues", "stopping"},
     "reader": {"epochs", "stopping"},
     "rule": set(),
     "tabular": set(),
@@ -413,6 +416,9 @@ def checked_declaration(document, *, root=ROOT, check_recipe_files=True):
                     "Una cadena necesita los orígenes de cada etapa en orden creciente",
                 )
     for name, model in models.items():
+        if "continues" in model:
+            _checked_continues(name, model, models, tiers, recipes, root, check_recipe_files)
+    for name, model in models.items():
         if model["runner"] != "reader":
             continue
         parent = models.get(model["parent"])
@@ -425,6 +431,45 @@ def checked_declaration(document, *, root=ROOT, check_recipe_files=True):
             f"El lector {name} necesita un padre mac_online de su equipo y de un nivel anterior",
         )
     return document
+
+
+def _recipe_predictor(root, path):
+    """Sección `predictor` de una receta: con los cambios del modelo fija su arquitectura."""
+    document = json.loads((Path(root) / path).read_text(encoding="utf-8"))
+    _require(isinstance(document, dict), f"La receta {path} no es un objeto")
+    return document.get("predictor")
+
+
+def _checked_continues(name, model, models, tiers, recipes, root, check_recipe_files):
+    """Padre de una continuación que parte de otro modelo en el origen anterior.
+
+    El padre es un ajuste mac_online del mismo equipo, de un nivel que no va después y que no
+    continúa a su vez, de modo que el plan lo ordena antes y su estado elegido existe en cada
+    origen. La continuación también es mac_online y conserva su arquitectura: los mismos
+    cambios del predictor y, con las recetas comprobadas, la misma sección `predictor`. Así
+    falla al declararse y no en la GPU tras esperar a su padre.
+    """
+    parent = models.get(model["continues"])
+    _require(
+        model.get("continuation") == CONTINUATION
+        and model["continues"] != name
+        and isinstance(parent, dict)
+        and parent.get("runner") == "fit"
+        and parent.get("variant") == "mac_online"
+        and "continuation" not in parent
+        and model["variant"] == "mac_online"
+        and parent["machine"] == model["machine"]
+        and tiers.index(parent["tier"]) <= tiers.index(model["tier"])
+        and parent.get("predictor_changes") == model.get("predictor_changes"),
+        f"La continuación {name} parte de un ajuste mac_online de su equipo y de un nivel "
+        "anterior, con sus mismos cambios del predictor, que no continúa a su vez",
+    )
+    if check_recipe_files:
+        _require(
+            _recipe_predictor(root, recipes[parent["recipe"]])
+            == _recipe_predictor(root, recipes[model["recipe"]]),
+            f"La continuación {name} no conserva la arquitectura del predictor de su padre",
+        )
 
 
 @dataclass(frozen=True)
@@ -493,8 +538,12 @@ def plan(declaration, machine):
                         needs = f"{models[name]['parent']}/{origin['year']}/seed-{seed}"
                     elif models[name].get("continuation") == CONTINUATION:
                         index = origins.index(origin)
+                        source = models[name].get("continues", name)
                         if index:
-                            needs = f"{name}/{origins[index - 1]['year']}/seed-{seed}"
+                            needs = f"{source}/{origins[index - 1]['year']}/seed-{seed}"
+                        elif source != name:
+                            # Sin estado anterior del padre, el primer origen no tiene trabajo.
+                            continue
                     jobs.append(
                         Job(
                             name,
