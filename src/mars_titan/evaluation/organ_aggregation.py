@@ -1,0 +1,652 @@
+"""Órganos de memoria como componente del agregador causal: S1 y S2 de un origen.
+
+Son los contrastes secundarios S1 y S2 del registro confirmatorio. Se añadieron el 22 de
+noviembre de 2026 a las 20:05 UTC, antes de ajustar ningún origen limpio.
+- **S1**: la media de rangos de `titans_mac_nogain` y `lightgbm_technical` frente al mejor de
+  los dos. El mejor es el de más IC en los tramos de decisión del origen (validación y
+  calibración), y se usa el mismo en las dos medidas.
+- **S2**: `ridge_cov_active` sobre esos dos modelos y la señal del brazo combinado de los órganos
+  de `titans_mac_nogain`, frente a la media de rangos de S1.
+  - `ridge_cov_active` es una regresión contraída con la covarianza de la sesión y conjunto
+    activo; λ y la semivida se eligen en calibración.
+  - La señal es la emisión del brazo menos la predicción del padre.
+  - Placebo: la misma señal barajada entre activos dentro de cada sesión.
+
+Cada contraste se mide en la etiqueta y en lo operable. Lo operable compara k·p + α con y + α,
+con k elegido en calibración para cada componente. Las diferencias son de evaluación, pareadas
+por sesión, con el t HAC de la criba.
+
+La configuración no cambia después de registrarse:
+- componentes, tramos, rejillas, factores y semillas están en la declaración;
+- la declaración debe tener la huella registrada;
+- el agregador del código debe usar la rejilla declarada.
+El agregador aprende en línea con la madurez exacta de la vista. La evaluación no interviene en
+ninguna elección.
+
+Las entradas las escriben otras unidades del relevo: el padre, los árboles y los órganos.
+- Si falta alguna, la orden espera hasta `--wait-hours`. Si siguen faltando, sale con el código
+  75 y la lista de lo que falta, sin escribir nada.
+- Calcula en una carpeta temporal y la publica de una vez como `<output>/<origen>`.
+- Un origen ya calculado con la misma declaración y las mismas entradas no se repite.
+"""
+
+import argparse
+import hashlib
+import importlib.util
+import json
+import math
+import os
+import shutil
+import sys
+import time
+from pathlib import Path
+
+import numpy as np
+import pyarrow as pa
+import pyarrow.parquet as pq
+
+from mars_titan.evaluation import online_aggregator as oa
+from mars_titan.evaluation import posttraining_pilots as pilots
+
+KIND = "posttraining_organ_aggregation_v1"
+# Huella canónica de configs/experiments/posttraining-aggregator-s2.json, la declaración de S2.
+REGISTERED_SHA256 = "e00daa98e23c120904aeb13fc3ef58cb9019521f49c1eed1940f05b6d83ed15f"
+MISSING_EXIT = 75  # EX_TEMPFAIL: faltan entradas de otras unidades y la orden se puede repetir
+SPLITS = ("validation", "calibration", "evaluation")
+AGGREGATED = ("calibration", "evaluation")
+ORDER = [("market", "ascending"), ("prediction_at", "ascending"), ("sample_id", "ascending")]
+COLUMNS = ["sample_id", "asset_id", "market", "prediction_at", "target", "prediction"]
+KEYS = ("sample_id", "asset_id", "market", "prediction_at", "target")
+CODE = Path(__file__).resolve().parents[3]
+SCREENING = CODE / "scripts" / "dgx_screening_report.py"
+SIGNAL, PLACEBO = "senal_organo", "senal_barajada"
+CONFIGS = dict(
+    dos=("parent", "tree"),
+    senal=("parent", "tree", "signal"),
+    placebo=("parent", "tree", "placebo"),
+)
+MODE_NAMES = dict(label="etiqueta", operable="operable")
+
+
+class MissingInputs(Exception):
+    """Entradas de otras unidades que todavía no están."""
+
+    def __init__(self, items):
+        super().__init__(f"Faltan {len(items)} entradas")
+        self.items = list(items)
+
+
+def _require(condition, message):
+    if not condition:
+        raise ValueError(message)
+
+
+def _screening():
+    _require(SCREENING.is_file(), f"Falta la criba {SCREENING} junto al código")
+    spec = importlib.util.spec_from_file_location("criba_de_s2", SCREENING)
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[spec.name] = module
+    spec.loader.exec_module(module)
+    return module
+
+
+def checked_declaration(document):
+    """La declaración registrada de S2 y su huella, o un error que dice por qué no lo es."""
+    _require(isinstance(document, dict), "La declaración de S2 es un objeto JSON")
+    digest = hashlib.sha256(pilots._canonical(document).encode()).hexdigest()
+    _require(
+        digest == REGISTERED_SHA256,
+        f"La declaración no es la registrada para S2 (huella {digest[:12]}, registrada "
+        f"{REGISTERED_SHA256[:12]}): la configuración de un contraste confirmatorio no cambia",
+    )
+    grid = document["aggregator"]
+    _require(
+        tuple(grid["lambdas"]) == tuple(oa.RIDGE_LAMBDAS)
+        and tuple(grid["half_lives"]) == tuple(oa.RIDGE_HALF_LIVES),
+        "El agregador del código no usa la rejilla de ridge_cov_active declarada "
+        f"(usa λ {oa.RIDGE_LAMBDAS} y semividas {oa.RIDGE_HALF_LIVES})",
+    )
+    return document, digest
+
+
+def folders(declaration, state, reference, organs, origin):
+    """Carpetas del padre, de los árboles y del brazo combinado de los órganos de un origen."""
+    seed = f"seed-{declaration['seed']}"
+    return dict(
+        parent=Path(state) / "runs" / declaration["parent"] / str(origin) / seed,
+        tree=Path(reference) / "runs" / declaration["tree"] / str(origin) / seed,
+        organ=Path(organs) / "runs" / declaration["organ"] / str(origin) / seed,
+    )
+
+
+def _needed(role):
+    return AGGREGATED if role == "organ" else SPLITS
+
+
+def _readable(path):
+    try:
+        pq.read_metadata(path)
+    except (OSError, pa.ArrowException):
+        return False
+    return True
+
+
+def missing_inputs(declaration, sources, manifest):
+    """Lo que falta todavía de las otras unidades; una lista vacía cuando está todo."""
+    missing = [] if manifest.is_file() else [f"el manifiesto de la cohorte {manifest}"]
+    for role, folder in sources.items():
+        record = folder / "run.json"
+        if not record.is_file():
+            missing.append(f"{role}: {record}")
+            continue
+        if role != "tree":
+            try:
+                status = json.loads(record.read_text(encoding="utf-8")).get("status")
+            except (OSError, ValueError):
+                status = None
+            if status != "completed":
+                missing.append(f"{role}: {record} no ha terminado (estado {status!r})")
+                continue
+        missing += [
+            f"{role}: {folder / f'{split}-predictions.parquet'}"
+            for split in _needed(role)
+            if not _readable(folder / f"{split}-predictions.parquet")
+        ]
+    return missing
+
+
+def wait_for_inputs(declaration, sources, manifest, *, hours, poll, sleep=time.sleep, say=print):
+    """Espera a que estén todas las entradas, como mucho `hours`; devuelve lo que falte."""
+    deadline = time.monotonic() + hours * 3600
+    while True:
+        missing = missing_inputs(declaration, sources, manifest)
+        if not missing or time.monotonic() >= deadline:
+            return missing
+        say(f"esperando {len(missing)} entradas; la primera: {missing[0]}")
+        sleep(poll)
+
+
+def _fingerprint(sources, manifest):
+    files = {"manifest": manifest}
+    for role, folder in sources.items():
+        files[f"{role}/run.json"] = folder / "run.json"
+        for split in _needed(role):
+            files[f"{role}/{split}"] = folder / f"{split}-predictions.parquet"
+    return {name: dict(path=str(path), sha256=pilots._sha256(path)) for name, path in files.items()}
+
+
+def _code_identity():
+    files = dict(
+        organ_aggregation=Path(__file__),
+        online_aggregator=Path(oa.__file__),
+        posttraining_pilots=Path(pilots.__file__),
+        screening=SCREENING,
+        technical_features=CODE / "src" / "mars_titan" / "data" / "technical_features.py",
+    )
+    return dict(
+        root=str(CODE),
+        files={name: pilots._sha256(path) for name, path in files.items() if path.is_file()},
+    )
+
+
+def _table(folder, split):
+    path = folder / f"{split}-predictions.parquet"
+    return pq.read_table(path, columns=COLUMNS).sort_by(ORDER)
+
+
+def known_rows(state, origin, parent, view, tables):
+    """Alfa conocido y madurez exacta de cada fila del padre, por tramo y en el orden de las tablas.
+
+    El alfa es el de la etiqueta (`KnownOffset` de la criba; NaN sin modelo de mercado). La
+    madurez sale de la vista con que se ajustó el padre.
+    """
+    known = _screening().KnownOffset(Path(state), origin)
+    maturity = pilots._maturity(Path(state) / "cohorts" / str(origin) / "manifest.json", view)
+    alpha, matures = {}, {}
+    for split, table in tables.items():
+        alpha[split] = known.rows(parent, split)[0]
+        rows = maturity[split]
+        lookup = dict(
+            zip(
+                zip(
+                    rows.column("asset_id").to_pylist(),
+                    rows.column("prediction_at").cast(pa.int64()).to_pylist(),
+                    strict=True,
+                ),
+                rows.column("matures_at").cast(pa.int64()).to_pylist(),
+                strict=True,
+            )
+        )
+        keys = zip(
+            table.column("asset_id").to_pylist(),
+            table.column("prediction_at").cast(pa.int64()).to_pylist(),
+            strict=True,
+        )
+        values = [lookup.get(key) for key in keys]
+        _require(
+            all(value is not None for value in values),
+            f"Hay filas de {split} del padre sin madurez en la vista {view[:12]}",
+        )
+        matures[split] = np.asarray(values, dtype=np.int64)
+    return alpha, matures
+
+
+def shuffled_within_sessions(values, market, instant, seed):
+    """La señal barajada entre activos dentro de cada sesión, con un generador por tramo."""
+    rng = np.random.default_rng(seed)
+    result = np.array(values, copy=True)
+    change = np.r_[True, (market[1:] != market[:-1]) | (instant[1:] != instant[:-1])]
+    starts = np.flatnonzero(change)
+    for start, end in zip(starts, np.r_[starts[1:], len(values)], strict=True):
+        result[start:end] = values[start:end][rng.permutation(end - start)]
+    return result
+
+
+def _checked_sources(declaration, origin, sources, records, fingerprint):
+    tree, organ, parent = records["tree"], records["organ"], records["parent"]
+    _require(
+        parent.get("final_test_opened") is False and organ.get("final_test_opened") is False,
+        f"El padre o el órgano de {origin} abrieron el test final",
+    )
+    _require(
+        tree.get("model") == declaration["tree"]
+        and tree.get("seed") == declaration["seed"]
+        and tree.get("final_test_access") is False,
+        f"{sources['tree']} no son los árboles declarados ({declaration['tree']}, semilla "
+        f"{declaration['seed']}, sin test final)",
+    )
+    _require(
+        organ.get("parent") == declaration["parent"] and organ.get("arm") == "combined",
+        f"{sources['organ']} no es el brazo combinado de {declaration['parent']}",
+    )
+    emissions = (organ.get("inputs") or {}).get("emissions") or {}
+    for split in SPLITS:
+        _require(
+            emissions.get(split) == fingerprint[f"parent/{split}"]["sha256"],
+            f"El órgano de {origin} se emitió con otras predicciones del padre ({split})",
+        )
+    for split in AGGREGATED:
+        _require(
+            (organ.get("outputs") or {}).get(split) == fingerprint[f"organ/{split}"]["sha256"],
+            f"La emisión de {split} del órgano de {origin} no es la de su registro",
+        )
+
+
+def _decision(tool, folder, splits):
+    ics = {split: tool.session_ic(tool.load_split(folder, split)) for split in splits}
+    return tool.summary(tool.pooled(ics, splits))["mean"]
+
+
+def _mean(values):
+    return float(np.mean(list(values.values()))) if values else None
+
+
+def _plain(value):
+    if isinstance(value, dict):
+        return {str(key): _plain(item) for key, item in value.items()}
+    if isinstance(value, (list, tuple)):
+        return [_plain(item) for item in value]
+    if isinstance(value, np.integer):
+        return int(value)
+    if isinstance(value, np.floating):
+        number = float(value)
+        return number if math.isfinite(number) else None
+    if isinstance(value, float) and not math.isfinite(value):
+        return None
+    return value
+
+
+def _write_component(folder, tables, prediction, alpha, matures):
+    folder.mkdir(parents=True)
+    for split in AGGREGATED:
+        base = tables[split]
+        table = pa.table(
+            {
+                **{name: base.column(name) for name in KEYS},
+                "prediction": pa.array(prediction[split].astype(np.float32)),
+                "alpha": pa.array(alpha[split].astype(np.float64)),
+                "matures_at": pa.array(matures[split].astype(np.int64)),
+            }
+        )
+        pq.write_table(table, folder / f"{split}-predictions.parquet")
+    return folder
+
+
+def _measure(declaration, tool, inputs, names, best, decision, mode, work):
+    runs = {}
+    for config, members in CONFIGS.items():
+        runs[config] = oa.run_aggregation(
+            {names[role]: inputs[role] for role in members},
+            splits=tuple(declaration["splits"]),
+            selection_split=declaration["selection_split"],
+            min_assets=declaration["min_assets"],
+            align=declaration["align"],
+            operable=mode == "operable",
+            alpha_col="alpha",
+            maturity_col="matures_at",
+            placebo_seed=declaration["aggregator_placebo_seed"],
+            operable_scales=tuple(declaration["operable_scales"]),
+        )
+        report = oa.render_markdown(oa._json_safe_report(runs[config]))
+        (work / "informes" / f"{mode}-{config}.md").write_text(report, encoding="utf-8")
+    two = runs["dos"]
+    evaluation = two["aligned"]["evaluation"]
+    ics = {
+        name: oa.session_rank_ic(
+            evaluation, evaluation["predictions"][:, i], min_assets=declaration["min_assets"]
+        )
+        for i, name in enumerate(two["model_names"])
+    }
+    ics.update(
+        s1=two["aggregators"]["rank_average"]["evaluation_session_ics"],
+        ridge_two=two["aggregators"]["ridge_cov_active"]["evaluation_session_ics"],
+        s2=runs["senal"]["aggregators"]["ridge_cov_active"]["evaluation_session_ics"],
+        s2_placebo=runs["placebo"]["aggregators"]["ridge_cov_active"]["evaluation_session_ics"],
+    )
+    parent, tree = names["parent"], names["tree"]
+    operable = {config: run["operable"] for config, run in runs.items()}
+    result = dict(
+        means={name: _mean(values) for name, values in ics.items()},
+        s1=dict(
+            best=names[best],
+            decision_ic={names[role]: value for role, value in decision.items()},
+            vs_best=tool.paired(ics["s1"], ics[names[best]]),
+            vs_parent=tool.paired(ics["s1"], ics[parent]),
+            vs_tree=tool.paired(ics["s1"], ics[tree]),
+        ),
+        s2=dict(
+            vs_s1=tool.paired(ics["s2"], ics["s1"]),
+            vs_placebo=tool.paired(ics["s2"], ics["s2_placebo"]),
+            placebo_vs_s1=tool.paired(ics["s2_placebo"], ics["s1"]),
+            ridge_two_vs_s1=tool.paired(ics["ridge_two"], ics["s1"]),
+            vs_ridge_two=tool.paired(ics["s2"], ics["ridge_two"]),
+            weights=runs["senal"]["aggregators"]["ridge_cov_active"]["mean_evaluation_weights"],
+            placebo_weights=runs["placebo"]["aggregators"]["ridge_cov_active"][
+                "mean_evaluation_weights"
+            ],
+            aggregator_placebos={
+                name: dict(
+                    mean=entry["summary"]["all"]["mean"],
+                    vs_ridge_cov_active=entry["contrasts"]["vs_ridge_cov_active"],
+                )
+                for name, entry in runs["senal"]["placebos"].items()
+            },
+        ),
+        hyperparameters={
+            config: run["selected_hyperparams"]["ridge_cov_active"] for config, run in runs.items()
+        },
+        factors=(
+            {config: info["scales"] for config, info in operable.items()}
+            if mode == "operable"
+            else None
+        ),
+        factors_on_boundary=(
+            {config: info["scales_on_boundary"] for config, info in operable.items()}
+            if mode == "operable"
+            else None
+        ),
+    )
+    return result, ics
+
+
+def _number(value, digits=4):
+    if value is None:
+        return "—"
+    return f"{value:+.{digits}f}".replace(".", ",").replace("-", "−")
+
+
+def _contrast(entry):
+    if entry["mean"] is None:
+        return "—"
+    return f"{_number(entry['mean'])} (t {_number(entry['t'], 1)}; {entry['sessions']} sesiones)"
+
+
+def _markdown(summary):
+    lines = [
+        f"# S1 y S2 del origen {summary['origin']}",
+        "",
+        f"Declaración {summary['declaration_sha256'][:12]}; código en {summary['code']['root']}.",
+        "Diferencias de evaluación pareadas por sesión, con t HAC.",
+        "",
+    ]
+    for mode, result in summary["modes"].items():
+        s1, s2, means = result["s1"], result["s2"], result["means"]
+        rows = [
+            (f"S1: media de rangos − el mejor por decisión ({s1['best']})", s1["vs_best"]),
+            ("S1: media de rangos − titans_mac_nogain", s1["vs_parent"]),
+            ("S1: media de rangos − lightgbm_technical", s1["vs_tree"]),
+            ("S2: ridge_cov_active con la señal − media de rangos", s2["vs_s1"]),
+            ("S2 − su placebo (señal barajada)", s2["vs_placebo"]),
+            ("Placebo − media de rangos", s2["placebo_vs_s1"]),
+            ("ridge_cov_active de los dos − media de rangos", s2["ridge_two_vs_s1"]),
+            ("S2 − ridge_cov_active de los dos", s2["vs_ridge_two"]),
+        ]
+        lines += [
+            f"## Medida: {MODE_NAMES[mode]}",
+            "",
+            "IC medio de evaluación: "
+            + ", ".join(f"{name} {_number(value)}" for name, value in means.items())
+            + ".",
+            "",
+            "| Contraste | Δ (t HAC) |",
+            "|---|---|",
+            *(f"| {label} | {_contrast(entry)} |" for label, entry in rows),
+            "",
+            "Pesos medios de S2 en evaluación: "
+            + ", ".join(f"{name} {value:.2f}" for name, value in s2["weights"].items())
+            + ". Hiperparámetros elegidos en calibración: "
+            + "; ".join(f"{config} {value}" for config, value in result["hyperparameters"].items())
+            + ".",
+        ]
+        if result["factors"] is not None:
+            lines.append(
+                "Factores de lo operable elegidos en calibración: "
+                + "; ".join(f"{config} {value}" for config, value in result["factors"].items())
+                + "."
+            )
+            for config, names in result["factors_on_boundary"].items():
+                if names:
+                    lines.append(
+                        f"AVISO: en {config}, el factor de {', '.join(names)} cae en un borde "
+                        "de la rejilla."
+                    )
+        lines.append("")
+    return "\n".join(lines)
+
+
+def _series(ics_by_mode):
+    columns = {name: [] for name in ("mode", "market", "prediction_at")}
+    names = sorted({name for ics in ics_by_mode.values() for name in ics})
+    columns.update({name: [] for name in names})
+    for mode, ics in ics_by_mode.items():
+        keys = sorted({key for values in ics.values() for key in values})
+        for key in keys:
+            columns["mode"].append(mode)
+            columns["market"].append(str(key[0]))
+            columns["prediction_at"].append(int(key[1]))
+            for name in names:
+                columns[name].append(float(ics.get(name, {}).get(key, math.nan)))
+    return pa.table(columns)
+
+
+def _already(target, digest, fingerprint, log):
+    record = target / "resumen.json"
+    try:
+        previous = json.loads(record.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        previous = {}
+    _require(
+        previous.get("status") == "completed" and previous.get("declaration_sha256") == digest,
+        f"La raíz {target} es de otra declaración o no terminó: no se mezcla con S2",
+    )
+    _require(
+        previous.get("inputs") == fingerprint,
+        f"Las entradas cambiaron desde que se calculó {target}: apártala para repetir el origen",
+    )
+    log(f"{target}: ya calculado con esta declaración y estas entradas")
+    return previous
+
+
+def aggregate(declaration, state, reference, organs, origin, output, *, wait_hours, poll, log):
+    """S1 y S2 de un origen, publicados en `<output>/<origen>`; devuelve el resumen."""
+    declaration, digest = checked_declaration(declaration)
+    sources = folders(declaration, state, reference, organs, origin)
+    manifest = Path(state) / "cohorts" / str(origin) / "manifest.json"
+    missing = wait_for_inputs(declaration, sources, manifest, hours=wait_hours, poll=poll, say=log)
+    if missing:
+        raise MissingInputs(missing)
+    fingerprint = _fingerprint(sources, manifest)
+    target = Path(output) / str(origin)
+    if target.exists():
+        return _already(target, digest, fingerprint, log)
+    started = time.monotonic()
+
+    def say(text):
+        log(f"{time.monotonic() - started:6.0f} s {text}")
+
+    records = {
+        role: json.loads((folder / "run.json").read_text(encoding="utf-8"))
+        for role, folder in sources.items()
+    }
+    _checked_sources(declaration, origin, sources, records, fingerprint)
+    tool = _screening()
+    decision = {
+        role: _decision(tool, sources[role], tuple(declaration["decision_splits"]))
+        for role in ("parent", "tree")
+    }
+    best = "parent" if decision["parent"] >= decision["tree"] else "tree"
+    say(f"decisión: {decision}; el mejor es {declaration[best]}")
+    tables = {role: {s: _table(folder, s) for s in AGGREGATED} for role, folder in sources.items()}
+    for role in ("tree", "organ"):
+        for split in AGGREGATED:
+            for name in KEYS:
+                _require(
+                    tables[role][split].column(name).equals(tables["parent"][split].column(name)),
+                    f"{sources[role]} no tiene las filas del padre en {split} (columna {name})",
+                )
+    view = records["parent"]["request"]["view_sha256"]
+    alpha, matures = known_rows(state, origin, sources["parent"], view, tables["parent"])
+    say("alfa conocido y madurez de la vista")
+    own = {
+        s: tables["parent"][s].column("prediction").to_numpy().astype(np.float64)
+        for s in AGGREGATED
+    }
+    signal = {
+        s: tables["organ"][s].column("prediction").to_numpy().astype(np.float64) - own[s]
+        for s in AGGREGATED
+    }
+    placebo = {
+        s: shuffled_within_sessions(
+            signal[s],
+            np.asarray(tables["parent"][s].column("market").to_pylist()),
+            tables["parent"][s].column("prediction_at").cast(pa.int64()).to_numpy(),
+            declaration["placebo"]["seed"],
+        )
+        for s in AGGREGATED
+    }
+    predictions = dict(
+        parent=own,
+        tree={
+            s: tables["tree"][s].column("prediction").to_numpy().astype(np.float64)
+            for s in AGGREGATED
+        },
+        signal=signal,
+        placebo=placebo,
+    )
+    names = dict(
+        parent=declaration["parent"], tree=declaration["tree"], signal=SIGNAL, placebo=PLACEBO
+    )
+    Path(output).mkdir(parents=True, exist_ok=True)
+    work = Path(output) / f".{origin}.{os.getpid()}.tmp"
+    try:
+        (work / "informes").mkdir(parents=True)
+        inputs = {
+            role: _write_component(
+                work / "entradas" / names[role], tables["parent"], values, alpha, matures
+            )
+            for role, values in predictions.items()
+        }
+        modes, series = {}, {}
+        for mode in declaration["modes"]:
+            modes[mode], series[mode] = _measure(
+                declaration, tool, inputs, names, best, decision, mode, work
+            )
+            say(f"{MODE_NAMES[mode]}: S2 − S1 {modes[mode]['s2']['vs_s1']['mean']}")
+        shutil.rmtree(work / "entradas")
+        summary = _plain(
+            dict(
+                schema_version=1,
+                kind=KIND,
+                status="completed",
+                origin=origin,
+                declaration_sha256=digest,
+                code=_code_identity(),
+                inputs=fingerprint,
+                alpha_known={s: float(np.isfinite(alpha[s]).mean()) for s in AGGREGATED},
+                modes=modes,
+                seconds=round(time.monotonic() - started),
+            )
+        )
+        pq.write_table(_series(series), work / "sesiones.parquet")
+        (work / "resumen.md").write_text(_markdown(summary), encoding="utf-8")
+        (work / "resumen.json").write_text(
+            json.dumps(summary, ensure_ascii=False, indent=1), encoding="utf-8"
+        )
+        os.rename(work, target)
+    finally:
+        shutil.rmtree(work, ignore_errors=True)
+    say(f"publicado en {target}")
+    return summary
+
+
+def parser():
+    result = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    commands = result.add_subparsers(dest="command", required=True)
+    run = commands.add_parser("agregar", help="Calcular S1 y S2 de un origen")
+    run.add_argument("--declaration", type=Path, required=True)
+    run.add_argument("--state", type=Path, required=True, help="Estado de la campaña")
+    run.add_argument("--reference", type=Path, required=True, help="Raíz de los árboles")
+    run.add_argument("--organs", type=Path, required=True, help="Raíz de los órganos")
+    run.add_argument("--origin", type=int, required=True)
+    run.add_argument("--output", type=Path, required=True, help="Raíz propia del agregador")
+    run.add_argument("--wait-hours", type=float, default=0.0)
+    run.add_argument("--poll-seconds", type=float, default=300.0)
+    return result
+
+
+def main(argv=None):
+    args = parser().parse_args(argv)
+
+    def log(line):
+        print(f"{time.strftime('%H:%M:%SZ', time.gmtime())} {line}", flush=True)
+
+    try:
+        declaration = json.loads(args.declaration.read_text(encoding="utf-8"))
+        aggregate(
+            declaration,
+            args.state,
+            args.reference,
+            args.organs,
+            args.origin,
+            args.output,
+            wait_hours=args.wait_hours,
+            poll=args.poll_seconds,
+            log=log,
+        )
+    except MissingInputs as missing:
+        print(
+            f"Faltan entradas de S2 para el origen {args.origin} tras esperar "
+            f"{args.wait_hours:g} h; no se escribe nada:",
+            file=sys.stderr,
+        )
+        for item in missing.items:
+            print(f"- {item}", file=sys.stderr)
+        return MISSING_EXIT
+    except ValueError as error:
+        print(f"Error: {error}", file=sys.stderr, flush=True)
+        return 1
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

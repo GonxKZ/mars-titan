@@ -1,0 +1,28 @@
+{
+  "schema_version": 1,
+  "kind": "posttraining_organ_aggregation_v1",
+  "final_test_access": false,
+  "description": "Contrastes secundarios S1 y S2 del registro confirmatorio (añadido del 22 de noviembre de 2026 a las 20:05 UTC), declarados a las 20:45 UTC por encargo del coordinador, antes de calcular ningún origen limpio. S1: la media de rangos de titans_mac_nogain y lightgbm_technical frente al mejor de los dos por su IC en los tramos de decisión del origen (validación y calibración). S2: ridge_cov_active (regresión contraída con la covarianza de la sesión y conjunto activo, con λ y semivida elegidos en calibración) sobre esos dos modelos y la señal del brazo combinado de los órganos de titans_mac_nogain (emisión − padre), frente a la media de rangos de S1. Placebo de S2: la misma señal barajada entre activos dentro de cada sesión, con la semilla 20261122. Cada contraste se mide en la etiqueta y en lo operable: k·p + α frente a y + α, con k elegido en calibración para cada componente en la rejilla de la herramienta desplegada, de 0,001 a 100. El agregador aprende en línea con la madurez exacta de la vista, y la evaluación no interviene en ninguna elección. Esta configuración no cambia: la orden exige esta huella.",
+  "seed": 42,
+  "min_assets": 30,
+  "parent": "titans_mac_nogain",
+  "tree": "lightgbm_technical",
+  "organ": "titans_mac_nogain__combined",
+  "decision_splits": ["validation", "calibration"],
+  "splits": ["calibration", "evaluation"],
+  "selection_split": "calibration",
+  "align": "strict",
+  "aggregator": {
+    "name": "ridge_cov_active",
+    "lambdas": [2.0, 1.0, 0.5, 0.1],
+    "half_lives": [null, 63.0, 21.0]
+  },
+  "baseline": "rank_average",
+  "placebo": {
+    "kind": "signal_shuffled_within_session",
+    "seed": 20261122
+  },
+  "aggregator_placebo_seed": 20261122,
+  "operable_scales": [0.001, 0.002, 0.005, 0.01, 0.02, 0.03, 0.05, 0.07, 0.1, 0.15, 0.2, 0.3, 0.5, 0.7, 1.0, 1.5, 2.0, 3.0, 5.0, 10.0, 30.0, 100.0],
+  "modes": ["label", "operable"]
+}
