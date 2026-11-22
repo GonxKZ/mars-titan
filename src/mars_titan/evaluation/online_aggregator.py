@@ -1563,6 +1563,7 @@ def run_aggregation(
     maturity_col: str | None = "matures_at",
     placebo_seed: int = 20261122,
     abstention_cost: float = 0.02,
+    operable_scales: tuple[float, ...] = OPERABLE_SCALES,
 ) -> dict[str, Any]:
     """Ejecuta la agregación causal completa sobre los tramos declarados sin fuga de evaluación.
 
@@ -1623,8 +1624,17 @@ def run_aggregation(
 
     operable_info: dict[str, Any] = dict(enabled=False, scales=None, baseline_alpha_ic=None)
     if operable:
+        _require(
+            len(operable_scales) >= 2
+            and all(isinstance(s, float) and math.isfinite(s) and s > 0 for s in operable_scales)
+            and list(operable_scales) == sorted(set(operable_scales)),
+            "La rejilla de factores operables son reales positivos, distintos y crecientes",
+        )
         scales = _fit_operable_scales_on_calibration(
-            aligned_splits["calibration"], min_assets=min_assets, exclude_keys=cal_embargo
+            aligned_splits["calibration"],
+            min_assets=min_assets,
+            exclude_keys=cal_embargo,
+            scales=tuple(operable_scales),
         )
         # Baseline +alpha sobre lo operable y -alpha sobre la etiqueta en evaluación
         eval_raw = aligned_splits["evaluation"]
@@ -1651,6 +1661,12 @@ def run_aggregation(
         operable_info = dict(
             enabled=True,
             scales=scales,
+            # Componentes cuyo factor elegido cae en un borde de la rejilla: la rejilla es corta.
+            scales_on_boundary=sorted(
+                name
+                for name, factor in scales.items()
+                if factor in (operable_scales[0], operable_scales[-1])
+            ),
             baseline_alpha_ic=dict(
                 plus_alpha_on_operable=summarize_session_dict(base_plus_op),
                 minus_alpha_on_label=summarize_session_dict(base_minus_lbl),

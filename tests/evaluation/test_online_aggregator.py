@@ -1206,3 +1206,17 @@ def test_ridge_cov_active_uses_the_covariance_known_at_its_own_session_and_no_la
     again = oa.ridge_stacking_weights(ics, changed, **options)
     assert not np.allclose(weights[-1], again[-1])
     np.testing.assert_array_equal(weights[:-1], again[:-1])
+
+
+def test_the_operable_factor_grid_is_declared_and_its_boundaries_are_flagged(tmp_path):
+    """La rejilla de factores operables se pasa al ajustar y avisa si el elegido cae en un borde."""
+    runs = _make_synthetic_runs(tmp_path, include_alpha=True, n_assets=35, seed=31)
+    narrow = oa.run_aggregation(runs, operable=True, min_assets=30, operable_scales=(0.5, 0.7))
+    assert set(narrow["operable"]["scales"].values()) <= {0.5, 0.7}
+    assert narrow["operable"]["scales_on_boundary"] == sorted(narrow["operable"]["scales"])
+    wide = oa.run_aggregation(
+        runs, operable=True, min_assets=30, operable_scales=(0.001, 0.01, 0.1, 1.0, 10.0, 100.0)
+    )
+    assert set(wide["operable"]["scales"].values()) <= {0.001, 0.01, 0.1, 1.0, 10.0, 100.0}
+    with pytest.raises(ValueError, match="rejilla de factores"):
+        oa.run_aggregation(runs, operable=True, min_assets=30, operable_scales=(1.0, 0.5))
