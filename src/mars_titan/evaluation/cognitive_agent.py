@@ -34,7 +34,8 @@ Variantes por origen y semilla, todas sobre las mismas filas:
   régimen (los expertos especialistas de Freund, Schapire, Singer y Warmuth, 1997, con la
   extensión de AdaNormalHedge para opciones que duermen). El régimen de una sesión se calcula
   solo con sesiones ya maduras: dispersión transversal reciente alta o baja frente a la mediana
-  de las maduras, y mercado reciente al alza o a la baja. La mezcla compite así con la mejor
+  de las maduras, y residuo medio reciente positivo («al alza») o no («a la baja»). La etiqueta
+  ya resta β̂·r_m, así que ese eje no es la dirección del mercado. La mezcla compite así con la mejor
   política que elige herramienta según el régimen, con la misma garantía de arrepentimiento.
 - `shapley/<subconjunto>`: el núcleo con cada subconjunto de herramientas, sin abstención, si se
   declara `shapley`. El valor de Shapley de cada herramienta (Shapley, 1953) reparte
@@ -93,7 +94,8 @@ SUBSET = "shapley/"
 MODALITY = "modality/"
 FULL = "full"
 MAX_MODALITY_MODELS = 8
-# Regímenes: dispersión transversal reciente alta o baja y mercado reciente al alza o a la baja.
+# Regímenes: dispersión transversal reciente alta o baja y residuo medio reciente de la etiqueta
+# positivo (up) o no (down). La etiqueta resta β̂·r_m: up/down no es la dirección del mercado.
 REGIMES = ("low_dispersion_down", "low_dispersion_up", "high_dispersion_down", "high_dispersion_up")
 UNKNOWN_REGIME = -1
 # Shapley exacto enumera 2^T subconjuntos por origen y semilla: con 8 herramientas son 256
@@ -550,7 +552,11 @@ def regimes(panel, session_matures, window):
 
     Con las últimas `window` sesiones maduras del mismo mercado (por instante de decisión), la
     sesión es de dispersión alta si su dispersión transversal media supera la mediana de las
-    dispersiones de todas las sesiones maduras, y al alza si su rendimiento medio es positivo.
+    dispersiones de todas las sesiones maduras, y al alza si la media de su etiqueta es
+    positiva. La etiqueta es el residuo y − α̂ − β̂·r_m, así que ese eje es el signo del residuo
+    medio de los activos del panel en las sesiones recientes y no la dirección del mercado. Con
+    `window` sesiones maduras justas, su dispersión se compara con la mediana de esas mismas
+    sesiones.
     Mientras no haya `window` sesiones maduras el régimen es desconocido y solo despiertan los
     generalistas. Devuelve el índice de `REGIMES` o `UNKNOWN_REGIME` de cada sesión.
     """
