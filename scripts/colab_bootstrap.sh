@@ -8,6 +8,7 @@
 # Uso, dentro de Colab y con Drive montado:
 #   bash colab_bootstrap.sh <paso> --paquete <carpeta del paquete en Drive> \
 #        --bundle <mars-titan.bundle> --commit <40 hex> [--trabajo /content/mars-titan]
+#        [--destino /home/gonzalo] [--grupos "A01-preparados-v31 Precios-US"]
 #
 # Pasos, en este orden:
 #   sistema   herramientas del sistema (zstd, tmux, cmake, ninja, git) y uv
@@ -25,7 +26,7 @@ paso="${1:-}"
 [ -n "$paso" ] || { echo "Falta el paso. Consulta la cabecera de este guion." >&2; exit 2; }
 shift
 
-paquete="" bundle="" commit="" trabajo="/content/mars-titan" destino="/home/gonzalo"
+paquete="" bundle="" commit="" trabajo="/content/mars-titan" destino="/home/gonzalo" grupos=""
 while [ "$#" -gt 0 ]; do
   case "$1" in
     --paquete) paquete="$2"; shift 2 ;;
@@ -33,6 +34,7 @@ while [ "$#" -gt 0 ]; do
     --commit) commit="$2"; shift 2 ;;
     --trabajo) trabajo="$2"; shift 2 ;;
     --destino) destino="$2"; shift 2 ;;
+    --grupos) grupos="$2"; shift 2 ;;
     *) echo "Opción desconocida: $1" >&2; exit 2 ;;
   esac
 done
@@ -49,6 +51,11 @@ GRUPOS=(
   A04-vistas-US A05-vistas-CN A06-vistas-conjuntas
   Etiquetas-US Muestras-US Precios-US Ventanas-US
 )
+
+# Con --grupos se restauran solo los nombrados, por ejemplo los de un mercado para empezar.
+if [ -n "$grupos" ]; then
+  read -r -a GRUPOS <<< "$grupos"
+fi
 
 falta() { echo "FALTA: $*" >&2; exit 1; }
 
