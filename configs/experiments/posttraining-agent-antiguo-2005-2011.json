@@ -1,0 +1,55 @@
+{
+  "schema_version": 1,
+  "kind": "cognitive_agent_v1",
+  "final_test_access": false,
+  "description": "Piloto de combinación en línea del programa de post-entrenamiento v10, declarado el 22 de noviembre de 2026 antes de ejecutarlo, para replicar entre orígenes. Agente cognitivo sobre el estado antiguo sin rasgos (titans_mac y sus lectores m0 a m3, orígenes 2005 a 2011, semilla 42: siete orígenes y una semilla). Núcleo: titans_mac. Herramientas: los cuatro lectores sobre el padre congelado (m3 con banco episódico, m1 y m2 con los diseños de banco alternativos y m0 sin banco). Mismos controles, inferencia y criterio que la declaración v1 del agente. Sin modalidades.",
+  "campaign": "configs/experiments/dgx-us-campaign-v1.json",
+  "core": "titans_mac",
+  "tools": {
+    "episodic_retrieval": [
+      "mars_titan_m3"
+    ],
+    "bank_m1": [
+      "mars_titan_m1"
+    ],
+    "bank_m2": [
+      "mars_titan_m2"
+    ],
+    "reader_without_bank": [
+      "mars_titan_m0"
+    ]
+  },
+  "feedback": {
+    "window": 63,
+    "min_assets": 30,
+    "margin": 0,
+    "shuffled_seed": 20261120
+  },
+  "placebo": {
+    "seed": 7
+  },
+  "context": {
+    "window": 21
+  },
+  "shapley": true,
+  "metric": "session_rank_ic",
+  "inference": {
+    "block_days": 21,
+    "replicates": 4000,
+    "seed": 2026,
+    "confidence": 0.95
+  },
+  "origins": [
+    2005,
+    2006,
+    2007,
+    2008,
+    2009,
+    2010,
+    2011
+  ],
+  "seeds": [
+    42
+  ],
+  "modalities": null
+}

@@ -1,0 +1,183 @@
+{
+  "schema_version": 1,
+  "kind": "posttraining_pilots_v1",
+  "final_test_access": false,
+  "description": "Pilotos de post-entrenamiento de la base v10 en CPU, declarados el 22 de noviembre de 2026 antes de leer ninguna emisión con estos métodos. Emisiones: los 50 trabajos terminados de la v8 en el origen 2013 con la semilla 42, los 11 propios de la extensión v8-ext1 (los comunes son idénticos a los de la v8) y, para replicar entre orígenes, titans_mac en 2005-2013 y mars_titan_m3 en 2005-2011 del estado antiguo sin rasgos (semilla 42). Memoria por activo: el contraste primario es lab-parent en evaluación con la configuración del laboratorio tabular (semivida 21, κ 0,1), fijada antes de ver estas emisiones; la configuración elegida con el IC medio de calibración (κ = 0 incluido, empates al κ menor y a la semivida menor) es secundaria; placebo_lab lee la memoria de otro activo (ciclo con semilla fija) y label_lab guarda la etiqueta en lugar del residuo para separar la corrección del error de la mera persistencia del rango del activo. Regla: la memoria entra en la campaña final si lab-parent es positivo con t HAC ≥ 2 en la serie conjunta de los orígenes del estado antiguo y en titans_mac_xrank de la v8, y placebo_lab-parent no lo es. Escala e intervalos: todo factor, corrección y escala de contexto se ajusta en calibración; κ de PT2 se elige arrancando en validación y puntuando la calibración (suma de puntuaciones de intervalo 80 y 95, empate al κ menor). Regla de calibración, por orden de sencillez: entra scale_cqr_static si su cobertura queda a ±2,5 puntos de 0,80 y 0,95, su mae_ratio no supera 1 y reduce la pinball frente a raw con t ≤ −2; un método en línea o por regímenes solo la sustituye si además reduce la pinball frente a scale_cqr_static con t ≤ −2. La evaluación se mira una vez; toda cifra se informa con el número de orígenes y semillas que la sostienen.",
+  "market": "US",
+  "min_assets": 30,
+  "runs": [
+    {
+      "state": "v8",
+      "models": [
+        "cross_asset_attention",
+        "cross_asset_attention_disabled",
+        "cross_asset_attention_frozen",
+        "cross_asset_attention_self",
+        "mars_titan_cognitive",
+        "mars_titan_m0",
+        "mars_titan_m0_noic",
+        "mars_titan_m0_u2",
+        "mars_titan_m3",
+        "mars_titan_m3_noic",
+        "titans_mac",
+        "titans_mac_dense256",
+        "titans_mac_disabled",
+        "titans_mac_disabled_autograd",
+        "titans_mac_disabled_dense256",
+        "titans_mac_disabled_ema",
+        "titans_mac_disabled_h32",
+        "titans_mac_disabled_ic",
+        "titans_mac_disabled_icw10",
+        "titans_mac_disabled_icw1",
+        "titans_mac_disabled_macro",
+        "titans_mac_disabled_nobranch",
+        "titans_mac_disabled_noic",
+        "titans_mac_disabled_nols",
+        "titans_mac_disabled_original",
+        "titans_mac_disabled_piecewise",
+        "titans_mac_disabled_rank",
+        "titans_mac_disabled_scalar",
+        "titans_mac_disabled_scalar_noic",
+        "titans_mac_disabled_t1",
+        "titans_mac_disabled_t4",
+        "titans_mac_disabled_t8",
+        "titans_mac_disabled_xrank",
+        "titans_mac_frozen",
+        "titans_mac_frozen_nobranch",
+        "titans_mac_frozen_noic",
+        "titans_mac_frozen_original",
+        "titans_mac_frozen_t8",
+        "titans_mac_frozen_xrank",
+        "titans_mac_icw10",
+        "titans_mac_icw1",
+        "titans_mac_mae",
+        "titans_mac_nobranch",
+        "titans_mac_noic",
+        "titans_mac_original",
+        "titans_mac_piecewise",
+        "titans_mac_t1",
+        "titans_mac_t4",
+        "titans_mac_t8",
+        "titans_mac_xrank"
+      ],
+      "origins": [
+        2013
+      ],
+      "seeds": [
+        42
+      ]
+    },
+    {
+      "state": "v8_ext1",
+      "models": [
+        "mars_titan_cognitive_ic",
+        "mars_titan_m0_ic",
+        "mars_titan_m3_ic",
+        "titans_mac_disabled_icw01",
+        "titans_mac_disabled_icw03",
+        "titans_mac_disabled_liq05",
+        "titans_mac_disabled_liq1",
+        "titans_mac_icw01",
+        "titans_mac_icw03",
+        "titans_mac_liq05",
+        "titans_mac_liq1"
+      ],
+      "origins": [
+        2013
+      ],
+      "seeds": [
+        42
+      ]
+    },
+    {
+      "state": "antiguo",
+      "models": [
+        "titans_mac"
+      ],
+      "origins": [
+        2005,
+        2006,
+        2007,
+        2008,
+        2009,
+        2010,
+        2011,
+        2012,
+        2013
+      ],
+      "seeds": [
+        42
+      ]
+    },
+    {
+      "state": "antiguo",
+      "models": [
+        "mars_titan_m3"
+      ],
+      "origins": [
+        2005,
+        2006,
+        2007,
+        2008,
+        2009,
+        2010,
+        2011
+      ],
+      "seeds": [
+        42
+      ]
+    }
+  ],
+  "memory": {
+    "value": "residual",
+    "half_lives": [
+      5,
+      10,
+      21,
+      42,
+      63
+    ],
+    "kappas": [
+      0,
+      0.025,
+      0.05,
+      0.1,
+      0.2,
+      0.4
+    ],
+    "lab": {
+      "half_life": 21,
+      "kappa": 0.1
+    },
+    "placebo_seed": 20261122,
+    "controls": [
+      "label"
+    ]
+  },
+  "calibration": {
+    "levels": [
+      0.025,
+      0.1,
+      0.5,
+      0.9,
+      0.975
+    ],
+    "nominals": [
+      0.8,
+      0.95
+    ],
+    "min_rows": 1000,
+    "online_rates": [
+      0,
+      0.005,
+      0.01,
+      0.02,
+      0.05,
+      0.1
+    ],
+    "regime_models": [
+      "titans_mac_xrank",
+      "titans_mac_noic"
+    ]
+  }
+}

@@ -1,0 +1,77 @@
+{
+  "schema_version": 1,
+  "kind": "posttraining_memories_v1",
+  "final_test_access": false,
+  "description": "Estudio de memorias del programa de post-entrenamiento v10, declarado el 22 de noviembre de 2026 antes de leer estas emisiones con estos métodos, a petición del coordinador tras el laboratorio tabular (memoria por activo +0,0017/+0,0018/+0,0015, t 2,4/2,7/2,1 en tres semillas; vecinos con claves de proyección +0,0016/+0,0016, t 2,8/2,9; las dos juntas +0,0024/+0,0029). Pregunta: cuánto sobrevive de cada memoria cuando el padre ya tiene memoria en línea. Emisiones: la v8 en el origen 2013 con la semilla 42 (un origen y una semilla; nada se generaliza sin más orígenes). Modelos: titans_mac con su control congelado y desactivado, titans_mac_xrank con los suyos, titans_mac_noic y los lectores m0, m3, cognitivo, m0_u2, m0_noic y m3_noic. Memoria por activo: rejilla del laboratorio (semividas 5, 10, 21, 63, 126 y κ 0,03 a 0,3), configuración del laboratorio (21 y 0,1) como contraste primario y la elegida con el IC de calibración como secundario; placebo con la memoria de otro activo (ciclo con semilla fija). Vecinos: la configuración que eligió el laboratorio con claves de proyección (ventana 63 sesiones maduras, 256 vecinos, τ 0,2, residuo recortado a ±3), κ elegido en calibración entre 0,05 y 0,4, y placebo con los valores del banco permutados. Claves: las 92 entradas del laboratorio (46 rasgos normalizados con el tramo de ajuste y sus rangos gaussianos por sesión) proyectadas con signos aleatorios a 64 dimensiones (semilla 53, la del laboratorio para la semilla 42, aunque el generador es el de NumPy y no el de PyTorch). Combinación: pesos (κ activo, κ vecinos) en {0; 0,05; 0,1; 0,2}² elegidos en calibración, comparada con cada memoria sola con su peso elegido igual; acuerdo entre lecturas como correlación de rangos media por sesión. La evaluación se mira una vez; los contrastes son pareados por sesión con t HAC de Newey-West del informe de criba.",
+  "market": "US",
+  "min_assets": 30,
+  "runs": [
+    {
+      "state": "v8",
+      "origin": 2013,
+      "seed": 42
+    }
+  ],
+  "models": [
+    "titans_mac",
+    "titans_mac_frozen",
+    "titans_mac_disabled",
+    "titans_mac_xrank",
+    "titans_mac_frozen_xrank",
+    "titans_mac_disabled_xrank",
+    "titans_mac_noic",
+    "mars_titan_m0",
+    "mars_titan_m3",
+    "mars_titan_cognitive",
+    "mars_titan_m0_u2",
+    "mars_titan_m0_noic",
+    "mars_titan_m3_noic"
+  ],
+  "inputs": {
+    "source": "tabular_lab_cache_v1",
+    "columns": 92,
+    "projection_dim": 64,
+    "projection_seed": 53
+  },
+  "asset": {
+    "half_lives": [
+      5,
+      10,
+      21,
+      63,
+      126
+    ],
+    "kappas": [
+      0.03,
+      0.05,
+      0.1,
+      0.2,
+      0.3
+    ],
+    "lab": {
+      "half_life": 21,
+      "kappa": 0.1
+    }
+  },
+  "neighbours": {
+    "window": 63,
+    "k": 256,
+    "tau": 0.2,
+    "clip": 3,
+    "kappas": [
+      0.05,
+      0.1,
+      0.2,
+      0.4
+    ]
+  },
+  "combination": {
+    "kappas": [
+      0,
+      0.05,
+      0.1,
+      0.2
+    ]
+  },
+  "placebo_seed": 20261122
+}
