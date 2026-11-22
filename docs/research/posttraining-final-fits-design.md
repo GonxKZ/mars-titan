@@ -24,6 +24,80 @@ de medir. Nada de esto se ha ejecutado: los costes son estimaciones a partir de 
   - Ninguna fila de ajuste puede tener su madurez dentro de la sesión de purga ni de la de embargo.
   - Se usa la madurez exacta de la vista, no un retardo supuesto.
 
+## Mercados, rasgos y factor de mercado (D-7, H10)
+
+Añadido el 23 de noviembre, con el hallazgo D-7 del cuaderno (8a8c5e9e de dgx-trainning) y la
+hipótesis H10 (protocolo 47ede1c7).
+
+**El hallazgo.**
+- La vista declara para China el factor CSI 300 (`…/csi300-inherited-gaps-recovery/price-factor-2006-2023-v16/prices.parquet`,
+  huella b96cd972…).
+- Ese fichero no está en la DGX. Comprobado el 23-11: tampoco está en este equipo, mientras que el
+  de EE. UU. (SPY, 3540094000…) sí está.
+- `corpus_inputs._market_factor` apaga entonces sin aviso los rasgos del modelo de mercado:
+  alpha_percent, alpha_t, beta, log_residual_volatility, has_market_model, realized_label_1/5/21,
+  alpha_21_percent y alpha_63_percent valen cero en todos los activos chinos.
+- La etiqueta china sí es un residuo del CSI 300: y = r(j+1) − α(j) − β(j)·m(j+1).
+
+Por eso todo ajuste con China hasta hoy ha entrenado sin el modelo de mercado.
+
+**Factor por mercado en los ajustes finales.**
+- EE. UU.: SPY de apertura a cierre, como ahora.
+- China, por orden de preferencia:
+  1. **El CSI 300 declarado, restaurado con su huella.** Es el de la etiqueta, así que no cambia
+     ninguna otra variable.
+  2. **El factor despejado de las propias etiquetas** (`x7_factor_reconstruido.py`; residuo
+     mediano de 1e-9 a 1e-6 desde 2008).
+     - Ganancia medida con árboles en 2013: +0,0079.
+     - Riesgo de fuga: m(t) solo puede salir de etiquetas ya maduras en t, que son las de las
+       decisiones de t − 1. Hay que reconstruirlo en un recorrido cronológico y con la madurez
+       exacta de la vista, nunca de una vez con toda la serie.
+  3. **El segundo modelo de mercado de H10**, contra la media simple del rendimiento intradía del
+     propio universo en cada sesión, en los dos mercados.
+     - Ganancia medida con árboles en 2013: de 0,117 a 0,130 (+0,0098 a +0,0130 en tres semillas,
+       t 3,6 a 4,4).
+     - Entra como un segundo juego de rasgos. No da el alfa de la etiqueta, así que no sirve de
+       desplazamiento conocido para lo operable.
+
+  La elección entre los tres es de H10 y del coordinador, no de estos post-entrenamientos. Cada
+  post-entrenamiento se mide con el factor ya fijado, nunca a la vez que se cambia.
+- **Regla común: fallar en vez de apagar.**
+  - Si un mercado con filas declara un factor cuyo fichero no está o no conserva su huella, el
+    ajuste no arranca.
+  - El recibo de cada ajuste guarda, por mercado y tramo, la fracción de filas con
+    has_market_model = 1. En China, desde 2008, debe ser la misma que en la vista.
+
+**Rasgos.**
+- `long_horizon_v3` son los 46 de la v2 (prefijo bit a bit) más 16 de precio y volumen validados
+  en China.
+- La rama técnica lee el ancho de la versión declarada.
+- Toda columna que se cuenta desde el final del bloque del gráfico se deriva del nombre del rasgo
+  en la versión declarada, nunca de un número fijo:
+  - `offset_column`, el alfa: −46 con v2 y −62 con v3;
+  - también `session_ic_term.liquidity_column`. Hoy la regla de cac92bf8 solo comprueba
+    `technical_branch.columns` y `offset_column`, y con v3 un `liquidity_column` escrito para la
+    v2 leería otra columna sin aviso.
+
+**Paquete de Colab.** Para que China no entrene a ciegas también allí, el paquete lleva:
+1. Los ficheros de factor de cada mercado con sus huellas, en las rutas que declara su manifiesto:
+   - SPY;
+   - para China, el CSI 300 restaurado, o el factor elegido en H10 con su receta y su huella.
+2. Una comprobación previa que corre antes de cargar la GPU y para con un mensaje. Exige, por
+   mercado:
+   - que el factor declarado existe y conserva su huella;
+   - que la fracción de has_market_model = 1 en el tramo de ajuste supera la de la vista menos un
+     margen fijo;
+   - que el ancho de rasgos y las columnas contadas desde el final cuadran con la versión
+     declarada.
+3. La versión de rasgos con su lista de nombres, para derivar por nombre las columnas que se
+   cuentan desde el final.
+4. El recibo de la comprobación dentro del run.json del ajuste.
+
+**Lectura por mercado.**
+- Toda medida de estos post-entrenamientos sobre estados conjuntos (H9:
+  `dgx-titans-us-cn-v31/v11-inputs-v2|v3`) se lee por mercado (`dgx_seed_contrasts.py --market`).
+- El IC operable y los costes solo existen en EE. UU. mientras China no tenga alfa conocido.
+
 ## C1. Destilación del conjunto hacia el núcleo
 
 **Variable:** la pérdida del alumno incluye o no la distancia al profesor, con un peso w = 0,3
@@ -64,6 +138,9 @@ fijado de antemano. El control es el mismo ajuste sin destilación.
 - La receta de los árboles se fijó con el desarrollo de 2013: en los bloques anteriores a 2013 es
   una elección con información posterior, leve pero declarada.
 - w elegido fuera de validación. Aquí se fija de antemano.
+- China (D-7): los árboles que hacen de profesor también vieron ceros en el modelo de mercado. El
+  profesor y el alumno se ajustan con el mismo factor ya fijado. Si es el reconstruido, su m(t)
+  sale de etiquetas maduras en t, en el mismo recorrido cronológico que el profesor.
 
 **Abandono:** se abandona si cualquiera de las dos condiciones falla en validación y calibración
 de 2013, con tres semillas:
@@ -98,6 +175,10 @@ punto elegido tal cual.
   como tramo de decisión de estos brazos. La decisión queda con la calibración, 61 sesiones, de
   poca potencia.
 - Recalcular la normalización con datos recientes cambiaría dos variables a la vez.
+- Un cambio de factor de mercado no se puede hacer como ajuste fino. En China los normalizadores
+  y los pesos se ajustaron con ceros en los rasgos del modelo de mercado, así que pasar a valores
+  reales pide un ajuste completo. C2 se mide después de fijar el factor y con el mismo factor en
+  los dos brazos.
 
 **Abandono:** se abandona un brazo si en calibración pierde frente al control en dos de tres
 semillas, o si su diferencia media en los orígenes limpios no supera +0,001.
@@ -124,7 +205,9 @@ otra variable y no se propone.
 - la anchura media a igual cobertura;
 - la mayor desviación entre tercios de liquidez y deciles de volatilidad;
 - la cobertura por trimestre, porque la intercambiabilidad no se cumple en el tiempo
-  (ml4t-non-stationarity).
+  (ml4t-non-stationarity);
+- en estados conjuntos, todo lo anterior por mercado. La corrección conforme se calibra por
+  mercado: CQR con un cuantil común mezclaría dos escalas de error.
 
 **Por dónde puede colarse el futuro:**
 - La cabeza se ajusta en validación, que ya decidió la parada del núcleo: es levemente optimista.
