@@ -6,6 +6,8 @@ una sesión), el placebo que lee la memoria de otro activo, la pausa y reanudaci
 los casos límite y que cada guarda rechaza lo que debe rechazar.
 """
 
+import copy
+
 import numpy as np
 import pytest
 from scipy.special import ndtri
@@ -354,3 +356,50 @@ def test_the_mean_of_an_asset_absent_for_many_half_lives_is_its_exact_ewma_ratio
     after, weight = memory.read("US", assets[:1])
     assert 0 < weight[0] < 1e-12
     assert after[0] == pytest.approx(before[0], rel=1e-12)
+
+
+def test_a_cohort_rejected_for_too_many_assets_leaves_no_trace_of_its_market(monkeypatch):
+    """H04 (a) de la auditoría: una operación rechazada no cambia el estado."""
+    monkeypatch.setattr(arm, "MAX_ASSETS", 3)
+    memory = arm.AssetResidualMemory(CONFIG)
+    before = memory.export()
+    assets = np.array(["US/A", "US/B", "US/C", "US/D"])
+    with pytest.raises(ValueError, match="máximo de activos"):
+        memory.emit("US", START, assets, np.zeros(4), kappas=(0.1,), matures_at=START + DAY)
+    assert memory.export() == before
+
+
+def _signed(payload):
+    payload["state_sha256"] = arm._state_sha256(payload)
+    return payload
+
+
+@pytest.mark.parametrize(
+    "tamper",
+    [
+        lambda p, m: p.update(schema_version=True),
+        lambda p, m: m["weight"].__setitem__(0, np.inf),
+        lambda p, m: m["pending"][0]["z"].__setitem__(0, np.nan),
+        lambda p, m: m["pending"][0].update(matures_at=m["pending"][0]["prediction_at"]),
+        lambda p, m: m.update(clock=FINAL_TEST_START_US),
+        lambda p, m: m["pending"][0].update(prediction_at=True),
+    ],
+    ids=[
+        "version-booleana",
+        "peso-infinito",
+        "z-nan",
+        "madura-al-decidir",
+        "reloj-2024",
+        "instante-booleano",
+    ],
+)
+def test_restore_rejects_a_state_that_breaks_an_invariant_even_with_a_valid_hash(tamper):
+    """H04 (b) de la auditoría: la huella no basta, se comprueban los invariantes."""
+    _, memory = replay(columns(panel(sessions=4, assets=6, seed=2)), flush=False)
+    payload = memory.export()
+    market = payload["markets"]["US"]
+    assert market["pending"]
+    arm.AssetResidualMemory.restore(_signed(copy.deepcopy(payload)))
+    tamper(payload, market)
+    with pytest.raises(ValueError):
+        arm.AssetResidualMemory.restore(_signed(payload))

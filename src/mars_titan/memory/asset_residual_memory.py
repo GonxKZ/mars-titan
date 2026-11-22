@@ -61,6 +61,15 @@ def _require(condition, message):
         raise ValueError(message)
 
 
+def _is_instant(value):
+    """Un instante de desarrollo: entero (no booleano) de microsegundos UTC anterior a 2024."""
+    return (
+        isinstance(value, (int, np.integer))
+        and not isinstance(value, bool)
+        and 0 <= int(value) < FINAL_TEST_START_US
+    )
+
+
 def _instant(value, name):
     _require(
         isinstance(value, (int, np.integer)) and not isinstance(value, bool),
@@ -260,8 +269,14 @@ class AssetResidualMemory:
         z = zscore(prediction.astype(np.float64))
         u = zscore(mean)
         emitted = {kappa: z + kappa * u for kappa in kappas}
-        state = self._market(market, create=True)
+        # El mercado nuevo se registra solo si su cohorte cabe: un rechazo no deja rastro.
+        fresh = state is None
+        if fresh:
+            _require(isinstance(market, str) and market, "El mercado es un texto no vacío")
+            state = _Market()
         state.positions(assets, grow=True)
+        if fresh:
+            self._markets[market] = state
         z = np.array(z, copy=True)
         z.setflags(write=False)
         state.pending.append(
@@ -370,6 +385,7 @@ class AssetResidualMemory:
             isinstance(payload, dict)
             and set(payload)
             == {"schema_version", "kind", "method", "config", "markets", "state_sha256"}
+            and type(payload["schema_version"]) is int
             and payload["schema_version"] == SCHEMA_VERSION
             and payload["kind"] == KIND
             and payload["method"] == METHOD,
@@ -382,12 +398,20 @@ class AssetResidualMemory:
         memory = cls(AssetMemoryConfig(**payload["config"]))
         for name, saved in copy.deepcopy(payload["markets"]).items():
             state = memory._market(name, create=True)
-            assets = saved["assets"]
+            assets, clock, matured = saved["assets"], saved["clock"], saved["matured"]
+            # La huella no basta: un estado firmado debe cumplir también los invariantes (H04).
             _require(
-                len(set(assets)) == len(assets)
+                len(set(assets)) == len(assets) <= MAX_ASSETS
+                and all(isinstance(a, str) and a for a in assets)
                 and saved["memory"].shape == saved["weight"].shape == (len(assets),)
                 and np.isfinite(saved["memory"]).all()
-                and np.all(saved["weight"] >= 0),
+                and np.isfinite(saved["weight"]).all()
+                and np.all(saved["weight"] >= 0)
+                and (clock is None or _is_instant(clock))
+                and (clock is not None or not saved["pending"])
+                and type(matured) is int
+                and matured >= 0
+                and len(saved["pending"]) <= MAX_PENDING,
                 f"La memoria guardada de {name} no es coherente",
             )
             state.assets = list(assets)
@@ -397,9 +421,16 @@ class AssetResidualMemory:
             previous = None
             for cohort in saved["pending"]:
                 z = np.array(cohort["z"], dtype=np.float64)
+                decided, matures = cohort["prediction_at"], cohort["matures_at"]
                 _require(
-                    len(z) == len(cohort["assets"])
-                    and (previous is None or cohort["prediction_at"] > previous)
+                    _is_instant(decided)
+                    and isinstance(matures, (int, np.integer))
+                    and not isinstance(matures, bool)
+                    and matures > decided
+                    and decided <= clock
+                    and len(z) == len(cohort["assets"])
+                    and np.isfinite(z).all()
+                    and (previous is None or decided > previous)
                     and all(a in state.index for a in cohort["assets"]),
                     f"Una cohorte pendiente de {name} no es coherente",
                 )
