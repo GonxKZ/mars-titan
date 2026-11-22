@@ -420,3 +420,88 @@ def test_the_known_offset_is_the_column_times_its_scale_and_zero_where_it_is_unk
     assert result.tolist() == [0.015, 0.0, -0.02, 0.0, 0.0]
     assert not result.requires_grad
     assert known_offset(column.float(), 0.01).dtype == torch.float32
+
+
+def test_the_plain_weight_adds_the_term_on_the_label_to_the_shifted_one():
+    point, target, sessions = sample()
+    offset = offsets()
+    both = SessionICTerm(weight=2.5, minimum_rows=5, plain_weight=1.5, **SHIFT)
+    shifted = reference((point + offset).tolist(), (target + offset).tolist(), sessions, 2.5, 5)
+    plain = reference(point.tolist(), target.tolist(), sessions, 1.5, 5)
+    value = both.term(point, target, sessions, offset=offset)
+    assert value.item() == pytest.approx(shifted + plain, rel=1e-8)
+    # Es la suma de los dos términos de siempre, cada uno con su peso, bit a bit.
+    alone = SessionICTerm(weight=2.5, minimum_rows=5, **SHIFT)
+    label = SessionICTerm(weight=1.5, minimum_rows=5)
+    torch.testing.assert_close(
+        value,
+        alone.term(point, target, sessions, offset=offset) + label.term(point, target, sessions),
+        rtol=0,
+        atol=0,
+    )
+    # Y no es el término desplazado con el peso sumado: el de la etiqueta no ve el alfa.
+    heavier = SessionICTerm(weight=4.0, minimum_rows=5, **SHIFT)
+    assert abs((value - heavier.term(point, target, sessions, offset=offset)).item()) > 1e-3
+    # Sin sesiones con suficientes filas vale cero y conserva el grafo.
+    leaf = point.clone().requires_grad_()
+    short = SessionICTerm(minimum_rows=64, plain_weight=1.0, **SHIFT)
+    zero = short.term(leaf, target, sessions, offset=offset)
+    assert zero.item() == 0.0 and zero.requires_grad
+
+
+def test_the_gradient_with_the_plain_weight_is_the_sum_of_the_two_gradients():
+    point, target, sessions = sample()
+    offset = offsets().requires_grad_()
+    leaf = point.clone().requires_grad_()
+    both = SessionICTerm(weight=2.0, minimum_rows=5, plain_weight=3.0, **SHIFT)
+    shifted = SessionICTerm(weight=2.0, minimum_rows=5, **SHIFT)
+    label = SessionICTerm(weight=3.0, minimum_rows=5)
+    together, through = torch.autograd.grad(
+        both.term(leaf, target, sessions, offset=offset), (leaf, offset), allow_unused=True
+    )
+    (first,) = torch.autograd.grad(shifted.term(leaf, target, sessions, offset=offset), leaf)
+    (second,) = torch.autograd.grad(label.term(leaf, target, sessions), leaf)
+    torch.testing.assert_close(together, first + second, rtol=1e-12, atol=1e-15)
+    assert through is None
+    # El término de la etiqueta no depende de la escala del punto; el desplazado sí.
+    scale = torch.ones((), dtype=torch.float64, requires_grad=True)
+    (moved,) = torch.autograd.grad(both.term(scale * point, target, sessions, offset=offset), scale)
+    (only,) = torch.autograd.grad(
+        shifted.term(scale * point, target, sessions, offset=offset), scale
+    )
+    torch.testing.assert_close(moved, only, rtol=1e-9, atol=1e-12)
+
+
+def test_the_plain_weight_needs_the_offset_and_enters_the_identity_only_then():
+    shifted = SessionICTerm(weight=3.0, minimum_rows=8, **SHIFT)
+    both = SessionICTerm(weight=3.0, minimum_rows=8, plain_weight=2.0, **SHIFT)
+    identity, before = both.identity(), shifted.identity()
+    assert {key: identity[key] for key in before} == before
+    assert set(identity) - set(before) == {"plain_weight", "plain"}
+    assert identity["plain_weight"] == 2.0
+    declared = dict(weight=3.0, minimum_rows=8, plain_weight=2.0, **SHIFT)
+    assert parse_session_ic_term(declared) == both
+    weighted = parse_session_ic_term(dict(declared, liquidity_column=-1, liquidity_power=1.0))
+    assert weighted.weighted and weighted.shifted and weighted.plain_weight == 2.0
+    # Un entero se guarda como número real, igual que el peso.
+    assert type(SessionICTerm(plain_weight=2, **SHIFT).plain_weight) is float
+
+
+@pytest.mark.parametrize(
+    "wrong",
+    [
+        dict(plain_weight=1.0),
+        dict(plain_weight=1.0, liquidity_column=-1, liquidity_power=1.0),
+        dict(plain_weight=0.0, **SHIFT),
+        dict(plain_weight=-1.0, **SHIFT),
+        dict(plain_weight=1e4, **SHIFT),
+        dict(plain_weight=float("nan"), **SHIFT),
+        dict(plain_weight="1.0", **SHIFT),
+        dict(plain_weight=True, **SHIFT),
+    ],
+)
+def test_invalid_plain_weights_are_rejected(wrong):
+    with pytest.raises(ValueError):
+        SessionICTerm(**wrong)
+    with pytest.raises(ValueError):
+        parse_session_ic_term(dict(weight=1.0, minimum_rows=8, **wrong))

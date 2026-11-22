@@ -1111,3 +1111,77 @@ def test_the_first_screen_of_the_new_base_changes_one_recipe_field_per_model():
         "cross_asset_attention_frozen_nogain",
         "cross_asset_attention_disabled_nogain",
     }
+
+
+def test_the_second_screen_of_the_new_base_adds_the_two_terms_and_the_weight_decay():
+    path = ROOT / "configs/experiments/us-campaign-v11-screen2.json"
+    source = ROOT / "configs/experiments/dgx-us-campaign-v10.json"
+    document, previous = campaign.load_declaration(path)[0], json.loads(source.read_text())
+    own = {"description", "source_declaration_sha256", "models", "tiers", "recipes"}
+    assert set(document) == set(previous)
+    for key in set(previous) - own:
+        assert document[key] == previous[key], key
+    assert document["source_declaration_sha256"] == hashlib.sha256(source.read_bytes()).hexdigest()
+    assert document["tiers"] == [
+        "core",
+        "controls",
+        "r4_nogain",
+        "y2_both",
+        "y2_both_controls",
+        "y2_wd",
+        "y2_wd_controls",
+    ]
+    cores = ("titans_mac", "titans_mac_frozen", "titans_mac_disabled")
+    nogain = ("titans_mac_nogain", "titans_mac_frozen_nogain", "titans_mac_disabled_nogain")
+    # Los dos tríos entran como en la v10: son el control de cada variante con el mismo código.
+    for model in (*cores, *nogain):
+        assert document["models"][model] == previous["models"][model]
+    for key in ("core", "core_nogain"):
+        assert document["recipes"][key] == previous["recipes"][key]
+
+    def changed(left, right):
+        one, two = flat_specification(document, left), flat_specification(document, right)
+        return {key for key in one.keys() | two.keys() if one.get(key) != two.get(key)}
+
+    base = flat_specification(document, "titans_mac")
+    assert set(base["recipe.session_ic_term"]) == {"weight", "minimum_rows"}
+    assert base["recipe.weight_decay"] == 0 and technical_features.NAMES[0] == "alpha_percent"
+    # Los dos términos de IC: el de lo operable, con el alfa conocido, y el de la etiqueta con
+    # el mismo peso.
+    both = {
+        **base["recipe.session_ic_term"],
+        "offset_column": -46,
+        "offset_scale": 0.01,
+        "plain_weight": base["recipe.session_ic_term"]["weight"],
+    }
+    expected = {}
+    for parent in (*cores, *nogain):
+        online = parent in ("titans_mac", "titans_mac_nogain")
+        tier = "y2_both" if online else "y2_both_controls"
+        expected[f"{parent}_icboth"] = (parent, tier, "recipe.session_ic_term", both)
+    # El decaimiento de pesos de 0,01: con la ganancia en los tres modos, y sin ella en línea.
+    for parent in (*cores, "titans_mac_nogain"):
+        online = parent in ("titans_mac", "titans_mac_nogain")
+        tier = "y2_wd" if online else "y2_wd_controls"
+        expected[f"{parent}_wd1e2"] = (parent, tier, "recipe.weight_decay", 0.01)
+    assert set(document["models"]) == set(cores) | set(nogain) | set(expected)
+    for model, (parent, tier, field, value) in expected.items():
+        entry = document["models"][model]
+        assert entry == {**previous["models"][parent], "recipe": entry["recipe"], "tier": tier}
+        assert changed(model, parent) == {field}, model
+        assert flat_specification(document, model)[field] == value
+        ChronologicalRecipe(**_recipe(document, model))
+    declared = json.loads(
+        (ROOT / "configs/experiments/us-campaign-v11-screen2-contrasts.json").read_text()
+    )["controls"]
+    controls = {model: parent for model, (parent, *_rest) in expected.items()}
+    controls.update(titans_mac_frozen="titans_mac", titans_mac_disabled="titans_mac")
+    controls.update(zip(nogain, cores, strict=True))
+    assert declared == controls
+    jobs = campaign.plan(document, "mars_titan")
+    by_tier = {}
+    for job in jobs:
+        by_tier.setdefault(job.tier, set()).add(job.model)
+    assert by_tier["y2_both"] == {"titans_mac_icboth", "titans_mac_nogain_icboth"}
+    assert by_tier["y2_wd"] == {"titans_mac_wd1e2", "titans_mac_nogain_wd1e2"}
+    assert len(by_tier["y2_both_controls"]) == 4 and len(by_tier["y2_wd_controls"]) == 2

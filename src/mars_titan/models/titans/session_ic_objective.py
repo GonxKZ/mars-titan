@@ -138,6 +138,15 @@ class SessionICTerm:
     desplazamiento, depende de la escala de p: sumada a a, una predicción con otra escala
     ordena de otra forma. Por eso también ajusta la escala de la mediana. Donde la columna no
     es finita (un activo sin modelo de mercado) el desplazamiento vale cero. No lleva gradiente.
+
+    Con `plain_weight`, que solo se declara junto al desplazamiento, el término suma además la
+    correlación de siempre, sin desplazamiento, con ese peso:
+
+        −w · (1/|T|) Σ ρ_t(p + a, g(y + a)) − w_plain · (1/|T|) Σ ρ_t(p, g(y))
+
+    El primero ordena lo que se puede operar y el segundo conserva el orden de la etiqueta, que
+    es el contraste de la campaña. En la red tabular, el término desplazado solo gana IC
+    operable y pierde el de la etiqueta; los dos juntos conservan los dos.
     """
 
     weight: float = 1.0
@@ -149,6 +158,8 @@ class SessionICTerm:
     # desde el final, y el factor que la lleva a las unidades de la etiqueta.
     offset_column: int | None = None
     offset_scale: float | None = None
+    # Peso del mismo término sobre la etiqueta tal cual, que se suma al desplazado.
+    plain_weight: float | None = None
 
     def __post_init__(self):
         if type(self.minimum_rows) is not int or not 3 <= self.minimum_rows <= 4096:
@@ -175,6 +186,13 @@ class SessionICTerm:
             if not 0 < scale <= 1e3:
                 raise ValueError("offset_scale debe ser positiva y acotada")
             object.__setattr__(self, "offset_scale", scale)
+        if self.plain_weight is not None:
+            if self.offset_column is None:
+                raise ValueError("plain_weight acompaña al desplazamiento: sin él sobra")
+            plain = _number(self.plain_weight, "plain_weight")
+            if not 0 < plain <= 1e3:
+                raise ValueError("plain_weight debe ser positivo y acotado")
+            object.__setattr__(self, "plain_weight", plain)
 
     @property
     def weighted(self):
@@ -222,6 +240,11 @@ class SessionICTerm:
                     "with_zero_where_it_is_not_finite"
                 ),
             )
+        if self.plain_weight is not None:
+            result.update(
+                plain_weight=self.plain_weight,
+                plain="same_correlation_without_the_offset_subtracted_with_its_own_weight",
+            )
         return result
 
     def term(self, point, target, sessions, liquidity=None, offset=None):
@@ -232,7 +255,18 @@ class SessionICTerm:
             offset is not None and offset.shape != point.shape
         ):
             raise ValueError("El término recibe el desplazamiento de cada fila solo si lo declara")
+        plain = None
         if offset is not None:
+            if self.plain_weight is not None:
+                # La etiqueta tal cual, antes de sumar el desplazamiento.
+                plain = session_correlations(
+                    point,
+                    target,
+                    sessions,
+                    self.minimum_rows,
+                    liquidity=liquidity,
+                    power=self.liquidity_power,
+                )
             # Lo operable: la etiqueta y su predicción con el desplazamiento conocido sumado.
             offset = offset.detach().to(point.dtype)
             point, target = point + offset, target + offset
@@ -246,7 +280,10 @@ class SessionICTerm:
         )
         if not len(correlations):
             return point.sum() * 0
-        return -self.weight * correlations.mean()
+        value = -self.weight * correlations.mean()
+        if plain is not None:
+            value = value + -self.plain_weight * plain.mean()
+        return value
 
 
 def parse_session_ic_term(raw):
@@ -262,11 +299,13 @@ def parse_session_ic_term(raw):
             {"liquidity_column", "liquidity_power"},
             {"offset_column", "offset_scale"},
         )
-        if extra in (set(), liquidity, offset, liquidity | offset):
+        plain = {"plain_weight"}
+        whole = (set(), liquidity, offset, liquidity | offset)
+        if extra in whole or extra in (offset | plain, liquidity | offset | plain):
             return SessionICTerm(**raw)
     raise ValueError(
         "session_ic_term debe declarar weight y minimum_rows (y liquidity_column con "
-        "liquidity_power, u offset_column con offset_scale), o ser None"
+        "liquidity_power, u offset_column con offset_scale y, con ellas, plain_weight), o ser None"
     )
 
 

@@ -597,3 +597,34 @@ def test_the_offset_column_belongs_to_the_chart_block(shared, tmp_path):
     with pytest.raises(ValueError, match="bloque del gráfico"):
         trainer(shared, tmp_path / "beyond", session_ic_term=beyond)
     assert trainer(shared, tmp_path / "edge", session_ic_term=dict(SHIFTED, offset_column=-width))
+
+
+def test_the_two_terms_are_added_to_the_declared_loss(shared, tmp_path):
+    both = dict(SHIFTED, plain_weight=1.5)
+    engine = trainer(shared, tmp_path / "run", session_ic_term=both)
+    assert engine.offset and not engine.liquidity
+    _charts, losses, task = spied(engine)
+    assert engine.run()["status"] == "completed"
+    assert len(losses) > 2
+    apart = 0
+    for prediction, target, keys in losses:
+        sessions = [(flow.split("/", 1)[0], at) for flow, at in keys]
+        offset, point = prediction[:, -1], median(prediction[:, :5])
+        operable = reference(
+            (point + offset).tolist(),
+            (target + offset).tolist(),
+            sessions,
+            SHIFTED["weight"],
+            SHIFTED["minimum_rows"],
+        )
+        label = reference(point.tolist(), target.tolist(), sessions, 1.5, SHIFTED["minimum_rows"])
+        expected = pinball_loss(prediction[:, :5], target).item() + operable + label
+        assert task(prediction, target, keys).item() == pytest.approx(expected, rel=1e-7, abs=1e-12)
+        apart += abs(label) > 1e-6
+    # El término de la etiqueta cuenta de verdad en el corpus de prueba.
+    assert apart > 0
+    identity = engine.identity["recipe"]["session_ic_term"]
+    assert identity["plain_weight"] == 1.5 and identity["offset_column"] == -2
+    # Sin el peso de la etiqueta la identidad es la del término desplazado de siempre.
+    alone = trainer(shared, tmp_path / "alone", session_ic_term=SHIFTED)
+    assert "plain_weight" not in alone.identity["recipe"]["session_ic_term"]
