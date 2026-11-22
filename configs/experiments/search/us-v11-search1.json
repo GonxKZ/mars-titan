@@ -1,0 +1,62 @@
+{
+  "schema_version": 1,
+  "kind": "campaign_search_v1",
+  "study": "us-v11-search1",
+  "tag": "s1",
+  "description": "Primera búsqueda conjunta sobre el núcleo de la base v11 en EE. UU.: la tasa de aprendizaje, el decaimiento de pesos, el peso del término de IC por sesión y la anchura de la rama densa, que la criba de la v10 solo mide de uno en uno. El modelo base entra como punto conocido cuando se mide en el mismo equipo que los ensayos.",
+  "final_test_access": false,
+  "seed": 20261123,
+  "campaign": "configs/experiments/us-campaign-v11-screen1.json",
+  "base_model": "titans_mac",
+  "year": 2013,
+  "run_seed": 42,
+  "startup": 8,
+  "confirm": 4,
+  "space": [
+    {
+      "name": "recipe.learning_rate",
+      "type": "float",
+      "low": 0.0003,
+      "high": 0.003,
+      "log": true
+    },
+    {
+      "name": "recipe.weight_decay",
+      "type": "ordinal",
+      "values": [
+        0,
+        0.0001,
+        0.001,
+        0.01,
+        0.1
+      ]
+    },
+    {
+      "name": "recipe.session_ic_term.weight",
+      "type": "float",
+      "low": 1,
+      "high": 10,
+      "log": true
+    },
+    {
+      "name": "predictor.technical_branch.hidden",
+      "type": "ordinal",
+      "values": [
+        64,
+        128,
+        256
+      ]
+    }
+  ],
+  "known": [
+    {
+      "model": "titans_mac",
+      "values": {
+        "recipe.learning_rate": 0.001,
+        "recipe.weight_decay": 0,
+        "recipe.session_ic_term.weight": 3,
+        "predictor.technical_branch.hidden": 128
+      }
+    }
+  ]
+}
