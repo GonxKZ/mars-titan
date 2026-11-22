@@ -1,0 +1,487 @@
+# Programa de post-entrenamiento de MARS-TITAN sobre la base v10
+
+Programa del 22 de noviembre de 2026, rama `postentrenamiento-v10` sobre 6c19d20c. Recorre todo lo
+que el repositorio hace después del ajuste principal (continuaciones, adaptadores, memorias y
+correctores con etiquetas maduras, calibración, combinación en línea y semillas), lo contrasta con
+la literatura primaria, corrige lo que faltaba con pruebas que fallaban antes, mide en CPU lo que
+se puede medir con emisiones reales y deja preparadas, con órdenes exactas, las etapas que
+necesitan la GPU. No abre el test final de 2024. Cada cifra lleva el estado, el origen y la semilla
+que la sostienen; lo que no se ha medido se marca como hipótesis. Las mediciones de otros (el
+laboratorio tabular y el plan del relevo del coordinador) se citan como suyas y no se repiten aquí.
+
+## Resumen
+
+- **Medido (v8, 2013, semilla 42, evaluación de 251 sesiones, contrastes pareados por sesión con HAC).**
+  - Las dos memorias supervisadas con etiquetas maduras suben el IC de rangos de los 13 modelos: la combinada, de +0,0020 a +0,0046.
+  - Sus placebos son negativos, así que la información se mide como brazo − placebo: +0,0026 (t 3,7) por activo y +0,0035 (t 5,6) por vecinos sobre titans_mac.
+  - Con el padre que ya escribe en su memoria, la memoria por activo sobrevive el 94–98 % en el par base. En el par con rangos, el de la base v10, sobrevive el 76 % (t −3,6 frente al control congelado). Sección 5.1.
+- **Correcciones con pruebas que fallaban antes.**
+  - Las cinco reales de la auditoría del segundo enjambre: H-01, H-08(1), H-09, H-11(i) y H-12(b).
+  - El arranque de los gemelos en CUDA.
+  - Las del programa (sección 4).
+  - El resto de la auditoría no se confirma o es una propiedad del diseño declarado (sección 7.2).
+- **En curso (GPU).** La prueba causal «misma red, evaluada sin escribir» (sección 6.5).
+  - El mecanismo, la orden, el análisis, las declaraciones y el parche del relevo están verificados.
+  - El par base de la v8 se ejecuta en la ventana del coordinador. Con el ritmo medido hasta las 08:25 UTC, un recorrido pasa de los 20 min con la máquina cargada (≈ 50 min proyectados; hipótesis hasta que acabe el primero), así que el par con rangos queda para la noche.
+- **Hipótesis, no medido.**
+  - El coste de las memorias por origen en la campaña (≈ 1 h 20 min de CPU).
+  - Cualquier efecto en otros orígenes, semillas o en la v10.
+
+
+## 1. Datos, protocolo y lectura de los resultados
+
+- **Tarea.** Para cada activo, el residuo del retorno de apertura a cierre de la sesión siguiente
+  frente al mercado, y = r^OC_{i,t+1} − α̂ − β̂·r^OC_{m,t+1}; la decisión se toma 5 minutos después del cierre y la etiqueta madura en la decisión siguiente
+  (`matures_at`). Métrica primaria: IC de rangos por sesión, con al menos 30 activos.
+- **Origen 2013 (`fold-008`).** Ajuste hasta abril de 2012, validación de abril a octubre de 2012,
+  calibración de octubre de 2012 a enero de 2013 y evaluación en 2013. La identidad de la vista de
+  cada trabajo es la cohorte que escribe su estado (`<estado>/cohorts/2013/manifest.json`,
+  f5f4d478… en la v8 y en la v10); la vista base de `views/US/fold-008` no lo es (ab18f946…), y los
+  pilotos lo comprueban antes de leer la madurez.
+- **Emisiones leídas (solo lectura).** v8: `dgx-titans-us-v31/v8/semillas-42,43,44/todos-114bcf4e`
+  (origen 2013, semilla 42; 1.139.633 filas en 437 sesiones: 125 de validación, 61 de calibración
+  y 251 de evaluación). v8-ext1: `…/v8-ext1/semillas-42,43,44/todos-8e532348`. Estado antiguo sin
+  rasgos: `…/todas/semillas-42,43,44/todos-5a6d1d94` (orígenes 2005 a 2013). La v10
+  (`…/v10/semillas-42,43,44/todos-3d10a30f`) tenía a las 05:24 UTC sus 19 trabajos de 2013 en
+  pausa y ninguno terminado: sus emisiones todavía no se pueden medir.
+- **Contrastes.** Siempre pareados por sesión (variante menos padre en la misma sesión), con t
+  HAC de Newey y West (1994) con el retardo automático del informe de criba
+  (`scripts/dgx_screening_report.py`). Todo hiperparámetro se elige con la calibración (empates
+  al valor menor) y la evaluación se lee una vez.
+- **Placebos.** Memoria por activo: la lectura de otro activo (desarreglo con semilla fija).
+  Vecinos: los valores del banco permutados entre sus filas en cada cohorte. Un efecto solo cuenta
+  si su placebo no lo reproduce.
+
+## 2. Inventario (fase 0) y skills aplicadas
+
+Piezas posteriores al ajuste principal que hay en el repositorio; el detalle está en la matriz de la sección 3:
+- Continuaciones entre orígenes (`continues` en la campaña DGX, nuevo aquí, y la cadena de la búsqueda).
+- Lectores sobre el códec congelado (m0, m3, cognitivo).
+- Adaptadores del paquete `posttraining/`, que no están conectados a la cola DGX.
+- Correctores asociativos B6 y E1 (solo GPU).
+- Las dos memorias supervisadas con etiquetas maduras, nuevas aquí: por activo y por vecinos.
+- Calibración: CQR estática, PT2 en línea y reajuste periódico.
+- Combinación en línea con AdaNormalHedge.TV: árbitros de versión y de modelos, y el agente cognitivo con herramientas, placebo, contexto y Shapley.
+- Media de semillas (`seed_mean_v1`).
+- Los gemelos de escritura (sección 6.5).
+
+| Skill | Dónde se aplicó | Qué cambió por aplicarla |
+|---|---|---|
+| test-driven-development | H-01, mecanismo de los gemelos, arreglo de CUDA, H-11, H-09, H-12 y los cambios de la sección 4 | Cada prueba se vio fallar antes del código. Excepciones registradas: parte del estudio de memorias y la orden de los gemelos se escribieron antes que sus pruebas; se compensó con mutantes |
+| mutation-testing | Todos los arreglos | Mutantes a mano muertos (sección 4); uno equivalente con estos límites (≤ frente a <, porque 128 no es múltiplo de 5) |
+| systematic-debugging | Primer lanzamiento en GPU; paradas por presión de producción | La causa se reprodujo en la GPU con una unidad mínima antes de tocar código. La historia de la guardia (56 minutos malos en 4 h) llevó a congelar la unidad en lugar de pararla |
+| verification-before-completion | Relevo, integración en v11, HEAD limpio | Clones nuevos con `git am`; integración simulada sobre v11 (78 de 79 pruebas); el error del GRU episódico se comprobó en HEAD limpio |
+| testing-anti-patterns | Dobles de prueba | Sin mocks del módulo probado. El doble del asignador de CUDA reproduce un contrato medido en la GPU real |
+| statistical-power | Gemelos y memorias | MDE solo con validación y calibración (sección 5.3); sin potencia observada |
+| experimental-design | Gemelos | Factorial 2×2 con control inverso y paridad; semillas como réplicas con la sesión como unidad; Holm entre los dos pares |
+| code-review | Revisión propia | Encontró la fuga de `MARS_TITAN_SHARED_INDICES` y que una frontera causal global rechazaría ventanas válidas de EE. UU. con China |
+| commit-work | Todos los commits | Diff cacheado revisado; un commit por arreglo; mensajes en ficheros |
+| performance-profiling | Gemelos y memorias | Separar la preparación en CPU de la fase de GPU (bytes leídos, %CPU, RSS, cpu.stat). El tiempo de sistema de las memorias queda como mejora pendiente |
+| peer-review | Auditoría del enjambre | Estructura afirmación → evidencia → prueba → veredicto (sección 7.2); no cambió código |
+| python-advanced, risk-metrics-calculation, backtesting-frameworks | Lectura | Sin cambio visible. La lista de sesgos de backtesting (anticipación, selección) ya la cubrían la madurez y la selección en calibración |
+
+
+## 3. Matriz de taxonomía (fase 1)
+
+Veredictos: **mantener** (lo actual es lo mejor respaldado o no hay motivo medido para tocarlo),
+**corregir** (un fallo o un hueco que se arregla aquí), **ablación** (una sola variable frente a su
+control, con su placebo cuando lo hay) y **descartar** (no aplica a esta tarea o ya se midió en
+contra). Las referencias están en la sección 9.
+
+| Dimensión | Estado en el repositorio | Opción mejor respaldada | Veredicto |
+|---|---|---|---|
+| Arquitectura del adaptador o corrector | Lectores episódicos sobre el códec congelado (m0, m3, cognitivo), matriz de adaptadores del paquete `posttraining/` (no conectada a la campaña DGX), correctores asociativos B6 y E1 (solo GPU) y, desde este programa, dos correctores sin parámetros sobre predicciones emitidas | Con una señal tan débil, primero un corrector no paramétrico que interpola la predicción con una lectura de memoria (kNN-LM) y no ajusta pesos; si muestra señal, un adaptador de bajo rango (LoRA) sobre el padre congelado | **Ablación**: los dos correctores sobre emisiones reales (5.1). Mantener los lectores de la v10. Los adaptadores del paquete quedan fuera hasta que un corrector sin parámetros sobreviva a su placebo (hipótesis) |
+| Representación y claves | Lectores: estado oculto del códec. Vecinos: proyección aleatoria de signos (64 dimensiones, semilla 53) de las 92 entradas del laboratorio (46 rasgos normalizados y sus rangos gaussianos por sesión). Memoria por activo: el activo | Proyección aleatoria fija (Achlioptas, 2003): conserva distancias y no tiene parámetros que sobreajustar. El laboratorio del coordinador midió claves de proyección por encima de las activaciones ocultas | **Mantener**. Claves aprendidas: solo como ablación en GPU, detrás de las de la sección 6 |
+| Operaciones | Núcleo MAC con memoria neuronal en línea (gradiente interno fusionado), 4 fichas persistentes, oculto 64 y una capa; correctores: EWMA por activo, k vecinos por coseno con softmax de temperatura τ, combinación z + κ·z(lectura) | Titans (memoria que aprende en evaluación) y kNN-LM (interpolación con una lectura) | **Mantener**. La atención entre activos la mide la v10 (sin emisiones terminadas) |
+| Activaciones | GELU y SiLU en la memoria y la fusión | Sin evidencia ni hipótesis que justifique tocarlas en un post-entrenamiento | **Mantener** |
+| Normalización | Escala robusta de aprendizaje (mediana y MAD del ajuste, recorte a 5), LayerNorm residual de la memoria; en los correctores, tipificación por sesión de la predicción y rangos gaussianos centrados de la etiqueta | Normalización de sección cruzada para un objetivo de ordenación: en la v8, los rangos por sesión de los rasgos fueron la única variante por encima de su control (+0,0042 de IC de decisión, t 2,65; +0,0055 en evaluación, t 4,86; plan del relevo, origen 2013, semilla 42) | **Mantener**. Límite documentado: la tipificación de los correctores usa solo las filas con etiqueta de cada sesión (sección 8) |
+| Regularización y anclaje | Decaimiento de pesos (0 en la v10), decaimiento anclado L2-SP (`AnchoredAdamW`: el ancla son los pesos al construir el optimizador, que en una continuación son los del padre), contracción con ruido solo en continuación, proximal en memorias; no hay EWC | L2-SP y contracción con ruido atacan la pérdida de generalización del arranque en caliente; EWC protege una tarea anterior que aquí no hay que conservar | **Ablación** en GPU (sección 6): decaimiento 0,1 hacia cero frente a hacia el padre, una sola variable. **Descartar** EWC |
+| Inicialización | Salidas residuales a cero (lectores, atención entre activos), fichas persistentes normales; la continuación parte del estado elegido del padre | Arranque en caliente regularizado (fila anterior). Única medición previa: en la búsqueda (2006 y 2007, semilla 42, criterio MAE) la cadena eligió el estado heredado y quedó un 0,066 % detrás del ajuste desde cero | **Ablación** en GPU: continuación frente a ajuste desde cero con la parada por IC de la v10 |
+| Pérdidas | Pinball de cinco cuantiles más término de IC por sesión de peso 3 (8 filas mínimas); destilación opcional | Pinball para cuantiles; el término de IC lo mide la propia v10 con sus brazos `_noic` | **Mantener**. Destilación: **descartar** mientras no haya un maestro mejor que el alumno |
+| Optimización | AdamW, tasa 1e-3, recorte de norma 1, acumulación de 8.192 filas (3d10a30f) | El coordinador midió que quitar la acumulación no acelera (85–102 frente a 107–126 pasos por minuto) y el laboratorio no vio efecto de variantes del optimizador | **Mantener** |
+| Programa de tasa | Tasa constante; AdamW sin calendario (Defazio et al., 2024) implementado en F3 de #749 | Ya se ensayó en un piloto y no ganó su criterio de validación (`docs/research/comparison-training-review-20261114.md`) | **Mantener**; **descartar** el cambio en esta fase |
+| Continuación entre orígenes | `continuation: previous_origin` (cadena propia) y, desde este programa, `continues` (parte de otro ajuste) | Continuar con regularización hacia el padre o con contracción y ruido (L2-SP; Ash y Adams, 2020) | **Ablación** en GPU (sección 6): cuatro brazos frente al ajuste desde cero de la v10 |
+| Repaso | `posttraining/replay_continuation.py` (paquete fuera de línea) | El repaso contra el olvido (Rolnick et al., 2019) solo tiene sentido si la continuación pierde por olvido | **Hipótesis**: solo tras medir la continuación |
+| Media de pesos (SWA/EMA) | `weight_average` en la receta cronológica (F2 de #749); su documento dice que no se ha ajustado ni evaluado con datos financieros | SWA (Izmailov et al., 2018) y EMA de pesos (Morales-Brotons et al., 2024) reducen la varianza del recorrido | **Ablación** en GPU, detrás de la continuación (no declarada aquí) |
+| Conjuntos de semillas | `evaluation/seed_ensemble.py` (`seed_mean_v1`) | Conjuntos profundos (Lakshminarayanan et al., 2017) | **No medible hoy** en 2013 (faltan 43 y 44 en la v8); la v10 declara las tres semillas |
+| Aprendizaje en línea con etiquetas maduras | Memorias C, PT2 en línea, árbitros en línea (AdaNormalHedge), agente cognitivo | Combinación en línea con realimentación retardada (AdaNormalHedge, Luo y Schapire, 2015) y conformal adaptativo (ACI, PID) | **Ablación** sobre emisiones (5.1 a 5.3) con control uniforme y placebo |
+| Calibración conformal | CQR estática, PT2 en línea, recalibración periódica, conformal ponderado por regímenes | CQR (Romano et al., 2019); ACI (Gibbs y Candès, 2021); PID (Angelopoulos et al., 2023); HopCPT (Auer et al., 2023) | **Ablación**: piloto de escala e intervalos (5.2) con la regla declarada antes de leerlo |
+| Adaptación en evaluación sin etiquetas | La memoria en línea de Titans ya aprende en evaluación | TTT (Sun et al., 2020) generaliza esa idea; Tent (Wang et al., 2021) minimiza la entropía de una clasificación, que aquí no existe | **Descartar** Tent; mantener la memoria del núcleo |
+| Canal de datos | Vistas por cohorte con identidad, copias empaquetadas verificadas, calentamiento de 12 meses cuyas filas no se emiten, etiqueta madura en la decisión siguiente | — | **Mantener**. Consecuencia comprobada: una memoria supervisada integrada en el modelo empezaría en frío (lo mide el arranque en frío de la adenda, 5.1) |
+| Generalización y evaluación | Controles congelado y desactivado por arquitectura, placebos, selección en calibración, una lectura de la evaluación, t HAC por sesión, familias de contrastes de la criba | HAC de Newey y West (1994); placebo propio por mecanismo; potencia declarada | **Corregir**: cada piloto informa sus orígenes, semillas y efecto mínimo detectable (5.3) |
+| Ingeniería computacional | FP32 IEEE estricto y algoritmos deterministas en la ruta de modelo; los correctores calculan cosenos en FP32 y pesos y sumas en FP64 | Selección exacta y determinista de los k mayores | **Corregido** aquí: selección exacta sin ordenar el banco y lectura en hilos con resultado idéntico (4) |
+
+## 4. Cambios de código (fase 2)
+
+Veinticuatro commits locales en `postentrenamiento-v10`. Cada cambio de comportamiento se escribió con su
+prueba antes y se vio fallar; donde la prueba se escribió después del código se compensó con
+mutaciones (rompiendo a propósito una guarda o una fórmula y comprobando que alguna prueba falla).
+
+| Commit | Qué cambia | Pruebas y mutaciones |
+|---|---|---|
+| d20b0cb2 | `memory/asset_residual_memory.py`: memoria por activo del residuo de rango maduro, con la definición del laboratorio tabular (Z, rangos gaussianos G, residuo E = G − (Z·G/n)Z, EWMA por activo, salida Z + κ·z(lectura)) | 23: igualdad con la definición del laboratorio con una sesión de retraso; el futuro (etiquetas y entradas) no cambia ninguna emisión anterior, bit a bit; una etiqueta que madura justo en la decisión se lee y una posterior no; placebo de otro activo; pausa y restauración a mitad del recorrido sin cambios; estado manipulado rechazado; NaN con sus coordenadas; test final cerrado |
+| 35b487f4 | `memory/neighbour_residual_memory.py`: memoria por vecinos del mismo residuo (claves de proyección, banco de las W cohortes maduras, k vecinos por coseno, softmax con τ, valores recortados a ±3) | Igualdad con la lectura del laboratorio (cosenos FP32 frente a FP64, tolerancia 2·10⁻⁵); causalidad por perturbación del futuro, bit a bit; placebo de valores permutados reproducible; pausa y restauración; banco vacío y banco menor que k |
+| 4a1a6734, 614e38c6 | `evaluation/posttraining_pilots.py` y sus declaraciones: escala e intervalos (CQR estática, PT2 en línea, regímenes) y memoria por activo sobre trabajos terminados, con la madurez de la vista de cada trabajo | Carga ordenada con la madurez de la vista; filas sin etiqueta o con objetivo distinto fallan con sus coordenadas; la tasa en línea y la configuración de memoria se eligen sin leer la evaluación; efecto plantado encontrado y su placebo no |
+| 961bb9b7 | `training/comparison_campaign.py`: `continues: <padre>`. Una continuación parte del estado elegido de otro ajuste `mac_online` de su equipo en el origen anterior, con su misma semilla y su misma arquitectura; sin trabajo en el primer origen | 128 pruebas del archivo en verde (cuatro nuevas: plan y bloqueo hasta que termina el padre, guardas del padre, arquitectura de la receta y ejecución desde el padre); 10 mutantes de esas guardas y de la planificación muertos |
+| 342061ee, a73b4971 | `configs/experiments/dgx-us-campaign-v10-post1.json` y tres recetas de continuación (decaimiento, L2-SP y contracción) que solo cambian su opción de ajuste respecto de la receta del núcleo de 3d10a30f (huella 3b88760f…) | 5 pruebas de la declaración y las recetas; una prueba con pasos reales del optimizador comprueba que el decaimiento anclado lleva los pesos hacia el estado elegido del padre (el mutante con ancla cero muere) |
+| d7333251 | Orden de los pilotos de la v8: primero el núcleo y sus lectores | Mismo conjunto de trabajos |
+| e4a7501f | Vecinos sin las filas del propio activo (`exclude_own`), para separar la historia del mismo activo de la de activos parecidos | 6 pruebas nuevas (lectura frente a la referencia con exclusión, contratos, un banco solo del propio activo lee cero, pausa y restauración, identidad, estado restaurado incoherente); 9 mutantes muertos |
+| 689273d4 | Adenda del estudio de memorias: vecinos de otros activos con su placebo y su combinación, corrección en unidades de retorno sumada a los cinco cuantiles con la recalibración estática ajustada en calibración, y arranque en frío de la memoria por activo | 7 pruebas nuevas (entre ellas: la corrección conserva el orden de los cuantiles y el IC; el arranque en frío equivale a la repetición directa; la elección no cambia al barajar los objetivos de evaluación dentro de cada sesión); 9 mutantes muertos |
+| 703fb445 | Selección exacta de los k vecinos sin ordenar el banco y lectura en varios hilos (sección 5.1, coste); el método pasa a v2 porque los empates en el k-ésimo coseno van ahora a la fila más antigua, como en la definición | Empates con claves canónicas (fallaba antes con y sin exclusión); selección idéntica a `np.argsort` estable con empates, filas excluidas y menos de k candidatas finitas; resultado idéntico con 1 y 3 hilos en la memoria y en el estudio; 9 mutantes muertos |
+| 3e81573a | Declaración de la adenda sobre la v8 (`configs/experiments/posttraining-memories-v10-adenda.json`), escrita antes de leer ningún resultado del estudio | La comprueba `checked_study` |
+| 5287c130, 954de171 | Orden de los pilotos (primero la réplica entre orígenes) y declaración del estudio de memorias sobre las emisiones de la v10 (`posttraining-memories-v10-on-v10.json`, 19 modelos), escrita cuando ninguno de sus trabajos de 2013 había terminado | La comprueba `checked_study` |
+| c42fbaa8 | H-01: el bucle del agente cognitivo aprende con la correlación de la métrica declarada (rangos), no con Pearson | La prueba fallaba: una herramienta con Pearson alto y rangos negativos se llevaba el 99,96 % del peso. Una opción constante pierde 1/2 y no da NaN. 3 mutantes muertos |
+| 5b448f66 | Gemelos de escritura: `carry_titans(..., evaluated_variant)` repite la propia ventana del ancla con su estado elegido y la otra política de escritura. Carga todos los tensores (parámetros y búferes) y comprueba bytes y contratos | Oráculo con el registrador de gradientes: cada gemelo repite bit a bit la ventana ajustada con la otra variante. Los búferes de learning_scale viajan. Cualquier otro cambio de contrato se rechaza. 7 mutantes muertos |
+| 6f4876cb | `training/write_twins.py`: la orden `gemelos` (GPU, paridad bit a bit antes de cualquier gemelo, reanudación con huellas, picos de memoria) y `analizar` (CPU: N, D, A, I con HAC y TTWS con error delta y Fieller) | 19 pruebas, escritas después del código, sin TDD estricto; lo compensan 12 mutantes muertos |
+| 4ea5e27e, f4de9cac | Declaraciones de los gemelos (v8 base, v8 con rangos y v10 con tres semillas), con la potencia medida solo en validación y calibración | La comprueba `checked_declaration` |
+| e9ff43ba | Los gemelos inicializan CUDA antes de poner a cero sus máximos: el primer lanzamiento en la GB10 fallaba a los 30 s con «Invalid device argument» | La prueba usa un doble del asignador con el contrato medido en la GPU y falló igual antes del arreglo. 3 mutantes muertos |
+| d94c7807 | H-11(i): la declaración del agente rechaza un contexto cuyas copias (1 + len(REGIMES) por opción) no caben en las 128 de la mezcla | La prueba fallaba (no se rechazaba). Límite exacto 24/25 modelos. 3 mutantes muertos |
+| c76d7133 | H-09: la media de semillas rechaza una semilla con cuantiles cruzados | La prueba fallaba. Los empates siguen admitidos. 3 mutantes muertos |
+| 803f6c7e | H-12(b): la calibración de cada ventana debe haber madurado, por mercado, antes de su primera decisión evaluada | La prueba fallaba. La prueba antigua de «etiquetas que nunca maduran» usaba un escenario sin causalidad y ahora retrasa solo la evaluación. 4 mutantes muertos |
+| fc9fc2fb | H-08(1): el eje «al alza» del régimen es el signo del residuo medio, no la dirección del mercado (solo documentación) | Sin cambio de comportamiento |
+
+El contrato causal común a los dos correctores: la lectura en la decisión t solo usa cohortes cuya
+etiqueta maduró como mucho en t, escritas una vez y en orden de emisión, con reloj monótono por
+mercado; las claves solo usan entradas de la propia decisión; cualquier valor no finito, cohorte
+fuera de orden, etiqueta que madura antes de su decisión o fecha del test final falla con mercado,
+fila e instante.
+
+## 5. Pilotos con emisiones reales (fase 3)
+
+Todo en CPU, en unidades acotadas (`mars-titan-post-*`, una cada vez, 8 GiB y 300 % de CPU), con
+las emisiones de solo lectura y una orden reproducible por piloto:
+
+```bash
+cd /home/gpic/TITANS-IA/MARS-TITAN-postentrenamiento
+export PYTHONPATH=$PWD/src:$PWD CUDA_VISIBLE_DEVICES= OMP_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1
+py=/home/gpic/.local/share/mars-titan/dgx-us-py312/bin/python
+estados=/home/gpic/.local/state/mars-titan/dgx-titans-us-v31
+# Estudio de memorias y su adenda (v8, origen 2013, semilla 42)
+$py -m mars_titan.evaluation.posttraining_pilots memorias \
+    --declaration configs/experiments/posttraining-memories-v10-adenda.json \
+    --state v8=$estados/v8/semillas-42,43,44/todos-114bcf4e \
+    --output <informe> --digest-cache <caché privada de huellas> \
+    --inputs-cache <caché del laboratorio tabular> --inputs-names <names.json del laboratorio> --threads 3
+# Pilotos por trabajo (escala e intervalos, memoria por activo)
+$py -m mars_titan.evaluation.posttraining_pilots pilotos \
+    --declaration configs/experiments/posttraining-pilots-v10.json \
+    --state v8=$estados/v8/semillas-42,43,44/todos-114bcf4e \
+    --state v8_ext1=$estados/v8-ext1/semillas-42,43,44/todos-8e532348 \
+    --state antiguo=$estados/todas/semillas-42,43,44/todos-5a6d1d94 \
+    --output <informe> --digest-cache <caché privada de huellas>
+```
+
+La caché de huellas debe ser privada (la orden rechaza una dentro de un estado de campaña). El
+estudio de memorias sobre la v10 es la misma orden con
+`configs/experiments/posttraining-memories-v10-on-v10.json` y
+`--state v10=$estados/v10/semillas-42,43,44/todos-3d10a30f`, cuando sus 19 trabajos de 2013
+estén terminados.
+
+### 5.1 Estudio de memorias y su adenda (medido)
+
+Medido en la v8, origen 2013, semilla 42, con 13 modelos. La evaluación son 251 sesiones; el padre es la emisión de cada modelo. Cada celda da el incremento pareado por sesión sobre el IC de rangos del padre, en unidades de 10⁻⁴, con su t HAC entre paréntesis. «Activo − placebo» y «vecinos − placebo» restan su placebo (información); «filas propias» es vecinos menos vecinos de otros activos.
+
+| modelo | IC padre | activo | activo−placebo | vecinos | vecinos−placebo | otros activos | filas propias | comb. | comb.−activo | comb.−vecinos | arranque en frío |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| titans_mac | 0,1107 | +18,6 (2,7) | +25,9 (3,7) | +21,0 (3,3) | +34,6 (5,6) | +17,2 (2,8) | +3,7 (5,8) | +33,7 (2,6) | +15,1 (2,3) | +12,7 (1,8) | +3,9 (2,0) |
+| titans_mac_frozen | 0,1094 | +19,0 (2,9) | +27,5 (4,1) | +24,0 (1,9) | +67,8 (5,8) | +16,0 (2,7) | +7,9 (1,2) | +33,9 (2,7) | +14,9 (2,3) | +9,9 (2,8) | +3,7 (2,2) |
+| titans_mac_disabled | 0,1049 | +19,8 (3,1) | +28,5 (4,4) | +26,0 (2,0) | +66,2 (5,7) | +16,6 (2,7) | +9,4 (1,4) | +35,1 (2,8) | +15,2 (2,3) | +9,1 (2,6) | +3,6 (1,9) |
+| titans_mac_xrank | 0,1163 | +8,9 (2,6) | +10,9 (3,1) | +13,9 (2,4) | +29,8 (5,0) | +10,3 (1,8) | +3,6 (5,5) | +19,7 (2,2) | +10,8 (1,8) | +5,8 (1,7) | +1,9 (2,2) |
+| titans_mac_frozen_xrank | 0,1098 | +17,7 (2,7) | +26,6 (4,2) | +18,2 (3,2) | +32,0 (5,8) | +14,1 (2,5) | +4,1 (6,6) | +30,6 (2,6) | +12,9 (2,2) | +12,4 (1,9) | +3,5 (2,2) |
+| titans_mac_disabled_xrank | 0,1059 | +15,3 (2,3) | +24,0 (3,6) | +19,6 (1,7) | +62,6 (5,8) | +12,3 (1,1) | +7,3 (6,2) | +23,7 (1,4) | +8,4 (0,7) | +4,2 (0,6) | +4,0 (2,2) |
+| titans_mac_noic | 0,1038 | +19,3 (2,2) | +33,1 (3,8) | +27,8 (1,3) | +196,9 (11,0) | +29,7 (2,4) | −1,9 (−0,2) | +45,9 (2,5) | +26,6 (2,3) | +18,1 (2,8) | +2,6 (1,4) |
+| mars_titan_m0 | 0,1108 | +18,6 (2,7) | +25,9 (3,7) | +20,9 (3,3) | +34,5 (5,6) | +17,2 (2,8) | +3,7 (5,8) | +33,6 (2,6) | +15,0 (2,3) | +12,7 (1,8) | +3,9 (2,0) |
+| mars_titan_m3 | 0,1108 | +18,6 (2,7) | +25,9 (3,7) | +20,9 (3,3) | +34,5 (5,6) | +17,2 (2,8) | +3,7 (5,8) | +33,6 (2,6) | +15,0 (2,3) | +12,7 (1,8) | +3,9 (2,0) |
+| mars_titan_cognitive | 0,1107 | +18,6 (2,7) | +25,9 (3,7) | +21,0 (3,3) | +34,6 (5,6) | +17,2 (2,8) | +3,7 (5,8) | +33,7 (2,6) | +15,1 (2,3) | +12,7 (1,8) | +3,9 (2,0) |
+| mars_titan_m0_u2 | 0,1108 | +18,6 (2,7) | +25,9 (3,7) | +20,9 (3,3) | +34,5 (5,6) | +17,2 (2,8) | +3,7 (5,8) | +33,6 (2,6) | +15,0 (2,3) | +12,7 (1,8) | +3,9 (2,0) |
+| mars_titan_m0_noic | 0,1044 | +19,9 (2,3) | +35,4 (4,3) | +33,6 (2,6) | +105,1 (9,1) | +25,5 (2,1) | +8,2 (6,5) | +43,3 (2,3) | +23,4 (2,1) | +9,6 (1,4) | +5,6 (2,0) |
+| mars_titan_m3_noic | 0,1042 | +20,2 (2,4) | +35,5 (4,4) | +34,1 (2,7) | +104,9 (9,1) | +26,0 (2,1) | +8,1 (6,5) | +44,1 (2,4) | +23,9 (2,1) | +10,0 (1,5) | +5,6 (2,0) |
+
+Lectura:
+- Los placebos son negativos y significativos (en titans_mac: por activo −0,00073 (t −3,1), por vecinos −0,00136 (t −5,9)). Una lectura sin información diluye el padre, así que la información de cada memoria es brazo − placebo, no brazo − padre.
+- **Memoria por activo** en titans_mac: +0,00186 (t 2,7) sobre el padre; la configuración del laboratorio (h = 21, κ = 0,1) es también la elegida en calibración.
+- **Memoria por vecinos**: +0,00210 (t 3,3). Con solo otros activos, +0,00172 (t 2,8). Las filas del propio activo añaden +0,00037 (t 5,8).
+- **Combinada**: +0,00337 (t 2,6). Supera a cada memoria sola: +0,00151 (t 2,3) frente a la de activo y +0,00127 (t 1,8) frente a la de vecinos.
+- **Acuerdo** entre las dos lecturas (correlación por sesión, evaluación): 0,37; con vecinos de otros activos, 0,28.
+- **Arranque en frío** (la memoria por activo vacía al empezar la evaluación): +0,00039 (t 2,0) frente a la memoria caliente. Empezar en frío no cuesta nada medible, y podría ganar algo (t 2,0).
+- **Corrección de los cinco cuantiles en unidades de retorno**:
+  - Sobre los cuantiles crudos, baja el pinball (t −9,9) y el MAE (t −19,3), pero empeora la puntuación de intervalo al 80 % (t +8,3) y al 95 % (t +7,6).
+  - Tras la CQR estática ajustada en calibración, empeora el pinball (t +3,6) y la puntuación de intervalo.
+  - No se adopta para intervalos.
+
+**Supervivencia cuando el padre ya escribe** (la pregunta del coordinador). La diferencia es el contraste pareado del incremento del padre en línea menos el del control; «sobrevive» es el cociente de incrementos.
+
+| Padre en línea | Brazo | Incremento del padre en línea | Control congelado: incremento · diferencia (t) · sobrevive | Control desactivado: incremento · diferencia (t) · sobrevive |
+|---|---|---|---|---|
+| titans_mac | por activo, h = 21 y κ = 0,1 fijos | +18,6 | +19,0 · −0,4 (t −0,4) · 98 % | +19,8 · −1,2 (t −1,0) · 94 % |
+| titans_mac | por activo − su placebo, fijos | +25,9 | +27,5 · −1,6 (t −1,2) · 94 % | +28,5 · −2,6 (t −1,7) · 91 % |
+| titans_mac | por vecinos, κ elegida | +21,0 | +24,0 · −3,0 (t −0,5) · 87 % | +26,0 · −5,1 (t −0,7) · 81 % |
+| titans_mac | por vecinos − su placebo, κ elegida | +34,6 | +67,8 · −33,2 (t −5,5) · 51 % | +66,2 · −31,6 (t −5,2) · 52 % |
+| titans_mac | combinada, κ elegidas | +33,7 | +33,9 · −0,2 (t −0,1) · 99 % | +35,1 · −1,4 (t −0,6) · 96 % |
+| titans_mac_xrank | por activo, h = 21 y κ = 0,1 fijos | +13,5 | +17,7 · −4,2 (t −3,6) · 76 % | +15,3 · −1,8 (t −1,2) · 88 % |
+| titans_mac_xrank | por activo − su placebo, fijos | +22,2 | +26,6 · −4,3 (t −3,2) · 84 % | +24,0 · −1,8 (t −1,2) · 93 % |
+| titans_mac_xrank | por vecinos, κ elegida | +13,9 | +18,2 · −4,3 (t −3,4) · 77 % | +19,6 · −5,7 (t −0,9) · 71 % |
+| titans_mac_xrank | por vecinos − su placebo, κ elegida | +29,8 | +32,0 · −2,2 (t −1,7) · 93 % | +62,6 · −32,8 (t −6,1) · 48 % |
+| titans_mac_xrank | combinada, κ elegidas | +19,7 | +30,6 · −10,9 (t −3,1) · 64 % | +23,7 · −4,0 (t −0,4) · 83 % |
+
+- El par con rangos es el que aplica a la base v10. Con parámetros fijos, la memoria por activo sobrevive el 76 % frente al congelado (t −3,6) y el 88 % frente al desactivado. En el par base sobrevive entera (94–99 %, |t| ≤ 1,7).
+- Las filas «vecinos − placebo» con κ distinta en el padre en línea y en el control (0,1 frente a 0,2) mezclan la dilución del placebo, que crece con κ. Ahí la comparación limpia de vecinos es el incremento sobre el padre.
+
+**Coste medido.** 1 h 23 min de reloj con 3 hilos, CPUQuota 300 % y 3,4 GiB de RSS. La lectura por vecinos de los 13 modelos tomó 3.736 s (los vecinos se calculan una vez para todos), la de otros activos 957 s, y cada modelo 16–19 s más. El tiempo de sistema (6.484 s frente a 2.710 s de usuario) indica asignaciones por bloque mejorables.
+
+**Integración** como órganos lectores de la base nueva: `INTEGRACION-MEMORIAS.md`, en la carpeta del informe. Recoge los puntos de entrada, qué lee cada memoria, el contrato causal, el coste, lo que falta para ejecutarlas como trabajo de la campaña y las réplicas.
+
+### 5.2 Pilotos de escala, intervalos y agente cognitivo
+
+Siguen pendientes. Los 77 trabajos de `posttraining-pilots-v10.json` y los dos agentes (`posttraining-agent-v8-2013.json` y `posttraining-agent-antiguo-2005-2011.json`) van en una sola unidad de CPU después de los gemelos (una unidad a la vez).
+
+### 5.3 Efecto mínimo detectable
+
+Con 251 sesiones de evaluación de un origen y una semilla, el EE HAC de un incremento de memoria es de 0,0006 a 0,0013 (MDE ≈ 2,8 · EE: 0,002 a 0,0036). El de una diferencia de supervivencia es ≈ 0,0001 por activo y ≈ 0,0006 por vecinos.
+
+En los gemelos, el MDE esperado de D es ≈ 0,0030 (par base) y ≈ 0,0047 (par con rangos). Se calculó solo con validación y calibración; no se usa potencia observada.
+
+
+## 6. Etapas con GPU (fase 4)
+
+### 6.1 Qué queda preparado
+
+- **Continuación desde los padres de la v10.** `configs/experiments/dgx-us-campaign-v10-post1.json`
+  (fuente: la declaración v10 de 3d10a30f, huella 836c79a6…; cohorte de 4.198 activos, vista
+  completa; parada de la v10: meseta del IC de validación con paciencia 3 y tope de 48 épocas; test
+  final cerrado). Vuelve a ajustar `titans_mac` de la v10 en 2012 con su misma receta
+  (`configs/titans/dgx-us-core-u2-ic3-dense-gr-v9.json`, huella 3b88760f…, con `accumulation_rows`
+  de 8.192) y continúa desde su estado elegido en 2013 con cuatro brazos que solo cambian el
+  ajuste: `titans_mac_cont` (la misma receta), `titans_mac_cont_wd` (decaimiento 0,1 hacia cero),
+  `titans_mac_cont_l2sp` (decaimiento 0,1 hacia el padre) y `titans_mac_cont_sp` (contracción 0,6
+  con ruido 0,01). Se vuelve a ajustar el padre en este estado porque la v10 no tiene 2012 y porque
+  `inherit` trasladaría la campaña entera y cerraría su permiso.
+- **Adaptadores sobre los padres de la v10.** Los únicos que la campaña DGX sabe ejecutar son los
+  lectores (`reader`: m0, m3, cognitivo), ya declarados en la v10. Los adaptadores del paquete
+  `posttraining/` no están conectados a la cola DGX; no se declaran aquí (sección 3).
+- **Comprobado en CPU sin GPU.** El plan da 18 trabajos (6 del padre en 2012 y 2013 y 12
+  continuaciones en 2013, cada una tras `titans_mac/2012/seed-s`); las continuaciones quedan
+  bloqueadas hasta que termina su padre; la ejecución de un trabajo de continuación carga el estado
+  elegido del padre (prueba de `execute_job` con datos sintéticos); y con pasos reales del
+  optimizador el decaimiento anclado lleva los pesos hacia ese estado.
+
+### 6.2 Órdenes
+
+Desde una copia fija (`git worktree`) en el commit que integre esta rama, con el lanzador de la
+campaña (`scripts/dgx_campaign.sh`, que fija cuBLAS determinista y antepone el `src` de la copia):
+
+```bash
+copia=/home/gpic/TITANS-IA/MARS-TITAN-campana-<commit>
+estado=/home/gpic/.local/state/mars-titan/dgx-titans-us-v31/v10-post1/semillas-42,43,44/todos-<commit>
+vistas=/home/gonzalo/.local/state/mars-titan/campaign-a-v2-views-v31-20261013/views/US
+decl=configs/experiments/dgx-us-campaign-v10-post1.json
+cd "$copia"
+./scripts/dgx_campaign.sh plan --machine mars_titan --declaration "$decl"          # 18 trabajos
+./scripts/dgx_campaign.sh prepare --declaration "$decl" --state "$estado" --views "$vistas"
+./scripts/dgx_campaign.sh doctor --machine mars_titan --declaration "$decl" --state "$estado" --views "$vistas"
+./scripts/dgx_campaign.sh authorize --declaration "$decl" --state "$estado" --views "$vistas" \
+    --note "Post-entrenamiento v10: continuaciones desde titans_mac/2012"
+```
+
+En el plan del relevo, con su formato (`prepara|…` construye antes los índices y las copias
+empaquetadas de un origen con `scripts/dgx_prepare_inputs.py`, como en la v10):
+
+```text
+prepara|<copia>|<estado>|configs/titans/dgx-us-core-v2.json|2012
+<copia>|<estado>|<vistas>|configs/experiments/dgx-us-campaign-v10-post1.json|1 --seed 42 --origin 2012 --tier core
+prepara|<copia>|<estado>|configs/titans/dgx-us-core-v2.json|2013
+<copia>|<estado>|<vistas>|configs/experiments/dgx-us-campaign-v10-post1.json|4 --seed 42 --tier post
+```
+
+La segunda fase no filtra por origen a propósito: el filtro de orígenes exige que el padre de cada
+trabajo esté en el bloque («El bloque de orígenes deja fuera al padre…»), y con `--tier post` las
+continuaciones solo esperan a que `titans_mac/2012/seed-42` esté terminado. `titans_mac/2013` de
+este estado no hace falta para los contrastes (se compara con el de la v10); ejecutarlo
+(`--seed 42 --origin 2013 --tier core`) solo sirve para comprobar que el padre vuelve a dar las
+mismas emisiones que en la v10.
+
+### 6.3 Coste esperado (estimación, no medición de estas recetas)
+
+Medido en la v8 sobre la GB10 (origen 2013, semilla 42): `titans_mac` 2,06 h de reloj en dos
+intentos (0,65 + 1,41 h), RSS de unos 20 GiB, memoria CUDA asignada máxima 2,4 GiB y reservada
+hasta 7,4 GiB; `titans_mac_frozen` 2,50 h. Con la parada por meseta de la v10, un ajuste de 2012
+(menos datos de ajuste que 2013) debería costar del orden de 1,5 a 2 h y una continuación entre 1
+y 2 h: si ninguna época mejora la validación se detiene a las tres épocas (hipótesis). La semilla
+42 son 5 trabajos, de 5 a 10 horas de GPU con un trabajador; las otras dos semillas, 10 trabajos
+más.
+
+### 6.4 Orden recomendado y regla de decisión (declarada antes de ejecutar)
+
+1. Semilla 42: el padre en 2012 y las cuatro continuaciones en 2013.
+2. Contrastes pareados por sesión con t HAC frente a `titans_mac/2013/seed-42` de la v10 (desde
+   cero), con `scripts/dgx_screening_report.py --compare <estado de la v10>` y un archivo de
+   controles que empareje cada brazo con `titans_mac`; además `titans_mac_cont_l2sp` frente a
+   `titans_mac_cont_wd` (una sola variable: el destino del decaimiento).
+3. Un brazo pasa a las semillas 43 y 44 si en la 42 su diferencia de decisión (validación) no es
+   negativa y la de evaluación es positiva con t ≥ 2. Se adopta solo si las tres semillas juntas
+   mantienen t ≥ 2. Si ninguno pasa, se registra como negativo y la continuación no entra en la
+   campaña final.
+4. Riesgos: que el padre vuelto a ajustar no sea idéntico al de la v10 (se comprueba con el paso
+   opcional de 6.2); que la parada elija el estado inicial del padre en 2013 (el brazo sin cambios
+   lo mide y el informe de cada trabajo registra la época elegida); un solo origen de desarrollo.
+
+### 6.5 Gemelos de escritura: la misma red, evaluada sin escribir
+
+**Pregunta** (encargo del coordinador, 06:10 UTC). La memoria en línea de `titans_mac` gana a su control congelado en validación (de +0,0005 a +0,0041 según la receta). ¿Esa ventaja viene de escribir en la memoria durante la evaluación o de los parámetros que deja un ajuste con escritura?
+
+**Diseño.** Factorial 2×2 ajuste × evaluación sobre la propia ventana fold-008 (origen 2013) y la vista de los trabajos:
+
+| Celda | Ajuste | Evaluación | Cómo se obtiene |
+|---|---|---|---|
+| oo | mac_online | escribe | emitida por titans_mac; se regenera para la paridad |
+| ff | mac_frozen | no escribe | emitida por titans_mac_frozen; se regenera para la paridad |
+| of | mac_online | no escribe | gemelo mac_frozen con el estado elegido de titans_mac (todos sus tensores) |
+| fo | mac_frozen | escribe | gemelo mac_online con el estado elegido de titans_mac_frozen (control a) |
+
+- Contrastes por sesión, sobre el IC de rangos con al menos 30 activos y con HAC de Newey-West (Bartlett, retardo automático):
+  - N = IC(oo) − IC(of): lo que aporta escribir en evaluación a la red ajustada escribiendo.
+  - D = IC(oo) − IC(ff): la ventaja total.
+  - A = IC(fo) − IC(ff): escribir con una red ajustada sin escritura.
+  - I = N − A.
+- TTWS = N̄/D̄, con error delta e intervalo de Fieller de la covarianza HAC conjunta. Solo se interpreta si D̄ es positivo con |t| ≥ 1,96.
+- Control b (paridad): cada ancla se regenera con su propia variante, y sus tres tramos deben salir bit a bit iguales a los emitidos; si no, la orden se detiene con la primera fila distinta y no se interpreta nada.
+- Las semillas se promedian sesión a sesión como réplicas; la unidad es la sesión.
+- Potencia, medida solo con validación y calibración:
+  - Par base: D = +0,00125 en validación (EE HAC 0,00152, 125 sesiones); MDE esperado ≈ 0,0030 con las 251 sesiones de evaluación.
+  - Par con rangos: D = +0,00412 (EE 0,00237); MDE ≈ 0,0047.
+  - Las N de los dos pares se leen juntas con Holm.
+
+**Mecanismo y verificación.** `carry_titans(..., evaluated_variant)` carga el state_dict completo y comprueba que el gemelo conserva sus bytes. Solo pueden cambiar la variante y el modo de MAC en los contratos.
+- La afirmación de Gemini sobre los búferes es cierta: `copy_paired_parameters` copia parámetros y no los búferes de learning_scale ni head.output_scale. En la campaña no cambia nada y el gemelo no usa esa función.
+- En CPU, con el registrador de gradientes, cada gemelo repite bit a bit la ventana ajustada con la otra variante. Es el oráculo N = D = A, I = 0, TTWS = 1.
+- El relevo está comprobado con clones nuevos de 114bcf4e y 3d10a30f y `git am` del parche (`gemelos-escritura.patch`, sha256 fa8263f9…): pasan 171 pruebas.
+
+**Ejecución.** Código del modelo de 114bcf4e (el que ajustó la v8) más el parche, en la GB10 con el MPS de la campaña, CUBLAS :4096:8 y FP32 estricto. La unidad tiene MemoryMax 12G y CPUQuota 200 %, y se congela mientras la presión de producción supera 2.
+
+**Estado a las 08:25 UTC.** El par base de la v8 se ejecuta en la ventana de GPU que abrió el coordinador.
+- 07:27Z: el primer lanzamiento falló a los 30 s sin leer datos (e9ff43ba).
+- 07:37Z: segundo lanzamiento. Los índices de las tres particiones tardaron ~5 min de CPU. Lo paré por presión de producción.
+- 07:49Z: tercer lanzamiento. La preparación de entradas en CPU tardó ≈ 10 min. Después, la validación de la paridad en línea ≈ 10 min y la calibración ≈ 14 min.
+- La unidad recibía de 0,15 a 0,46 núcleos con CPUWeight 15 en una máquina con carga media 70 sobre 20 núcleos. Con el visto bueno del coordinador, a las 08:19Z subí CPUWeight a 100 sin tocar la cuota ni la memoria, y pasó a 0,64–0,9 núcleos.
+- RSS anónimo ≈ 7 GiB (más 3,7 GiB de caché de páginas recuperable); GPU 2,5 GiB.
+- Con más de 20 min por recorrido, el par con rangos queda para la noche (criterio del coordinador).
+
+
+## 7. Documentos de Gemini y auditoría del segundo enjambre
+
+### 7.1 Documentos de diseño del primer enjambre
+
+Los dos documentos del primer enjambre (`memoria-nucleo.md` y `memoria-vecinos.md`) se trataron
+como entrada no fiable. Sus ganancias son conjeturas suyas y no se usan. Lo comprobado:
+
+- **La memoria de Titans nunca escribe etiquetas.** `training/titans_walk_forward.py` declara
+  `MEMORY_POLICY = "reset_each_pass_then_input_warmup_v1"` (línea 97) y
+  `labels="compared_with_the_issued_prediction_after_maturity_never_written"` (línea 149): la
+  memoria en línea aprende de las entradas y la etiqueta madura solo se compara con lo emitido.
+- **Calentamiento supervisado causal (a).** Las filas de calentamiento no se emiten:
+  `financial_run.py` marca `warmup = event.at < source.phase.decision_start` y salta esas filas
+  (`if warmup: … continue`, línea 684). Una memoria supervisada integrada en el modelo empezaría,
+  por tanto, sin ninguna etiqueta madura en la primera decisión. No se implementa en GPU; su coste
+  se acota con el arranque en frío de la adenda (5.1), que vacía la memoria por activo en la
+  primera sesión de evaluación.
+- **Corrección en unidades de retorno sumada a los cinco cuantiles (b).** Implementada como
+  `shift_quantiles`: q_j + s_t·(κ_a·a + κ_v·v) con s_t la dispersión de la predicción en la sesión;
+  conserva el orden de los cuantiles y da los mismos rangos de sesión que la combinación tipificada
+  (prueba). Se mide en la adenda con la recalibración estática ajustada solo en calibración.
+- **Puntos de conexión (c).** `FrozenFinancialConsumer.prepare` existe
+  (`models/titans/frozen_financial.py`, línea 507, con la marca de calentamiento) y
+  `ChronologicalInference._labels` (`financial_run.py`, líneas 824–863) resuelve las etiquetas
+  maduras contra la predicción emitida y llama a `signal.settle(matured)` (línea 856): una memoria
+  supervisada que se asentara ahí solo vería etiquetas maduras, como la señal de fiabilidad.
+- **Selección exacta de los k mayores.** El documento propone, para GPU, empaquetar (coseno,
+  rango) en un entero de 64 bits para que no haya empates. La versión de CPU de este programa
+  cumple el mismo contrato por otro camino (cota de los máximos de bloque y orden estable:
+  coseno descendente y, a igual coseno, la fila más antigua) y se prueba igual a `np.argsort`
+  estable. Su crítica a `episodic_readout.py` (líneas 442–443, puntuaciones en FP64 y orden
+  estable) solo vale si ese lector se escalara a un banco de 264.474 filas: su configuración
+  admite como mucho 1.024 episodios.
+- **Ablaciones del lector por vecinos.** La primera (vecinos del propio activo frente a los de
+  otros) es la exclusión de la adenda (`exclude_own`). Las otras cuatro (decaimiento por edad,
+  claves aprendidas, distancia L2 frente a coseno y ventanas de 126 y 252 sesiones) no se han
+  ejecutado. La cita de TabReD (ICLR 2025) no se ha comprobado aquí.
+
+### 7.2 Auditoría del segundo enjambre (H-01…H-12 de `agente.md`)
+
+Cada afirmación se contrastó con el código. Si era un defecto, con una prueba que fallaba antes del arreglo.
+
+| Hallazgo | Veredicto | Evidencia o arreglo |
+|---|---|---|
+| H-01 | Real: el bucle aprendía con Pearson aunque la métrica declarada es de rangos. La parte de NaN no se confirma | c42fbaa8. La prueba fallaba: una herramienta con Pearson alto y rangos negativos se llevaba el 99,96 % del peso. Una opción constante pierde 1/2 sin NaN |
+| H-02 | Propiedad del diseño | La pérdida (1 − IC)/2 está documentada en `online_arbiters` |
+| H-03 | No reproducido | Es la construcción publicada de AdaNormalHedge.TV (w(0,0) = 0,1978 para una copia nueva). El peso de una opción en una sesión solo suma sus copias despiertas |
+| H-04, H-05 | Propiedad del diseño | El agente ordena (métrica de IC); la CQR en línea es la declarada en PT2 |
+| H-06 | Solo aplica a la declaración antigua `dgx-us-cognitive-agent-v1.json` | Las declaraciones del post-entrenamiento tienen un modelo por herramienta |
+| H-07 | No aplica a estos datos | Retraso medido d = 1 en las 312 sesiones de calibración y evaluación de la v8 en 2013 |
+| H-08 | (1) Real, de documentación. Lo demás es diseño | fc9fc2fb: el eje «al alza» es el signo del residuo medio, no la dirección del mercado |
+| H-09 | Real en parte: no se validaba el orden de cada semilla | c76d7133. La varianza epistémica no es un defecto del método declarado (media de Vincent) |
+| H-10 | Regla del proyecto | Fallar con un mensaje que diga dónde y por qué |
+| H-11 | (i) Real; (ii) diseño documentado; (iii) no es un defecto; (iv) diseño | d94c7807. (iii): el paso descendente de Romano y Wolf es bilateral (`stepdown`), y la dirección solo marca «favorable»: una interacción negativa sale con su intervalo y su p bilateral |
+| H-12 | (b) Real; (a), (c) y (d), diseño; (e) menor, sin llamadas en producción | 803f6c7e: la calibración de cada ventana madura, por mercado, antes de su primera decisión evaluada |
+
+
+## 8. Limitaciones y riesgos
+
+- **Un origen y una semilla.** Todo lo medido en CPU sobre Titans es la v8 en 2013 con la semilla
+  42 (y, para la memoria por activo, la réplica entre orígenes del estado antiguo sin rasgos, también
+  con la semilla 42). Ninguna cifra se generaliza sin más orígenes ni semillas.
+- **Modelos muy correlacionados.** Los trece modelos del estudio comparten datos y casi toda la
+  arquitectura: sus contrastes no son independientes y no se suman como evidencia.
+- **Claves de los vecinos fuera del modelo.** Las 92 entradas salen de la caché del laboratorio
+  tabular (en la carpeta temporal de la sesión, con su huella SHA-256 en cada informe). Coinciden
+  fila a fila con las emitidas, pero no son las entradas que ve el modelo.
+- **Tipificación con las filas etiquetadas.** Los correctores tipifican la predicción y ordenan
+  la etiqueta solo con las filas de la sesión que tienen etiqueta; una fila sin etiqueta no entra
+  en esas estadísticas.
+- **Selección por calibración con 61 sesiones.** La elección de κ y de la semivida usa pocas
+  sesiones; el contraste primario es siempre la configuración del laboratorio, fijada antes de ver
+  estas emisiones.
+- **Primera ejecución del estudio detenida.** La declaración original
+  (`posttraining-memories-v10.json`) se ejecutó con el método de vecinos v1 y se detuvo sin
+  escribir informe; la adenda (v2) se declaró antes de leer ningún resultado. Los vecinos de v1 y
+  v2 solo difieren en los empates en el k-ésimo coseno.
+- **Desliz de TDD.** Parte del estudio de memorias se escribió antes que su prueba; se compensó con
+  mutaciones (9 muertas en esa entrega) y queda registrado aquí.
+- **Lo que no se pudo medir.**
+  - El conjunto de semillas en 2013: faltan la 43 y la 44 en la v8.
+  - B6 y E1: necesitan las claves del códec en GPU.
+  - Cualquier emisión de la v10: a las 08:18 UTC sus 21 trabajos de 2013 seguían sin ejecutar (`declared_not_executed`). El plan del relevo pone las tres semillas del núcleo y de sus controles en 2013 antes que cualquier criba.
+- **Gemelos con un origen y una semilla en la v8.** La inferencia es dentro de la red ajustada, no entre ajustes. La v10 con tres semillas es la réplica declarada.
+
+## 9. Referencias
+
+Comprobadas el 22 de noviembre de 2026 en el resumen del artículo o del editor; tratadas como datos.
+
+- Achlioptas (2003). Database-friendly random projections: Johnson-Lindenstrauss with binary coins. *Journal of Computer and System Sciences* 66(4). doi:10.1016/S0022-0000(03)00025-4.
+- Angelopoulos, Candès y Tibshirani (2023). Conformal PID control for time series prediction. arXiv:2307.16895.
+- Ash y Adams (2020). On warm-starting neural network training. NeurIPS 2020. arXiv:1910.08475.
+- Auer, Gauch, Klotz y Hochreiter (2023). Conformal prediction for time series with modern Hopfield networks (HopCPT). arXiv:2303.12783.
+- Behrouz, Zhong y Mirrokni (2025). Titans: learning to memorize at test time. arXiv:2501.00663.
+- Defazio et al. (2024). The road less scheduled. arXiv:2405.15682.
+- Fieller (1954). Some problems in interval estimation. *Journal of the Royal Statistical Society, Series B* 16(2):175–185. doi:10.1111/j.2517-6161.1954.tb00159.x.
+- Freund, Schapire, Singer y Warmuth (1997). Using and combining predictors that specialize. STOC 1997, 334–343. doi:10.1145/258533.258616.
+- Gibbs y Candès (2021). Adaptive conformal inference under distribution shift. arXiv:2106.00170.
+- Gneiting y Raftery (2007). Strictly proper scoring rules, prediction, and estimation. *Journal of the American Statistical Association* 102(477):359–378 (puntuación de intervalo).
+- Hinton, Vinyals y Dean (2015). Distilling the knowledge in a neural network. arXiv:1503.02531.
+- Hu et al. (2021). LoRA: low-rank adaptation of large language models. arXiv:2106.09685.
+- Izmailov et al. (2018). Averaging weights leads to wider optima and better generalization (SWA). arXiv:1803.05407.
+- Jegadeesh (1990). Evidence of predictable behavior of security returns. *Journal of Finance* 45(3):881–898.
+- Khandelwal et al. (2019). Generalization through memorization: nearest neighbor language models (kNN-LM). arXiv:1911.00172.
+- Kirkpatrick et al. (2017). Overcoming catastrophic forgetting in neural networks (EWC). *PNAS*. arXiv:1612.00796.
+- Lakshminarayanan, Pritzel y Blundell (2017). Simple and scalable predictive uncertainty estimation using deep ensembles. arXiv:1612.01474.
+- Li, Grandvalet y Davoine (2018). Explicit inductive bias for transfer learning with convolutional networks (L2-SP). ICML 2018. arXiv:1802.01483.
+- Luo y Schapire (2015). Achieving all with no parameters: AdaNormalHedge. arXiv:1502.05934.
+- Morales-Brotons, Vogels y Hendrikx (2024). Exponential moving average of weights in deep learning. arXiv:2411.18704.
+- Newey y West (1994). Automatic lag selection in covariance matrix estimation. *Review of Economic Studies*. doi:10.2307/2297912.
+- Romano y Wolf (2016). Efficient computation of adjusted p-values for resampling-based stepdown multiple testing. *Statistics & Probability Letters* 113:38–40. doi:10.1016/j.spl.2016.02.012.
+- Rolnick et al. (2019). Experience replay for continual learning. arXiv:1811.11682.
+- Romano, Patterson y Candès (2019). Conformalized quantile regression. arXiv:1905.03222.
+- Sun et al. (2020). Test-time training with self-supervision for generalization under distribution shifts. arXiv:1909.13231.
+- Wang et al. (2021). Tent: fully test-time adaptation by entropy minimization. arXiv:2006.10726.
+- Wortsman et al. (2022). Model soups. arXiv:2203.05482.
+- Holm (1979). A simple sequentially rejective multiple test procedure. *Scandinavian Journal of Statistics* 6(2):65–70.
+
