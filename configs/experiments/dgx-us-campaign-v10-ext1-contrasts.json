@@ -1,0 +1,23 @@
+{
+  "schema_version": 1,
+  "kind": "dgx_campaign_contrasts",
+  "description": "Control de cada modelo de la extensión de la campaña DGX v10 para el contraste pareado: cada variante se compara con el núcleo, del que solo la separa un campo de la receta.",
+  "controls": {
+    "titans_mac_frozen": "titans_mac",
+    "titans_mac_disabled": "titans_mac",
+    "titans_mac_ema999": "titans_mac",
+    "titans_mac_ema9998": "titans_mac",
+    "titans_mac_qroute": "titans_mac",
+    "titans_mac_qroute_median": "titans_mac",
+    "titans_mac_qroute_encoder": "titans_mac",
+    "titans_mac_nozm": "titans_mac",
+    "titans_mac_nonorm": "titans_mac"
+  },
+  "always_kept": [
+    "titans_mac_macro",
+    "titans_mac_no_charts",
+    "titans_mac_no_macro",
+    "titans_mac_no_news",
+    "titans_mac_no_fundamentals"
+  ]
+}

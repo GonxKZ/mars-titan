@@ -1,0 +1,257 @@
+{
+  "schema_version": 1,
+  "kind": "comparison_campaign_v1",
+  "market": "US",
+  "final_test_access": false,
+  "description": "Extensión de la campaña DGX v10 en EE. UU. (GB10): variantes de una sola variable de la receta del núcleo que no estaban en la campaña. El promedio exponencial de pesos con retención 0,999 y 0,9998 (la v10 mide 0,995, cuya semivida es de una décima de época), el encaminamiento de cuantiles en sus tres combinaciones, la mediana inicial sorteada en lugar del cero exacto y la memoria sin la normalización de su residuo. El núcleo y sus controles son los de la v10, campo a campo.",
+  "source_declaration_sha256": "836c79a6122fc14a1566826ece99f3708849a7d481361c334acd693383c88716",
+  "cohort": {
+    "size": 4198,
+    "rule": "entire_source_view"
+  },
+  "seeds": [
+    42,
+    43,
+    44
+  ],
+  "origins": [
+    {
+      "fold": "fold-000",
+      "role": "development",
+      "year": 2005
+    },
+    {
+      "fold": "fold-001",
+      "role": "development",
+      "year": 2006
+    },
+    {
+      "fold": "fold-002",
+      "role": "development",
+      "year": 2007
+    },
+    {
+      "fold": "fold-003",
+      "role": "development",
+      "year": 2008
+    },
+    {
+      "fold": "fold-004",
+      "role": "development",
+      "year": 2009
+    },
+    {
+      "fold": "fold-005",
+      "role": "development",
+      "year": 2010
+    },
+    {
+      "fold": "fold-006",
+      "role": "development",
+      "year": 2011
+    },
+    {
+      "fold": "fold-007",
+      "role": "development",
+      "year": 2012
+    },
+    {
+      "fold": "fold-008",
+      "role": "development",
+      "year": 2013
+    },
+    {
+      "fold": "fold-009",
+      "role": "development",
+      "year": 2014
+    },
+    {
+      "fold": "fold-010",
+      "role": "development",
+      "year": 2015
+    },
+    {
+      "fold": "fold-011",
+      "role": "development",
+      "year": 2016
+    },
+    {
+      "fold": "fold-012",
+      "role": "development",
+      "year": 2017
+    },
+    {
+      "fold": "fold-013",
+      "role": "development",
+      "year": 2018
+    },
+    {
+      "fold": "fold-014",
+      "role": "development",
+      "year": 2019
+    },
+    {
+      "fold": "fold-015",
+      "role": "development",
+      "year": 2020
+    },
+    {
+      "fold": "fold-016",
+      "role": "development",
+      "year": 2021
+    },
+    {
+      "fold": "fold-017",
+      "role": "development",
+      "year": 2022
+    },
+    {
+      "fold": "fold-018",
+      "role": "confirmation",
+      "year": 2023
+    }
+  ],
+  "tiers": [
+    "core",
+    "controls",
+    "x1_ema",
+    "x1_routing",
+    "x1_median",
+    "x1_norm"
+  ],
+  "recipes": {
+    "core": "configs/titans/dgx-us-core-u2-ic3-dense-gr-v9.json",
+    "core_ema999": "configs/titans/dgx-us-core-ema999-u2-ic3-dense-gr-v9.json",
+    "core_ema9998": "configs/titans/dgx-us-core-ema9998-u2-ic3-dense-gr-v9.json",
+    "core_qroute": "configs/titans/dgx-us-core-qroute-u2-ic3-dense-gr-v9.json",
+    "core_qroute_median": "configs/titans/dgx-us-core-qroute-median-u2-ic3-dense-gr-v9.json",
+    "core_qroute_encoder": "configs/titans/dgx-us-core-qroute-encoder-u2-ic3-dense-gr-v9.json",
+    "core_nozm": "configs/titans/dgx-us-core-nozm-u2-ic3-dense-gr-v9.json",
+    "core_nonorm": "configs/titans/dgx-us-core-nonorm-u2-ic3-dense-gr-v9.json"
+  },
+  "stopping": {
+    "fit": {
+      "metric": "session_rank_ic",
+      "min_assets": 30,
+      "stopping": "validation_plateau",
+      "patience": 3,
+      "min_delta": 0.0,
+      "max_epochs": 48,
+      "initial_state": "reported"
+    },
+    "reader": {
+      "metric": "session_rank_ic",
+      "min_assets": 30,
+      "stopping": "validation_plateau",
+      "patience": 3,
+      "min_delta": 0.0,
+      "max_epochs": 24
+    }
+  },
+  "execution": {
+    "pipeline": {
+      "decode_workers": 4,
+      "prefetch_batches": 6,
+      "group_cache_mib": 2048,
+      "prepare_workers": 3
+    },
+    "workers": {
+      "mars_titan": 4,
+      "references": 1
+    },
+    "learning_traces": {
+      "every": 8,
+      "max_bytes": 67108864
+    },
+    "order": "seed_tier",
+    "threads": {
+      "intra": 20,
+      "interop": 20
+    }
+  },
+  "budget": {
+    "min_free_gib": 60,
+    "memory_gib": {
+      "mars_titan": 24
+    },
+    "cuda_gib": {
+      "mars_titan": 16
+    },
+    "deadline_utc": "2026-12-02T18:00:00+00:00"
+  },
+  "models": {
+    "titans_mac": {
+      "machine": "mars_titan",
+      "recipe": "core",
+      "runner": "fit",
+      "tier": "core",
+      "variant": "mac_online"
+    },
+    "titans_mac_frozen": {
+      "machine": "mars_titan",
+      "recipe": "core",
+      "runner": "fit",
+      "tier": "controls",
+      "variant": "mac_frozen"
+    },
+    "titans_mac_disabled": {
+      "machine": "mars_titan",
+      "recipe": "core",
+      "runner": "fit",
+      "tier": "controls",
+      "variant": "mac_disabled"
+    },
+    "titans_mac_ema999": {
+      "machine": "mars_titan",
+      "recipe": "core_ema999",
+      "runner": "fit",
+      "tier": "x1_ema",
+      "variant": "mac_online"
+    },
+    "titans_mac_ema9998": {
+      "machine": "mars_titan",
+      "recipe": "core_ema9998",
+      "runner": "fit",
+      "tier": "x1_ema",
+      "variant": "mac_online"
+    },
+    "titans_mac_qroute": {
+      "machine": "mars_titan",
+      "recipe": "core_qroute",
+      "runner": "fit",
+      "tier": "x1_routing",
+      "variant": "mac_online"
+    },
+    "titans_mac_qroute_median": {
+      "machine": "mars_titan",
+      "recipe": "core_qroute_median",
+      "runner": "fit",
+      "tier": "x1_routing",
+      "variant": "mac_online"
+    },
+    "titans_mac_qroute_encoder": {
+      "machine": "mars_titan",
+      "recipe": "core_qroute_encoder",
+      "runner": "fit",
+      "tier": "x1_routing",
+      "variant": "mac_online"
+    },
+    "titans_mac_nozm": {
+      "machine": "mars_titan",
+      "recipe": "core_nozm",
+      "runner": "fit",
+      "tier": "x1_median",
+      "variant": "mac_online"
+    },
+    "titans_mac_nonorm": {
+      "machine": "mars_titan",
+      "recipe": "core_nonorm",
+      "runner": "fit",
+      "tier": "x1_norm",
+      "variant": "mac_online"
+    }
+  },
+  "inputs": {
+    "technical": "long_horizon_v2"
+  }
+}

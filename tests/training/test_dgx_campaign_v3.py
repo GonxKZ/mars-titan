@@ -848,3 +848,76 @@ def test_the_campaigns_with_session_ranks_in_the_base_keep_each_contrast(name, o
 def _recipe(document, model):
     name = document["models"][model]["recipe"]
     return json.loads((ROOT / document["recipes"][name]).read_text())["recipe"]
+
+
+def test_the_extension_of_v10_changes_one_recipe_field_per_model():
+    path = ROOT / "configs/experiments/dgx-us-campaign-v10-ext1.json"
+    source = ROOT / "configs/experiments/dgx-us-campaign-v10.json"
+    document, previous = campaign.load_declaration(path)[0], json.loads(source.read_text())
+    own = {"description", "source_declaration_sha256", "models", "tiers", "recipes"}
+    assert set(document) == set(previous)
+    for key in set(previous) - own:
+        assert document[key] == previous[key], key
+    assert document["source_declaration_sha256"] == hashlib.sha256(source.read_bytes()).hexdigest()
+    assert document["tiers"] == ["core", "controls", "x1_ema", "x1_routing", "x1_median", "x1_norm"]
+    # El núcleo y sus controles son los de la campaña, para heredar sus ajustes.
+    cores = ("titans_mac", "titans_mac_frozen", "titans_mac_disabled")
+    for model in cores:
+        assert document["models"][model] == previous["models"][model]
+    assert document["recipes"]["core"] == previous["recipes"]["core"]
+
+    def changed(left, right):
+        one, two = flat_specification(document, left), flat_specification(document, right)
+        keys = (one.keys() | two.keys()) - {"predictor_changes"}
+        return {key for key in keys if one.get(key) != two.get(key)}
+
+    scale = flat_specification(document, "titans_mac")["predictor.learning_scale"]
+    assert scale["zero_median"] is True
+    expected = {
+        "titans_mac_ema999": ("x1_ema", "recipe.weight_average", {"decay": 0.999}),
+        "titans_mac_ema9998": ("x1_ema", "recipe.weight_average", {"decay": 0.9998}),
+        "titans_mac_qroute": (
+            "x1_routing",
+            "predictor.quantile_routing",
+            {"median_from_tails": False, "encoder_from_spreads": False},
+        ),
+        "titans_mac_qroute_median": (
+            "x1_routing",
+            "predictor.quantile_routing",
+            {"median_from_tails": False, "encoder_from_spreads": True},
+        ),
+        "titans_mac_qroute_encoder": (
+            "x1_routing",
+            "predictor.quantile_routing",
+            {"median_from_tails": True, "encoder_from_spreads": False},
+        ),
+        "titans_mac_nozm": (
+            "x1_median",
+            "predictor.learning_scale",
+            {**scale, "zero_median": False},
+        ),
+        "titans_mac_nonorm": ("x1_norm", "predictor.memory_residual_layer_norm", False),
+    }
+    assert set(document["models"]) == set(cores) | set(expected)
+    for model, (tier, field, value) in expected.items():
+        entry = document["models"][model]
+        assert entry == {
+            **previous["models"]["titans_mac"],
+            "recipe": entry["recipe"],
+            "tier": tier,
+        }
+        assert changed(model, "titans_mac") == {field}, model
+        assert flat_specification(document, model)[field] == value
+    # La v10 ya mide el promedio de pesos con otra retención: aquí solo cambia ese número.
+    for model, decay in (("titans_mac_ema999", 0.999), ("titans_mac_ema9998", 0.9998)):
+        assert ChronologicalRecipe(**_recipe(document, model)).weight_average == {"decay": decay}
+    assert flat_specification(previous, "titans_mac_ema")["recipe.weight_average"] == {
+        "decay": 0.995
+    }
+    declared = json.loads(
+        (ROOT / "configs/experiments/dgx-us-campaign-v10-ext1-contrasts.json").read_text()
+    )["controls"]
+    assert set(declared) == set(document["models"]) - {"titans_mac"}
+    assert set(declared.values()) == {"titans_mac"}
+    jobs = campaign.plan(document, "mars_titan")
+    assert len({job.model for job in jobs if job.tier.startswith("x1_")}) == 7
