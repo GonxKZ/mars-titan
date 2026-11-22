@@ -1,0 +1,33 @@
+{
+  "schema_version": 1,
+  "kind": "posttraining_write_twins_v1",
+  "final_test_access": false,
+  "description": "Prueba causal «misma red, evaluada sin escribir» sobre la v10 (estado todos-3d10a30f, recetas con accumulation_rows de 8.192), declarada el 22 de noviembre de 2026 a las 07:00 UTC, cuando ninguno de los seis ajustes del origen 2013 había terminado (titans_mac y titans_mac_frozen de la semilla 42 estaban en pausa y los de 43 y 44 no estaban en la cola). Mismas celdas, paridad, estadísticos, lecturas y potencia que posttraining-write-twins-v8.json, con las tres semillas como réplicas: el IC de cada celda se promedia sesión a sesión entre semillas antes del error HAC (la unidad es la sesión) y el informe da además N, D, A e I de cada semilla. La orden falla con la ruta del primer ajuste que no esté terminado. El código del modelo de la v10 es el de esta rama (sin cambios entre 6c19d20c y 3d10a30f en titans_walk_forward, carried_predictions, checkpoints, financial_run, los modelos de Titans ni la cabeza de cuantiles).",
+  "market": "US",
+  "min_assets": 30,
+  "pairs": [
+    {
+      "online": "titans_mac",
+      "frozen": "titans_mac_frozen"
+    }
+  ],
+  "runs": [
+    {
+      "state": "v10",
+      "origin": 2013,
+      "seeds": [
+        42,
+        43,
+        44
+      ]
+    }
+  ],
+  "analysis": {
+    "primary": "evaluation",
+    "secondary": [
+      "validation",
+      "calibration"
+    ],
+    "confidence": 0.95
+  }
+}
