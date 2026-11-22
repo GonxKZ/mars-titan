@@ -241,6 +241,14 @@ def _first(mask):
     return int(np.flatnonzero(mask)[0])
 
 
+def emission_order(table):
+    """Activo, mercado e instante de cada fila emitida y su orden (mercado, instante, activo)."""
+    asset = _strings(table["asset_id"])
+    market = _strings(table["market"])
+    moments = table["prediction_at"].cast(pa.int64()).to_numpy()
+    return asset, market, moments, np.lexsort((asset, moments, market))
+
+
 def load_split(table, maturity, name):
     """Ordenar un tramo emitido, comprobarlo y unirle la madurez de las etiquetas de la vista.
 
@@ -261,10 +269,7 @@ def load_split(table, maturity, name):
     columns = needed + (QUANTILE_COLUMNS if has_quantiles else ())
     for column in columns:
         _require(table[column].null_count == 0, f"La columna {column} de {name} tiene nulos")
-    asset = _strings(table["asset_id"])
-    market = _strings(table["market"])
-    moments = table["prediction_at"].cast(pa.int64()).to_numpy()
-    order = np.lexsort((asset, moments, market))
+    asset, market, moments, order = emission_order(table)
     asset, market, moments = asset[order], market[order], moments[order].astype(np.int64)
     target = table["target"].to_numpy().astype(np.float64)[order]
     prediction = table["prediction"].to_numpy().astype(np.float64)[order]
@@ -750,6 +755,13 @@ def checked_study(document):
         ),
         "Cada ejecución declara estado, origen y semilla",
     )
+    checked_memories(document, "tabular_lab_cache_v1", "la caché del laboratorio tabular")
+    _checked_addendum(document.get("addendum"))
+    return document
+
+
+def checked_memories(document, source, where):
+    """Modelos, claves, rejillas y placebo: lo común al estudio de memorias y a sus órganos."""
     models = document["models"]
     _require(
         isinstance(models, list)
@@ -762,12 +774,12 @@ def checked_study(document):
     _require(
         isinstance(inputs, dict)
         and set(inputs) == {"source", "columns", "projection_dim", "projection_seed"}
-        and inputs["source"] == "tabular_lab_cache_v1"
+        and inputs["source"] == source
         and inputs["columns"] == 92
         and type(inputs["projection_dim"]) is int
         and inputs["projection_dim"] >= 1
         and type(inputs["projection_seed"]) is int,
-        "Las claves salen de la caché del laboratorio tabular (92 columnas) con su proyección",
+        f"Las claves salen de {where} ({source}, 92 columnas) con su proyección",
     )
     asset = document["asset"]
     _require(
@@ -803,7 +815,6 @@ def checked_study(document):
         type(document["placebo_seed"]) is int and document["placebo_seed"] >= 0,
         "La semilla del placebo es un entero no negativo",
     )
-    _checked_addendum(document.get("addendum"))
     return document
 
 
@@ -1002,7 +1013,9 @@ def _best(grid, keys):
     return sorted(keys, key=lambda key: (-score(key), key))[0]
 
 
-def memory_study(splits, predictions, keys, section, *, quantiles=None, threads=1, log=print):
+def memory_study(
+    splits, predictions, keys, section, *, quantiles=None, threads=1, log=print, organs=False
+):
     """Memoria por activo, memoria por vecinos y su combinación sobre varios modelos.
 
     `splits` son los tramos de referencia (las filas son las mismas para todos los modelos),
@@ -1011,6 +1024,11 @@ def memory_study(splits, predictions, keys, section, *, quantiles=None, threads=
     Con `addendum` en la sección se miden además los vecinos de otros activos, la memoria como
     corrección de los cinco cuantiles (`quantiles` {modelo: cuantiles de las filas unidas}) y
     la memoria por activo que empieza vacía en la evaluación.
+
+    Con `organs` devuelve además, para los órganos de memoria, la lectura de cada brazo en las
+    filas unidas (la combinada con la semivida y los pesos elegidos en calibración y la fija del
+    laboratorio), su elección, la dispersión de la predicción en cada sesión y el estado de su
+    memoria por activo al terminar, junto al estado de la memoria por vecinos de todos los modelos.
     """
     addendum = _checked_addendum(section.get("addendum")) or {}
     _require(
@@ -1039,8 +1057,9 @@ def memory_study(splits, predictions, keys, section, *, quantiles=None, threads=
         clip=section["neighbours"]["clip"],
     )
     started = time.monotonic()
+    neighbour_memory = nrm.NeighbourMemory(config, models=len(models), threads=threads)
     reads, placebo_reads = nrm.replay(
-        nrm.NeighbourMemory(config, models=len(models), threads=threads),
+        neighbour_memory,
         markets=joined["markets"],
         prediction_at=joined["prediction_at"],
         matures_at=joined["matures_at"],
@@ -1086,17 +1105,17 @@ def memory_study(splits, predictions, keys, section, *, quantiles=None, threads=
             prediction=prediction,
             **{k: v for k, v in joined.items()},
         )
-        return out[0.0], out[1.0] - out[0.0]
+        return out[0.0], out[1.0] - out[0.0], memory
 
-    results, series = {}, []
+    results, series, exported = {}, [], {}
     for j, model in enumerate(models):
         started = time.monotonic()
         prediction = matrix[:, j]
         z = None
         variants = {"parent": ics(prediction)}
-        asset = {}
+        asset, memories = {}, {}
         for half_life in section["asset"]["half_lives"]:
-            z, asset[half_life] = asset_reads(prediction, half_life, False)
+            z, asset[half_life], memories[half_life] = asset_reads(prediction, half_life, False)
         asset_grid = {
             (h, k): ics(z + k * asset[h])
             for h in section["asset"]["half_lives"]
@@ -1108,7 +1127,7 @@ def memory_study(splits, predictions, keys, section, *, quantiles=None, threads=
         variants["asset_lab"] = asset_grid[lab]
         variants["asset_selected"] = asset_grid[chosen_asset]
         for name, (h, k) in (("asset_placebo_lab", lab), ("asset_placebo_selected", chosen_asset)):
-            _, fake = asset_reads(prediction, h, True)
+            _, fake, _ = asset_reads(prediction, h, True)
             variants[name] = ics(z + k * fake)
         near = _zscore_sessions(reads[:, j], slices)
         fake_near = _zscore_sessions(placebo_reads[:, j], slices)
@@ -1125,6 +1144,27 @@ def memory_study(splits, predictions, keys, section, *, quantiles=None, threads=
         variants["combined"] = combo[both]
         variants["combined_asset_only"] = combo[only_asset]
         variants["combined_neighbours_only"] = combo[only_near]
+        if organs:
+            exported[model] = dict(
+                dispersion=_session_dispersion(prediction, slices),
+                arms=dict(
+                    combined=dict(
+                        signal=both[0] * own + both[1] * near,
+                        selection=dict(
+                            selected_on="calibration",
+                            half_life=chosen_asset[0],
+                            kappa_asset=both[0],
+                            kappa_neighbours=both[1],
+                        ),
+                        state=memories[chosen_asset[0]].export(),
+                    ),
+                    asset_lab=dict(
+                        signal=lab[1] * asset[lab[0]],
+                        selection=dict(selected_on="lab", half_life=lab[0], kappa=lab[1]),
+                        state=memories[lab[0]].export(),
+                    ),
+                ),
+            )
         extra_selection, extra_pairs, extra = {}, [], {}
         if other_reads is not None:
             other = _zscore_sessions(other_reads[:, j], slices)
@@ -1245,6 +1285,9 @@ def memory_study(splits, predictions, keys, section, *, quantiles=None, threads=
             value=pa.array(value, type=pa.float64()),
         )
     )
+    if organs:
+        organ = dict(models=exported, order=models, neighbours=neighbour_memory.export())
+        return results, table, organ
     return results, table
 
 
