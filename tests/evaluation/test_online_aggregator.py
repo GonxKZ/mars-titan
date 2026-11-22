@@ -1220,3 +1220,20 @@ def test_the_operable_factor_grid_is_declared_and_its_boundaries_are_flagged(tmp
     assert set(wide["operable"]["scales"].values()) <= {0.001, 0.01, 0.1, 1.0, 10.0, 100.0}
     with pytest.raises(ValueError, match="rejilla de factores"):
         oa.run_aggregation(runs, operable=True, min_assets=30, operable_scales=(1.0, 0.5))
+
+
+def test_each_aggregator_returns_its_prediction_of_every_split_in_the_aligned_order(tmp_path):
+    runs = _make_synthetic_runs(tmp_path, n_assets=35, seed=41)
+    result = oa.run_aggregation(runs, min_assets=30)
+    for name in ("rank_average", "ridge_cov_active"):
+        entry = result["aggregators"][name]
+        assert set(entry["split_predictions"]) == set(result["splits"])
+        np.testing.assert_array_equal(
+            entry["split_predictions"]["evaluation"], entry["evaluation_prediction"]
+        )
+        for split, prediction in entry["split_predictions"].items():
+            aligned = result["aligned"][split]
+            assert len(prediction) == len(aligned["target"])
+            ics = oa.session_rank_ic(aligned, prediction, min_assets=30)
+            assert ics == entry["split_session_ics"][split]
+    assert "split_predictions" not in oa._json_safe_report(result)["aggregators"]["rank_average"]

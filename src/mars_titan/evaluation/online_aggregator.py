@@ -2087,6 +2087,7 @@ def run_aggregation(
         exp_map = abs_exposure_map if agg_name == "session_abstention" else None
         per_split_summary = {}
         per_split_ics = {}
+        per_split_predictions = {}
         eval_pred = None
         eval_w = None
         eval_abst = None
@@ -2103,6 +2104,7 @@ def run_aggregation(
             )
             per_split_ics[sp] = ics_sp
             per_split_summary[sp] = summarize_session_dict(ics_sp)
+            per_split_predictions[sp] = pred_sp
             if sp == "evaluation":
                 eval_pred, eval_w, eval_abst = pred_sp, w_sp, abst_sp
         if agg_name == "rank_average":
@@ -2131,6 +2133,9 @@ def run_aggregation(
             evaluation_weights=eval_w,
             evaluation_abstained=eval_abst,
             evaluation_session_ics=per_split_ics["evaluation"],
+            # Predicción emitida en cada tramo, en el orden de las filas alineadas del tramo.
+            split_predictions=per_split_predictions,
+            split_session_ics=per_split_ics,
         )
         if agg_name == "session_abstention":
             entry["abstention_diagnostics"] = abs_diag_eval
@@ -2247,6 +2252,8 @@ def _json_safe_report(result: dict[str, Any]) -> dict[str, Any]:
                 "evaluation_weights",
                 "evaluation_abstained",
                 "evaluation_session_ics",
+                "split_predictions",
+                "split_session_ics",
             )
         }
         for name, entry in result["aggregators"].items()
