@@ -272,3 +272,249 @@ def test_an_independent_implementation_gives_the_same_features():
             assert other.shape == mine.shape and other.dtype == np.float32
             worst = np.maximum(worst, np.abs(mine.astype(float) - other.astype(float)).max(axis=0))
     assert worst.max() < 2e-4, dict(zip(names, worst.round(6).tolist(), strict=True))
+
+
+# --- long_horizon_v3: los 46 rasgos de la v2 más dieciséis de precio y volumen ---------------
+
+ADDED_V3 = (
+    "days_since_high_21",
+    "days_since_high_63",
+    "days_since_high_252",
+    "days_since_low_63",
+    "days_since_low_252",
+    "up_move_share_cc_14",
+    "up_move_share_oc_14",
+    "up_day_fraction_cc_21",
+    "up_day_fraction_cc_63",
+    "up_day_fraction_oc_63",
+    "price_volume_corr_63",
+    "volume_cv_21",
+    "move_weighted_volume_cv_cc_21",
+    "move_weighted_volume_cv_oc_21",
+    "candle_upper_shadow_5",
+    "candle_upper_shadow_21",
+)
+
+
+def rough_prices(rows=420, seed=7):
+    """Precios con sesiones sin volumen, velas sin rango y un tramo de máximos repetidos."""
+    generator = np.random.default_rng(seed)
+    close = 20.0 * np.exp(np.cumsum(generator.normal(0.0, 0.02, rows)))
+    opened = close * np.exp(generator.normal(0.0, 0.01, rows))
+    high = np.maximum(opened, close) * (1.0 + np.abs(generator.normal(0.0, 0.006, rows)))
+    low = np.minimum(opened, close) * (1.0 - np.abs(generator.normal(0.0, 0.006, rows)))
+    volume = np.exp(generator.normal(12.0, 0.6, rows))
+    volume[generator.choice(rows, 12, replace=False)] = 0.0
+    flat = generator.choice(np.arange(5, rows), 6, replace=False)
+    opened[flat] = high[flat] = low[flat] = close[flat]
+    if rows > 320:
+        # Un máximo repetido: el empate lo gana la sesión más reciente.
+        high[300] = high[305] = high[280:320].max() * 1.01
+    sessions = pd.bdate_range("2012-01-02", periods=rows).values.astype("datetime64[D]")
+    return np.column_stack([opened, high, low, close, volume]), sessions
+
+
+def _reference_v3(prices):
+    """Los dieciséis rasgos añadidos, fila a fila y sin vectorizar."""
+    import math
+
+    rows = len(prices)
+    opened, high, low, close, volume = (prices[:, k].tolist() for k in range(5))
+    nan = float("nan")
+    cc = [nan] + [math.log(close[t] / close[t - 1]) for t in range(1, rows)]
+    oc = [math.log(close[t] / opened[t]) for t in range(rows)]
+    upper = []
+    for t in range(rows):
+        span = high[t] - low[t]
+        top = (high[t] - max(opened[t], close[t])) / span if span > 0 else nan
+        upper.append(min(max(top, 0.0), 1.0) if span > 0 else nan)
+
+    def needed(window):
+        return math.ceil(0.75 * window)
+
+    def window_of(series, t, window, first=0):
+        if t - window + 1 < first:
+            return None
+        return series[t - window + 1 : t + 1]
+
+    def since(series, t, window, largest):
+        values = window_of(series, t, window)
+        if values is None:
+            return nan
+        best, age = None, None
+        for back, value in enumerate(reversed(values)):
+            if best is None or (value > best if largest else value < best):
+                best, age = value, back
+        return 2.0 * age / (window - 1) - 1.0
+
+    def share(series, t, window, first):
+        values = window_of(series, t, window, first)
+        if values is None:
+            return nan
+        total = sum(abs(v) for v in values)
+        return 2.0 * sum(max(v, 0.0) for v in values) / total - 1.0 if total > 0 else nan
+
+    def fraction(series, t, window, first):
+        values = window_of(series, t, window, first)
+        if values is None:
+            return nan
+        return 2.0 * sum(v > 0 for v in values) / len(values) - 1.0
+
+    def correlation(left, right, t, window):
+        a, b = window_of(left, t, window), window_of(right, t, window)
+        if a is None:
+            return nan
+        ma, mb = sum(a) / window, sum(b) / window
+        saa = sum((x - ma) ** 2 for x in a)
+        sbb = sum((x - mb) ** 2 for x in b)
+        sab = sum((x - ma) * (y - mb) for x, y in zip(a, b, strict=True))
+        return sab / math.sqrt(saa * sbb) if saa > 0 and sbb > 0 else nan
+
+    def variation(series, t, window, first, neutral):
+        values = window_of(series, t, window, first)
+        if values is None:
+            return nan
+        mean = sum(values) / window
+        if mean <= 0:
+            return nan
+        deviation = math.sqrt(sum((v - mean) ** 2 for v in values) / (window - 1))
+        return math.log(deviation / mean / neutral) if deviation > 0 else nan
+
+    def shadow(t, window):
+        values = window_of(upper, t, window)
+        if values is None:
+            return nan
+        known = [v for v in values if not math.isnan(v)]
+        if len(known) < needed(window):
+            return nan
+        return 4.0 * (sum(known) / len(known) - 0.25)
+
+    log_close = [math.log(c) for c in close]
+    log_volume = [math.log1p(v) for v in volume]
+    moved_cc = [nan] + [abs(cc[t]) * volume[t] for t in range(1, rows)]
+    moved_oc = [abs(oc[t]) * volume[t] for t in range(rows)]
+    table = np.full((rows, len(ADDED_V3)), np.nan)
+    for t in range(rows):
+        table[t] = [
+            since(high, t, 21, True),
+            since(high, t, 63, True),
+            since(high, t, 252, True),
+            since(low, t, 63, False),
+            since(low, t, 252, False),
+            share(cc, t, 14, 1),
+            share(oc, t, 14, 0),
+            fraction(cc, t, 21, 1),
+            fraction(cc, t, 63, 1),
+            fraction(oc, t, 63, 0),
+            correlation(log_close, log_volume, t, 63),
+            variation(volume, t, 21, 0, 0.5),
+            variation(moved_cc, t, 21, 1, 1.0),
+            variation(moved_oc, t, 21, 0, 1.0),
+            shadow(t, 5),
+            shadow(t, 21),
+        ]
+    return np.clip(np.where(np.isfinite(table), table, 0.0), -8.0, 8.0).astype(np.float32)
+
+
+def test_the_third_version_keeps_the_second_bit_for_bit_and_adds_sixteen_columns():
+    assert technical.NAMES_V3[:46] == technical.NAMES_V2 and technical.NAMES_V3[46:] == ADDED_V3
+    assert technical.VERSIONS[technical.NAME_V3] is technical.NAMES_V3
+    _, sessions, table, market = market_prices(seed=5)
+    rough, days = rough_prices()
+    # Con el factor de mercado y sin él, y con precios limpios y con huecos.
+    for prices, when, factor in ((table, sessions, (sessions, market)), (rough, days, ())):
+        second = technical.technical_features(prices, when, *factor, version=technical.NAME_V2)
+        third = technical.technical_features(prices, when, *factor, version=technical.NAME_V3)
+        assert third.shape == (len(prices), 62) and third.dtype == np.float32
+        assert np.array_equal(third[:, :46], second)
+        assert np.isfinite(third).all() and np.abs(third).max() <= technical.LIMIT
+        # Las dos primeras versiones no cambian al existir la tercera.
+        first = technical.technical_features(prices, when, *factor)
+        assert np.array_equal(second[:, :30], first)
+
+
+def test_the_third_version_matches_a_row_by_row_reference():
+    prices, sessions = rough_prices()
+    third = technical.technical_features(prices, sessions, version=technical.NAME_V3)
+    expected = _reference_v3(prices)
+    for column, name in enumerate(ADDED_V3):
+        np.testing.assert_allclose(
+            third[:, 46 + column], expected[:, column], rtol=2e-5, atol=2e-6, err_msg=name
+        )
+    # Ninguna columna está muerta: con historia suficiente todas varían.
+    assert all(third[260:, 46 + column].std() > 1e-3 for column in range(len(ADDED_V3)))
+
+
+def test_the_third_version_is_causal_row_by_row():
+    prices, sessions = rough_prices()
+    whole = technical.technical_features(prices, sessions, version=technical.NAME_V3)
+    for cut in (30, 63, 252, 300, 419):
+        changed = prices.copy()
+        changed[cut:] *= np.random.default_rng(cut).uniform(0.5, 2.0, (len(prices) - cut, 5))
+        changed[cut:, 1] = np.maximum(changed[cut:, 1], changed[cut:, [0, 3]].max(axis=1))
+        changed[cut:, 2] = np.minimum(changed[cut:, 2], changed[cut:, [0, 3]].min(axis=1))
+        again = technical.technical_features(changed, sessions, version=technical.NAME_V3)
+        assert np.array_equal(again[:cut], whole[:cut]), cut
+        prefix = technical.technical_features(
+            prices[:cut], sessions[:cut], version=technical.NAME_V3
+        )
+        assert np.array_equal(prefix, whole[:cut]), cut
+
+
+def test_the_third_version_is_zero_without_history_range_or_volume():
+    prices, sessions = rough_prices(rows=300)
+    third = technical.technical_features(prices, sessions, version=technical.NAME_V3)
+    index = {name: 46 + column for column, name in enumerate(ADDED_V3)}
+    # Sin la ventana completa no hay valor.
+    assert (third[:20, index["days_since_high_21"]] == 0).all()
+    assert (third[:251, index["days_since_high_252"]] == 0).all()
+    assert (third[:14, index["up_move_share_cc_14"]] == 0).all()
+    assert (third[:13, index["up_move_share_oc_14"]] == 0).all()
+    assert (
+        third[20, index["days_since_high_21"]] != 0 or third[21, index["days_since_high_21"]] != 0
+    )
+    # Precio constante y sin volumen: ni velas, ni movimientos, ni variabilidad.
+    still = np.tile(np.array([10.0, 10.0, 10.0, 10.0, 0.0]), (300, 1))
+    quiet = technical.technical_features(still, sessions, version=technical.NAME_V3)
+    for name in (
+        "up_move_share_cc_14",
+        "price_volume_corr_63",
+        "volume_cv_21",
+        "candle_upper_shadow_21",
+    ):
+        assert (quiet[:, index[name]] == 0).all(), name
+    # El máximo de hoy es la distancia cero: −1 tras centrar.
+    rising = np.column_stack([np.linspace(10, 20, 300)] * 4 + [np.full(300, 1e6)])
+    rising[:, 1] += 0.5
+    rising[:, 2] -= 0.5
+    up = technical.technical_features(rising, sessions, version=technical.NAME_V3)
+    assert (up[251:, index["days_since_high_252"]] == -1.0).all()
+    assert (up[251:, index["days_since_low_252"]] == 1.0).all()
+
+
+def test_the_third_version_needs_three_quarters_of_each_window():
+    _, sessions, prices, _ = market_prices(seed=11)
+    prices, sessions = prices[:300].copy(), sessions[:300]
+    # Velas con sombra superior distinta de un cuarto del rango, todas válidas.
+    prices[:, 1] = np.maximum(prices[:, 0], prices[:, 3]) * 1.02
+    index = {name: 46 + column for column, name in enumerate(ADDED_V3)}
+    clean = technical.technical_features(prices, sessions, version=technical.NAME_V3)
+    assert (clean[4:, index["candle_upper_shadow_5"]] != 0).all()
+    # Dos velas sin rango en cinco sesiones: quedan tres sombras válidas y hacen falta cuatro.
+    holed = prices.copy()
+    for row in (200, 202):
+        holed[row, :4] = holed[row, 3]
+    third = technical.technical_features(holed, sessions, version=technical.NAME_V3)
+    assert (third[202:205, index["candle_upper_shadow_5"]] == 0).all()
+    assert third[206, index["candle_upper_shadow_5"]] != 0
+    # Una sola vela sin rango sí deja valor: cuatro de cinco.
+    single = prices.copy()
+    single[200, :4] = single[200, 3]
+    one = technical.technical_features(single, sessions, version=technical.NAME_V3)
+    assert (one[200:205, index["candle_upper_shadow_5"]] != 0).all()
+    # Con seis precios no válidos de catorce el reparto de subidas no se calcula (hacen falta once).
+    broken = prices.copy()
+    broken[150:156, 3] = np.nan
+    gaps = technical.technical_features(broken, sessions, version=technical.NAME_V3)
+    assert gaps[160, index["up_move_share_oc_14"]] == 0
+    assert gaps[175, index["up_move_share_oc_14"]] != 0
