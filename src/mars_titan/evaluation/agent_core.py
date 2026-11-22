@@ -577,8 +577,7 @@ def known_rows(state, origin, tables, view):
     maturity = pilots._maturity(Path(state) / "cohorts" / str(origin) / "manifest.json", view)
     matures = {}
     for split, table in tables.items():
-        if split not in maturity:
-            continue
+        _require(split in maturity, f"La vista {view[:12]} no da la madurez de {split}")
         rows = maturity[split]
         lookup = dict(
             zip(

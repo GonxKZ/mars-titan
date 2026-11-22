@@ -345,3 +345,93 @@ def test_the_four_measures_of_an_origin(tmp_path, monkeypatch, capsys):
     capsys.readouterr()
     assert ac.main(_arguments(paths, output)) == 0
     assert "ya calculado" in capsys.readouterr().out
+
+
+def test_known_rows_reads_the_screening_features_of_the_decision_day(tmp_path, monkeypatch):
+    names = [
+        "has_market_model",
+        "alpha_percent",
+        "log_dollar_volume_21",
+        "log_volatility_252",
+        "volatility_21_over_252",
+    ]
+    days = np.array(["2018-01-02", "2018-01-03", "2018-01-04"], dtype="datetime64[D]")
+    features = {
+        "US/A": np.array(
+            [[1, 2.0, 10.0, -3.0, 0.5], [0, 4.0, 11.0, -3.1, 0.4], [1, -1.0, 12.0, -3.2, 0.3]]
+        ),
+        "US/B": np.array(
+            [[1, 1.0, 20.0, -2.0, 0.1], [1, 3.0, 21.0, -2.1, 0.2], [1, 5.0, 22.0, -2.2, 0.3]]
+        ),
+    }
+    hour = 21 * 3_600_000_000
+    instant = {d: START + i * DAY + hour for i, d in enumerate(("d0", "d1", "d2"))}
+    instant["fuera"] = START + 9 * DAY + hour
+    alpha_of = {
+        ("US/A", "d0"): 0.02,
+        ("US/A", "d1"): np.nan,
+        ("US/A", "d2"): -0.01,
+        ("US/B", "d0"): 0.01,
+        ("US/B", "d1"): 0.03,
+        ("US/B", "d2"): 0.05,
+    }
+    by_instant = {(a, instant[d]): v for (a, d), v in alpha_of.items()}
+
+    class Module:
+        NAMES = names
+
+        @staticmethod
+        def technical_features(prices, days_, *factors):
+            return prices
+
+    class Base:
+        def __init__(self, state, origin):
+            self.module, self.prepared, self.factors = Module, tmp_path, {}
+
+        def _table(self, path):
+            return features[f"{path.parent.parent.name}/{path.parent.name}"], days
+
+        def known(self, asset, instants):
+            return np.array([by_instant.get((asset, int(t)), np.nan) for t in instants]), None
+
+    rows = dict(
+        validation=[("US/A", "d0"), ("US/B", "d1")],
+        calibration=[("US/A", "d1"), ("US/B", "d2"), ("US/A", "fuera")],
+        evaluation=[("US/B", "d0"), ("US/A", "d2")],
+    )
+    tables = {
+        split: pa.table(
+            dict(
+                asset_id=[a for a, _ in items],
+                prediction_at=pa.array([instant[d] for _, d in items], pa.timestamp("us", "UTC")),
+            )
+        )
+        for split, items in rows.items()
+    }
+    maturity = {
+        split: pa.table(
+            dict(
+                asset_id=table.column("asset_id"),
+                prediction_at=table.column("prediction_at"),
+                matures_at=pa.array(
+                    [t + DAY for t in table.column("prediction_at").cast(pa.int64()).to_pylist()],
+                    pa.timestamp("us", "UTC"),
+                ),
+            )
+        )
+        for split, table in tables.items()
+    }
+    monkeypatch.setattr(og, "_screening", lambda: type("Tool", (), dict(KnownOffset=Base)))
+    monkeypatch.setattr(pilots, "_maturity", lambda manifest, view: maturity)
+    alpha, liquidity, volatility, matures = ac.known_rows(tmp_path, YEAR, tables, "v" * 64)
+    np.testing.assert_array_equal(alpha["validation"], [0.02, 0.03])
+    np.testing.assert_array_equal(alpha["calibration"], [np.nan, 0.05, np.nan])
+    np.testing.assert_array_equal(alpha["evaluation"], [0.01, -0.01])
+    np.testing.assert_array_equal(liquidity["calibration"], [11.0, 22.0, np.nan])
+    np.testing.assert_allclose(volatility["validation"], [-2.5, -1.9])
+    np.testing.assert_allclose(volatility["evaluation"], [-1.9, -2.9])
+    assert np.isnan(volatility["calibration"][2])
+    assert matures["evaluation"].tolist() == [instant["d0"] + DAY, instant["d2"] + DAY]
+    del maturity["evaluation"]
+    with pytest.raises(ValueError, match="no da la madurez de evaluation"):
+        ac.known_rows(tmp_path, YEAR, tables, "v" * 64)
