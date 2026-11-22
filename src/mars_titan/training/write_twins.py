@@ -39,6 +39,16 @@ declarada, el intervalo de Fieller no está acotado y el cociente no se interpre
 Cada tramo lleva además el perfil de N, D, A e I por trimestre natural de sus sesiones y su
 pendiente por año (mínimos cuadrados con error HAC de la puntuación), para ver si la ventaja de
 escribir decae a lo largo del recorrido.
+
+`reinicios` (GPU) añade a un par con sus gemelos hechos los brazos con reinicio de la memoria
+rápida, aprobados por el coordinador el 22 de noviembre de 2026: el estado elegido de `online`
+evaluado escribiendo en la evaluación, pero desde el estado inicial de la memoria al abrirse la
+decisión y sin calcular el calentamiento (R0), o además volviendo a ese estado cada 63 instantes
+medidos (R63). Se reinicia todo: pesos rápidos, momentos y cola de cada flujo, y el contexto de
+mercado. Antes de ningún brazo, la calibración se regenera sin reinicio con el mismo código y
+tiene que salir bit a bit igual a la emitida; si no, la orden se detiene. `analizar-reinicios`
+(CPU) da, en la evaluación, R − oo y R − of por sesión, con su media HAC, su perfil por trimestre
+y su pendiente: R0 − oo es lo que aportan las escrituras del calentamiento.
 """
 
 from __future__ import annotations
@@ -69,6 +79,9 @@ JOBS = {
     "frozen_fit_online_eval": ("frozen", "mac_online"),
 }
 CELLS = ("oo", "of", "ff", "fo")
+# Brazos con reinicio: periodo en instantes medidos (None: solo al abrirse la decisión).
+RESETS = {"R0": None, "R63": 63}
+RESET_PARITY = "parity_online_calibration"
 YEAR_US = 365.25 * 86_400_000_000
 FIRST_ORIGIN, LAST_ORIGIN = 2005, 2023
 _DECLARATION = {
@@ -275,7 +288,7 @@ def _aside(destination):
     raise ValueError(f"Demasiados trabajos interrumpidos junto a {destination}")
 
 
-def _finished(destination, evaluated):
+def _finished(destination, evaluated, partitions=PARTITIONS, memory_reset=None):
     """Recibo de un trabajo ya terminado de esta prueba, con sus tablas comprobadas, o None."""
     path = destination / "carry.json"
     if not path.is_file():
@@ -285,7 +298,10 @@ def _finished(destination, evaluated):
     _require(
         receipt.get("status") == "completed"
         and receipt.get("regenerated") is True
-        and (switch is None if evaluated is None else switch["evaluated_variant"] == evaluated),
+        and (switch is None if evaluated is None else switch["evaluated_variant"] == evaluated)
+        and set(receipt["predictions"]) == set(partitions)
+        and receipt.get("memory_reset")
+        == (None if memory_reset is None else memory_reset.record()),
         f"{destination} no es un trabajo terminado de esta prueba",
     )
     for record in receipt["predictions"].values():
@@ -431,6 +447,136 @@ def _twins(declaration, states, output, digest, numerics, device, log, carry):
                 )
                 atomic_json(folder / "twins.json", summary)
                 summaries.append(summary)
+    return summaries
+
+
+def _pair(declaration, online):
+    pairs = [pair for pair in declaration["pairs"] if pair["online"] == online]
+    _require(pairs, f"El par {online} no está declarado")
+    return pairs[0]
+
+
+def run_resets(
+    declaration, states, output, online, arms, *, device="cuda:0", log=print, carry=None
+):
+    """Brazos con reinicio de un par con sus gemelos hechos, tras una paridad sin reinicio."""
+    from . import prediction_regeneration as regeneration
+    from . import titans_walk_forward as wf
+    from .window_indices import SHARED_INDICES_ENV
+
+    declaration = checked_declaration(declaration)
+    pair = _pair(declaration, online)
+    _require(
+        isinstance(arms, list | tuple)
+        and arms
+        and all(arm in RESETS for arm in arms)
+        and len(set(arms)) == len(arms),
+        f"Los brazos con reinicio son {sorted(RESETS)}, sin repetir",
+    )
+    output = Path(output)
+    digest = _saved_declaration(output, declaration)
+    numerics = regeneration.strict_fp32()
+    carry = carry or wf.carry_titans
+    # Los brazos leen los índices de entrada que ya compartieron los gemelos.
+    shared = os.environ.get(SHARED_INDICES_ENV)
+    if shared is None:
+        os.environ[SHARED_INDICES_ENV] = str(output / "indices")
+    try:
+        return _resets(
+            declaration, states, output, pair, arms, digest, numerics, device, log, carry
+        )
+    finally:
+        if shared is None:
+            os.environ.pop(SHARED_INDICES_ENV, None)
+
+
+def _resets(declaration, states, output, pair, arms, digest, numerics, device, log, carry):
+    from . import prediction_regeneration as regeneration
+    from . import titans_walk_forward as wf
+    from .financial_run import MemoryReset
+
+    plan = [(RESET_PARITY, ("calibration",), None)] + [
+        (f"reset_{arm}", ("evaluation",), MemoryReset(RESETS[arm])) for arm in arms
+    ]
+    summaries = []
+    for run in declaration["runs"]:
+        for seed in run["seeds"]:
+            folders, reports, view = anchors(states, run, seed, pair)
+            # Sin los gemelos con su paridad exacta no hay celdas oo y of con que comparar.
+            _cells(states, output, run, seed, pair)
+            folder = output / _stem(run, seed, pair)
+            jobs = {}
+            for name, partitions, reset in plan:
+                destination = folder / name
+                receipt = _finished(destination, None, partitions, reset)
+                started, computed = time.perf_counter(), receipt is None
+                if computed:
+                    if destination.exists():
+                        log(f"{folder.name}/{name}: apartado en {_aside(destination).name}")
+                    _reset_peak(device)
+                    with wf.unfused_attention():
+                        receipt = carry(
+                            folders["online"],
+                            view,
+                            view,
+                            destination,
+                            device=device,
+                            regenerate=True,
+                            evaluated_variant=None,
+                            partitions=partitions,
+                            memory_reset=reset,
+                        )
+                    log(f"{folder.name}/{name}: {time.perf_counter() - started:.0f} s")
+                else:
+                    log(f"{folder.name}/{name}: ya hecho")
+                job = dict(
+                    anchor=str(folders["online"]),
+                    partitions=list(partitions),
+                    memory_reset=None if reset is None else reset.record(),
+                    receipt_sha256=sha256(destination / "carry.json"),
+                    seconds=receipt.get("seconds"),
+                    peak=_peak(device) if computed else None,
+                )
+                if reset is None:
+                    originals = regeneration.originals(folders["online"], reports["online"])
+                    comparison = regeneration.compare(
+                        {partition: originals[partition] for partition in partitions},
+                        destination,
+                        receipt,
+                    )
+                    job["parity"] = comparison
+                    if not comparison["identical"]:
+                        item = comparison["partitions"][partitions[0]]
+                        detail = first_difference(item["original"], item["regenerated"])
+                        atomic_json(folder / "resets-parity-failure.json", dict(job, first=detail))
+                        raise ValueError(
+                            f"La paridad sin reinicio de {folders['online']} falla en "
+                            f"{partitions[0]}: {detail}. No se lanza ningún brazo con reinicio"
+                        )
+                else:
+                    metrics = receipt["predictions"]["evaluation"]["metrics"]
+                    job.update(
+                        {key: metrics[key] for key in ("memory_resets", "measured_instants")}
+                    )
+                jobs[name] = job
+            summary = dict(
+                schema_version=1,
+                kind=f"{KIND}_resets",
+                declaration_sha256=digest,
+                state=run["state"],
+                origin=run["origin"],
+                seed=seed,
+                pair=pair,
+                arms=list(arms),
+                view_sha256=reports["online"]["request"]["view_sha256"],
+                jobs=jobs,
+                device=device,
+                numerics=numerics,
+                final_test_opened=False,
+                finished_at_utc=datetime.now(UTC).isoformat(),
+            )
+            atomic_json(folder / "resets.json", summary)
+            summaries.append(summary)
     return summaries
 
 
@@ -712,6 +858,89 @@ def analyze(declaration, states, output):
     return report
 
 
+def reset_contrasts(ic, arms):
+    """N y, por brazo con reinicio, R − oo (lo que pierde sin lo escrito antes) y R − of."""
+    contrasts = dict(N=ic["oo"] - ic["of"])
+    for arm in arms:
+        contrasts[f"{arm}-oo"] = ic[arm] - ic["oo"]
+        contrasts[f"{arm}-of"] = ic[arm] - ic["of"]
+    return contrasts
+
+
+def analyze_resets(declaration, states, output, online):
+    """Brazos con reinicio frente a oo y of en la evaluación: medias HAC, trimestres y pendiente."""
+    declaration = checked_declaration(declaration)
+    pair = _pair(declaration, online)
+    output = Path(output)
+    digest = _saved_declaration(output, declaration)
+    confidence = declaration["analysis"]["confidence"]
+    z = NormalDist().inv_cdf(0.5 + confidence / 2)
+    series, blocks, instants, arms = {}, [], [], None
+    for run in declaration["runs"]:
+        seeds = {}
+        for seed in run["seeds"]:
+            cells = _cells(states, output, run, seed, pair)
+            folder = output / _stem(run, seed, pair)
+            path = folder / "resets.json"
+            _require(path.is_file(), f"Faltan los brazos con reinicio de {folder}")
+            summary = json.loads(path.read_text(encoding="utf-8"))
+            _require(
+                summary["jobs"][RESET_PARITY]["parity"]["identical"] is True,
+                f"La paridad sin reinicio de {folder} no es exacta: no se interpreta nada",
+            )
+            present = [arm for arm in RESETS if f"reset_{arm}" in summary["jobs"]]
+            _require(
+                present and (arms is None or present == arms),
+                f"{folder} no tiene los mismos brazos con reinicio que las demás semillas",
+            )
+            arms = present
+            columns = dict(
+                oo=cells["oo"], of=cells["of"], **{arm: folder / f"reset_{arm}" for arm in arms}
+            )
+            values, reference = {}, None
+            for name, source in columns.items():
+                ics, sample, target = session_ics(source, "evaluation", declaration["min_assets"])
+                if reference is None:
+                    reference = (sample, target)
+                _require(
+                    sample == reference[0] and np.array_equal(target, reference[1]),
+                    f"Las filas de evaluation de {source} no son las de las demás celdas",
+                )
+                values[name] = ics
+            seeds[seed] = values
+        common = set.intersection(*(set(item) for v in seeds.values() for item in v.values()))
+        _require(common, f"{run['state']}/{run['origin']} no tiene sesiones comunes")
+        keys = sorted(common)
+        for name in seeds[run["seeds"][0]]:
+            averaged = np.mean([[v[name][key] for key in keys] for v in seeds.values()], axis=0)
+            series.setdefault(name, []).append(averaged)
+        blocks += [(run["state"], run["origin"], key[0]) for key in keys]
+        instants += [key[1] for key in keys]
+    ic = {name: np.concatenate(values) for name, values in series.items()}
+    contrasts = reset_contrasts(ic, arms)
+    statistics = {name: _mean_statistics(values, blocks, z) for name, values in contrasts.items()}
+    quarters, trend = profile_statistics(contrasts, blocks, instants, z)
+    report = dict(
+        schema_version=1,
+        kind=f"{KIND}_resets_report",
+        declaration_sha256=digest,
+        final_test_opened=False,
+        pair=pair,
+        partition="evaluation",
+        arms=arms,
+        min_assets=declaration["min_assets"],
+        confidence=confidence,
+        sessions=len(blocks),
+        ic={name: float(values.mean()) for name, values in ic.items()},
+        contrasts=statistics,
+        readings={name: _reading(value, z) for name, value in statistics.items()},
+        quarters=quarters,
+        trend=trend,
+    )
+    atomic_json(output / f"resets-{online}.json", report)
+    return report
+
+
 def _states(values):
     states = {}
     for value in values:
@@ -725,18 +954,27 @@ def _states(values):
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     commands = parser.add_subparsers(dest="command", required=True)
-    for name in ("gemelos", "analizar"):
+    for name in ("gemelos", "analizar", "reinicios", "analizar-reinicios"):
         command = commands.add_parser(name)
         command.add_argument("--declaration", type=Path, required=True)
         command.add_argument("--state", action="append", required=True, help="NOMBRE=RUTA")
         command.add_argument("--output", type=Path, required=True)
-        if name == "gemelos":
+        if name in ("gemelos", "reinicios"):
             command.add_argument("--device", default="cuda:0", choices=("cpu", "cuda:0"))
+        if name in ("reinicios", "analizar-reinicios"):
+            command.add_argument("--pair", required=True, help="modelo online del par")
+        if name == "reinicios":
+            command.add_argument("--arm", action="append", required=True, choices=sorted(RESETS))
     args = parser.parse_args(argv)
     declaration = json.loads(args.declaration.read_text(encoding="utf-8"))
     states = _states(args.state)
     if args.command == "gemelos":
         run_twins(declaration, states, args.output, device=args.device)
+    elif args.command == "reinicios":
+        run_resets(declaration, states, args.output, args.pair, args.arm, device=args.device)
+    elif args.command == "analizar-reinicios":
+        report = analyze_resets(declaration, states, args.output, args.pair)
+        print(json.dumps(report["contrasts"], ensure_ascii=False, indent=1)[:4000])
     else:
         report = analyze(declaration, states, args.output)
         print(json.dumps(report["pairs"], ensure_ascii=False, indent=1)[:4000])

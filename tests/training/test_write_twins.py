@@ -21,6 +21,7 @@ from mars_titan.training import titans_walk_forward as wf
 from mars_titan.training import write_twins as twins
 from mars_titan.training.window_indices import SHARED_INDICES_ENV
 from tests.training.test_titans_walk_forward import (  # noqa: F401
+    _compare,
     base,
     learning_doubles_module,
 )
@@ -173,6 +174,105 @@ def test_a_parity_that_is_not_bit_exact_stops_before_any_twin(
         twins.analyze(declaration(), states, output)
 
 
+# --- Brazos con reinicio de la memoria rápida ----------------------------------------------------
+
+
+def test_reset_arms_follow_the_twins_and_a_bit_exact_parity_without_reset(
+    base,  # noqa: F811
+    tmp_path,
+    capsys,
+):
+    states = dict(t=campaign_state(base, tmp_path / "state"))
+    output, logs = tmp_path / "twins", []
+    with pytest.raises(ValueError, match="Faltan los gemelos"):
+        twins.run_resets(declaration(), states, output, "titans_mac", ["R0"], device="cpu")
+    twins.run_twins(declaration(), states, output, device="cpu")
+    (summary,) = twins.run_resets(
+        declaration(), states, output, "titans_mac", ["R0", "R63"], device="cpu", log=logs.append
+    )
+    jobs = summary["jobs"]
+    assert list(jobs) == [twins.RESET_PARITY, "reset_R0", "reset_R63"]
+    parity = jobs[twins.RESET_PARITY]["parity"]
+    assert parity["identical"] is True and set(parity["partitions"]) == {"calibration"}
+    assert jobs["reset_R0"]["memory_reset"]["every"] is None
+    assert jobs["reset_R63"]["memory_reset"]["every"] == 63
+    # La evaluación del fixture tiene menos de 63 instantes medidos: R63 es R0.
+    assert jobs["reset_R63"]["memory_resets"] == jobs["reset_R0"]["memory_resets"] == 1
+    folder = output / "t--2023--seed-42--titans_mac"
+    assert _compare(folder / "reset_R0", folder / "reset_R63", "evaluation")
+    assert summary["numerics"]["float32_matmul_precision"] == "highest"
+    assert SHARED_INDICES_ENV not in os.environ
+    assert all(job["peak"]["host_max_rss_bytes"] > 0 for job in jobs.values())
+    report = twins.analyze_resets(declaration(), states, output, "titans_mac")
+    saved = json.loads((output / "resets-titans_mac.json").read_text())
+    assert saved == json.loads(json.dumps(report))
+    assert report["arms"] == ["R0", "R63"] and report["partition"] == "evaluation"
+    contrasts, ic = report["contrasts"], report["ic"]
+    assert set(contrasts) == {"N", "R0-oo", "R0-of", "R63-oo", "R63-of"}
+    assert contrasts["R0-oo"]["mean"] == contrasts["R63-oo"]["mean"]
+    assert contrasts["R0-oo"]["mean"] == pytest.approx(ic["R0"] - ic["oo"])
+    assert contrasts["R0-of"]["mean"] == pytest.approx(
+        contrasts["R0-oo"]["mean"] + contrasts["N"]["mean"]
+    )
+    factorial = twins.analyze(declaration(), states, output)["pairs"]["titans_mac"]
+    assert contrasts["N"]["mean"] == factorial["partitions"]["evaluation"]["contrasts"]["N"]["mean"]
+    assert sum(item["sessions"] for item in report["quarters"].values()) == report["sessions"]
+    assert set(report["trend"]) == set(contrasts)
+    run, pair = declaration()["runs"][0], declaration()["pairs"][0]
+    cells = twins._cells(states, output, run, 42, pair)
+    for name, source in dict(oo=cells["oo"], of=cells["of"], R0=folder / "reset_R0").items():
+        ics, _, _ = twins.session_ics(source, "evaluation", 3)
+        assert ic[name] == pytest.approx(np.mean(list(ics.values())))
+    # La orden repite sin rehacer los trabajos terminados.
+    path = tmp_path / "declaration.json"
+    path.write_text(json.dumps(declaration()))
+    common = ["--declaration", str(path), "--state", f"t={states['t']}", "--output", str(output)]
+    arguments = ["--pair", "titans_mac", "--arm", "R0", "--device", "cpu"]
+    assert twins.main(["reinicios", *common, *arguments]) == 0
+    assert capsys.readouterr().out.count("ya hecho") == 2
+    assert twins.main(["analizar-reinicios", *common, "--pair", "titans_mac"]) == 0
+    assert json.loads((output / "resets-titans_mac.json").read_text())["arms"] == ["R0"]
+    for pair, arms, message in (
+        ("titans_mac_frozen", ["R0"], "par"),
+        ("titans_mac", ["R7"], "brazos"),
+        ("titans_mac", ["R0", "R0"], "brazos"),
+        ("titans_mac", [], "brazos"),
+    ):
+        with pytest.raises(ValueError, match=message):
+            twins.run_resets(declaration(), states, output, pair, arms, device="cpu")
+
+
+def test_a_parity_without_reset_that_is_not_bit_exact_stops_before_any_reset(
+    base,  # noqa: F811
+    tmp_path,
+):
+    states = dict(t=campaign_state(base, tmp_path / "state"))
+    output = tmp_path / "twins"
+    twins.run_twins(declaration(), states, output, device="cpu")
+
+    def flipped(anchor, anchor_view, view, output, **options):
+        receipt = wf.carry_titans(anchor, anchor_view, view, output, **options)
+        if options["memory_reset"] is None:
+            path = output / "calibration-predictions.parquet"
+            table = pq.read_table(path)
+            values = table["prediction"].to_numpy().copy()
+            values[0] = np.nextafter(values[0], np.inf)
+            column = table.schema.get_field_index("prediction")
+            pq.write_table(table.set_column(column, "prediction", pa.array(values)), path)
+        return receipt
+
+    with pytest.raises(ValueError, match="sin reinicio .* falla en calibration"):
+        twins.run_resets(
+            declaration(), states, output, "titans_mac", ["R0"], device="cpu", carry=flipped
+        )
+    folder = output / "t--2023--seed-42--titans_mac"
+    failure = json.loads((folder / "resets-parity-failure.json").read_text())
+    assert failure["first"]["column"] == "prediction" and failure["first"]["differing_rows"] == 1
+    assert not (folder / "reset_R0").exists()
+    with pytest.raises(ValueError, match="Faltan los brazos con reinicio"):
+        twins.analyze_resets(declaration(), states, output, "titans_mac")
+
+
 class _CudaAllocator:
     """El contrato del asignador de PyTorch en la GPU, comprobado en la GB10 con torch 2.14: sus
     máximos no se pueden poner a cero antes de inicializar CUDA («Invalid device argument»), y
@@ -319,6 +419,23 @@ def test_the_factorial_contrasts_separate_writing_from_fitting():
     assert twins.partition_statistics(flat, [("t", 2013, "US")] * 251, 0.95)["readings"]["N"] == (
         "not_detected"
     )
+
+
+def test_the_reset_contrasts_compare_each_arm_with_writing_and_with_not_writing():
+    ic = dict(
+        oo=np.array([0.3, 0.1]),
+        of=np.array([0.1, 0.0]),
+        R0=np.array([0.2, 0.4]),
+        R63=np.array([0.0, 0.1]),
+    )
+    contrasts = twins.reset_contrasts(ic, ["R0", "R63"])
+    assert list(contrasts) == ["N", "R0-oo", "R0-of", "R63-oo", "R63-of"]
+    np.testing.assert_allclose(contrasts["N"], [0.2, 0.1])
+    np.testing.assert_allclose(contrasts["R0-oo"], [-0.1, 0.3])
+    np.testing.assert_allclose(contrasts["R0-of"], [0.1, 0.4])
+    np.testing.assert_allclose(contrasts["R63-oo"], [-0.3, 0.0])
+    np.testing.assert_allclose(contrasts["R63-of"], [-0.1, 0.1])
+    assert list(twins.reset_contrasts(ic, ["R63"])) == ["N", "R63-oo", "R63-of"]
 
 
 def test_seeds_are_averaged_session_by_session_as_replicates():
