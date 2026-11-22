@@ -223,7 +223,7 @@
       "stopping": "validation_plateau",
       "patience": 3,
       "min_delta": 0.0,
-      "max_epochs": 16,
+      "max_epochs": 48,
       "initial_state": "reported"
     },
     "reader": {
@@ -232,7 +232,7 @@
       "stopping": "validation_plateau",
       "patience": 3,
       "min_delta": 0.0,
-      "max_epochs": 12
+      "max_epochs": 24
     }
   },
   "execution": {

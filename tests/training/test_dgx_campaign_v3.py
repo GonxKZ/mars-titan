@@ -759,10 +759,20 @@ def test_the_campaigns_with_the_median_gain_only_add_it_and_their_controls(name,
 def test_the_campaigns_with_session_ranks_in_the_base_keep_each_contrast(name, origin):
     path, source = ROOT / "configs/experiments" / name, ROOT / "configs/experiments" / origin
     document, previous = campaign.load_declaration(path)[0], json.loads(source.read_text())
-    own = {"description", "source_declaration_sha256", "models", "tiers", "recipes"}
+    own = {"description", "source_declaration_sha256", "models", "tiers", "recipes", "stopping"}
     assert set(document) == set(previous)
     for key in set(previous) - own:
         assert document[key] == previous[key], key
+    # La regla de parada es la misma meseta de validación con otro tope: en el origen 2013 de
+    # la v8 el de 16 épocas cortó dos ajustes que seguían mejorando. El tope queda como
+    # salvaguarda que no llega a decidir.
+    caps = dict(fit=(16, 48), reader=(12, 24))
+    assert set(document["stopping"]) == set(previous["stopping"]) == set(caps)
+    for stage, (before, after) in caps.items():
+        rule, old = document["stopping"][stage], previous["stopping"][stage]
+        assert (old["max_epochs"], rule["max_epochs"]) == (before, after)
+        assert {**rule, "max_epochs": before} == old
+        assert rule["stopping"] == "validation_plateau" and rule["patience"] == 3
     assert document["source_declaration_sha256"] == hashlib.sha256(source.read_bytes()).hexdigest()
     assert document["tiers"] == [
         "r4_noranks" if tier == "r4_ranks" else tier for tier in previous["tiers"]

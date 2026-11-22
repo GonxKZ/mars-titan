@@ -1350,6 +1350,11 @@ ejecutarse:
   el padre la declara (sin ella, la identidad es la de antes) y exige la sesión completa.
 - **Estado del punto de control.** `titans_mac_disabled_h128` fallaba al guardar su estado por
   el tope de 512 MiB, que sube a 2 GiB.
+- **La meseta de validación decide cuándo parar.** La regla es la de la v8 (parar tras tres
+  épocas sin mejorar el IC de validación y emitir la mejor), pero su tope de 16 épocas cortó
+  en el origen 2013 dos de 67 ajustes que seguían mejorando (`titans_mac_frozen_noic`, con su
+  mejor época en la última, y `titans_mac_t8`). El tope sube a 48 épocas en los ajustes y de
+  12 a 24 en los lectores: queda como salvaguarda y deja de decidir.
 
 ### Herramientas nuevas
 
