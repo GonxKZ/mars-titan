@@ -20,9 +20,11 @@ laboratorio tabular y el plan del relevo del coordinador) se citan como suyas y 
   - El arranque de los gemelos en CUDA.
   - Las del programa (sección 4).
   - El resto de la auditoría no se confirma o es una propiedad del diseño declarado (sección 7.2).
-- **En curso (GPU).** La prueba causal «misma red, evaluada sin escribir» (sección 6.5).
-  - El mecanismo, la orden, el análisis, las declaraciones y el parche del relevo están verificados.
-  - El par base de la v8 se ejecuta en la ventana del coordinador. Con el ritmo medido hasta las 08:25 UTC, un recorrido pasa de los 20 min con la máquina cargada (≈ 50 min proyectados; hipótesis hasta que acabe el primero), así que el par con rangos queda para la noche.
+- **Medido (gemelos, v8, 2013, semilla 42; sección 6.5).** Escribir en evaluación con la misma red:
+  - par base: N = +0,00003 (t 0,6);
+  - par con rangos: N = +0,00113 (t 3,5), el 17 % de la ventaja, sin decaer en 2013. Es también el par sin ganancia de la v10.
+- **Medido (órganos, v10, 2013, semilla 42; sección 5.4).** Los 8 brazos mejoran a su padre en evaluación: de +0,0014 a +0,0031 (t 1,6–2,9); 3 de 8 pasan Holm.
+- **En curso.** El par de la v10 en GPU; en CPU, el trío sin ganancia y lo operable.
 - **Hipótesis, no medido.**
   - El coste de las memorias por origen en la campaña (≈ 1 h 20 min de CPU).
   - Cualquier efecto en otros orígenes, semillas o en la v10.
@@ -242,6 +244,44 @@ Con 251 sesiones de evaluación de un origen y una semilla, el EE HAC de un incr
 En los gemelos, el MDE esperado de D es ≈ 0,0030 (par base) y ≈ 0,0047 (par con rangos). Se calculó solo con validación y calibración; no se usa potencia observada.
 
 
+### 5.4 Órganos de memoria sobre la v10 (medido, 2013, semilla 42)
+
+Cada modelo y semilla emite dos brazos fila a fila (`memory_organs emitir`, 2c0d7bc8), en una raíz con la forma de un estado de campaña:
+- **combined**: z + κa·u_activo + κv·u_vecinos, con h, κa y κv elegidos en la calibración del propio origen;
+- **asset_lab**: h = 21 y κ = 0,1 fijos.
+
+La señal se suma a la predicción y a sus cinco cuantiles, multiplicada por la dispersión de la predicción en la sesión. Las claves salen de la vista de cada origen (9f5efd92). La criba lee la raíz con `--reference <raíz> --decision-split calibration` (b340d59f).
+
+Evaluación: 251 sesiones; calibración: 61. Contrastes pareados por sesión con t HAC. lightgbm_technical de dgx-us-v4-dbae075f.
+
+| Modelo | Brazo | Elección | IC cal. | IC eval. | − padre, eval. | − lightgbm, eval. | − lightgbm, cal. |
+|---|---|---|---|---|---|---|---|
+| titans_mac | padre | — | +0,1231 | +0,1132 | — | +0,0009 (t +0,5) | +0,0030 (t +0,9) |
+| titans_mac | combined | h 21, κa 0.05, κv 0.1 | +0,1253 | +0,1154 | +0,0023 (t +2,8) | +0,0032 (t +1,6) | +0,0052 (t +1,7) |
+| titans_mac | asset_lab | h 21, κa 0.1 | +0,1238 | +0,1146 | +0,0014 (t +2,3) | +0,0024 (t +1,2) | +0,0037 (t +1,2) |
+| titans_mac_frozen | padre | — | +0,1161 | +0,1117 | — | -0,0005 (t -0,2) | -0,0040 (t -1,8) |
+| titans_mac_frozen | combined | h 21, κa 0.1, κv 0.1 | +0,1197 | +0,1149 | +0,0031 (t +2,5) | +0,0026 (t +1,5) | -0,0004 (t -0,2) |
+| titans_mac_frozen | asset_lab | h 21, κa 0.1 | +0,1174 | +0,1137 | +0,0019 (t +2,9) | +0,0014 (t +0,8) | -0,0027 (t -1,4) |
+| titans_mac_disabled | padre | — | +0,1123 | +0,1100 | — | -0,0023 (t -1,0) | -0,0078 (t -3,6) |
+| titans_mac_disabled | combined | h 21, κa 0.1, κv 0.2 | +0,1176 | +0,1128 | +0,0029 (t +1,6) | +0,0006 (t +0,3) | -0,0025 (t -0,7) |
+| titans_mac_disabled | asset_lab | h 21, κa 0.1 | +0,1140 | +0,1118 | +0,0019 (t +2,8) | -0,0004 (t -0,2) | -0,0061 (t -2,7) |
+| cross_asset_attention | padre | — | +0,1229 | +0,1152 | — | +0,0030 (t +1,6) | +0,0027 (t +1,3) |
+| cross_asset_attention | combined | h 21, κa 0.05, κv 0.1 | +0,1256 | +0,1175 | +0,0023 (t +2,5) | +0,0053 (t +3,0) | +0,0055 (t +2,2) |
+| cross_asset_attention | asset_lab | h 21, κa 0.1 | +0,1235 | +0,1169 | +0,0016 (t +2,4) | +0,0046 (t +2,6) | +0,0034 (t +1,5) |
+
+Lectura:
+- **Frente al padre.** Los 8 brazos lo mejoran en evaluación: de +0,0014 a +0,0031 (t 1,6–2,9). Con Holm al 5 % pasan 3 de 8. Los contrastes están muy correlacionados, así que Holm es conservador.
+- **Frente a lightgbm_technical.** Solo cross_asset_attention lo supera con t ≥ 2: combined +0,0053 (t 3,0) y asset_lab +0,0046 (t 2,6). El núcleo titans_mac con combined queda en +0,0032 (t 1,6).
+- **Calibración de combined.** Es dentro de muestra: h y las κ se eligen ahí entre 80 combinaciones. El sesgo de selección esperado ronda 2,4 errores estándar (cota de Bailey y López de Prado), así que solo cuenta la evaluación.
+- **Placebos** (no se emiten). Placebo − padre es negativo: de −0,0008 a −0,0044 (t −3,8 a −8,9). Por eso la lectura es brazo − padre y no brazo − placebo.
+- **Comprobaciones.**
+  - El IC de la emisión fila a fila es el del estudio (|Δ| máx. 0).
+  - Filas, muestras y objetivos de cada tabla son los del padre.
+  - Cambiar las etiquetas desde la sesión 20 no cambia ninguna señal hasta su cierre (prueba de causalidad).
+  - Las claves se escalan solo con las filas de ajuste.
+- **Coste.** 32 min 14 s, con la GPU y pruebas en paralelo. La pasada por vecinos son 1.583 s y el RSS máximo 2,6 GiB. La pasada por vecinos bajó de 691 a 242 s, medido en validación con 3 modelos.
+- **Relevo.** Lo lanza la línea `orden|…` de `memory_organs linea`. La declaración v2 (55cfc250) añade el trío sin ganancia en la misma pasada.
+
 ## 6. Etapas con GPU (fase 4)
 
 ### 6.1 Qué queda preparado
@@ -358,13 +398,35 @@ más.
 
 **Ejecución.** Código del modelo de 114bcf4e (el que ajustó la v8) más el parche, en la GB10 con el MPS de la campaña, CUBLAS :4096:8 y FP32 estricto. La unidad tiene MemoryMax 12G y CPUQuota 200 %, y se congela mientras la presión de producción supera 2.
 
-**Estado a las 08:25 UTC.** El par base de la v8 se ejecuta en la ventana de GPU que abrió el coordinador.
-- 07:27Z: el primer lanzamiento falló a los 30 s sin leer datos (e9ff43ba).
-- 07:37Z: segundo lanzamiento. Los índices de las tres particiones tardaron ~5 min de CPU. Lo paré por presión de producción.
-- 07:49Z: tercer lanzamiento. La preparación de entradas en CPU tardó ≈ 10 min. Después, la validación de la paridad en línea ≈ 10 min y la calibración ≈ 14 min.
-- La unidad recibía de 0,15 a 0,46 núcleos con CPUWeight 15 en una máquina con carga media 70 sobre 20 núcleos. Con el visto bueno del coordinador, a las 08:19Z subí CPUWeight a 100 sin tocar la cuota ni la memoria, y pasó a 0,64–0,9 núcleos.
-- RSS anónimo ≈ 7 GiB (más 3,7 GiB de caché de páginas recuperable); GPU 2,5 GiB.
-- Con más de 20 min por recorrido, el par con rangos queda para la noche (criterio del coordinador).
+**Resultados** (medido; v8, 2013, semilla 42; paridad bit a bit en los cuatro anclas; t HAC entre paréntesis).
+
+| Par | Tramo | N | D | A | I | TTWS [Fieller 95 %] | Pendiente de N por año |
+|---|---|---|---|---|---|---|---|
+| base | evaluación | +0,00003 (0,58) | +0,00133 (1,23) | +0,00168 (2,67) | −0,00165 (−2,56) | no interpretable | +0,00009 (0,60) |
+| base | calibración | +0,00018 (3,16) | +0,00523 (2,79) | +0,00415 (4,55) | −0,00397 (−4,29) | 0,034 [0,011; 0,125] | — |
+| rangos | evaluación | +0,00113 (3,52) | +0,00649 (5,24) | +0,00233 (4,36) | −0,00120 (−2,34) | 0,175 [0,078; 0,313] | −0,00006 (−0,06) |
+| rangos | calibración | +0,00205 (5,63) | +0,00680 (3,15) | +0,00391 (5,07) | −0,00187 (−2,38) | 0,30 [0,16; 0,80] | — |
+
+- **Holm declarado** sobre las dos N de evaluación: pasa la del par con rangos (p 0,0004); la del base no (p 0,56).
+- **N del par con rangos por trimestre de 2013:** +0,0008 (1,5), +0,0016 (2,0), +0,0015 (2,3) y +0,0006 (1,1). No decae.
+- **Lectura:**
+  - En el par base, escribir en evaluación no aporta: N tiene un MDE de 0,00013, y la ventaja de la red en línea está en sus parámetros.
+  - En el par con rangos, escribir aporta el 17 % de la ventaja.
+  - A > 0 en los dos pares: escribir ayuda también a una red ajustada sin escritura.
+  - I < 0: el ajuste con escritura ya incorpora parte de lo que aporta escribir.
+- **El par sin ganancia de la v10 es este par con rangos:**
+  - los estados elegidos coinciden tensor a tensor (60 de 60);
+  - comparten receta (72f06e0f) y vista (f5f4d478);
+  - las tres tablas de predicciones tienen la misma huella.
+  - No se repite en GPU.
+- **Coste:** recorridos de 3.782, 2.360, 2.651 y 2.037 s (base) y 3.407, 2.381, 1.583 y 1.270 s (rangos). RSS 10 GB y GPU reservada 4,6 GB.
+- **En marcha:** el par de la v10 (titans_mac, receta con ganancia), desde las 18:25Z.
+- **Brazos con reinicio** (ae7eb3fa, f611f7a5; aprobados por el coordinador):
+  - R0 evalúa desde el estado inicial de la memoria y del contexto al abrirse la decisión, sin calcular el calentamiento.
+  - R63 vuelve además a ese estado cada 63 instantes medidos.
+  - Antes de ningún brazo, la calibración se regenera sin reinicio y debe salir bit a bit igual.
+  - Regla: R0 y R63 sobre el par cuya N decaiga en evaluación (pendiente negativa con |t| > 2). Si no decae ninguno, solo R0 sobre el par con rangos: responde si las escrituras del calentamiento aportan algo.
+  - Coste estimado (hipótesis): 25–32 min de GPU.
 
 
 ## 7. Documentos de Gemini y auditoría del segundo enjambre
