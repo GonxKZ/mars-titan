@@ -267,8 +267,13 @@ class SessionICTerm:
                     liquidity=liquidity,
                     power=self.liquidity_power,
                 )
+            if offset.device != point.device:
+                raise ValueError(
+                    "El desplazamiento conocido debe estar en el dispositivo del punto"
+                )
             # Lo operable: la etiqueta y su predicción con el desplazamiento conocido sumado.
             offset = offset.detach().to(point.dtype)
+            require_finite(offset, "El desplazamiento conocido debe ser finito")
             point, target = point + offset, target + offset
         correlations = session_correlations(
             point,
@@ -311,8 +316,9 @@ def parse_session_ic_term(raw):
 
 def known_offset(values, scale):
     """Desplazamiento conocido de cada fila: su columna por la escala, y cero si no es finita."""
-    values = values.detach()
-    return torch.where(torch.isfinite(values), values * scale, torch.zeros_like(values))
+    # La finitud se comprueba después de escalar: un valor finito puede desbordar al multiplicarlo.
+    scaled = values.detach() * scale
+    return torch.where(torch.isfinite(scaled), scaled, torch.zeros_like(scaled))
 
 
 def liquidity_weights(values, power):

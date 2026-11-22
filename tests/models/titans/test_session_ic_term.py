@@ -505,3 +505,21 @@ def test_invalid_plain_weights_are_rejected(wrong):
         SessionICTerm(**wrong)
     with pytest.raises(ValueError):
         parse_session_ic_term(dict(weight=1.0, minimum_rows=8, **wrong))
+
+
+def test_the_known_offset_is_zero_where_the_scaled_value_overflows():
+    # Finito en FP32 y fuera de rango al multiplicar por la escala: antes salía infinito.
+    column = torch.tensor([1e38, -1e38, 1.5, float("nan"), float("inf")], dtype=torch.float32)
+    result = known_offset(column, 100.0)
+    assert torch.isfinite(result).all()
+    assert result.tolist() == pytest.approx([0.0, 0.0, 150.0, 0.0, 0.0])
+
+
+def test_an_offset_that_is_not_finite_is_refused_by_the_term():
+    point, target, sessions = sample()
+    term = SessionICTerm(minimum_rows=5, **SHIFT)
+    for wrong in (float("inf"), float("nan")):
+        offset = offsets()
+        offset[3] = wrong
+        with pytest.raises(ValueError, match="desplazamiento"):
+            term.term(point, target, sessions, offset=offset)
