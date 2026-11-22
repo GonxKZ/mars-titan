@@ -156,6 +156,27 @@ def test_sampled_median_keeps_the_drawn_head_and_only_scales_its_output():
     assert torch.equal(scalar.head.bias, reference.head.bias)
 
 
+def test_the_paired_copy_moves_parameters_and_leaves_each_predictor_its_own_scales():
+    """Afirmación del enjambre 2 comprobada: `copy_paired_parameters` no copia los buffers de
+    `learning_scale` ni `head.output_scale`. En la campaña cada predictor recibe las mismas
+    estadísticas antes de emparejarse, así que allí no cambia nada. Un gemelo de un estado ya
+    ajustado carga el estado completo (`titans_walk_forward._switched_parameters`)."""
+    declared = dict(DECLARED, zero_median=False)
+    source, _ = build(learning_scale=declared, fitted=False)
+    target, _ = build("mac_frozen", learning_scale=declared, fitted=False)
+    config = source.config.learning_scale
+    source.set_learning_statistics(statistics(config, label=0.02))
+    target.set_learning_statistics(statistics(config, label=0.06, seed=4))
+    receipt = copy_paired_parameters(source.eval(), target.eval())
+    parameters = dict(target.named_parameters())
+    assert all(torch.equal(value, parameters[name]) for name, value in source.named_parameters())
+    mine, theirs = dict(source.named_buffers()), dict(target.named_buffers())
+    differing = sorted(name for name in mine if not torch.equal(mine[name], theirs[name]))
+    assert "head.output_scale" in differing
+    assert any(name.startswith("learning_scaler.") for name in differing)
+    assert not set(differing) & set(receipt["copied_parameters"])
+
+
 def test_prepare_refuses_until_the_fit_statistics_arrive():
     model, batch = build(fitted=False)
     with pytest.raises(ValueError, match="Faltan las estadísticas"):

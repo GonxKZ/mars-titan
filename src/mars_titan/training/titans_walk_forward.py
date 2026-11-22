@@ -56,6 +56,7 @@ from mars_titan.models.titans.financial import (
     VARIANTS,
     FinancialConfig,
     FinancialPredictor,
+    _tensor_digest,
     copy_paired_parameters,
 )
 from mars_titan.models.titans.financial_inputs import FINAL_TEST_US
@@ -841,6 +842,15 @@ def carried_memory_policy(warmup_months):
     )
 
 
+def _portable(extra):
+    """Contrato del predictor sin las huellas de la vista y del índice de entrada ni su modo."""
+    configuration = dict(extra["configuration"])
+    inputs = dict(configuration.pop("inputs"))
+    inputs.pop("source_sha256")
+    inputs.pop("view_sha256")
+    return canonical(dict(extra, configuration=dict(configuration, inputs=inputs), training=0))
+
+
 def _carried_parameters(model, target):
     """Cargar el estado elegido del ancla en el predictor de la ventana trasladada.
 
@@ -848,20 +858,104 @@ def _carried_parameters(model, target):
     dimensiones, política, contexto, variante, semilla y arquitectura deben coincidir.
     """
     expected = target.get_extra_state()
-
-    def portable(extra):
-        configuration = dict(extra["configuration"])
-        inputs = dict(configuration.pop("inputs"))
-        inputs.pop("source_sha256")
-        inputs.pop("view_sha256")
-        return canonical(dict(extra, configuration=dict(configuration, inputs=inputs), training=0))
-
     anchor = model["_extra_state"]
     _require(
-        portable(anchor) == portable(expected),
+        _portable(anchor) == _portable(expected),
         "El estado del ancla no corresponde a la entrada ni a la arquitectura del predictor",
     )
     target.load_state_dict({**model, "_extra_state": dict(expected, training=anchor["training"])})
+
+
+# Gemelos de escritura: la misma red ajustada, evaluada con la memoria que escribe o sin escribir.
+WRITE_POLICIES = ("mac_online", "mac_frozen")
+_WRITE_FIELDS = {"variant": set(WRITE_POLICIES), "memory_mode": {"online", "frozen"}}
+
+
+def _without_write_policy(value):
+    """Contrato sin los dos campos que deciden si la memoria escribe: variante y modo de MAC."""
+    if isinstance(value, dict):
+        return {
+            key: (
+                "write_policy"
+                if key in _WRITE_FIELDS and item in _WRITE_FIELDS[key]
+                else _without_write_policy(item)
+            )
+            for key, item in value.items()
+        }
+    if isinstance(value, (list, tuple)):
+        return [_without_write_policy(item) for item in value]
+    return value
+
+
+def _switched_payload(model, expected):
+    """Estado elegido con los contratos del gemelo, que solo cambian en cómo escribe la memoria.
+
+    Los tensores pasan tal cual. Cada contrato (`_extra_state`) del gemelo sustituye al del
+    estado si los dos coinciden salvo en la variante y el modo de MAC. El del predictor admite
+    además, como un traslado, otras huellas de la vista y del índice de entrada, y conserva el
+    modo train/eval del estado guardado.
+    """
+    _require(
+        set(model) == set(expected), "El estado elegido y el gemelo no tienen las mismas entradas"
+    )
+    payload = {}
+    for key, value in model.items():
+        if not key.endswith("_extra_state"):
+            payload[key] = value
+            continue
+        wanted = expected[key]
+        if key == "_extra_state":
+            wanted = dict(wanted, training=value["training"])
+            same = _portable(_without_write_policy(value)) == _portable(
+                _without_write_policy(wanted)
+            )
+        else:
+            same = _without_write_policy(value) == _without_write_policy(wanted)
+        _require(same, f"El contrato {key} cambia algo más que la escritura de la memoria")
+        payload[key] = wanted
+    return payload
+
+
+def _switched_parameters(model, target, fitted):
+    """Cargar el estado elegido de `fitted` en el gemelo `target`, que solo cambia cómo escribe.
+
+    `copy_paired_parameters` no sirve: copia parámetros iniciales de un emparejamiento y deja a
+    cada predictor sus buffers, como las estadísticas de `learning_scale` y `head.output_scale`.
+    Aquí se cargan todos los tensores del estado, parámetros y buffers, y se comprueba que el
+    gemelo los conserva byte a byte. Devuelve el recibo de la carga.
+    """
+    evaluated = target.config.variant
+    _require(
+        fitted != evaluated and {fitted, evaluated} == set(WRITE_POLICIES),
+        "El gemelo de escritura va de mac_online a mac_frozen o al revés",
+    )
+    payload = _switched_payload(model, target.state_dict())
+    target.load_state_dict(payload)
+    loaded = target.state_dict()
+    tensors = {
+        name: _tensor_digest(value)
+        for name, value in loaded.items()
+        if isinstance(value, torch.Tensor)
+    }
+    _require(
+        tensors.keys() == {name for name, value in model.items() if isinstance(value, torch.Tensor)}
+        and all(_tensor_digest(model[name]) == digest for name, digest in tensors.items()),
+        "El gemelo no conserva los bytes del estado elegido",
+    )
+    target.verify_parameter_identity()
+    buffers = {name for name, _ in target.named_buffers()}
+    return dict(
+        schema_version=1,
+        fitted_variant=fitted,
+        evaluated_variant=evaluated,
+        tensors=len(tensors),
+        tensors_sha256=hashlib.sha256(canonical(tensors).encode()).hexdigest(),
+        buffers=sorted(name for name in tensors if name in buffers),
+        rewritten_contracts=sorted(
+            key for key in model if key.endswith("_extra_state") and model[key] != payload[key]
+        ),
+        parameter_id=target._parameter_id,
+    )
 
 
 def _new_destination(output, protected):
@@ -885,6 +979,7 @@ def carry_titans(
     stop=None,
     modality_ablation=None,
     regenerate=False,
+    evaluated_variant=None,
 ):
     """Predecir una ventana posterior con el estado elegido en la ventana ancla.
 
@@ -893,7 +988,9 @@ def carry_titans(
     `modality_ablation` predice solo la evaluación, también en la propia ventana del ancla,
     y el calentamiento y el tramo leen las mismas entradas ablacionadas, así que la memoria
     rápida también ve la ausencia. Con `regenerate` repite la validación, la calibración y
-    la evaluación de la propia ventana del ancla.
+    la evaluación de la propia ventana del ancla. Con `evaluated_variant`, solo junto a
+    `regenerate`, esa repetición usa la otra política de escritura (el gemelo `mac_frozen` de un
+    ajuste `mac_online` o al revés) con todos los tensores del estado elegido sin cambios.
     """
     require_learning_allowed("la predicción trasladada de Titans-MAC")
     from .carried_predictions import (
@@ -909,6 +1006,10 @@ def carry_titans(
     started = time.perf_counter()
     anchor, anchor_view, view, output = (Path(v) for v in (anchor, anchor_view, view, output))
     _require(device in ("cpu", "cuda:0"), "El dispositivo debe ser cpu o cuda:0 explícitos")
+    _require(
+        evaluated_variant is None or (regenerate and modality_ablation is None),
+        "El gemelo de escritura solo repite la propia ventana del ancla, sin ablación",
+    )
     report, report_sha = read_manifest(anchor / "run.json", 16 * 1024**2)
     _require(
         report.get("kind") == KIND
@@ -924,6 +1025,17 @@ def carry_titans(
     _verify(anchor, report)
     identity = report["identity"]
     document, request = identity["recipe"], identity["request"]
+    variant = request["variant"] if evaluated_variant is None else evaluated_variant
+    if evaluated_variant is not None:
+        _require(
+            request["variant"] != evaluated_variant
+            and {request["variant"], evaluated_variant} == set(WRITE_POLICIES),
+            "El gemelo de escritura va de mac_online a mac_frozen o al revés",
+        )
+        _require(
+            request.get("local_control") is None,
+            "El control local C solo existe en mac_online: no tiene gemelo de escritura",
+        )
     options = walk_forward_options(document)
     # El recorrido congelado usa el truncamiento y los bloques del caso elegido en el ancla.
     chronological = case_recipe(document, request.get("search_case"))
@@ -955,7 +1067,7 @@ def carry_titans(
     predictor = FinancialPredictor(
         FinancialConfig(
             sources[partitions[0]].specification(),
-            variant=request["variant"],
+            variant=variant,
             seed=request["seed"],
             **options_predictor,
         ),
@@ -970,7 +1082,11 @@ def carry_titans(
         selection="best",
         expected_sha256=report["checkpoint"]["sha256"],
     )
-    _carried_parameters(state["model"], predictor)
+    if evaluated_variant is None:
+        _carried_parameters(state["model"], predictor)
+        switch = None
+    else:
+        switch = _switched_parameters(state["model"], predictor, request["variant"])
     inference = ChronologicalInference(predictor, chronological)
     predictions = {}
     for name in partitions:
@@ -1015,6 +1131,7 @@ def carry_titans(
         finished_at_utc=datetime.now(UTC).isoformat(),
         **ablation_record(modality_ablation),
         **regeneration_record(regenerate),
+        **({} if switch is None else dict(write_policy=switch)),
     )
     atomic_json(output / "carry.json", receipt)
     return receipt
