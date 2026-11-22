@@ -1,0 +1,31 @@
+{
+  "schema_version": 1,
+  "kind": "posttraining_write_twins_v1",
+  "final_test_access": false,
+  "description": "Enmienda de posttraining-write-twins-v10.json declarada el 22 de noviembre de 2026 a las 10:30 UTC, antes de que exista ningún gemelo de la v10: los ajustes de las semillas 43 y 44 del origen 2013 no están en la cola de la v10 (solo hay runs/titans_mac/2013/seed-42 y su control), así que se mide solo la semilla 42. Todo lo demás es igual a la declaración original: celdas, paridad, estadísticos, lecturas, potencia y código (el de esta rama, sin cambios respecto a 3d10a30f en titans_walk_forward salvo los gemelos, carried_predictions, checkpoints, financial_run, los modelos de Titans ni la cabeza de cuantiles). Sin réplicas de semilla, la inferencia es dentro de la red ajustada, como en la v8. Orden de GPU del coordinador: par base de la v8, par con rangos de la v8 y este par. El análisis da además el perfil por trimestre y la pendiente por año de N, D, A e I.",
+  "market": "US",
+  "min_assets": 30,
+  "pairs": [
+    {
+      "online": "titans_mac",
+      "frozen": "titans_mac_frozen"
+    }
+  ],
+  "runs": [
+    {
+      "state": "v10",
+      "origin": 2013,
+      "seeds": [
+        42
+      ]
+    }
+  ],
+  "analysis": {
+    "primary": "evaluation",
+    "secondary": [
+      "validation",
+      "calibration"
+    ],
+    "confidence": 0.95
+  }
+}
