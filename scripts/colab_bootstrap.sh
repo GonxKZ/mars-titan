@@ -38,6 +38,9 @@ while [ "$#" -gt 0 ]; do
 done
 
 repo="$trabajo/repo"
+# Los guiones de este kit se leen de la copia que contiene a este, que puede ser más nueva
+# que el commit fijado de la campaña.
+herramientas="$(cd "$(dirname "$0")" && pwd)"
 export PATH="$HOME/.local/bin:$PATH"
 
 # Grupos del paquete que entrenan. Los originales (B01 a B07) no hacen falta.
@@ -132,7 +135,8 @@ paso_comprobar() {
     cd "$repo"
     export CUBLAS_WORKSPACE_CONFIG=:4096:8 MARS_TITAN_REQUIRE_CUDA=1 CUDA_VISIBLE_DEVICES=0
     [ -z "$nativo" ] || export MARS_TITAN_EPISODIC_NATIVE="$nativo"
-    uv run --no-sync python scripts/colab_site.py --output "$trabajo/equipo.json" --disk "$trabajo"
+    uv run --no-sync python "$herramientas/colab_site.py" \
+      --output "$trabajo/equipo.json" --disk "$trabajo"
     # Emisión, gradientes y recuperación en CUDA sin pasos de optimizador, y la escritura
     # de memoria fusionada (Triton) frente a su referencia.
     uv run --no-sync pytest -q -rs \

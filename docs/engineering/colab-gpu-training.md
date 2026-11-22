@@ -34,7 +34,7 @@ declaración de la campaña no admite orígenes posteriores a 2023.
 | Guion | Qué hace |
 | --- | --- |
 | `scripts/colab_bootstrap.sh` | Arranque por pasos repetibles: herramientas del sistema y uv, copia fija del código en su commit, entorno bloqueado, restauración de los datos con huellas, enlace episódico nativo y comprobaciones en CUDA |
-| `scripts/colab_campaign.sh` | Lanza `comparison_campaign` con el entorno del repositorio. Exige `MARS_TITAN_SITE`, la etiqueta del equipo |
+| `scripts/colab_campaign.sh` | Lanza `comparison_campaign` con el entorno del repositorio. Exige `MARS_TITAN_SITE`, la etiqueta del equipo. Un commit anterior al kit (el de la campaña v10) se lanza con su `dgx_campaign.sh` y `MARS_TITAN_DGX_PYTHON` apuntando al entorno; sus intentos no llevan la etiqueta, pero sí la GPU, la plataforma y las versiones |
 | `scripts/colab_site.py` | Ficha del equipo: máquina, GPU, controlador, CUDA, cuDNN y versiones. Compara dos fichas y dice en qué difieren |
 | `scripts/colab_sync.py` | Copia coherente del estado de la campaña a Drive mientras los trabajos escriben, y su vuelta a una máquina nueva |
 | `scripts/colab_parity.py` | Puerta de paridad entre equipos: mismas filas y etiquetas, y equivalencia del IC por sesión dentro de un margen |
