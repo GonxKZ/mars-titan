@@ -392,6 +392,25 @@ Están en `docs/research/posttraining-final-fits-design.md`:
 - C2, ajuste fino de recencia con 63 y 252 sesiones frente a no tocar;
 - C3, cabeza de calibración posterior frente a CQR. C3 ya lo mide A2 en CPU.
 
+### 5.10 D, las cribas de la v11: regla fijada antes de sus emisiones
+
+Las dos cribas de la v11 (`todos-7823a21b` y `todos-b443f803`, 2013, semilla 42) aún no tienen
+emisiones. La regla queda escrita antes:
+
+- **Órganos.** Los de la línea de la v11 del plan v36 (`posttraining-memory-organs-v11.json`, en
+  su raíz propia), sin cambios.
+- **Mejor modelo solo de cada criba.** Es el de mayor IC medio por sesión en **calibración**, en la
+  etiqueta (con min_assets 30), entre los modelos de la criba con sus tres tramos completos.
+  - Si dos quedan a menos de 0,0005, se toma el que va antes en la lista de la declaración de
+    órganos de la v11.
+  - La evaluación no interviene.
+- **S1 y S2.** S1 es la media de rangos de ese modelo y lightgbm_technical. S2 es ridge_cov_active
+  con además la señal de su órgano combinado. La declaración es la de S2 cambiando solo el padre
+  y el órgano: las rejillas, la semilla del placebo y los modos quedan iguales.
+- **Lectura.** Es exploratoria y va fuera de la familia primaria. Se informan:
+  - S1 menos el mejor modelo, S2 menos S1 y S2 menos el placebo, pareadas por sesión con t HAC;
+  - el mismo contraste frente al S1 y el S2 de la v10 en 2013.
+
 ## 6. Etapas con GPU (fase 4)
 
 ### 6.1 Qué queda preparado
