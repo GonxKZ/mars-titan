@@ -901,3 +901,71 @@ def test_the_command_line_reads_one_market_and_another_state(tmp_path, capsys):
     assert entry["evaluation"]["sessions"] == SESSIONS["evaluation"]
     assert entry["evaluation"]["mean"] > 0.1
     assert "Solo las sesiones de CN" in capsys.readouterr().out
+
+
+def _wild_outside(state, market):
+    """Deja predicciones absurdas en las filas que no son del mercado: no deben pesar nada."""
+    for path in state.rglob("*-predictions.parquet"):
+        table = pq.read_table(path)
+        other = np.array(table.column("market").to_pylist()) != market
+        prediction = table.column("prediction").to_numpy().copy()
+        prediction[other] = -1e6 * prediction[other] + 123.0
+        index = table.schema.get_field_index("prediction")
+        pq.write_table(table.set_column(index, "prediction", pa.array(prediction)), path)
+
+
+def test_the_rows_of_other_markets_weigh_nothing_under_a_market_filter(tmp_path):
+    both = ("US", "CN")
+    plain, wild = tmp_path / "plain", tmp_path / "wild"
+    for state in (plain, wild):
+        for seed in (42, 43):
+            write_model(state, "base", seed, signal=0.3, noise_seed=seed, markets=both)
+            write_model(
+                state,
+                "mejor",
+                seed,
+                signal={"US": 0.3, "CN": 0.6},
+                noise_seed=seed + 50,
+                markets=both,
+            )
+    _wild_outside(wild, "CN")
+
+    def measured(state):
+        report = contrasts.build(
+            state, 2013, [42, 43], {"mejor": "base"}, offset=FakeOffset(), market="CN"
+        )
+        for model in report["models"].values():
+            model.pop("provenance")
+        return report
+
+    one, other = measured(plain), measured(wild)
+    assert one == other
+    # Sin el filtro, esas filas sí cuentan: la prueba distingue.
+    whole = contrasts.build(plain, 2013, [42, 43], {"mejor": "base"})
+    broken = contrasts.build(wild, 2013, [42, 43], {"mejor": "base"})
+    assert whole["contrasts"]["mejor"]["evaluation"] != broken["contrasts"]["mejor"]["evaluation"]
+    # Los rangos de las filas que no se leen valen cero, no memoria sin inicializar.
+    data = contrasts.seed_splits(plain, "base", 2013, 42, "CN")["evaluation"]
+    ranks = contrasts._ranks(data)
+    inside = np.zeros(len(ranks), dtype=bool)
+    for _, _, start, end in data["sessions"]:
+        inside[start:end] = True
+    assert inside.sum() == SESSIONS["evaluation"] * ASSETS and (ranks[~inside] == 0).all()
+
+
+def test_a_contrast_says_when_model_and_control_do_not_share_sessions(tmp_path):
+    state = tmp_path / "state"
+    for seed in (42, 43):
+        write_model(state, "base", seed, signal=0.3, noise_seed=seed)
+        write_model(state, "mejor", seed, signal=0.6, noise_seed=seed + 50, markets=("US", "CN"))
+        write_model(state, "igual", seed, signal=0.3, noise_seed=seed + 90)
+    report = contrasts.build(state, 2013, [42, 43], {"mejor": "base", "igual": "base"})
+    entry = report["contrasts"]["mejor"]
+    # El contraste solo usa las sesiones comunes, y lo dice.
+    assert entry["evaluation"]["sessions"] == SESSIONS["evaluation"]
+    assert entry["unpaired_sessions"] == {
+        split: dict(model=count, control=0) for split, count in SESSIONS.items()
+    }
+    assert "unpaired_sessions" not in report["contrasts"]["igual"]
+    text = contrasts.markdown(report)
+    assert "no comparten todas las sesiones" in text and "mejor" in text.split("no comparten")[1]

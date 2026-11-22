@@ -131,7 +131,8 @@ def _ranks(data):
     dejar de contar como empate.
     """
     report = _report_module()
-    ranks = np.empty(len(data["target"]), dtype=np.float64)
+    # Con un filtro de mercado hay filas fuera de las sesiones leídas: su rango queda en cero.
+    ranks = np.zeros(len(data["target"]), dtype=np.float64)
     for _, _, start, end in data["sessions"]:
         ranks[start:end] = report.average_ranks(data["prediction"][start:end])
     return ranks
@@ -378,6 +379,17 @@ def _origin(
             _pooled(mean[name], DECISION), _pooled(mean[control], DECISION)
         )
         entry["ensemble"] = _paired(combined[name], combined[control])
+        # El contraste solo usa las sesiones comunes. Si no son todas, los niveles de los dos
+        # modelos se midieron en sesiones distintas y hay que saberlo al leer la tabla.
+        apart = {
+            split: dict(
+                model=len(set(mean[name][split]) - set(mean[control][split])),
+                control=len(set(mean[control][split]) - set(mean[name][split])),
+            )
+            for split in SPLITS
+        }
+        if any(count for counts in apart.values() for count in counts.values()):
+            entry["unpaired_sessions"] = apart
         if offset is not None:
             one, other = measured_mean[name], measured_mean[control]
             entry["operable"] = _paired(one["free"], other["free"])
@@ -575,6 +587,29 @@ def _operable_table(document):
     return lines
 
 
+def _unpaired_note(contrasts):
+    """Los contrastes cuyo modelo y cuyo control no comparten todas las sesiones."""
+    apart = {
+        name: entry["unpaired_sessions"]
+        for name, entry in contrasts.items()
+        if "unpaired_sessions" in entry
+    }
+    if not apart:
+        return []
+    lines = [
+        "",
+        "Modelo y control no comparten todas las sesiones (la Δ usa solo las comunes):",
+        "",
+    ]
+    for name, counts in apart.items():
+        own = counts["evaluation"]
+        lines.append(
+            f"- {name}: en evaluación, {own['model']} sesiones solo del modelo y "
+            f"{own['control']} solo del control"
+        )
+    return lines
+
+
 def _market_note(document):
     """La línea que dice que solo se leyó un mercado, si es así."""
     market = document.get("market")
@@ -631,6 +666,7 @@ def markdown(document):
             f"- {name}: semillas {', '.join(map(str, seeds))}"
             for name, seeds in document["incomplete"].items()
         ]
+    lines += _unpaired_note(document["contrasts"])
     lines += _operable_table(document)
     lines += [*PLACES, *_places(document)]
     return "\n".join(lines) + "\n"
