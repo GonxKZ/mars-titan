@@ -43,6 +43,7 @@ from pathlib import Path
 
 import numpy as np
 import pyarrow as pa
+import pyarrow.compute as pc
 import pyarrow.parquet as pq
 
 from mars_titan.evaluation import online_aggregator as oa
@@ -194,17 +195,92 @@ def _table(folder, split):
     return pq.read_table(path, columns=COLUMNS).sort_by(ORDER)
 
 
-def known_rows(state, origin, parent, view, tables):
+def checked_factors(manifest_path, markets):
+    """Cada mercado medido declara su factor de mercado, y el fichero está y conserva su huella.
+
+    Sin él, `KnownOffset` deja el alfa en NaN sin avisar (hallazgo D-7: el CSI 300 de China no está
+    en la DGX ni en este equipo) y lo operable pierde ese mercado en silencio.
+    """
+    manifest = json.loads(Path(manifest_path).read_text(encoding="utf-8"))
+    declared = manifest.get("market_factors") or {}
+    for market in sorted(markets):
+        entry = declared.get(market) or {}
+        path = entry.get("prices_path")
+        _require(
+            bool(path) and bool(entry.get("prices_sha256")),
+            f"La vista {manifest_path} no declara el factor de mercado de {market}: no hay alfa "
+            "conocido; mide los otros mercados con --market",
+        )
+        _require(
+            Path(path).is_file(),
+            f"No está el factor de mercado de {market} que declara la vista ({path}): no hay alfa "
+            "conocido; mide los otros mercados con --market",
+        )
+        _require(
+            pilots._sha256(Path(path)) == entry["prices_sha256"],
+            f"El factor de mercado de {market} ({path}) no conserva la huella de la vista",
+        )
+
+
+def markets_of(tables):
+    """Mercados con filas en unas tablas, ordenados."""
+    found = set()
+    for table in tables.values():
+        found.update(table.column("market").unique().to_pylist())
+    return sorted(found)
+
+
+def measured_markets(present, wanted):
+    """Mercados que se miden: los pedidos con --market, o el único del estado.
+
+    En un estado conjunto la lectura es por mercado: sin --market no se mezclan.
+    """
+    if wanted:
+        missing = sorted(set(wanted) - set(present))
+        _require(not missing, f"El estado no tiene filas de {missing} (tiene {present})")
+        return sorted(set(wanted))
+    _require(
+        len(present) == 1,
+        f"El estado tiene filas de {present}: la lectura es por mercado, indica --market "
+        "(por ejemplo --market US)",
+    )
+    return list(present)
+
+
+def only(table, markets):
+    """Las filas de unos mercados, en el mismo orden."""
+    return table.filter(pc.is_in(table.column("market"), value_set=pa.array(list(markets))))
+
+
+def target_name(origin, markets):
+    """Carpeta de un origen: `<año>` con el único mercado del estado; `<año>-<mercados>` si se
+    piden."""
+    return str(origin) if not markets else f"{origin}-{'+'.join(sorted(set(markets)))}"
+
+
+def known_rows(state, origin, parent, view, tables, markets=None):
     """Alfa conocido y madurez exacta de cada fila del padre, por tramo y en el orden de las tablas.
 
     El alfa es el de la etiqueta (`KnownOffset` de la criba; NaN sin modelo de mercado). La
     madurez sale de la vista con que se ajustó el padre.
     """
+    markets = list(markets or markets_of(tables))
+    manifest = Path(state) / "cohorts" / str(origin) / "manifest.json"
+    checked_factors(manifest, markets)
     known = _screening().KnownOffset(Path(state), origin)
-    maturity = pilots._maturity(Path(state) / "cohorts" / str(origin) / "manifest.json", view)
+    maturity = pilots._maturity(manifest, view)
     alpha, matures = {}, {}
     for split, table in tables.items():
-        alpha[split] = known.rows(parent, split)[0]
+        every = pq.read_table(
+            parent / f"{split}-predictions.parquet",
+            columns=["sample_id", "market", "prediction_at"],
+        ).sort_by(ORDER)
+        keep = np.isin(np.asarray(every.column("market").to_pylist()), markets)
+        _require(
+            every.column("sample_id").filter(pa.array(keep)).equals(table.column("sample_id")),
+            f"Las filas de {split} no son las del padre en {markets}",
+        )
+        alpha[split] = known.rows(parent, split)[0][keep]
         rows = maturity[split]
         lookup = dict(
             zip(
@@ -280,8 +356,15 @@ def _checked_sources(declaration, origin, sources, records, fingerprint):
         )
 
 
-def _decision(tool, folder, splits):
-    ics = {split: tool.session_ic(tool.load_split(folder, split)) for split in splits}
+def _decision(tool, folder, splits, markets):
+    ics = {
+        split: {
+            key: value
+            for key, value in tool.session_ic(tool.load_split(folder, split)).items()
+            if key[0] in markets
+        }
+        for split in splits
+    }
     return tool.summary(tool.pooled(ics, splits))["mean"]
 
 
@@ -495,8 +578,14 @@ def _already(target, digest, fingerprint, log):
     return previous
 
 
-def aggregate(declaration, state, reference, organs, origin, output, *, wait_hours, poll, log):
-    """S1 y S2 de un origen, publicados en `<output>/<origen>`; devuelve el resumen."""
+def aggregate(
+    declaration, state, reference, organs, origin, output, *, wait_hours, poll, log, markets=None
+):
+    """S1 y S2 de un origen, publicados en `<output>/<origen>`; devuelve el resumen.
+
+    `markets` limita la medida a esos mercados (`<output>/<origen>-<mercados>`). Un estado con
+    varios mercados exige elegirlos: la lectura es por mercado.
+    """
     declaration, digest = checked_declaration(declaration)
     sources = folders(declaration, state, reference, organs, origin)
     manifest = Path(state) / "cohorts" / str(origin) / "manifest.json"
@@ -504,7 +593,7 @@ def aggregate(declaration, state, reference, organs, origin, output, *, wait_hou
     if missing:
         raise MissingInputs(missing)
     fingerprint = _fingerprint(sources, manifest)
-    target = Path(output) / str(origin)
+    target = Path(output) / target_name(origin, markets)
     if target.exists():
         return _already(target, digest, fingerprint, log)
     started = time.monotonic()
@@ -517,14 +606,22 @@ def aggregate(declaration, state, reference, organs, origin, output, *, wait_hou
         for role, folder in sources.items()
     }
     _checked_sources(declaration, origin, sources, records, fingerprint)
+    tables = {role: {s: _table(folder, s) for s in AGGREGATED} for role, folder in sources.items()}
+    present = markets_of(tables["parent"])
+    measured = measured_markets(present, markets)
+    if measured != present:
+        tables = {
+            role: {s: only(table, measured) for s, table in splits.items()}
+            for role, splits in tables.items()
+        }
+    say(f"mercados medidos: {measured} (el estado tiene {present})")
     tool = _screening()
     decision = {
-        role: _decision(tool, sources[role], tuple(declaration["decision_splits"]))
+        role: _decision(tool, sources[role], tuple(declaration["decision_splits"]), measured)
         for role in ("parent", "tree")
     }
     best = "parent" if decision["parent"] >= decision["tree"] else "tree"
     say(f"decisión: {decision}; el mejor es {declaration[best]}")
-    tables = {role: {s: _table(folder, s) for s in AGGREGATED} for role, folder in sources.items()}
     for role in ("tree", "organ"):
         for split in AGGREGATED:
             for name in KEYS:
@@ -533,7 +630,7 @@ def aggregate(declaration, state, reference, organs, origin, output, *, wait_hou
                     f"{sources[role]} no tiene las filas del padre en {split} (columna {name})",
                 )
     view = records["parent"]["request"]["view_sha256"]
-    alpha, matures = known_rows(state, origin, sources["parent"], view, tables["parent"])
+    alpha, matures = known_rows(state, origin, sources["parent"], view, tables["parent"], measured)
     say("alfa conocido y madurez de la vista")
     own = {
         s: tables["parent"][s].column("prediction").to_numpy().astype(np.float64)
@@ -590,6 +687,7 @@ def aggregate(declaration, state, reference, organs, origin, output, *, wait_hou
                 declaration_sha256=digest,
                 code=_code_identity(),
                 inputs=fingerprint,
+                markets=measured,
                 alpha_known={s: float(np.isfinite(alpha[s]).mean()) for s in AGGREGATED},
                 modes=modes,
                 seconds=round(time.monotonic() - started),
@@ -619,6 +717,13 @@ def parser():
     run.add_argument("--output", type=Path, required=True, help="Raíz propia del agregador")
     run.add_argument("--wait-hours", type=float, default=0.0)
     run.add_argument("--poll-seconds", type=float, default=300.0)
+    run.add_argument(
+        "--market",
+        action="append",
+        dest="markets",
+        metavar="MERCADO",
+        help="Medir solo este mercado (repetible); obligatorio en un estado con varios",
+    )
     return result
 
 
@@ -640,6 +745,7 @@ def main(argv=None):
             wait_hours=args.wait_hours,
             poll=args.poll_seconds,
             log=log,
+            markets=args.markets,
         )
     except MissingInputs as missing:
         print(

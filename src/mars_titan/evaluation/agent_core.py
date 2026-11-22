@@ -538,6 +538,9 @@ def known_rows(state, origin, tables, view):
     conocido de `KnownOffset`; cada activo se calcula una sola vez para todos los tramos.
     """
     tool = og._screening()
+    og.checked_factors(
+        Path(state) / "cohorts" / str(origin) / "manifest.json", og.markets_of(tables)
+    )
     base = tool.KnownOffset(Path(state), origin)
     names = base.module.NAMES
     columns = {
@@ -951,8 +954,14 @@ def _a4(declaration, tool, views):
     return dict(books=books, contrasts=contrasts), rows
 
 
-def measure(declaration, state, reference, organs, origin, output, *, wait_hours, poll, log):
-    """A1–A4 de un origen, publicados en `<output>/<origen>`; devuelve el resumen."""
+def measure(
+    declaration, state, reference, organs, origin, output, *, wait_hours, poll, log, markets=None
+):
+    """A1–A4 de un origen, publicados en `<output>/<origen>`; devuelve el resumen.
+
+    `markets` limita la medida a esos mercados (`<output>/<origen>-<mercados>`). Un estado con
+    varios mercados exige elegirlos: la lectura es por mercado.
+    """
     declaration, digest = checked_declaration(declaration)
     sources = og.folders(declaration, state, reference, organs, origin)
     manifest = Path(state) / "cohorts" / str(origin) / "manifest.json"
@@ -965,7 +974,7 @@ def measure(declaration, state, reference, organs, origin, output, *, wait_hours
     if attention is not None:
         sources = dict(sources, attention=attention)
     fingerprint = og._fingerprint(sources, manifest)
-    target = Path(output) / str(origin)
+    target = Path(output) / og.target_name(origin, markets)
     if target.exists():
         return og._already(target, digest, fingerprint, log)
     started = time.monotonic()
@@ -1001,6 +1010,15 @@ def measure(declaration, state, reference, organs, origin, output, *, wait_hours
     )
     if "attention" in sources:
         tables["attention"] = {s: og._table(sources["attention"], s) for s in SPLITS}
+    present = og.markets_of(parent)
+    measured = og.measured_markets(present, markets)
+    if measured != present:
+        parent = {s: og.only(table, measured) for s, table in parent.items()}
+        tables = {
+            role: {s: og.only(table, measured) for s, table in splits.items()}
+            for role, splits in tables.items()
+        }
+    say(f"mercados medidos: {measured} (el estado tiene {present})")
     for role, splits in tables.items():
         for split, table in splits.items():
             for name in og.KEYS:
@@ -1152,6 +1170,7 @@ def measure(declaration, state, reference, organs, origin, output, *, wait_hours
                 code=og._code_identity(),
                 inputs=fingerprint,
                 players=list(players),
+                markets=measured,
                 operable_factors=factors,
                 alpha_known={s: float(np.isfinite(alpha[s]).mean()) for s in SPLITS},
                 a1=a1,
@@ -1277,6 +1296,13 @@ def parser():
     run.add_argument("--output", type=Path, required=True, help="Raíz propia del núcleo")
     run.add_argument("--wait-hours", type=float, default=0.0)
     run.add_argument("--poll-seconds", type=float, default=300.0)
+    run.add_argument(
+        "--market",
+        action="append",
+        dest="markets",
+        metavar="MERCADO",
+        help="Medir solo este mercado (repetible); obligatorio en un estado con varios",
+    )
     return result
 
 
@@ -1298,6 +1324,7 @@ def main(argv=None):
             wait_hours=args.wait_hours,
             poll=args.poll_seconds,
             log=log,
+            markets=args.markets,
         )
     except og.MissingInputs as missing:
         print(

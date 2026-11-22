@@ -184,7 +184,7 @@ def _write(folder, split, rows, prediction, quantiles=None):
     columns = dict(
         sample_id=pa.array(rows["sample_id"]),
         asset_id=pa.array(rows["asset_id"]),
-        market=pa.array(["US"] * len(rows["sample_id"])),
+        market=pa.array([a.split("/", 1)[0] for a in rows["asset_id"]]),
         prediction_at=pa.array(rows["prediction_at"], pa.timestamp("us", "UTC")),
         target=pa.array(rows["target"], pa.float32()),
         prediction=pa.array(prediction, pa.float32()),
@@ -194,7 +194,7 @@ def _write(folder, split, rows, prediction, quantiles=None):
     pq.write_table(pa.table(columns), folder / f"{split}-predictions.parquet")
 
 
-def campaign(tmp_path, *, tree=True):
+def campaign(tmp_path, *, tree=True, markets=("US",)):
     """Padre con cuantiles estrechos, árboles y órgano sintéticos; la señal ve un tercer factor."""
     rng = np.random.default_rng(8)
     state, reference, organs = tmp_path / "estado", tmp_path / "referencia", tmp_path / "organos"
@@ -208,29 +208,36 @@ def campaign(tmp_path, *, tree=True):
         own, other, organ, alpha, quantiles = [], [], [], [], {q: [] for q in ac.QUANTILES}
         for session in range(count):
             instant = START + (day + session) * DAY
-            z1, z2, z3, noise, n1, n2, n3 = rng.standard_normal((7, ASSETS))
-            scale = rng.uniform(0.5, 1.5, ASSETS)
-            rows["sample_id"] += [f"{split[0]}{session:03d}-{a:02d}" for a in range(ASSETS)]
-            rows["asset_id"] += [f"US/A{a:02d}" for a in range(ASSETS)]
-            rows["prediction_at"] += [instant] * ASSETS
-            rows["target"] += list(0.3 * z1 + 0.2 * z2 + 0.3 * z3 + scale * noise)
-            own += list(z1 + 0.7 * n1)
-            other += list(z2 + 0.7 * n2)
-            organ += list(z1 + 0.7 * n1 + 0.05 * (z3 + 0.5 * n3))
-            alpha += list(0.002 * rng.standard_normal(ASSETS))
-            for q, half in zip(ac.QUANTILES, (-0.9, -0.5, 0.0, 0.5, 0.9), strict=True):
-                quantiles[q] += list(0.3 * (z1 + 0.7 * n1) + half * scale)
+            for market in markets:
+                prefix = "" if market == "US" else market
+                z1, z2, z3, noise, n1, n2, n3 = rng.standard_normal((7, ASSETS))
+                scale = rng.uniform(0.5, 1.5, ASSETS)
+                rows["sample_id"] += [
+                    f"{prefix}{split[0]}{session:03d}-{a:02d}" for a in range(ASSETS)
+                ]
+                rows["asset_id"] += [f"{market}/A{a:02d}" for a in range(ASSETS)]
+                rows["prediction_at"] += [instant] * ASSETS
+                rows["target"] += list(0.3 * z1 + 0.2 * z2 + 0.3 * z3 + scale * noise)
+                own += list(z1 + 0.7 * n1)
+                other += list(z2 + 0.7 * n2)
+                organ += list(z1 + 0.7 * n1 + 0.05 * (z3 + 0.5 * n3))
+                alpha += list(0.002 * rng.standard_normal(ASSETS))
+                for q, half in zip(ac.QUANTILES, (-0.9, -0.5, 0.0, 0.5, 0.9), strict=True):
+                    quantiles[q] += list(0.3 * (z1 + 0.7 * n1) + half * scale)
         day += count + 2
         _write(parent, split, rows, own, quantiles)
         if tree:
             _write(trees, split, rows, other)
         if split != "validation":
             _write(combined, split, rows, organ)
-        size = count * ASSETS
-        known["alpha"][split] = np.asarray(alpha)
-        known["liquidity"][split] = rng.normal(15, 2, size)
-        known["volatility"][split] = rng.normal(3, 0.5, size)
-        known["matures"][split] = np.asarray(rows["prediction_at"], dtype=np.int64) + DAY
+        size = count * ASSETS * len(markets)
+        ids = rows["sample_id"]
+        known["alpha"][split] = dict(zip(ids, alpha, strict=True))
+        known["liquidity"][split] = dict(zip(ids, rng.normal(15, 2, size), strict=True))
+        known["volatility"][split] = dict(zip(ids, rng.normal(3, 0.5, size), strict=True))
+        known["matures"][split] = dict(
+            zip(ids, np.asarray(rows["prediction_at"], dtype=np.int64) + DAY, strict=True)
+        )
     (parent / "run.json").write_text(
         json.dumps(
             dict(
@@ -294,11 +301,14 @@ def _arguments(paths, output, *extra):
 def _known(paths):
     def known_rows(state, origin, tables, view):
         k = paths["known"]
-        return (
-            {s: k["alpha"][s] for s in tables},
-            {s: k["liquidity"][s] for s in tables},
-            {s: k["volatility"][s] for s in tables},
-            {s: k["matures"][s] for s in tables},
+
+        def column(name, split):
+            values = k[name][split]
+            return np.asarray([values[i] for i in tables[split].column("sample_id").to_pylist()])
+
+        return tuple(
+            {s: column(name, s) for s in tables}
+            for name in ("alpha", "liquidity", "volatility", "matures")
         )
 
     return known_rows
@@ -404,6 +414,7 @@ def test_known_rows_reads_the_screening_features_of_the_decision_day(tmp_path, m
             dict(
                 asset_id=[a for a, _ in items],
                 prediction_at=pa.array([instant[d] for _, d in items], pa.timestamp("us", "UTC")),
+                market=[a.split("/", 1)[0] for a, _ in items],
             )
         )
         for split, items in rows.items()
@@ -423,6 +434,26 @@ def test_known_rows_reads_the_screening_features_of_the_decision_day(tmp_path, m
     }
     monkeypatch.setattr(og, "_screening", lambda: type("Tool", (), dict(KnownOffset=Base)))
     monkeypatch.setattr(pilots, "_maturity", lambda manifest, view: maturity)
+    factor = tmp_path / "spy.parquet"
+    pq.write_table(pa.table(dict(close=[1.0])), factor)
+    manifest = tmp_path / "cohorts" / str(YEAR) / "manifest.json"
+    manifest.parent.mkdir(parents=True)
+    declared = dict(
+        US=dict(prices_path=str(factor), prices_sha256=pilots._sha256(factor)),
+        CN=dict(prices_path=str(tmp_path / "csi300.parquet"), prices_sha256="b" * 64),
+    )
+    manifest.write_text(json.dumps(dict(market_factors=declared)))
+    chinese = dict(
+        evaluation=pa.table(
+            dict(
+                asset_id=["CN/X"],
+                prediction_at=pa.array([instant["d0"]], pa.timestamp("us", "UTC")),
+                market=["CN"],
+            )
+        )
+    )
+    with pytest.raises(ValueError, match="No está el factor de mercado de CN"):
+        ac.known_rows(tmp_path, YEAR, chinese, "v" * 64)
     alpha, liquidity, volatility, matures = ac.known_rows(tmp_path, YEAR, tables, "v" * 64)
     np.testing.assert_array_equal(alpha["validation"], [0.02, 0.03])
     np.testing.assert_array_equal(alpha["calibration"], [np.nan, 0.05, np.nan])
@@ -451,3 +482,18 @@ def test_gross_and_net_risk_use_the_same_days():
     net = ac.risk_metrics(gross[1:] - 5e-4 * 2.0, annualization=252, cvar=0.2)["sharpe"]
     assert busy["net_sharpe"]["1.0"] == pytest.approx(net)
     assert busy["net_sharpe"]["2.0"] < busy["net_sharpe"]["1.0"] < busy["risk"]["sharpe"]
+
+
+def test_a_joint_state_needs_its_market_and_measures_only_that_one(tmp_path, monkeypatch, capsys):
+    paths = campaign(tmp_path, markets=("CN", "US"))
+    monkeypatch.setattr(ac, "known_rows", _known(paths))
+    output = tmp_path / "nucleo"
+    assert ac.main(_arguments(paths, output)) == 1
+    assert "indica --market" in capsys.readouterr().err
+    assert ac.main(_arguments(paths, output, "--market", "US")) == 0
+    folder = output / f"{YEAR}-US"
+    summary = json.loads((folder / "resumen.json").read_text(encoding="utf-8"))
+    assert summary["markets"] == ["US"]
+    assert {game["sessions"] for game in summary["a3"].values()} == {SESSIONS["evaluation"]}
+    days = pq.read_table(folder / "a4-dias.parquet")
+    assert days.column("market").unique().to_pylist() == ["US"]

@@ -33,7 +33,7 @@ def _write(folder, split, rows, prediction):
         dict(
             sample_id=pa.array(rows["sample_id"]),
             asset_id=pa.array(rows["asset_id"]),
-            market=pa.array(["US"] * len(rows["sample_id"])),
+            market=pa.array([a.split("/", 1)[0] for a in rows["asset_id"]]),
             prediction_at=pa.array(rows["prediction_at"], pa.timestamp("us", "UTC")),
             target=pa.array(rows["target"], pa.float32()),
             prediction=pa.array(prediction, pa.float32()),
@@ -42,7 +42,7 @@ def _write(folder, split, rows, prediction):
     pq.write_table(table, folder / f"{split}-predictions.parquet")
 
 
-def campaign(tmp_path, *, tree=True):
+def campaign(tmp_path, *, tree=True, markets=("US",)):
     """Padre, árboles y brazo combinado sintéticos: solo la señal del órgano ve el tercer factor."""
     rng = np.random.default_rng(5)
     state, reference, organs = tmp_path / "estado", tmp_path / "referencia", tmp_path / "organos"
@@ -56,23 +56,36 @@ def campaign(tmp_path, *, tree=True):
         own, other, organ, alpha = [], [], [], []
         for session in range(count):
             instant = START + (day + session) * DAY
-            z1, z2, z3, noise, n1, n2, n3 = rng.standard_normal((7, ASSETS))
-            rows["sample_id"] += [f"{split[0]}{session:03d}-{asset:02d}" for asset in range(ASSETS)]
-            rows["asset_id"] += [f"US/A{asset:02d}" for asset in range(ASSETS)]
-            rows["prediction_at"] += [instant] * ASSETS
-            rows["target"] += list(0.3 * z1 + 0.2 * z2 + 0.3 * z3 + noise)
-            own += list(z1 + 0.7 * n1)
-            other += list(z2 + 0.7 * n2)
-            organ += list(z1 + 0.7 * n1 + 0.05 * (z3 + 0.5 * n3))
-            alpha += list(0.002 * rng.standard_normal(ASSETS))
+            for market in markets:
+                prefix = "" if market == "US" else market
+                z1, z2, z3, noise, n1, n2, n3 = rng.standard_normal((7, ASSETS))
+                rows["sample_id"] += [
+                    f"{prefix}{split[0]}{session:03d}-{asset:02d}" for asset in range(ASSETS)
+                ]
+                rows["asset_id"] += [f"{market}/A{asset:02d}" for asset in range(ASSETS)]
+                rows["prediction_at"] += [instant] * ASSETS
+                # En China los árboles ven mucho más que el padre: una decisión que mezclara los
+                # mercados elegiría los árboles.
+                first, second = (0.3, 0.2) if market == "US" else (0.05, 0.6)
+                rows["target"] += list(first * z1 + second * z2 + 0.3 * z3 + noise)
+                own += list(z1 + 0.7 * n1)
+                other += list(z2 + 0.7 * n2)
+                organ += list(z1 + 0.7 * n1 + 0.05 * (z3 + 0.5 * n3))
+                alpha += list(0.002 * rng.standard_normal(ASSETS))
         day += count + 2
         _write(parent, split, rows, own)
         if tree:
             _write(trees, split, rows, other)
         if split != "validation":
             _write(combined, split, rows, organ)
-        known["alpha"][split] = np.asarray(alpha)
-        known["matures"][split] = np.asarray(rows["prediction_at"], dtype=np.int64) + DAY
+        known["alpha"][split] = dict(zip(rows["sample_id"], alpha, strict=True))
+        known["matures"][split] = dict(
+            zip(
+                rows["sample_id"],
+                np.asarray(rows["prediction_at"], dtype=np.int64) + DAY,
+                strict=True,
+            )
+        )
     (parent / "run.json").write_text(
         json.dumps(
             dict(
@@ -130,12 +143,17 @@ def _arguments(paths, output, *extra):
 
 
 def _known(paths, seen=None):
-    def known_rows(state, origin, parent, view, tables):
+    def known_rows(state, origin, parent, view, tables, markets=None):
         if seen is not None:
             seen.append(view)
+
+        def column(name, split):
+            values = paths["known"][name][split]
+            return np.asarray([values[i] for i in tables[split].column("sample_id").to_pylist()])
+
         return (
-            {s: paths["known"]["alpha"][s] for s in tables},
-            {s: paths["known"]["matures"][s] for s in tables},
+            {s: column("alpha", s) for s in tables},
+            {s: column("matures", s) for s in tables},
         )
 
     return known_rows
@@ -290,3 +308,100 @@ def test_an_organ_of_another_fit_of_the_parent_is_refused(tmp_path, monkeypatch,
     record.write_text(json.dumps(data))
     assert og.main(_arguments(paths, tmp_path / "agregador")) == 1
     assert "no es el brazo combinado de este ajuste" in capsys.readouterr().err
+
+
+def test_each_measured_market_needs_its_declared_factor_with_its_hash(tmp_path):
+    factor = tmp_path / "spy.parquet"
+    pq.write_table(pa.table(dict(close=[1.0, 2.0])), factor)
+    declared = dict(
+        US=dict(prices_path=str(factor), prices_sha256=pilots._sha256(factor)),
+        CN=dict(prices_path=str(tmp_path / "csi300.parquet"), prices_sha256="b" * 64),
+        JP=dict(prices_path=str(factor), prices_sha256="0" * 64),
+    )
+    manifest = tmp_path / "manifest.json"
+    manifest.write_text(json.dumps(dict(market_factors=declared)))
+    og.checked_factors(manifest, ["US"])
+    with pytest.raises(ValueError, match="No está el factor de mercado de CN"):
+        og.checked_factors(manifest, ["US", "CN"])
+    with pytest.raises(ValueError, match="no conserva la huella"):
+        og.checked_factors(manifest, ["JP"])
+    with pytest.raises(ValueError, match="no declara el factor de mercado de KR"):
+        og.checked_factors(manifest, ["KR"])
+
+
+def test_a_joint_state_is_read_one_market_at_a_time(tmp_path, monkeypatch, capsys):
+    paths = campaign(tmp_path, markets=("CN", "US"))
+    monkeypatch.setattr(og, "known_rows", _known(paths))
+    output = tmp_path / "agregador"
+    assert og.main(_arguments(paths, output)) == 1
+    assert "indica --market" in capsys.readouterr().err
+    assert not output.exists() or not any(output.iterdir())
+    assert og.main(_arguments(paths, output, "--market", "US")) == 0
+    folder = output / f"{YEAR}-US"
+    summary = json.loads((folder / "resumen.json").read_text(encoding="utf-8"))
+    assert summary["markets"] == ["US"]
+    assert summary["modes"]["label"]["s1"]["best"] == "titans_mac_nogain"
+    assert pq.read_table(folder / "sesiones.parquet").column("market").unique().to_pylist() == [
+        "US"
+    ]
+    assert og.main(_arguments(paths, output, "--market", "JP")) == 1
+    assert "no tiene filas de ['JP']" in capsys.readouterr().err
+
+
+def test_known_rows_takes_the_alpha_of_the_measured_market_rows(tmp_path, monkeypatch):
+    parent = tmp_path / "padre"
+    parent.mkdir()
+    instants = [START, START, START + DAY, START + DAY]
+    rows = pa.table(
+        dict(
+            sample_id=["u1", "c1", "u2", "c2"],
+            asset_id=["US/A", "CN/B", "US/A", "CN/B"],
+            market=["US", "CN", "US", "CN"],
+            prediction_at=pa.array(instants, pa.timestamp("us", "UTC")),
+            target=pa.array([0.0] * 4, pa.float32()),
+            prediction=pa.array([0.0] * 4, pa.float32()),
+        )
+    )
+    pq.write_table(rows, parent / "evaluation-predictions.parquet")
+    every = rows.sort_by(og.ORDER)
+    alpha_of = dict(u1=0.01, u2=0.02, c1=np.nan, c2=np.nan)
+
+    class Known:
+        def __init__(self, state, origin):
+            pass
+
+        def rows(self, run, split):
+            ids = every.column("sample_id").to_pylist()
+            return np.array([alpha_of[i] for i in ids]), None
+
+    factor = tmp_path / "spy.parquet"
+    pq.write_table(pa.table(dict(close=[1.0])), factor)
+    manifest = tmp_path / "cohorts" / str(YEAR) / "manifest.json"
+    manifest.parent.mkdir(parents=True)
+    manifest.write_text(
+        json.dumps(
+            dict(
+                market_factors=dict(
+                    US=dict(prices_path=str(factor), prices_sha256=pilots._sha256(factor)),
+                    CN=dict(prices_path=str(tmp_path / "csi300.parquet"), prices_sha256="b" * 64),
+                )
+            )
+        )
+    )
+    maturity = dict(
+        evaluation=pa.table(
+            dict(
+                asset_id=rows.column("asset_id"),
+                prediction_at=rows.column("prediction_at"),
+                matures_at=pa.array([t + DAY for t in instants], pa.timestamp("us", "UTC")),
+            )
+        )
+    )
+    monkeypatch.setattr(og, "_screening", lambda: type("Tool", (), dict(KnownOffset=Known)))
+    monkeypatch.setattr(pilots, "_maturity", lambda manifest, view: maturity)
+    tables = dict(evaluation=og.only(every, ["US"]))
+    alpha, matures = og.known_rows(tmp_path, YEAR, parent, VIEW, tables, ["US"])
+    assert alpha["evaluation"].tolist() == [0.01, 0.02]
+    assert matures["evaluation"].tolist() == [START + DAY, START + 2 * DAY]
+    with pytest.raises(ValueError, match="No está el factor de mercado de CN"):
+        og.known_rows(tmp_path, YEAR, parent, VIEW, dict(evaluation=every), ["CN", "US"])
