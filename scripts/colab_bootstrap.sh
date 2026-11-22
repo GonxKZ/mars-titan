@@ -18,6 +18,7 @@
 #   nativo    compila el enlace episódico que usan los lectores m1, m2 y m3
 #   comprobar ficha del equipo, pruebas de CUDA del núcleo y memoria fusionada
 #   todo      todos los anteriores
+#   busqueda  Optuna para scripts/campaign_search.py, en una carpeta aparte (no entra en todo)
 #
 # El año 2024 no forma parte del paquete de entrenamiento y sigue cerrado.
 set -euo pipefail
@@ -152,6 +153,21 @@ paso_comprobar() {
   )
 }
 
+paso_busqueda() {
+  [ -d "$repo/.venv" ] || falta "ejecuta antes el paso entorno"
+  local sitio="$trabajo/busqueda-site"
+  # Optuna no forma parte del entorno bloqueado: va a una carpeta que solo ve la búsqueda,
+  # con las mismas versiones que en la DGX y sin dependencias, para no tapar las del entorno.
+  uv pip install --python "$repo/.venv/bin/python" --target "$sitio" --no-deps \
+    optuna==5.1.0 alembic==1.20.1 colorlog==6.12.0 mako==1.4.3 sqlalchemy==2.1.9 tqdm==4.70.1
+  PYTHONPATH="$sitio" "$repo/.venv/bin/python" -c "
+import optuna
+from optuna.storages.journal import JournalFileBackend
+print('optuna', optuna.__version__)
+"
+  echo "Para buscar: PYTHONPATH=$sitio $repo/.venv/bin/python <kit>/campaign_search.py ..."
+}
+
 case "$paso" in
   sistema) paso_sistema ;;
   codigo) paso_codigo ;;
@@ -159,6 +175,7 @@ case "$paso" in
   datos) paso_datos ;;
   nativo) paso_nativo ;;
   comprobar) paso_comprobar ;;
+  busqueda) paso_busqueda ;;
   todo) paso_sistema; paso_codigo; paso_entorno; paso_datos; paso_nativo; paso_comprobar ;;
   *) echo "Paso desconocido: $paso" >&2; exit 2 ;;
 esac
