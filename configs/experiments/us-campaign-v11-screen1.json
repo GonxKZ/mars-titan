@@ -3,7 +3,7 @@
   "kind": "comparison_campaign_v1",
   "market": "US",
   "final_test_access": false,
-  "description": "Primera criba de la base nueva (v11) en EE. UU.: el núcleo de la v10 y sus dos controles, campo a campo, y diez variantes de una sola variable que la rama v11 permite medir. La normalización por capa de la rama densa, el recorte de gradiente por grupo funcional y el recorte global en 10, la recencia por tasa de aprendizaje con semividas de 5 y 10 años, el recorte suave de las entradas escaladas, la escala aprendida por entrada en la rama densa, y la emisión sin grafo de los tramos que se repiten en los tres modos de memoria, que no debe cambiar ningún resultado y mide tiempo. El término de IC medido sobre lo operable, con la predicción y la etiqueta más el alfa conocido, en los tres modos de memoria. Además, la atención entre activos en sus dos posiciones, antes y después de la rama técnica, cada una con su control self_only.",
+  "description": "Primera criba de la base nueva (v11) en EE. UU.: el núcleo de la v10 y sus dos controles, campo a campo, y diez variantes de una sola variable que la rama v11 permite medir. La normalización por capa de la rama densa, el recorte de gradiente por grupo funcional y el recorte global en 10, la recencia por tasa de aprendizaje con semividas de 5 y 10 años, el recorte suave de las entradas escaladas, la escala aprendida por entrada en la rama densa, y la emisión sin grafo de los tramos que se repiten en los tres modos de memoria, que no debe cambiar ningún resultado y mide tiempo. El término de IC medido sobre lo operable, con la predicción y la etiqueta más el alfa conocido, en los tres modos de memoria, sobre el núcleo y sobre el trío sin ganancia de la mediana, que entra tal como está en la v10. Además, la atención entre activos en sus dos posiciones, antes y después de la rama técnica, cada una con su control self_only.",
   "source_declaration_sha256": "836c79a6122fc14a1566826ece99f3708849a7d481361c334acd693383c88716",
   "cohort": {
     "size": 4198,
@@ -114,16 +114,20 @@
   "tiers": [
     "core",
     "controls",
+    "r4_nogain",
     "y1_norm",
     "y1_clip",
     "y1_recency",
     "y1_scale",
     "y1_speed",
     "y1_operable",
-    "y1_xattn"
+    "y1_operable_nogain",
+    "y1_xattn",
+    "y1_xattn_late"
   ],
   "recipes": {
     "core": "configs/titans/dgx-us-core-u2-ic3-dense-gr-v9.json",
+    "core_nogain": "configs/titans/dgx-us-core-u2-ic3-dense-ranks-v6.json",
     "core_ln": "configs/titans/dgx-us-core-u2-ic3-dense-gr-v9-ln-v11.json",
     "core_cliprole": "configs/titans/dgx-us-core-u2-ic3-dense-gr-v9-cliprole-v11.json",
     "core_clip10": "configs/titans/dgx-us-core-u2-ic3-dense-gr-v9-clip10-v11.json",
@@ -132,7 +136,8 @@
     "core_smooth": "configs/titans/dgx-us-core-u2-ic3-dense-gr-v9-smooth-v11.json",
     "core_fscale": "configs/titans/dgx-us-core-u2-ic3-dense-gr-v9-fscale-v11.json",
     "core_nograph": "configs/titans/dgx-us-core-u2-ic3-dense-gr-v9-nograph-v11.json",
-    "core_icop": "configs/titans/dgx-us-core-u2-ic3-dense-gr-v9-icop-v11.json"
+    "core_icop": "configs/titans/dgx-us-core-u2-ic3-dense-gr-v9-icop-v11.json",
+    "core_nogain_icop": "configs/titans/dgx-us-core-u2-ic3-dense-ranks-v6-icop-v11.json"
   },
   "stopping": {
     "fit": {
@@ -204,6 +209,27 @@
       "recipe": "core",
       "runner": "fit",
       "tier": "controls",
+      "variant": "mac_disabled"
+    },
+    "titans_mac_nogain": {
+      "machine": "mars_titan",
+      "recipe": "core_nogain",
+      "runner": "fit",
+      "tier": "r4_nogain",
+      "variant": "mac_online"
+    },
+    "titans_mac_frozen_nogain": {
+      "machine": "mars_titan",
+      "recipe": "core_nogain",
+      "runner": "fit",
+      "tier": "r4_nogain",
+      "variant": "mac_frozen"
+    },
+    "titans_mac_disabled_nogain": {
+      "machine": "mars_titan",
+      "recipe": "core_nogain",
+      "runner": "fit",
+      "tier": "r4_nogain",
       "variant": "mac_disabled"
     },
     "titans_mac_ln": {
@@ -297,6 +323,27 @@
       "tier": "y1_operable",
       "variant": "mac_disabled"
     },
+    "titans_mac_nogain_icop": {
+      "machine": "mars_titan",
+      "recipe": "core_nogain_icop",
+      "runner": "fit",
+      "tier": "y1_operable_nogain",
+      "variant": "mac_online"
+    },
+    "titans_mac_frozen_nogain_icop": {
+      "machine": "mars_titan",
+      "recipe": "core_nogain_icop",
+      "runner": "fit",
+      "tier": "y1_operable_nogain",
+      "variant": "mac_frozen"
+    },
+    "titans_mac_disabled_nogain_icop": {
+      "machine": "mars_titan",
+      "recipe": "core_nogain_icop",
+      "runner": "fit",
+      "tier": "y1_operable_nogain",
+      "variant": "mac_disabled"
+    },
     "cross_asset_attention": {
       "machine": "mars_titan",
       "recipe": "core",
@@ -327,7 +374,7 @@
       "machine": "mars_titan",
       "recipe": "core",
       "runner": "fit",
-      "tier": "y1_xattn",
+      "tier": "y1_xattn_late",
       "variant": "mac_online",
       "predictor_changes": {
         "cross_asset_attention": {
@@ -341,7 +388,7 @@
       "machine": "mars_titan",
       "recipe": "core",
       "runner": "fit",
-      "tier": "y1_xattn",
+      "tier": "y1_xattn_late",
       "variant": "mac_online",
       "predictor_changes": {
         "cross_asset_attention": {

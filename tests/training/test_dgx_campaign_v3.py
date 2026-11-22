@@ -934,12 +934,23 @@ def test_the_first_screen_of_the_new_base_changes_one_recipe_field_per_model():
         assert document[key] == previous[key], key
     assert document["source_declaration_sha256"] == hashlib.sha256(source.read_bytes()).hexdigest()
     tiers = ["core", "controls", "y1_norm", "y1_clip", "y1_recency", "y1_scale", "y1_speed"]
-    assert document["tiers"] == [*tiers, "y1_operable", "y1_xattn"]
+    assert document["tiers"] == [
+        *tiers[:2],
+        "r4_nogain",
+        *tiers[2:],
+        "y1_operable",
+        "y1_operable_nogain",
+        "y1_xattn",
+        "y1_xattn_late",
+    ]
     # El núcleo y sus controles son los de la v10, campo a campo: la base nueva los reproduce.
     cores = ("titans_mac", "titans_mac_frozen", "titans_mac_disabled")
-    for model in cores:
+    # El trío sin ganancia de la mediana entra también tal como está en la v10.
+    nogain = ("titans_mac_nogain", "titans_mac_frozen_nogain", "titans_mac_disabled_nogain")
+    for model in (*cores, *nogain):
         assert document["models"][model] == previous["models"][model]
-    assert document["recipes"]["core"] == previous["recipes"]["core"]
+    for key in ("core", "core_nogain"):
+        assert document["recipes"][key] == previous["recipes"][key]
 
     def changed(left, right):
         one, two = flat_specification(document, left), flat_specification(document, right)
@@ -993,6 +1004,19 @@ def test_the_first_screen_of_the_new_base_changes_one_recipe_field_per_model():
     assert set(base["recipe.session_ic_term"]) == {"weight", "minimum_rows"}
     for parent in cores:
         expected[f"{parent}_icop"] = (parent, "y1_operable", "recipe.session_ic_term", operable)
+    # Y sobre el trío sin ganancia: allí el término ajusta la escala de la mediana él solo.
+    for parent in nogain:
+        assert (
+            flat_specification(document, parent)["recipe.session_ic_term"]
+            == (base["recipe.session_ic_term"])
+        )
+        assert "predictor.median_gain" not in flat_specification(document, parent)
+        expected[f"{parent}_icop"] = (
+            parent,
+            "y1_operable_nogain",
+            "recipe.session_ic_term",
+            operable,
+        )
     # La atención entre activos en sus dos posiciones, cada una con su control self_only. Las
     # dos de la v10 se declaran como allí; las tardías solo añaden la posición.
     late = dict(position="after_technical")
@@ -1014,7 +1038,7 @@ def test_the_first_screen_of_the_new_base_changes_one_recipe_field_per_model():
         assert entry == {
             **previous["models"]["titans_mac"],
             "predictor_changes": dict(cross_asset_attention=declared),
-            "tier": "y1_xattn",
+            "tier": "y1_xattn_late" if "position" in declared else "y1_xattn",
         }
         if "position" not in declared:
             assert entry == {**previous["models"][model], "tier": "y1_xattn"}
@@ -1025,7 +1049,7 @@ def test_the_first_screen_of_the_new_base_changes_one_recipe_field_per_model():
         "cross_asset_attention_late": "after_technical_branch_before_head",
         "cross_asset_attention_late_self": "after_technical_branch_before_head",
     }
-    assert set(document["models"]) == set(cores) | set(expected) | set(mixers)
+    assert set(document["models"]) == set(cores) | set(nogain) | set(expected) | set(mixers)
     for model, (parent, tier, field, value) in expected.items():
         entry = document["models"][model]
         assert entry == {**previous["models"][parent], "recipe": entry["recipe"], "tier": tier}
@@ -1038,7 +1062,8 @@ def test_the_first_screen_of_the_new_base_changes_one_recipe_field_per_model():
     )["controls"]
     controls = {model: parent for model, (parent, *_rest) in expected.items()}
     controls.update(titans_mac_frozen="titans_mac", titans_mac_disabled="titans_mac")
+    controls.update(zip(nogain, cores, strict=True))
     controls.update({model: control for model, (_declared, control) in mixers.items()})
     assert declared == controls
     jobs = campaign.plan(document, "mars_titan")
-    assert len({job.model for job in jobs if job.tier.startswith("y1_")}) == 17
+    assert len({job.model for job in jobs if job.tier.startswith("y1_")}) == 20
