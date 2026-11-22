@@ -1,6 +1,7 @@
 """Los contrastes con varias semillas promedian por sesión y no esconden semillas que faltan."""
 
 import importlib.util
+import itertools
 import json
 from pathlib import Path
 
@@ -24,7 +25,16 @@ ASSETS = 40
 
 
 def write_model(
-    state, model, seed, *, signal, noise_seed, sessions=SESSIONS, year=2013, assets=ASSETS
+    state,
+    model,
+    seed,
+    *,
+    signal,
+    noise_seed,
+    sessions=SESSIONS,
+    year=2013,
+    assets=ASSETS,
+    markets=("US",),
 ):
     """Emisiones sintéticas: las etiquetas dependen solo de la sesión y el ruido, de la semilla."""
     folder = state / "runs" / model / str(year) / f"seed-{seed}"
@@ -32,18 +42,19 @@ def write_model(
     offset = 0
     for split, count in sessions.items():
         rows = []
-        for session in range(count):
-            labels = np.random.default_rng(10_000 + offset + session).standard_normal(assets)
-            noise = np.random.default_rng(noise_seed * 1000 + offset + session).standard_normal(
-                assets
-            )
-            prediction = signal * labels + noise
+        for session, (place, market) in itertools.product(range(count), enumerate(markets)):
+            # El primer mercado conserva las semillas de siempre; cada uno tiene las suyas.
+            shift = offset + session + 500_000 * place
+            labels = np.random.default_rng(10_000 + shift).standard_normal(assets)
+            noise = np.random.default_rng(noise_seed * 1000 + shift).standard_normal(assets)
+            strength = signal[market] if isinstance(signal, dict) else signal
+            prediction = strength * labels + noise
             instant = START + (offset + session) * DAY
             for asset in range(assets):
                 rows.append(
                     dict(
-                        sample_id=f"US/A{asset:03d}/{instant}",
-                        market="US",
+                        sample_id=f"{market}/A{asset:03d}/{instant}",
+                        market=market,
                         prediction_at=instant,
                         target=float(labels[asset]),
                         prediction=float(prediction[asset]),
@@ -746,3 +757,86 @@ def test_the_command_writes_the_table_and_the_document(tmp_path, capsys):
     assert "Conjunto" in text and "Δ conjunto (t)" in text
     with pytest.raises(SystemExit):
         contrasts.main([*arguments[:-1], str(output), "--seed", "42"])
+
+
+def test_a_market_filter_contrasts_only_the_sessions_of_that_market(tmp_path):
+    state = tmp_path / "state"
+    both = ("US", "CN")
+    for seed in (42, 43, 44):
+        write_model(state, "base", seed, signal=0.3, noise_seed=seed, markets=both)
+        # Mejor solo en China: en EE. UU. es el mismo modelo con otro ruido.
+        write_model(
+            state, "mejor", seed, signal={"US": 0.3, "CN": 0.6}, noise_seed=seed + 50, markets=both
+        )
+    seeds, controls = [42, 43, 44], {"mejor": "base"}
+    whole = contrasts.build(state, 2013, seeds, controls)
+    china = contrasts.build(state, 2013, seeds, controls, market="CN")
+    states = contrasts.build(state, 2013, seeds, controls, market="US")
+    assert "market" not in whole and china["market"] == "CN" and states["market"] == "US"
+    count = SESSIONS["evaluation"]
+    assert whole["contrasts"]["mejor"]["evaluation"]["sessions"] == 2 * count
+    assert china["contrasts"]["mejor"]["evaluation"]["sessions"] == count
+    assert states["contrasts"]["mejor"]["evaluation"]["sessions"] == count
+    gain = {
+        name: document["contrasts"]["mejor"]["evaluation"]["mean"]
+        for name, document in (("whole", whole), ("china", china), ("states", states))
+    }
+    assert gain["china"] > 0.1 and abs(gain["states"]) < 0.03
+    # Las sesiones de los dos mercados pesan lo mismo en el total.
+    assert gain["whole"] == pytest.approx((gain["china"] + gain["states"]) / 2, abs=1e-12)
+    assert china["contrasts"]["mejor"]["evaluation"]["t"] > 5
+    assert "Solo las sesiones de CN" in contrasts.markdown(china)
+    assert "Solo las sesiones" not in contrasts.markdown(whole)
+    with pytest.raises(ValueError, match="no tiene sesiones de JP"):
+        contrasts.build(state, 2013, seeds, controls, market="JP")
+
+
+def test_the_market_filter_also_reaches_the_summary_between_origins(tmp_path):
+    state = tmp_path / "state"
+    for year in (2014, 2015):
+        for seed in (42, 43):
+            common = dict(year=year, markets=("US", "CN"))
+            write_model(state, "base", seed, signal=0.3, noise_seed=seed + year, **common)
+            write_model(
+                state,
+                "mejor",
+                seed,
+                signal={"US": 0.3, "CN": 0.6},
+                noise_seed=seed + 7 * year,
+                **common,
+            )
+    document = contrasts.build_origins(
+        state, [2014, 2015], [42, 43], {"mejor": "base"}, market="CN"
+    )
+    assert document["market"] == "CN"
+    for origin in document["origins"]:
+        assert origin["market"] == "CN"
+        assert origin["contrasts"]["mejor"]["evaluation"]["sessions"] == SESSIONS["evaluation"]
+    assert "Solo las sesiones de CN" in contrasts.markdown_origins(document)
+
+
+def test_the_market_filter_also_reads_a_reference_fitted_once(tmp_path):
+    state, other = tmp_path / "state", tmp_path / "reference"
+    both = ("US", "CN")
+    for seed in (42, 43):
+        write_model(
+            state, "mejor", seed, signal={"US": 0.3, "CN": 0.6}, noise_seed=seed, markets=both
+        )
+    write_model(other, "arboles", 42, signal=0.3, noise_seed=7, markets=both)
+    report = contrasts.build(
+        state,
+        2013,
+        [42, 43],
+        {"mejor": "arboles"},
+        references=[other],
+        reference_seed=42,
+        market="CN",
+    )
+    # El nivel de la referencia es el de sus sesiones chinas, no el de todas.
+    china = contrasts.seed_sessions(contrasts.seed_splits(other, "arboles", 2013, 42, "CN"))
+    expected = float(np.mean(list(china["evaluation"].values())))
+    assert len(china["evaluation"]) == SESSIONS["evaluation"]
+    assert report["models"]["arboles"]["evaluation"]["mean"] == pytest.approx(expected, abs=1e-12)
+    whole = contrasts.seed_sessions(contrasts.seed_splits(other, "arboles", 2013, 42))
+    assert abs(float(np.mean(list(whole["evaluation"].values()))) - expected) > 1e-4
+    assert report["contrasts"]["mejor"]["evaluation"]["sessions"] == SESSIONS["evaluation"]

@@ -80,8 +80,12 @@ def _run(place, model, year, seed):
     return Path(place) / "runs" / model / str(year) / f"seed-{seed}"
 
 
-def seed_splits(place, model, year, seed):
-    """Emisiones de cada tramo de una ejecución, o None si le falta alguno."""
+def seed_splits(place, model, year, seed, market=None):
+    """Emisiones de cada tramo de una ejecución, o None si le falta alguno.
+
+    Con `market` solo quedan las sesiones de ese mercado. En una campaña conjunta cada sesión
+    de cada mercado pesa lo mismo, y un cambio que solo sirve a uno se diluye en el total.
+    """
     report = _report_module()
     run = _run(place, model, year, seed)
     result = {}
@@ -89,6 +93,11 @@ def seed_splits(place, model, year, seed):
         data = report.load_split(run, split)
         if data is None:
             return None
+        if market is not None:
+            kept = [session for session in data["sessions"] if session[0] == market]
+            if not kept:
+                raise ValueError(f"{run}: el tramo {split} no tiene sesiones de {market}")
+            data = dict(data, sessions=kept)
         result[split] = data
     return result
 
@@ -254,15 +263,20 @@ def _level(sessions, per_seed, combined):
     return entry
 
 
-def build(state, year, seeds, controls, references=(), reference_seed=None, offset=None):
+def build(
+    state, year, seeds, controls, references=(), reference_seed=None, offset=None, market=None
+):
     """Niveles de cada modelo y contraste de cada uno con su control.
 
-    Con `offset` (el alfa conocido de cada fila) se mide además el rendimiento operable.
+    Con `offset` (el alfa conocido de cada fila) se mide además el rendimiento operable. Con
+    `market` todo se mide solo en las sesiones de ese mercado.
     """
-    return _origin(state, year, seeds, controls, references, reference_seed, offset)[0]
+    return _origin(state, year, seeds, controls, references, reference_seed, offset, market)[0]
 
 
-def _origin(state, year, seeds, controls, references=(), reference_seed=None, offset=None):
+def _origin(
+    state, year, seeds, controls, references=(), reference_seed=None, offset=None, market=None
+):
     """El documento de un origen y sus series de IC por sesión, una por clase de medida."""
     report = _report_module()
     seeds = list(dict.fromkeys(seeds))
@@ -273,10 +287,10 @@ def _origin(state, year, seeds, controls, references=(), reference_seed=None, of
         # Las emisiones de un modelo se sueltan al pasar al siguiente: solo queda el IC.
         place, fixed = _home(state, name, year, references, reference_seed)
         if fixed is None:
-            runs = [seed_splits(place, name, year, seed) for seed in seeds]
+            runs = [seed_splits(place, name, year, seed, market) for seed in seeds]
         else:
             # Un solo ajuste: se lee una vez y hace de pareja de todas las semillas.
-            runs = [seed_splits(place, name, year, fixed)] * len(seeds)
+            runs = [seed_splits(place, name, year, fixed, market)] * len(seeds)
         absent = [seed for seed, run in zip(seeds, runs, strict=True) if run is None]
         if absent:
             missing[name] = absent
@@ -311,6 +325,8 @@ def _origin(state, year, seeds, controls, references=(), reference_seed=None, of
         contrasts={},
         incomplete={},
     )
+    if market is not None:
+        document["market"] = market
     for name, per_kind in measured_mean.items():
         seeds_of = measured_seed[name]
         for kind, key, factor in OPERABLE_LEVELS:
@@ -388,11 +404,13 @@ def _split(sessions, split):
     return _pooled(sessions, DECISION) if split == "decision" else sessions[split]
 
 
-def build_origins(state, years, seeds, controls, references=(), reference_seed=None, offsets=None):
+def build_origins(
+    state, years, seeds, controls, references=(), reference_seed=None, offsets=None, market=None
+):
     """Los contrastes de cada origen y su resumen entre orígenes.
 
     `offsets` da, para cada año, el alfa conocido de sus filas; con él se resume también el
-    rendimiento operable.
+    rendimiento operable. Con `market` todo se mide solo en las sesiones de ese mercado.
     """
     report = _report_module()
     years = list(dict.fromkeys(years))
@@ -405,6 +423,7 @@ def build_origins(state, years, seeds, controls, references=(), reference_seed=N
             references,
             reference_seed,
             None if offsets is None else offsets(year),
+            market,
         )
         for year in years
     ]
@@ -417,6 +436,8 @@ def build_origins(state, years, seeds, controls, references=(), reference_seed=N
         origins=[part[0] for part in parts],
         across={},
     )
+    if market is not None:
+        document["market"] = market
     for name, control in sorted(controls.items()):
         present = [part for part in parts if name in part[0]["contrasts"]]
         if not present:
@@ -523,10 +544,17 @@ def _operable_table(document):
     return lines
 
 
+def _market_note(document):
+    """La línea que dice que solo se leyó un mercado, si es así."""
+    market = document.get("market")
+    return [] if market is None else [f"Solo las sesiones de {market}.", ""]
+
+
 def markdown(document):
     lines = [
         f"# Contrastes con {len(document['seeds'])} semillas, origen {document['year']}",
         "",
+        *_market_note(document),
         "El IC de cada sesión es la media de las semillas. La t usa error con autocorrelación.",
         "El conjunto es el IC de la media de rangos de las semillas, y su Δ compara el conjunto",
         "del modelo con el de su control, en evaluación.",
@@ -583,6 +611,7 @@ def markdown_origins(document):
         f"# Contrastes con {len(document['seeds'])} semillas en {len(years)} orígenes",
         "",
         f"Orígenes: {', '.join(map(str, years))}.",
+        *_market_note(document),
         "El IC de cada sesión es la media de las semillas.",
         "",
         "## Entre orígenes",
@@ -675,6 +704,10 @@ def main(argv=None):
         help="Medir también el rendimiento operable, con el alfa conocido de cada fila",
     )
     parser.add_argument(
+        "--market",
+        help="Medir solo las sesiones de este mercado (por ejemplo CN en una campaña conjunta)",
+    )
+    parser.add_argument(
         "--pair",
         action="append",
         default=[],
@@ -692,7 +725,9 @@ def main(argv=None):
         if controls.get(name, control) != control:
             parser.error(f"{name} ya tiene declarado otro control: {controls[name]}")
         controls[name] = control
-    sources = dict(references=args.reference, reference_seed=args.reference_seed)
+    sources = dict(
+        references=args.reference, reference_seed=args.reference_seed, market=args.market
+    )
 
     def known(year):
         return _report_module().KnownOffset(args.state, year)
