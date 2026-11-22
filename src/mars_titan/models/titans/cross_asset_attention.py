@@ -21,6 +21,11 @@ Cada activo solo se atiende a sí mismo y la mezcla se reduce a W_o W_v n_i. As�
 información de los demás activos del efecto de añadir una capa residual.
 
 C5 necesita todas las filas de la sesión en el mismo bloque (`session_level`).
+
+Por defecto (`position="after_mac"`) mezcla la salida de MAC, antes de que la rama técnica
+sume su residuo, así que no ve esa señal. Con `position="after_technical"` mezcla después de
+la rama técnica: e_i es entonces la representación completa que lee la cabeza. Es otra
+identidad y necesita que la rama técnica esté declarada.
 """
 
 import hashlib
@@ -36,18 +41,27 @@ from .state import check_finite
 CROSS_ASSET_ATTENTION = "cross_asset_attention_v1"
 MODES = ("same_session", "self_only")
 HEADS = (1, 2, 4, 8)
+# Posición declarada y el nombre con el que entra en la identidad. El de la posición de
+# partida es el de siempre: una declaración sin `position` conserva su identidad.
+POSITIONS = dict(
+    after_mac="after_mac_before_head",
+    after_technical="after_technical_branch_before_head",
+)
 
 
 @dataclass(frozen=True)
 class CrossAssetAttentionConfig:
     heads: int = 4
     mode: str = "same_session"
+    position: str = "after_mac"
 
     def __post_init__(self):
         if type(self.heads) is not int or self.heads not in HEADS:
             raise ValueError(f"C5 admite {HEADS} cabezas")
         if type(self.mode) is not str or self.mode not in MODES:
             raise ValueError("El modo de C5 debe ser same_session o self_only")
+        if type(self.position) is not str or self.position not in POSITIONS:
+            raise ValueError("La posición de C5 debe ser after_mac o after_technical")
 
     def identity(self):
         return dict(
@@ -58,7 +72,7 @@ class CrossAssetAttentionConfig:
             groups="same_market_and_prediction_instant_in_the_block"
             if self.mode == "same_session"
             else "each_row_with_itself",
-            position="after_mac_before_head",
+            position=POSITIONS[self.position],
             normalization="layer_norm_before_projections",
             output="residual_with_zero_initialized_projection",
             state="none",
@@ -73,9 +87,12 @@ def parse_cross_asset_attention(raw):
     if type(raw) is CrossAssetAttentionConfig:
         raw.__post_init__()
         return raw
-    if isinstance(raw, dict) and set(raw) == {"heads", "mode"}:
+    if isinstance(raw, dict) and {"heads", "mode"} <= set(raw) <= {"heads", "mode", "position"}:
         return CrossAssetAttentionConfig(**raw)
-    raise ValueError("cross_asset_attention debe declarar heads y mode, o ser None")
+    raise ValueError(
+        "cross_asset_attention debe declarar heads y mode, con position si no es la de partida, "
+        "o ser None"
+    )
 
 
 class CrossAssetAttention(nn.Module):

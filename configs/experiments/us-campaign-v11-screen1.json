@@ -3,7 +3,7 @@
   "kind": "comparison_campaign_v1",
   "market": "US",
   "final_test_access": false,
-  "description": "Primera criba de la base nueva (v11) en EE. UU.: el núcleo de la v10 y sus dos controles, campo a campo, y diez variantes de una sola variable que la rama v11 permite medir. La normalización por capa de la rama densa, el recorte de gradiente por grupo funcional y el recorte global en 10, la recencia por tasa de aprendizaje con semividas de 5 y 10 años, el recorte suave de las entradas escaladas, la escala aprendida por entrada en la rama densa, y la emisión sin grafo de los tramos que se repiten en los tres modos de memoria, que no debe cambiar ningún resultado y mide tiempo.",
+  "description": "Primera criba de la base nueva (v11) en EE. UU.: el núcleo de la v10 y sus dos controles, campo a campo, y diez variantes de una sola variable que la rama v11 permite medir. La normalización por capa de la rama densa, el recorte de gradiente por grupo funcional y el recorte global en 10, la recencia por tasa de aprendizaje con semividas de 5 y 10 años, el recorte suave de las entradas escaladas, la escala aprendida por entrada en la rama densa, y la emisión sin grafo de los tramos que se repiten en los tres modos de memoria, que no debe cambiar ningún resultado y mide tiempo. Además, la atención entre activos en sus dos posiciones, antes y después de la rama técnica, cada una con su control self_only.",
   "source_declaration_sha256": "836c79a6122fc14a1566826ece99f3708849a7d481361c334acd693383c88716",
   "cohort": {
     "size": 4198,
@@ -118,7 +118,8 @@
     "y1_clip",
     "y1_recency",
     "y1_scale",
-    "y1_speed"
+    "y1_speed",
+    "y1_xattn"
   ],
   "recipes": {
     "core": "configs/titans/dgx-us-core-u2-ic3-dense-gr-v9.json",
@@ -272,6 +273,60 @@
       "runner": "fit",
       "tier": "y1_speed",
       "variant": "mac_disabled"
+    },
+    "cross_asset_attention": {
+      "machine": "mars_titan",
+      "recipe": "core",
+      "runner": "fit",
+      "tier": "y1_xattn",
+      "variant": "mac_online",
+      "predictor_changes": {
+        "cross_asset_attention": {
+          "heads": 4,
+          "mode": "same_session"
+        }
+      }
+    },
+    "cross_asset_attention_self": {
+      "machine": "mars_titan",
+      "recipe": "core",
+      "runner": "fit",
+      "tier": "y1_xattn",
+      "variant": "mac_online",
+      "predictor_changes": {
+        "cross_asset_attention": {
+          "heads": 4,
+          "mode": "self_only"
+        }
+      }
+    },
+    "cross_asset_attention_late": {
+      "machine": "mars_titan",
+      "recipe": "core",
+      "runner": "fit",
+      "tier": "y1_xattn",
+      "variant": "mac_online",
+      "predictor_changes": {
+        "cross_asset_attention": {
+          "heads": 4,
+          "mode": "same_session",
+          "position": "after_technical"
+        }
+      }
+    },
+    "cross_asset_attention_late_self": {
+      "machine": "mars_titan",
+      "recipe": "core",
+      "runner": "fit",
+      "tier": "y1_xattn",
+      "variant": "mac_online",
+      "predictor_changes": {
+        "cross_asset_attention": {
+          "heads": 4,
+          "mode": "self_only",
+          "position": "after_technical"
+        }
+      }
     }
   },
   "inputs": {

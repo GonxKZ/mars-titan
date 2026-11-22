@@ -14,7 +14,11 @@
     "titans_mac_fscale": "titans_mac",
     "titans_mac_nograph": "titans_mac",
     "titans_mac_frozen_nograph": "titans_mac_frozen",
-    "titans_mac_disabled_nograph": "titans_mac_disabled"
+    "titans_mac_disabled_nograph": "titans_mac_disabled",
+    "cross_asset_attention": "titans_mac",
+    "cross_asset_attention_self": "cross_asset_attention",
+    "cross_asset_attention_late": "cross_asset_attention",
+    "cross_asset_attention_late_self": "cross_asset_attention_late"
   },
   "always_kept": [
     "titans_mac_macro",

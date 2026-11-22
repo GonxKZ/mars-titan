@@ -678,6 +678,16 @@ class FinancialConfig:
         object.__setattr__(
             self, "cross_asset_attention", parse_cross_asset_attention(self.cross_asset_attention)
         )
+        declared = self.cross_asset_attention
+        if (
+            declared is not None
+            and declared.position == "after_technical"
+            and self.technical_branch is None
+        ):
+            raise ValueError(
+                "La atención entre activos después de la rama técnica necesita la rama técnica "
+                "declarada (technical_branch)"
+            )
         # H4 y C5 son dos formas de mezclar los activos de la sesión y se comparan entre sí.
         if self.asset_groups is not None and self.cross_asset_attention is not None:
             raise ValueError("H4 y C5 son alternativas y no se combinan")
@@ -2312,9 +2322,10 @@ class FinancialPredictor(nn.Module):
                 )
             else:
                 encoded, next_mac = token, None
-            if self.cross_asset_attention is not None:
+            mixer = self.cross_asset_attention
+            if mixer is not None and mixer.config.position == "after_mac":
                 # Mezcla las filas de cada mercado e instante del bloque, que es la sesión entera.
-                encoded = self.cross_asset_attention(encoded, markets, batch.prediction_at)
+                encoded = mixer(encoded, markets, batch.prediction_at)
             if self.asset_groups is not None:
                 # Los grupos salen de la ventana recibida, sin los rangos de F4.
                 encoded = self.asset_groups(
@@ -2331,6 +2342,9 @@ class FinancialPredictor(nn.Module):
                 # Con rangos por sesión, entre las filas del bloque de cada mercado.
                 residual = branch(charts, markets) if branch.session_level else branch(charts)
                 encoded = encoded + residual
+            if mixer is not None and mixer.config.position == "after_technical":
+                # La mezcla lee la representación con su residuo técnico, la que ve la cabeza.
+                encoded = mixer(encoded, markets, batch.prediction_at)
             if self.local_control is not None:
                 local_result = self.local_control(
                     self.mac,

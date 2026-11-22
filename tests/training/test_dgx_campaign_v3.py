@@ -7,6 +7,7 @@ from pathlib import Path
 import pytest
 
 from mars_titan.data import technical_features
+from mars_titan.models.titans.cross_asset_attention import parse_cross_asset_attention
 from mars_titan.training import comparison_campaign as campaign
 from mars_titan.training import mars_titan_run as readout
 from mars_titan.training.comparison_cohorts import FULL_VIEW_RULE
@@ -933,7 +934,7 @@ def test_the_first_screen_of_the_new_base_changes_one_recipe_field_per_model():
         assert document[key] == previous[key], key
     assert document["source_declaration_sha256"] == hashlib.sha256(source.read_bytes()).hexdigest()
     tiers = ["core", "controls", "y1_norm", "y1_clip", "y1_recency", "y1_scale", "y1_speed"]
-    assert document["tiers"] == tiers
+    assert document["tiers"] == [*tiers, "y1_xattn"]
     # El núcleo y sus controles son los de la v10, campo a campo: la base nueva los reproduce.
     cores = ("titans_mac", "titans_mac_frozen", "titans_mac_disabled")
     for model in cores:
@@ -985,7 +986,39 @@ def test_the_first_screen_of_the_new_base_changes_one_recipe_field_per_model():
             True,
         ),
     }
-    assert set(document["models"]) == set(cores) | set(expected)
+    # La atención entre activos en sus dos posiciones, cada una con su control self_only. Las
+    # dos de la v10 se declaran como allí; las tardías solo añaden la posición.
+    late = dict(position="after_technical")
+    mixers = {
+        "cross_asset_attention": (dict(heads=4, mode="same_session"), "titans_mac"),
+        "cross_asset_attention_self": (dict(heads=4, mode="self_only"), "cross_asset_attention"),
+        "cross_asset_attention_late": (
+            dict(heads=4, mode="same_session", **late),
+            "cross_asset_attention",
+        ),
+        "cross_asset_attention_late_self": (
+            dict(heads=4, mode="self_only", **late),
+            "cross_asset_attention_late",
+        ),
+    }
+    positions = {}
+    for model, (declared, _control) in mixers.items():
+        entry = document["models"][model]
+        assert entry == {
+            **previous["models"]["titans_mac"],
+            "predictor_changes": dict(cross_asset_attention=declared),
+            "tier": "y1_xattn",
+        }
+        if "position" not in declared:
+            assert entry == {**previous["models"][model], "tier": "y1_xattn"}
+        positions[model] = parse_cross_asset_attention(declared).identity()["position"]
+    assert positions == {
+        "cross_asset_attention": "after_mac_before_head",
+        "cross_asset_attention_self": "after_mac_before_head",
+        "cross_asset_attention_late": "after_technical_branch_before_head",
+        "cross_asset_attention_late_self": "after_technical_branch_before_head",
+    }
+    assert set(document["models"]) == set(cores) | set(expected) | set(mixers)
     for model, (parent, tier, field, value) in expected.items():
         entry = document["models"][model]
         assert entry == {**previous["models"][parent], "recipe": entry["recipe"], "tier": tier}
@@ -998,6 +1031,7 @@ def test_the_first_screen_of_the_new_base_changes_one_recipe_field_per_model():
     )["controls"]
     controls = {model: parent for model, (parent, *_rest) in expected.items()}
     controls.update(titans_mac_frozen="titans_mac", titans_mac_disabled="titans_mac")
+    controls.update({model: control for model, (_declared, control) in mixers.items()})
     assert declared == controls
     jobs = campaign.plan(document, "mars_titan")
-    assert len({job.model for job in jobs if job.tier.startswith("y1_")}) == 10
+    assert len({job.model for job in jobs if job.tier.startswith("y1_")}) == 14
