@@ -33,6 +33,7 @@ from __future__ import annotations
 import hashlib
 import json
 import math
+import queue
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
 
@@ -54,7 +55,7 @@ CHUNK = 128
 MAX_THREADS = 16
 
 
-def _top(sims, k):
+def _top(sims, k, mask=None):
     """Posiciones de las k mayores similitudes de cada fila, en el orden estable del laboratorio.
 
     El orden es el de `np.argsort(-sims, kind="stable")[:, :k]`: de mayor a menor coseno y, a
@@ -63,6 +64,7 @@ def _top(sims, k):
     valor de la fila (al menos k bloques tienen un elemento que la alcanza), así que las filas que
     la alcanzan contienen a las k mayores. Con unos 2k bloques quedan del orden de 1,4k
     candidatas por fila, que se ordenan; el resultado no depende del tamaño de los bloques.
+    `mask`, si se da, es un búfer booleano con la forma de `sims` donde se marcan las candidatas.
     """
     rows, size = sims.shape
     width = max(1, size // (2 * k))
@@ -72,7 +74,9 @@ def _top(sims, k):
         maxima = np.concatenate([maxima, sims[:, whole:].max(axis=1, keepdims=True)], axis=1)
     blocks = maxima.shape[1]
     low = np.partition(maxima, blocks - k, axis=1)[:, blocks - k]
-    row, column = np.nonzero(sims >= low[:, None])
+    if mask is None:
+        mask = np.empty(sims.shape, dtype=bool)
+    row, column = np.nonzero(np.greater_equal(sims, low[:, None], out=mask))
     counts = np.bincount(row, minlength=rows)
     _require(bool(np.all(counts >= k)), "La cota de los k vecinos dejó una fila sin k candidatas")
     order = np.lexsort((column, -sims[row, column], row))
@@ -179,6 +183,25 @@ class _Market:
         self.matured = 0
 
 
+class _Scratch:
+    """Búferes de un hilo de lectura: similitudes y máscara de un bloque de consultas.
+
+    Se reservan una vez y solo crecen. Reservarlos en cada bloque (87 MB con el banco de 63
+    cohortes) costaba un fallo de página por cada 4 KiB tocado y era la mayor parte del tiempo.
+    """
+
+    def __init__(self):
+        self._sims = np.empty(0, dtype=np.float32)
+        self._mask = np.empty(0, dtype=bool)
+
+    def views(self, rows, size):
+        need = rows * size
+        if self._sims.size < need:
+            self._sims = np.empty(need, dtype=np.float32)
+            self._mask = np.empty(need, dtype=bool)
+        return self._sims[:need].reshape(rows, size), self._mask[:need].reshape(rows, size)
+
+
 class NeighbourMemory:
     """Banco causal por mercado y lectura por vecinos para M modelos a la vez."""
 
@@ -198,6 +221,23 @@ class NeighbourMemory:
         self.models = models
         self.threads = threads
         self._markets = {}
+        # Búferes reutilizados (no son estado): uno por hilo de lectura y el banco contiguo de
+        # cada mercado.
+        self._scratch = queue.SimpleQueue()
+        for _ in range(threads):
+            self._scratch.put(_Scratch())
+        self._joined = {}
+
+    def _join(self, market, name, parts):
+        """`np.concatenate(parts)` escrito en un búfer del mercado que solo crece."""
+        size = sum(len(part) for part in parts)
+        tail, dtype = parts[0].shape[1:], parts[0].dtype
+        buffer = self._joined.get((market, name))
+        fits = buffer is not None and buffer.dtype == dtype and buffer.shape[1:] == tail
+        if not fits or len(buffer) < size:
+            buffer = np.empty((size + size // 2, *tail), dtype=dtype)
+            self._joined[(market, name)] = buffer
+        return np.concatenate(parts, out=buffer[:size])
 
     def _market(self, market, create=False):
         _require(isinstance(market, str) and market, "El mercado es un texto no vacío")
@@ -212,11 +252,11 @@ class NeighbourMemory:
         placebo = None if placebo_seed is None else np.zeros((rows, self.models))
         if not state.bank:
             return reads, placebo
-        bank_keys = np.concatenate([c["keys"] for c in state.bank])
-        values = np.concatenate([c["values"] for c in state.bank])
+        bank_keys = self._join(market, "keys", [c["keys"] for c in state.bank])
+        values = self._join(market, "values", [c["values"] for c in state.bank])
         bank_assets = None
         if self.config.exclude_own:
-            bank_assets = np.concatenate([c["assets"] for c in state.bank])
+            bank_assets = self._join(market, "assets", [c["assets"] for c in state.bank])
         _require(
             bank_keys.shape[1] == keys.shape[1],
             f"Las claves de {market} en {prediction_at} no tienen la dimensión del banco",
@@ -230,11 +270,21 @@ class NeighbourMemory:
         tau = float(self.config.tau)
 
         def read(start):
-            sims = keys[start : start + CHUNK] @ bank_keys.T
+            scratch = self._scratch.get()
+            try:
+                _read(start, scratch)
+            finally:
+                self._scratch.put(scratch)
+
+        def _read(start, scratch):
+            block = keys[start : start + CHUNK]
+            sims, mask = scratch.views(len(block), size)
+            np.matmul(block, bank_keys.T, out=sims)
             if bank_assets is not None:
-                sims[assets[start : start + CHUNK, None] == bank_assets[None, :]] = -np.inf
+                np.equal(assets[start : start + CHUNK, None], bank_assets[None, :], out=mask)
+                sims[mask] = -np.inf
             if k < size:
-                index = _top(sims, k)
+                index = _top(sims, k, mask=mask)
             else:
                 index = np.broadcast_to(np.arange(size), sims.shape)
             top = np.take_along_axis(sims, index, axis=1).astype(np.float64)

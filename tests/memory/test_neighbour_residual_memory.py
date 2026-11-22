@@ -407,3 +407,36 @@ def test_a_restored_state_of_an_exclusion_needs_the_asset_of_every_row():
         broken["state_sha256"] = nrm._state_sha256(broken)
         with pytest.raises(ValueError, match="no es coherente"):
             nrm.NeighbourMemory.restore(broken)
+
+
+def test_reading_a_cohort_reuses_the_buffers_of_the_earlier_ones():
+    """Con el banco lleno, una cohorte se lee sin pedir memoria del tamaño de los bloques.
+
+    La matriz de similitudes de un bloque de consultas frente al banco (128 × 9.000 cosenos FP32,
+    4,6 MB aquí; 87 MB con el banco real de 63 cohortes) y la máscara de candidatas se escriben en
+    búferes que se reservan una vez y se reutilizan. Pedirlos de nuevo en cada bloque cuesta
+    fallos de página y tiempo de sistema (110 millones de fallos en el origen 2013).
+    """
+    import tracemalloc
+
+    assets, sessions = 3000, 6
+    data = panel(sessions=sessions, assets=assets, seed=12)
+    first = {key: value[: (sessions - 1) * assets] for key, value in data.items()}
+    last = {key: value[(sessions - 1) * assets :] for key, value in data.items()}
+    memory = nrm.NeighbourMemory(CONFIG, models=2)
+    nrm.replay(memory, **first, flush=False)
+    # Solo la cohorte pendiente (la última de `first`) necesita su etiqueta al reanudar.
+    pending = slice((sessions - 2) * assets, (sessions - 1) * assets)
+    earlier = {key: data[key][pending] for key in ("markets", "prediction_at", "target")}
+    tracemalloc.start()
+    try:
+        before = tracemalloc.get_traced_memory()[0]
+        tracemalloc.reset_peak()
+        reads, _ = nrm.replay(memory, **last, flush=False, pending_targets=earlier)
+        peak = tracemalloc.get_traced_memory()[1] - before
+    finally:
+        tracemalloc.stop()
+    similarities = nrm.CHUNK * CONFIG.window * assets * 4
+    assert peak < similarities / 2, f"{peak} bytes nuevos al leer una cohorte"
+    whole, _, _ = run(data)
+    np.testing.assert_array_equal(reads, whole[(sessions - 1) * assets :])
