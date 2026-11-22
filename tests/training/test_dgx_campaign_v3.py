@@ -1307,3 +1307,29 @@ def test_the_branch_and_the_known_offset_follow_the_declared_technical_version()
         dict(moved, models=plain, tiers=sorted({model["tier"] for model in plain.values()})),
         root=ROOT,
     )
+
+
+def test_the_liquidity_column_follows_the_declared_technical_version():
+    experiments = ROOT / "configs/experiments"
+    source = json.loads((experiments / "dgx-us-campaign-v10.json").read_text())
+    liquid = {name: model for name, model in source["models"].items() if "liq" in name}
+    assert len(liquid) == 4 and {model["tier"] for model in liquid.values()} == {"r4_liquid"}
+    document = {key: value for key, value in source.items() if key != "analysis"}
+    document.update(models=liquid, tiers=["r4_liquid"])
+    campaign.checked_declaration(document, root=ROOT)
+    # El término de IC ponderado lee el volumen negociado, contado desde el final del bloque.
+    recipe = json.loads((ROOT / source["recipes"]["core_liq1"]).read_text())
+    assert recipe["recipe"]["session_ic_term"]["liquidity_column"] == -29
+    assert technical_features.NAMES_V2[-29] == "log_dollar_volume_21"
+    assert technical_features.NAMES_V3[-29] != "log_dollar_volume_21"
+    branch = dict(columns=62, hidden=128, depth=2, session_ranks=True)
+    moved = dict(
+        document,
+        inputs=dict(technical=technical_features.NAME_V3),
+        models={
+            name: dict(model, predictor_changes=dict(technical_branch=branch))
+            for name, model in liquid.items()
+        },
+    )
+    with pytest.raises(ValueError, match="columna de liquidez"):
+        campaign.checked_declaration(moved, root=ROOT)

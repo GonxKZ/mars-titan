@@ -155,15 +155,19 @@ def _checked_rule(rule, runner):
     return rule
 
 
-# Columna de los rasgos técnicos con el alfa conocido de la fila, que suma el término de IC de
-# lo operable (`offset_column`).
-KNOWN_ALPHA = "alpha_percent"
+# Columnas de los rasgos técnicos que el término de IC lee por su posición contada desde el
+# final del bloque: el alfa conocido de la fila, que suma el término de lo operable, y el
+# volumen negociado, que pondera el término de lo líquido.
+NAMED_COLUMNS = dict(
+    offset_column=("alpha_percent", "El desplazamiento conocido"),
+    liquidity_column=("log_dollar_volume_21", "La columna de liquidez"),
+)
 
 
 def _technical_reading(root, path, model, read):
-    """Columnas que lee la rama técnica de un modelo y columna de su desplazamiento conocido.
+    """Columnas que lee la rama técnica de un modelo y las que su término de IC lee por posición.
 
-    Las dos se cuentan desde el final del bloque del gráfico, así que dependen de cuántas
+    Todas se cuentan desde el final del bloque del gráfico, así que dependen de cuántas
     columnas añade la versión de rasgos de la campaña. `read` guarda las recetas ya leídas.
     """
     if path not in read:
@@ -174,7 +178,7 @@ def _technical_reading(root, path, model, read):
     term = (recipe.get("recipe") or {}).get("session_ic_term")
     return (
         branch.get("columns") if isinstance(branch, dict) else None,
-        term.get("offset_column") if isinstance(term, dict) else None,
+        {key: term[key] for key in NAMED_COLUMNS if key in term} if isinstance(term, dict) else {},
     )
 
 
@@ -424,23 +428,21 @@ def checked_declaration(document, *, root=ROOT, check_recipe_files=True):
         if runner in GPU_RUNNERS:
             job_rule(document, model)
         if runner in GPU_RUNNERS and check_recipe_files:
-            # La rama y el desplazamiento se cuentan desde el final del bloque: con otra
-            # versión de rasgos leerían otras columnas sin que nada fallara.
-            columns, offset = _technical_reading(root, recipes[model["recipe"]], model, read)
+            # La rama y las columnas del término de IC se cuentan desde el final del bloque:
+            # con otra versión de rasgos leerían otras columnas sin que nada fallara.
+            columns, placed = _technical_reading(root, recipes[model["recipe"]], model, read)
             _require(
                 columns is None or columns == len(technical),
                 f"La rama técnica del modelo {name} lee {columns} columnas y los rasgos "
                 f"declarados por la campaña tienen {len(technical)}",
             )
-            _require(
-                offset is None
-                or (
-                    KNOWN_ALPHA in technical
-                    and offset == technical.index(KNOWN_ALPHA) - len(technical)
-                ),
-                f"El desplazamiento conocido del modelo {name} lee la columna {offset} y la del "
-                f"alfa ({KNOWN_ALPHA}) es otra con los rasgos declarados por la campaña",
-            )
+            for key, position in placed.items():
+                wanted, label = NAMED_COLUMNS[key]
+                _require(
+                    wanted in technical and position == technical.index(wanted) - len(technical),
+                    f"{label} del modelo {name} lee la columna {position} y la de {wanted} "
+                    "es otra con los rasgos declarados por la campaña",
+                )
         if "continuation" in model:
             _require(
                 model["continuation"] == CONTINUATION,
