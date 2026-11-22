@@ -51,7 +51,8 @@ Por eso todo ajuste con China hasta hoy ha entrenado sin el modelo de mercado.
      - Ganancia medida con árboles en 2013: +0,0079.
      - Riesgo de fuga: m(t) solo puede salir de etiquetas ya maduras en t, que son las de las
        decisiones de t − 1. Hay que reconstruirlo en un recorrido cronológico y con la madurez
-       exacta de la vista, nunca de una vez con toda la serie.
+       exacta de la vista como fecha de disponibilidad (unión hacia atrás), nunca de una vez con
+       toda la serie.
   3. **El segundo modelo de mercado de H10**, contra la media simple del rendimiento intradía del
      propio universo en cada sesión, en los dos mercados.
      - Ganancia medida con árboles en 2013: de 0,117 a 0,130 (+0,0098 a +0,0130 en tres semillas,
