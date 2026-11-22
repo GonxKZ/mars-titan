@@ -103,6 +103,9 @@ def test_twins_reproduce_the_parity_and_the_crossed_cells_of_the_factorial(
     assert json.loads((output / "report.json").read_text()) == json.loads(json.dumps(report))
     for partition, result in report["pairs"]["titans_mac"]["partitions"].items():
         ic, contrasts = result["ic"], result["contrasts"]
+        # El perfil reparte las sesiones del tramo entre sus trimestres.
+        assert sum(item["sessions"] for item in result["quarters"].values()) == result["sessions"]
+        assert set(result["trend"]) == {"N", "D", "A", "I"}
         # Oráculo: sin pasos de optimizador, cada gemelo es la ventana de la otra variante.
         assert ic["of"] == ic["ff"] and ic["fo"] == ic["oo"], partition
         assert contrasts["N"]["mean"] == contrasts["D"]["mean"] == contrasts["A"]["mean"]
@@ -329,3 +332,49 @@ def test_seeds_are_averaged_session_by_session_as_replicates():
     np.testing.assert_allclose(
         averaged["of"], twins.seed_average({43: second, 42: first}, keys)["of"]
     )
+
+
+def test_the_profile_gives_each_contrast_by_calendar_quarter_and_its_trend_per_year():
+    rng = np.random.default_rng(13)
+    days = np.sort(rng.choice(365, size=251, replace=False))
+    # 2013-01-01 a las 21:00 UTC, en microsegundos, más un día laborable por sesión.
+    instants = 1_357_074_000_000_000 + days * 86_400_000_000
+    year = days / 365.25
+    noise = 0.002 * rng.standard_normal((4, 251))
+    # Escribir gana 0,01 en enero y la ventaja cae 0,02 por año; la del control no cambia.
+    ic = dict(
+        oo=0.10 + noise[0],
+        of=0.09 + 0.02 * year + noise[1],
+        ff=0.08 + noise[2],
+        fo=0.08 + noise[3],
+    )
+    # Dos bloques de mercado: el error HAC de cada trimestre usa los bloques de sus sesiones.
+    blocks = [("t", 2013, "US" if i % 3 else "CN") for i in range(251)]
+    result = twins.partition_statistics(ic, blocks, 0.95, instants=instants)
+    contrasts = twins.factorial_contrasts(ic)
+    months = instants.astype("datetime64[us]").astype("datetime64[M]").astype(np.int64) % 12
+    labels = np.array([f"2013T{month // 3 + 1}" for month in months])
+    assert list(result["quarters"]) == ["2013T1", "2013T2", "2013T3", "2013T4"]
+    screening = twins._screening()
+    for label, item in result["quarters"].items():
+        rows = np.flatnonzero(labels == label)
+        assert item["sessions"] == len(rows)
+        for name in ("N", "D", "A", "I"):
+            values = contrasts[name][rows]
+            assert item[name]["mean"] == pytest.approx(values.mean(), abs=1e-15)
+            _, se, _ = screening._newey_west_hac(values, blocks=[blocks[i] for i in rows])
+            assert item[name]["se_hac"] == pytest.approx(se, rel=1e-12)
+    trend = result["trend"]
+    x = (instants - instants[0]) / (365.25 * 86_400_000_000)
+    slope = np.polyfit(x, contrasts["N"], 1)[0]
+    assert trend["N"]["slope_per_year"] == pytest.approx(slope, rel=1e-9)
+    assert trend["N"]["slope_per_year"] == pytest.approx(-0.02, abs=0.005)
+    centered = x - x.mean()
+    residual = contrasts["N"] - contrasts["N"].mean() - slope * centered
+    _, se_mean, _ = screening._newey_west_hac(centered * residual, blocks=blocks)
+    expected = se_mean * len(x) / np.sum(centered**2)
+    assert trend["N"]["se_hac"] == pytest.approx(expected, rel=1e-6)
+    assert trend["N"]["t"] < -5 and abs(trend["D"]["t"]) < 3
+    assert trend["N"]["sessions"] == 251
+    # Sin instantes no hay perfil.
+    assert "quarters" not in twins.partition_statistics(ic, blocks, 0.95)

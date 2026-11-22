@@ -35,6 +35,10 @@ detectable 2,8 × EE (80 % de potencia, α = 0,05 bilateral). TTWS = N̄ / D̄ e
 ventaja atribuible a la escritura en evaluación, con error por el método delta y el intervalo de
 Fieller de la covarianza HAC conjunta de (N, D). Si D̄ no se distingue de cero con la confianza
 declarada, el intervalo de Fieller no está acotado y el cociente no se interpreta.
+
+Cada tramo lleva además el perfil de N, D, A e I por trimestre natural de sus sesiones y su
+pendiente por año (mínimos cuadrados con error HAC de la puntuación), para ver si la ventaja de
+escribir decae a lo largo del recorrido.
 """
 
 from __future__ import annotations
@@ -46,7 +50,7 @@ import math
 import os
 import resource
 import time
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from statistics import NormalDist
 
@@ -65,6 +69,7 @@ JOBS = {
     "frozen_fit_online_eval": ("frozen", "mac_online"),
 }
 CELLS = ("oo", "of", "ff", "fo")
+YEAR_US = 365.25 * 86_400_000_000
 FIRST_ORIGIN, LAST_ORIGIN = 2005, 2023
 _DECLARATION = {
     "schema_version",
@@ -552,21 +557,78 @@ def seed_average(seeds, keys):
     }
 
 
-def partition_statistics(ic, blocks, confidence):
-    """Medias de las celdas, contrastes con su error HAC, sus lecturas y el cociente TTWS."""
+def _quarter(instant):
+    """Trimestre natural (UTC) de un instante en microseconds: «2013T1»."""
+    moment = datetime(1970, 1, 1, tzinfo=UTC) + timedelta(microseconds=int(instant))
+    return f"{moment.year}T{(moment.month - 1) // 3 + 1}"
+
+
+def trend_statistics(values, instants, blocks):
+    """Pendiente por año de una serie de sesiones (MCO) con su error HAC por bloque.
+
+    Var(b) = Var(Σ (x − x̄)·e) / Sxx², con la varianza de largo plazo de la puntuación (x − x̄)·e
+    del error de Newey-West de la criba (Bartlett, retardo automático por bloque).
+    """
+    values = np.asarray(values, dtype=np.float64)
+    years = (np.asarray(instants, dtype=np.float64) - float(np.min(instants))) / YEAR_US
+    centered = years - years.mean()
+    spread = float(np.sum(centered**2))
+    if len(values) < 3 or spread == 0:
+        return dict(slope_per_year=None, se_hac=None, t=None, hac_lags=0, sessions=len(values))
+    slope = float(np.sum(centered * (values - values.mean())) / spread)
+    residual = values - values.mean() - slope * centered
+    _, se_mean, lags = _screening()._newey_west_hac(centered * residual, blocks=blocks)
+    se = None if se_mean is None else float(se_mean) * len(values) / spread
+    return dict(
+        slope_per_year=slope,
+        se_hac=se,
+        t=None if not se else slope / se,
+        hac_lags=lags,
+        sessions=len(values),
+    )
+
+
+def profile_statistics(contrasts, blocks, instants, z):
+    """Cada contraste por trimestre natural de sus sesiones y su pendiente por año."""
+    labels = np.array([_quarter(instant) for instant in instants])
+    quarters = {}
+    for label in sorted(set(labels.tolist())):
+        rows = np.flatnonzero(labels == label)
+        inside = [blocks[i] for i in rows]
+        quarters[label] = dict(
+            sessions=len(rows),
+            **{
+                name: _mean_statistics(values[rows], inside, z)
+                for name, values in contrasts.items()
+            },
+        )
+    trend = {name: trend_statistics(values, instants, blocks) for name, values in contrasts.items()}
+    return quarters, trend
+
+
+def partition_statistics(ic, blocks, confidence, instants=None):
+    """Medias de las celdas, contrastes con su error HAC, sus lecturas y el cociente TTWS.
+
+    Con `instants` (el instante de cada sesión) añade el perfil de cada contraste por trimestre
+    natural y su pendiente por año, con errores HAC.
+    """
     z = NormalDist().inv_cdf(0.5 + confidence / 2)
     contrasts = factorial_contrasts(ic)
     statistics = {name: _mean_statistics(values, blocks, z) for name, values in contrasts.items()}
     readings = {name: _reading(value, z) for name, value in statistics.items()}
     ratio = ratio_statistics(contrasts["N"], contrasts["D"], confidence, blocks)
     ratio["interpretable"] = readings["D"] == "positive" and ratio["fieller"]["bounded"]
-    return dict(
+    result = dict(
         sessions=len(blocks),
         ic={cell: float(ic[cell].mean()) for cell in CELLS},
         contrasts=statistics,
         readings=readings,
         ttws=ratio,
     )
+    if instants is not None:
+        _require(len(instants) == len(blocks), "Cada sesión del perfil necesita su instante")
+        result["quarters"], result["trend"] = profile_statistics(contrasts, blocks, instants, z)
+    return result
 
 
 def _cells(states, output, run, seed, pair):
@@ -607,7 +669,7 @@ def analyze(declaration, states, output):
     for pair in declaration["pairs"]:
         partitions = {}
         for partition in (analysis["primary"], *analysis["secondary"]):
-            per_seed, series, blocks = {}, {}, []
+            per_seed, series, blocks, instants = {}, {}, [], []
             for run in declaration["runs"]:
                 seeds = {}
                 for seed in run["seeds"]:
@@ -641,10 +703,10 @@ def analyze(declaration, states, output):
                 for cell, averaged in seed_average(seeds, keys).items():
                     series.setdefault(cell, []).append(averaged)
                 blocks += [(run["state"], run["origin"], key[0]) for key in keys]
+                instants += [key[1] for key in keys]
             ic = {c: np.concatenate(series[c]) for c in CELLS}
-            partitions[partition] = dict(
-                partition_statistics(ic, blocks, analysis["confidence"]), per_seed=per_seed
-            )
+            statistics = partition_statistics(ic, blocks, analysis["confidence"], instants=instants)
+            partitions[partition] = dict(statistics, per_seed=per_seed)
         report["pairs"][pair["online"]] = dict(frozen=pair["frozen"], partitions=partitions)
     atomic_json(output / "report.json", report)
     return report
