@@ -157,10 +157,9 @@ def test_the_lab_columns_keep_long_horizon_v1_and_add_sixteen_with_missing_histo
         (columns["open"] == columns["close"]) & (columns["high"] == columns["low"])
     )
     assert named["zero_volume_63"][i] == pytest.approx(stale[i - 62 : i + 1].mean(), rel=1e-6)
-    location = (2 * columns["close"] - columns["high"] - columns["low"]) / (
-        columns["high"] - columns["low"]
-    )
-    assert named["close_location_1"][i] == pytest.approx(location[i], rel=1e-6)
+    span = columns["high"][i] - columns["low"][i]
+    location = (2 * columns["close"][i] - columns["high"][i] - columns["low"][i]) / span
+    assert named["close_location_1"][i] == pytest.approx(location, rel=1e-6)
     alpha, beta, residual, _ = tf.market_model(columns["close"] / columns["open"] - 1, market)
     realized = columns["close"][i] / columns["open"][i] - 1 - alpha[i - 1] - beta[i - 1] * market[i]
     assert named["residual_1"][i] == pytest.approx(realized / residual[i - 1], rel=1e-5)
