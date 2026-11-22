@@ -184,6 +184,15 @@ def checked_declaration(document):
         ),
         "El contexto declara solo la ventana de sesiones maduras del régimen, o no se declara",
     )
+    if context is not None:
+        # La mezcla por régimen da a AdaNormalHedge.TV 1 + len(REGIMES) copias de cada opción.
+        options = 1 + sum(len(models) for models in tools.values())
+        copies = options * (1 + len(REGIMES))
+        _require(
+            copies <= arbiters.MAX_OPTIONS,
+            f"Con contexto, las {options} opciones del agente dan {copies} copias y la mezcla "
+            f"admite {arbiters.MAX_OPTIONS}",
+        )
     _require(
         type(document.get("shapley")) is bool
         and (not document["shapley"] or len(tools) <= MAX_SHAPLEY_TOOLS),

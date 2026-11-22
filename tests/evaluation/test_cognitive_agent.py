@@ -10,6 +10,7 @@ import pytest
 from mars_titan.data.modality_ablation import ablation_identity
 from mars_titan.data.storage import atomic_json, sha256
 from mars_titan.evaluation import cognitive_agent as agent
+from mars_titan.evaluation import online_arbiters as arbiters
 from mars_titan.evaluation import scale_diagnostics as sd
 from mars_titan.evaluation import variant_screening_analysis as analysis
 from mars_titan.evaluation.arbiter_analysis import joined, stage_metric
@@ -118,6 +119,24 @@ def _mean(outcome, metric="session_rank_ic"):
 def test_declaration_rejects_designs_outside_the_contract(changes):
     with pytest.raises(ValueError):
         declaration(**changes)
+
+
+def test_a_context_is_declared_only_if_the_copies_of_its_options_fit_in_the_arbiter():
+    """Con contexto, cada opción del agente (núcleo y modelos de las herramientas) aporta
+    1 + len(REGIMES) copias a AdaNormalHedge.TV. Si no caben en `MAX_OPTIONS`, la declaración se
+    rechaza antes de leer ninguna predicción y no al llegar a la mezcla por régimen."""
+    copies = 1 + len(agent.REGIMES)
+    fit = arbiters.MAX_OPTIONS // copies - 1
+
+    def tools(count):
+        names = [f"m{i}" for i in range(count)]
+        size = agent.MAX_TOOL_MODELS
+        return {f"t{j}": names[j * size : (j + 1) * size] for j in range(-(-count // size))}
+
+    declaration(context=dict(window=10), tools=tools(fit))
+    with pytest.raises(ValueError, match="copias"):
+        declaration(context=dict(window=10), tools=tools(fit + 1))
+    declaration(context=None, tools=tools(fit + 1))
 
 
 def test_the_loop_learns_to_trust_the_informative_tool_and_ignores_the_placebo():
