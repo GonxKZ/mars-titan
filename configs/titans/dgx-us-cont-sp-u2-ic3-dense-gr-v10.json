@@ -56,6 +56,7 @@
     "block_rows": 8192,
     "checkpoint_updates": 256,
     "checkpoint_seconds": 900,
+    "accumulation_rows": 8192,
     "precision": "fp32_ieee_attention_v1",
     "learning_rate": 0.001,
     "determinism": "torch_deterministic_algorithms_v2",
@@ -73,7 +74,7 @@
     "warmup_months": 12
   },
   "pending": [
-    "Continuación desde el padre de la v10 con contracción y ruido una vez antes del primer paso (θ ← 0,6·θ + 0,01·θ₀; Ash y Adams, 2020; training/shrink_perturb.py). Solo se ejecuta como continuación: la campaña no planifica trabajo en el primer origen. Es dgx-us-core-u2-ic3-dense-gr-v9-d-v10.json con ese único cambio.",
+    "Continuación desde el padre de la v10 con contracción y ruido una vez antes del primer paso (θ ← 0,6·θ + 0,01·θ₀; Ash y Adams, 2020; training/shrink_perturb.py). Solo se ejecuta como continuación: la campaña no planifica trabajo en el primer origen. Es dgx-us-core-u2-ic3-dense-gr-v9.json con ese único cambio.",
     "Sin resultados publicados. El test final de 2024 permanece cerrado."
   ]
 }

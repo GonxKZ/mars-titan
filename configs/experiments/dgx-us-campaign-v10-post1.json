@@ -3,8 +3,8 @@
   "kind": "comparison_campaign_v1",
   "market": "US",
   "final_test_access": false,
-  "description": "Extensión de post-entrenamiento de la campaña DGX v10 en EE. UU. (GB10), fase 4 del programa de post-entrenamiento v10 (docs/research/posttraining-program-v10.md). Pregunta: si continuar desde el padre del origen anterior mejora al ajuste desde cero del mismo origen, y con qué regularización. El padre es titans_mac de la v10 (receta del núcleo de 05885104, copia literal); se vuelve a ajustar en 2012 en este estado porque la herencia trasladaría la campaña entera y cerraría su permiso. Cuatro brazos parten del mismo estado elegido del padre en 2012 con la misma semilla y se ajustan en 2013 con la parada de la v10, que puede volver a elegir el estado del padre si ninguna época lo mejora: la receta del núcleo sin cambios, decaimiento 0,1 hacia cero, decaimiento 0,1 anclado al padre (L2-SP) y contracción 0,6 con ruido 0,01. Contrastes pareados por sesión: cada brazo frente a titans_mac/2013 de la v10 (desde cero) y L2-SP frente al decaimiento hacia cero (una sola variable: el destino del decaimiento). La medición anterior (búsqueda, 2006 y 2007, criterio MAE) eligió el estado heredado y quedó un 0,066 % detrás del ajuste desde cero; esta repite la pregunta con la parada por IC de rangos de la v10. Un origen; nada se generaliza sin más orígenes. Test final de 2024 cerrado.",
-  "source_declaration_sha256": "584f95baaf3f7bfe62911dc3afe83fd7f3126823857f5b0855a7ec8242e64570",
+  "description": "Extensión de post-entrenamiento de la campaña DGX v10 en EE. UU. (GB10), fase 4 del programa de post-entrenamiento v10 (docs/research/posttraining-program-v10.md). Pregunta: si continuar desde el padre del origen anterior mejora al ajuste desde cero del mismo origen, y con qué regularización. El padre es titans_mac de la v10 (la receta de su núcleo en 3d10a30f, con accumulation_rows de 8192); se vuelve a ajustar en 2012 en este estado porque la herencia trasladaría la campaña entera y cerraría su permiso. Cuatro brazos parten del mismo estado elegido del padre en 2012 con la misma semilla y se ajustan en 2013 con la parada de la v10, que puede volver a elegir el estado del padre si ninguna época lo mejora: la receta del núcleo sin cambios, decaimiento 0,1 hacia cero, decaimiento 0,1 anclado al padre (L2-SP) y contracción 0,6 con ruido 0,01. Contrastes pareados por sesión: cada brazo frente a titans_mac/2013 de la v10 (desde cero) y L2-SP frente al decaimiento hacia cero (una sola variable: el destino del decaimiento). La medición anterior (búsqueda, 2006 y 2007, criterio MAE) eligió el estado heredado y quedó un 0,066 % detrás del ajuste desde cero; esta repite la pregunta con la parada por IC de rangos de la v10. Un origen; nada se generaliza sin más orígenes. Test final de 2024 cerrado.",
+  "source_declaration_sha256": "836c79a6122fc14a1566826ece99f3708849a7d481361c334acd693383c88716",
   "cohort": {
     "size": 4198,
     "rule": "entire_source_view"
@@ -31,7 +31,7 @@
     "post"
   ],
   "recipes": {
-    "core": "configs/titans/dgx-us-core-u2-ic3-dense-gr-v9-d-v10.json",
+    "core": "configs/titans/dgx-us-core-u2-ic3-dense-gr-v9.json",
     "cont_wd": "configs/titans/dgx-us-cont-wd-u2-ic3-dense-gr-v10.json",
     "cont_l2sp": "configs/titans/dgx-us-cont-l2sp-u2-ic3-dense-gr-v10.json",
     "cont_sp": "configs/titans/dgx-us-cont-sp-u2-ic3-dense-gr-v10.json"

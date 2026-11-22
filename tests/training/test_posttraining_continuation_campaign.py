@@ -15,10 +15,10 @@ from mars_titan.training import comparison_campaign as campaign
 from mars_titan.training.financial_run import ChronologicalRecipe
 
 DECLARATION = "configs/experiments/dgx-us-campaign-v10-post1.json"
-CORE = "configs/titans/dgx-us-core-u2-ic3-dense-gr-v9-d-v10.json"
-# Huella de la receta del núcleo en 05885104, el estado vigente de la v10: el padre que se
-# vuelve a ajustar es el mismo modelo que el de la campaña.
-CORE_SHA256 = "c0a22a774b1907dc940d58d05e0abbc5fd998db7b7c76d0aaf45e558e3aaaf6a"
+CORE = "configs/titans/dgx-us-core-u2-ic3-dense-gr-v9.json"
+# Huella de la receta del núcleo de la v10 en 3d10a30f, la versión que ejecuta la campaña (con
+# accumulation_rows de 8192): el padre que se vuelve a ajustar es el mismo modelo.
+CORE_SHA256 = "3b88760f86b922f7fec97c8f0a9af41a8bee3148b252def45ca43468d68a61e6"
 # Lo único que cambia cada receta de continuación respecto del núcleo de la v10.
 CHANGES = {
     "cont_wd": dict(weight_decay=0.1),

@@ -56,6 +56,7 @@
     "block_rows": 8192,
     "checkpoint_updates": 256,
     "checkpoint_seconds": 900,
+    "accumulation_rows": 8192,
     "precision": "fp32_ieee_attention_v1",
     "learning_rate": 0.001,
     "determinism": "torch_deterministic_algorithms_v2",
@@ -68,7 +69,7 @@
     "warmup_months": 12
   },
   "pending": [
-    "Continuación desde el padre de la v10 con decaimiento de pesos desacoplado de 0,1 hacia cero, el de titans_mac_wd. Es el control del decaimiento anclado: mismo λ, distinto destino. Es dgx-us-core-u2-ic3-dense-gr-v9-d-v10.json con ese único cambio.",
+    "Continuación desde el padre de la v10 con decaimiento de pesos desacoplado de 0,1 hacia cero, el de titans_mac_wd. Es el control del decaimiento anclado: mismo λ, distinto destino. Es dgx-us-core-u2-ic3-dense-gr-v9.json con ese único cambio.",
     "Sin resultados publicados. El test final de 2024 permanece cerrado."
   ]
 }
