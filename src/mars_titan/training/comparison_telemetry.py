@@ -3,11 +3,56 @@
 import importlib.metadata
 import os
 import platform
+import re
 import resource
 import subprocess
 import sys
 import threading
 import time
+
+SITE_ENV = "MARS_TITAN_SITE"
+_SITE = re.compile(r"[a-z0-9][a-z0-9.-]{0,63}")
+_DRIVER = re.compile(r"[0-9A-Za-z._-]{1,64}")
+
+
+def _site():
+    """Etiqueta del equipo que ejecuta la campaña, declarada por quien la lanza.
+
+    Distingue en los resultados dónde se ajustó cada modelo (por ejemplo, la GPU de Colab
+    frente a la DGX). Sin la variable no hay etiqueta. Una etiqueta mal escrita detiene el
+    intento al empezar, antes de gastar cómputo en un resultado sin procedencia.
+    """
+    label = os.environ.get(SITE_ENV)
+    if label is None:
+        return None
+    if _SITE.fullmatch(label) is None:
+        raise ValueError(
+            f"{SITE_ENV} es una etiqueta de 1 a 64 caracteres: minúsculas, cifras, puntos y guiones"
+        )
+    return label
+
+
+def _gpu_driver():
+    """Versión del controlador de la GPU 0, o None si no se puede leer."""
+    try:
+        result = subprocess.run(
+            ["nvidia-smi", "--id=0", "--query-gpu=driver_version", "--format=csv,noheader"],
+            capture_output=True,
+            text=True,
+            timeout=2,
+            check=True,
+        )
+    except (OSError, subprocess.SubprocessError):
+        return None
+    lines = result.stdout.split()
+    return lines[0] if len(lines) == 1 and _DRIVER.fullmatch(lines[0]) else None
+
+
+def _optional(read):
+    try:
+        return read()
+    except (AttributeError, RuntimeError, TypeError, ValueError):
+        return None
 
 
 def _versions():
@@ -27,6 +72,12 @@ def _cuda(device):
         cuda_scope="pytorch_allocator",
         gpu_name=None,
         cuda_reason="El intento no utiliza CUDA",
+        # Procedencia del acelerador: arquitectura, memoria, controlador y bibliotecas.
+        gpu_capability=None,
+        gpu_total_bytes=None,
+        gpu_driver=None,
+        cuda_runtime=None,
+        cudnn=None,
     )
     if device == "cpu":
         return result
@@ -49,6 +100,20 @@ def _cuda(device):
             )
     except (AttributeError, RuntimeError) as error:
         result["cuda_reason"] = f"{type(error).__name__}: {str(error)[:300]}"
+        return result
+    if result["cuda_reason"] is None:
+        # Cada dato se lee por separado: uno desconocido no borra los demás ni los picos.
+        result.update(
+            gpu_capability=_optional(
+                lambda: [int(v) for v in torch.cuda.get_device_capability(device)]
+            ),
+            gpu_total_bytes=_optional(
+                lambda: int(torch.cuda.get_device_properties(device).total_memory)
+            ),
+            gpu_driver=_gpu_driver(),
+            cuda_runtime=_optional(lambda: torch.version.cuda),
+            cudnn=_optional(lambda: torch.backends.cudnn.version()),
+        )
     return result
 
 
@@ -61,6 +126,7 @@ class AttemptMetrics:
     """
 
     def __init__(self):
+        self.site = _site()
         self.started = time.perf_counter()
         usage = resource.getrusage(resource.RUSAGE_SELF)
         self.cpu_started = usage.ru_utime + usage.ru_stime
@@ -78,6 +144,7 @@ class AttemptMetrics:
             peak_rss_bytes=int(usage.ru_maxrss) * 1024,
             rss_scope="process_lifetime",
             device=device,
+            site=self.site,
             platform=dict(system=platform.system(), machine=platform.machine()),
             versions=_versions(),
             energy_joules=None,
