@@ -1,4 +1,4 @@
-"""Rasgos técnicos causales de horizonte largo de un activo (`long_horizon_v1` y `long_horizon_v2`).
+"""Rasgos técnicos causales de horizonte largo de un activo (`long_horizon_v1`, `_v2` y `_v3`).
 
 La etiqueta de la edición histórica es el residuo de la rentabilidad intradía de la sesión
 siguiente, `r(t+1) - alfa(t) - beta(t) * m(t+1)`, con alfa y beta de un OLS con intercepto sobre
@@ -18,13 +18,28 @@ mercado cuyo factor no esté disponible), la etiqueta ya realizada de la última
 posición del cierre en el rango del día. Medido en el origen 2013 de EE. UU. con un modelo de
 árboles ajustado solo con estos rasgos: IC de rangos de 0,111 en la evaluación con la v1 y de
 0,114 con las columnas añadidas.
+
+`long_horizon_v3` conserva las 46 columnas de la v2, bit a bit, y añade 16 de precio y volumen:
+las sesiones desde el máximo y el mínimo de la ventana, la parte de los movimientos y de las
+sesiones que fueron al alza, la correlación entre precio y volumen, la variabilidad del volumen y
+del volumen ponderado por el movimiento, y la sombra superior media de la vela. Cada una va
+centrada en su punto neutro, de modo que el cero de la historia insuficiente no señala nada. Son
+las que pasaron la validación rasgo a rasgo en la tabla de China del origen 2013, solo con el
+tramo de ajuste (señal estable por trimestres y correlación menor de 0,7 con las 46). Medido
+allí: con árboles, de 0,117 a 0,123 de IC de rangos en la evaluación; con una red de dos capas,
+de 0,126 a 0,134. En EE. UU. no cambian el resultado de los árboles.
 """
+
+import math
 
 import numpy as np
 from numpy.lib.stride_tricks import sliding_window_view
 
 NAME = "long_horizon_v1"
 NAME_V2 = "long_horizon_v2"
+NAME_V3 = "long_horizon_v3"
+# Parte mínima de filas válidas en una ventana de la v3.
+COVERAGE = 0.75
 # Ventana y mínimo de pares del OLS de la etiqueta.
 HISTORY, MINIMUM = 252, 126
 LIMIT = 8.0
@@ -80,8 +95,27 @@ NAMES_V2 = (
     "close_location_1",
     "close_location_5",
 )
+NAMES_V3 = (
+    *NAMES_V2,
+    "days_since_high_21",
+    "days_since_high_63",
+    "days_since_high_252",
+    "days_since_low_63",
+    "days_since_low_252",
+    "up_move_share_cc_14",
+    "up_move_share_oc_14",
+    "up_day_fraction_cc_21",
+    "up_day_fraction_cc_63",
+    "up_day_fraction_oc_63",
+    "price_volume_corr_63",
+    "volume_cv_21",
+    "move_weighted_volume_cv_cc_21",
+    "move_weighted_volume_cv_oc_21",
+    "candle_upper_shadow_5",
+    "candle_upper_shadow_21",
+)
 # Columnas de cada versión declarada. Las de una versión anterior son siempre un prefijo.
-VERSIONS = {NAME: NAMES, NAME_V2: NAMES_V2}
+VERSIONS = {NAME: NAMES, NAME_V2: NAMES_V2, NAME_V3: NAMES_V3}
 
 
 def _window_sum(values, window):
@@ -95,6 +129,122 @@ def _window_extreme(values, window, function):
     result = np.full(len(values), np.nan)
     if len(values) >= window:
         result[window - 1 :] = function(sliding_window_view(values, window), axis=1)
+    return result
+
+
+def _windows(values, window, first=0):
+    """Ventanas de `window` filas hasta cada fila desde `first + window - 1`, y esa fila."""
+    start = first + window - 1
+    if len(values) <= start:
+        return None, start
+    return sliding_window_view(values[first:], window), start
+
+
+def _since_extreme(values, window, largest):
+    """Sesiones desde el extremo más reciente de la ventana: −1 si es hoy, 1 el más antiguo."""
+    result = np.full(len(values), np.nan)
+    windows, start = _windows(values, window)
+    if windows is None:
+        return result
+    valid = np.isfinite(windows)
+    # Del revés, para que un empate lo gane la sesión más reciente.
+    recent = np.where(valid, windows, -np.inf if largest else np.inf)[:, ::-1]
+    age = (np.argmax if largest else np.argmin)(recent, axis=1)
+    known = (valid.sum(axis=1) >= math.ceil(COVERAGE * window)) & valid[:, -1]
+    result[start:] = np.where(known, 2.0 * age / (window - 1) - 1.0, np.nan)
+    return result
+
+
+def _up_share(returns, window, first):
+    """Parte del movimiento de la ventana que fue al alza, de −1 (todo bajadas) a 1."""
+    result = np.full(len(returns), np.nan)
+    windows, start = _windows(returns, window, first)
+    if windows is None:
+        return result
+    valid = np.isfinite(windows)
+    clean = np.where(valid, windows, 0.0)
+    total = np.abs(clean).sum(axis=1)
+    known = (valid.sum(axis=1) >= math.ceil(COVERAGE * window)) & (total > 0)
+    with np.errstate(divide="ignore", invalid="ignore"):
+        share = np.maximum(clean, 0.0).sum(axis=1) / total
+    result[start:] = np.where(known, 2.0 * share - 1.0, np.nan)
+    return result
+
+
+def _up_fraction(returns, window, first):
+    """Parte de las sesiones válidas de la ventana que cerraron al alza, de −1 a 1."""
+    result = np.full(len(returns), np.nan)
+    windows, start = _windows(returns, window, first)
+    if windows is None:
+        return result
+    valid = np.isfinite(windows)
+    count = valid.sum(axis=1)
+    rising = (valid & (windows > 0)).sum(axis=1)
+    known = count >= math.ceil(COVERAGE * window)
+    result[start:] = np.where(known, 2.0 * rising / np.maximum(count, 1) - 1.0, np.nan)
+    return result
+
+
+def _centered(windows, valid):
+    """Cada ventana menos su media sobre las filas válidas, y si tiene más de un valor distinto."""
+    count = np.maximum(valid.sum(axis=1), 1)
+    mean = np.where(valid, windows, 0.0).sum(axis=1) / count
+    spread = np.where(valid, windows, -np.inf).max(axis=1) - np.where(valid, windows, np.inf).min(
+        axis=1
+    )
+    # Una ventana constante no tiene dispersión: se decide con sus extremos y no con una resta
+    # de sumas, que deja residuos de redondeo.
+    varies = spread > 1e-12 * np.maximum(np.abs(mean), 1.0)
+    return np.where(valid, windows - mean[:, None], 0.0), mean, varies
+
+
+def _window_correlation(left, right, window):
+    """Correlación de Pearson de las filas válidas de la ventana."""
+    result = np.full(len(left), np.nan)
+    one, start = _windows(left, window)
+    if one is None:
+        return result
+    other, _ = _windows(right, window)
+    valid = np.isfinite(one) & np.isfinite(other)
+    with np.errstate(divide="ignore", invalid="ignore"):
+        x, _, varies_x = _centered(one, valid)
+        y, _, varies_y = _centered(other, valid)
+        scale = np.sqrt(np.einsum("ij,ij->i", x, x) * np.einsum("ij,ij->i", y, y))
+        value = np.einsum("ij,ij->i", x, y) / scale
+    count = valid.sum(axis=1)
+    known = (count >= max(math.ceil(COVERAGE * window), 2)) & varies_x & varies_y & (scale > 0)
+    result[start:] = np.where(known, np.clip(value, -1.0, 1.0), np.nan)
+    return result
+
+
+def _log_variation(values, window, first, neutral):
+    """Logaritmo del coeficiente de variación de la ventana entre su valor neutro."""
+    result = np.full(len(values), np.nan)
+    windows, start = _windows(values, window, first)
+    if windows is None:
+        return result
+    valid = np.isfinite(windows)
+    count = valid.sum(axis=1)
+    with np.errstate(divide="ignore", invalid="ignore"):
+        centered, mean, varies = _centered(windows, valid)
+        deviation = np.sqrt(np.einsum("ij,ij->i", centered, centered) / np.maximum(count - 1, 1))
+        value = np.log(deviation / mean / neutral)
+    known = (count >= max(math.ceil(COVERAGE * window), 2)) & (mean > 0) & varies
+    result[start:] = np.where(known, value, np.nan)
+    return result
+
+
+def _window_mean(values, window):
+    """Media de las filas válidas de la ventana, con su cobertura mínima."""
+    result = np.full(len(values), np.nan)
+    windows, start = _windows(values, window)
+    if windows is None:
+        return result
+    valid = np.isfinite(windows)
+    count = valid.sum(axis=1)
+    total = np.where(valid, windows, 0.0).sum(axis=1)
+    known = count >= math.ceil(COVERAGE * window)
+    result[start:] = np.where(known, total / np.maximum(count, 1), np.nan)
     return result
 
 
@@ -203,7 +353,7 @@ def technical_features(prices, sessions, calendar=None, market=None, version=NAM
         features["intraday_21"] = sum_intraday / year * np.sqrt(21)
         features["overnight_21"] = sum_overnight / year * np.sqrt(21)
         features["maximum_return_21"] = _window_extreme(filled, 21, np.max) / year
-        if version == NAME_V2:
+        if version in (NAME_V2, NAME_V3):
             clean_intraday = np.where(np.isfinite(intraday_log), intraday_log, 0.0)
             clean_overnight = np.where(np.isfinite(overnight), overnight, 0.0)
             for window in (5, 63, 252):
@@ -225,6 +375,43 @@ def technical_features(prices, sessions, calendar=None, market=None, version=NAM
             fraction = _window_sum(untraded, 63) / 63
             fraction[:62] = np.nan
             features["untraded_63"] = fraction
+        if version == NAME_V3:
+            open_v, high_v, low_v, close_v = (
+                np.where(np.isfinite(v) & (v > 0), v, np.nan) for v in (opened, high, low, close)
+            )
+            volume_v = np.where(np.isfinite(volume) & (volume >= 0), volume, np.nan)
+            close_to_close = np.full(rows, np.nan)
+            close_to_close[1:] = np.log(close_v[1:] / close_v[:-1])
+            open_to_close = np.log(close_v / open_v)
+            for window in (21, 63, 252):
+                features[f"days_since_high_{window}"] = _since_extreme(high_v, window, True)
+            for window in (63, 252):
+                features[f"days_since_low_{window}"] = _since_extreme(low_v, window, False)
+            # El primer rendimiento de cierre a cierre es el de la segunda fila.
+            features["up_move_share_cc_14"] = _up_share(close_to_close, 14, 1)
+            features["up_move_share_oc_14"] = _up_share(open_to_close, 14, 0)
+            features["up_day_fraction_cc_21"] = _up_fraction(close_to_close, 21, 1)
+            features["up_day_fraction_cc_63"] = _up_fraction(close_to_close, 63, 1)
+            features["up_day_fraction_oc_63"] = _up_fraction(open_to_close, 63, 0)
+            features["price_volume_corr_63"] = _window_correlation(
+                np.log(close_v), np.log1p(volume_v), 63
+            )
+            # Neutros: un coeficiente de variación de 0,5 en el volumen y de 1 con el movimiento.
+            features["volume_cv_21"] = _log_variation(volume_v, 21, 0, 0.5)
+            features["move_weighted_volume_cv_cc_21"] = _log_variation(
+                np.abs(close_to_close) * volume_v, 21, 1, 1.0
+            )
+            features["move_weighted_volume_cv_oc_21"] = _log_variation(
+                np.abs(open_to_close) * volume_v, 21, 0, 1.0
+            )
+            span = high_v - low_v
+            shadow = np.clip((high_v - np.maximum(open_v, close_v)) / span, 0.0, 1.0)
+            shadow = np.where(span > 0, shadow, np.nan)
+            for window in (5, 21):
+                # Una sombra superior de un cuarto del rango es lo habitual: su punto neutro.
+                features[f"candle_upper_shadow_{window}"] = 4.0 * (
+                    _window_mean(shadow, window) - 0.25
+                )
         features["has_market_model"] = np.zeros(rows)
         if calendar is not None and market is not None:
             calendar = np.asarray(calendar, dtype="datetime64[D]")
@@ -244,7 +431,7 @@ def technical_features(prices, sessions, calendar=None, market=None, version=NAM
             ):
                 features[name][inside] = values[position[inside]]
             features["has_market_model"] = np.isfinite(features["alpha_percent"]).astype(np.float64)
-            if version == NAME_V2:
+            if version in (NAME_V2, NAME_V3):
                 # Etiqueta de la sesión anterior, ya realizada al cierre de esta:
                 # r(t) - alfa(t-1) - beta(t-1) * m(t), en desviaciones residuales de t-1.
                 realized = np.full(len(calendar), np.nan)
