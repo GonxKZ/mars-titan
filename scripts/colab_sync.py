@@ -99,19 +99,29 @@ def write_atomic(destination, data, mtime_ns=None):
 
 def copy_file(source, destination):
     """Copiar un archivo. Devuelve sus bytes, o None si desapareció o cambió mientras se leía."""
+    # Se escribe primero en un subdirectorio temporal del mismo sistema de ficheros para
+    # conservar intacta cualquier copia previa válida en `destination` si el origen cambia.
+    stage_dir = destination.parent / f"{TEMPORARY}stage.{os.getpid()}.{id(source)}"
+    staged = stage_dir / destination.name
     try:
         before = source.stat()
         with source.open("rb") as reader:
-            write_atomic(destination, reader, before.st_mtime_ns)
+            write_atomic(staged, reader, before.st_mtime_ns)
         after = source.stat()
+        if (before.st_size, before.st_mtime_ns) != (after.st_size, after.st_mtime_ns):
+            # Alguien lo reescribió durante la copia: se descarta el temporal y el destino queda.
+            return None
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        os.replace(staged, destination)
+        return before.st_size
     except FileNotFoundError:
-        destination.unlink(missing_ok=True)
         return None
-    if (before.st_size, before.st_mtime_ns) != (after.st_size, after.st_mtime_ns):
-        # Alguien lo reescribió durante la copia: no se da por bueno y se repetirá.
-        destination.unlink(missing_ok=True)
-        return None
-    return before.st_size
+    finally:
+        staged.unlink(missing_ok=True)
+        try:
+            stage_dir.rmdir()
+        except OSError:
+            pass
 
 
 def referenced_states(index_bytes):
@@ -181,9 +191,20 @@ def push(state, mirror):
         else:
             report["copied"] += 1
             report["bytes"] += size
-    for relative, (data, mtime_ns) in sorted(indexes.items()):
+    # Publicar primero los índices de checkpoints para detectar cuáles se retienen; un `run.json`
+    # del mismo directorio `fit/` no debe publicarse si su `checkpoints/latest.json` fue retenido.
+    held_fit_dirs = set()
+    ordered_indexes = sorted(
+        indexes.items(), key=lambda item: (0 if item[0].name == CHECKPOINT_INDEX else 1, item[0])
+    )
+    for relative, (data, mtime_ns) in ordered_indexes:
         destination = mirror / relative
         if relative.name == CHECKPOINT_INDEX and not complete(relative, data, mirror):
+            report["held"].append(relative.as_posix())
+            if len(relative.parents) >= 2:
+                held_fit_dirs.add(relative.parents[1])
+            continue
+        if relative.name == "run.json" and relative.parent in held_fit_dirs:
             report["held"].append(relative.as_posix())
             continue
         if not (destination.is_file() and destination.read_bytes() == data):

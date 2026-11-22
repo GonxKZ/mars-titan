@@ -55,6 +55,10 @@ def average_ranks(values):
 
 def rank_correlation(prediction, target):
     """Correlación de rangos. Una predicción o una etiqueta constante no ordena: cero."""
+    prediction = np.asarray(prediction, dtype=np.float64)
+    target = np.asarray(target, dtype=np.float64)
+    if not (np.isfinite(prediction).all() and np.isfinite(target).all()):
+        return float("nan")
     left, right = average_ranks(prediction), average_ranks(target)
     left, right = left - left.mean(), right - right.mean()
     scale = math.sqrt(float(left @ left) * float(right @ right))
@@ -132,7 +136,14 @@ def normal_cdf(value):
 
 def tost(mean, standard_error, margin):
     """Mayor de los dos valores p unilaterales de la equivalencia dentro de ±margin."""
-    if not standard_error > 0 or not math.isfinite(standard_error):
+    if (
+        not math.isfinite(mean)
+        or not math.isfinite(standard_error)
+        or not math.isfinite(margin)
+        or margin <= 0
+    ):
+        return 1.0
+    if standard_error <= 0:
         return 0.0 if abs(mean) < margin else 1.0
     lower = 1.0 - normal_cdf((mean + margin) / standard_error)
     upper = normal_cdf((mean - margin) / standard_error)
@@ -141,6 +152,8 @@ def tost(mean, standard_error, margin):
 
 def verdict(mean, standard_error, margin, alpha=0.05):
     """equivalente, distinto o no concluyente, con el intervalo del 90 % de la diferencia."""
+    if not math.isfinite(mean) or not math.isfinite(margin) or margin <= 0:
+        return "no concluyente", [float("-inf"), float("inf")]
     half = 1.6448536269514722 * standard_error if math.isfinite(standard_error) else float("inf")
     low, high = mean - half, mean + half
     if tost(mean, standard_error, margin) <= alpha:
@@ -158,7 +171,13 @@ def compare_runs(folder_a, folder_b, margin=DEFAULT_MARGIN):
     for split in SPLITS:
         left = read_predictions(Path(folder_a) / f"{split}-predictions.parquet")
         right = read_predictions(Path(folder_b) / f"{split}-predictions.parquet")
-        same_rows = left["sample"].equals(right["sample"])
+        left_markets = np.asarray(left["markets"], dtype=object)[left["market"]]
+        right_markets = np.asarray(right["markets"], dtype=object)[right["market"]]
+        same_rows = (
+            left["sample"].equals(right["sample"])
+            and bool(np.array_equal(left_markets, right_markets))
+            and bool(np.array_equal(left["instant"], right["instant"]))
+        )
         entry = dict(rows_a=len(left["sample"]), rows_b=len(right["sample"]), same_rows=same_rows)
         if same_rows:
             entry["same_targets"] = bool(np.array_equal(left["target"], right["target"]))
@@ -226,7 +245,8 @@ def summarize(reports, margin=DEFAULT_MARGIN):
         tost_p=tost(mean, error, margin),
         verdict=label,
     )
-    summary["verdict"] = label
+    split_verdicts = [entry["verdict"] for entry in summary["splits"].values()]
+    summary["verdict"] = "distinto" if "distinto" in split_verdicts else label
     return summary
 
 

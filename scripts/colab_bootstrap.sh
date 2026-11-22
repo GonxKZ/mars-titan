@@ -40,6 +40,10 @@ while [ "$#" -gt 0 ]; do
   esac
 done
 
+trabajo="$(realpath -m "$trabajo")"
+[ -z "$paquete" ] || paquete="$(realpath -m "$paquete")"
+[ -z "$bundle" ] || bundle="$(realpath -m "$bundle")"
+[ -z "$destino" ] || destino="$(realpath -m "$destino")"
 repo="$trabajo/repo"
 # Los guiones de este kit se leen de la copia que contiene a este, que puede ser más nueva
 # que el commit fijado de la campaña.
@@ -137,8 +141,10 @@ paso_nativo() {
 
 paso_comprobar() {
   [ -d "$repo/.venv" ] || falta "ejecuta antes el paso entorno"
-  local nativo
-  nativo="$(find "$trabajo/nativo" -maxdepth 1 -name '_episodic_native*.so' 2>/dev/null | head -1)"
+  local nativo=""
+  if [ -d "$trabajo/nativo" ]; then
+    nativo="$(find "$trabajo/nativo" -maxdepth 1 -name '_episodic_native*.so' 2>/dev/null | head -1 || true)"
+  fi
   (
     cd "$repo"
     export CUBLAS_WORKSPACE_CONFIG=:4096:8 MARS_TITAN_REQUIRE_CUDA=1 CUDA_VISIBLE_DEVICES=0

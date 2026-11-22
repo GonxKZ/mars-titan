@@ -50,16 +50,25 @@ done
 
 falta() { echo "FALTA: $*" >&2; exit 1; }
 
+[ -n "$repo" ] || falta "--repo"
+repo="$(realpath -m "$repo")"
 [ -d "$repo/src/mars_titan" ] || falta "--repo debe ser la copia fija del repositorio ($repo)"
 [ -n "$estado" ] || falta "--estado"
+estado="$(realpath -m "$estado")"
 [ -n "$vistas" ] || falta "--vistas"
+vistas="$(realpath -m "$vistas")"
+[ -z "$nativo" ] || nativo="$(realpath -m "$nativo")"
 [ -n "$declaracion" ] || falta "--declaracion"
 [ -f "$repo/$declaracion" ] || falta "la declaración no está en la copia fija ($declaracion)"
-[[ "$origen" =~ ^20[0-9]{2}$ ]] && [ "$origen" -ge 2005 ] || falta "--origen debe ser un año desde 2005"
+[[ "$origen" =~ ^20[0-9]{2}$ ]] && [ "$origen" -ge 2005 ] && [ "$origen" -le 2023 ] \
+  || falta "--origen debe ser un año entre 2005 y 2023 (2024 está sellado)"
 [[ "$trabajadores" =~ ^[1-8]$ ]] || falta "--trabajadores debe estar entre 1 y 8"
 : "${MARS_TITAN_SITE:?Declara MARS_TITAN_SITE, por ejemplo google-colab-rtx-pro-6000}"
 
 python="${MARS_TITAN_COLAB_PYTHON:-$repo/.venv/bin/python}"
+case "$python" in
+  */*) python="$(realpath -m "$python")" ;;
+esac
 [ "$ensayo" = 1 ] || [ -x "$python" ] || falta "no existe el intérprete del entorno ($python)"
 
 # El lanzador de la copia fija: el de Colab si lo trae, y si no el de la DGX con este entorno.
@@ -119,12 +128,24 @@ paso_permiso() {
 }
 
 paso_lanza() {
-  local argumentos=() valor
-  for valor in $semillas; do argumentos+=(--seed "$valor"); done
-  for valor in $niveles; do argumentos+=(--tier "$valor"); done
-  # shellcheck disable=SC2086
+  local argumentos=() seed_list=() tier_list=() extra_args=() valor
+  read -r -a seed_list <<< "$semillas"
+  [ "${#seed_list[@]}" -gt 0 ] || falta "--semillas no puede quedar vacío"
+  for valor in "${seed_list[@]}"; do
+    [[ "$valor" =~ ^[0-9]+$ ]] || falta "semilla no válida: $valor"
+    argumentos+=(--seed "$valor")
+  done
+  read -r -a tier_list <<< "$niveles"
+  [ "${#tier_list[@]}" -gt 0 ] || falta "--niveles no puede quedar vacío"
+  for valor in "${tier_list[@]}"; do
+    [[ "$valor" =~ ^[A-Za-z0-9_-]+$ ]] || falta "nivel no válido: $valor"
+    argumentos+=(--tier "$valor")
+  done
+  if [ -n "$extra" ]; then
+    read -r -a extra_args <<< "$extra"
+  fi
   campana run --machine mars_titan --workers "$trabajadores" "${argumentos[@]}" \
-    --origin "$origen" $extra
+    --origin "$origen" "${extra_args[@]}"
 }
 
 paso_estado() {

@@ -112,7 +112,11 @@ def validate(declared):
             f"Campos que no se declaran en una búsqueda: {', '.join(unknown)}. El objetivo es "
             "siempre el IC de rangos de validación y no se declara"
         )
-    if declared.get("schema_version") != 1 or declared.get("kind") != KIND:
+    if (
+        type(declared.get("schema_version")) is not int
+        or declared.get("schema_version") != 1
+        or declared.get("kind") != KIND
+    ):
         raise ValueError(f"La declaración debe ser {KIND} con schema_version 1")
     if declared.get("final_test_access") is not False:
         raise ValueError("final_test_access debe ser false: el test final sigue cerrado")
@@ -414,7 +418,12 @@ def tell(folder, declared, state):
             continue
         measured[entry["model"]] = sessions
         summary = {split: report.summary(sessions[split]) for split in SPLITS}
-        study.tell(entry["number"], summary["validation"]["mean"])
+        val_mean = summary["validation"]["mean"]
+        if val_mean is None or not math.isfinite(val_mean):
+            continue
+        existing = study.trials[entry["number"]]
+        if existing.state != optuna.trial.TrialState.COMPLETE:
+            study.tell(entry["number"], val_mean)
         entry.update(status="told", **summary)
         told.append(entry)
         _write(folder / "trials.json", ledger)
@@ -426,14 +435,18 @@ def tell(folder, declared, state):
             continue
         measured[item["model"]] = sessions
         summary = {split: report.summary(sessions[split]) for split in SPLITS}
-        study.add_trial(
-            optuna.trial.create_trial(
-                params=_params(declared["space"], item["values"]),
-                distributions=_distributions(declared["space"]),
-                value=summary["validation"]["mean"],
-                user_attrs=dict(known=item["model"]),
+        val_mean = summary["validation"]["mean"]
+        if val_mean is None or not math.isfinite(val_mean):
+            continue
+        if not any(t.user_attrs.get("known") == item["model"] for t in study.trials):
+            study.add_trial(
+                optuna.trial.create_trial(
+                    params=_params(declared["space"], item["values"]),
+                    distributions=_distributions(declared["space"]),
+                    value=val_mean,
+                    user_attrs=dict(known=item["model"]),
+                )
             )
-        )
         ledger["known"][item["model"]] = dict(values=item["values"], **summary)
         _write(folder / "trials.json", ledger)
     # El contraste con el modelo base, sesión a sesión, de los ensayos que aún no lo tienen.
@@ -485,10 +498,11 @@ def report(folder, declared):
         candidates.append(dict(entry, confirmed=None if difference is None else difference > 0))
     concordance = None
     if len(rows) >= 3:
-        concordance = module.correlation(
+        raw_concordance = module.correlation(
             module.average_ranks(np.asarray([row["validation"]["mean"] for row in rows])),
             module.average_ranks(np.asarray([row["calibration"]["mean"] for row in rows])),
         )
+        concordance = None if math.isnan(raw_concordance) else raw_concordance
     errors = [
         row["against_base"]["validation"]["se"]
         for row in rows
@@ -531,6 +545,16 @@ def _difference(entry, split):
     return f"{_number(against['mean'], sign=True)} ({_number(against['t'], 1, True)})"
 
 
+def _param_value(value):
+    if value is None:
+        return "—"
+    if isinstance(value, bool):
+        return "true" if value else "false"
+    if isinstance(value, (int, float)):
+        return f"{value:g}"
+    return str(value)
+
+
 def markdown(document):
     names = [item["name"] for item in document["space"]]
     short = [name.rsplit(".", 1)[-1] for name in names]
@@ -550,14 +574,14 @@ def markdown(document):
         f"| --- | --- | {' | '.join('---' for _ in labels)} | --- | --- | --- | --- |",
     ]
     for row in document["trials"]:
-        values = " | ".join(f"{row['values'][name]:g}" for name in names)
+        values = " | ".join(_param_value(row["values"][name]) for name in names)
         lines.append(
             f"| {row['number']} | {row['generation']} | {values} "
             f"| {_number(row['validation']['mean'])} | {_difference(row, 'validation')} "
             f"| {_number(row['calibration']['mean'])} | {_difference(row, 'calibration')} |"
         )
     for model, entry in document["known"].items():
-        values = " | ".join(f"{entry['values'][name]:g}" for name in names)
+        values = " | ".join(_param_value(entry["values"][name]) for name in names)
         lines.append(
             f"| {model} | conocido | {values} | {_number(entry['validation']['mean'])} | — "
             f"| {_number(entry['calibration']['mean'])} | — |"
