@@ -334,6 +334,64 @@ El agregador en línea del tercer enjambre (`evaluation/online_aggregator.py`) s
   - Solo cambia que no normaliza por el peso, que decae por calendario y que recorta en 3.
   - No se adopta. P2 (r = 4) queda aparcado por decisión del coordinador.
 
+### 5.8 Núcleo agéntico sobre las emisiones (A1–A4; protocolo fijado, sin medir)
+
+Son medidas descriptivas y secundarias sobre las emisiones ya hechas, sin reentrenar nada. No
+entran en la familia primaria.
+- La declaración es `configs/experiments/posttraining-agent-core.json` (huella 7019689c…).
+- La orden es `python -m mars_titan.evaluation.agent_core medir`, con su línea en
+  `nucleo/linea-a.txt`.
+- Se fijaron en git (a6242492) antes de medir ningún origen.
+
+- **A1, abstención selectiva de S1 y S2.**
+  - Por activo, se abstiene donde más discrepan los rangos tipificados de la red y de los
+    árboles. Por sesión, donde menos se parecen sus órdenes.
+  - La cobertura se elige en calibración entre {0,5; …; 1}, por el IC medio con los abstenidos a
+    cero. La regla está escrita antes de mirar la evaluación.
+  - En evaluación se informan:
+    - el IC del conjunto cubierto;
+    - el IC con lo abstenido a cero, frente a dos controles de igual cobertura en cada sesión:
+      menor |z| y azar (20 sorteos);
+    - la curva de riesgo y cobertura;
+    - los tercios de liquidez.
+- **A2, intervalos conformes al 80 % y al 95 %, en la etiqueta.** Se comparan cuatro sistemas:
+  - los cuantiles del núcleo tal cual;
+  - esos cuantiles conformalizados en calibración (CQR);
+  - la regresión cuantílica del sistema combinado (media de rangos y anchura del núcleo),
+    ajustada en validación;
+  - esa misma regresión conformalizada en calibración.
+
+  Se mide la cobertura y la anchura en evaluación: en total, por tercio de liquidez, por decil de
+  volatilidad de 21 sesiones y por trimestre.
+- **A3, Shapley exacto del IC medio de evaluación.**
+  - Jugadores: padre, árboles, señal del órgano, placebo (la señal barajada dentro de cada sesión)
+    y, si existe, la atención. En 2013 existe y tiene las mismas filas.
+  - Hay dos juegos, la media de rangos y ridge_cov_active, y cada sesión da su t HAC.
+  - En la media de rangos el placebo no es un jugador nulo: con su mismo peso diluye. El cero solo
+    se exige en ridge.
+- **A4, lo operable con costes.**
+  - Carteras de colas al 10 %, de S1, de S2 y de cada modelo solo, sin optimizar nada contra la
+    evaluación.
+  - Se informan:
+    - la rotación diaria;
+    - el coste de equilibrio por unidad de rotación y el margen frente a 5 pb;
+    - el Sharpe neto a 5, 10 y 15 pb;
+    - Sortino, caída máxima y CVaR al 5 %;
+    - el DSR con 4 ensayos correlacionados, una cota indulgente;
+    - la monotonía por deciles.
+  - Sin AUM no hay impacto de mercado.
+- **Covariables.**
+  - Alfa, liquidez y volatilidad son las de la criba del día de la decisión.
+  - Un oráculo compara el alfa con `KnownOffset`.
+  - La madurez es la de la vista del padre.
+
+### 5.9 Post-entrenamientos de los ajustes finales (diseño, sin GPU)
+
+Están en `docs/research/posttraining-final-fits-design.md`:
+- C1, destilación del conjunto hacia el núcleo con un profesor fuera de ajuste y cronológico;
+- C2, ajuste fino de recencia con 63 y 252 sesiones frente a no tocar;
+- C3, cabeza de calibración posterior frente a CQR. C3 ya lo mide A2 en CPU.
+
 ## 6. Etapas con GPU (fase 4)
 
 ### 6.1 Qué queda preparado
