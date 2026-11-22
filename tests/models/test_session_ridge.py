@@ -154,7 +154,9 @@ def test_a_fit_without_cross_sections_or_validation_sessions_is_refused(ridge):
         )
 
 
-def test_the_hold_stops_the_fit_before_reading_anything():
+def test_the_hold_stops_the_fit_before_reading_anything(learning_hold):
+    # La protección la pone la prueba: no depende de la que haya o no en la máquina.
+    learning_hold(False)
     with pytest.raises(LearningHoldError, match="Bloqueo de aprendizaje vigente"):
         session_ridge.fit(None, None, None, min_assets=3)
 
