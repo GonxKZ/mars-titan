@@ -75,7 +75,12 @@ def campaign(tmp_path, *, tree=True):
         known["matures"][split] = np.asarray(rows["prediction_at"], dtype=np.int64) + DAY
     (parent / "run.json").write_text(
         json.dumps(
-            dict(status="completed", final_test_opened=False, request=dict(view_sha256=VIEW))
+            dict(
+                status="completed",
+                final_test_opened=False,
+                run_id="padre-1",
+                request=dict(view_sha256=VIEW),
+            )
         )
     )
     if tree:
@@ -89,7 +94,10 @@ def campaign(tmp_path, *, tree=True):
             dict(
                 status="completed",
                 final_test_opened=False,
-                parent="titans_mac_nogain",
+                model="titans_mac_nogain__combined",
+                origin=YEAR,
+                seed=42,
+                parent=dict(model="titans_mac_nogain", state=str(state), run_id="padre-1"),
                 arm="combined",
                 inputs=dict(emissions=emissions),
                 outputs=outputs,
@@ -271,3 +279,14 @@ def test_a_root_written_with_another_declaration_is_refused(tmp_path, monkeypatc
     )
     assert og.main(_arguments(paths, tmp_path / "agregador")) == 1
     assert "otra declaración" in capsys.readouterr().err
+
+
+def test_an_organ_of_another_fit_of_the_parent_is_refused(tmp_path, monkeypatch, capsys):
+    paths = campaign(tmp_path)
+    monkeypatch.setattr(og, "known_rows", _known(paths))
+    record = paths["organ"] / "run.json"
+    data = json.loads(record.read_text())
+    data["parent"]["run_id"] = "otro"
+    record.write_text(json.dumps(data))
+    assert og.main(_arguments(paths, tmp_path / "agregador")) == 1
+    assert "no es el brazo combinado de este ajuste" in capsys.readouterr().err

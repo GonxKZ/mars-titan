@@ -255,9 +255,17 @@ def _checked_sources(declaration, origin, sources, records, fingerprint):
         f"{sources['tree']} no son los árboles declarados ({declaration['tree']}, semilla "
         f"{declaration['seed']}, sin test final)",
     )
+    declared = organ.get("parent")
     _require(
-        organ.get("parent") == declaration["parent"] and organ.get("arm") == "combined",
-        f"{sources['organ']} no es el brazo combinado de {declaration['parent']}",
+        organ.get("model") == declaration["organ"]
+        and organ.get("arm") == "combined"
+        and organ.get("origin") == origin
+        and organ.get("seed") == declaration["seed"]
+        and isinstance(declared, dict)
+        and declared.get("model") == declaration["parent"]
+        and declared.get("run_id") == parent.get("run_id"),
+        f"{sources['organ']} no es el brazo combinado de este ajuste de {declaration['parent']} "
+        f"(origen {origin}, semilla {declaration['seed']})",
     )
     emissions = (organ.get("inputs") or {}).get("emissions") or {}
     for split in SPLITS:
