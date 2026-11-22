@@ -908,6 +908,64 @@ def completed(state, year, seed):
     return records
 
 
+NO_TELEMETRY = "sin telemetría del equipo"
+
+
+def provenance(record):
+    """Dónde se ajustó un trabajo: equipo, GPU, máquina, PyTorch y commit de sus intentos.
+
+    Un intento sin recursos anotados no cuenta. Dos intentos en el mismo sitio cuentan una vez
+    y un trabajo reanudado en otro equipo conserva los dos, en el orden en que corrieron.
+    """
+    places = []
+    for attempt in record.get("attempts") or []:
+        resources = attempt.get("resources")
+        if not resources:
+            continue
+        place = dict(
+            site=resources.get("site"),
+            gpu=resources.get("gpu_name"),
+            machine=(resources.get("platform") or {}).get("machine"),
+            torch=(resources.get("versions") or {}).get("torch"),
+            commit=(attempt.get("execution") or {}).get("code_commit"),
+        )
+        if place not in places:
+            places.append(place)
+    return places
+
+
+def place_label(place):
+    """Una línea para un sitio: GPU o CPU, máquina y etiqueta del equipo."""
+    machine = f" ({place['machine']})" if place["machine"] else ""
+    site = f"equipo {place['site']}" if place["site"] else "sin etiqueta de equipo"
+    return f"{place['gpu'] or 'CPU'}{machine}, {site}"
+
+
+def provenance_groups(models):
+    """Modelos de cada sitio: {etiqueta: [nombres]}, con los sitios sin telemetría al final."""
+    groups = {}
+    for name, places in sorted(models.items()):
+        labels = [place_label(place) for place in places] or [NO_TELEMETRY]
+        for label in dict.fromkeys(labels):
+            groups.setdefault(label, []).append(name)
+    return {
+        label: groups[label]
+        for label in sorted(groups, key=lambda item: (item == NO_TELEMETRY, item))
+    }
+
+
+def provenance_lines(models, prefix=""):
+    """Líneas de la procedencia de unos modelos, una por sitio."""
+    lines = []
+    for label, names in provenance_groups(models).items():
+        everyone = len(names) == len(models) and len(names) > 1
+        listed = (
+            f"los {len(names)} modelos" if everyone else ", ".join(f"`{name}`" for name in names)
+        )
+        lines.append(f"- {prefix}{label}: {listed}")
+    return lines
+
+
 def model_report(state, record, year, seed, decision_splits=DECISION):
     run = state / "runs" / record["model"] / str(year) / f"seed-{seed}"
     splits = {split: load_split(run, split) for split in SPLITS}
@@ -936,6 +994,7 @@ def model_report(state, record, year, seed, decision_splits=DECISION):
         best_epoch=result.get("best_epoch"),
         selected_validation_ic=None if score is None else 1 - 2 * score,
         hours=sum(seconds) / 3600 if seconds else None,
+        provenance=provenance(record),
         epochs=curve,
         epoch_std=float(np.std(late, ddof=1)) if len(late) > 1 else None,
         ic={split: summary(values) for split, values in ics.items()},
@@ -1471,6 +1530,17 @@ def markdown(report):
                 f"{_f(item['evaluation']['t'], 2)} |"
             )
         lines.append("")
+    lines += [
+        "## Procedencia de los ajustes",
+        "",
+        "Equipo y GPU de cada ajuste, según la telemetría de sus intentos. Un ajuste reanudado en "
+        "otro equipo aparece en los dos.",
+        "",
+    ]
+    for origin in report["origins"]:
+        places = {name: item.get("provenance") or [] for name, item in origin["models"].items()}
+        lines += provenance_lines(places, prefix=f"Origen {origin['year']}, ")
+    lines.append("")
     return "\n".join(lines)
 
 

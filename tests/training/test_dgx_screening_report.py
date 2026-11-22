@@ -95,6 +95,46 @@ def test_the_ranks_average_ties_and_the_session_ic_is_the_spearman_of_each_sessi
     assert report.session_ic(short) == {}
 
 
+def test_the_report_says_where_each_model_was_fitted(tmp_path):
+    folder = tmp_path / "estado"
+    dgx = states.attempt(None, "NVIDIA GB10", machine="aarch64")
+    colab = states.attempt("google-colab-rtx-pro-6000", "NVIDIA RTX PRO 6000 Blackwell")
+    # Dos intentos en el mismo equipo cuentan una vez; un trabajo reanudado en otro, las dos.
+    write_model(folder, "control", 2013, 0.15, seed=1, attempts=[dgx, dict(dgx, seconds=5.0)])
+    write_model(folder, "mejor", 2013, 0.45, seed=2, attempts=[colab])
+    write_model(folder, "mudado", 2013, 0.3, seed=3, attempts=[dgx, colab])
+    write_model(folder, "antiguo", 2013, 0.2, seed=4)
+    document = report.build(folder, [2013], 42, {}, {})
+    models = document["origins"][0]["models"]
+    here = dict(
+        site=None, gpu="NVIDIA GB10", machine="aarch64", torch="2.14.0+cu130", commit="a" * 40
+    )
+    assert models["control"]["provenance"] == [here]
+    assert [item["site"] for item in models["mudado"]["provenance"]] == [
+        None,
+        "google-colab-rtx-pro-6000",
+    ]
+    assert models["mejor"]["provenance"][0]["gpu"] == "NVIDIA RTX PRO 6000 Blackwell"
+    assert models["antiguo"]["provenance"] == []
+    lines = report.markdown(document).splitlines()
+    start = lines.index("## Procedencia de los ajustes")
+    section = [line for line in lines[start + 1 :] if line.startswith("- ")]
+    assert section == [
+        "- Origen 2013, NVIDIA GB10 (aarch64), sin etiqueta de equipo: `control`, `mudado`",
+        "- Origen 2013, NVIDIA RTX PRO 6000 Blackwell (x86_64), equipo google-colab-rtx-pro-6000: "
+        "`mejor`, `mudado`",
+        "- Origen 2013, sin telemetría del equipo: `antiguo`",
+    ]
+
+
+def test_one_place_for_every_model_is_said_in_one_line(state):
+    document = report.build(state, [2013], 42, {}, {})
+    lines = report.markdown(document).splitlines()
+    start = lines.index("## Procedencia de los ajustes")
+    section = [line for line in lines[start + 1 :] if line.startswith("- ")]
+    assert section == ["- Origen 2013, sin telemetría del equipo: los 4 modelos"]
+
+
 def test_the_paired_contrast_separates_a_better_model_from_noise(state):
     controls = dict(controls=dict(mejor="control", ruido="control"), groups=dict(mejor="grupo"))
     document = report.build(state, [2013], 42, controls["controls"], controls["groups"])
