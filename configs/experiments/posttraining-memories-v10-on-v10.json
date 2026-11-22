@@ -1,0 +1,90 @@
+{
+  "schema_version": 1,
+  "kind": "posttraining_memories_v1",
+  "final_test_access": false,
+  "description": "Estudio de memorias con su adenda sobre las emisiones de la campaña v10 de EE. UU. (estado todos-3d10a30f, recetas con accumulation_rows de 8.192), declarado el 22 de noviembre de 2026 cuando ninguno de sus trabajos del origen 2013 había terminado (los 19 estaban en pausa a las 05:24 UTC), es decir, antes de que existiera ninguna emisión que leer. Pregunta del coordinador: cuánto sobrevive de la memoria por activo, de la memoria por vecinos y de su combinación cuando el padre ya tiene memoria en línea, ahora con la base v10 (ganancia aprendida de la mediana y rangos por sesión de los rasgos en la rama densa). Mismos métodos, rejillas, claves, selección en calibración, placebos y adenda que posttraining-memories-v10-adenda.json (vecinos v2): un origen (2013) y una semilla (42); nada se generaliza sin más orígenes. Modelos: titans_mac con sus controles congelado y desactivado, las variantes que quitan una pieza (noranks, nogain, noic, nobranch) con sus controles, y la atención entre activos con los suyos. Solo se ejecuta cuando los 19 trabajos estén terminados; si falta alguno, falla con su ruta.",
+  "market": "US",
+  "min_assets": 30,
+  "runs": [
+    {
+      "state": "v10",
+      "origin": 2013,
+      "seed": 42
+    }
+  ],
+  "models": [
+    "titans_mac",
+    "titans_mac_frozen",
+    "titans_mac_disabled",
+    "titans_mac_noranks",
+    "titans_mac_frozen_noranks",
+    "titans_mac_disabled_noranks",
+    "titans_mac_nogain",
+    "titans_mac_frozen_nogain",
+    "titans_mac_disabled_nogain",
+    "titans_mac_noic",
+    "titans_mac_frozen_noic",
+    "titans_mac_disabled_noic",
+    "titans_mac_nobranch",
+    "titans_mac_frozen_nobranch",
+    "titans_mac_disabled_nobranch",
+    "cross_asset_attention",
+    "cross_asset_attention_frozen",
+    "cross_asset_attention_disabled",
+    "cross_asset_attention_self"
+  ],
+  "inputs": {
+    "source": "tabular_lab_cache_v1",
+    "columns": 92,
+    "projection_dim": 64,
+    "projection_seed": 53
+  },
+  "asset": {
+    "half_lives": [
+      5,
+      10,
+      21,
+      63,
+      126
+    ],
+    "kappas": [
+      0.03,
+      0.05,
+      0.1,
+      0.2,
+      0.3
+    ],
+    "lab": {
+      "half_life": 21,
+      "kappa": 0.1
+    }
+  },
+  "neighbours": {
+    "window": 63,
+    "k": 256,
+    "tau": 0.2,
+    "clip": 3,
+    "kappas": [
+      0.05,
+      0.1,
+      0.2,
+      0.4
+    ]
+  },
+  "combination": {
+    "kappas": [
+      0,
+      0.05,
+      0.1,
+      0.2
+    ]
+  },
+  "placebo_seed": 20261122,
+  "addendum": {
+    "exclude_own": true,
+    "quantile_shift": {
+      "min_rows": 1000
+    },
+    "cold_start": true
+  }
+}
