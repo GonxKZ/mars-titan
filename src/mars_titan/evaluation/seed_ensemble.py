@@ -64,6 +64,15 @@ def seed_mean(tables):
         for name in KEYS:
             if not table[name].equals(first[name]):
                 raise ValueError(f"Las semillas no comparten la columna {name}")
+    # Promediar conserva el orden de los niveles solo si cada semilla ya lo cumple.
+    for seed in seeds:
+        if not levels:
+            break
+        stacked = np.column_stack([tables[seed][name].to_numpy() for name in levels])
+        crossed = np.flatnonzero(np.any(np.diff(stacked, axis=1) < 0, axis=1))
+        if crossed.size:
+            row = first["sample_id"][int(crossed[0])].as_py()
+            raise ValueError(f"Cuantiles cruzados en la semilla {seed}, fila {row}")
     columns = {name: first[name] for name in names}
     for name in averaged:
         stacked = np.stack([tables[seed][name].to_numpy() for seed in seeds])

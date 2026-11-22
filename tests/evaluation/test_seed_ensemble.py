@@ -55,6 +55,22 @@ def test_quantile_levels_are_averaged_and_stay_ordered():
     assert description["averaged_columns"] == ["prediction", *QUANTILE_COLUMNS]
 
 
+def test_a_seed_with_crossed_quantiles_is_rejected_with_its_seed_and_row():
+    """H-09 del segundo enjambre: promediar conserva el orden de los niveles solo si cada semilla
+    ya lo cumple. Una semilla con cuantiles cruzados se rechaza en lugar de promediarse."""
+    crossed = table([0.0, 0.1, 0.2], quantiles=0.01)
+    low, level = QUANTILE_COLUMNS[0], QUANTILE_COLUMNS[1]
+    values = crossed[level].to_numpy().copy()
+    values[2] = crossed[low].to_numpy()[2] - 1.0
+    position = crossed.schema.get_field_index(level)
+    crossed = crossed.set_column(position, level, pa.array(values, type=pa.float64()))
+    with pytest.raises(ValueError, match="cruzados en la semilla 1, fila CN/C/1"):
+        seed_mean({0: table([0.0, 0.1, 0.2], quantiles=0.01), 1: crossed})
+    tied = table([0.0, 0.1, 0.2], quantiles=0.0)
+    combined, _ = seed_mean({0: tied, 1: tied})
+    assert combined[low].equals(tied[low])
+
+
 @pytest.mark.parametrize(
     "tables",
     [
