@@ -1355,16 +1355,21 @@ ejecutarse:
   en el origen 2013 dos de 67 ajustes que seguían mejorando (`titans_mac_frozen_noic`, con su
   mejor época en la última, y `titans_mac_t8`). El tope sube a 48 épocas en los ajustes y de
   12 a 24 en los lectores: queda como salvaguarda y deja de decidir.
-- **El gradiente sale del grafo de la emisión.** Con `accumulation_rows`, el ajuste calculaba
-  cada tramo dos veces: una al emitir, cuyo grafo descartaba, y otra al repetirlo por bloques
-  de flujos para acumular el gradiente. Desde que la pérdida lleva el término de IC por sesión
-  y la rama densa los rangos, cada instante va entero en un bloque y la repetición era un solo
-  bloque con todos los flujos: el mismo cálculo otra vez, el 26 % del tiempo del hilo
-  principal en el perfil del 20 de noviembre. Las 35 recetas de ajuste de las dos campañas son
-  copias sin ese campo (sufijo `-d-v10`). El gradiente es el mismo: las pruebas del recorrido
-  ya exigían que el camino directo y el repetido coincidieran con una tolerancia relativa de
-  10⁻⁹, también con el término de IC y con la atención entre activos. Lo encontró la auditoría
-  de la receta encargada al enjambre de Gemini; se comprobó en el código antes de aplicarlo.
+- **Probado y retirado: tomar el gradiente del grafo de la emisión.** Con
+  `accumulation_rows`, el ajuste calcula cada tramo dos veces: una al emitir, cuyo grafo
+  descarta, y otra al repetirlo por bloques de flujos. Con cada instante entero en un bloque,
+  esa repetición es un solo bloque con todos los flujos, y el perfil del 20 de noviembre le
+  atribuía el 26 % del hilo principal. Una auditoría de la receta (enjambre de Gemini) propuso
+  quitar el campo, y las pruebas del recorrido ya exigían que los dos caminos dieran el mismo
+  gradiente (tolerancia relativa de 10⁻⁹). Se relanzó la campaña con 35 recetas sin el campo
+  (sufijo `-d-v10`, commit 05885104) y se midió: a igual carga de la máquina los ajustes no
+  fueron más rápidos (85 a 102 pasos por minuto frente a 107 a 126) y el de memoria congelada
+  fue más lento y cada vez más (de 38 a 23 pasos por minuto, frente a 77 a 82). A los 35
+  minutos la campaña volvió a su estado anterior (commit 3d10a30f), que conservaba su avance.
+  La paridad de gradientes no estaba probada con la memoria congelada ni había medida de
+  tiempo: antes de volver a proponerlo hace falta un banco de pruebas con los tres modos de
+  memoria, el tiempo por paso y la memoria retenida. Las recetas `-d-v10` quedan para ese
+  banco y ninguna declaración las usa.
 
 ### Herramientas nuevas
 

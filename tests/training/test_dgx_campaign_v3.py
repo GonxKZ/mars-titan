@@ -784,10 +784,6 @@ def test_the_campaigns_with_session_ranks_in_the_base_keep_each_contrast(name, o
     )
     dense = {"columns", "hidden", "depth"}
     cores = ("titans_mac", "titans_mac_frozen", "titans_mac_disabled")
-    # Ningún ajuste repite el tramo por bloques: con cada instante entero en un bloque, la
-    # repetición era el mismo cálculo otra vez. El gradiente sale del grafo de la emisión, y
-    # las pruebas del recorrido exigen que los dos caminos den los mismos gradientes.
-    replay = "recipe.accumulation_rows"
 
     def changed(left, right, other=None):
         one, two = flat_specification(document, left), flat_specification(other or document, right)
@@ -796,7 +792,7 @@ def test_the_campaigns_with_session_ranks_in_the_base_keep_each_contrast(name, o
 
     carried = {model for model in previous["models"] if not model.endswith("_xrank")}
     assert carried | {f"{core}_noranks" for core in cores} == set(document["models"])
-    ranked = direct = 0
+    ranked = 0
     for model in sorted(carried):
         entry, before = document["models"][model], previous["models"][model]
         assert entry == before, model
@@ -809,22 +805,17 @@ def test_the_campaigns_with_session_ranks_in_the_base_keep_each_contrast(name, o
             }, model
             assert now["recipe.block_rows"] == 8192
             assert now["recipe.max_working_bytes"] == 2 * 1024**3
-            continue
-        assert was[replay] == 8192 and replay not in now, model
-        assert now["recipe.block_rows"] == 8192 >= document["cohort"]["size"], model
-        assert ChronologicalRecipe(**_recipe(document, model)).accumulation_rows is None
-        direct += 1
-        if isinstance(was.get(branch), dict) and set(was[branch]) == dense:
-            assert changed(model, model, previous) == {branch, replay}, model
+        elif isinstance(was.get(branch), dict) and set(was[branch]) == dense:
+            assert changed(model, model, previous) == {branch}, model
             assert now[branch] == {**was[branch], "session_ranks": True}
             ranked += 1
         else:
-            assert changed(model, model, previous) == {replay}, model
-    assert ranked > 60 and direct > 90
+            assert changed(model, model, previous) == set(), model
+    assert ranked > 60
     for core in cores:
         # Sin los rangos, el núcleo es el de la campaña anterior, campo a campo.
         assert changed(f"{core}_noranks", core) == {branch}
-        assert changed(f"{core}_noranks", core, previous) == {replay}
+        assert changed(f"{core}_noranks", core, previous) == set()
         assert document["models"][f"{core}_noranks"]["tier"] == "r4_noranks"
         assert changed(f"{core}_nogain", core) == {gain}
         assert changed(f"{core}_noic", core) == {term}

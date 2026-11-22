@@ -130,11 +130,27 @@ sesiones; los demás se publican por semanas o meses y quedan fuera de este dise
 | Regresión lineal con interacciones rasgo × choque, frente a la lineal sin ellas | 0,0967 | −0,0001 | −0,51 | −0,0004 |
 | Red más la parte de interacción (peso 0,1) | 0,1133 | −0,0014 | −1,86 | −0,0003 |
 
-La parte de interacción gana 0,0010 en calibración y pierde 0,0014 en evaluación: ruido. La
-hipótesis queda **sin contrastar para los 139 indicadores de publicación espaciada**, que son
-casi toda la macro. Su prueba es por eventos: la sorpresa del día de publicación (el valor
-nuevo menos el anterior, cuando la edad del dato vuelve a cero) cruzada con la sensibilidad de
-cada activo estimada solo con publicaciones pasadas (H3-b, pendiente).
+La parte de interacción gana 0,0010 en calibración y pierde 0,0014 en evaluación: ruido. Ese
+diseño dejaba sin contrastar los 139 indicadores de publicación espaciada.
+
+**Experimento H3-b (22 de noviembre, una semilla): tampoco por publicaciones.** Hay publicación
+de un indicador cuando la edad de su dato vuelve a cero; la sorpresa es el valor nuevo menos
+el anterior, tipificada con las sorpresas del tramo de ajuste. Por activo e indicador, una
+regresión con contracción de la etiqueta madura sobre la sorpresa, actualizada solo con
+publicaciones pasadas. Guion del enjambre de Gemini (`macro_eventos.py`, 21 pruebas), revisado
+y ejecutado con los datos reales.
+
+| Variante | Evaluación | Frente a la estática | t | En calibración |
+| --- | ---: | ---: | ---: | ---: |
+| Mejor configuración por calibración (sin olvido, contracción 100, retardo 3, peso 0,05) | 0,1144 | −0,0003 | −1,74 | +0,0004 |
+| Placebo: fechas de publicación barajadas por indicador | 0,1147 | −0,0000 | −0,13 | −0,0005 |
+| Placebo: sorpresas barajadas entre eventos | 0,1144 | −0,0003 | −1,58 | −0,0009 |
+
+La lectura real no se separa de sus placebos. Con los dos diseños, la macro no ordena activos
+a través de una sensibilidad lineal por activo en este origen; coincide con lo que las
+ablaciones de modalidad dirán en los Titans (`v_no_macro`, `v_macro`). Es coherente con que
+el mercado absorbe los anuncios dentro de la sesión y con que no hay consenso de analistas
+con el que medir la sorpresa.
 
 ### H4. Los lectores no aportan por sus claves y por lo que guardan
 
@@ -202,6 +218,8 @@ desacoplado de 0,01: −0,0001 (t = −1,20). Se conserva la configuración base
 | H4-a | 22-11 | ¿Qué limita a la memoria episódica: las claves o el banco? | Claves (estado oculto, proyección aleatoria) con banco de sesiones enteras | Red estática; valores permutados | +0,0007 (t 1,5) y +0,0016 (t 2,8); placebo −0,0006 | El banco y lo que guarda; las claves aleatorias bastan |
 | H5-a | 22-11 | ¿Ayuda cambiar el optimizador? | Segundo momento 0,95; 5 sesiones por paso; AdamW 0,01 | Configuración base | −0,0000, −0,0011, −0,0001 | Se conserva la base |
 | H4-b | 22-11 | ¿La memoria por activo y la de vecinos son la misma información? | Las dos lecturas a la vez, con sus pesos | Cada una sola | +0,0024 y +0,0029 juntas; +0,0007 a +0,0012 sobre cada una | Son complementarias en parte; pasan a medirse sobre los Titans |
+| H3-b | 22-11 | ¿La sorpresa de cada publicación macro, cruzada con la sensibilidad de cada activo, añade orden? | Regresión por activo en tiempo de eventos | Red estática; fechas barajadas; sorpresas barajadas | −0,0003 (t −1,7); placebos −0,0000 y −0,0003 | No. Con H3-a, la sensibilidad lineal a la macro queda descartada en este origen |
+| E-1 | 22-11 | ¿Quitar la repetición del tramo acelera el ajuste sin cambiarlo? | `accumulation_rows` ausente | Recetas con repetición, a igual carga | No acelera (85–102 frente a 107–126 pasos/min) y la memoria congelada se frena (38 → 23) | Retirado a los 35 minutos; pendiente de un banco de pruebas con los tres modos de memoria |
 | F-1 | 22-11 | ¿Qué hace la memoria por dentro al entrenar? | Trazas de `titans_mac` | `titans_mac_frozen` | Tasa de escritura 0,049 a 0,025; olvido 0,003 a 0,02; momento 0,50 a 0,2; pérdida asociativa entre 16 y 48 sin converger | La memoria está viva, pero no resuelve su objetivo interno |
 
 ## Interacción observada: rangos por sesión y memoria en línea
