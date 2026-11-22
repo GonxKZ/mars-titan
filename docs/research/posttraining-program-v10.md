@@ -385,6 +385,52 @@ entran en la familia primaria.
   - Un oráculo compara el alfa con `KnownOffset`.
   - La madurez es la de la vista del padre.
 
+**Resultado de 2013** (medido; descriptivo y secundario).
+- Fuente: v10, semilla 42, evaluación de 251 sesiones, t HAC por sesión; `nucleo/2013`, copia
+  e8910918, 1.264 s de CPU.
+- Oráculo: los IC de S1 y S2 reproducen los de la orden de S2, 0,1180 / 0,0886 y 0,1191 / 0,0890.
+
+- **A1, abstención.**
+  - La regla de calibración elige cobertura 1, es decir, no abstenerse, en los ocho casos: dos
+    sistemas × dos modos × por activo o por sesión. El Δ de evaluación es 0 por construcción.
+  - Curva en evaluación (sin t):
+    - Al 50 % de cobertura, el IC del conjunto cubierto de S1 sube de 0,1180 a 0,1645 en la
+      etiqueta, pero quitar las de menor |z| da 0,1628 (+0,0017). En lo operable, 0,1173 frente a
+      0,1180 (−0,0007).
+    - La discrepancia entre la red y los árboles apenas mejora a la magnitud. Poner a cero lo
+      abstenido siempre baja el IC: 0,1066 al 50 %.
+  - El IC se concentra en el tercio menos líquido: 0,1675, 0,1005 y 0,0757 en la etiqueta.
+- **A2, intervalos.**
+  - Al 80 %:
+    - los cuantiles del núcleo cubren 0,889, con anchura media 0,0552;
+    - con CQR, 0,831 (0,0482);
+    - la regresión cuantílica del sistema combinado con CQR, 0,828 (0,0374): un 32 % más
+      estrecha que el núcleo crudo y un 22 % más que su CQR.
+  - Al 95 %: 0,966, 0,961 y 0,961.
+  - Todos cubren al menos lo nominal en total, por tercio de liquidez y por trimestre (el peor
+    trimestre, 0,809 al 80 %).
+  - El decil de volatilidad extremo no: el combinado con CQR da 0,687 al 80 % y 0,896 al 95 %;
+    el núcleo con CQR, 0,772 y 0,917.
+- **A3, Shapley del IC medio.**
+  - Etiqueta, ridge (conjunto 0,1196):
+    - padre +0,0391 (t 20,9), árboles +0,0370 (t 19,6), atención +0,0383 (t 19,5);
+    - señal del órgano +0,0049 (t 3,0);
+    - placebo +0,0003 (t 1,1), compatible con cero.
+  - En la media de rangos el placebo diluye, −0,0108 (t −13,7), como se declaró.
+  - En lo operable el placebo no sale cero, +0,0090 (t 7,1).
+    - Su factor elegido es k = 0,005, así que su predicción operable es casi el alfa conocido, que
+      informa de lo operable.
+    - La señal del órgano, +0,0093, no se distingue de él.
+- **A4, colas al 10 % en lo operable.**
+  - S1:
+    - +58,8 pb por sesión en bruto, con rotación de 1,57 (sobre 4);
+    - coste de equilibrio de 37,4 pb por unidad de rotación, 7,5 veces el de 5 pb;
+    - Sharpe anual bruto 18,5, y neto 16,0, 13,6 y 11,1 a 5, 10 y 15 pb.
+  - Diferencias diarias en bruto: S1 − padre −2,8 pb (t −2,4), S1 − árboles +5,1 pb (t 3,7) y
+    S2 − S1 −2,8 pb (t −1,8). En las colas, el padre solo gana a la mezcla.
+  - Los Sharpe son de residuos de una sesión en un universo de supervivientes (D-2), sin impacto
+    ni AUM. No son Sharpe operables.
+
 ### 5.9 Post-entrenamientos de los ajustes finales (diseño, sin GPU)
 
 Están en `docs/research/posttraining-final-fits-design.md`:
