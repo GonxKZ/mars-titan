@@ -236,6 +236,32 @@ de memoria congelada y 0,0010 al núcleo sin memoria. Con los rangos, aprender e
 0,0065 por encima de la memoria congelada (0,0013 sin ellos). Puede ser una semilla afortunada:
 la campaña v10 lo repite con tres semillas en los tres núcleos antes de darlo por cierto.
 
+**La v10 no lo repite con la semilla 42 (22 de noviembre).** El núcleo de la v10 es la receta
+con rangos de la v8 más la ganancia aprendida de la mediana, con otra versión del código y un
+tope de épocas más alto que ninguno de los dos alcanza. Diferencia pareada del IC por sesión,
+memoria en línea menos memoria congelada:
+
+| Par | Validación | Calibración (t) | Evaluación (t) | Evaluación por trimestres |
+| --- | ---: | ---: | ---: | --- |
+| v8 sin rangos | +0,0013 | +0,0052 (2,8) | +0,0013 (1,2) | +0,0012, −0,0013, +0,0042, +0,0012 |
+| v8 con rangos | +0,0041 | +0,0068 (3,1) | +0,0065 (5,4) | +0,0064, +0,0090, +0,0069, +0,0037 |
+| v10 (rangos y ganancia de la mediana) | +0,0010 | +0,0070 (2,1) | +0,0014 (1,2) | +0,0050, +0,0047, +0,0001, −0,0041 |
+
+- En los tres pares la ventaja de escribir en línea es mayor en calibración, las 61 sesiones
+  que siguen a la validación, que en la evaluación del año siguiente.
+- De la v8 con rangos a la v10, el núcleo en línea baja 0,0031 (0,1163 a 0,1132) y los de
+  memoria congelada y sin memoria suben 0,0019 y 0,0041. O la ganancia de la mediana ayuda a
+  los controles y perjudica al que escribe, o es la variación de un ajuste a otro. Lo separa el
+  trío sin ganancia de la v10 (`r4_nogain`, en la cola del origen 2013) y lo acotan las semillas
+  43 y 44.
+- En la v10 la ventaja decae a lo largo del año de evaluación (pendiente de −0,012 por año,
+  t = −3,1) y acaba negativa en el último trimestre; en los dos pares de la v8 no decae. Es una
+  observación hecha después de mirar, sobre una semilla. **Comprobación fijada antes de tener
+  los datos:** con las semillas 43 y 44 de la v10, la pendiente de esa diferencia dentro del año
+  de evaluación será negativa en las dos. Si lo es, la memoria que escribe se degrada con el
+  recorrido y procede medir un reinicio periódico de su estado con la herramienta de los gemelos
+  de escritura, sin reajustar. Si no lo es, se descarta como ruido.
+
 ## Propuestas externas pendientes de medir
 
 La cuarta ronda de Gemini (22 de noviembre) propone, por orden de ganancia esperada: reajuste
