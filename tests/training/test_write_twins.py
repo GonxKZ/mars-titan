@@ -76,6 +76,14 @@ def campaign_state(base, root):  # noqa: F811
         dict(analysis=dict(primary="evaluation", secondary=[], confidence=1.0)),
         dict(extra=True),
         dict(schema_version=True),
+        dict(jobs=[]),
+        dict(jobs=["online_fit_frozen_eval"]),
+        dict(jobs=["online_fit_frozen_eval", "parity_online"]),
+        dict(jobs=["parity_online", "parity_online", "online_fit_frozen_eval"]),
+        dict(jobs=["parity_online", "other"]),
+        dict(jobs=["parity_online"]),
+        # A saldría de las dos celdas congeladas, pero la red en línea no tiene su paridad.
+        dict(jobs=["parity_frozen", "online_fit_frozen_eval", "frozen_fit_online_eval"]),
     ],
 )
 def test_the_declaration_is_checked_before_opening_any_state(changes):
@@ -144,6 +152,44 @@ def test_twins_reproduce_the_parity_and_the_crossed_cells_of_the_factorial(
     recorded["jobs"]["parity_frozen"]["parity"]["identical"] = False
     summary_path.write_text(json.dumps(recorded))
     with pytest.raises(ValueError, match="no se interpreta nada"):
+        twins.analyze(declaration(), states, output)
+
+
+def test_n_alone_runs_only_its_two_jobs_and_gives_the_n_of_the_factorial(
+    base,  # noqa: F811
+    tmp_path,
+):
+    states = dict(t=campaign_state(base, tmp_path / "state"))
+    full = tmp_path / "factorial"
+    twins.run_twins(declaration(), states, full, device="cpu")
+    whole = twins.analyze(declaration(), states, full)["pairs"]["titans_mac"]["partitions"]
+    only_n = declaration(jobs=["parity_online", "online_fit_frozen_eval"])
+    stem = "t--2023--seed-42--titans_mac"
+    # Sin trabajos previos, la orden calcula solo los dos declarados.
+    fresh = tmp_path / "solo-n"
+    (alone,) = twins.run_twins(only_n, states, fresh, device="cpu")
+    assert list(alone["jobs"]) == only_n["jobs"]
+    assert sorted(p.name for p in (fresh / stem).iterdir() if p.is_dir()) == sorted(only_n["jobs"])
+    # Los dos trabajos de un factorial completo se reutilizan copiados: el ejecutor los comprueba
+    # por su recibo y repite la comparación de paridad.
+    output = tmp_path / "n-reutilizada"
+    for name in only_n["jobs"]:
+        shutil.copytree(full / stem / name, output / stem / name)
+    logs = []
+    (summary,) = twins.run_twins(only_n, states, output, device="cpu", log=logs.append)
+    assert sum("ya hecho" in line for line in logs) == 2
+    assert summary["jobs"]["parity_online"]["parity"]["identical"] is True
+    for root in (fresh, output):
+        report = twins.analyze(only_n, states, root)
+        for partition, result in report["pairs"]["titans_mac"]["partitions"].items():
+            reference = whole[partition]
+            assert set(result["ic"]) == {"oo", "of"} and set(result["contrasts"]) == {"N"}
+            assert result["ttws"] is None and set(result["trend"]) == {"N"}
+            assert result["ic"] == {cell: reference["ic"][cell] for cell in ("oo", "of")}
+            assert result["contrasts"]["N"] == reference["contrasts"]["N"], partition
+            assert result["trend"]["N"] == reference["trend"]["N"]
+    # La raíz de N queda ligada a su declaración: la del factorial completo se rechaza.
+    with pytest.raises(ValueError, match="otra declaración"):
         twins.analyze(declaration(), states, output)
 
 

@@ -79,6 +79,15 @@ JOBS = {
     "frozen_fit_online_eval": ("frozen", "mac_online"),
 }
 CELLS = ("oo", "of", "ff", "fo")
+# El trabajo del que sale cada celda; las de los ajustes propios son las anclas, comprobadas por su
+# paridad. Cada contraste resta dos celdas; I = N − A.
+CELL_JOBS = dict(
+    oo="parity_online",
+    of="online_fit_frozen_eval",
+    ff="parity_frozen",
+    fo="frozen_fit_online_eval",
+)
+CONTRASTS = dict(N=("oo", "of"), D=("oo", "ff"), A=("fo", "ff"))
 # Brazos con reinicio: periodo en instantes medidos (None: solo al abrirse la decisión).
 RESETS = {"R0": None, "R63": 63}
 RESET_PARITY = "parity_online_calibration"
@@ -96,6 +105,8 @@ _DECLARATION = {
     "analysis",
 }
 _ANALYSIS = {"primary", "secondary", "confidence"}
+# Opcional: los trabajos que se miden (todos los del factorial si no se declaran).
+_OPTIONAL = {"jobs"}
 
 
 def _require(condition, message):
@@ -110,8 +121,9 @@ def _integer(value, minimum, maximum=None):
 def checked_declaration(document):
     """Validar la declaración antes de abrir ningún estado."""
     _require(
-        isinstance(document, dict) and set(document) == _DECLARATION,
-        f"La declaración de los gemelos tiene exactamente {sorted(_DECLARATION)}",
+        isinstance(document, dict) and _DECLARATION <= set(document) <= _DECLARATION | _OPTIONAL,
+        f"La declaración de los gemelos tiene exactamente {sorted(_DECLARATION)} y, si acaso,"
+        f" {sorted(_OPTIONAL)}",
     )
     _require(
         type(document["schema_version"]) is int
@@ -173,7 +185,33 @@ def checked_declaration(document):
         and 0.5 < analysis["confidence"] < 1,
         "El análisis declara su tramo principal, los secundarios y la confianza",
     )
+    jobs = document.get("jobs", list(JOBS))
+    _require(
+        isinstance(jobs, list) and jobs and jobs == [name for name in JOBS if name in jobs],
+        f"jobs es una lista de {list(JOBS)}, en ese orden y sin repetir",
+    )
+    for name in jobs:
+        role, evaluated = JOBS[name]
+        _require(
+            evaluated is None or f"parity_{role}" in jobs,
+            f"{name} necesita la paridad de su red (parity_{role})",
+        )
+    _require(
+        factorial_contrasts({cell: 0.0 for cell in declared_cells(document)}),
+        f"Los trabajos {jobs} no dan ningún contraste del factorial",
+    )
     return document
+
+
+def declared_jobs(declaration):
+    """Los trabajos que mide la declaración: todos los del factorial si no declara otros."""
+    return tuple(declaration.get("jobs", JOBS))
+
+
+def declared_cells(declaration):
+    """Las celdas del factorial que dan los trabajos declarados, en el orden de CELLS."""
+    jobs = declared_jobs(declaration)
+    return tuple(cell for cell in CELLS if CELL_JOBS[cell] in jobs)
 
 
 def _canonical(document):
@@ -379,7 +417,8 @@ def _twins(declaration, states, output, digest, numerics, device, log, carry):
                 folder = output / _stem(run, seed, pair)
                 folder.mkdir(parents=True, exist_ok=True)
                 jobs = {}
-                for name, (role, evaluated) in JOBS.items():
+                for name in declared_jobs(declaration):
+                    role, evaluated = JOBS[name]
                     destination = folder / name
                     receipt = _finished(destination, evaluated)
                     started, computed = time.perf_counter(), receipt is None
@@ -706,17 +745,27 @@ def _reading(statistics, z):
 
 
 def factorial_contrasts(ic):
-    """N, D, A e I sesión a sesión a partir del IC de las cuatro celdas ajuste × evaluación."""
-    contrasts = dict(N=ic["oo"] - ic["of"], D=ic["oo"] - ic["ff"], A=ic["fo"] - ic["ff"])
-    contrasts["I"] = contrasts["N"] - contrasts["A"]
+    """N, D, A e I sesión a sesión con las celdas ajuste × evaluación que haya.
+
+    Con las cuatro celdas da los cuatro contrastes; con `oo` y `of`, solo N.
+    """
+    contrasts = {
+        name: ic[first] - ic[second]
+        for name, (first, second) in CONTRASTS.items()
+        if first in ic and second in ic
+    }
+    if "N" in contrasts and "A" in contrasts:
+        contrasts["I"] = contrasts["N"] - contrasts["A"]
     return contrasts
 
 
 def seed_average(seeds, keys):
     """IC de cada celda en las sesiones `keys`, promediado sesión a sesión entre semillas."""
+    first = next(iter(seeds.values()))
     return {
         cell: np.mean([[values[cell][key] for key in keys] for values in seeds.values()], axis=0)
         for cell in CELLS
+        if cell in first
     }
 
 
@@ -779,11 +828,13 @@ def partition_statistics(ic, blocks, confidence, instants=None):
     contrasts = factorial_contrasts(ic)
     statistics = {name: _mean_statistics(values, blocks, z) for name, values in contrasts.items()}
     readings = {name: _reading(value, z) for name, value in statistics.items()}
-    ratio = ratio_statistics(contrasts["N"], contrasts["D"], confidence, blocks)
-    ratio["interpretable"] = readings["D"] == "positive" and ratio["fieller"]["bounded"]
+    ratio = None
+    if "N" in contrasts and "D" in contrasts:
+        ratio = ratio_statistics(contrasts["N"], contrasts["D"], confidence, blocks)
+        ratio["interpretable"] = readings["D"] == "positive" and ratio["fieller"]["bounded"]
     result = dict(
         sessions=len(blocks),
-        ic={cell: float(ic[cell].mean()) for cell in CELLS},
+        ic={cell: float(ic[cell].mean()) for cell in CELLS if cell in ic},
         contrasts=statistics,
         readings=readings,
         ttws=ratio,
@@ -794,28 +845,32 @@ def partition_statistics(ic, blocks, confidence, instants=None):
     return result
 
 
-def _cells(states, output, run, seed, pair):
-    """Carpetas de las cuatro celdas de un par, después de comprobar su paridad."""
+def _cells(states, output, run, seed, pair, jobs=tuple(JOBS)):
+    """Carpetas de las celdas de los trabajos `jobs` de un par, después de comprobar su paridad."""
     folders, _, _ = anchors(states, run, seed, pair)
     folder = Path(output) / _stem(run, seed, pair)
     path = folder / "twins.json"
     _require(path.is_file(), f"Faltan los gemelos de {folder}")
     summary = json.loads(path.read_text(encoding="utf-8"))
+    absent = sorted(set(jobs) - set(summary["jobs"]))
+    _require(not absent, f"Los gemelos de {folder} no tienen los trabajos {absent}")
     for name in ("parity_online", "parity_frozen"):
-        _require(
-            summary["jobs"][name]["parity"]["identical"] is True,
-            f"La paridad de {folder / name} no es exacta: no se interpreta nada",
-        )
-    return dict(
+        if name in jobs:
+            _require(
+                summary["jobs"][name]["parity"]["identical"] is True,
+                f"La paridad de {folder / name} no es exacta: no se interpreta nada",
+            )
+    cells = dict(
         oo=folders["online"],
         of=folder / "online_fit_frozen_eval",
         ff=folders["frozen"],
         fo=folder / "frozen_fit_online_eval",
     )
+    return {cell: path for cell, path in cells.items() if CELL_JOBS[cell] in jobs}
 
 
 def analyze(declaration, states, output):
-    """Informe de los gemelos: IC de las cuatro celdas y contrastes N, D, A, I y TTWS por tramo."""
+    """Informe de los gemelos: IC de las celdas medidas y sus contrastes (N, D, A, I y TTWS)."""
     declaration = checked_declaration(declaration)
     output = Path(output)
     digest = _saved_declaration(output, declaration)
@@ -836,7 +891,7 @@ def analyze(declaration, states, output):
             for run in declaration["runs"]:
                 seeds = {}
                 for seed in run["seeds"]:
-                    cells = _cells(states, output, run, seed, pair)
+                    cells = _cells(states, output, run, seed, pair, declared_jobs(declaration))
                     values, reference = {}, None
                     for cell, folder in cells.items():
                         ics, sample, target = session_ics(
@@ -853,14 +908,14 @@ def analyze(declaration, states, output):
                         )
                         values[cell] = ics
                     seeds[seed] = values
-                common = set.intersection(*(set(v[c]) for v in seeds.values() for c in CELLS))
+                common = set.intersection(*(set(v[c]) for v in seeds.values() for c in v))
                 _require(common, f"{run['state']}/{run['origin']} no tiene sesiones comunes")
                 keys = sorted(common)
                 for seed, values in seeds.items():
-                    rows = {c: np.array([values[c][k] for k in keys]) for c in CELLS}
+                    rows = {c: np.array([values[c][k] for k in keys]) for c in values}
                     per_seed[f"{run['state']}/{run['origin']}/seed-{seed}"] = dict(
                         sessions=len(keys),
-                        ic={c: float(rows[c].mean()) for c in CELLS},
+                        ic={c: float(rows[c].mean()) for c in rows},
                         **{
                             name: float(value.mean())
                             for name, value in factorial_contrasts(rows).items()
@@ -870,7 +925,7 @@ def analyze(declaration, states, output):
                     series.setdefault(cell, []).append(averaged)
                 blocks += [(run["state"], run["origin"], key[0]) for key in keys]
                 instants += [key[1] for key in keys]
-            ic = {c: np.concatenate(series[c]) for c in CELLS}
+            ic = {c: np.concatenate(series[c]) for c in series}
             statistics = partition_statistics(ic, blocks, analysis["confidence"], instants=instants)
             partitions[partition] = dict(statistics, per_seed=per_seed)
         report["pairs"][pair["online"]] = dict(frozen=pair["frozen"], partitions=partitions)

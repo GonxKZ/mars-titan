@@ -1,0 +1,37 @@
+{
+  "schema_version": 1,
+  "kind": "posttraining_write_twins_v1",
+  "final_test_access": false,
+  "description": "Enmienda de posttraining-write-twins-v10.json declarada el 23 de noviembre de 2026 a las 01:00 UTC por encargo del coordinador, antes de lanzar ningún trabajo de las semillas 43 y 44, cuyos ajustes titans_mac y titans_mac_frozen de 2013 ya están terminados. Mide solo N en las tres semillas del origen 2013: la misma red en línea evaluada escribiendo (oo, el ancla, comprobada por la paridad bit a bit de su emisión) frente a evaluada sin escribir (of). D, A, I y TTWS no se miden con las semillas 43 y 44; siguen siendo los de la semilla 42 en gemelos/v10. Los dos trabajos de la semilla 42 son los de gemelos/v10, con el mismo código del modelo y las mismas anclas: se copian a la raíz nueva antes de lanzar, y el ejecutor los comprueba por su recibo y repite su comparación de paridad. Estadísticos y lecturas como en la declaración original: el IC de cada celda se promedia sesión a sesión entre semillas antes del error HAC (la unidad es la sesión), y el informe da además N de cada semilla. El código es el de esta rama; respecto a f611f7a5, la copia de los gemelos de la v10, solo cambian write_twins (los trabajos declarados) y módulos de evaluación y de memoria post-entrenamiento que la orden no importa.",
+  "market": "US",
+  "min_assets": 30,
+  "pairs": [
+    {
+      "online": "titans_mac",
+      "frozen": "titans_mac_frozen"
+    }
+  ],
+  "runs": [
+    {
+      "state": "v10",
+      "origin": 2013,
+      "seeds": [
+        42,
+        43,
+        44
+      ]
+    }
+  ],
+  "jobs": [
+    "parity_online",
+    "online_fit_frozen_eval"
+  ],
+  "analysis": {
+    "primary": "evaluation",
+    "secondary": [
+      "validation",
+      "calibration"
+    ],
+    "confidence": 0.95
+  }
+}
