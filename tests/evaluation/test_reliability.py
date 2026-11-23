@@ -632,7 +632,14 @@ def test_f1_and_f2_of_an_origin(tmp_path, monkeypatch, capsys):
     assert set(summary["verdicts"]["intervals"]) == {"0.8", "0.9", "0.95"}
     assert summary["f1"]["label/s2/all"]["ic_positive_block"]["low"] <= 1.0
     assert "casos al 90" in summary["verdicts"]["f2"]["confidence"]["statement"]
-    assert "F2, confianza direccional" in (folder / "resumen.md").read_text(encoding="utf-8")
+    report = (folder / "resumen.md").read_text(encoding="utf-8")
+    assert "F2, confianza direccional" in report
+    # Lo primero del informe es lo que se lee como «90 % de fiabilidad».
+    assert report.split("\n## ")[1].startswith("Lo que se lee como «90 % de fiabilidad»")
+    assert "| 90 % |" in report and "D10" in report
+    (folder / "resumen.md").unlink()
+    assert rel.main(["informe", "--summary", str(folder / "resumen.json")]) == 0
+    assert (folder / "resumen.md").read_text(encoding="utf-8") == report
     assert [p.name for p in output.iterdir()] == [str(core.YEAR)]
     capsys.readouterr()
     assert rel.main(_arguments(paths, output)) == 0

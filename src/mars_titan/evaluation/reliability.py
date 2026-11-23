@@ -1158,6 +1158,74 @@ def _p(entry, digits=3):
     return f"{_f(entry['rate'], digits)} [{_f(entry['low'], digits)}; {_f(entry['high'], digits)}]"
 
 
+def headline(summary):
+    """Lo primero del informe: lo que se lee como «90 % de fiabilidad»."""
+    lines = [
+        "## Lo que se lee como «90 % de fiabilidad»",
+        "",
+        "**Intervalos de la entrega** (Mondrian con ACI sobre los cuantiles del padre, en la etiqueta; "
+        "elegido con 2013 y confirmado en cada origen por la regla de R-1: a menos de 0,02 de la "
+        "nominal en total y ningún decil de volatilidad ni mercado más de 0,05 por debajo).",
+        "",
+        "| Nominal | Cobertura total | Peor decil | Mejor decil | Por mercado | Anchura media | Confirma la regla |",
+        "|---|---|---|---|---|---|---|",
+    ]
+    adaptive = summary["intervals"]["adaptive"]
+    for level, entry in adaptive.items():
+        item = entry["candidates"][entry["delivered"]]
+        deciles = [g["coverage"] for g in item["volatility"].values()]
+        markets = ", ".join(f"{m} {_f(g['coverage'], 3)}" for m, g in item["market"].items())
+        lines.append(
+            f"| {float(level) * 100:.0f} % | {_f(item['coverage'], 3)} | {_f(min(deciles), 3)} | "
+            f"{_f(max(deciles), 3)} | {markets} | {_f(item['width'], 4)} | "
+            + ("sí |" if entry["confirmed"] else "no: " + "; ".join(item["reasons"]) + " |")
+        )
+    first = next(iter(adaptive.values()))
+    groups = list(first["candidates"][first["delivered"]]["volatility"])
+    lines += [
+        "",
+        "Cobertura por decil de volatilidad realizada (de la menos volátil a la más volátil, dentro "
+        "de cada sesión):",
+        "",
+        "| Nominal | " + " | ".join(f"D{int(g) + 1}" for g in groups) + " |",
+        "|---" * (len(groups) + 1) + "|",
+    ]
+    for level, entry in adaptive.items():
+        item = entry["candidates"][entry["delivered"]]
+        lines.append(
+            f"| {float(level) * 100:.0f} % | "
+            + " | ".join(_f(item["volatility"][g]["coverage"], 3) for g in groups)
+            + " |"
+        )
+    lines += [
+        "",
+        "**Fiabilidad de S2 por sesión y en ventanas** (fracción con IC de rangos > 0; una "
+        "fiabilidad ≥ 0,90 está demostrada si llegan los límites de Wilson y de bloques):",
+        "",
+        "| Modo / filas | Sesiones (Wilson) | Sesiones (bloques) | Ventanas de 5 | Ventanas de 21 | ≥ 0,90 por sesión |",
+        "|---|---|---|---|---|---|",
+    ]
+    names = dict(label="etiqueta", operable="operable", all="todos", liquid="tercio líquido")
+    for key, item in summary["f1"].items():
+        mode, predictor, scope = key.split("/")
+        if predictor != "s2":
+            continue
+        lines.append(
+            f"| {names[mode]} / {names[scope]} | {_p(item['ic_positive'])} | "
+            f"{_p(item.get('ic_positive_block'))} | {_p(item['windows']['5']['ic'])} | "
+            f"{_p(item['windows']['21']['ic'])} | {summary['verdicts']['f1'][key]['sessions']} |"
+        )
+    confidence = summary["verdicts"]["f2"]["confidence"]
+    lines += [
+        "",
+        f"**Confianza de signo de S2:** {confidence['emitted']}, con rango "
+        f"[{_f(confidence['range'][0], 3)}; {_f(confidence['range'][1], 3)}] en evaluación; "
+        f"{confidence['statement']}.",
+        "",
+    ]
+    return lines
+
+
 def markdown(summary):
     """Resumen legible de F1 y F2 de un origen."""
     lines = [
@@ -1167,6 +1235,7 @@ def markdown(summary):
         f"evaluación, con intervalos de Wilson al 95 %. Tope de |α| (cuantil 0,99 de calibración): "
         f"{_f(summary['alpha_cap'], 5)}. Factores operables: {summary['operable_factors']}.",
         "",
+        *headline(summary),
         "## F1, fiabilidad por sesión y en ventanas",
         "",
         "| Modo / predictor / filas | Sesiones | IC medio | Peor IC | IC > 0 (Wilson) | IC > 0 (bloques) | Deciles > 0 | Ventanas de 5 con IC > 0 | Ventanas de 21 con IC > 0 |",
@@ -1311,6 +1380,8 @@ def parser():
         metavar="MERCADO",
         help="Medir solo este mercado (repetible); obligatorio en un estado con varios",
     )
+    render = commands.add_parser("informe", help="Rehacer resumen.md desde resumen.json, sin medir")
+    render.add_argument("--summary", type=Path, required=True, help="resumen.json de un origen")
     return result
 
 
@@ -1320,6 +1391,18 @@ def main(argv=None):
     def log(line):
         print(f"{time.strftime('%H:%M:%SZ', time.gmtime())} {line}", flush=True)
 
+    if args.command == "informe":
+        summary = json.loads(args.summary.read_text(encoding="utf-8"))
+        _require_kind = summary.get("kind") == KIND
+        if not _require_kind:
+            print(
+                f"Error: {args.summary} no es un resumen de F ({summary.get('kind')!r})",
+                file=sys.stderr,
+            )
+            return 1
+        (args.summary.parent / "resumen.md").write_text(markdown(summary), encoding="utf-8")
+        log(f"rehecho {args.summary.parent / 'resumen.md'}")
+        return 0
     try:
         declaration = json.loads(args.declaration.read_text(encoding="utf-8"))
         measure(
