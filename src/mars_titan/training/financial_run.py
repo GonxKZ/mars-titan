@@ -147,6 +147,10 @@ _PREDICTOR_MODULES = dict(
 
 # Marca de una predicción del tramo cuyo grafo se recalcula al actualizar.
 _REPLAY = object()
+# --- factor_memory ---
+# Marca de estado factorial inicial todavía no capturado al principio del tramo.
+_UNSET = object()
+# --- fin factor_memory ---
 # Contadores de F5. Solo aparecen si el predictor declara las cabezas auxiliares.
 _AUXILIARY_COUNTERS = (
     "auxiliary_labels",
@@ -455,6 +459,10 @@ def clip_parameter_groups(predictor, trainable=None):
             buckets["technical_head"].append(name)
         elif name.startswith(("mac.", "reliability_gates.", "cross_sectional_rank_memory.")):
             buckets["mac"].append(name)
+        # --- factor_memory ---
+        elif name.startswith("factor_memory."):
+            buckets["mac"].append(name)
+        # --- fin factor_memory ---
         else:
             buckets["backbone_fusion"].append(name)
     groups = {group: names for group, names in buckets.items() if names}
@@ -781,6 +789,11 @@ class _Pass:
     rank_memory: object = None
     rank_memory_start: object = None
     rank_memory_labels: list = field(default_factory=list)
+    # --- factor_memory ---
+    # Con LFM-SW, la base factorial por mercado y su fotografía al inicio del tramo.
+    factor_memory: object = None
+    factor_start: object = _UNSET
+    # --- fin factor_memory ---
     # Con métrica `session_rank_ic`, acumulador en flujo del IC de rangos de entrenamiento.
     rank_ic: object = None
 
@@ -856,6 +869,9 @@ class ChronologicalInference:
         self.reliability = predictor.config.mature_reliability
         # CRRM cambia ajuste e inferencia y consume etiquetas maduras en ambos recorridos.
         self.uses_rank_memory = predictor.cross_sectional_rank_memory is not None
+        # --- factor_memory ---
+        self.uses_factor_memory = predictor.factor_memory is not None
+        # --- fin factor_memory ---
         if torch.backends.mha.get_fastpath_enabled() or torch.is_inference_mode_enabled():
             raise ValueError("El recorrido exige fastpath=False declarado y sin inference_mode")
         if (
@@ -918,6 +934,14 @@ class ChronologicalInference:
         if self.uses_rank_memory and accumulate and run.rank_memory_start is None:
             run.rank_memory_start = predictor.detach_rank_memory(run.rank_memory)
         context = dict(context=run.context) if self.uses_context else {}
+        # --- factor_memory ---
+        if self.uses_factor_memory:
+            if accumulate and run.factor_start is _UNSET:
+                run.factor_start = run.factor_memory
+            if run.factor_memory is None:
+                run.factor_memory = predictor.initial_factor_memory(differentiable=graph)
+        factor = dict(factor_memory=run.factor_memory) if self.uses_factor_memory else {}
+        # --- fin factor_memory ---
         signal, surprises = self._signal(run), []
         # Las comprobaciones de finitud de todos los bloques del evento se resuelven juntas
         # al final, antes de volver al recorrido, que es el único que aplica pasos, guarda
@@ -955,6 +979,10 @@ class ChronologicalInference:
                 prepare_options = (
                     dict(options, rank_memory=run.rank_memory) if self.uses_rank_memory else options
                 )
+                # --- factor_memory ---
+                if self.uses_factor_memory:
+                    prepare_options = dict(prepare_options, **factor)
+                # --- fin factor_memory ---
                 with nvtx_ranges.phase("titans.prepare"), torch.set_grad_enabled(graph):
                     prepared = predictor.prepare(
                         batch,
@@ -976,6 +1004,14 @@ class ChronologicalInference:
                 if self.uses_context:
                     # Los bloques siguientes del evento leen el mismo contexto confirmado.
                     context = dict(context=prepared.next_context)
+                # --- factor_memory ---
+                if self.uses_factor_memory:
+                    next_factor = prepared.next_factor_memory
+                    run.factor_memory = (
+                        predictor.detach_factor_memory(next_factor) if accumulate else next_factor
+                    )
+                    factor = dict(factor_memory=run.factor_memory)
+                # --- fin factor_memory ---
                 result = prepared.local_control
                 if result is not None:
                     # Con acumulación el término emitido solo cuenta: su grafo retendría el lote.
@@ -1206,6 +1242,10 @@ class ChronologicalInference:
         run.rank_memory = None
         run.rank_memory_start = None
         run.rank_memory_labels.clear()
+        # --- factor_memory ---
+        run.factor_memory = None
+        run.factor_start = _UNSET
+        # --- fin factor_memory ---
         run.pending.clear()
         run.graphs.clear()
         run.levels.clear()
@@ -1694,6 +1734,15 @@ class ChronologicalTrainer(ChronologicalInference):
                 if self.uses_rank_memory:
                     for position, items in run.rank_memory_labels:
                         rank_by_pos.setdefault(position, []).append(items)
+                # --- factor_memory ---
+                factor_state = None
+                if self.uses_factor_memory:
+                    factor_state = (
+                        predictor.initial_factor_memory(differentiable=True)
+                        if run.factor_start in (None, _UNSET)
+                        else predictor.detach_factor_memory(run.factor_start)
+                    )
+                # --- fin factor_memory ---
                 for seg_index, (batch, plan, whole) in enumerate(run.segment):
                     if self.uses_rank_memory:
                         for items in rank_by_pos.get(seg_index, ()):
@@ -1721,6 +1770,10 @@ class ChronologicalTrainer(ChronologicalInference):
                     replay_plan = (
                         dict(plan, rank_memory=rank_state) if self.uses_rank_memory else plan
                     )
+                    # --- factor_memory ---
+                    if self.uses_factor_memory:
+                        replay_plan = dict(replay_plan, factor_memory=factor_state)
+                    # --- fin factor_memory ---
                     with torch.enable_grad():
                         prepared = predictor.prepare(
                             batch,
@@ -1738,6 +1791,10 @@ class ChronologicalTrainer(ChronologicalInference):
                             prepared.point_predictions,
                             differentiable=True,
                         )
+                    # --- factor_memory ---
+                    if self.uses_factor_memory:
+                        factor_state = prepared.next_factor_memory
+                    # --- fin factor_memory ---
                     states.put(prepared.next_state)
                     if prepared.local_control is not None:
                         penalties.append(prepared.local_control.penalty)
@@ -1961,6 +2018,12 @@ class ChronologicalTrainer(ChronologicalInference):
                 run.context = self.predictor.detach_context(run.context, parameter_id)
             if run.rank_memory is not None:
                 run.rank_memory = self.predictor.detach_rank_memory(run.rank_memory, parameter_id)
+            # --- factor_memory ---
+            if run.factor_memory is not None:
+                run.factor_memory = self.predictor.detach_factor_memory(
+                    run.factor_memory, parameter_id
+                )
+            # --- fin factor_memory ---
         run.penalties.clear()
         run.graphs.clear()
         run.predictions.clear()
@@ -1970,6 +2033,9 @@ class ChronologicalTrainer(ChronologicalInference):
         run.starts.clear()
         run.rank_memory_start = None
         run.rank_memory_labels.clear()
+        # --- factor_memory ---
+        run.factor_start = _UNSET
+        # --- fin factor_memory ---
         run.instants = 0
         run.counters["segments"] += 1
 
@@ -2050,6 +2116,10 @@ class ChronologicalTrainer(ChronologicalInference):
             or run.rank_memory_labels
         ):
             raise ValueError("Solo se confirma un recorrido en la barrera posterior a un paso")
+        # --- factor_memory ---
+        if run.factor_start is not _UNSET:
+            raise ValueError("Solo se confirma un recorrido en la barrera posterior a un paso")
+        # --- fin factor_memory ---
         predictor, size = self.predictor, self.predictor.config.max_batch
         flows = sorted(run.flows)
         fast = [
@@ -2090,6 +2160,17 @@ class ChronologicalTrainer(ChronologicalInference):
                 if self.uses_rank_memory
                 else {}
             ),
+            # --- factor_memory ---
+            **(
+                dict(
+                    factor_memory=None
+                    if run.factor_memory is None
+                    else predictor.export_factor_memory(run.factor_memory)
+                )
+                if self.uses_factor_memory
+                else {}
+            ),
+            # --- fin factor_memory ---
             **(
                 dict(rank_ic=None if run.rank_ic is None else run.rank_ic.export())
                 if self.track_train_rank_ic
@@ -2108,6 +2189,10 @@ class ChronologicalTrainer(ChronologicalInference):
             raise ValueError(
                 "El recorrido guardado no corresponde a la memoria transversal de rango"
             )
+        # --- factor_memory ---
+        if self.uses_factor_memory != ("factor_memory" in payload):
+            raise ValueError("El recorrido guardado no corresponde a la memoria factorial")
+        # --- fin factor_memory ---
         if self.track_train_rank_ic != ("rank_ic" in payload):
             raise ValueError("El recorrido guardado no corresponde al IC de rangos del ajuste")
         run = _Pass()
@@ -2133,6 +2218,10 @@ class ChronologicalTrainer(ChronologicalInference):
             run.reliability = ReliabilitySignal.restore(self.reliability, payload["reliability"])
         if self.uses_rank_memory and payload["rank_memory"] is not None:
             run.rank_memory = self.predictor.restore_rank_memory(payload["rank_memory"])
+        # --- factor_memory ---
+        if self.uses_factor_memory and payload["factor_memory"] is not None:
+            run.factor_memory = self.predictor.restore_factor_memory(payload["factor_memory"])
+        # --- fin factor_memory ---
         if self.track_train_rank_ic and payload["rank_ic"] is not None:
             run.rank_ic = _SessionRankIC.restore(
                 self.recipe.selection["min_assets"], payload["rank_ic"]

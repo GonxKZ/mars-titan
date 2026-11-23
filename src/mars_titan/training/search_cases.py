@@ -95,6 +95,10 @@ PREDICTOR_CHANGES = (
     "memory_inner_gradient",
     "memory_cross_sectional_surprise",
     # --- fin memory_cross_sectional_surprise ---
+    # --- factor_memory ---
+    # Memoria rápida factorizada con blanqueo espectral de sesión (LFM-SW, Idea 4).
+    "factor_memory",
+    # --- fin factor_memory ---
 )
 # Cambios que se declaran con un nombre en lugar de un objeto.
 NAMED_CHANGES = (

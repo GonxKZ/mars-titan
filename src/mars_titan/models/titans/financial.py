@@ -94,6 +94,11 @@ from .cross_sectional_surprise import (
 # --- fin memory_cross_sectional_surprise ---
 from .differential_attention import DIFFERENTIAL_ATTENTION
 from .differential_attention import identity as differential_identity
+
+# --- factor_memory ---
+from .factor_memory import FactorMemoryConfig, LowRankFactorMemory, parse_factor_memory
+
+# --- fin factor_memory ---
 from .financial_inputs import (
     FINAL_TEST_US,
     FLOW_ID,
@@ -350,6 +355,11 @@ class FinancialConfig:
     # None conserva la fusión común. `presence_softmax_v1` pondera los bloques presentes con
     # softmax enmascarado por presencia y conserva el peso total M = 5.
     modality_gating: str | None = None
+    # --- factor_memory ---
+    # Memoria rápida factorizada con blanqueo espectral de sesión (LFM-SW, Idea 4). Sin
+    # declararla, la identidad y el cálculo no cambian.
+    factor_memory: FactorMemoryConfig | None = None
+    # --- fin factor_memory ---
 
     def __post_init__(self):
         if self.memory_inner_gradient not in INNER_GRADIENTS:
@@ -402,6 +412,9 @@ class FinancialConfig:
         self._check_median_gain()
         self._check_memory_projections()
         self._check_runtime_limits()
+        # --- factor_memory ---
+        self._check_factor_memory()
+        # --- fin factor_memory ---
 
     def _check_input_contract(self):
         """Entrada, codificador, cabeza y disposición de atención."""
@@ -969,6 +982,20 @@ class FinancialConfig:
         ):
             raise ValueError("Esta pieza admite únicamente banco desactivado y K=1")
 
+    # --- factor_memory ---
+    def _check_factor_memory(self):
+        """Memoria rápida factorizada con blanqueo espectral de sesión (LFM-SW)."""
+        object.__setattr__(self, "factor_memory", parse_factor_memory(self.factor_memory))
+        if self.factor_memory is not None:
+            if self.factor_memory.factors >= self.hidden_size:
+                raise ValueError("factor_memory.factors debe ser menor que hidden_size")
+            if self.auxiliary_horizons is not None:
+                raise ValueError(
+                    "Las cabezas auxiliares con memoria factorial necesitan otro contraste"
+                )
+
+    # --- fin factor_memory ---
+
     def _check_axial_time_region(self):
         """C2 sobre mac_online, sin el operador regional, C1, C6, PT6 ni la red holográfica."""
         object.__setattr__(
@@ -1231,6 +1258,10 @@ class FinancialConfig:
             result.update(
                 reference_encoder=dict(kind=self.reference_encoder, contract=REFERENCE_CONTRACT)
             )
+        # --- factor_memory ---
+        if self.factor_memory is not None:
+            result.update(factor_memory=self.factor_memory.identity())
+        # --- fin factor_memory ---
         return result
 
 
@@ -1266,6 +1297,10 @@ class PreparedDecisions:
     surprise: torch.Tensor | None = None
     # Solo con CRRM: claves transversales [flujos, dim] emitidas en este instante.
     rank_memory_keys: torch.Tensor | None = None
+    # --- factor_memory ---
+    # Solo con LFM-SW: base factorial actualizada por mercado tras la sesión.
+    next_factor_memory: object = None
+    # --- fin factor_memory ---
 
 
 @dataclass(frozen=True)
@@ -1637,6 +1672,16 @@ class FinancialPredictor(nn.Module):
             if config.auxiliary_horizons is not None
             else None
         )
+        # --- factor_memory ---
+        # LFM-SW deriva su semilla de la del predictor y arranca con proyección de salida nula.
+        self.factor_memory = (
+            LowRankFactorMemory(
+                config.hidden_size, config.factor_memory, seed=config.seed, dtype=dtype
+            )
+            if config.factor_memory is not None
+            else None
+        )
+        # --- fin factor_memory ---
         self.to(device=device, dtype=dtype)
         self._seal_parameters()
         self.register_load_state_dict_post_hook(self._after_load)
@@ -1644,6 +1689,10 @@ class FinancialPredictor(nn.Module):
     @property
     def session_level(self):
         """Si alguna operación necesita todas las filas de la sesión en el mismo bloque."""
+        # --- factor_memory ---
+        if self.factor_memory is not None:
+            return True
+        # --- fin factor_memory ---
         objective = self.output_objective
         # --- memory_cross_sectional_surprise ---
         if self.config.memory_cross_sectional_surprise is not None:
@@ -2309,6 +2358,35 @@ class FinancialPredictor(nn.Module):
             payload, self._parameter_id, device=self.head.weight.device
         )
 
+    # --- factor_memory ---
+    def initial_factor_memory(self, *, differentiable=False):
+        """Estado factorial inicial por mercado de LFM-SW al empezar un recorrido."""
+        self._require_factor_memory()
+        return self.factor_memory.initial_state(self._parameter_id, differentiable=differentiable)
+
+    def detach_factor_memory(self, factor_memory, parameter_id=None):
+        """Cortar el grafo de la base factorial en una barrera de truncamiento."""
+        self._require_factor_memory()
+        return self.factor_memory.detach_state(factor_memory, parameter_id or self._parameter_id)
+
+    def export_factor_memory(self, factor_memory):
+        """Exportar copias CPU sin grafo del estado factorial para puntos de control."""
+        self._require_factor_memory()
+        return self.factor_memory.export_state(factor_memory, self._parameter_id)
+
+    def restore_factor_memory(self, payload):
+        """Restaurar el estado factorial validado en el dispositivo del predictor."""
+        self._require_factor_memory()
+        return self.factor_memory.restore_state(
+            payload, self._parameter_id, device=self.head.weight.device
+        )
+
+    def _require_factor_memory(self):
+        if self.factor_memory is None:
+            raise ValueError("El predictor no declara memoria factorial")
+
+    # --- fin factor_memory ---
+
     def _program_fusion(self, price, batch, context, selection):
         """Consultar el prefijo confirmado y preparar una sola escritura del token final."""
         execution = None
@@ -2483,6 +2561,9 @@ class FinancialPredictor(nn.Module):
         session_complete=False,
         reliability=None,
         rank_memory=None,
+        # --- factor_memory ---
+        factor_memory=None,
+        # --- fin factor_memory ---
     ):
         """Predecir un bloque desde el estado de sus flujos y proponer el estado siguiente.
 
@@ -2504,6 +2585,9 @@ class FinancialPredictor(nn.Module):
                 session_complete=session_complete,
                 reliability=reliability,
                 rank_memory=rank_memory,
+                # --- factor_memory ---
+                factor_memory=factor_memory,
+                # --- fin factor_memory ---
             )
 
     def _prepare(
@@ -2519,6 +2603,9 @@ class FinancialPredictor(nn.Module):
         session_complete=False,
         reliability=None,
         rank_memory=None,
+        # --- factor_memory ---
+        factor_memory=None,
+        # --- fin factor_memory ---
     ):
         check_differentiable(differentiable)
         if torch.is_inference_mode_enabled():
@@ -2649,6 +2736,14 @@ class FinancialPredictor(nn.Module):
             raise ValueError("PT4 recibe su contexto de sesión y el núcleo no admite ninguno")
         if context is not None:
             self.session_context.validate(context, self._parameter_id)
+        # --- factor_memory ---
+        if (self.factor_memory is None) != (factor_memory is None):
+            raise ValueError(
+                "LFM-SW exige su estado de memoria factorial y el núcleo sin ella no admite ninguno"
+            )
+        if factor_memory is not None:
+            self.factor_memory.validate_state(factor_memory, self._parameter_id)
+        # --- fin factor_memory ---
         if context_selection is not None:
             if context is None:
                 raise ValueError("La selección de contexto necesita un padre con PT4")
@@ -2782,6 +2877,18 @@ class FinancialPredictor(nn.Module):
                 encoded = mixer(encoded, markets, batch.prediction_at)
             if hologram is not None and hologram.config.position == "after_technical":
                 encoded = hologram(encoded, markets, batch.prediction_at)
+            # --- factor_memory ---
+            next_factor_memory = None
+            if self.factor_memory is not None:
+                encoded, next_factor_memory = self.factor_memory.step(
+                    encoded,
+                    batch.flow_ids,
+                    markets,
+                    batch.prediction_at,
+                    factor_memory,
+                    differentiable=differentiable,
+                )
+            # --- fin factor_memory ---
             rank_memory_keys = None
             if self.cross_sectional_rank_memory is not None:
                 # Claves transversales centradas sobre la representación previa a CRRM y lectura
@@ -2839,6 +2946,9 @@ class FinancialPredictor(nn.Module):
             outputs,
             surprise=None if sink is None else sink[0],
             rank_memory_keys=rank_memory_keys,
+            # --- factor_memory ---
+            next_factor_memory=next_factor_memory,
+            # --- fin factor_memory ---
             **({"regional_trace": regional_trace} if regional_trace is not None else {}),
         )
 
