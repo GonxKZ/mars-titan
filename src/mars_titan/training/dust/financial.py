@@ -105,6 +105,9 @@ class FinancialDustAdapter:
             # --- contrastive_memory ---
             "contrastive_memory",
             # --- fin contrastive_memory ---
+            # --- ic_titans_mlp ---
+            "ic_titans_mlp",
+            # --- fin ic_titans_mlp ---
             "memory_huber",
             "memory_time_scales",
             "differential_attention",
@@ -145,6 +148,9 @@ class FinancialDustAdapter:
                     # --- contrastive_memory ---
                     "contrastive_memory",
                     # --- fin contrastive_memory ---
+                    # --- ic_titans_mlp ---
+                    "ic_titans_mlp",
+                    # --- fin ic_titans_mlp ---
                     "output_objective",
                     "auxiliary_heads",
                     # --- factor_memory ---

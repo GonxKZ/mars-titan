@@ -467,6 +467,10 @@ def clip_parameter_groups(predictor, trainable=None):
         elif name.startswith("contrastive_memory."):
             buckets["mac"].append(name)
         # --- fin contrastive_memory ---
+        # --- ic_titans_mlp ---
+        elif name.startswith("ic_titans_mlp."):
+            buckets["mac"].append(name)
+        # --- fin ic_titans_mlp ---
         else:
             buckets["backbone_fusion"].append(name)
     groups = {group: names for group, names in buckets.items() if names}
@@ -803,6 +807,11 @@ class _Pass:
     contrastive: object = None
     contrastive_start: object = None
     # --- fin contrastive_memory ---
+    # --- ic_titans_mlp ---
+    ic_mlp_memory: object = None
+    ic_mlp_memory_start: object = None
+    ic_mlp_memory_labels: list = field(default_factory=list)
+    # --- fin ic_titans_mlp ---
     # Con métrica `session_rank_ic`, acumulador en flujo del IC de rangos de entrenamiento.
     rank_ic: object = None
 
@@ -884,6 +893,9 @@ class ChronologicalInference:
         # --- contrastive_memory ---
         self.uses_contrastive = predictor.contrastive_memory is not None
         # --- fin contrastive_memory ---
+        # --- ic_titans_mlp ---
+        self.uses_ic_mlp_memory = predictor.ic_titans_mlp is not None
+        # --- fin ic_titans_mlp ---
         if torch.backends.mha.get_fastpath_enabled() or torch.is_inference_mode_enabled():
             raise ValueError("El recorrido exige fastpath=False declarado y sin inference_mode")
         if (
@@ -945,6 +957,12 @@ class ChronologicalInference:
             run.rank_memory = predictor.initial_rank_memory()
         if self.uses_rank_memory and accumulate and run.rank_memory_start is None:
             run.rank_memory_start = predictor.detach_rank_memory(run.rank_memory)
+        # --- ic_titans_mlp ---
+        if self.uses_ic_mlp_memory and run.ic_mlp_memory is None:
+            run.ic_mlp_memory = predictor.initial_ic_mlp_memory()
+        if self.uses_ic_mlp_memory and accumulate and run.ic_mlp_memory_start is None:
+            run.ic_mlp_memory_start = predictor.detach_ic_mlp_memory(run.ic_mlp_memory)
+        # --- fin ic_titans_mlp ---
         context = dict(context=run.context) if self.uses_context else {}
         # --- factor_memory ---
         if self.uses_factor_memory:
@@ -1008,6 +1026,10 @@ class ChronologicalInference:
                 if self.uses_contrastive:
                     prepare_options = dict(prepare_options, contrastive=contrastive)
                 # --- fin contrastive_memory ---
+                # --- ic_titans_mlp ---
+                if self.uses_ic_mlp_memory:
+                    prepare_options = dict(prepare_options, ic_mlp_memory=run.ic_mlp_memory)
+                # --- fin ic_titans_mlp ---
                 with nvtx_ranges.phase("titans.prepare"), torch.set_grad_enabled(graph):
                     prepared = predictor.prepare(
                         batch,
@@ -1026,6 +1048,16 @@ class ChronologicalInference:
                         prepared.point_predictions,
                         differentiable=graph and not accumulate,
                     )
+                # --- ic_titans_mlp ---
+                if self.uses_ic_mlp_memory and not warmup:
+                    run.ic_mlp_memory = predictor.stage_ic_mlp_memory(
+                        run.ic_mlp_memory,
+                        batch.flow_ids,
+                        batch.prediction_at,
+                        prepared.ic_mlp_keys,
+                        differentiable=graph and not accumulate,
+                    )
+                # --- fin ic_titans_mlp ---
                 if self.uses_context:
                     # Los bloques siguientes del evento leen el mismo contexto confirmado.
                     context = dict(context=prepared.next_context)
@@ -1217,6 +1249,9 @@ class ChronologicalInference:
     def _labels(self, run, event, *, train):
         """Resolver etiquetas maduras contra la predicción emitida y su grafo vigente."""
         markets, moments, errors, matured, rank_matured = [], [], [], [], []
+        # --- ic_titans_mlp ---
+        ic_mlp_matured = []
+        # --- fin ic_titans_mlp ---
         for flow, decision_at, value in event.labels:
             key = flow, decision_at
             if key not in run.pending:
@@ -1226,6 +1261,10 @@ class ChronologicalInference:
                 matured.append((flow, issued, value))
             if self.uses_rank_memory:
                 rank_matured.append((flow, decision_at, value))
+            # --- ic_titans_mlp ---
+            if self.uses_ic_mlp_memory:
+                ic_mlp_matured.append((flow, decision_at, value))
+            # --- fin ic_titans_mlp ---
             if train and run.horizons is not None:
                 run.counters["auxiliary_labels"] += run.horizons.mature(flow, decision_at, value)
             market = flow.split("/", 1)[0]
@@ -1264,6 +1303,20 @@ class ChronologicalInference:
                 differentiable=train and not accumulate,
                 train=train,
             )
+        # --- ic_titans_mlp ---
+        if self.uses_ic_mlp_memory and ic_mlp_matured:
+            if run.ic_mlp_memory is None:
+                run.ic_mlp_memory = self.predictor.initial_ic_mlp_memory()
+            accumulate = train and self.recipe.accumulation_rows is not None
+            if accumulate and run.segment:
+                run.ic_mlp_memory_labels.append((len(run.segment), tuple(ic_mlp_matured)))
+            run.ic_mlp_memory = self.predictor.settle_ic_mlp_memory(
+                run.ic_mlp_memory,
+                ic_mlp_matured,
+                differentiable=train and not accumulate,
+                train=train,
+            )
+        # --- fin ic_titans_mlp ---
         for start in range(0, len(errors), 4096):
             run.errors.update(
                 markets[start : start + 4096],
@@ -1290,6 +1343,11 @@ class ChronologicalInference:
         run.contrastive = None
         run.contrastive_start = None
         # --- fin contrastive_memory ---
+        # --- ic_titans_mlp ---
+        run.ic_mlp_memory = None
+        run.ic_mlp_memory_start = None
+        run.ic_mlp_memory_labels.clear()
+        # --- fin ic_titans_mlp ---
         run.pending.clear()
         run.graphs.clear()
         run.levels.clear()
@@ -1800,12 +1858,26 @@ class ChronologicalTrainer(ChronologicalInference):
                     else None
                 )
                 # --- fin contrastive_memory ---
+                # --- ic_titans_mlp ---
+                ic_mlp_state = run.ic_mlp_memory_start if self.uses_ic_mlp_memory else None
+                ic_mlp_by_pos = {}
+                if self.uses_ic_mlp_memory:
+                    for position, items in run.ic_mlp_memory_labels:
+                        ic_mlp_by_pos.setdefault(position, []).append(items)
+                # --- fin ic_titans_mlp ---
                 for seg_index, (batch, plan, whole) in enumerate(run.segment):
                     if self.uses_rank_memory:
                         for items in rank_by_pos.get(seg_index, ()):
                             rank_state = predictor.settle_rank_memory(
                                 rank_state, items, differentiable=True, train=True
                             )
+                    # --- ic_titans_mlp ---
+                    if self.uses_ic_mlp_memory:
+                        for items in ic_mlp_by_pos.get(seg_index, ()):
+                            ic_mlp_state = predictor.settle_ic_mlp_memory(
+                                ic_mlp_state, items, differentiable=True, train=True
+                            )
+                    # --- fin ic_titans_mlp ---
                     rows = [i for i, flow in enumerate(batch.flow_ids) if flow in members]
                     if not rows:
                         continue
@@ -1843,6 +1915,10 @@ class ChronologicalTrainer(ChronologicalInference):
                     if contrastive is not None:
                         replay_plan = dict(replay_plan, contrastive=contrastive)
                     # --- fin contrastive_memory ---
+                    # --- ic_titans_mlp ---
+                    if self.uses_ic_mlp_memory:
+                        replay_plan = dict(replay_plan, ic_mlp_memory=ic_mlp_state)
+                    # --- fin ic_titans_mlp ---
                     with torch.enable_grad():
                         prepared = predictor.prepare(
                             batch,
@@ -1868,6 +1944,16 @@ class ChronologicalTrainer(ChronologicalInference):
                     if contrastive is not None:
                         contrastive = prepared.next_contrastive
                     # --- fin contrastive_memory ---
+                    # --- ic_titans_mlp ---
+                    if self.uses_ic_mlp_memory:
+                        ic_mlp_state = predictor.stage_ic_mlp_memory(
+                            ic_mlp_state,
+                            batch.flow_ids,
+                            batch.prediction_at,
+                            prepared.ic_mlp_keys,
+                            differentiable=True,
+                        )
+                    # --- fin ic_titans_mlp ---
                     states.put(prepared.next_state)
                     if prepared.local_control is not None:
                         penalties.append(prepared.local_control.penalty)
@@ -2103,6 +2189,12 @@ class ChronologicalTrainer(ChronologicalInference):
                     run.contrastive, parameter_id
                 )
             # --- fin contrastive_memory ---
+            # --- ic_titans_mlp ---
+            if run.ic_mlp_memory is not None:
+                run.ic_mlp_memory = self.predictor.detach_ic_mlp_memory(
+                    run.ic_mlp_memory, parameter_id
+                )
+            # --- fin ic_titans_mlp ---
         run.penalties.clear()
         run.graphs.clear()
         run.predictions.clear()
@@ -2118,6 +2210,10 @@ class ChronologicalTrainer(ChronologicalInference):
         # --- contrastive_memory ---
         run.contrastive_start = None
         # --- fin contrastive_memory ---
+        # --- ic_titans_mlp ---
+        run.ic_mlp_memory_start = None
+        run.ic_mlp_memory_labels.clear()
+        # --- fin ic_titans_mlp ---
         run.instants = 0
         run.counters["segments"] += 1
 
@@ -2206,6 +2302,10 @@ class ChronologicalTrainer(ChronologicalInference):
         if run.contrastive_start is not None:
             raise ValueError("Solo se confirma un recorrido en la barrera posterior a un paso")
         # --- fin contrastive_memory ---
+        # --- ic_titans_mlp ---
+        if run.ic_mlp_memory_start is not None or run.ic_mlp_memory_labels:
+            raise ValueError("Solo se confirma un recorrido en la barrera posterior a un paso")
+        # --- fin ic_titans_mlp ---
         predictor, size = self.predictor, self.predictor.config.max_batch
         flows = sorted(run.flows)
         fast = [
@@ -2268,6 +2368,17 @@ class ChronologicalTrainer(ChronologicalInference):
                 else {}
             ),
             # --- fin contrastive_memory ---
+            # --- ic_titans_mlp ---
+            **(
+                dict(
+                    ic_mlp_memory=None
+                    if run.ic_mlp_memory is None
+                    else predictor.export_ic_mlp_memory(run.ic_mlp_memory)
+                )
+                if self.uses_ic_mlp_memory
+                else {}
+            ),
+            # --- fin ic_titans_mlp ---
             **(
                 dict(rank_ic=None if run.rank_ic is None else run.rank_ic.export())
                 if self.track_train_rank_ic
@@ -2296,6 +2407,10 @@ class ChronologicalTrainer(ChronologicalInference):
                 "El recorrido guardado no corresponde a la memoria contrastiva del predictor"
             )
         # --- fin contrastive_memory ---
+        # --- ic_titans_mlp ---
+        if self.uses_ic_mlp_memory != ("ic_mlp_memory" in payload):
+            raise ValueError("El recorrido guardado no corresponde a la memoria IC-Titans-MLP")
+        # --- fin ic_titans_mlp ---
         if self.track_train_rank_ic != ("rank_ic" in payload):
             raise ValueError("El recorrido guardado no corresponde al IC de rangos del ajuste")
         run = _Pass()
@@ -2329,6 +2444,10 @@ class ChronologicalTrainer(ChronologicalInference):
         if self.uses_contrastive and payload["contrastive"] is not None:
             run.contrastive = self.predictor.restore_contrastive_memory(payload["contrastive"])
         # --- fin contrastive_memory ---
+        # --- ic_titans_mlp ---
+        if self.uses_ic_mlp_memory and payload["ic_mlp_memory"] is not None:
+            run.ic_mlp_memory = self.predictor.restore_ic_mlp_memory(payload["ic_mlp_memory"])
+        # --- fin ic_titans_mlp ---
         if self.track_train_rank_ic and payload["rank_ic"] is not None:
             run.rank_ic = _SessionRankIC.restore(
                 self.recipe.selection["min_assets"], payload["rank_ic"]

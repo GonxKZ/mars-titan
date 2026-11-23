@@ -240,6 +240,12 @@ def _parent(folder, view, seed, control=None):
         "El consumidor congelado no gestiona el ciclo de sesión de la memoria contrastiva",
     )
     # --- fin contrastive_memory ---
+    # --- ic_titans_mlp ---
+    _require(
+        changes.get("ic_titans_mlp", predictor.get("ic_titans_mlp")) is None,
+        "El consumidor congelado aún no recibe la memoria neuronal IC-Titans-MLP",
+    )
+    # --- fin ic_titans_mlp ---
     _verify(folder, report)
     return report, digest
 
@@ -297,6 +303,12 @@ def _frozen_parent(
         "El consumidor congelado no gestiona el ciclo de sesión de la memoria contrastiva",
     )
     # --- fin contrastive_memory ---
+    # --- ic_titans_mlp ---
+    _require(
+        options.get("ic_titans_mlp") is None,
+        "El consumidor congelado aún no recibe la memoria neuronal IC-Titans-MLP",
+    )
+    # --- fin ic_titans_mlp ---
     _require(
         allow_context or options.get("session_context") is None,
         "Este consumidor todavía no recupera el contexto compartido de PT4",

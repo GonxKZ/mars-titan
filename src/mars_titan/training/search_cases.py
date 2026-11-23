@@ -88,6 +88,9 @@ PREDICTOR_CHANGES = (
     "modality_gating",
     # Memoria transversal de rango y residuo maduro (CRRM).
     "cross_sectional_rank_memory",
+    # --- ic_titans_mlp ---
+    "ic_titans_mlp",
+    # --- fin ic_titans_mlp ---
     # Interferómetro holográfico de sesión en fase dual (WP11).
     "session_hologram",
     # --- memory_cross_sectional_surprise ---
