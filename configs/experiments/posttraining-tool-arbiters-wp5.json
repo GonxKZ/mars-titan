@@ -1,0 +1,117 @@
+{
+  "schema_version": 1,
+  "kind": "posttraining_tool_arbiters_v1",
+  "final_test_access": false,
+  "description": "Herramientas de hoy más los tres órganos de WP5 del núcleo (banco denso, memoria holográfica y traza), de organos/wp5-v10. DODEA (idea 4 de Gemini) frente a S2, al agente (AdaNormalHedge.TV sin abstención), a la media uniforme y a su placebo de igual capacidad (pista y redundancia de otra herramienta), programa §5.15, declarado antes de medir. Semillas 42, 43 y 44 con el árbol de la semilla 42; S2 es la configuración registrada en cada semilla. La semivida de la pista y μ se eligen en calibración. Regla: DODEA entra si mejora a S2 y a su placebo con t de Newey-West ≥ 2 en lo operable, pareado por sesión en evaluación sobre la media de semillas; la etiqueta se informa. Su autor la da por refutada si no gana +0,0025 de IC operable al agente y +0,0030 a la media uniforme, con t ≥ 2 en lugar de su Romano-Wolf. 2013 decide; 2024 sigue sellado.",
+  "seeds": [
+    42,
+    43,
+    44
+  ],
+  "tree_seed": 42,
+  "min_assets": 30,
+  "s2": {
+    "parent": "titans_mac_nogain",
+    "tree": "lightgbm_technical",
+    "organ": "titans_mac_nogain__combined"
+  },
+  "tools": [
+    {
+      "name": "titans_mac_nogain",
+      "source": "state"
+    },
+    {
+      "name": "titans_mac",
+      "source": "state"
+    },
+    {
+      "name": "mars_titan_m3",
+      "source": "state"
+    },
+    {
+      "name": "mars_titan_cognitive",
+      "source": "state"
+    },
+    {
+      "name": "lightgbm_technical",
+      "source": "reference"
+    },
+    {
+      "name": "titans_mac_nogain__combined",
+      "source": "organs"
+    },
+    {
+      "name": "titans_mac_nogain__dense_bank",
+      "source": "organs"
+    },
+    {
+      "name": "titans_mac_nogain__holographic_delta",
+      "source": "organs"
+    },
+    {
+      "name": "titans_mac_nogain__asset_trace",
+      "source": "organs"
+    }
+  ],
+  "splits": [
+    "calibration",
+    "evaluation"
+  ],
+  "selection_split": "calibration",
+  "align": "strict",
+  "modes": [
+    "label",
+    "operable"
+  ],
+  "operable_scales": [
+    0.001,
+    0.002,
+    0.005,
+    0.01,
+    0.02,
+    0.03,
+    0.05,
+    0.07,
+    0.1,
+    0.15,
+    0.2,
+    0.3,
+    0.5,
+    0.7,
+    1.0,
+    1.5,
+    2.0,
+    3.0,
+    5.0,
+    10.0,
+    30.0,
+    100.0
+  ],
+  "aggregator_placebo_seed": 20261122,
+  "arbiters": {
+    "dodea": {
+      "hint_half_lives": [
+        1.0,
+        5.0,
+        21.0
+      ],
+      "ridges": [
+        0.1,
+        0.3,
+        1.0,
+        3.0
+      ],
+      "placebo_seed": 20261123
+    }
+  },
+  "rule": {
+    "primary_mode": "operable",
+    "min_t": 2.0,
+    "author": {
+      "mode": "operable",
+      "vs_agent": 0.0025,
+      "vs_uniform": 0.003,
+      "min_t": 2.0
+    }
+  }
+}
