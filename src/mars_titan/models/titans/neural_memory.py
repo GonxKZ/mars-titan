@@ -777,7 +777,10 @@ class NeuralMemory(nn.Module):
         surprise: list | None = None,
         input_slots: list[int | None] | None = None,
     ) -> tuple[NeuralMemoryState, Tensor]:
-        """Actualiza un token con el kernel fusionado y devuelve M(post_query; W′) en la misma pasada."""
+        """Actualiza un token con el kernel fusionado y devuelve M(post_query; W′).
+
+        La lectura sale de la misma pasada que la escritura.
+        """
         check_differentiable(differentiable)
         if torch.is_inference_mode_enabled():
             raise ValueError("inference_mode impide el gradiente interno, utilice no_grad")

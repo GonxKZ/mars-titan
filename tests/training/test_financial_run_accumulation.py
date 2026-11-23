@@ -153,13 +153,13 @@ def peak_saved_bytes(engine, monkeypatch):
         current["run"] = run
         return update(run, at)
 
-    def measured(prediction, target):
+    def measured(prediction, target, weights=None):
         run = current["run"]
         held = [v for v in (*run.graphs.values(), *run.predictions) if torch.is_tensor(v)]
         states = run.flows.values()
         fast = [t for s in states for t in (*s.mac.memory.weights, *s.mac.memory.momentum)]
         peaks.append(saved_graph_bytes([prediction, *held, *fast], exclude=parameters))
-        return loss(prediction, target)
+        return loss(prediction, target, weights=weights)
 
     monkeypatch.setattr(engine, "_update", tracked)
     monkeypatch.setattr(engine, "_loss", measured)
