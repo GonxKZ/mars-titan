@@ -15,7 +15,7 @@ import pyarrow as pa
 import pyarrow.compute as pc
 import pyarrow.parquet as pq
 
-from mars_titan.data import technical_features
+from mars_titan.data import panel_signals, technical_features
 from mars_titan.data.batches import read_bounded_table
 from mars_titan.data.cohort_files import read_manifest
 from mars_titan.data.input_perturbations import read_variant, variant_modalities
@@ -552,13 +552,15 @@ class CorpusDataset:
 
         self._target_factor_sources = revision_sources(meta, input_policy=input_policy)
         self.context = meta["context_sessions"]
-        # Extensión de entradas declarada por la vista: rasgos técnicos de horizonte largo, que
-        # se añaden al bloque del gráfico al leer. Sin ella la lectura no cambia.
+        # Extensión de entradas declarada por la vista: rasgos técnicos de horizonte largo y,
+        # opcionalmente, panel precalculado, que se añaden al bloque del gráfico al leer. Sin
+        # ella la lectura no cambia.
         extensions = meta.get("input_extensions")
         if extensions is not None and (
             not self.masked
             or not isinstance(extensions, dict)
-            or not {"technical"} <= set(extensions) <= {"technical", "market_model"}
+            or not {"technical"} <= set(extensions) <= {"technical", "market_model", "panel"}
+            or not isinstance(extensions["technical"], str)
             or extensions["technical"] not in technical_features.VERSIONS
             or extensions.get("market_model", "required") != "required"
             or modality_ablation is not None
@@ -568,10 +570,12 @@ class CorpusDataset:
                 "máscaras, sin variante de lectura"
             )
         self.technical = None if extensions is None else extensions["technical"]
+        self.panel = None if not extensions or "panel" not in extensions else extensions["panel"]
         # Con `market_model: required` un factor de mercado ausente detiene la lectura.
         self._market_model_required = bool(extensions) and "market_model" in extensions
         self._technical_rows, self._technical_lock = OrderedDict(), threading.Lock()
         self._market_factors = {}
+        self._panels = {}
         # Las ediciones desde la v3.1 declaran ventanas por sesión del calendario con presencia.
         contract = (meta.get("representation") or {}).get("price_window")
         if contract is not None and (
@@ -608,6 +612,27 @@ class CorpusDataset:
         self._verify_files()
         if counts != meta.get("counts"):
             raise ValueError("Los recuentos del corpus no concilian con los activos")
+        if self.panel is not None:
+            asset_markets = {asset["market"] for asset in self.assets}
+            view_markets = set(self.temporals) if self.temporals else asset_markets
+            if isinstance(meta.get("markets"), list) and set(meta["markets"]) != view_markets:
+                raise ValueError("Los mercados declarados por la vista no coinciden")
+            panel_signals.checked_panel_spec(self.panel, markets=view_markets)
+            root = panel_signals.panel_root()
+            self._panels = {
+                market: panel_signals.PanelSignals(
+                    root,
+                    name=self.panel["name"],
+                    market=market,
+                    manifest_sha256=self.panel["sha256"][market],
+                )
+                for market in sorted(view_markets)
+            }
+
+    def verify_panels(self):
+        """Comprobar que los artefactos de panel declarados no han cambiado desde su apertura."""
+        for reader in self._panels.values():
+            reader.verify()
 
     def _verify_files(self):
         """Comprobar todos los artefactos, con las huellas pendientes calculadas en paralelo.
@@ -1014,6 +1039,9 @@ class CorpusDataset:
                 rows = technical_features.technical_features(
                     prices, days, *self._market_factor(asset["market"]), version=self.technical
                 )
+                if self._panels:
+                    panel_rows = self._panels[asset["market"]].rows(asset["symbol"], days)
+                    rows = np.concatenate([panel_rows, rows], axis=1)
                 self._technical_rows[key] = rows
                 while len(self._technical_rows) > 128:
                     self._technical_rows.popitem(last=False)
@@ -1314,6 +1342,7 @@ class CorpusDataset:
             )
         if sha256(self.path) != self.identity:
             raise ValueError("El manifiesto cambió desde su confirmación")
+        self.verify_panels()
         dimensions = None
         for asset in sorted(self.assets, key=lambda a: (a["market"], a["symbol"])):
             path = self._file(asset, "samples")
@@ -1370,6 +1399,7 @@ class CorpusDataset:
                 self._file(asset, kind)
         if sha256(self.path) != self.identity:
             raise ValueError("El manifiesto cambió durante la lectura de observaciones")
+        self.verify_panels()
 
     def batches(self, *, partition, batch_size, epoch, seed, cursor=None):
         from .target_factors import confirm_sources
@@ -1387,6 +1417,7 @@ class CorpusDataset:
             raise ValueError("La partición, el lote, la época o la semilla no son válidos")
         if sha256(self.path) != self.identity:
             raise ValueError("El manifiesto ha cambiado desde su confirmación")
+        self.verify_panels()
         for temporal in self.temporals.values():
             temporal.verify()
         identity = {

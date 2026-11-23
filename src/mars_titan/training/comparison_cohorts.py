@@ -23,6 +23,7 @@ from pathlib import Path
 
 from mars_titan.data.cohort_files import read_manifest, safe_destination
 from mars_titan.data.input_policy import HISTORICAL_MASKED
+from mars_titan.data.panel_signals import checked_panel_spec
 from mars_titan.data.storage import atomic_json, outside_source, sha256
 from mars_titan.data.technical_features import VERSIONS as TECHNICAL
 from mars_titan.evaluation.splits import PARTITIONS
@@ -145,28 +146,30 @@ def project_cohort(source, *, size):
     return view, selection
 
 
-def checked_extensions(extensions):
+def checked_extensions(extensions, *, markets=None):
     """Extensión de entradas que una campaña declara para sus cohortes, o None.
 
-    La única es la de rasgos técnicos de horizonte largo, en una de sus versiones, que
-    `CorpusDataset` añade al bloque del gráfico al leer. La declara el manifiesto de la cohorte,
-    así que su huella, sus índices y sus copias empaquetadas son distintos de los de la misma
-    vista sin extensión o con otra versión. Con `market_model: required` la lectura se detiene
-    si falta en el equipo el factor de mercado de algún mercado, en vez de dejar a cero sus
-    rasgos del modelo de mercado.
+    Admite rasgos técnicos de horizonte largo (`technical`), en una de sus versiones, que
+    `CorpusDataset` añade al bloque del gráfico al leer, junto a `market_model: required`
+    opcional y un panel precalculado (`panel`) opcional cuyos mercados coincidan exactamente con
+    los de la vista. La declara el manifiesto de la cohorte, así que su huella, sus índices y sus
+    copias empaquetadas son distintos de los de la misma vista sin extensión o con otra versión o
+    panel. Con `market_model: required` la lectura se detiene si falta en el equipo el factor de
+    mercado de algún mercado, en vez de dejar a cero sus rasgos del modelo de mercado.
     """
+    if extensions is None:
+        return None
     _require(
-        extensions is None
-        or (
-            isinstance(extensions, dict)
-            and {"technical"} <= set(extensions) <= {"technical", "market_model"}
-            and isinstance(extensions["technical"], str)
-            and extensions["technical"] in TECHNICAL
-            and extensions.get("market_model", "required") == "required"
-        ),
+        isinstance(extensions, dict)
+        and {"technical"} <= set(extensions) <= {"technical", "market_model", "panel"}
+        and isinstance(extensions["technical"], str)
+        and extensions["technical"] in TECHNICAL
+        and extensions.get("market_model", "required") == "required",
         f"La única extensión de entradas es technical ({' o '.join(TECHNICAL)}), con "
-        "market_model required si el factor de mercado no puede faltar",
+        "market_model required si el factor de mercado no puede faltar y panel opcional",
     )
+    if "panel" in extensions:
+        checked_panel_spec(extensions["panel"], markets=markets)
     return extensions
 
 
@@ -180,7 +183,7 @@ def write_cohort(source_path, output, *, size, extensions=None):
     safe_destination(output)
     source, digest = read_manifest(source_path, 64 * 1024**2)
     view, selection = project_cohort(source, size=size)
-    if checked_extensions(extensions) is not None:
+    if checked_extensions(extensions, markets=("US",)) is not None:
         view = dict(view, input_extensions=extensions)
     for root in source["roots"].values():
         outside_source(Path(root), output)
@@ -333,7 +336,7 @@ def write_full_view(source_path, output, *, size, extensions=None):
         final_test_opened=False,
     )
     document = None
-    if checked_extensions(extensions) is not None:
+    if checked_extensions(extensions, markets=markets) is not None:
         document = dict(source, input_extensions=extensions)
         receipt["input_extensions"] = extensions
         del receipt["manifest_sha256"]

@@ -20,6 +20,7 @@ import time
 from contextlib import closing
 from pathlib import Path
 
+from mars_titan.data import panel_signals
 from mars_titan.data.cohort_files import safe_destination
 from mars_titan.data.storage import atomic_json, outside_source, sha256
 from mars_titan.models.titans.config import MAX_BLOCK_ROWS, canonical
@@ -124,8 +125,16 @@ def supported(source):
     return type(source) in (FinancialObservationSource, PackedPhaseSource)
 
 
+def _panel_implementation():
+    return {panel_signals.__name__: sha256(Path(panel_signals.__file__))}
+
+
 def source_implementation(source):
-    return implementation() if type(source) is PackedPhaseSource else {}
+    result = implementation() if type(source) is PackedPhaseSource else {}
+    dataset = getattr(source, "dataset", None)
+    if getattr(dataset, "panel", None) is not None:
+        result = dict(result, **_panel_implementation())
+    return result
 
 
 def reset_usage():
@@ -309,6 +318,12 @@ def stream(source, root, start, block):
         block=STORED_BLOCK,
         implementation=implementation(),
     )
+    if source.dataset.panel is not None:
+        expected["panel"] = dict(
+            name=source.dataset.panel["name"],
+            sha256=dict(sorted(source.dataset.panel["sha256"].items())),
+        )
+        expected["implementation"] = dict(expected["implementation"], **_panel_implementation())
     original = getattr(source, "reference_batched_events", source.batched_events)
     with lockfile.open("a") as handle:
         if not _try_lock(handle, fcntl.LOCK_SH):

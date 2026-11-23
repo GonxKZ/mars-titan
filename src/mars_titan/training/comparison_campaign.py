@@ -40,6 +40,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 from mars_titan.data.cohort_files import read_manifest, safe_destination
+from mars_titan.data.panel_signals import PANELS
 from mars_titan.data.storage import atomic_json
 
 from .comparison_cohorts import (
@@ -409,8 +410,10 @@ def checked_declaration(document, *, root=ROOT, check_recipe_files=True):
     )
     # Extensión de entradas de toda la campaña: la declaran sus cohortes, no cada modelo, para
     # que todos sus trabajos compartan índices y copias empaquetadas.
-    inputs = checked_extensions(document.get("inputs"))
+    inputs = checked_extensions(document.get("inputs"), markets=document["market"].split("+"))
     technical = () if inputs is None else TECHNICAL[inputs["technical"]]
+    panel = () if not inputs or "panel" not in inputs else PANELS[inputs["panel"]["name"]]
+    branch_columns = len(technical) + len(panel)
     read = {}
     if "analysis" in document:
         from mars_titan.evaluation.comparison_protocol import checked
@@ -436,9 +439,15 @@ def checked_declaration(document, *, root=ROOT, check_recipe_files=True):
             # con otra versión de rasgos leerían otras columnas sin que nada fallara.
             columns, placed = _technical_reading(root, recipes[model["recipe"]], model, read)
             _require(
-                columns is None or columns == len(technical),
-                f"La rama técnica del modelo {name} lee {columns} columnas y los rasgos "
-                f"declarados por la campaña tienen {len(technical)}",
+                columns is None or columns == branch_columns,
+                (
+                    f"La rama técnica del modelo {name} lee {columns} columnas y con el panel "
+                    f"declarado ({len(panel)}) más los rasgos técnicos ({len(technical)}) debe "
+                    f"leer exactamente {branch_columns}"
+                    if panel
+                    else f"La rama técnica del modelo {name} lee {columns} columnas y los rasgos "
+                    f"declarados por la campaña tienen {len(technical)}"
+                ),
             )
             for key, position in placed.items():
                 wanted, label = NAMED_COLUMNS[key]
