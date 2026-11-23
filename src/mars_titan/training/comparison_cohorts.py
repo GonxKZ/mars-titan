@@ -151,17 +151,21 @@ def checked_extensions(extensions):
     La única es la de rasgos técnicos de horizonte largo, en una de sus versiones, que
     `CorpusDataset` añade al bloque del gráfico al leer. La declara el manifiesto de la cohorte,
     así que su huella, sus índices y sus copias empaquetadas son distintos de los de la misma
-    vista sin extensión o con otra versión.
+    vista sin extensión o con otra versión. Con `market_model: required` la lectura se detiene
+    si falta en el equipo el factor de mercado de algún mercado, en vez de dejar a cero sus
+    rasgos del modelo de mercado.
     """
     _require(
         extensions is None
         or (
             isinstance(extensions, dict)
-            and set(extensions) == {"technical"}
+            and {"technical"} <= set(extensions) <= {"technical", "market_model"}
             and isinstance(extensions["technical"], str)
             and extensions["technical"] in TECHNICAL
+            and extensions.get("market_model", "required") == "required"
         ),
-        f"La única extensión de entradas es technical: {' o '.join(TECHNICAL)}",
+        f"La única extensión de entradas es technical ({' o '.join(TECHNICAL)}), con "
+        "market_model required si el factor de mercado no puede faltar",
     )
     return extensions
 

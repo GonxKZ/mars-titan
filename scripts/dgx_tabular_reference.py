@@ -77,9 +77,18 @@ def price_table(path):
 
 
 def market_factor(manifest, market):
+    """Días y rendimiento intradía del factor declarado de un mercado, o (None, None) si falta.
+
+    Si la cohorte exige el modelo de mercado (`market_model: required`), un factor ausente
+    detiene la referencia en vez de dejar a cero sus rasgos.
+    """
     declared = (manifest.get("market_factors") or {}).get(market) or {}
     path = Path(declared.get("prices_path") or "")
     if not path.is_file():
+        if "market_model" in (manifest.get("input_extensions") or {}):
+            raise ValueError(
+                f"Falta en este equipo el factor de mercado de {market} que declara la vista"
+            )
         return None, None
     prices, days = price_table(path)
     with np.errstate(divide="ignore", invalid="ignore"):

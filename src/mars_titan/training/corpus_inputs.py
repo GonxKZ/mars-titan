@@ -558,8 +558,9 @@ class CorpusDataset:
         if extensions is not None and (
             not self.masked
             or not isinstance(extensions, dict)
-            or set(extensions) != {"technical"}
+            or not {"technical"} <= set(extensions) <= {"technical", "market_model"}
             or extensions["technical"] not in technical_features.VERSIONS
+            or extensions.get("market_model", "required") != "required"
             or modality_ablation is not None
         ):
             raise ValueError(
@@ -567,6 +568,8 @@ class CorpusDataset:
                 "máscaras, sin variante de lectura"
             )
         self.technical = None if extensions is None else extensions["technical"]
+        # Con `market_model: required` un factor de mercado ausente detiene la lectura.
+        self._market_model_required = bool(extensions) and "market_model" in extensions
         self._technical_rows, self._technical_lock = OrderedDict(), threading.Lock()
         self._market_factors = {}
         # Las ediciones desde la v3.1 declaran ventanas por sesión del calendario con presencia.
@@ -981,6 +984,11 @@ class CorpusDataset:
                 with np.errstate(divide="ignore", invalid="ignore"):
                     returns = np.where((opened > 0) & (close > 0), close / opened - 1, np.nan)
                 factor = (days, returns)
+            elif self._market_model_required:
+                raise ValueError(
+                    f"Falta en este equipo el factor de mercado de {market} que declara la vista "
+                    f"({path}): sus rasgos del modelo de mercado quedarían a cero"
+                )
             self._market_factors[market] = factor
         return self._market_factors[market]
 

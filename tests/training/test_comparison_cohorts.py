@@ -328,3 +328,21 @@ def test_only_the_declared_input_extension_is_accepted(tmp_path, extensions):
     with pytest.raises(ValueError, match="extensión de entradas"):
         cohorts.write_cohort(origin, tmp_path / "cohort", size=16, extensions=extensions)
     assert not (tmp_path / "cohort").exists()
+
+
+def test_the_extension_may_require_the_market_model():
+    from mars_titan.training.comparison_cohorts import checked_extensions
+
+    required = dict(technical="long_horizon_v2", market_model="required")
+    assert checked_extensions(required) == required
+    assert checked_extensions(dict(technical="long_horizon_v2")) == dict(
+        technical="long_horizon_v2"
+    )
+    for wrong in (
+        dict(market_model="required"),
+        dict(technical="long_horizon_v2", market_model="optional"),
+        dict(technical="long_horizon_v2", market_model=True),
+        dict(technical="long_horizon_v2", otra="x"),
+    ):
+        with pytest.raises(ValueError, match="extensión de entradas"):
+            checked_extensions(wrong)

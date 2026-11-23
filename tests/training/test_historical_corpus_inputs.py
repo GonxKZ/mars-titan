@@ -743,3 +743,35 @@ def test_the_technical_extension_appends_the_features_of_each_row(tmp_path):
     assert [b["inputs"]["charts"].shape for b in read_all(path)] == [
         b["inputs"]["charts"].shape for b in plain
     ]
+
+
+def test_a_required_market_model_stops_the_reading_when_its_factor_is_missing(tmp_path):
+    from mars_titan.data import technical_features as technical
+
+    path = supervised(tmp_path)
+    meta = json.loads(path.read_text())
+    declared = dict(meta["market_factors"]["US"], return_convention="close_over_open_minus_one")
+    plain = dict(technical=technical.NAME_V2)
+    required = dict(plain, market_model="required")
+    meta = dict(meta, market_factors=dict(US=declared))
+    # Con el factor en su sitio, exigirlo no cambia lo que se lee.
+    dump(path, dict(meta, input_extensions=plain))
+    before = read_all(path)
+    dump(path, dict(meta, input_extensions=required))
+    after = read_all(path)
+    assert len(after) == len(before) > 0
+    for one, other in zip(before, after, strict=True):
+        assert np.array_equal(one["inputs"]["charts"], other["inputs"]["charts"])
+    # Sin el archivo, la lectura se detiene en vez de apagar los rasgos del modelo de mercado.
+    absent = dict(declared, prices_path=str(tmp_path / "no-existe.parquet"))
+    dump(path, dict(meta, market_factors=dict(US=absent), input_extensions=required))
+    with pytest.raises(ValueError, match="Falta en este equipo el factor de mercado de US"):
+        read_all(path)
+    # Sin exigirlo sigue valiendo lo de siempre: se leen, apagados.
+    dump(path, dict(meta, market_factors=dict(US=absent), input_extensions=plain))
+    assert len(read_all(path)) == len(before)
+    # Solo se admite ese valor.
+    for wrong in ("optional", True, None):
+        dump(path, dict(meta, input_extensions=dict(plain, market_model=wrong)))
+        with pytest.raises(ValueError, match="extensión de entradas"):
+            read_all(path)
