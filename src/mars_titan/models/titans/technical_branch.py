@@ -50,6 +50,12 @@ La transformación solo lee filas del bloque, que tiene un único instante y ent
 en él. Como los rangos de un subconjunto serían otros, el predictor la exige con la sesión
 completa, igual que `session_rank_inputs_v1`.
 
+Con `absent_rows="masked_v1"`, los valores ausentes (deducidos de las columnas indicadoras
+`has_market_model`, `has_63_sessions` y `has_252_sessions` del bloque sin escalar según la
+tabla explícita de dependencias de `long_horizon_v2` y `long_horizon_v3`) no entran en el orden
+de su columna y su rango vale 0; las columnas indicadoras y las independientes no cambian. Con
+el valor por defecto `absent_rows="ranked"` se conserva bit a bit el cálculo anterior.
+
 Las ramas no tienen estado y solo leen entradas disponibles en la emisión. Sin `session_ranks`
 no mezclan filas. El residuo queda en la representación de trabajo, así que un lector ajustado
 sobre el núcleo lo recibe sin cambios.
@@ -75,17 +81,127 @@ K miembros se toma a la salida de la rama antes de la cabeza.
 
 import hashlib
 from dataclasses import dataclass
+from types import MappingProxyType
 
 import torch
 from torch import nn
 
+from mars_titan.data.technical_features import NAME_V2, NAME_V3, VERSIONS
+
 from .config import LAYER_NORM_EPS, bounded_integer, require_identity
 from .session_ranks import gaussian_ranks
-from .state import check_finite
+from .state import check_finite, require_finite
 
 TECHNICAL_BRANCH = "technical_branch_v1"
 TECHNICAL_DENSE = "technical_branch_v2"
 ENSEMBLE_MEMBERS = (1, 4, 8, 16)
+ABSENT_RANKED = "ranked"
+ABSENT_MASKED = "masked_v1"
+ABSENT_ROWS = (ABSENT_RANKED, ABSENT_MASKED)
+INDICATORS = ("has_market_model", "has_63_sessions", "has_252_sessions")
+
+# Dependencias explícitas entre cada indicador de presencia y los rasgos técnicos que
+# `mars_titan.data.technical_features` deja en NaN (y luego rellena con 0) cuando falta el
+# modelo de mercado o la historia requerida. Las columnas indicadoras y las de horizonte corto
+# (<= 21 sesiones) no figuran aquí y nunca se enmascaran.
+_MARKET_MODEL_FEATURES = (
+    "alpha_percent",
+    "alpha_t",
+    "beta",
+    "log_residual_volatility",
+    "realized_label_1",
+    "realized_label_5",
+    "realized_label_21",
+    "alpha_21_percent",
+    "alpha_63_percent",
+)
+_HISTORY_63_V2_FEATURES = (
+    "dollar_volume_5_over_63",
+    "untraded_63",
+)
+_HISTORY_63_V3_ADDED = (
+    "days_since_high_63",
+    "days_since_low_63",
+    "up_day_fraction_cc_63",
+    "up_day_fraction_oc_63",
+    "price_volume_corr_63",
+)
+_HISTORY_252_V2_FEATURES = (
+    "return_5",
+    "return_21",
+    "return_63",
+    "return_126",
+    "return_252",
+    "momentum_12_1",
+    "log_volatility_252",
+    "volatility_21_over_252",
+    "volatility_63_over_252",
+    "distance_to_high_252",
+    "distance_to_low_252",
+    "dollar_volume_21_over_252",
+    "return_1",
+    "intraday_1",
+    "overnight_1",
+    "range_1",
+    "intraday_21",
+    "overnight_21",
+    "maximum_return_21",
+    "intraday_mean_252_percent",
+    "overnight_mean_252_percent",
+    "intraday_5",
+    "intraday_63",
+    "intraday_252",
+    "overnight_5",
+    "overnight_63",
+    "overnight_252",
+)
+_HISTORY_252_V3_ADDED = (
+    "days_since_high_252",
+    "days_since_low_252",
+)
+
+ABSENT_DEPENDENCIES = MappingProxyType(
+    {
+        NAME_V2: MappingProxyType(
+            {
+                "has_market_model": _MARKET_MODEL_FEATURES,
+                "has_63_sessions": _HISTORY_63_V2_FEATURES,
+                "has_252_sessions": _HISTORY_252_V2_FEATURES,
+            }
+        ),
+        NAME_V3: MappingProxyType(
+            {
+                "has_market_model": _MARKET_MODEL_FEATURES,
+                "has_63_sessions": (*_HISTORY_63_V2_FEATURES, *_HISTORY_63_V3_ADDED),
+                "has_252_sessions": (*_HISTORY_252_V2_FEATURES, *_HISTORY_252_V3_ADDED),
+            }
+        ),
+    }
+)
+ABSENT_VERSION_BY_COLUMNS = MappingProxyType(
+    {len(VERSIONS[version]): version for version in ABSENT_DEPENDENCIES}
+)
+
+
+def _presence_tables(columns):
+    """Tablas de índices en dispositivo para construir la máscara booleana de `masked_v1`."""
+    version = ABSENT_VERSION_BY_COLUMNS[columns]
+    names = VERSIONS[version]
+    index_by_name = {name: index for index, name in enumerate(names)}
+    indicator_index = [0] * columns
+    has_indicator = [False] * columns
+    for indicator, dependents in ABSENT_DEPENDENCIES[version].items():
+        source = index_by_name[indicator]
+        for name in dependents:
+            column = index_by_name[name]
+            indicator_index[column] = source
+            has_indicator[column] = True
+    indicator_columns = [index_by_name[name] for name in INDICATORS]
+    return (
+        torch.tensor(indicator_index, dtype=torch.int64),
+        torch.tensor(has_indicator, dtype=torch.bool),
+        torch.tensor(indicator_columns, dtype=torch.int64),
+    )
 
 
 @dataclass(frozen=True)
@@ -136,6 +252,8 @@ class TechnicalDenseConfig:
     feature_scaling: bool = False
     # Miembros del conjunto eficiente BatchEnsemble tipo TabM (1 = red simple; 4, 8 o 16).
     ensemble_members: int = 1
+    # Cómo entran en los rangos las filas ausentes del rasgo: `"ranked"` (hoy) o `"masked_v1"`.
+    absent_rows: str = ABSENT_RANKED
 
     def __post_init__(self):
         bounded_integer(self.columns, "columnas de la rama técnica", 1, 512)
@@ -151,6 +269,16 @@ class TechnicalDenseConfig:
             raise ValueError("LayerNorm en la rama técnica necesita hidden >= 2")
         if type(self.ensemble_members) is not int or self.ensemble_members not in ENSEMBLE_MEMBERS:
             raise ValueError("ensemble_members de la rama técnica debe ser 1, 4, 8 o 16")
+        if type(self.absent_rows) is not str or self.absent_rows not in ABSENT_ROWS:
+            raise ValueError("absent_rows de la rama técnica debe ser ranked o masked_v1")
+        if self.absent_rows == ABSENT_MASKED:
+            if not self.session_ranks:
+                raise ValueError("absent_rows='masked_v1' necesita session_ranks=True")
+            if self.columns not in ABSENT_VERSION_BY_COLUMNS:
+                raise ValueError(
+                    "absent_rows='masked_v1' requiere las columnas de long_horizon_v2 (46) o "
+                    "long_horizon_v3 (62)"
+                )
 
     def identity(self):
         result = dict(
@@ -173,6 +301,15 @@ class TechnicalDenseConfig:
                 encoding="normalized_features_then_their_session_normal_scores",
                 session="rows_of_one_market_and_decision_instant_in_one_complete_block",
                 normal_scores="inverse_normal_of_average_rank_minus_half_over_the_rows",
+            )
+        # Sin enmascarar filas ausentes se conserva literalmente la identidad anterior.
+        if self.absent_rows != ABSENT_RANKED:
+            version = ABSENT_VERSION_BY_COLUMNS[self.columns]
+            result.update(
+                absent_rows=self.absent_rows,
+                absent_feature_version=version,
+                absent_value=0.0,
+                normal_scores="inverse_normal_of_average_rank_minus_half_over_present_rows",
             )
         # Sin LayerNorm se conserva literalmente la identidad anterior.
         if self.layer_norm:
@@ -213,12 +350,13 @@ def parse_technical_branch(raw):
         "layer_norm",
         "feature_scaling",
         "ensemble_members",
+        "absent_rows",
     }:
         return TechnicalDenseConfig(**raw)
     raise ValueError(
         "technical_branch debe declarar columns, bins, embedding y hidden, o columns, hidden y "
-        "depth (y opcionalmente session_ranks, layer_norm, feature_scaling y ensemble_members), "
-        "o ser None"
+        "depth (y opcionalmente session_ranks, layer_norm, feature_scaling, ensemble_members y "
+        "absent_rows), o ser None"
     )
 
 
@@ -245,6 +383,7 @@ class TechnicalBranch(nn.Module):
 
     # No mezcla filas: no necesita la sesión completa en un bloque.
     session_level = False
+    uses_raw_charts = False
 
     def __init__(self, hidden_size, config, *, clip, seed, dtype=torch.float32):
         super().__init__()
@@ -415,6 +554,16 @@ class TechnicalDense(nn.Module):
         self.input_scale = (
             nn.Parameter(torch.ones(first, dtype=dtype)) if config.feature_scaling else None
         )
+        # Tablas de índices en dispositivo solo con `masked_v1`; con `ranked` no hay buffers.
+        if config.absent_rows == ABSENT_MASKED:
+            indicator_index, has_indicator, indicator_columns = _presence_tables(config.columns)
+            self.register_buffer("indicator_index", indicator_index)
+            self.register_buffer("has_indicator", has_indicator)
+            self.register_buffer("indicator_columns", indicator_columns)
+        else:
+            self.indicator_index = None
+            self.has_indicator = None
+            self.indicator_columns = None
 
     def get_extra_state(self):
         return dict(
@@ -429,22 +578,77 @@ class TechnicalDense(nn.Module):
         """Si la rama necesita todas las filas de la sesión en el mismo bloque."""
         return self.config.session_ranks
 
-    def ranks(self, features, markets):
+    @property
+    def uses_raw_charts(self):
+        """Si la rama lee los indicadores de ausencia en el bloque del gráfico sin escalar."""
+        return self.config.absent_rows == ABSENT_MASKED
+
+    def presence(self, indicators):
+        """Máscara booleana [filas, columnas] de valores presentes según `absent_rows`."""
+        if (
+            not isinstance(indicators, torch.Tensor)
+            or indicators.ndim != 2
+            or indicators.shape[1] != self.config.columns
+            or indicators.dtype not in (torch.float32, torch.float64)
+        ):
+            raise ValueError(
+                "La presencia de la rama técnica necesita rasgos [filas, columnas] en FP32 o FP64"
+            )
+        if self.config.absent_rows == ABSENT_RANKED:
+            return torch.ones_like(indicators, dtype=torch.bool)
+        if (
+            self.indicator_index is None
+            or self.has_indicator is None
+            or self.indicator_columns is None
+        ):
+            raise ValueError(
+                "La máscara de ausencias de la rama técnica no coincide con su configuración"
+            )
+        if indicators.device != self.indicator_index.device:
+            raise ValueError("Los indicadores de ausencia necesitan el mismo dispositivo")
+        if len(indicators) == 0:
+            return torch.ones_like(indicators, dtype=torch.bool)
+        require_finite(
+            indicators.index_select(1, self.indicator_columns),
+            "Los indicadores de ausencia de la rama técnica deben ser finitos",
+        )
+        return (~self.has_indicator).unsqueeze(0) | (
+            indicators.index_select(1, self.indicator_index) > 0
+        )
+
+    def ranks(self, features, markets, *, indicators=None):
         """Puntuaciones normales del rango de cada rasgo entre las filas de su mercado."""
         if markets is None or len(markets) != len(features):
             raise ValueError("Los rangos de la rama técnica necesitan el mercado de cada fila")
+        if indicators is not None and (
+            not isinstance(indicators, torch.Tensor)
+            or indicators.shape != features.shape
+            or indicators.device != features.device
+            or indicators.dtype != features.dtype
+        ):
+            raise ValueError(
+                "Los indicadores de ausencia deben tener la misma forma, dispositivo y precisión"
+            )
         if len(features) == 0:
             return torch.zeros_like(features)
+        mask = (
+            self.presence(features if indicators is None else indicators)
+            if self.config.absent_rows == ABSENT_MASKED
+            else None
+        )
         first = markets[0]
         if all(value == first for value in markets):
-            return gaussian_ranks(features, torch.ones_like(features, dtype=torch.bool))
+            present = torch.ones_like(features, dtype=torch.bool) if mask is None else mask
+            return gaussian_ranks(features, present)
         result = torch.zeros_like(features)
         for market in sorted(set(markets)):
             positions = [index for index, value in enumerate(markets) if value == market]
             if positions[-1] - positions[0] + 1 == len(positions):
                 start, stop = positions[0], positions[-1] + 1
                 values = features[start:stop]
-                present = torch.ones_like(values, dtype=torch.bool)
+                present = (
+                    torch.ones_like(values, dtype=torch.bool) if mask is None else mask[start:stop]
+                )
                 result = result.clone()
                 result[start:stop] = gaussian_ranks(values, present)
             else:
@@ -456,14 +660,19 @@ class TechnicalDense(nn.Module):
                     else torch.tensor(positions, dtype=torch.int64, device=features.device)
                 )
                 values = features.index_select(0, rows)
-                present = torch.ones_like(values, dtype=torch.bool)
+                present = (
+                    torch.ones_like(values, dtype=torch.bool)
+                    if mask is None
+                    else mask.index_select(0, rows)
+                )
                 result = result.index_copy(0, rows, gaussian_ranks(values, present))
         return result
 
-    def forward(self, charts, markets=None):
+    def forward(self, charts, markets=None, *, raw_charts=None):
         """Residuo [filas, dimensión] a partir del bloque del gráfico ya normalizado.
 
         `markets` es el mercado de cada fila del bloque y solo se usa con `session_ranks`.
+        `raw_charts` es el bloque del gráfico sin escalar cuando `absent_rows="masked_v1"`.
         """
         config = self.config
         if (
@@ -478,10 +687,37 @@ class TechnicalDense(nn.Module):
         actual_members = self.outer.members if isinstance(self.outer, BatchEnsembleLinear) else 1
         if actual_members != config.ensemble_members:
             raise ValueError("El conjunto de la rama técnica no coincide con su configuración")
+        if (config.absent_rows == ABSENT_MASKED) != (
+            self.indicator_index is not None
+            and self.has_indicator is not None
+            and self.indicator_columns is not None
+        ):
+            raise ValueError(
+                "La máscara de ausencias de la rama técnica no coincide con su configuración"
+            )
+        if raw_charts is not None and (
+            not isinstance(raw_charts, torch.Tensor)
+            or raw_charts.ndim != 2
+            or raw_charts.shape[0] != charts.shape[0]
+            or raw_charts.shape[1] < config.columns
+            or raw_charts.device != charts.device
+            or raw_charts.dtype != charts.dtype
+        ):
+            raise ValueError(
+                "Los rasgos sin escalar de la rama técnica necesitan el mismo lote, dispositivo y "
+                "precisión"
+            )
         hidden = charts[:, charts.shape[1] - config.columns :]
         if config.session_ranks:
             # Los rangos no llevan gradiente hacia las entradas: son una función a trozos constante.
-            hidden = torch.cat((hidden, self.ranks(hidden.detach(), markets)), dim=1)
+            indicators = (
+                None
+                if raw_charts is None
+                else raw_charts[:, raw_charts.shape[1] - config.columns :].detach()
+            )
+            hidden = torch.cat(
+                (hidden, self.ranks(hidden.detach(), markets, indicators=indicators)), dim=1
+            )
         if self.input_scale is not None:
             hidden = hidden * self.input_scale
         if config.ensemble_members > 1:

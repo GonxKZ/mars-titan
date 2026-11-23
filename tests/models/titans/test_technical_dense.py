@@ -1066,3 +1066,665 @@ def test_predictor_with_batchensemble_adds_residual_clips_and_round_trips():
         other, _ = build(technical_branch=asdict(replace(config, ensemble_members=other_members)))
         with pytest.raises((ValueError, RuntimeError)):
             other.load_state_dict(predictor.state_dict())
+
+
+# --- absent_rows: rangos sin contar las filas ausentes (`ranked` y `masked_v1`) ---------------
+
+
+def _synthetic_prices_with_untraded(seed=0):
+    """Precios sintéticos con factor de mercado y sesiones sin volumen para activar untraded_63."""
+    from tests.data.test_technical_features import market_prices
+
+    _, sessions, table, market = market_prices(seed=seed)
+    prices = table.copy()
+    # Una sesión sin volumen cada 30 días garantiza untraded_63 > 0 en cualquier ventana de 63.
+    prices[10::30, 4] = 0.0
+    return sessions, prices, market
+
+
+def _masked_reference_scores(values, present):
+    """Puntuaciones normales de cada columna solo sobre sus filas presentes, con bucles Python."""
+    rows, cols = values.shape
+    scores = torch.zeros_like(values)
+    for col in range(cols):
+        active = [row for row in range(rows) if bool(present[row, col])]
+        if not active:
+            continue
+        col_scores = normal_scores([values[row, col].item() for row in active])
+        for row, score in zip(active, col_scores, strict=True):
+            scores[row, col] = score
+    return scores
+
+
+def _realistic_session_features(version, *, dtype=torch.float64):
+    """Bloque de rasgos reales de varias edades y con/sin factor de mercado para US y CN."""
+    from mars_titan.data import technical_features as technical
+
+    rows, markets = [], []
+    # 7 activos US con edades variadas (sin 63, sin 252, completos) y uno sin factor de mercado.
+    us_specs = [
+        (0, 35, True),
+        (1, 55, True),
+        (2, 160, True),
+        (3, 200, True),
+        (4, 300, True),
+        (5, 340, True),
+        (6, 380, False),
+    ]
+    # 5 activos CN sin factor de mercado en ninguna fila y con edades variadas.
+    cn_specs = [
+        (10, 40, False),
+        (11, 150, False),
+        (12, 210, False),
+        (13, 310, False),
+        (14, 360, False),
+    ]
+    for market_name, specs in (("US", us_specs), ("CN", cn_specs)):
+        for seed, row_index, has_factor in specs:
+            sessions, prices, factor = _synthetic_prices_with_untraded(seed=seed)
+            table = (
+                technical.technical_features(prices, sessions, sessions, factor, version=version)
+                if has_factor
+                else technical.technical_features(prices, sessions, version=version)
+            )
+            rows.append(table[row_index])
+            markets.append(market_name)
+    import numpy as np
+
+    features = torch.tensor(np.stack(rows), dtype=dtype)
+    return features, tuple(markets)
+
+
+def _realistic_predictor(
+    version, *, absent_rows="ranked", variant="mac_online", dtype=torch.float64
+):
+    """Predictor con `learning_scale` ajustado sobre rasgos reales donde la mediana de los
+    indicadores vale 1 (de modo que el escalador desplaza 1 -> 0 y 0 -> -clip)."""
+    import numpy as np
+    from test_financial_adapter import specification
+
+    from mars_titan.data import technical_features as technical
+    from mars_titan.models.learning_scale import LearningScale, fit_statistics
+    from mars_titan.models.quantile_head import QUANTILE_HEAD
+    from mars_titan.models.titans.financial import (
+        DecisionBatch,
+        FinancialConfig,
+        FinancialPredictor,
+    )
+
+    width = len(technical.VERSIONS[version])
+    prefix = 4
+    dims = dict(DIMENSIONS, charts=prefix + width)
+    spec = specification(historical=True)
+    spec = type(spec)(
+        source_sha256=spec.source_sha256,
+        view_sha256=spec.view_sha256,
+        representation=spec.representation,
+        dimensions=dims,
+        input_policy=spec.input_policy,
+    )
+    sessions, prices, factor = _synthetic_prices_with_untraded(seed=21)
+    fit_table = technical.technical_features(prices, sessions, sessions, factor, version=version)
+    # 200 filas: ~85% con los tres indicadores a 1 (filas 260..430) y ~15% tempranas (30..60).
+    chosen = np.concatenate([np.arange(30, 60), np.arange(260, 430)])
+    fit_count = len(chosen)
+    rng = np.random.default_rng(7)
+    fit_inputs = {
+        name: rng.normal(
+            0.0, 1.0, size=(fit_count, 64, w) if name == "prices" else (fit_count, w)
+        ).astype(np.float32)
+        for name, w in dims.items()
+    }
+    fit_inputs["prices"][..., -1] = 1.0
+    fit_inputs["charts"][:, prefix:] = fit_table[chosen]
+    for name in ("fundamentals", "macro"):
+        fit_inputs[name][:, 1] = 1.0
+        fit_inputs[name][:, 2] = np.abs(fit_inputs[name][:, 2])
+    presence = np.ones((fit_count, 5), dtype=np.bool_)
+    scale_cfg = dict(clip=5.0, price_returns=True, zero_median=True)
+    stats = fit_statistics(
+        LearningScale(**scale_cfg), fit_inputs, presence, rng.normal(scale=0.02, size=fit_count)
+    )
+    branch_cfg = TechnicalDenseConfig(
+        columns=width, hidden=16, depth=2, session_ranks=True, absent_rows=absent_rows
+    )
+    config = FinancialConfig(
+        spec,
+        variant=variant,
+        hidden_size=32,
+        layers=1,
+        seed=42,
+        head=QUANTILE_HEAD,
+        learning_scale=scale_cfg,
+        technical_branch=asdict(branch_cfg),
+    )
+    model = FinancialPredictor(config, dtype=dtype)
+    model.set_learning_statistics(stats)
+    # Construir un lote con activos US y CN de distintas edades e indicadores mezclados.
+    features, markets = _realistic_session_features(version, dtype=torch.float32)
+    n_rows = len(markets)
+    batch_rng = np.random.default_rng(13)
+    batch_inputs = {
+        name: batch_rng.normal(
+            0.0, 0.5, size=(n_rows, 64, w) if name == "prices" else (n_rows, w)
+        ).astype(np.float32)
+        for name, w in dims.items()
+    }
+    batch_inputs["prices"][..., -1] = 1.0
+    batch_inputs["charts"][:, prefix:] = features.numpy()
+    for name in ("fundamentals", "macro"):
+        batch_inputs[name][:, 1] = 1.0
+        batch_inputs[name][:, 2] = np.abs(batch_inputs[name][:, 2])
+    at = 1_609_459_200_000_000
+    raw = dict(
+        inputs=batch_inputs,
+        presence=np.ones((n_rows, 5), dtype=np.bool_),
+        sample_ids=[f"{m}/A{i:03d}/{at}" for i, m in enumerate(markets)],
+        market=list(markets),
+        prediction_at=np.full(n_rows, at, dtype="datetime64[us]"),
+        input_available_at=np.full(n_rows, at - 1, dtype="datetime64[us]"),
+    )
+    return model, DecisionBatch.from_corpus(raw, spec, dtype=dtype), markets
+
+
+@pytest.mark.parametrize("version", ["long_horizon_v2", "long_horizon_v3"])
+def test_absent_dependency_table_matches_technical_features_on_synthetic_prices(version):
+    from mars_titan.data import technical_features as technical
+    from mars_titan.models.titans.technical_branch import (
+        ABSENT_DEPENDENCIES,
+        ABSENT_VERSION_BY_COLUMNS,
+        INDICATORS,
+    )
+
+    names = technical.VERSIONS[version]
+    assert ABSENT_VERSION_BY_COLUMNS[len(names)] == version
+    deps = ABSENT_DEPENDENCIES[version]
+    assert tuple(deps) == INDICATORS
+    # Ninguna columna se repite entre indicadores y ninguna columna indicadora depende de nada.
+    listed = [name for group in deps.values() for name in group]
+    assert len(listed) == len(set(listed))
+    assert set(listed) < set(names)
+    assert not (set(listed) & set(INDICATORS))
+
+    # Comprobar sobre precios sintéticos (dos semillas) que donde cada indicador vale 0,
+    # exactamente sus columnas dependientes (y el propio indicador) valen 0.
+    hm, h63, h252 = (names.index(ind) for ind in INDICATORS)
+    sessions, prices, factor = _synthetic_prices_with_untraded(seed=2)
+    with_m = technical.technical_features(prices, sessions, sessions, factor, version=version)
+    without_m = technical.technical_features(prices, sessions, version=version)
+
+    def zero_columns(slice_rows):
+        return {names[col] for col in range(len(names)) if not slice_rows[:, col].any()}
+
+    # 1) Sin factor de mercado y con >= 252 sesiones: has_market_model=0, has_63=1, has_252=1.
+    no_market = without_m[260:400]
+    assert (no_market[:, hm] == 0).all()
+    assert (no_market[:, h63] == 1).all() and (no_market[:, h252] == 1).all()
+    assert zero_columns(no_market) == set(deps["has_market_model"]) | {"has_market_model"}
+
+    # 2) Con factor de mercado, entre 126 y 250 sesiones: has_market_model=1, has_63=1, has_252=0.
+    no_252 = with_m[130:251]
+    assert (no_252[:, hm] == 1).all() and (no_252[:, h63] == 1).all()
+    assert (no_252[:, h252] == 0).all()
+    assert zero_columns(no_252) == set(deps["has_252_sessions"]) | {"has_252_sessions"}
+
+    # 3) Con 21..61 sesiones: los tres indicadores valen 0 y los rasgos de <=21 sesiones no.
+    no_63 = with_m[22:62]
+    assert (no_63[:, hm] == 0).all() and (no_63[:, h63] == 0).all() and (no_63[:, h252] == 0).all()
+    assert zero_columns(no_63) == set(listed) | set(INDICATORS)
+
+    # 4) Con historia completa y factor de mercado: ninguna columna es idénticamente cero.
+    full = with_m[260:400]
+    assert (full[:, hm] == 1).all() and (full[:, h63] == 1).all() and (full[:, h252] == 1).all()
+    assert zero_columns(full) == set()
+
+    # 5) Frontera de una sesión (documentada en INFORME.md): las ventanas de nivel/OHLC sin
+    # retorno previo arrancan en las filas 62 y 251 (una sesión antes que has_63 y has_252).
+    assert with_m[62, h63] == 0 and with_m[63, h63] == 1
+    assert with_m[251, h252] == 0 and with_m[252, h252] == 1
+    assert with_m[124, hm] == 0 and with_m[125, hm] == 1
+    assert with_m[125, names.index("realized_label_1")] == 0
+    assert with_m[126, names.index("realized_label_1")] != 0
+
+
+@pytest.mark.parametrize("version", ["long_horizon_v2", "long_horizon_v3"])
+@pytest.mark.parametrize("dtype", [torch.float32, torch.float64])
+def test_absent_rows_ranked_default_is_bit_identical_to_explicit_and_baseline(version, dtype):
+    from mars_titan.data import technical_features as technical
+    from mars_titan.models.titans.session_ranks import gaussian_ranks
+
+    width = len(technical.VERSIONS[version])
+    default_cfg = TechnicalDenseConfig(columns=width, hidden=16, depth=2, session_ranks=True)
+    explicit_cfg = TechnicalDenseConfig(
+        columns=width, hidden=16, depth=2, session_ranks=True, absent_rows="ranked"
+    )
+    assert default_cfg == explicit_cfg and default_cfg.absent_rows == "ranked"
+    assert default_cfg.identity() == explicit_cfg.identity()
+    assert "absent_rows" not in default_cfg.identity()
+    assert "absent_feature_version" not in default_cfg.identity()
+    assert (
+        default_cfg.identity()["normal_scores"]
+        == "inverse_normal_of_average_rank_minus_half_over_the_rows"
+    )
+
+    layer = TechnicalDense(12, default_cfg, clip=5.0, seed=3, dtype=dtype)
+    assert dict(layer.named_buffers()) == {}
+    features, markets = _realistic_session_features(version, dtype=dtype)
+    scores = layer.ranks(features, markets)
+    for market in ("US", "CN"):
+        rows = [i for i, m in enumerate(markets) if m == market]
+        expected = gaussian_ranks(features[rows], torch.ones_like(features[rows], dtype=torch.bool))
+        assert torch.equal(scores[rows], expected)
+
+
+def test_absent_rows_identity_validation_and_state_dict():
+    from mars_titan.models.titans.technical_branch import ABSENT_MASKED, ABSENT_RANKED
+
+    base_v2 = TechnicalDenseConfig(columns=46, hidden=16, depth=2, session_ranks=True)
+    masked_v2 = replace(base_v2, absent_rows=ABSENT_MASKED)
+    masked_v3 = TechnicalDenseConfig(
+        columns=62, hidden=16, depth=2, session_ranks=True, absent_rows=ABSENT_MASKED
+    )
+    assert base_v2.absent_rows == ABSENT_RANKED
+    assert masked_v2.identity() != base_v2.identity()
+    assert masked_v2.identity()["absent_rows"] == "masked_v1"
+    assert masked_v2.identity()["absent_feature_version"] == "long_horizon_v2"
+    assert masked_v3.identity()["absent_feature_version"] == "long_horizon_v3"
+    assert masked_v2.identity()["absent_value"] == 0.0
+    assert (
+        masked_v2.identity()["normal_scores"]
+        == "inverse_normal_of_average_rank_minus_half_over_present_rows"
+    )
+    assert parse_technical_branch(asdict(masked_v2)) == masked_v2
+    assert parse_technical_branch(asdict(masked_v3)) == masked_v3
+    assert checked_predictor_changes(dict(technical_branch=asdict(masked_v2))) == dict(
+        technical_branch=asdict(masked_v2)
+    )
+
+    # Declaraciones inválidas rechazadas.
+    for bad in ("masked_v2", "", True, 1, None):
+        with pytest.raises(ValueError, match="absent_rows"):
+            TechnicalDenseConfig(
+                columns=46, hidden=16, depth=2, session_ranks=True, absent_rows=bad
+            )
+    with pytest.raises(ValueError, match="session_ranks"):
+        TechnicalDenseConfig(
+            columns=46, hidden=16, depth=2, session_ranks=False, absent_rows=ABSENT_MASKED
+        )
+    for bad_cols in (6, 30, 45, 47, 61, 63):
+        with pytest.raises(ValueError, match="long_horizon_v2"):
+            TechnicalDenseConfig(
+                columns=bad_cols, hidden=16, depth=2, session_ranks=True, absent_rows=ABSENT_MASKED
+            )
+
+    # Round-trip de state_dict y rechazo al cruzar ranked <-> masked_v1.
+    source = opened(TechnicalDense(12, masked_v2, clip=5.0, seed=3, dtype=torch.float64))
+    same = TechnicalDense(12, masked_v2, clip=5.0, seed=7, dtype=torch.float64)
+    same.load_state_dict(source.state_dict())
+    features, markets = _realistic_session_features("long_horizon_v2", dtype=torch.float64)
+    assert torch.equal(same(features, markets), source(features, markets))
+
+    ranked = TechnicalDense(12, base_v2, clip=5.0, seed=3, dtype=torch.float64)
+    with pytest.raises((ValueError, RuntimeError)):
+        ranked.load_state_dict(source.state_dict())
+    with pytest.raises((ValueError, RuntimeError)):
+        source.load_state_dict(ranked.state_dict())
+
+
+@pytest.mark.parametrize("version", ["long_horizon_v2", "long_horizon_v3"])
+@pytest.mark.parametrize("dtype", [torch.float32, torch.float64])
+def test_masked_ranks_exclude_absent_rows_zero_them_and_keep_independent_columns(version, dtype):
+    from mars_titan.data import technical_features as technical
+    from mars_titan.models.titans.technical_branch import ABSENT_DEPENDENCIES, ABSENT_MASKED
+
+    names = technical.VERSIONS[version]
+    width = len(names)
+    ranked_cfg = TechnicalDenseConfig(columns=width, hidden=16, depth=2, session_ranks=True)
+    masked_cfg = replace(ranked_cfg, absent_rows=ABSENT_MASKED)
+    ranked_layer = TechnicalDense(12, ranked_cfg, clip=5.0, seed=3, dtype=dtype)
+    masked_layer = TechnicalDense(12, masked_cfg, clip=5.0, seed=3, dtype=dtype)
+    # Pesos idénticos sin consumir generador global.
+    for name, value in ranked_layer.named_parameters():
+        assert torch.equal(dict(masked_layer.named_parameters())[name], value), name
+
+    features, markets = _realistic_session_features(version, dtype=dtype)
+    us_rows = [i for i, m in enumerate(markets) if m == "US"]
+    us_features = features[us_rows]
+    us_markets = tuple("US" for _ in us_rows)
+
+    actual = masked_layer.ranks(us_features, us_markets)
+    baseline = ranked_layer.ranks(us_features, us_markets)
+    assert actual.shape == us_features.shape and actual.dtype == dtype
+
+    # Máscara esperada construida a mano a partir de las columnas indicadoras.
+    deps = ABSENT_DEPENDENCIES[version]
+    expected_present = torch.ones_like(us_features, dtype=torch.bool)
+    for indicator, cols in deps.items():
+        ind_col = names.index(indicator)
+        flag = us_features[:, ind_col] > 0
+        for col_name in cols:
+            expected_present[:, names.index(col_name)] = flag
+    expected = _masked_reference_scores(us_features.double(), expected_present).to(dtype)
+
+    atol = 1e-6 if dtype == torch.float32 else 1e-12
+    rtol = 1e-6 if dtype == torch.float32 else 1e-12
+    torch.testing.assert_close(actual, expected, rtol=rtol, atol=atol)
+
+    # Las posiciones ausentes valen exactamente cero.
+    assert torch.equal(actual[~expected_present], torch.zeros_like(actual[~expected_present]))
+    # Las columnas indicadoras y las independientes no cambian respecto a ranked.
+    dependent_indices = {names.index(c) for group in deps.values() for c in group}
+    independent_indices = [i for i in range(width) if i not in dependent_indices]
+    assert torch.equal(actual[:, independent_indices], baseline[:, independent_indices])
+    # Las columnas dependientes con mezcla de ausentes sí cambian respecto a ranked.
+    dep = sorted(dependent_indices)
+    assert not torch.equal(actual[:, dep], baseline[:, dep])
+
+    # Perturbar valores de celdas ausentes no altera ningún rango (ni presentes ni ausentes).
+    perturbed = us_features.clone()
+    perturbed[~expected_present] = 7.5
+    assert torch.equal(masked_layer.ranks(perturbed, us_markets), actual)
+
+    # Cambiar el orden de filas permuta exactamente la salida de la rama completa.
+    opened_masked = opened(TechnicalDense(12, masked_cfg, clip=5.0, seed=3, dtype=torch.float64))
+    charts = torch.cat(
+        (torch.randn(len(us_rows), 3, dtype=torch.float64), us_features.double()), dim=1
+    )
+    order = torch.tensor([5, 0, 6, 2, 1, 4, 3])
+    out = opened_masked(charts, us_markets)
+    moved = opened_masked(charts[order], us_markets)
+    torch.testing.assert_close(moved, out[order], rtol=1e-12, atol=1e-13)
+
+
+@pytest.mark.parametrize("version", ["long_horizon_v2", "long_horizon_v3"])
+def test_masked_ranks_work_per_market_and_handle_all_absent_and_single_present(version):
+    from mars_titan.data import technical_features as technical
+    from mars_titan.models.titans.technical_branch import ABSENT_DEPENDENCIES, ABSENT_MASKED
+
+    names = technical.VERSIONS[version]
+    width = len(names)
+    cfg = TechnicalDenseConfig(
+        columns=width, hidden=16, depth=2, session_ranks=True, absent_rows=ABSENT_MASKED
+    )
+    layer = opened(TechnicalDense(12, cfg, clip=5.0, seed=3, dtype=torch.float64))
+
+    features, markets = _realistic_session_features(version, dtype=torch.float64)
+    # 1) Bloque contiguo (US seguido de CN) y bloque intercalado (US/CN mezclados).
+    interleaved_order = torch.tensor([0, 7, 1, 8, 2, 9, 3, 10, 4, 11, 5, 6])
+    interleaved_features = features[interleaved_order]
+    interleaved_markets = tuple(markets[i] for i in interleaved_order.tolist())
+
+    contiguous_ranks = layer.ranks(features, markets)
+    interleaved_ranks = layer.ranks(interleaved_features, interleaved_markets)
+    torch.testing.assert_close(
+        interleaved_ranks, contiguous_ranks[interleaved_order], rtol=0, atol=0
+    )
+
+    # Cada mercado coincide exactamente con calcularlo por separado; perturbar CN no toca US.
+    us_idx = [i for i, m in enumerate(markets) if m == "US"]
+    cn_idx = [i for i, m in enumerate(markets) if m == "CN"]
+    torch.testing.assert_close(
+        contiguous_ranks[us_idx],
+        layer.ranks(features[us_idx], tuple("US" for _ in us_idx)),
+        rtol=0,
+        atol=0,
+    )
+    torch.testing.assert_close(
+        contiguous_ranks[cn_idx],
+        layer.ranks(features[cn_idx], tuple("CN" for _ in cn_idx)),
+        rtol=0,
+        atol=0,
+    )
+    changed = features.clone()
+    changed[cn_idx] = changed[cn_idx] * -2.0 + 0.5
+    assert torch.equal(layer(changed, markets)[us_idx], layer(features, markets)[us_idx])
+
+    # 2) En CN has_market_model=0 en todas las filas -> columnas de modelo de mercado todo ceros.
+    mm_cols = [names.index(c) for c in ABSENT_DEPENDENCIES[version]["has_market_model"]]
+    assert torch.count_nonzero(contiguous_ranks[cn_idx][:, mm_cols]) == 0
+
+    # 3) Una sola fila presente en una columna dependiente -> su rango (y el resto) vale 0.
+    single = features[:4].clone()
+    single[:, names.index("has_252_sessions")] = torch.tensor(
+        [1.0, 0.0, 0.0, 0.0], dtype=torch.float64
+    )
+    h252_cols = [names.index(c) for c in ABSENT_DEPENDENCIES[version]["has_252_sessions"]]
+    single_ranks = layer.ranks(single, ("US",) * 4)
+    assert torch.count_nonzero(single_ranks[:, h252_cols]) == 0
+
+    # 4) Lote vacío devuelve tensor vacío de la misma forma (en ranks y en presence).
+    empty = features[:0]
+    assert layer.ranks(empty, ()).shape == (0, width)
+    assert layer.presence(empty).shape == (0, width)
+    assert not TechnicalBranch(
+        12, TechnicalBranchConfig(columns=width), clip=5.0, seed=3
+    ).uses_raw_charts
+    assert layer.uses_raw_charts
+    assert not TechnicalDense(
+        12, replace(cfg, absent_rows="ranked"), clip=5.0, seed=3
+    ).uses_raw_charts
+
+
+@pytest.mark.parametrize("version", ["long_horizon_v2", "long_horizon_v3"])
+@pytest.mark.parametrize("dtype", [torch.float32, torch.float64])
+def test_masked_predictor_reads_unscaled_indicators_under_learning_scale(version, dtype):
+    from mars_titan.data import technical_features as technical
+    from mars_titan.models.titans.financial import copy_paired_parameters
+    from mars_titan.models.titans.frozen_financial import FrozenFinancialConsumer
+    from mars_titan.models.titans.technical_branch import ABSENT_DEPENDENCIES, ABSENT_MASKED
+
+    names = technical.VERSIONS[version]
+    width = len(names)
+    ranked_model, batch, markets = _realistic_predictor(version, absent_rows="ranked", dtype=dtype)
+    masked_model, _, _ = _realistic_predictor(version, absent_rows=ABSENT_MASKED, dtype=dtype)
+
+    # Confirmar que learning_scaler desplaza los indicadores 1 -> 0 y 0 -> negativo (< 0):
+    # leer el indicador después de escalar marcaría todas las filas como ausentes.
+    scaled_charts = masked_model.learning_scaler(batch.inputs, batch.presence)["charts"]
+    raw_tech = batch.inputs["charts"][:, -width:]
+    scaled_tech = scaled_charts[:, -width:]
+    for indicator in ("has_market_model", "has_63_sessions", "has_252_sessions"):
+        col = names.index(indicator)
+        present_rows = raw_tech[:, col] > 0
+        absent_rows = raw_tech[:, col] == 0
+        assert present_rows.any() and absent_rows.any()
+        assert (scaled_tech[present_rows, col] == 0).all()
+        assert (scaled_tech[absent_rows, col] < 0).all()
+
+    # Al construirse (capa outer en 0), ranked y masked emiten idéntico al control sin rama.
+    start_ranked = emit(ranked_model, batch, session_complete=True)
+    start_masked = emit(masked_model, batch, session_complete=True)
+    torch.testing.assert_close(
+        start_masked.point_predictions, start_ranked.point_predictions, rtol=0, atol=0
+    )
+    torch.testing.assert_close(
+        start_masked.working_state, start_ranked.working_state, rtol=0, atol=0
+    )
+
+    # Al abrir outer, el predictor pasa raw_charts (sin escalar) a la rama técnica y
+    # el residuo coincide bit a bit con technical_branch(scaled, markets, raw_charts=raw).
+    with torch.no_grad():
+        gen = torch.Generator().manual_seed(17)
+        w_shape = masked_model.technical_branch.outer.weight.shape
+        b_shape = masked_model.technical_branch.outer.bias.shape
+        w = 0.1 * torch.randn(w_shape, dtype=dtype, generator=gen)
+        b = 0.1 * torch.randn(b_shape, dtype=dtype, generator=gen)
+        for model in (ranked_model, masked_model):
+            model.technical_branch.outer.weight.copy_(w)
+            model.technical_branch.outer.bias.copy_(b)
+            model._seal_parameters()
+
+    prep_ranked = emit(ranked_model, batch, session_complete=True)
+    prep_masked = emit(masked_model, batch, session_complete=True)
+    expected_residual = masked_model.technical_branch(
+        scaled_charts, markets, raw_charts=batch.inputs["charts"]
+    )
+    torch.testing.assert_close(
+        prep_masked.working_state,
+        start_masked.working_state + expected_residual,
+        rtol=0,
+        atol=0,
+    )
+    # Los rangos calculados sobre scaled_tech con indicadores sin escalar tienen no-ceros en
+    # presentes y ceros exactos en ausentes, y difieren del modo ranked.
+    masked_ranks = masked_model.technical_branch.ranks(scaled_tech, markets, indicators=raw_tech)
+    h252_col = names.index("return_252")
+    assert (masked_ranks[raw_tech[:, names.index("has_252_sessions")] == 0, h252_col] == 0).all()
+    assert (masked_ranks[raw_tech[:, names.index("has_252_sessions")] > 0, h252_col] != 0).any()
+    assert not torch.equal(prep_masked.working_state, prep_ranked.working_state)
+
+    # Compatible con controles emparejados (copy_paired_parameters) y FrozenFinancialConsumer.
+    paired_frozen, _, _ = _realistic_predictor(
+        version, absent_rows=ABSENT_MASKED, variant="mac_frozen", dtype=dtype
+    )
+    copy_paired_parameters(masked_model, paired_frozen)
+    with pytest.raises(ValueError):
+        copy_paired_parameters(masked_model, ranked_model)
+
+    for param in masked_model.parameters():
+        param.requires_grad_(False)
+    masked_model.eval()
+    consumer = FrozenFinancialConsumer(masked_model)
+    with torch.no_grad():
+        frozen = consumer.prepare(
+            batch,
+            masked_model.initial_state(batch.flow_ids),
+            context_id="ctx",
+            session_complete=True,
+        )
+    assert frozen.quantiles is not None
+    torch.testing.assert_close(frozen.quantiles, prep_masked.quantiles, rtol=0, atol=0)
+    torch.testing.assert_close(
+        frozen.point_predictions, prep_masked.point_predictions, rtol=0, atol=0
+    )
+    branch_id = consumer.identity()["predictor"]["configuration"]["technical_branch"]
+    assert branch_id["absent_rows"] == ABSENT_MASKED
+    assert "has_252_sessions" in ABSENT_DEPENDENCIES[version]
+
+
+@pytest.mark.parametrize("dtype", [torch.float32, torch.float64])
+def test_masked_branch_is_causal_and_has_finite_gradients_with_constant_zero_prediction(dtype):
+    import numpy as np
+
+    from mars_titan.data import technical_features as technical
+    from mars_titan.models.quantile_head import pinball_loss
+    from mars_titan.models.titans.session_ic_objective import SessionICTerm
+    from mars_titan.models.titans.technical_branch import ABSENT_MASKED
+
+    # 1) Sin fugas: perturbar precios y factor de mercado futuros tras el corte no altera los
+    # rasgos, la máscara de ausencia ni la salida de TechnicalDense en el corte.
+    version = technical.NAME_V2
+    width = len(technical.VERSIONS[version])
+    cfg = TechnicalDenseConfig(
+        columns=width, hidden=16, depth=2, session_ranks=True, absent_rows=ABSENT_MASKED
+    )
+    layer = opened(TechnicalDense(12, cfg, clip=5.0, seed=3, dtype=torch.float64)).to(dtype)
+
+    cut = 280
+    rows_before, rows_after = [], []
+    specs = ((0, 40, True), (1, 180, True), (2, 270, True), (3, 275, False))
+    for seed, row_idx, has_factor in specs:
+        sessions, prices, factor = _synthetic_prices_with_untraded(seed=seed)
+        changed_p = prices.copy()
+        changed_p[cut:] *= 1.8
+        changed_f = factor.copy()
+        changed_f[cut:] = -changed_f[cut:] + 0.05
+        if has_factor:
+            a = technical.technical_features(prices, sessions, sessions, factor, version=version)
+            b = technical.technical_features(
+                changed_p, sessions, sessions, changed_f, version=version
+            )
+        else:
+            a = technical.technical_features(prices, sessions, version=version)
+            b = technical.technical_features(changed_p, sessions, version=version)
+        rows_before.append(a[row_idx])
+        rows_after.append(b[row_idx])
+    f_before = torch.tensor(np.stack(rows_before), dtype=dtype)
+    f_after = torch.tensor(np.stack(rows_after), dtype=dtype)
+    markets = ("US",) * 4
+    assert torch.equal(layer.presence(f_before), layer.presence(f_after))
+    assert torch.equal(layer(f_before, markets), layer(f_after, markets))
+
+    # 2) Gradientes finitos con predicción constante en cero (capa outer inicializada a cero
+    # y zero_median=True en FinancialPredictor), tanto con pinball como con session_ic_term,
+    # y también cuando una columna entera está ausente en todas las filas.
+    zero_layer = TechnicalDense(12, cfg, clip=5.0, seed=3, dtype=dtype)
+    all_absent = f_before.clone()
+    all_absent[:, technical.VERSIONS[version].index("has_market_model")] = 0.0
+    leaf = all_absent.requires_grad_(True)
+    out = zero_layer(leaf, markets)
+    assert torch.count_nonzero(out) == 0
+    grads = torch.autograd.grad(out.sum(), (zero_layer.outer.weight, zero_layer.outer.bias, leaf))
+    assert all(torch.isfinite(g).all() for g in grads)
+    assert grads[0].abs().sum() > 0 and grads[1].abs().sum() > 0
+
+    model, batch, batch_markets = _realistic_predictor(
+        version, absent_rows=ABSENT_MASKED, dtype=dtype
+    )
+    prepared = model.prepare(
+        batch,
+        model.initial_state(batch.flow_ids, differentiable=True),
+        differentiable=True,
+        session_complete=True,
+    )
+    # La predicción puntual arranca exactamente constante en 0.
+    assert torch.count_nonzero(prepared.point_predictions) == 0
+    targets = torch.linspace(-0.02, 0.02, len(batch.flow_ids), dtype=dtype)
+    ic_term = SessionICTerm(weight=3.0, minimum_rows=3)
+    sessions_key = tuple((market, 0) for market in batch_markets)
+    loss = pinball_loss(prepared.quantiles, targets) + ic_term.term(
+        prepared.point_predictions, targets, sessions_key
+    )
+    params = [
+        model.technical_branch.outer.weight,
+        model.technical_branch.outer.bias,
+        model.head.weight,
+    ]
+    model_grads = torch.autograd.grad(loss, params)
+    assert all(torch.isfinite(g).all() for g in model_grads)
+    assert all(g.abs().sum() > 0 for g in model_grads)
+
+    # Con outer abierta, todas las capas de la rama técnica reciben gradiente finito y no nulo.
+    with torch.no_grad():
+        opened(model.technical_branch)
+        model.technical_branch.to(dtype)
+        model._seal_parameters()
+    prepared_open = model.prepare(
+        batch,
+        model.initial_state(batch.flow_ids, differentiable=True),
+        differentiable=True,
+        session_complete=True,
+    )
+    loss_open = pinball_loss(prepared_open.quantiles, targets)
+    branch_grads = torch.autograd.grad(loss_open, list(model.technical_branch.parameters()))
+    assert all(torch.isfinite(g).all() and g.abs().sum() > 0 for g in branch_grads)
+
+    # 3) Rechazar raw_charts / indicators inválidos, NaN en columnas indicadoras o estado corrupto.
+    with pytest.raises(ValueError):
+        layer(f_before, markets, raw_charts=f_before[:-1])
+    with pytest.raises(ValueError):
+        layer(
+            f_before,
+            markets,
+            raw_charts=f_before.to(torch.float32 if dtype == torch.float64 else torch.float64),
+        )
+    with pytest.raises(ValueError):
+        layer.ranks(f_before, markets, indicators=f_before[:, :-1])
+    with pytest.raises(ValueError, match="presencia"):
+        layer.presence(f_before[:, :-1])
+    bad_ind = f_before.clone()
+    bad_ind[0, technical.VERSIONS[version].index("has_252_sessions")] = float("nan")
+    with pytest.raises(ValueError, match="finitos"):
+        layer.ranks(f_before, markets, indicators=bad_ind)
+    # presence() en modo ranked devuelve todo True; en modo masked_v1 detecta buffers ausentes.
+    ranked_layer = TechnicalDense(
+        12, replace(cfg, absent_rows="ranked"), clip=5.0, seed=3, dtype=dtype
+    )
+    assert torch.equal(ranked_layer.presence(f_before), torch.ones_like(f_before, dtype=torch.bool))
+    broken = TechnicalDense(12, cfg, clip=5.0, seed=3, dtype=dtype)
+    broken._buffers.pop("indicator_index")
+    broken.indicator_index = None
+    with pytest.raises(ValueError, match="máscara de ausencias"):
+        broken(f_before, markets)
+    with pytest.raises(ValueError, match="máscara de ausencias"):
+        broken.presence(f_before)
