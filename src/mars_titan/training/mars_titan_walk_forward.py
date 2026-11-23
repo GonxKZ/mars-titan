@@ -234,6 +234,12 @@ def _parent(folder, view, seed, control=None):
         "El consumidor congelado aún no gestiona la memoria factorial",
     )
     # --- fin factor_memory ---
+    # --- contrastive_memory ---
+    _require(
+        changes.get("contrastive_memory", predictor.get("contrastive_memory")) is None,
+        "El consumidor congelado no gestiona el ciclo de sesión de la memoria contrastiva",
+    )
+    # --- fin contrastive_memory ---
     _verify(folder, report)
     return report, digest
 
@@ -285,6 +291,12 @@ def _frozen_parent(
         "El consumidor congelado aún no gestiona la memoria factorial",
     )
     # --- fin factor_memory ---
+    # --- contrastive_memory ---
+    _require(
+        options.get("contrastive_memory") is None,
+        "El consumidor congelado no gestiona el ciclo de sesión de la memoria contrastiva",
+    )
+    # --- fin contrastive_memory ---
     _require(
         allow_context or options.get("session_context") is None,
         "Este consumidor todavía no recupera el contexto compartido de PT4",

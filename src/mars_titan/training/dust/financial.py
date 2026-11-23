@@ -102,6 +102,9 @@ class FinancialDustAdapter:
             "opponent_heads",
             "mature_reliability",
             "cross_sectional_rank_memory",
+            # --- contrastive_memory ---
+            "contrastive_memory",
+            # --- fin contrastive_memory ---
             "memory_huber",
             "memory_time_scales",
             "differential_attention",
@@ -139,6 +142,9 @@ class FinancialDustAdapter:
                     "cross_asset_attention",
                     "asset_groups",
                     "session_hologram",
+                    # --- contrastive_memory ---
+                    "contrastive_memory",
+                    # --- fin contrastive_memory ---
                     "output_objective",
                     "auxiliary_heads",
                     # --- factor_memory ---

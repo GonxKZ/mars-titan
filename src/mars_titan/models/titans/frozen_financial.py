@@ -108,6 +108,10 @@ def declared_sources(config):
     if getattr(config, "factor_memory", None) is not None:
         sources.append("mars_titan.models.titans.factor_memory")
     # --- fin factor_memory ---
+    # --- contrastive_memory ---
+    if getattr(config, "contrastive_memory", None) is not None:
+        sources.append("mars_titan.models.titans.contrastive_memory")
+    # --- fin contrastive_memory ---
     if getattr(config, "learning_scale", None) is not None:
         sources.append("mars_titan.models.learning_scale")
     if getattr(config, "reference_encoder", None) == "dlinear":
@@ -545,6 +549,12 @@ class FrozenFinancialConsumer:
         if predictor.factor_memory is not None:
             raise ValueError("El consumidor congelado aún no gestiona la memoria factorial")
         # --- fin factor_memory ---
+        # --- contrastive_memory ---
+        if predictor.contrastive_memory is not None:
+            raise ValueError(
+                "El consumidor congelado no gestiona el ciclo de sesión de la memoria contrastiva"
+            )
+        # --- fin contrastive_memory ---
         if readout is not None and (
             readout.config.hidden_size != predictor.config.hidden_size
             or readout.step_logit.device != predictor.head.weight.device

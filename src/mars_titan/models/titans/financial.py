@@ -73,6 +73,15 @@ from .config import (
     canonical,
     require_identity,
 )
+
+# --- contrastive_memory ---
+from .contrastive_memory import (
+    ContrastiveMemory,
+    ContrastiveMemoryConfig,
+    parse_contrastive_memory,
+)
+
+# --- fin contrastive_memory ---
 from .cross_asset_attention import (
     CrossAssetAttention,
     CrossAssetAttentionConfig,
@@ -360,6 +369,11 @@ class FinancialConfig:
     # declararla, la identidad y el cálculo no cambian.
     factor_memory: FactorMemoryConfig | None = None
     # --- fin factor_memory ---
+    # --- contrastive_memory ---
+    # Idea 5 (InfoNCE-Titans): memoria asociativa contrastiva transversal por mercado. Sin
+    # declararla, la identidad y el cálculo no cambian.
+    contrastive_memory: ContrastiveMemoryConfig | None = None
+    # --- fin contrastive_memory ---
 
     def __post_init__(self):
         if self.memory_inner_gradient not in INNER_GRADIENTS:
@@ -404,6 +418,9 @@ class FinancialConfig:
         # --- memory_cross_sectional_surprise ---
         self._check_cross_sectional_surprise()
         # --- fin memory_cross_sectional_surprise ---
+        # --- contrastive_memory ---
+        self._check_contrastive_memory()
+        # --- fin contrastive_memory ---
         self._check_core_variants()
         self._check_learning_scale()
         self._check_technical_branch()
@@ -951,6 +968,22 @@ class FinancialConfig:
                 )
 
     # --- fin memory_cross_sectional_surprise ---
+    # --- contrastive_memory ---
+    def _check_contrastive_memory(self):
+        """InfoNCE-Titans: memoria asociativa contrastiva por mercado sobre mac_online."""
+        object.__setattr__(
+            self, "contrastive_memory", parse_contrastive_memory(self.contrastive_memory)
+        )
+        if self.contrastive_memory is None:
+            return
+        if self.variant != "mac_online":
+            raise ValueError("contrastive_memory necesita mac_online")
+        if self.auxiliary_horizons is not None:
+            raise ValueError(
+                "Las cabezas auxiliares con memoria contrastiva necesitan otro contraste"
+            )
+
+    # --- fin contrastive_memory ---
 
     def _check_memory_projections(self):
         """Normalización residual y proyecciones de memoria."""
@@ -1262,6 +1295,10 @@ class FinancialConfig:
         if self.factor_memory is not None:
             result.update(factor_memory=self.factor_memory.identity())
         # --- fin factor_memory ---
+        # --- contrastive_memory ---
+        if self.contrastive_memory is not None:
+            result.update(contrastive_memory=self.contrastive_memory.identity())
+        # --- fin contrastive_memory ---
         return result
 
 
@@ -1301,6 +1338,10 @@ class PreparedDecisions:
     # Solo con LFM-SW: base factorial actualizada por mercado tras la sesión.
     next_factor_memory: object = None
     # --- fin factor_memory ---
+    # --- contrastive_memory ---
+    # Solo con memoria contrastiva transversal: estado con los tokens pendientes de su sesión.
+    next_contrastive: object = None
+    # --- fin contrastive_memory ---
 
 
 @dataclass(frozen=True)
@@ -1384,6 +1425,10 @@ class FinancialPredictor(nn.Module):
                 "La sorpresa relativa transversal (CSOS) no se combina con el control local"
             )
         # --- fin memory_cross_sectional_surprise ---
+        # --- contrastive_memory ---
+        if local_control is not None and config.contrastive_memory is not None:
+            raise ValueError("La memoria contrastiva no se combina con el control local C")
+        # --- fin contrastive_memory ---
         # El presupuesto de C está contrastado con el núcleo sin las variantes de #786.
         if local_control is not None and (
             config.memory_huber is not None
@@ -1682,6 +1727,16 @@ class FinancialPredictor(nn.Module):
             else None
         )
         # --- fin factor_memory ---
+        # --- contrastive_memory ---
+        # Idea 5 deriva su semilla de la del predictor y no consume el generador global.
+        self.contrastive_memory = (
+            ContrastiveMemory(
+                config.hidden_size, config.contrastive_memory, seed=config.seed, dtype=dtype
+            )
+            if config.contrastive_memory is not None
+            else None
+        )
+        # --- fin contrastive_memory ---
         self.to(device=device, dtype=dtype)
         self._seal_parameters()
         self.register_load_state_dict_post_hook(self._after_load)
@@ -1760,6 +1815,9 @@ class FinancialPredictor(nn.Module):
         self._holographic_component()
         self._axial_component()
         self._fractal_component()
+        # --- contrastive_memory ---
+        self._contrastive_component()
+        # --- fin contrastive_memory ---
         execution = self._regional_execution_component()
         if type(execution) is RegionalHierarchy:
             execution.validate_payload(execution.state_dict(), "")
@@ -1832,6 +1890,24 @@ class FinancialPredictor(nn.Module):
         ):
             raise ValueError("C3 no corresponde a la configuración declarada")
         return module
+
+    # --- contrastive_memory ---
+    def _contrastive_component(self):
+        declared, module = self.config.contrastive_memory, self.contrastive_memory
+        if declared is None and module is None:
+            return None
+        if (
+            declared is None
+            or type(module) is not ContrastiveMemory
+            or module.config != declared
+            or module.hidden_size != self.config.hidden_size
+            or module.out_projection.weight.device != self.head.weight.device
+            or module.out_projection.weight.dtype != self.head.weight.dtype
+        ):
+            raise ValueError("La memoria contrastiva no corresponde a la configuración declarada")
+        return module
+
+    # --- fin contrastive_memory ---
 
     def _parameter_digest(self):
         items = (*self.named_parameters(), *self.named_buffers())
@@ -2386,6 +2462,42 @@ class FinancialPredictor(nn.Module):
             raise ValueError("El predictor no declara memoria factorial")
 
     # --- fin factor_memory ---
+    # --- contrastive_memory ---
+    def initial_contrastive_memory(self, *, differentiable=False):
+        """Estado inicial por mercado de la memoria contrastiva InfoNCE-Titans."""
+        self._require_contrastive()
+        return self.contrastive_memory.initial_state(
+            self._parameter_id, differentiable=differentiable
+        )
+
+    def commit_contrastive_memory(self, state, *, differentiable=False):
+        """Confirmar las sesiones pendientes de la memoria contrastiva tras emitirlas."""
+        self._require_contrastive()
+        self.contrastive_memory.validate(state, self._parameter_id)
+        return self.contrastive_memory.commit(state, differentiable=differentiable)
+
+    def detach_contrastive_memory(self, state, parameter_id=None, *, reattach_initial=False):
+        self._require_contrastive()
+        return self.contrastive_memory.detach(
+            state, parameter_id or self._parameter_id, reattach_initial=reattach_initial
+        )
+
+    def export_contrastive_memory(self, state):
+        self._require_contrastive()
+        self.contrastive_memory.validate(state, self._parameter_id)
+        return self.contrastive_memory.export_state(state)
+
+    def restore_contrastive_memory(self, payload):
+        self._require_contrastive()
+        return self.contrastive_memory.restore_state(
+            payload, self._parameter_id, device=self.head.weight.device
+        )
+
+    def _require_contrastive(self):
+        if self.contrastive_memory is None:
+            raise ValueError("El predictor no declara memoria contrastiva")
+
+    # --- fin contrastive_memory ---
 
     def _program_fusion(self, price, batch, context, selection):
         """Consultar el prefijo confirmado y preparar una sola escritura del token final."""
@@ -2564,6 +2676,9 @@ class FinancialPredictor(nn.Module):
         # --- factor_memory ---
         factor_memory=None,
         # --- fin factor_memory ---
+        # --- contrastive_memory ---
+        contrastive=None,
+        # --- fin contrastive_memory ---
     ):
         """Predecir un bloque desde el estado de sus flujos y proponer el estado siguiente.
 
@@ -2588,6 +2703,9 @@ class FinancialPredictor(nn.Module):
                 # --- factor_memory ---
                 factor_memory=factor_memory,
                 # --- fin factor_memory ---
+                # --- contrastive_memory ---
+                contrastive=contrastive,
+                # --- fin contrastive_memory ---
             )
 
     def _prepare(
@@ -2606,6 +2724,9 @@ class FinancialPredictor(nn.Module):
         # --- factor_memory ---
         factor_memory=None,
         # --- fin factor_memory ---
+        # --- contrastive_memory ---
+        contrastive=None,
+        # --- fin contrastive_memory ---
     ):
         check_differentiable(differentiable)
         if torch.is_inference_mode_enabled():
@@ -2744,6 +2865,14 @@ class FinancialPredictor(nn.Module):
         if factor_memory is not None:
             self.factor_memory.validate_state(factor_memory, self._parameter_id)
         # --- fin factor_memory ---
+        # --- contrastive_memory ---
+        if (self.contrastive_memory is None) != (contrastive is None):
+            raise ValueError(
+                "La memoria contrastiva recibe su estado de sesión solo cuando se declara"
+            )
+        if contrastive is not None:
+            self.contrastive_memory.validate(contrastive, self._parameter_id)
+        # --- fin contrastive_memory ---
         if context_selection is not None:
             if context is None:
                 raise ValueError("La selección de contexto necesita un padre con PT4")
@@ -2889,6 +3018,17 @@ class FinancialPredictor(nn.Module):
                     differentiable=differentiable,
                 )
             # --- fin factor_memory ---
+            # --- contrastive_memory ---
+            # Orden antes de la cabeza: lecturas de sesión (holograma) -> memorias no supervisadas
+            # (memoria contrastiva transversal) -> memorias de etiquetas maduras (CRRM) -> cabeza.
+            next_contrastive = None
+            if self.contrastive_memory is not None:
+                extra, next_contrastive = self.contrastive_memory.read(
+                    encoded, batch.flow_ids, batch.prediction_at, contrastive
+                )
+                encoded = encoded + extra
+                check_finite(encoded, "La representación con memoria contrastiva")
+            # --- fin contrastive_memory ---
             rank_memory_keys = None
             if self.cross_sectional_rank_memory is not None:
                 # Claves transversales centradas sobre la representación previa a CRRM y lectura
@@ -2949,6 +3089,9 @@ class FinancialPredictor(nn.Module):
             # --- factor_memory ---
             next_factor_memory=next_factor_memory,
             # --- fin factor_memory ---
+            # --- contrastive_memory ---
+            next_contrastive=next_contrastive,
+            # --- fin contrastive_memory ---
             **({"regional_trace": regional_trace} if regional_trace is not None else {}),
         )
 

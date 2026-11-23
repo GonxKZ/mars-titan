@@ -99,6 +99,10 @@ PREDICTOR_CHANGES = (
     # Memoria rápida factorizada con blanqueo espectral de sesión (LFM-SW, Idea 4).
     "factor_memory",
     # --- fin factor_memory ---
+    # --- contrastive_memory ---
+    # Idea 5 (InfoNCE-Titans): memoria asociativa contrastiva transversal compartida por mercado.
+    "contrastive_memory",
+    # --- fin contrastive_memory ---
 )
 # Cambios que se declaran con un nombre en lugar de un objeto.
 NAMED_CHANGES = (
