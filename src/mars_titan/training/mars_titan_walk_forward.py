@@ -228,6 +228,13 @@ def _parent(folder, view, seed, control=None):
         is None,
         "El consumidor congelado aún no recibe la memoria transversal de rango maduro",
     )
+    # --- persistent_session_hologram ---
+    _require(
+        changes.get("persistent_session_hologram", predictor.get("persistent_session_hologram"))
+        is None,
+        "El consumidor congelado aún no gestiona el ciclo de sesión del holograma persistente",
+    )
+    # --- fin persistent_session_hologram ---
     _verify(folder, report)
     return report, digest
 
@@ -273,6 +280,12 @@ def _frozen_parent(
         options.get("cross_sectional_rank_memory") is None,
         "El consumidor congelado aún no recibe la memoria transversal de rango maduro",
     )
+    # --- persistent_session_hologram ---
+    _require(
+        options.get("persistent_session_hologram") is None,
+        "El consumidor congelado aún no gestiona el ciclo de sesión del holograma persistente",
+    )
+    # --- fin persistent_session_hologram ---
     _require(
         allow_context or options.get("session_context") is None,
         "Este consumidor todavía no recupera el contexto compartido de PT4",

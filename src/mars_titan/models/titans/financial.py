@@ -110,6 +110,15 @@ from .local_control import MACProjectionConfig, MACProjectionControl, ProjectedM
 from .mac import TitansMAC
 from .opponent_heads import OpponentHeads
 from .output_objectives import build_objective, check_objectives, objective_identity
+
+# --- persistent_session_hologram ---
+from .persistent_session_hologram import (
+    PersistentSessionHologram,
+    PersistentSessionHologramConfig,
+    parse_persistent_session_hologram,
+)
+
+# --- fin persistent_session_hologram ---
 from .presence_modulation import (
     FILM,
     MACRO_FILM,
@@ -296,6 +305,9 @@ class FinancialConfig:
     # CRRM: memoria transversal de rango y residuo maduro (apagada por defecto). Sin
     # declararla, la identidad y el cálculo no cambian.
     cross_sectional_rank_memory: CrossSectionalRankMemoryConfig | None = None
+    # --- persistent_session_hologram ---
+    persistent_session_hologram: PersistentSessionHologramConfig | None = None
+    # --- fin persistent_session_hologram ---
     # R1, U2 y U1 de #786 sobre el núcleo: pérdida de Huber, semividas geométricas y atención
     # diferencial. Sin declararlas, la identidad y el cálculo no cambian.
     memory_huber: HuberMemory | None = None
@@ -379,6 +391,9 @@ class FinancialConfig:
         self._check_auxiliary_horizons()
         self._check_mature_reliability()
         self._check_cross_sectional_rank_memory()
+        # --- persistent_session_hologram ---
+        self._check_persistent_session_hologram()
+        # --- fin persistent_session_hologram ---
         self._check_core_variants()
         self._check_learning_scale()
         self._check_technical_branch()
@@ -899,6 +914,30 @@ class FinancialConfig:
                     "contraste"
                 )
 
+    # --- persistent_session_hologram ---
+    def _check_persistent_session_hologram(self):
+        """Campo holográfico persistente multiescala y exclusiones declaradas."""
+        object.__setattr__(
+            self,
+            "persistent_session_hologram",
+            parse_persistent_session_hologram(self.persistent_session_hologram),
+        )
+        declared = self.persistent_session_hologram
+        if declared is not None:
+            if self.variant != "mac_online":
+                raise ValueError("persistent_session_hologram necesita mac_online")
+            if declared.position == "after_technical" and self.technical_branch is None:
+                raise ValueError(
+                    "El holograma persistente después de la rama técnica necesita la rama "
+                    "técnica declarada (technical_branch)"
+                )
+            if self.auxiliary_horizons is not None:
+                raise ValueError(
+                    "Las cabezas auxiliares con holograma persistente necesitan otro contraste"
+                )
+
+    # --- fin persistent_session_hologram ---
+
     def _check_memory_projections(self):
         """Normalización residual y proyecciones de memoria."""
         if type(self.memory_residual_layer_norm) is not bool:
@@ -1127,6 +1166,10 @@ class FinancialConfig:
             result.update(mature_reliability=self.mature_reliability.identity())
         if self.cross_sectional_rank_memory is not None:
             result.update(cross_sectional_rank_memory=self.cross_sectional_rank_memory.identity())
+        # --- persistent_session_hologram ---
+        if self.persistent_session_hologram is not None:
+            result.update(persistent_session_hologram=self.persistent_session_hologram.identity())
+        # --- fin persistent_session_hologram ---
         if self.memory_huber is not None:
             result.update(memory_huber=self.memory_huber.identity())
         if self.memory_time_scales is not None:
@@ -1220,6 +1263,9 @@ class PreparedDecisions:
     surprise: torch.Tensor | None = None
     # Solo con CRRM: claves transversales [flujos, dim] emitidas en este instante.
     rank_memory_keys: torch.Tensor | None = None
+    # --- persistent_session_hologram ---
+    next_persistent_hologram: object = None
+    # --- fin persistent_session_hologram ---
 
 
 @dataclass(frozen=True)
@@ -1297,6 +1343,10 @@ class FinancialPredictor(nn.Module):
             raise ValueError("La fiabilidad madura no se combina con el control local")
         if local_control is not None and config.cross_sectional_rank_memory is not None:
             raise ValueError("La memoria transversal de rango no se combina con el control local")
+        # --- persistent_session_hologram ---
+        if local_control is not None and config.persistent_session_hologram is not None:
+            raise ValueError("El holograma persistente no se combina con el control local")
+        # --- fin persistent_session_hologram ---
         # El presupuesto de C está contrastado con el núcleo sin las variantes de #786.
         if local_control is not None and (
             config.memory_huber is not None
@@ -1557,6 +1607,18 @@ class FinancialPredictor(nn.Module):
             if config.session_hologram is not None
             else None
         )
+        # --- persistent_session_hologram ---
+        self.persistent_session_hologram = (
+            PersistentSessionHologram(
+                config.hidden_size,
+                config.persistent_session_hologram,
+                seed=config.seed,
+                dtype=dtype,
+            )
+            if config.persistent_session_hologram is not None
+            else None
+        )
+        # --- fin persistent_session_hologram ---
         # #791 empieza con pesos nulos y no consume ningún generador.
         self.reliability_gates = (
             ReliabilityGates(config.mature_reliability, dtype=dtype)
@@ -1589,6 +1651,10 @@ class FinancialPredictor(nn.Module):
     @property
     def session_level(self):
         """Si alguna operación necesita todas las filas de la sesión en el mismo bloque."""
+        # --- persistent_session_hologram ---
+        if self.persistent_session_hologram is not None:
+            return True
+        # --- fin persistent_session_hologram ---
         objective = self.output_objective
         return (
             self.config.session_rank_inputs is not None
@@ -2250,6 +2316,42 @@ class FinancialPredictor(nn.Module):
             payload, self._parameter_id, device=self.head.weight.device
         )
 
+    # --- persistent_session_hologram ---
+    def _require_persistent_hologram(self):
+        if self.persistent_session_hologram is None:
+            raise ValueError("El predictor no declara holograma persistente de sesión")
+
+    def initial_persistent_hologram(self):
+        """Estado inicial vacío de MPSH al empezar un recorrido o una fase."""
+        self._require_persistent_hologram()
+        return self.persistent_session_hologram.initial_state(self._parameter_id)
+
+    def commit_persistent_hologram(self, state, *, differentiable=False):
+        """Confirmar las sesiones pendientes de MPSH al cerrar su emisión."""
+        self._require_persistent_hologram()
+        self.persistent_session_hologram.validate_state(state, self._parameter_id)
+        return self.persistent_session_hologram.commit(state, differentiable=differentiable)
+
+    def detach_persistent_hologram(self, state, parameter_id=None):
+        """Cortar el grafo de MPSH en la barrera de truncamiento y actualizar huella."""
+        self._require_persistent_hologram()
+        return self.persistent_session_hologram.detach_state(
+            state, parameter_id or self._parameter_id
+        )
+
+    def export_persistent_hologram(self, state):
+        self._require_persistent_hologram()
+        self.persistent_session_hologram.validate_state(state, self._parameter_id)
+        return self.persistent_session_hologram.export_state(state)
+
+    def restore_persistent_hologram(self, payload):
+        self._require_persistent_hologram()
+        return self.persistent_session_hologram.restore_state(
+            payload, self._parameter_id, device=self.head.weight.device
+        )
+
+    # --- fin persistent_session_hologram ---
+
     def _program_fusion(self, price, batch, context, selection):
         """Consultar el prefijo confirmado y preparar una sola escritura del token final."""
         execution = None
@@ -2424,6 +2526,9 @@ class FinancialPredictor(nn.Module):
         session_complete=False,
         reliability=None,
         rank_memory=None,
+        # --- persistent_session_hologram ---
+        persistent_hologram=None,
+        # --- fin persistent_session_hologram ---
     ):
         """Predecir un bloque desde el estado de sus flujos y proponer el estado siguiente.
 
@@ -2445,6 +2550,9 @@ class FinancialPredictor(nn.Module):
                 session_complete=session_complete,
                 reliability=reliability,
                 rank_memory=rank_memory,
+                # --- persistent_session_hologram ---
+                persistent_hologram=persistent_hologram,
+                # --- fin persistent_session_hologram ---
             )
 
     def _prepare(
@@ -2460,6 +2568,9 @@ class FinancialPredictor(nn.Module):
         session_complete=False,
         reliability=None,
         rank_memory=None,
+        # --- persistent_session_hologram ---
+        persistent_hologram=None,
+        # --- fin persistent_session_hologram ---
     ):
         check_differentiable(differentiable)
         if torch.is_inference_mode_enabled():
@@ -2586,6 +2697,17 @@ class FinancialPredictor(nn.Module):
             )
         else:
             self.cross_sectional_rank_memory.validate_state(rank_memory, self._parameter_id)
+        # --- persistent_session_hologram ---
+        if self.persistent_session_hologram is None:
+            if persistent_hologram is not None:
+                raise ValueError("El predictor no declara el holograma persistente de sesión")
+        elif persistent_hologram is None:
+            raise ValueError(
+                "El predictor declara el holograma persistente de sesión y necesita su estado"
+            )
+        else:
+            self.persistent_session_hologram.validate_state(persistent_hologram, self._parameter_id)
+        # --- fin persistent_session_hologram ---
         if (self.session_context is None) != (context is None):
             raise ValueError("PT4 recibe su contexto de sesión y el núcleo no admite ninguno")
         if context is not None:
@@ -2691,6 +2813,17 @@ class FinancialPredictor(nn.Module):
             hologram = self.session_hologram
             if hologram is not None and hologram.config.position == "after_mac":
                 encoded = hologram(encoded, markets, batch.prediction_at)
+            # --- persistent_session_hologram ---
+            next_persistent_hologram = None
+            persistent_hologram_mod = self.persistent_session_hologram
+            if (
+                persistent_hologram_mod is not None
+                and persistent_hologram_mod.config.position == "after_mac"
+            ):
+                encoded, next_persistent_hologram = persistent_hologram_mod(
+                    encoded, markets, batch.prediction_at, persistent_hologram
+                )
+            # --- fin persistent_session_hologram ---
             if self.asset_groups is not None:
                 # Los grupos salen de la ventana recibida, sin los rangos de F4.
                 encoded = self.asset_groups(
@@ -2719,6 +2852,15 @@ class FinancialPredictor(nn.Module):
                 encoded = mixer(encoded, markets, batch.prediction_at)
             if hologram is not None and hologram.config.position == "after_technical":
                 encoded = hologram(encoded, markets, batch.prediction_at)
+            # --- persistent_session_hologram ---
+            if (
+                persistent_hologram_mod is not None
+                and persistent_hologram_mod.config.position == "after_technical"
+            ):
+                encoded, next_persistent_hologram = persistent_hologram_mod(
+                    encoded, markets, batch.prediction_at, persistent_hologram
+                )
+            # --- fin persistent_session_hologram ---
             rank_memory_keys = None
             if self.cross_sectional_rank_memory is not None:
                 # Claves transversales centradas sobre la representación previa a CRRM y lectura
@@ -2776,6 +2918,9 @@ class FinancialPredictor(nn.Module):
             outputs,
             surprise=None if sink is None else sink[0],
             rank_memory_keys=rank_memory_keys,
+            # --- persistent_session_hologram ---
+            next_persistent_hologram=next_persistent_hologram,
+            # --- fin persistent_session_hologram ---
             **({"regional_trace": regional_trace} if regional_trace is not None else {}),
         )
 
