@@ -95,6 +95,9 @@ class FinancialDustAdapter:
             "cross_asset_attention",
             "asset_groups",
             "session_hologram",
+            # --- hopfield_rank_brain ---
+            "hopfield_rank_brain",
+            # --- fin hopfield_rank_brain ---
             "laplace_scale_head",
             "auxiliary_horizons",
             "session_rank_inputs",
@@ -133,6 +136,9 @@ class FinancialDustAdapter:
                     "cross_asset_attention",
                     "asset_groups",
                     "session_hologram",
+                    # --- hopfield_rank_brain ---
+                    "hopfield_rank_brain",
+                    # --- fin hopfield_rank_brain ---
                     "output_objective",
                     "auxiliary_heads",
                 )

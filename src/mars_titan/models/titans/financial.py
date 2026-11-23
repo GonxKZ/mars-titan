@@ -103,6 +103,15 @@ from .holographic_network import (
     area_layout,
     parse_holographic_network,
 )
+
+# --- hopfield_rank_brain ---
+from .hopfield_rank_brain import (
+    HopfieldRankBrainConfig,
+    RepulsiveSparseHopfieldRankBrain,
+    parse_hopfield_rank_brain,
+)
+
+# --- fin hopfield_rank_brain ---
 from .huber_memory import HuberMemory
 from .key_competition_config import KeyCompetition
 from .laplace_scale import LaplaceScaleHead
@@ -284,6 +293,11 @@ class FinancialConfig:
     # WP11: interferómetro holográfico de sesión en fase dual (O(N), sin eco propio). Sin
     # declararlo, la identidad y el cálculo no cambian.
     session_hologram: SessionHologramConfig | None = None
+    # --- hopfield_rank_brain ---
+    # RSHRB: cerebro de atractores de Hopfield escasos con inhibición lateral de orden.
+    # Sin declararlo, la identidad y el cálculo no cambian.
+    hopfield_rank_brain: HopfieldRankBrainConfig | None = None
+    # --- fin hopfield_rank_brain ---
     # F1 de #749: escala de Laplace, otro objetivo de salida excluyente con el de IC.
     laplace_scale_head: LaplaceScaleHead | None = None
     # F5 de #749: cabezas auxiliares de horizontes largos. Sin declararlas nada cambia.
@@ -379,6 +393,9 @@ class FinancialConfig:
         self._check_auxiliary_horizons()
         self._check_mature_reliability()
         self._check_cross_sectional_rank_memory()
+        # --- hopfield_rank_brain ---
+        self._check_hopfield_rank_brain()
+        # --- fin hopfield_rank_brain ---
         self._check_core_variants()
         self._check_learning_scale()
         self._check_technical_branch()
@@ -899,6 +916,32 @@ class FinancialConfig:
                     "contraste"
                 )
 
+    # --- hopfield_rank_brain ---
+    def _check_hopfield_rank_brain(self):
+        """Cerebro de Hopfield escaso repulsivo y exclusiones declaradas."""
+        object.__setattr__(
+            self, "hopfield_rank_brain", parse_hopfield_rank_brain(self.hopfield_rank_brain)
+        )
+        brain = self.hopfield_rank_brain
+        if brain is not None:
+            if brain.position == "after_technical" and self.technical_branch is None:
+                raise ValueError(
+                    "hopfield_rank_brain después de la rama técnica necesita la rama técnica "
+                    "declarada (technical_branch)"
+                )
+            if (
+                self.cross_asset_attention is not None
+                or self.asset_groups is not None
+                or self.fractal_shared_operator is not None
+            ):
+                raise ValueError("hopfield_rank_brain no se combina con C5, H4 ni C3")
+            if self.auxiliary_horizons is not None:
+                raise ValueError(
+                    "Las cabezas auxiliares con hopfield_rank_brain necesitan otro contraste"
+                )
+
+    # --- fin hopfield_rank_brain ---
+
     def _check_memory_projections(self):
         """Normalización residual y proyecciones de memoria."""
         if type(self.memory_residual_layer_norm) is not bool:
@@ -1121,6 +1164,10 @@ class FinancialConfig:
             result.update(asset_groups=groups)
         if self.session_hologram is not None:
             result.update(session_hologram=self.session_hologram.identity())
+        # --- hopfield_rank_brain ---
+        if self.hopfield_rank_brain is not None:
+            result.update(hopfield_rank_brain=self.hopfield_rank_brain.identity())
+        # --- fin hopfield_rank_brain ---
         if self.auxiliary_horizons is not None:
             result.update(auxiliary_horizons=self.auxiliary_horizons.identity())
         if self.mature_reliability is not None:
@@ -1557,6 +1604,16 @@ class FinancialPredictor(nn.Module):
             if config.session_hologram is not None
             else None
         )
+        # --- hopfield_rank_brain ---
+        # RSHRB usa su propio generador derivado y puerta inicial a cero sobre W_out no nula.
+        self.hopfield_rank_brain = (
+            RepulsiveSparseHopfieldRankBrain(
+                config.hidden_size, config.hopfield_rank_brain, seed=config.seed, dtype=dtype
+            )
+            if config.hopfield_rank_brain is not None
+            else None
+        )
+        # --- fin hopfield_rank_brain ---
         # #791 empieza con pesos nulos y no consume ningún generador.
         self.reliability_gates = (
             ReliabilityGates(config.mature_reliability, dtype=dtype)
@@ -1589,6 +1646,10 @@ class FinancialPredictor(nn.Module):
     @property
     def session_level(self):
         """Si alguna operación necesita todas las filas de la sesión en el mismo bloque."""
+        # --- hopfield_rank_brain ---
+        if self.hopfield_rank_brain is not None:
+            return True
+        # --- fin hopfield_rank_brain ---
         objective = self.output_objective
         return (
             self.config.session_rank_inputs is not None
@@ -2691,6 +2752,13 @@ class FinancialPredictor(nn.Module):
             hologram = self.session_hologram
             if hologram is not None and hologram.config.position == "after_mac":
                 encoded = hologram(encoded, markets, batch.prediction_at)
+            # --- hopfield_rank_brain ---
+            if (
+                self.hopfield_rank_brain is not None
+                and self.hopfield_rank_brain.config.position == "after_mac"
+            ):
+                encoded = self.hopfield_rank_brain(encoded, markets, batch.prediction_at)
+            # --- fin hopfield_rank_brain ---
             if self.asset_groups is not None:
                 # Los grupos salen de la ventana recibida, sin los rangos de F4.
                 encoded = self.asset_groups(
@@ -2719,6 +2787,13 @@ class FinancialPredictor(nn.Module):
                 encoded = mixer(encoded, markets, batch.prediction_at)
             if hologram is not None and hologram.config.position == "after_technical":
                 encoded = hologram(encoded, markets, batch.prediction_at)
+            # --- hopfield_rank_brain ---
+            if (
+                self.hopfield_rank_brain is not None
+                and self.hopfield_rank_brain.config.position == "after_technical"
+            ):
+                encoded = self.hopfield_rank_brain(encoded, markets, batch.prediction_at)
+            # --- fin hopfield_rank_brain ---
             rank_memory_keys = None
             if self.cross_sectional_rank_memory is not None:
                 # Claves transversales centradas sobre la representación previa a CRRM y lectura

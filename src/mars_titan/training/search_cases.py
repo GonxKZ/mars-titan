@@ -90,6 +90,10 @@ PREDICTOR_CHANGES = (
     "cross_sectional_rank_memory",
     # Interferómetro holográfico de sesión en fase dual (WP11).
     "session_hologram",
+    # --- hopfield_rank_brain ---
+    # Cerebro de atractores de Hopfield escasos con inhibición lateral de orden (RSHRB).
+    "hopfield_rank_brain",
+    # --- fin hopfield_rank_brain ---
 )
 # Cambios que se declaran con un nombre en lugar de un objeto.
 NAMED_CHANGES = (
