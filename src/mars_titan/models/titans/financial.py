@@ -189,6 +189,15 @@ from .session_hologram import (
 from .session_ic_objective import SessionICObjective
 from .session_ranks import SESSION_RANK_INPUTS, rank_session_inputs
 from .session_ranks import identity as session_rank_identity
+
+# --- session_resonator ---
+from .session_resonator import (
+    SessionResonator,
+    SessionResonatorConfig,
+    parse_session_resonator,
+)
+
+# --- fin session_resonator ---
 from .state import (
     MACState,
     check_differentiable,
@@ -312,6 +321,11 @@ class FinancialConfig:
     # WP11: interferómetro holográfico de sesión en fase dual (O(N), sin eco propio). Sin
     # declararlo, la identidad y el cálculo no cambian.
     session_hologram: SessionHologramConfig | None = None
+    # --- session_resonator ---
+    # CSRF (WP13-2): resonador holográfico de descomposición latente transversal tras la rama
+    # técnica. Sin declararlo, la identidad y el cálculo no cambian.
+    session_resonator: SessionResonatorConfig | None = None
+    # --- fin session_resonator ---
     # F1 de #749: escala de Laplace, otro objetivo de salida excluyente con el de IC.
     laplace_scale_head: LaplaceScaleHead | None = None
     # F5 de #749: cabezas auxiliares de horizontes largos. Sin declararlas nada cambia.
@@ -432,6 +446,9 @@ class FinancialConfig:
         # --- ic_titans_mlp ---
         self._check_ic_titans_mlp()
         # --- fin ic_titans_mlp ---
+        # --- session_resonator ---
+        self._check_session_resonator()
+        # --- fin session_resonator ---
         self._check_core_variants()
         self._check_learning_scale()
         self._check_technical_branch()
@@ -973,6 +990,19 @@ class FinancialConfig:
                     "La sorpresa relativa transversal (CSOS) es incompatible con "
                     "memory_inner_gradient='fused_v1'; declare analytic_v1 o autograd_v1"
                 )
+    # --- session_resonator ---
+    def _check_session_resonator(self):
+        """Resonador holográfico transversal de sesión (CSRF) y exclusiones declaradas."""
+        object.__setattr__(
+            self, "session_resonator", parse_session_resonator(self.session_resonator)
+        )
+        if self.session_resonator is not None:
+            if (
+                self.cross_asset_attention is not None
+                or self.asset_groups is not None
+                or self.fractal_shared_operator is not None
+            ):
+                raise ValueError("CSRF es una alternativa a C3, C5 y H4 y no se combina con ellos")
             if self.auxiliary_horizons is not None:
                 raise ValueError(
                     "Las cabezas auxiliares con operaciones por sesión necesitan otro contraste"
@@ -1008,6 +1038,7 @@ class FinancialConfig:
                 )
 
     # --- fin ic_titans_mlp ---
+    # --- fin session_resonator ---
 
     def _check_memory_projections(self):
         """Normalización residual y proyecciones de memoria."""
@@ -1245,6 +1276,10 @@ class FinancialConfig:
             result.update(asset_groups=groups)
         if self.session_hologram is not None:
             result.update(session_hologram=self.session_hologram.identity())
+        # --- session_resonator ---
+        if self.session_resonator is not None:
+            result.update(session_resonator=self.session_resonator.identity())
+        # --- fin session_resonator ---
         if self.auxiliary_horizons is not None:
             result.update(auxiliary_horizons=self.auxiliary_horizons.identity())
         if self.mature_reliability is not None:
@@ -1727,6 +1762,16 @@ class FinancialPredictor(nn.Module):
             if config.session_hologram is not None
             else None
         )
+        # --- session_resonator ---
+        # CSRF usa su propio generador derivado de la semilla y arranca con ganancia nula.
+        self.session_resonator = (
+            SessionResonator(
+                config.hidden_size, config.session_resonator, seed=config.seed, dtype=dtype
+            )
+            if config.session_resonator is not None
+            else None
+        )
+        # --- fin session_resonator ---
         # #791 empieza con pesos nulos y no consume ningún generador.
         self.reliability_gates = (
             ReliabilityGates(config.mature_reliability, dtype=dtype)
@@ -1799,6 +1844,10 @@ class FinancialPredictor(nn.Module):
         if self.ic_titans_mlp is not None:
             return True
         # --- fin ic_titans_mlp ---
+        # --- session_resonator ---
+        if self.session_resonator is not None:
+            return True
+        # --- fin session_resonator ---
         objective = self.output_objective
         # --- memory_cross_sectional_surprise ---
         if self.config.memory_cross_sectional_surprise is not None:
@@ -3139,6 +3188,12 @@ class FinancialPredictor(nn.Module):
                 encoded = encoded + extra
                 check_finite(encoded, "La representación con memoria contrastiva")
             # --- fin contrastive_memory ---
+            # --- session_resonator ---
+            if self.session_resonator is not None:
+                # CSRF descompone la representación completa en la sesión tras la rama
+                # técnica y tras el holograma de sesión, antes de CRRM y la cabeza.
+                encoded = self.session_resonator(encoded, markets, batch.prediction_at)
+            # --- fin session_resonator ---
             rank_memory_keys = None
             if self.cross_sectional_rank_memory is not None:
                 # Claves transversales centradas sobre la representación previa a CRRM y lectura

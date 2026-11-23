@@ -106,6 +106,10 @@ PREDICTOR_CHANGES = (
     # Idea 5 (InfoNCE-Titans): memoria asociativa contrastiva transversal compartida por mercado.
     "contrastive_memory",
     # --- fin contrastive_memory ---
+    # --- session_resonator ---
+    # Resonador holográfico de descomposición latente transversal (CSRF, WP13-2).
+    "session_resonator",
+    # --- fin session_resonator ---
 )
 # Cambios que se declaran con un nombre en lugar de un objeto.
 NAMED_CHANGES = (

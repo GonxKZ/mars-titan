@@ -118,6 +118,9 @@ class FinancialDustAdapter:
             # --- factor_memory ---
             "factor_memory",
             # --- fin factor_memory ---
+            # --- session_resonator ---
+            "session_resonator",
+            # --- fin session_resonator ---
         )
         if (
             config.variant != "transformer_direct"
@@ -156,6 +159,9 @@ class FinancialDustAdapter:
                     # --- factor_memory ---
                     "factor_memory",
                     # --- fin factor_memory ---
+                    # --- session_resonator ---
+                    "session_resonator",
+                    # --- fin session_resonator ---
                 )
             )
             or type(predictor.price_encoder) is not CompactPriceTransformer

@@ -31,6 +31,11 @@ from .regional_hierarchy import RegionalHierarchy
 from .session_hologram import HolographicSessionInterferometer, SessionHologramConfig
 from .session_ic_objective import SessionScale
 
+# --- session_resonator ---
+from .session_resonator import SessionResonator, SessionResonatorConfig
+
+# --- fin session_resonator ---
+
 _TRANSFORMER_ACTIVATION = torch.nn.functional.gelu
 
 _TITANS_MODULES = (
@@ -116,6 +121,10 @@ def declared_sources(config):
     if getattr(config, "contrastive_memory", None) is not None:
         sources.append("mars_titan.models.titans.contrastive_memory")
     # --- fin contrastive_memory ---
+    # --- session_resonator ---
+    if getattr(config, "session_resonator", None) is not None:
+        sources.append("mars_titan.models.titans.session_resonator")
+    # --- fin session_resonator ---
     if getattr(config, "learning_scale", None) is not None:
         sources.append("mars_titan.models.learning_scale")
     if getattr(config, "reference_encoder", None) == "dlinear":
@@ -260,6 +269,14 @@ def _module_settings(module):
     ):
         settings["cross_sectional_surprise"] = module.config.identity()
     # --- fin memory_cross_sectional_surprise ---
+    # --- session_resonator ---
+    if type(module) is SessionResonator:
+        if type(module.config) is not SessionResonatorConfig:
+            raise ValueError("El resonador de sesión no conserva su configuración identificada")
+        module.config.__post_init__()
+        fields = ("hidden_size",)
+        settings["session_resonator"] = module.config.identity()
+    # --- fin session_resonator ---
     settings.update((name, getattr(module, name)) for name in fields)
     return settings
 
@@ -355,6 +372,34 @@ def _validate_cross_sectional_surprise(predictor):
 
 
 # --- fin memory_cross_sectional_surprise ---
+# --- session_resonator ---
+def _validate_session_resonator(predictor):
+    """Comprobar que el resonador de sesión coincide con su configuración."""
+    declared, module = predictor.config.session_resonator, predictor.session_resonator
+    if declared is None and module is None:
+        return
+    if (
+        type(declared) is not SessionResonatorConfig
+        or type(module) is not SessionResonator
+        or type(module.config) is not SessionResonatorConfig
+    ):
+        raise ValueError("El resonador de sesión no corresponde a la configuración declarada")
+    declared.__post_init__()
+    module.config.__post_init__()
+    if (
+        module.config != declared
+        or module.hidden_size != predictor.config.hidden_size
+        or not isinstance(getattr(module, "out_proj", None), torch.nn.Linear)
+        or any(
+            tensor.device != predictor.head.weight.device
+            or tensor.dtype != predictor.head.weight.dtype
+            for tensor in (*module.parameters(), *module.buffers())
+        )
+    ):
+        raise ValueError("El resonador de sesión no corresponde a la configuración declarada")
+
+
+# --- fin session_resonator ---
 
 
 def _validate_intervention(readout):
@@ -579,6 +624,9 @@ class FrozenFinancialConsumer:
         # --- memory_cross_sectional_surprise ---
         _validate_cross_sectional_surprise(predictor)
         # --- fin memory_cross_sectional_surprise ---
+        # --- session_resonator ---
+        _validate_session_resonator(predictor)
+        # --- fin session_resonator ---
         _validate_intervention(readout)
         self._models = (("predictor", predictor),) + ((("readout", readout),) if readout else ())
         self._signature, modes = _execution_signature(self._models)
@@ -679,6 +727,13 @@ class FrozenFinancialConsumer:
                 "bloque (session_complete=True)"
             )
         # --- fin memory_cross_sectional_surprise ---
+        # --- session_resonator ---
+        if self.predictor.session_resonator is not None and session_complete is not True:
+            raise ValueError(
+                "El resonador de sesión necesita la sesión completa en un bloque "
+                "(session_complete=True)"
+            )
+        # --- fin session_resonator ---
         options = {}
         if self.predictor.local_control is not None:
             options.update(control_selection=selection, control_context_id=context_id)
