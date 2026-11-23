@@ -990,6 +990,12 @@ class FinancialConfig:
                     "La sorpresa relativa transversal (CSOS) es incompatible con "
                     "memory_inner_gradient='fused_v1'; declare analytic_v1 o autograd_v1"
                 )
+            if self.auxiliary_horizons is not None:
+                raise ValueError(
+                    "Las cabezas auxiliares con operaciones por sesión necesitan otro contraste"
+                )
+
+    # --- fin memory_cross_sectional_surprise ---
     # --- session_resonator ---
     def _check_session_resonator(self):
         """Resonador holográfico transversal de sesión (CSRF) y exclusiones declaradas."""
@@ -1008,7 +1014,7 @@ class FinancialConfig:
                     "Las cabezas auxiliares con operaciones por sesión necesitan otro contraste"
                 )
 
-    # --- fin memory_cross_sectional_surprise ---
+    # --- fin session_resonator ---
     # --- contrastive_memory ---
     def _check_contrastive_memory(self):
         """InfoNCE-Titans: memoria asociativa contrastiva por mercado sobre mac_online."""
@@ -1038,7 +1044,6 @@ class FinancialConfig:
                 )
 
     # --- fin ic_titans_mlp ---
-    # --- fin session_resonator ---
 
     def _check_memory_projections(self):
         """Normalización residual y proyecciones de memoria."""
