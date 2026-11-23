@@ -9,12 +9,17 @@
 #   bash colab_bootstrap.sh <paso> --paquete <carpeta del paquete en Drive> \
 #        --bundle <mars-titan.bundle> --commit <40 hex> [--trabajo /content/mars-titan]
 #        [--destino /home/gonzalo] [--grupos "A01-preparados-v31 Precios-US"]
+#        [--factor-cn <MARS-TITAN-factor-mercado-CN-CSI300.zip>]
 #
 # Pasos, en este orden:
 #   sistema   herramientas del sistema (zstd, tmux, cmake, ninja, git) y uv
 #   codigo    copia fija del repositorio en el commit pedido
 #   entorno   entorno bloqueado del proyecto (uv sync --locked --all-extras)
-#   datos     restaura los grupos de datos que entrenan (EE. UU., China y vistas)
+#   datos     restaura los grupos de datos que entrenan (EE. UU., China y vistas), el factor
+#             de mercado de China si se da su zip, y comprueba los factores de las vistas
+#   factor-cn restaura solo el zip del factor de mercado de China (lo llama datos)
+#   factores  comprueba que cada factor de mercado que declaran las vistas está, con su huella
+#             (lo llama datos): sin él los rasgos del modelo de mercado valen cero y nada falla
 #   nativo    compila el enlace episódico que usan los lectores m1, m2 y m3
 #   comprobar ficha del equipo, pruebas de CUDA del núcleo y memoria fusionada
 #   todo      todos los anteriores
@@ -28,6 +33,7 @@ paso="${1:-}"
 shift
 
 paquete="" bundle="" commit="" trabajo="/content/mars-titan" destino="/home/gonzalo" grupos=""
+factor_cn=""
 while [ "$#" -gt 0 ]; do
   case "$1" in
     --paquete) paquete="$2"; shift 2 ;;
@@ -36,6 +42,7 @@ while [ "$#" -gt 0 ]; do
     --trabajo) trabajo="$2"; shift 2 ;;
     --destino) destino="$2"; shift 2 ;;
     --grupos) grupos="$2"; shift 2 ;;
+    --factor-cn) factor_cn="$2"; shift 2 ;;
     *) echo "Opción desconocida: $1" >&2; exit 2 ;;
   esac
 done
@@ -44,6 +51,7 @@ trabajo="$(realpath -m "$trabajo")"
 [ -z "$paquete" ] || paquete="$(realpath -m "$paquete")"
 [ -z "$bundle" ] || bundle="$(realpath -m "$bundle")"
 [ -z "$destino" ] || destino="$(realpath -m "$destino")"
+[ -z "$factor_cn" ] || factor_cn="$(realpath -m "$factor_cn")"
 repo="$trabajo/repo"
 # Los guiones de este kit se leen de la copia que contiene a este, que puede ser más nueva
 # que el commit fijado de la campaña.
@@ -124,6 +132,80 @@ paso_datos() {
   uv run --no-project --python 3.12 "$paquete/RESTAURAR.py" \
     --paquetes "$paquete" --destino "$destino" "${argumentos[@]}"
   df -h "$destino" | tail -1
+  [ -z "$factor_cn" ] || paso_factor_cn
+  paso_factores
+}
+
+paso_factor_cn() {
+  [ -f "$factor_cn" ] || falta "no existe el zip del factor de mercado de China ($factor_cn)"
+  # El factor de China vive fuera de los grupos del paquete. Su zip trae la ruta bajo .local y
+  # las huellas: solo se restaura lo que cuadra con ellas, y nunca encima de otros bytes.
+  python3 - "$factor_cn" "$destino" <<'PY' || falta "no se pudo restaurar el factor de China"
+import hashlib
+import sys
+import zipfile
+from pathlib import Path
+
+archive, destination = zipfile.ZipFile(sys.argv[1]), Path(sys.argv[2]).resolve()
+names = [item.filename for item in archive.infolist() if item.filename.startswith(".local/")]
+names = [name for name in names if not name.endswith("/")]
+sums = {}
+for line in archive.read("SHA256SUMS.txt").decode("utf-8").splitlines():
+    if line.strip():
+        digest, name = line.split(None, 1)
+        sums[name.strip()] = digest
+if not names:
+    sys.exit("el zip no trae nada bajo .local/")
+pending = []
+for name in names:
+    target = (destination / name).resolve()
+    if ".." in name.split("/") or destination not in target.parents:
+        sys.exit(f"ruta fuera del destino: {name}")
+    payload = archive.read(name)
+    if hashlib.sha256(payload).hexdigest() != sums.get(name):
+        sys.exit(f"la huella de {name} no es la de SHA256SUMS.txt")
+    if target.exists() and target.read_bytes() != payload:
+        sys.exit(f"ya existe con otros bytes: {target}")
+    pending.append((target, payload))
+for target, payload in pending:
+    target.parent.mkdir(parents=True, exist_ok=True)
+    target.write_bytes(payload)
+print(f"factor de mercado de China restaurado: {len(pending)} ficheros")
+PY
+}
+
+paso_factores() {
+  # Un factor ausente no detiene el entrenamiento: apaga en silencio los rasgos del modelo de
+  # mercado de ese mercado. Se comprueba aquí, antes de empaquetar o ajustar nada.
+  python3 - "$destino" <<'PY' || falta "falta el factor de mercado de algún mercado (arriba)"
+import hashlib
+import json
+import sys
+from pathlib import Path
+
+root = Path(sys.argv[1]) / ".local/state/mars-titan"
+views = sorted({path.parent.parent for path in root.glob("*/views/*/fold-*/manifest.json")})
+if not views:
+    sys.exit(f"no hay vistas restauradas bajo {root}")
+missing = 0
+for view in views:
+    # Los factores son los mismos en todos los orígenes de una vista: basta el último.
+    manifest = json.loads(sorted(view.glob("fold-*/manifest.json"))[-1].read_text(encoding="utf-8"))
+    factors = manifest.get("market_factors") or {}
+    for market in sorted({asset["market"] for asset in manifest.get("assets") or []}):
+        declared = factors.get(market) or {}
+        path = Path(declared.get("prices_path") or "/no-declarado")
+        if not path.is_file():
+            state = "AUSENTE"
+        elif hashlib.sha256(path.read_bytes()).hexdigest() != declared.get("prices_sha256"):
+            state = "CON OTRA HUELLA"
+        else:
+            print(f"{view.name}: factor de {market} presente")
+            continue
+        missing += 1
+        print(f"FALTA el factor de {market} de la vista {view.name}: {state} ({path})", file=sys.stderr)
+sys.exit(1 if missing else 0)
+PY
 }
 
 paso_nativo() {
@@ -179,6 +261,8 @@ case "$paso" in
   codigo) paso_codigo ;;
   entorno) paso_entorno ;;
   datos) paso_datos ;;
+  factor-cn) paso_factor_cn ;;
+  factores) paso_factores ;;
   nativo) paso_nativo ;;
   comprobar) paso_comprobar ;;
   busqueda) paso_busqueda ;;
