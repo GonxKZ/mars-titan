@@ -98,6 +98,9 @@ class FinancialDustAdapter:
             # --- hopfield_rank_brain ---
             "hopfield_rank_brain",
             # --- fin hopfield_rank_brain ---
+            # --- persistent_session_hologram ---
+            "persistent_session_hologram",
+            # --- fin persistent_session_hologram ---
             "laplace_scale_head",
             "auxiliary_horizons",
             "session_rank_inputs",
@@ -166,6 +169,9 @@ class FinancialDustAdapter:
                     # --- hopfield_rank_brain ---
                     "hopfield_rank_brain",
                     # --- fin hopfield_rank_brain ---
+                    # --- persistent_session_hologram ---
+                    "persistent_session_hologram",
+                    # --- fin persistent_session_hologram ---
                     "output_objective",
                     "auxiliary_heads",
                     # --- factor_memory ---

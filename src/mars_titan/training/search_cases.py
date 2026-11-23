@@ -120,6 +120,9 @@ PREDICTOR_CHANGES = (
     # --- three_factor_consolidation ---
     "three_factor_consolidation",
     # --- fin three_factor_consolidation ---
+    # --- persistent_session_hologram ---
+    "persistent_session_hologram",
+    # --- fin persistent_session_hologram ---
 )
 # Cambios que se declaran con un nombre en lugar de un objeto.
 NAMED_CHANGES = (

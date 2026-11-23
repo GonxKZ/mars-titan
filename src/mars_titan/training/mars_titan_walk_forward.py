@@ -259,6 +259,13 @@ def _parent(folder, view, seed, control=None):
         "El consumidor congelado aún no recibe la consolidación sináptica de tres factores",
     )
     # --- fin three_factor_consolidation ---
+    # --- persistent_session_hologram ---
+    _require(
+        changes.get("persistent_session_hologram", predictor.get("persistent_session_hologram"))
+        is None,
+        "El consumidor congelado aún no gestiona el ciclo de sesión del holograma persistente",
+    )
+    # --- fin persistent_session_hologram ---
     _verify(folder, report)
     return report, digest
 
@@ -334,6 +341,12 @@ def _frozen_parent(
         "El consumidor congelado aún no recibe la consolidación sináptica de tres factores",
     )
     # --- fin three_factor_consolidation ---
+    # --- persistent_session_hologram ---
+    _require(
+        options.get("persistent_session_hologram") is None,
+        "El consumidor congelado aún no gestiona el ciclo de sesión del holograma persistente",
+    )
+    # --- fin persistent_session_hologram ---
     _require(
         allow_context or options.get("session_context") is None,
         "Este consumidor todavía no recupera el contexto compartido de PT4",

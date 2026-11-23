@@ -455,6 +455,11 @@ def clip_parameter_groups(predictor, trainable=None):
     for name, _ in predictor.named_parameters():
         if allowed is not None and name not in allowed:
             continue
+        # --- persistent_session_hologram ---
+        if name.startswith("persistent_session_hologram."):
+            buckets["mac"].append(name)
+            continue
+        # --- fin persistent_session_hologram ---
         if name.startswith(("technical_branch.", "head.", "output_objective.", "auxiliary_heads.")):
             buckets["technical_head"].append(name)
         elif name.startswith(("mac.", "reliability_gates.", "cross_sectional_rank_memory.")):
@@ -830,6 +835,10 @@ class _Pass:
     three_factor_start: object = None
     three_factor_labels: list = field(default_factory=list)
     # --- fin three_factor_consolidation ---
+    # --- persistent_session_hologram ---
+    persistent_hologram: object = None
+    persistent_hologram_start: object = None
+    # --- fin persistent_session_hologram ---
     # Con métrica `session_rank_ic`, acumulador en flujo del IC de rangos de entrenamiento.
     rank_ic: object = None
 
@@ -920,6 +929,9 @@ class ChronologicalInference:
         # --- three_factor_consolidation ---
         self.uses_three_factor = predictor.three_factor_consolidation is not None
         # --- fin three_factor_consolidation ---
+        # --- persistent_session_hologram ---
+        self.uses_persistent_hologram = predictor.persistent_session_hologram is not None
+        # --- fin persistent_session_hologram ---
         if torch.backends.mha.get_fastpath_enabled() or torch.is_inference_mode_enabled():
             raise ValueError("El recorrido exige fastpath=False declarado y sin inference_mode")
         if (
@@ -999,6 +1011,15 @@ class ChronologicalInference:
         if self.uses_three_factor and accumulate and run.three_factor_start is None:
             run.three_factor_start = predictor.detach_three_factor_state(run.three_factor_state)
         # --- fin three_factor_consolidation ---
+        # --- persistent_session_hologram ---
+        if self.uses_persistent_hologram and run.persistent_hologram is None:
+            run.persistent_hologram = predictor.initial_persistent_hologram()
+        if self.uses_persistent_hologram and accumulate and run.persistent_hologram_start is None:
+            run.persistent_hologram_start = predictor.detach_persistent_hologram(
+                run.persistent_hologram
+            )
+        staged_hologram = run.persistent_hologram if self.uses_persistent_hologram else None
+        # --- fin persistent_session_hologram ---
         context = dict(context=run.context) if self.uses_context else {}
         # --- factor_memory ---
         if self.uses_factor_memory:
@@ -1076,6 +1097,10 @@ class ChronologicalInference:
                         prepare_options, three_factor_state=run.three_factor_state
                     )
                 # --- fin three_factor_consolidation ---
+                # --- persistent_session_hologram ---
+                if self.uses_persistent_hologram:
+                    prepare_options = dict(prepare_options, persistent_hologram=staged_hologram)
+                # --- fin persistent_session_hologram ---
                 with nvtx_ranges.phase("titans.prepare"), torch.set_grad_enabled(graph):
                     prepared = predictor.prepare(
                         batch,
@@ -1127,6 +1152,10 @@ class ChronologicalInference:
                         differentiable=graph and not accumulate,
                     )
                 # --- fin three_factor_consolidation ---
+                # --- persistent_session_hologram ---
+                if self.uses_persistent_hologram:
+                    staged_hologram = prepared.next_persistent_hologram
+                # --- fin persistent_session_hologram ---
                 if self.uses_context:
                     # Los bloques siguientes del evento leen el mismo contexto confirmado.
                     context = dict(context=prepared.next_context)
@@ -1182,6 +1211,16 @@ class ChronologicalInference:
                         predictor.detach_contrastive_memory(committed) if accumulate else committed
                     )
             # --- fin contrastive_memory ---
+            # --- persistent_session_hologram ---
+            if self.uses_persistent_hologram:
+                with (
+                    nvtx_ranges.phase("titans.persistent_hologram"),
+                    torch.set_grad_enabled(graph and not accumulate),
+                ):
+                    run.persistent_hologram = predictor.commit_persistent_hologram(
+                        staged_hologram, differentiable=graph and not accumulate
+                    )
+            # --- fin persistent_session_hologram ---
             with nvtx_ranges.phase("titans.emit"):
                 self._emit(run, source, emitted)
             if surprises:
@@ -1469,6 +1508,10 @@ class ChronologicalInference:
         run.three_factor_start = None
         run.three_factor_labels.clear()
         # --- fin three_factor_consolidation ---
+        # --- persistent_session_hologram ---
+        run.persistent_hologram = None
+        run.persistent_hologram_start = None
+        # --- fin persistent_session_hologram ---
         run.pending.clear()
         run.graphs.clear()
         run.levels.clear()
@@ -2000,6 +2043,11 @@ class ChronologicalTrainer(ChronologicalInference):
                     for position, items in run.three_factor_labels:
                         three_factor_by_pos.setdefault(position, []).append(items)
                 # --- fin three_factor_consolidation ---
+                # --- persistent_session_hologram ---
+                holo_state = (
+                    run.persistent_hologram_start if self.uses_persistent_hologram else None
+                )
+                # --- fin persistent_session_hologram ---
                 for seg_index, (batch, plan, whole) in enumerate(run.segment):
                     if self.uses_rank_memory:
                         for items in rank_by_pos.get(seg_index, ()):
@@ -2076,6 +2124,10 @@ class ChronologicalTrainer(ChronologicalInference):
                     if self.uses_three_factor:
                         replay_plan = dict(replay_plan, three_factor_state=three_factor_state)
                     # --- fin three_factor_consolidation ---
+                    # --- persistent_session_hologram ---
+                    if self.uses_persistent_hologram:
+                        replay_plan = dict(replay_plan, persistent_hologram=holo_state)
+                    # --- fin persistent_session_hologram ---
                     with torch.enable_grad():
                         prepared = predictor.prepare(
                             batch,
@@ -2134,6 +2186,12 @@ class ChronologicalTrainer(ChronologicalInference):
                             differentiable=True,
                         )
                     # --- fin three_factor_consolidation ---
+                    # --- persistent_session_hologram ---
+                    if self.uses_persistent_hologram:
+                        holo_state = predictor.commit_persistent_hologram(
+                            prepared.next_persistent_hologram, differentiable=True
+                        )
+                    # --- fin persistent_session_hologram ---
                     states.put(prepared.next_state)
                     if prepared.local_control is not None:
                         penalties.append(prepared.local_control.penalty)
@@ -2387,6 +2445,12 @@ class ChronologicalTrainer(ChronologicalInference):
                     run.three_factor_state, parameter_id
                 )
             # --- fin three_factor_consolidation ---
+            # --- persistent_session_hologram ---
+            if run.persistent_hologram is not None:
+                run.persistent_hologram = self.predictor.detach_persistent_hologram(
+                    run.persistent_hologram, parameter_id
+                )
+            # --- fin persistent_session_hologram ---
         run.penalties.clear()
         run.graphs.clear()
         run.predictions.clear()
@@ -2414,6 +2478,9 @@ class ChronologicalTrainer(ChronologicalInference):
         run.three_factor_start = None
         run.three_factor_labels.clear()
         # --- fin three_factor_consolidation ---
+        # --- persistent_session_hologram ---
+        run.persistent_hologram_start = None
+        # --- fin persistent_session_hologram ---
         run.instants = 0
         run.counters["segments"] += 1
 
@@ -2514,6 +2581,10 @@ class ChronologicalTrainer(ChronologicalInference):
         if run.lead_lag_memory_start is not None or run.lead_lag_memory_labels:
             raise ValueError("Solo se confirma un recorrido en la barrera posterior a un paso")
         # --- fin lead_lag_memory ---
+        # --- persistent_session_hologram ---
+        if run.persistent_hologram_start is not None:
+            raise ValueError("Solo se confirma un recorrido en la barrera posterior a un paso")
+        # --- fin persistent_session_hologram ---
         predictor, size = self.predictor, self.predictor.config.max_batch
         flows = sorted(run.flows)
         fast = [
@@ -2609,6 +2680,17 @@ class ChronologicalTrainer(ChronologicalInference):
                 else {}
             ),
             # --- fin three_factor_consolidation ---
+            # --- persistent_session_hologram ---
+            **(
+                dict(
+                    persistent_hologram=None
+                    if run.persistent_hologram is None
+                    else predictor.export_persistent_hologram(run.persistent_hologram)
+                )
+                if self.uses_persistent_hologram
+                else {}
+            ),
+            # --- fin persistent_session_hologram ---
             **(
                 dict(rank_ic=None if run.rank_ic is None else run.rank_ic.export())
                 if self.track_train_rank_ic
@@ -2653,6 +2735,12 @@ class ChronologicalTrainer(ChronologicalInference):
                 "El recorrido guardado no corresponde a la consolidación de tres factores"
             )
         # --- fin three_factor_consolidation ---
+        # --- persistent_session_hologram ---
+        if self.uses_persistent_hologram != ("persistent_hologram" in payload):
+            raise ValueError(
+                "El recorrido guardado no corresponde al holograma persistente de sesión"
+            )
+        # --- fin persistent_session_hologram ---
         if self.track_train_rank_ic != ("rank_ic" in payload):
             raise ValueError("El recorrido guardado no corresponde al IC de rangos del ajuste")
         run = _Pass()
@@ -2700,6 +2788,12 @@ class ChronologicalTrainer(ChronologicalInference):
                 payload["three_factor_state"]
             )
         # --- fin three_factor_consolidation ---
+        # --- persistent_session_hologram ---
+        if self.uses_persistent_hologram and payload["persistent_hologram"] is not None:
+            run.persistent_hologram = self.predictor.restore_persistent_hologram(
+                payload["persistent_hologram"]
+            )
+        # --- fin persistent_session_hologram ---
         if self.track_train_rank_ic and payload["rank_ic"] is not None:
             run.rank_ic = _SessionRankIC.restore(
                 self.recipe.selection["min_assets"], payload["rank_ic"]
