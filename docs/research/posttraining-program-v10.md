@@ -237,9 +237,53 @@ Lectura:
 
 **Integración** como órganos lectores de la base nueva: `INTEGRACION-MEMORIAS.md`, en la carpeta del informe. Recoge los puntos de entrada, qué lee cada memoria, el contrato causal, el coste, lo que falta para ejecutarlas como trabajo de la campaña y las réplicas.
 
-### 5.2 Pilotos de escala, intervalos y agente cognitivo
+### 5.2 Pilotos de escala, intervalos y agente cognitivo (medido)
 
-Siguen pendientes. Los 77 trabajos de `posttraining-pilots-v10.json` y los dos agentes (`posttraining-agent-v8-2013.json` y `posttraining-agent-antiguo-2005-2011.json`) van en una sola unidad de CPU después de los gemelos (una unidad a la vez).
+Los 77 pilotos de `posttraining-pilots-v10.json` terminaron el 23 de noviembre (`pilotos/runs`; 12 h 48 min de CPU). La lectura con las reglas de su declaración está en `pilotos/lectura.md` y la hace `lee_pilotos.py` (con la investigación del coordinador), que usa la función de contraste del informe de criba. El agente del estado antiguo está en `agente/antiguo-2005-2011`. El de la v8 no corrió: el registro de `titans_mac_xrank` de 2013 no declara la duración de cada intento y la orden lo rechaza. Su pregunta la contestan el agregador S2 y los árbitros sobre la v10 (§5.15).
+
+**Memoria por activo.** Contraste primario: la configuración del laboratorio (semivida 21, κ 0,1) menos el padre, en evaluación. Incrementos del IC por sesión en 10⁻⁴, con su t HAC.
+
+| Emisión | Sesiones | Laboratorio − padre | Placebo − padre | Laboratorio − placebo | Etiqueta − padre | Laboratorio − etiqueta |
+|---|---|---|---|---|---|---|
+| Estado antiguo, titans_mac, 2005–2013 (serie conjunta) | 2.256 | +88,1 (18,5) | −5,2 (−2,6) | +93,3 (19,7) | +83,3 (18,7) | +4,8 (12,5) |
+| Estado antiguo, mars_titan_m3, 2005–2011 (serie conjunta) | 1.756 | +92,4 (15,7) | −6,4 (−2,7) | +98,8 (17,2) | +87,7 (15,8) | +4,6 (10,7) |
+| v8, titans_mac_xrank, 2013 | 251 | +13,5 (1,93) | −8,7 (−3,7) | +22,2 (3,2) | +12,5 (2,6) | +1,0 (0,4) |
+| v8, titans_mac, 2013 | 251 | +18,6 (2,7) | −7,3 (−3,2) | +25,9 (3,7) | +15,4 (3,2) | +3,2 (1,2) |
+| v8, titans_mac_noic, 2013 | 251 | +20,7 (1,2) | −47,6 (−7,1) | +68,2 (4,6) | +18,9 (1,5) | +1,8 (0,4) |
+
+- En el estado antiguo, sin rasgos, la memoria por activo añade +0,0088 de IC (t 18,5). Es positiva y con t ≥ 2 en los nueve orígenes de titans_mac (de +0,0042 en 2008 a +0,0146 en 2011) y en los siete de mars_titan_m3.
+- En la v8, con rasgos, el incremento es entre cinco y seis veces menor. Es positivo en las 61 emisiones de 2013 y con t ≥ 2 en 51 (mediana +0,0020).
+- El placebo, que lee la memoria de otro activo, resta siempre: la ganancia no es de capacidad.
+- Guardar la etiqueta en lugar del residuo da casi lo mismo: la diferencia es +0,0005 en el estado antiguo y +0,0001 (t 0,4) en titans_mac_xrank. Lo que aprovecha esta memoria es sobre todo la persistencia del rango de cada activo, no la corrección del error del modelo.
+- **Regla: no entra como pieza propia.** Pasa en la serie conjunta del estado antiguo y el placebo no es positivo, pero en titans_mac_xrank de la v8 se queda en t 1,93, por debajo del 2 que pide la declaración. La memoria por activo sigue dentro del órgano combinado, que es una de las herramientas del agregador S2 y se midió con su propio protocolo (§5.4).
+
+**Escala e intervalos.** La regla pide a `scale_cqr_static` (escala LAD ajustada en calibración y CQR estática encima) cobertura a ±2,5 puntos de 0,80 y de 0,95, error absoluto no mayor que el de cero y pinball menor que la cruda con t ≤ −2.
+
+- La cumple en 61 de las 74 emisiones con cuantiles (tres modelos no los emiten): en 53 de 58 de la v8 y en 8 de 16 del estado antiguo.
+- En el núcleo de referencia de la v8 (titans_mac_xrank) cumple: cobertura de 0,810 y 0,953, pinball un 23 % menor que la cruda y ECE de 0,029 frente a 0,148.
+- En el estado antiguo falla en los años de cambio de régimen: la cobertura al 80 % es 0,765 en 2008, 0,891 en 2009, 0,756 en 2010 y 0,757 en 2012. Un ajuste estático hecho con el último trimestre del año anterior no aguanta un cambio de volatilidad.
+- La versión en línea de la misma escala devuelve la cobertura a 0,799–0,801 al 80 % y a 0,942–0,953 al 95 % en esos mismos años, y baja la pinball hasta un 3,4 % (2009). Es mejor que la estática con t ≤ −2 en 14 emisiones y peor en 3. En 53 de las 74 la tasa elegida es cero y las dos coinciden.
+- Sin la escala (`cqr_static`, `cqr_online`) o por regímenes, la pinball es entre un 14 % y un 16 % mayor.
+- **Regla:** `scale_cqr_static` entra donde cumple, y la versión en línea la sustituye solo donde reduce la pinball con t ≤ −2, que son los orígenes con cambio de régimen. La entrega lleva la capa adaptativa de F7-b (Mondrian con ACI, medida en 2013: 0,7996, 0,9003 y 0,9499). Estos pilotos dan la razón entre orígenes: la calibración estática se descalibra justo en los años difíciles. Queda por medir la cobertura de F7-b en los orígenes limpios cuando la campaña final emita.
+
+**Agente cognitivo en el estado antiguo** (2005–2011, 1.756 sesiones, bloques de 21 días, intervalos simultáneos por familia; IC en 10⁻⁴).
+
+| Contraste | Estimación | Intervalo simultáneo | p de Holm |
+|---|---|---|---|
+| Agente − núcleo | +14,6 | [−5,0; +34,1] | 0,26 |
+| Agente − media uniforme | +5,3 | [−5,3; +16,0] | 0,43 |
+| Agente − realimentación barajada | −1,1 | [−2,5; +0,3] | 0,26 |
+| Agente con placebo − agente | −0,0 | [−0,2; +0,2] | 0,88 |
+| Shapley del banco M1 | +10,4 | [−2,0; +22,9] | 0,17 |
+| Shapley del lector sin banco | +8,0 | [−0,9; +16,9] | 0,17 |
+| Shapley de la recuperación episódica | −2,0 | [−5,5; +1,6] | 0,41 |
+| Shapley del banco M2 | −1,9 | [−5,5; +1,7] | 0,41 |
+
+- El agente queda por encima del núcleo (0,0419 frente a 0,0404), pero el intervalo simultáneo incluye el cero: no está demostrado.
+- No mejora a la media uniforme de sus herramientas, y con la realimentación barajada no pierde. El aprendizaje de pesos en línea no aporta.
+- Aportan el banco M1 y el lector sin banco; la recuperación episódica y el banco M2, no. Ninguna herramienta pasa la corrección por comparaciones múltiples.
+- La abstención no se activa nunca y el placebo es nulo.
+- Coincide con lo medido en la v10 (S2, §5.15): el agente es, como mucho, una media de herramientas parecidas.
 
 ### 5.3 Efecto mínimo detectable
 
