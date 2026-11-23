@@ -96,16 +96,38 @@ y calibración con el resto de 2023), que sería el modelo de uso de 2024 en ade
 preparados terminan el 29-12-2023 y las vistas terminan en el origen de 2023, así que el examen del modelo final es 2023
 y la fecha de 2024 del contrato es una barrera, no un conjunto disponible.
 
-**Presupuesto de la campaña final (estimado el 23 a las 07:45Z; la velocidad en Colab no está medida).** Medido en la
-primera criba de la v11 (origen 2013, 4.198 activos): un trabajador hace de 130 a 150 pasos por minuto, lo mismo con
-tres que con cinco a la vez; los doce modelos terminados necesitaron de 7 a 22 épocas (media 11,6); cinco trabajadores
-dan cerca de un millón de pasos al día. Una época del origen de 2023 son 2.736 pasos en EE. UU. y 1.910 en China (810
-activos, ajuste desde julio de 2006). Con unos doce modelos de GPU por mercado y tres semillas, el origen final son de
-1,6 a 2,0 millones de pasos (unos dos días de la DGX sola); los nueve orígenes de 2014 a 2022, unos 12,5 millones; el
-reajuste opcional, otros dos. Cada RTX PRO 6000 se estima entre 0,8 y 2,3 veces la DGX (de 4 a 6 trabajadores por la
-memoria del anfitrión, hasta 20 GiB por trabajo del núcleo; velocidad por trabajador entre una y dos veces): con dos y
-la DGX, todo son de tres a seis días y de 1.050 a 2.200 unidades de cómputo a 7,5 por hora. La prueba de velocidad en
-Colab (hora y media con la instalación) espera la orden del dueño.
+**Presupuesto de la campaña final (estimado el 23 a las 08:00Z, sin ejecutar nada en Colab por decisión del dueño).**
+
+Medido en la DGX (primera criba de la v11, origen 2013, 4.198 activos, código sin kernels): un trabajador hace de 130 a
+150 pasos por minuto, lo mismo con tres que con cinco a la vez; ocupa un núcleo entero y corre en los diez núcleos
+rápidos; usa unos 3 GiB de memoria propia (el resto de su residente son páginas compartidas de la copia empaquetada, con
+un pico de 20 GiB al cargar) y 3,7 GiB de memoria de GPU; con cuatro trabajadores el servidor de MPS marca un 65 % de uso
+de la GPU. Los doce modelos terminados necesitaron de 7 a 22 épocas (media 11,6). Una época del origen de 2023 son 2.736
+pasos en EE. UU. y 1.910 en China (810 activos, ajuste desde julio de 2006). La prueba corta de K-1 dio de 2,2 a 2,4
+veces con los kernels; falta verla en un ajuste real (la tercera criba).
+
+De fuentes públicas, ninguna de Google (consultadas el 23 de noviembre): el entorno G4 de Colab cuesta de 8,7 a 10,05
+unidades por hora; muestra 97.887 MiB de memoria de GPU, 176,88 GiB de memoria y unos 189 GB de disco libre, lo que
+coincide con la `g4-standard-48` de Google Cloud (48 vCPU, AMD EPYC Turin; los vCPU son una deducción); el EPYC 9B45
+marca de 2.545 a 2.633 en Geekbench 6 por núcleo y la GB10, 3.123. No hay confirmación de que Colab admita MPS ni de
+cuántas sesiones con esa GPU permite a la vez.
+
+| Supuesto | Valor | Origen |
+| --- | --- | --- |
+| Trabajo de un ajuste de EE. UU. en 2023 | 3,9 horas de trabajador con la parada actual; de 1,5 a 2 veces más con la adaptativa | Medido (pasos y épocas); el factor de la adaptativa es una suposición hasta la tercera criba |
+| Trabajo de un ajuste de China en 2023 | de 0,3 a 0,5 del coste por paso de EE. UU. | Suposición por el número de activos; sin medir |
+| Modelos de GPU por mercado y semillas | unos 12, con 3 semillas | Suposición; lo fijan las cribas |
+| Velocidad por trabajador en Colab | de 1,0 a 1,3 veces la de la DGX | Estimado: CPU por núcleo 0,83 veces, parte de GPU unas 3 veces más rápida |
+| Trabajadores por GPU de Colab | de 12 a 16 con MPS; el equivalente a 5 o 6 sin él | Estimado: 24 núcleos y picos de 7,4 GiB de memoria de GPU; sin MPS, por turnos |
+| Pérdida por los relevos de 24 horas | 5 % | Suposición |
+
+Con eso, el origen final (36 ajustes por mercado) son unas 180 horas de trabajador con la parada actual y unas 315 con
+la adaptativa; los nueve orígenes de 2014 a 2022, unas 6,9 veces más; el reajuste opcional, una vez más. Dos GPU de
+Colab con MPS y la DGX dan de 670 a 1.070 horas de trabajador al día: todo el programa son de 1,5 a 2,4 días y de 630 a
+1.160 unidades con la parada actual, y de 2,6 a 4,2 días y de 1.090 a 2.030 unidades con la adaptativa. Sin MPS, de 3,4
+a 4,6 días con la parada actual y de 6 a 8 con la adaptativa, que ya no cabe en 2.000 unidades (199 a 230 horas de GPU).
+Si los kernels sostienen su factor en un ajuste real, todo baja a cerca de la mitad. Lo primero que se comprobará en
+Colab, cuando el dueño lo autorice: MPS, número de núcleos y tarifa.
 
 ## Hipótesis abiertas
 
