@@ -16,6 +16,13 @@ DECLARATION = core.ROOT / "configs" / "experiments" / "posttraining-holographic.
 SEEDS = (42, 43, 44)
 STATIC = "titans_mac_disabled_nogain"
 IGNORED = ["description", "models"]
+WP5 = {
+    arm: core.ROOT
+    / "configs"
+    / "experiments"
+    / f"posttraining-holographic-wp5-{arm.replace('_', '-')}.json"
+    for arm in holo.WP5_SHA256
+}
 
 
 def declaration():
@@ -106,7 +113,7 @@ def test_organ_roots_must_share_the_declaration(tmp_path):
         holo.organ_declarations([tmp_path / "a"], "otro", IGNORED)
 
 
-def campaign(tmp_path, *, organ_strength=0.6, core_noise=0.8, static_noise=0.8):
+def campaign(tmp_path, *, organ_strength=0.6, core_noise=0.8, static_noise=0.8, arm="combined"):
     """Tres semillas de núcleo, secundario y estático que ven un factor; el órgano ve otro."""
     rng = np.random.default_rng(21)
     state = tmp_path / "estado"
@@ -152,7 +159,7 @@ def campaign(tmp_path, *, organ_strength=0.6, core_noise=0.8, static_noise=0.8):
             )
             (folder / "run.json").write_text(json.dumps(record))
         static = state / "runs" / STATIC / str(core.YEAR) / f"seed-{seed}"
-        organ = roots[seed] / "runs" / f"{STATIC}__combined" / str(core.YEAR) / f"seed-{seed}"
+        organ = roots[seed] / "runs" / f"{STATIC}__{arm}" / str(core.YEAR) / f"seed-{seed}"
         for split in og.AGGREGATED:
             rows, _, z3 = shared[split]
             own = pq.read_table(static / f"{split}-predictions.parquet").column("prediction")
@@ -161,10 +168,10 @@ def campaign(tmp_path, *, organ_strength=0.6, core_noise=0.8, static_noise=0.8):
         record = dict(
             status="completed",
             final_test_opened=False,
-            model=f"{STATIC}__combined",
+            model=f"{STATIC}__{arm}",
             origin=core.YEAR,
             seed=seed,
-            arm="combined",
+            arm=arm,
             parent=dict(model=STATIC, run_id=f"{STATIC}-{seed}"),
             inputs=dict(
                 emissions={
@@ -180,8 +187,8 @@ def campaign(tmp_path, *, organ_strength=0.6, core_noise=0.8, static_noise=0.8):
     return dict(state=state, roots=roots, known=known)
 
 
-def _arguments(paths, output, *extra):
-    arguments = ["medir", "--declaration", str(DECLARATION), "--state", str(paths["state"])]
+def _arguments(paths, output, *extra, declaration=DECLARATION):
+    arguments = ["medir", "--declaration", str(declaration), "--state", str(paths["state"])]
     arguments += ["--origin", str(core.YEAR), "--output", str(output)]
     for seed, root in sorted(paths["roots"].items()):
         arguments += ["--organs", f"{seed}={root}"]
@@ -276,3 +283,50 @@ def test_mixed_organ_declarations_and_missing_inputs_fail_with_a_reason(
     (organ / "evaluation-predictions.parquet").unlink()
     assert holo.main(_arguments(paths, tmp_path / "h")) == og.MISSING_EXIT
     assert "seed-44" in capsys.readouterr().err
+
+
+@pytest.mark.parametrize("arm", sorted(holo.WP5_SHA256))
+def test_the_wp5_variants_differ_from_f6_only_in_the_organ_and_the_description(arm):
+    variant = json.loads(WP5[arm].read_text(encoding="utf-8"))
+    kept = ("organ", "description")
+    assert {k: v for k, v in variant.items() if k not in kept} == {
+        k: v for k, v in declaration().items() if k not in kept
+    }
+    assert variant["organ"] == f"{STATIC}__{arm}"
+    _, digest = holo.checked_declaration(variant)
+    assert digest == holo.WP5_SHA256[arm] and holo.REGISTERED[digest] == arm
+    assert holo.organ_arm(variant) == arm and holo.organ_arm(declaration()) == "combined"
+
+
+def test_a_variant_with_another_organ_or_rule_is_refused():
+    variant = json.loads(WP5["dense_bank"].read_text(encoding="utf-8"))
+    variant["organ"] = f"{STATIC}__asset_trace"
+    with pytest.raises(ValueError, match="no es la registrada para F6"):
+        holo.checked_declaration(variant)
+    variant = json.loads(WP5["asset_trace"].read_text(encoding="utf-8"))
+    variant["rule"]["min_gain"] = 0.001
+    with pytest.raises(ValueError, match="no es la registrada para F6"):
+        holo.checked_declaration(variant)
+
+
+def test_a_wp5_variant_measures_its_own_organ_with_the_rule_of_f6(tmp_path, monkeypatch, capsys):
+    paths = campaign(tmp_path, arm="dense_bank")
+    monkeypatch.setattr(holo.ac, "known_rows", core._known(paths))
+    output = tmp_path / "holografico-wp5"
+    assert holo.main(_arguments(paths, output, declaration=WP5["dense_bank"])) == 0
+    summary = json.loads((output / str(core.YEAR) / "resumen.json").read_text(encoding="utf-8"))
+    assert summary["declaration_sha256"] == holo.WP5_SHA256["dense_bank"]
+    assert summary["verdict"]["enters"] and summary["verdict"]["organs_matter"]
+    assert summary["levels"]["label"]["evaluation"]["C3"]["mean"] == pytest.approx(
+        _expected_c3(paths), abs=1e-9
+    )
+    # F6 busca su brazo combinado, que esta raíz no tiene.
+    assert holo.main(_arguments(paths, tmp_path / "f6")) == og.MISSING_EXIT
+    capsys.readouterr()
+    run = paths["roots"][42] / "runs" / f"{STATIC}__dense_bank" / str(core.YEAR) / "seed-42"
+    record = json.loads((run / "run.json").read_text())
+    record["arm"] = "combined"
+    (run / "run.json").write_text(json.dumps(record))
+    arguments = _arguments(paths, tmp_path / "otra", declaration=WP5["dense_bank"])
+    assert holo.main(arguments) == 1
+    assert "no es el brazo dense_bank" in capsys.readouterr().err

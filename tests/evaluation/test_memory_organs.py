@@ -563,6 +563,42 @@ def test_the_v11_organs_add_the_attention_on_the_nogain_trio_to_the_models_of_v2
     assert set(v11) == set(v2)
 
 
+def test_the_wp5_organs_add_the_proposed_episodic_section_to_v2_for_the_core_and_static():
+    folder = HERE.parents[2] / "configs" / "experiments"
+    v2 = json.loads((folder / "posttraining-memory-organs-v2.json").read_text())
+    wp5 = organs.checked_organs(
+        json.loads((folder / "posttraining-memory-organs-wp5-v10.json").read_text())
+    )
+    assert wp5["models"] == ["titans_mac_nogain", "titans_mac_disabled_nogain"]
+    assert wp5["description"] != v2["description"]
+    same = {key for key in v2 if key not in {"models", "description"}}
+    assert {key: wp5[key] for key in same} == {key: v2[key] for key in same}
+    assert set(wp5) == set(v2) | {"episodic_organs"}
+    # La configuración que propuso el parche de Gemini, sin cambios.
+    assert wp5["episodic_organs"] == {
+        "dense_bank": dict(
+            window=126,
+            k=256,
+            temperatures=[0.05, 0.1, 0.15, 0.2],
+            clip=0.1,
+            kappas=[0.05, 0.1, 0.2, 0.4],
+        ),
+        "holographic_delta": dict(
+            dim=2048,
+            decay=0.95,
+            rate=0.25,
+            clip=0.1,
+            entity="asset",
+            seed=20261122,
+            dtype="float64",
+            kappas=[0.05, 0.1, 0.2, 0.4],
+        ),
+        "asset_trace": dict(
+            half_lives=[5, 10, 21, 63, 126], clip=0.1, kappas=[0.03, 0.05, 0.1, 0.2, 0.3]
+        ),
+    }
+
+
 def test_the_relay_line_starts_the_emission_in_its_own_unit_without_waiting(capsys):
     options = dict(
         label="v11",

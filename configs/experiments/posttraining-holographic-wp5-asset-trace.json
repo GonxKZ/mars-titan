@@ -1,0 +1,83 @@
+{
+  "schema_version": 1,
+  "kind": "posttraining_holographic_v1",
+  "final_test_access": false,
+  "description": "Variante de F6 con el órgano asset_trace de WP5 (programa §5.14), declarada antes de medir: la declaración de F6 (huella 0316226e…) con organ = titans_mac_disabled_nogain__asset_trace y esta descripción. La regla, las semillas, el agregador y los conjuntos no cambian. H es ridge_cov_active de {padre estático titans_mac_disabled_nogain, señal de su brazo asset_trace (órgano − padre)}; H3, la media de rangos por sesión de las semillas 42, 43 y 44; C3, la de titans_mac_nogain. H entra como segundo cerebro si IC(C3⊕H3) − IC(C3) ≥ +0,0020 con t de Newey-West ≥ 2 en la etiqueta y ese contraste es > 0 en lo operable; el control a igual número de redes es C3⊕E3. Se informa la correlación de los IC por sesión de C3 y H3, la vara del coordinador (por debajo de 0,94, señal distinta). Son tres variantes medidas a la vez: 2013 decide y los orígenes limpios confirman con la misma regla.",
+  "seeds": [
+    42,
+    43,
+    44
+  ],
+  "min_assets": 30,
+  "core": "titans_mac_nogain",
+  "secondary": "titans_mac",
+  "static": "titans_mac_disabled_nogain",
+  "organ": "titans_mac_disabled_nogain__asset_trace",
+  "organ_declaration_ignores": [
+    "description",
+    "models"
+  ],
+  "splits": [
+    "calibration",
+    "evaluation"
+  ],
+  "selection_split": "calibration",
+  "align": "strict",
+  "aggregator": {
+    "name": "ridge_cov_active",
+    "lambdas": [
+      2.0,
+      1.0,
+      0.5,
+      0.1
+    ],
+    "half_lives": [
+      null,
+      63.0,
+      21.0
+    ]
+  },
+  "aggregator_placebo_seed": 20261122,
+  "operable_scales": [
+    0.001,
+    0.002,
+    0.005,
+    0.01,
+    0.02,
+    0.03,
+    0.05,
+    0.07,
+    0.1,
+    0.15,
+    0.2,
+    0.3,
+    0.5,
+    0.7,
+    1.0,
+    1.5,
+    2.0,
+    3.0,
+    5.0,
+    10.0,
+    30.0,
+    100.0
+  ],
+  "modes": [
+    "label",
+    "operable"
+  ],
+  "ensemble": {
+    "brain": "mean_of_session_ranks_over_seeds",
+    "pair": "mean_of_two_brains_with_weights_one_half"
+  },
+  "rule": {
+    "primary_mode": "label",
+    "min_gain": 0.002,
+    "min_t": 2.0,
+    "operable": "mean_above_zero",
+    "control": "c3_plus_e3_same_number_of_networks",
+    "control_min_t": 2.0,
+    "decides": "2013",
+    "confirms": "clean_origins_with_the_same_rule"
+  }
+}

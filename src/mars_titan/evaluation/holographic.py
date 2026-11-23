@@ -18,6 +18,10 @@ cuya huella exige la orden. Es exploratorio y va fuera de la familia primaria.
   segunda red y no de los órganos, y se dice así.
 - **«Se equivoca en sitios distintos»:** la correlación de los IC por sesión de C3 y H3 y la
   correlación de rangos media entre sus predicciones dentro de cada sesión, sin umbral.
+- **Variantes de WP5 (programa §5.14):** la declaración de F6 con el órgano
+  `<estático>__dense_bank`, `__holographic_delta` o `__asset_trace` y otra descripción. Cada
+  una tiene su huella registrada, la orden exige que el registro del órgano sea el de ese brazo y
+  la regla no cambia.
 
 Los contrastes son diferencias pareadas por sesión en evaluación, con la t de Newey-West de la
 criba. Cada semilla puede traer sus órganos de una raíz distinta si las raíces comparten
@@ -47,6 +51,14 @@ from mars_titan.evaluation import posttraining_pilots as pilots
 KIND = "posttraining_holographic_v1"
 # Huella canónica de configs/experiments/posttraining-holographic.json, la declaración de F6.
 REGISTERED_SHA256 = "0316226e16174587f50dc993a447c63cb6f0ca2b888c000ee131e0b216ae2c63"
+# Huellas de configs/experiments/posttraining-holographic-wp5-<brazo>.json: F6 con un órgano de WP5.
+WP5_SHA256 = {
+    "dense_bank": "9ea3c63c973337adca90a9064a9813985a816b2ec842d3cd9e40a5acc9d71b49",
+    "holographic_delta": "8272fe12ee4206fc848fad0ffd8e6e5c5a93fb506d754c3774205239775bb446",
+    "asset_trace": "1053e40ec9efc85db4de705879f570db65ca8abc1c74c4fb2a523e8f6e388c7a",
+}
+# El brazo del órgano de cada declaración registrada.
+REGISTERED = {REGISTERED_SHA256: "combined", **{v: k for k, v in WP5_SHA256.items()}}
 SPLITS, AGGREGATED = og.SPLITS, og.AGGREGATED
 BRAINS = ("C", "H", "E", "T")
 Z95 = 1.959963984540054
@@ -62,9 +74,13 @@ def checked_declaration(document):
     _require(isinstance(document, dict), "La declaración de F6 es un objeto JSON")
     digest = hashlib.sha256(pilots._canonical(document).encode()).hexdigest()
     _require(
-        digest == REGISTERED_SHA256,
+        digest in REGISTERED,
         f"La declaración no es la registrada para F6 (huella {digest[:12]}, registrada "
-        f"{REGISTERED_SHA256[:12]}): la regla no cambia",
+        f"{REGISTERED_SHA256[:12]}) ni una de sus variantes de WP5: la regla no cambia",
+    )
+    _require(
+        document["organ"] == f"{document['static']}__{REGISTERED[digest]}",
+        f"El órgano declarado {document['organ']} no es el brazo {REGISTERED[digest]} del estático",
     )
     grid = document["aggregator"]
     _require(
@@ -252,8 +268,15 @@ def fingerprint(sources, manifest):
     return {name: dict(path=str(path), sha256=pilots._sha256(path)) for name, path in files.items()}
 
 
+def organ_arm(declaration):
+    """El brazo del órgano: `combined` en F6 y el órgano de WP5 en sus variantes."""
+    return declaration["organ"].rsplit("__", 1)[-1]
+
+
 def checked_records(declaration, origin, sources, records, prints):
     """Comprueba los registros y devuelve la vista común de los padres."""
+    arm = organ_arm(declaration)
+    label = "combinado" if arm == "combined" else arm
     views = set()
     for role, record in records.items():
         _require(record.get("final_test_opened") is False, f"{sources[role]} abrió el test final")
@@ -268,12 +291,12 @@ def checked_records(declaration, origin, sources, records, prints):
         parent = organ.get("parent") or {}
         _require(
             organ.get("model") == declaration["organ"]
-            and organ.get("arm") == "combined"
+            and organ.get("arm") == arm
             and organ.get("origin") == origin
             and organ.get("seed") == seed
             and parent.get("model") == declaration["static"]
             and parent.get("run_id") == static.get("run_id"),
-            f"{sources[f'organ/{seed}']} no es el brazo combinado de este ajuste de "
+            f"{sources[f'organ/{seed}']} no es el brazo {label} de este ajuste de "
             f"{declaration['static']} (origen {origin}, semilla {seed})",
         )
         emissions = (organ.get("inputs") or {}).get("emissions") or {}
