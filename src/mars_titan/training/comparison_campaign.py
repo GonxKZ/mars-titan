@@ -177,7 +177,8 @@ def _technical_reading(root, path, model, read):
     branch = predictor.get("technical_branch")
     term = (recipe.get("recipe") or {}).get("session_ic_term")
     return (
-        branch.get("columns") if isinstance(branch, dict) else None,
+        # Una rama declarada sin columnas cuenta como una que lee cero: no pasa la regla.
+        branch.get("columns", 0) if isinstance(branch, dict) else None,
         {key: term[key] for key in NAMED_COLUMNS if key in term} if isinstance(term, dict) else {},
     )
 

@@ -1271,6 +1271,16 @@ def test_the_branch_and_the_known_offset_follow_the_declared_technical_version()
             changed["inputs"] = inputs
         with pytest.raises(ValueError, match="rama técnica"):
             campaign.checked_declaration(changed, root=ROOT)
+    # Una rama declarada sin su número de columnas tampoco pasa: no se sabría qué lee.
+    loose = dict(
+        wide,
+        models={
+            name: dict(model, predictor_changes=dict(technical_branch=dict(hidden=128, depth=2)))
+            for name, model in wide["models"].items()
+        },
+    )
+    with pytest.raises(ValueError, match="rama técnica"):
+        campaign.checked_declaration(loose, root=ROOT)
     # Sin leer las recetas no se puede comprobar, y la declaración sigue siendo válida.
     narrow = dict(wide, inputs=dict(technical=technical_features.NAME_V2))
     campaign.checked_declaration(narrow, root=ROOT, check_recipe_files=False)
