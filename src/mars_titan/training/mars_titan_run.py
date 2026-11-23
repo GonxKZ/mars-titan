@@ -173,7 +173,7 @@ class ReadoutRecipe:
         if self.session_ic_term is not None and type(self.session_ic_term) is not dict:
             raise ValueError("session_ic_term debe declarar weight y minimum_rows, o ser None")
         term = parse_session_ic_term(self.session_ic_term)
-        if term is not None and term.weighted:
+        if term is not None and (term.weighted or term.liquidity_column is not None):
             # El lector repite bloques ya emitidos y no conserva sus entradas.
             raise ValueError("El término del lector no pondera por liquidez")
         return term

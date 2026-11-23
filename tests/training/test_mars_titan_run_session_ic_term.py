@@ -205,10 +205,16 @@ def test_the_reader_recipe_declares_the_term_whole_and_without_liquidity():
         dict(weight=0.0, minimum_rows=3),
         dict(weight=1.0, minimum_rows=3, otra=1),
         dict(weight=1.0, minimum_rows=3, liquidity_column=-1, liquidity_power=1.0),
+        dict(weight=1.0, minimum_rows=3, liquidity_column=-1, liquidity_weight=2.0),
+        dict(weight=1.0, minimum_rows=3, liquidity_column=-1, liquidity_weight=1.0),
         "session_ic_term_v1",
     ):
         with pytest.raises(ValueError):
             mt.ReadoutRecipe(session_ic_term=value)
+    # `stability` no requiere entradas extra y entra en la identidad solo cuando > 0.
+    stable = recipe(session_ic_term=dict(TERM, stability=0.5))
+    assert stable.identity()["session_ic_term"]["stability"] == 0.5
+    assert recipe(session_ic_term=dict(TERM, stability=0.0)).identity() == declared.identity()
 
 
 @pytest.mark.native("MARS_TITAN_EPISODIC_NATIVE")

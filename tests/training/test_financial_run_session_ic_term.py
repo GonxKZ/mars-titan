@@ -6,10 +6,11 @@ from collections import Counter
 import pytest
 import torch
 
-from mars_titan.data.input_policy import HISTORICAL_MASKED
+from mars_titan.data.input_policy import HISTORICAL_MASKED, MODALITIES
 from mars_titan.memory import financial_observations as observations
 from mars_titan.models.baselines.multimodal import SCALAR_HEAD
 from mars_titan.models.quantile_head import (
+    LEVELS,
     MEDIAN_GAIN,
     PINBALL,
     QUANTILE_HEAD,
@@ -21,7 +22,12 @@ from mars_titan.models.titans.financial import FinancialConfig, FinancialPredict
 from mars_titan.models.titans.session_ic_objective import SESSION_IC_TERM, SessionICObjective
 from mars_titan.training.corpus_inputs import CorpusDataset
 from mars_titan.training.financial_run import ChronologicalRecipe, ChronologicalTrainer
-from tests.models.titans.test_session_ic_term import reference, weighted_reference
+from tests.models.titans.test_session_ic_term import (
+    numpy_session_term_reference,
+    numpy_top_third_weights,
+    reference,
+    weighted_reference,
+)
 from tests.training.chronological_fixture import chronological_corpus, decision, phases
 from tests.training.test_financial_run import SELECTION, RecordingOptimizer, corpus, entries
 from tests.training.test_financial_run_auxiliary_horizons import AUXILIARY
@@ -628,3 +634,373 @@ def test_the_two_terms_are_added_to_the_declared_loss(shared, tmp_path):
     # Sin el peso de la etiqueta la identidad es la del término desplazado de siempre.
     alone = trainer(shared, tmp_path / "alone", session_ic_term=SHIFTED)
     assert "plain_weight" not in alone.identity["recipe"]["session_ic_term"]
+
+
+def _numpy_weighted_pinball(quantiles, target, sessions, liquidity, liquidity_weight):
+    """Media ponderada independiente del pinball con pesos del tercio líquido por sesión."""
+    import numpy as np
+
+    q = np.asarray(quantiles, dtype=np.float64)
+    y = np.asarray(target, dtype=np.float64)[:, None]
+    tau = np.asarray(LEVELS, dtype=np.float64)[None, :]
+    residual = y - q
+    per_row = np.maximum(tau * residual, (tau - 1.0) * residual).mean(axis=-1)
+    weights = np.ones(len(per_row), dtype=np.float64)
+    groups = {}
+    for row, key in enumerate(sessions):
+        groups.setdefault(key, []).append(row)
+    for rows in groups.values():
+        w_session = numpy_top_third_weights([liquidity[row] for row in rows], liquidity_weight)
+        for idx, row in enumerate(rows):
+            weights[row] = w_session[idx]
+    return float((weights * per_row).sum() / weights.sum())
+
+
+@pytest.mark.parametrize("dtype", [torch.float32, torch.float64])
+def test_wp1_neutral_options_match_baseline_task_loss_and_gradients_bitwise(
+    shared, tmp_path, dtype
+):
+    generator = torch.Generator().manual_seed(19)
+    prediction = torch.randn(18, 5, dtype=dtype, generator=generator).sort(dim=1).values
+    target = torch.randn(18, dtype=dtype, generator=generator)
+    keys = [(f"{'US' if row % 2 == 0 else 'CN'}/A{row:04d}", row // 6) for row in range(18)]
+    base_engine = trainer(shared, tmp_path / "base", session_ic_term=TERM)
+    base_pred = prediction.clone().requires_grad_(True)
+    base_loss = base_engine._task_loss(base_pred, target, keys)
+    (base_grad,) = torch.autograd.grad(base_loss, base_pred)
+
+    for idx, opts in enumerate(
+        (
+            dict(TERM, liquidity_weight=1.0),
+            dict(TERM, stability=0.0),
+            dict(TERM, liquidity_weight=1.0, stability=0.0),
+            dict(TERM, liquidity_column=-1, liquidity_weight=1.0, stability=0.0),
+        )
+    ):
+        eng = trainer(shared, tmp_path / f"neutral-{idx}", session_ic_term=opts)
+        assert not eng.liquidity
+        assert (
+            eng.identity["recipe"]["session_ic_term"]
+            == (base_engine.identity["recipe"]["session_ic_term"])
+        )
+        pred = prediction.clone().requires_grad_(True)
+        loss = eng._task_loss(pred, target, keys)
+        (grad,) = torch.autograd.grad(loss, pred)
+        torch.testing.assert_close(loss, base_loss, rtol=0, atol=0)
+        torch.testing.assert_close(grad, base_grad, rtol=0, atol=0)
+
+
+@pytest.mark.parametrize("dtype", [torch.float32, torch.float64])
+def test_liquidity_weight_weights_pinball_and_ic_and_handles_missing_and_constant(
+    shared, tmp_path, dtype
+):
+    generator = torch.Generator().manual_seed(29)
+    # 3 sesiones completas (6 filas cada una, dos mercados) + 1 sesión corta (2 filas).
+    keys = (
+        [(f"US/A{i:04d}", 1) for i in range(6)]
+        + [(f"US/A{i:04d}", 2) for i in range(6)]
+        + [(f"CN/B{i:04d}", 1) for i in range(6)]
+        + [(f"CN/B{i:04d}", 9) for i in range(2)]
+    )
+    rows = len(keys)
+    sessions = [(flow.split("/", 1)[0], at) for flow, at in keys]
+    quantiles = torch.randn(rows, 5, dtype=dtype, generator=generator).sort(dim=1).values
+    target = torch.randn(rows, dtype=dtype, generator=generator)
+    liquidity = torch.tensor(
+        [
+            -2.0,
+            -1.0,
+            0.0,
+            1.0,
+            2.0,
+            3.0,
+            10.0,
+            20.0,
+            30.0,
+            40.0,
+            50.0,
+            60.0,
+            float("nan"),
+            -5.0,
+            -3.0,
+            -1.0,
+            1.0,
+            float("inf"),
+            0.5,
+            1.5,
+        ],
+        dtype=dtype,
+    )
+    offset = 0.2 * torch.randn(rows, dtype=dtype, generator=generator)
+
+    # Modo etiqueta + liquidity_weight + stability.
+    opts = dict(
+        weight=2.0, minimum_rows=3, liquidity_column=-1, liquidity_weight=3.0, stability=0.5
+    )
+    eng = trainer(shared, tmp_path / "label", session_ic_term=opts)
+    assert eng.liquidity
+    packed = torch.cat([quantiles, liquidity.unsqueeze(1)], dim=1).requires_grad_(True)
+    loss = eng._task_loss(packed, target, keys)
+    exp_pinball = _numpy_weighted_pinball(
+        quantiles.tolist(), target.tolist(), sessions, liquidity.tolist(), 3.0
+    )
+    exp_ic = numpy_session_term_reference(
+        median(quantiles).tolist(),
+        target.tolist(),
+        sessions,
+        weight=2.0,
+        minimum_rows=3,
+        liquidity=liquidity.tolist(),
+        liquidity_weight=3.0,
+        stability=0.5,
+    )
+    rel = 1e-5 if dtype == torch.float32 else 1e-8
+    assert loss.item() == pytest.approx(exp_pinball + exp_ic, rel=rel, abs=1e-6)
+    (grad,) = torch.autograd.grad(loss, packed)
+    assert torch.isfinite(grad).all()
+    assert torch.count_nonzero(grad[:, -1]) == 0
+    # Comprobar directamente que pinball pondera las colas ([0, 1, 3, 4], sin término de IC):
+    # en US/1, filas 4-5 son el tercio líquido (peso 3) y 0-3 pesan 1.
+    plain_eng = trainer(shared, tmp_path / "plain", session_ic_term=TERM)
+    plain_q = quantiles.clone().requires_grad_(True)
+    (plain_grad,) = torch.autograd.grad(plain_eng._task_loss(plain_q, target, keys), plain_q)
+    # Razón entre gradiente de colas (fila líquida vs no líquida) escalada por la razón de pesos.
+    liq_ratio = (grad[5, 0] / plain_grad[5, 0]).item()
+    nonliq_ratio = (grad[0, 0] / plain_grad[0, 0]).item()
+    assert liq_ratio / nonliq_ratio == pytest.approx(3.0, rel=1e-5)
+    # En CN/1 las filas con NaN e inf (índices 12 y 17) pesan 1, igual que la fila 0.
+    nan_ratio = (grad[12, 0] / plain_grad[12, 0]).item()
+    inf_ratio = (grad[17, 0] / plain_grad[17, 0]).item()
+    assert nan_ratio / nonliq_ratio == pytest.approx(1.0, rel=1e-5)
+    assert inf_ratio / nonliq_ratio == pytest.approx(1.0, rel=1e-5)
+
+    # Modo operable + plain_weight + liquidity_weight + stability.
+    both_opts = dict(opts, offset_column=-2, offset_scale=0.5, plain_weight=1.5)
+    both_eng = trainer(shared, tmp_path / "both", session_ic_term=both_opts)
+    packed_both = torch.cat(
+        [quantiles, liquidity.unsqueeze(1), offset.unsqueeze(1)], dim=1
+    ).requires_grad_(True)
+    loss_both = both_eng._task_loss(packed_both, target, keys)
+    exp_op = numpy_session_term_reference(
+        (median(quantiles) + offset).tolist(),
+        (target + offset).tolist(),
+        sessions,
+        weight=2.0,
+        minimum_rows=3,
+        liquidity=liquidity.tolist(),
+        liquidity_weight=3.0,
+        stability=0.5,
+    )
+    exp_plain = numpy_session_term_reference(
+        median(quantiles).tolist(),
+        target.tolist(),
+        sessions,
+        weight=1.5,
+        minimum_rows=3,
+        liquidity=liquidity.tolist(),
+        liquidity_weight=3.0,
+        stability=0.5,
+    )
+    assert loss_both.item() == pytest.approx(exp_pinball + exp_op + exp_plain, rel=rel, abs=1e-6)
+    (grad_both,) = torch.autograd.grad(loss_both, packed_both)
+    assert torch.isfinite(grad_both).all()
+
+    # Predicción constante cero y liquidez completamente ausente -> gradientes finitos.
+    zeros = torch.zeros_like(quantiles)
+    all_nan = torch.full_like(liquidity, float("nan"))
+    packed_zero = torch.cat([zeros, all_nan.unsqueeze(1)], dim=1).requires_grad_(True)
+    loss_zero = eng._task_loss(packed_zero, target, keys)
+    (grad_zero,) = torch.autograd.grad(loss_zero, packed_zero)
+    assert torch.isfinite(loss_zero) and torch.isfinite(grad_zero).all()
+
+    # Columna fuera del bloque del gráfico rechazada incluso con liquidity_weight=1.0.
+    width = shared["train"].specification().dimensions["charts"]
+    with pytest.raises(ValueError, match="bloque del gráfico"):
+        trainer(
+            shared,
+            tmp_path / "oob",
+            session_ic_term=dict(TERM, liquidity_column=-(width + 1), liquidity_weight=1.0),
+        )
+
+
+def test_absent_charts_presence_marks_liquidity_unknown_in_graphs(shared, tmp_path):
+    from types import SimpleNamespace
+
+    from mars_titan.models.titans.financial import DecisionBatch
+    from mars_titan.training.financial_run import validated_cpu_batches
+
+    opts = dict(weight=2.0, minimum_rows=3, liquidity_column=-1, liquidity_weight=3.0)
+    eng = trainer(shared, tmp_path / "charts-absent", session_ic_term=opts)
+    event = next(event for event in shared["train"].batched_events(block_rows=8) if event.inputs)
+    cpu = validated_cpu_batches(event.inputs, eng.predictor.config.inputs)[0]
+    batch = DecisionBatch.from_validated(
+        cpu, device=eng.device, dtype=eng.predictor.head.weight.dtype
+    )
+    state = eng.predictor.initial_state(batch.flow_ids, differentiable=False)
+    prepared = eng.predictor.prepare(batch, state, differentiable=False, session_complete=True)
+    masked_presence = batch.presence.clone()
+    masked_presence[0, MODALITIES.index("charts")] = False
+    masked_batch = SimpleNamespace(inputs=batch.inputs, presence=masked_presence)
+    out = eng._graphs(prepared, masked_batch)
+    assert torch.isnan(out[0, -1])
+    assert torch.isfinite(out[1:, -1]).all()
+    # La fila con charts ausente recibe peso 1 y gradiente finito en _task_loss.
+    target = torch.zeros(len(batch.flow_ids), dtype=out.dtype)
+    keys = list(zip(batch.flow_ids, batch.prediction_at, strict=True))
+    packed = out.detach().clone().requires_grad_(True)
+    loss = eng._task_loss(packed, target, keys)
+    (grad,) = torch.autograd.grad(loss, packed)
+    assert torch.isfinite(loss) and torch.isfinite(grad).all()
+
+
+def test_wp1_options_run_end_to_end_with_replay_scalar_head_and_causal_no_leakage(shared, tmp_path):
+    wp1 = dict(
+        weight=2.0,
+        minimum_rows=3,
+        liquidity_column=-1,
+        liquidity_weight=3.0,
+        stability=0.5,
+        offset_column=-2,
+        offset_scale=0.5,
+        plain_weight=1.5,
+    )
+    direct = trainer(shared, tmp_path / "direct", truncation=3, session_ic_term=wp1)
+    charts, losses, task = spied(direct)
+    assert direct.run()["status"] == "completed"
+    assert len(losses) > 2
+    for prediction, target, keys in losses:
+        assert prediction.shape == (len(keys), 7)
+        sessions = [(flow.split("/", 1)[0], at) for flow, at in keys]
+        quantiles, liq, off = prediction[:, :5], prediction[:, 5], prediction[:, 6]
+        exp_pinball = _numpy_weighted_pinball(
+            quantiles.tolist(), target.tolist(), sessions, liq.tolist(), 3.0
+        )
+        exp_op = numpy_session_term_reference(
+            (median(quantiles) + off).tolist(),
+            (target + off).tolist(),
+            sessions,
+            weight=2.0,
+            minimum_rows=3,
+            liquidity=liq.tolist(),
+            liquidity_weight=3.0,
+            stability=0.5,
+        )
+        exp_plain = numpy_session_term_reference(
+            median(quantiles).tolist(),
+            target.tolist(),
+            sessions,
+            weight=1.5,
+            minimum_rows=3,
+            liquidity=liq.tolist(),
+            liquidity_weight=3.0,
+            stability=0.5,
+        )
+        assert task(prediction, target, keys).item() == pytest.approx(
+            exp_pinball + exp_op + exp_plain, rel=1e-7, abs=1e-12
+        )
+    identity = direct.identity["recipe"]["session_ic_term"]
+    assert identity["liquidity_weight"] == 3.0 and identity["stability"] == 0.5
+
+    # Replay por bloques reproduce los gradientes directos.
+    replayed = trainer(
+        shared, tmp_path / "replayed", truncation=3, accumulation_rows=8, session_ic_term=wp1
+    )
+    replayed.run()
+    left, right = records(direct), records(replayed)
+    assert len(left) == len(right) > 2
+    for first, second in zip(left, right, strict=True):
+        for name, value in first.items():
+            torch.testing.assert_close(second[name], value, rtol=1e-9, atol=1e-12)
+
+    # Cabeza escalar con mae también funciona con liquidity_weight y stability.
+    scalar_model = predictor(shared, head=SCALAR_HEAD)
+    scalar_engine = trainer(
+        shared,
+        tmp_path / "scalar",
+        model=scalar_model,
+        loss="mae",
+        session_ic_term=dict(
+            weight=2.0, minimum_rows=3, liquidity_column=-1, liquidity_weight=3.0, stability=0.5
+        ),
+    )
+    assert scalar_engine.run()["status"] == "completed"
+
+    # Sin fugas del futuro: perturbar el futuro tras `cut` no cambia ni un bit hasta `cut`.
+    cut = decision("2022-12-09")
+    engines = []
+    for name, perturb in (("base", None), ("future", cut)):
+        eng = trainer(
+            streams(tmp_path / name, perturb_after=perturb),
+            tmp_path / name / "run",
+            session_ic_term=wp1,
+        )
+        eng.run()
+        engines.append(eng)
+    base, future = engines
+    past_base = [e for e in entries(base.audit, "prediction", "train") if e[3] <= cut]
+    past_future = [e for e in entries(future.audit, "prediction", "train") if e[3] <= cut]
+    assert past_base and past_base == past_future
+    steps = [u[2] for u in entries(base.audit, "update") if u[1] <= cut]
+    assert steps
+    for first, second in zip(records(base)[: len(steps)], records(future), strict=False):
+        for key, value in first.items():
+            torch.testing.assert_close(second[key], value, rtol=0, atol=0)
+
+
+def test_liquidity_weight_weights_scalar_and_point_declared_losses(shared, tmp_path):
+    generator = torch.Generator().manual_seed(43)
+    keys = [(f"US/A{i:04d}", 1) for i in range(6)] + [(f"US/A{i:04d}", 2) for i in range(6)]
+    sessions = [(flow.split("/", 1)[0], at) for flow, at in keys]
+    target = torch.randn(12, dtype=torch.float64, generator=generator)
+    liquidity = torch.tensor([1.0, 2.0, 3.0, 4.0, 5.0, 6.0] * 2, dtype=torch.float64)
+    row_w = torch.tensor([1.0, 1.0, 1.0, 1.0, 4.0, 4.0] * 2, dtype=torch.float64)
+    opts = dict(weight=2.0, minimum_rows=3, liquidity_column=-1, liquidity_weight=4.0)
+    scalar_pred = torch.randn(12, dtype=torch.float64, generator=generator)
+    packed_scalar = torch.stack([scalar_pred, liquidity], dim=1)
+    ic_scalar = numpy_session_term_reference(
+        scalar_pred.tolist(),
+        target.tolist(),
+        sessions,
+        weight=2.0,
+        minimum_rows=3,
+        liquidity=liquidity.tolist(),
+        liquidity_weight=4.0,
+    )
+    for kind, per_row in (
+        ("mae", (scalar_pred - target).abs()),
+        ("mse", (scalar_pred - target).square()),
+        (
+            "huber",
+            torch.nn.functional.huber_loss(scalar_pred, target, reduction="none", delta=0.01),
+        ),
+    ):
+        eng = trainer(
+            shared,
+            tmp_path / f"scalar-{kind}",
+            model=predictor(shared, head=SCALAR_HEAD),
+            loss=kind,
+            session_ic_term=opts,
+        )
+        expected = ((row_w * per_row).sum() / row_w.sum()).item() + ic_scalar
+        assert eng._task_loss(packed_scalar, target, keys).item() == pytest.approx(
+            expected, rel=1e-8
+        )
+
+    from mars_titan.training.quantile_objectives import POINT_COMPONENT, POINT_MAE
+
+    quantiles = torch.randn(12, 5, dtype=torch.float64, generator=generator).sort(dim=1).values
+    packed_q = torch.cat([quantiles, liquidity.unsqueeze(1)], dim=1)
+    ic_q = numpy_session_term_reference(
+        median(quantiles).tolist(),
+        target.tolist(),
+        sessions,
+        weight=2.0,
+        minimum_rows=3,
+        liquidity=liquidity.tolist(),
+        liquidity_weight=4.0,
+    )
+    l1_med = (median(quantiles) - target).abs()
+    for kind, scale in ((POINT_MAE, 1.0), (POINT_COMPONENT, 0.1)):
+        eng = trainer(shared, tmp_path / f"point-{kind}", loss=kind, session_ic_term=opts)
+        expected = ((row_w * (l1_med * scale)).sum() / row_w.sum()).item() + ic_q
+        assert eng._task_loss(packed_q, target, keys).item() == pytest.approx(expected, rel=1e-8)
