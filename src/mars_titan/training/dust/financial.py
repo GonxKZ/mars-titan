@@ -95,6 +95,9 @@ class FinancialDustAdapter:
             "cross_asset_attention",
             "asset_groups",
             "session_hologram",
+            # --- hopfield_rank_brain ---
+            "hopfield_rank_brain",
+            # --- fin hopfield_rank_brain ---
             "laplace_scale_head",
             "auxiliary_horizons",
             "session_rank_inputs",
@@ -157,6 +160,9 @@ class FinancialDustAdapter:
                     # --- ic_titans_mlp ---
                     "ic_titans_mlp",
                     # --- fin ic_titans_mlp ---
+                    # --- hopfield_rank_brain ---
+                    "hopfield_rank_brain",
+                    # --- fin hopfield_rank_brain ---
                     "output_objective",
                     "auxiliary_heads",
                     # --- factor_memory ---

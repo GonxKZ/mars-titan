@@ -20,6 +20,11 @@ from .episodic_readout import EpisodicReadout, apply_episodic_readout
 from .episodic_snapshot import EpisodeSnapshot
 from .evidence_bridge import SharedEvidenceBridge
 from .financial import FinancialPredictor, _tensor_digest
+
+# --- hopfield_rank_brain ---
+from .hopfield_rank_brain import HopfieldRankBrainConfig, RepulsiveSparseHopfieldRankBrain
+
+# --- fin hopfield_rank_brain ---
 from .laplace_scale import LaplaceScale
 from .local_control import MACProjectionControl
 from .opponent_heads import OpponentSpread
@@ -129,6 +134,10 @@ def declared_sources(config):
     if getattr(config, "session_resonator", None) is not None:
         sources.append("mars_titan.models.titans.session_resonator")
     # --- fin session_resonator ---
+    # --- hopfield_rank_brain ---
+    if getattr(config, "hopfield_rank_brain", None) is not None:
+        sources.append("mars_titan.models.titans.hopfield_rank_brain")
+    # --- fin hopfield_rank_brain ---
     if getattr(config, "learning_scale", None) is not None:
         sources.append("mars_titan.models.learning_scale")
     if getattr(config, "reference_encoder", None) == "dlinear":
@@ -281,6 +290,14 @@ def _module_settings(module):
         fields = ("hidden_size",)
         settings["session_resonator"] = module.config.identity()
     # --- fin session_resonator ---
+    # --- hopfield_rank_brain ---
+    if type(module) is RepulsiveSparseHopfieldRankBrain:
+        if type(module.config) is not HopfieldRankBrainConfig:
+            raise ValueError("hopfield_rank_brain no conserva su configuración identificada")
+        module.config.__post_init__()
+        fields = ("hidden_size", "prototypes_count", "steps")
+        settings["hopfield_rank_brain"] = module.config.identity()
+    # --- fin hopfield_rank_brain ---
     settings.update((name, getattr(module, name)) for name in fields)
     return settings
 
@@ -404,6 +421,38 @@ def _validate_session_resonator(predictor):
 
 
 # --- fin session_resonator ---
+
+
+# --- hopfield_rank_brain ---
+def _validate_hopfield_rank_brain(predictor):
+    """Comprobar que hopfield_rank_brain coincide con su configuración."""
+    declared, module = predictor.config.hopfield_rank_brain, predictor.hopfield_rank_brain
+    if declared is None and module is None:
+        return
+    if (
+        type(declared) is not HopfieldRankBrainConfig
+        or type(module) is not RepulsiveSparseHopfieldRankBrain
+        or type(module.config) is not HopfieldRankBrainConfig
+    ):
+        raise ValueError("hopfield_rank_brain no corresponde a la configuración declarada")
+    declared.__post_init__()
+    module.config.__post_init__()
+    if (
+        module.config != declared
+        or module.hidden_size != predictor.config.hidden_size
+        or module.prototypes_count != declared.prototypes
+        or module.steps != declared.steps
+        or not isinstance(getattr(module, "out", None), torch.nn.Linear)
+        or any(
+            parameter.device != predictor.head.weight.device
+            or parameter.dtype != predictor.head.weight.dtype
+            for parameter in module.parameters()
+        )
+    ):
+        raise ValueError("hopfield_rank_brain no corresponde a la configuración declarada")
+
+
+# --- fin hopfield_rank_brain ---
 
 
 def _validate_intervention(readout):
@@ -637,6 +686,9 @@ class FrozenFinancialConsumer:
         # --- session_resonator ---
         _validate_session_resonator(predictor)
         # --- fin session_resonator ---
+        # --- hopfield_rank_brain ---
+        _validate_hopfield_rank_brain(predictor)
+        # --- fin hopfield_rank_brain ---
         _validate_intervention(readout)
         self._models = (("predictor", predictor),) + ((("readout", readout),) if readout else ())
         self._signature, modes = _execution_signature(self._models)
@@ -744,6 +796,13 @@ class FrozenFinancialConsumer:
                 "(session_complete=True)"
             )
         # --- fin session_resonator ---
+        # --- hopfield_rank_brain ---
+        if self.predictor.hopfield_rank_brain is not None and session_complete is not True:
+            raise ValueError(
+                "El mezclador entre activos necesita la sesión completa en un bloque "
+                "(session_complete=True)"
+            )
+        # --- fin hopfield_rank_brain ---
         options = {}
         if self.predictor.local_control is not None:
             options.update(control_selection=selection, control_context_id=context_id)

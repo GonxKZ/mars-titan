@@ -113,6 +113,10 @@ PREDICTOR_CHANGES = (
     # Resonador holográfico de descomposición latente transversal (CSRF, WP13-2).
     "session_resonator",
     # --- fin session_resonator ---
+    # --- hopfield_rank_brain ---
+    # Cerebro de atractores de Hopfield escasos con inhibición lateral de orden (RSHRB).
+    "hopfield_rank_brain",
+    # --- fin hopfield_rank_brain ---
 )
 # Cambios que se declaran con un nombre en lugar de un objeto.
 NAMED_CHANGES = (
