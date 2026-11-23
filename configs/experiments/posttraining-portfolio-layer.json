@@ -2,7 +2,7 @@
   "schema_version": 1,
   "kind": "posttraining_portfolio_layer_v1",
   "final_test_access": false,
-  "description": "P, la capa de cartera para las medidas netas (encargo del coordinador del 23 de noviembre de 2026), declarada antes de escribir su código y de medir (programa §5.12). Descriptivo y secundario. Puntuación operable de S2 con su configuración, tipificada en rangos dentro de cada sesión, sin las filas con |α| sobre el tope de F (cuantil 0,99 de calibración); lectura principal en el tercio más líquido de cada sesión y secundaria con todos los nombres. Libro largo del decil alto y corto del bajo, pesos iguales por pata, neutral en dinero, exposición bruta 2, rendimiento y + α. Suavizado: media exponencial por activo del rango tipificado con λ en {1; 0,6; 0,4; 0,25; 0,15}; banda de no operar por histéresis de rangos con salida en el extremo {0,1; 0,2; 0,3}; (λ, salida) elegidos en calibración por el neto medio a 3 pb por lado. Coste c·Σ|Δw| con c en {2; 3; 5} pb por lado. Control: la señal diaria sin suavizar ni banda; referencia: el alfa solo. En evaluación: neto medio, rotación, Sharpe anualizado, caída máxima y coste de equilibrio por coste; fracción de ventanas de 1, 5 y 21 sesiones con neto > 0 (Wilson y arranque estacionario) y su neto medio; capa − control pareada por sesión con t de Newey-West. Regla (alcance líquido): entra si su neto a 3 pb supera al control con t ≥ 2 y su neto a 5 pb es > 0 con t ≥ 2. Límites: ejecución al precio de la decisión, coste fijo por lado sin impacto, sin modelar la disponibilidad de cortos.",
+  "description": "P, la capa de cartera para las medidas netas (encargo del coordinador del 23 de noviembre de 2026), declarada antes de escribir su código y de medir (programa §5.12). Descriptivo y secundario. Puntuación operable de S2 con su configuración, tipificada en rangos dentro de cada sesión, sin las filas con |α| sobre el tope de F (cuantil 0,99 de calibración); lectura principal en el tercio más líquido de cada sesión y secundaria con todos los nombres. Libro largo del decil alto y corto del bajo, pesos iguales por pata, neutral en dinero, exposición bruta 2, rendimiento y + α. Suavizado: media exponencial por activo del rango tipificado con λ en {1; 0,6; 0,4; 0,25; 0,15}; banda de no operar por histéresis de rangos con salida en el extremo {0,1; 0,2; 0,3}; (λ, salida) elegidos en calibración por el neto medio a 3 pb por lado. Coste c·Σ|Δw| con c en {2; 3; 5} pb por lado. Control: la señal diaria sin suavizar ni banda; referencia: el alfa solo. En evaluación: neto medio, rotación, Sharpe anualizado, caída máxima y coste de equilibrio por coste; fracción de ventanas de 1, 5 y 21 sesiones con neto > 0 (Wilson y arranque estacionario) y su neto medio; capa − control pareada por sesión con t de Newey-West. Regla (alcance líquido): entra si su neto a 3 pb supera al control con t ≥ 2 y su neto a 5 pb es > 0 con t ≥ 2. Detalles fijados antes de medir: a igualdad en calibración se elige lo más sencillo (λ mayor y después salida menor); cada tramo empieza sin cartera y con el suavizado reiniciado; una sesión con menos nombres que min_assets en el universo o con una pata vacía no tiene posiciones; los deciles salen del percentil de punto medio del rango suavizado. Límites: ejecución al precio de la decisión, coste fijo por lado sin impacto, sin modelar la disponibilidad de cortos.",
   "seed": 42,
   "min_assets": 30,
   "parent": "titans_mac_nogain",
@@ -61,5 +61,15 @@
     "beats_control_min_t": 2.0,
     "positive_cost_bps": 5.0,
     "positive_min_t": 2.0
+  },
+  "details": {
+    "choice_tie_break": "simplest_first_larger_lambda_then_smaller_exit",
+    "split_start": "empty_book_and_restarted_smoothing",
+    "thin_session": "no_positions_below_min_assets",
+    "empty_leg": "no_positions_that_session",
+    "deciles": "midpoint_percentile_of_the_smoothed_score_long_at_or_above_one_minus_tail_short_below_tail",
+    "window_intervals": "wilson_and_stationary_bootstrap_for_single_sessions_wilson_for_longer_windows",
+    "sharpe": "mean_over_std_of_net_times_sqrt_annualization",
+    "drawdown": "of_the_cumulative_sum_of_net"
   }
 }

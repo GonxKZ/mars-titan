@@ -630,7 +630,7 @@ calibración.
 
 Es el encargo del coordinador del 23 de noviembre: las medidas netas de una cartera sencilla sobre
 la puntuación operable de S2.
-- La declaración es `configs/experiments/posttraining-portfolio-layer.json` (huella 13b9792a…),
+- La declaración es `configs/experiments/posttraining-portfolio-layer.json` (huella 828ee84c…),
   fijada antes de escribir el código y de medir.
 - Es descriptivo y secundario.
 - Tiene la misma separación que F: 2013 es desarrollo, los orígenes limpios confirman y 2024 sigue
@@ -689,6 +689,15 @@ Si no, no entra, y las cifras se dan tal cual.
 - La ejecución es al precio de la decisión, con coste fijo por lado y sin impacto de mercado.
 - No se modela si los cortos están disponibles.
 - Los costes son los mismos en todo el tercio líquido.
+
+**Detalles fijados antes de medir** (en la declaración, con el código):
+- En calibración, a igualdad gana lo más sencillo: λ mayor y, después, salida menor.
+- Cada tramo empieza sin cartera y con el suavizado reiniciado.
+- Una sesión con menos nombres que min_assets en el universo, o con una pata vacía, no tiene
+  posiciones y paga el cierre.
+- Los deciles salen del percentil de punto medio del rango suavizado.
+- La orden es `python -m mars_titan.evaluation.portfolio_layer medir`, con las mismas entradas
+  que S2.
 
 ## 6. Etapas con GPU (fase 4)
 
