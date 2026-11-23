@@ -601,13 +601,33 @@ más.
   - las tres tablas de predicciones tienen la misma huella.
   - No se repite en GPU.
 - **Coste:** recorridos de 3.782, 2.360, 2.651 y 2.037 s (base) y 3.407, 2.381, 1.583 y 1.270 s (rangos). RSS 10 GB y GPU reservada 4,6 GB.
-- **En marcha:** el par de la v10 (titans_mac, receta con ganancia), desde las 18:25Z.
+- **Par de la v10** (titans_mac, receta con ganancia; 2013, semilla 42, evaluación de 251 sesiones,
+  t HAC; medido el 22-11):
+  - N = +0,0012 (t 2,45; IC [+0,0002; +0,0022]; MDE80 0,0014). Tiene el mismo signo en validación
+    (+0,0012, t 1,4) y en calibración (+0,0005, t 0,4), y no decae (−0,0017 al año, t −1,2).
+  - D = +0,0014 (t 1,2), no detectado. Cae a lo largo del año (−0,0124 al año, t −4,1; el 4.º
+    trimestre da −0,0039).
+  - A = +0,0004 (t 0,9) e I = +0,0008 (t 1,1).
+  - Lectura: en la v10, escribir en evaluación suma poco, pero suma, y sin coste. Una sola semilla.
+- **N con las semillas 43 y 44** (aaa64e35, `posttraining-write-twins-v10-n.json`): solo la paridad
+  en línea y la red evaluada sin escribir. Los dos trabajos de la semilla 42 se reutilizan. En GPU
+  desde el 23-11 a las 00:38Z.
 - **Brazos con reinicio** (ae7eb3fa, f611f7a5; aprobados por el coordinador):
   - R0 evalúa desde el estado inicial de la memoria y del contexto al abrirse la decisión, sin calcular el calentamiento.
   - R63 vuelve además a ese estado cada 63 instantes medidos.
   - Antes de ningún brazo, la calibración se regenera sin reinicio y debe salir bit a bit igual.
   - Regla: R0 y R63 sobre el par cuya N decaiga en evaluación (pendiente negativa con |t| > 2). Si no decae ninguno, solo R0 sobre el par con rangos: responde si las escrituras del calentamiento aportan algo.
-  - Coste estimado (hipótesis): 25–32 min de GPU.
+  - Coste estimado (hipótesis): 25–32 min de GPU. Medido: 13 min de paridad de calibración y 18 min
+    de R0.
+- **R0 sobre el par con rangos de la v8** (la regla dio este caso, porque N no decae en ningún par;
+  2013, semilla 42, evaluación de 251 sesiones, t HAC, IC del 95 %):
+  - N = +0,0011 (t 3,52; IC [+0,0005; +0,0018]).
+  - R0 − oo = −0,0001 (t −1,16; IC [−0,0003; +0,0001]; MDE80 0,0003): lo escrito en el calentamiento
+    no aporta nada detectable.
+  - R0 − of = +0,0010 (t 3,25; IC [+0,0004; +0,0016]): R0 conserva en torno al 90 % de N.
+  - Las pendientes no son distintas de cero.
+  - Lectura: la ganancia de escribir sale de lo que se escribe en la propia evaluación. Reiniciar ni
+    ayuda ni perjudica más allá de ±0,0003, así que la receta no necesita reinicio.
 
 
 ## 7. Documentos de Gemini y auditoría del segundo enjambre
