@@ -85,6 +85,15 @@ from .cross_sectional_rank_memory import (
 )
 from .differential_attention import DIFFERENTIAL_ATTENTION
 from .differential_attention import identity as differential_identity
+
+# --- dual_hemisphere_brain ---
+from .dual_hemisphere_brain import (
+    DualHemisphereBrain,
+    DualHemisphereBrainConfig,
+    parse_dual_hemisphere_brain,
+)
+
+# --- fin dual_hemisphere_brain ---
 from .financial_inputs import (
     FINAL_TEST_US,
     FLOW_ID,
@@ -284,6 +293,9 @@ class FinancialConfig:
     # WP11: interferómetro holográfico de sesión en fase dual (O(N), sin eco propio). Sin
     # declararlo, la identidad y el cálculo no cambian.
     session_hologram: SessionHologramConfig | None = None
+    # --- dual_hemisphere_brain ---
+    dual_hemisphere_brain: DualHemisphereBrainConfig | None = None
+    # --- fin dual_hemisphere_brain ---
     # F1 de #749: escala de Laplace, otro objetivo de salida excluyente con el de IC.
     laplace_scale_head: LaplaceScaleHead | None = None
     # F5 de #749: cabezas auxiliares de horizontes largos. Sin declararlas nada cambia.
@@ -379,6 +391,9 @@ class FinancialConfig:
         self._check_auxiliary_horizons()
         self._check_mature_reliability()
         self._check_cross_sectional_rank_memory()
+        # --- dual_hemisphere_brain ---
+        self._check_dual_hemisphere_brain()
+        # --- fin dual_hemisphere_brain ---
         self._check_core_variants()
         self._check_learning_scale()
         self._check_technical_branch()
@@ -899,6 +914,21 @@ class FinancialConfig:
                     "contraste"
                 )
 
+    # --- dual_hemisphere_brain ---
+    def _check_dual_hemisphere_brain(self):
+        """Cerebro holográfico de doble hemisferio con ortogonalización transversal (CODHB)."""
+        object.__setattr__(
+            self,
+            "dual_hemisphere_brain",
+            parse_dual_hemisphere_brain(self.dual_hemisphere_brain),
+        )
+        if self.dual_hemisphere_brain is not None and self.auxiliary_horizons is not None:
+            raise ValueError(
+                "Las cabezas auxiliares con cerebro de doble hemisferio necesitan otro contraste"
+            )
+
+    # --- fin dual_hemisphere_brain ---
+
     def _check_memory_projections(self):
         """Normalización residual y proyecciones de memoria."""
         if type(self.memory_residual_layer_norm) is not bool:
@@ -1121,6 +1151,10 @@ class FinancialConfig:
             result.update(asset_groups=groups)
         if self.session_hologram is not None:
             result.update(session_hologram=self.session_hologram.identity())
+        # --- dual_hemisphere_brain ---
+        if self.dual_hemisphere_brain is not None:
+            result.update(dual_hemisphere_brain=self.dual_hemisphere_brain.identity())
+        # --- fin dual_hemisphere_brain ---
         if self.auxiliary_horizons is not None:
             result.update(auxiliary_horizons=self.auxiliary_horizons.identity())
         if self.mature_reliability is not None:
@@ -1557,6 +1591,19 @@ class FinancialPredictor(nn.Module):
             if config.session_hologram is not None
             else None
         )
+        # --- dual_hemisphere_brain ---
+        self.dual_hemisphere_brain = (
+            DualHemisphereBrain(
+                config.hidden_size,
+                config.inputs.dimensions,
+                config.dual_hemisphere_brain,
+                seed=config.seed,
+                dtype=dtype,
+            )
+            if config.dual_hemisphere_brain is not None
+            else None
+        )
+        # --- fin dual_hemisphere_brain ---
         # #791 empieza con pesos nulos y no consume ningún generador.
         self.reliability_gates = (
             ReliabilityGates(config.mature_reliability, dtype=dtype)
@@ -1590,6 +1637,10 @@ class FinancialPredictor(nn.Module):
     def session_level(self):
         """Si alguna operación necesita todas las filas de la sesión en el mismo bloque."""
         objective = self.output_objective
+        # --- dual_hemisphere_brain ---
+        if self.dual_hemisphere_brain is not None:
+            return True
+        # --- fin dual_hemisphere_brain ---
         return (
             self.config.session_rank_inputs is not None
             or self.cross_asset_attention is not None
@@ -2719,6 +2770,19 @@ class FinancialPredictor(nn.Module):
                 encoded = mixer(encoded, markets, batch.prediction_at)
             if hologram is not None and hologram.config.position == "after_technical":
                 encoded = hologram(encoded, markets, batch.prediction_at)
+            # --- dual_hemisphere_brain ---
+            if self.dual_hemisphere_brain is not None:
+                encoded = self.dual_hemisphere_brain(
+                    encoded,
+                    received.inputs["prices"],
+                    batch.inputs["news"],
+                    batch.inputs["fundamentals"],
+                    batch.inputs["macro"],
+                    batch.presence,
+                    markets,
+                    batch.prediction_at,
+                )
+            # --- fin dual_hemisphere_brain ---
             rank_memory_keys = None
             if self.cross_sectional_rank_memory is not None:
                 # Claves transversales centradas sobre la representación previa a CRRM y lectura

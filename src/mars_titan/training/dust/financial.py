@@ -143,6 +143,12 @@ class FinancialDustAdapter:
             raise ValueError(
                 "La variante Dust inicial admite TransformerDirect escalar sin ampliaciones"
             )
+        # --- dual_hemisphere_brain ---
+        if config.dual_hemisphere_brain is not None or predictor.dual_hemisphere_brain is not None:
+            raise ValueError(
+                "La variante Dust inicial admite TransformerDirect escalar sin ampliaciones"
+            )
+        # --- fin dual_hemisphere_brain ---
         self.predictor = predictor
         self.device, self.dtype = predictor.head.weight.device, predictor.head.weight.dtype
         if str(self.device) not in {"cpu", "cuda:0"} or self.dtype not in (

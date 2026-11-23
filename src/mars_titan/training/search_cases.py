@@ -90,6 +90,9 @@ PREDICTOR_CHANGES = (
     "cross_sectional_rank_memory",
     # Interferómetro holográfico de sesión en fase dual (WP11).
     "session_hologram",
+    # --- dual_hemisphere_brain ---
+    "dual_hemisphere_brain",
+    # --- fin dual_hemisphere_brain ---
 )
 # Cambios que se declaran con un nombre en lugar de un objeto.
 NAMED_CHANGES = (
