@@ -113,7 +113,7 @@
       "prepare_workers": 3
     },
     "workers": {
-      "mars_titan": 4,
+      "mars_titan": 3,
       "references": 1
     },
     "learning_traces": {
@@ -129,10 +129,10 @@
   "budget": {
     "min_free_gib": 60,
     "memory_gib": {
-      "mars_titan": 24
+      "mars_titan": 8
     },
     "cuda_gib": {
-      "mars_titan": 16
+      "mars_titan": 6
     },
     "deadline_utc": "2026-12-01T11:00:00+00:00"
   },
