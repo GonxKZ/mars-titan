@@ -152,6 +152,10 @@ con sus controles, igual que el holograma de sesión
 el mismo examen que el núcleo. El enjambre escribe los adaptadores; el coordinador los verifica con mutaciones propias
 y los mide en la cuarta criba. Entra en la campaña final lo que supere a su control.
 
+Estado a las 18:00Z del 23: el enjambre no ha recibido el contrato y trabaja en un sistema aparte (detalle en
+«Enjambre de las cuatro familias», más abajo). La cuarta criba mide lo que sí existe en el motor: las invenciones de
+Gemini para el núcleo y el núcleo agéntico (`mars_titan_cognitive`). La familia 3 no tiene todavía forma de examinarse aquí.
+
 **Disco para el origen final.** La copia empaquetada del origen de 2023 son unos 45 GB (la de 2013 son 27). Con 69 GiB
 libres y el suelo de la guardia en 60 no cabe: hace falta retirar antes la de 2013 y, además, que se libere la caché
 de construcción de Docker (decisión del dueño) o espacio equivalente.
@@ -521,6 +525,55 @@ para rasgos nuevos. Como en el segundo, lo que sigue separa lo medido aquí de l
 | Auditoría de código (16 hallazgos, 13 parches) | Primera pasada. Seis están en la rama de post-entrenamiento y diez en herramientas propias (informe, contrastes, guiones de Colab, guardia, búsqueda) | Los de post-entrenamiento, enviados a ese programa. Los propios se integran con sus pruebas cuando cierre su verificador; la cota del origen en 2023 del guion de Colab entra en cualquier caso |
 | Estado del arte tabular, Colab con RTX PRO 6000, macro con compuerta | En curso | — |
 | Rasgos nuevos (encargo directo): contabilidad dinámica y anuncios, familias de Alpha158 que faltan, recuento de noticias, transformaciones relativas al sector | Código y pruebas con datos sintéticos, en curso. Cobertura medida de los hechos contables en 300 activos: del 13 % al 55 % según el concepto, sin cuenta de resultados ni acciones en circulación | Se calculan con los datos reales y se miden con árboles y con la red tabular, familia a familia, antes de tocar las entradas de la campaña |
+
+### Enjambre de las cuatro familias (sesión interactiva del dueño, 23 de noviembre)
+
+Unos treinta trabajadores con verificador y crítico propios, en la rama `mmarrs-titan` (árbol de trabajo
+`MARS-TITAN-postentrenamiento-opt`, 36 ficheros nuevos sin confirmar). Leído entero dos veces: hasta las 15:00Z y
+hasta las 18:00Z. Construye un sistema propio, con su entrenador, su capa de datos y su evaluación; a las 18:00Z no usa
+el [contrato de módulo de sesión](../engineering/session-module-contract.md), así que sus familias todavía no pasan
+por el motor de campaña ni por su examen. Encargo vigente del dueño: los mejores datos para que aprendan las cuatro
+familias, robustez ante datos ausentes y toda la taxonomía de aprendizaje profundo, con vistas a los ajustes completos
+en la RTX PRO 6000 cuando él avise.
+
+Lo que mide su laboratorio (ronda A, EE. UU., 251 sesiones de 2013 fuera de muestra, una semilla, ajuste con
+ventanas de 160 sesiones y solo los 46 rasgos técnicos de la tabla `x3-us-2013-tabla`, BF16):
+
+| Familia | Variante | IC | Frente a su versión anterior | Su control |
+| --- | --- | --- | --- | --- |
+| Base densa | `v00_dense_baseline` | 0,048 | — | — |
+| 1. Titans original | `titans_v1` con ScheduleFree; `t15b_full_v2` | 0,050; 0,058 | +0,008 | Sin placebo propio |
+| 2. Cerebro holográfico | `nb_v1_k1`; `nb_v2_fhrr_lgn_pi`; `nb_v2_full` | 0,039; 0,057; 0,043 | +0,018; la completa pierde 0,014 | Sin placebo propio |
+| 3. MMARRS-TITAN | `v13b`; `v14b`; `v14c` con bucle contrafactual | 0,050; 0,051; 0,055 | +0,005 | El contrafactual barajado da 0,050: la ganancia desaparece |
+| 4. Núcleo agéntico | `cog_v1_soft_k3` (6 herramientas); tres de la v2 (10 herramientas) | 0,057; de 0,043 a 0,046 | La v2 pierde 0,010 | Uniforme y placebo de la v2, al mismo nivel que ella |
+
+Cómo leerlo:
+
+- **No son cifras comparables con las de la campaña.** Con esa misma tabla y toda su historia, LightGBM da 0,112 y el
+  núcleo de la campaña, de 0,113 a 0,117 con las entradas completas. Un ajuste de 160 sesiones mide otra cosa: qué
+  aprende deprisa cada arquitectura. Sirve para ordenar ideas, no para decir que una familia gana.
+- **Una semilla y un sesgo que señaló su propio crítico:** los modelos con estado dan cuatro veces menos pasos de
+  optimizador por época que la base densa. Parte de las diferencias entre familias puede ser eso.
+- **Lo que mejor aguanta su propio control** es el bucle contrafactual de la familia 3 (pierde toda la ganancia al
+  barajarlo). En la familia 2, las piezas de plasticidad lenta empeoran con ventanas cortas; en la 4, más
+  herramientas no es mejor.
+- Tres supuestos suyos siguen chocando con lo comprobado aquí: BF16, un examen en 2024 que no existe y el rendimiento
+  esperado de la RTX PRO 6000.
+
+Auditoría de datos del enjambre (muestra de 250 activos por mercado, antes de 2024), coherente con la propia (D-1):
+en EE. UU. faltan el 63 % de los fundamentales y el 82 % de las noticias, y el 100 % de ambos de 2000 a 2008; en
+China, el 99 % de los fundamentales y el 88 % de las noticias; sin volumen, el 2,3 % y el 3,8 % de las filas; curtosis
+de los retornos diarios de 175 y de 53.
+
+| Propuesta del enjambre | Estado aquí | Cómo se mide y decisión |
+| --- | --- | --- |
+| 24 señales calculadas sobre todo el conjunto (variación bipotencia y saltos, momento residual frente a pares, reversión condicionada a liquidez, asimetría de Amihud, velocidad y aceleración de rangos, rachas de límite y edad tras una suspensión para China, sorpresa de disponibilidad, contradicciones entre modalidades, compuestos contables con caducidad) | Sus pruebas pasan en su árbol y su auditoría da IC univariantes con t de hasta −7 en China. Sin medida del valor que añaden sobre las 46 columnas | D-10: árboles con toda la historia, 46 columnas frente a 46 más las señales, semillas 42 a 44, pareado por sesión, en 2013 y 2015 de EE. UU. y en China. Si suman, entran como versión nueva de los rasgos |
+| Índices de mercado, carteras que imitan factores e indicadores macro derivados | En construcción desde las 17:49Z | Igual que la fila anterior, cuando entregue |
+| Optimizador ScheduleFree y media de pesos con corrección de sesgo | En su laboratorio, corregir el sesgo de la media sube la base densa de 0,055 a 0,066 y ScheduleFree la lleva a 0,068. En el motor de campaña la media lenta de pesos sin calentamiento ya estaba señalada (segundo enjambre) | Candidato a una criba de optimizador en 2013 si queda tiempo tras la campaña final; exige una opción nueva en el entrenador, con sus pruebas |
+| Entradas con rango gaussiano para colas pesadas; fusión que distingue dato ausente de dato cero | El motor ya ordena por sesión la rama técnica y la tercera criba mide la compuerta de presencia (`titans_mac_mgate`) y los rangos sin ausentes | Se lee en la tercera criba |
+| Bucle contrafactual (familia 3), codificación FHRR con entrada doble y precisión por activo (familia 2), núcleo cognitivo de seis herramientas (familia 4) | Solo en su sistema | Entran en el examen de la campaña cuando existan como módulo de sesión según el contrato, con su placebo; hasta entonces, hipótesis |
+| Cabeza de alfa calibrada en escala para la cartera | Ataca un fallo de su evaluación (pesos lineales sobre predicciones sin escala). Aquí la escala la fija el post-entrenamiento (F7-b) | No aplica al motor |
+| Sonda de geometría de la pérdida (hessiana, colapso neuronal, cuello de información) | Herramienta de diagnóstico | Útil para el trabajo escrito; no cambia un modelo |
 
 ## Criba de la base nueva: atención entre activos sobre el trío sin ganancia
 
