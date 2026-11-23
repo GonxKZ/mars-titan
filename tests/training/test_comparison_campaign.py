@@ -2178,9 +2178,14 @@ def test_a_joint_campaign_declares_both_markets_and_the_full_view_of_each_origin
     # La cohorte por huella solo existe para US: la conjunta declara la vista completa.
     with pytest.raises(ValueError, match="vista completa de cada origen"):
         campaign.checked_declaration(declaration(market="US+CN"))
-    for market in ("CN", "CN+US", "US+CN+JP", "us", None):
-        with pytest.raises(ValueError, match=r"US o de US\+CN"):
+    for market in ("CN+US", "US+CN+JP", "us", "cn", None):
+        with pytest.raises(ValueError, match=r"US, de CN o de US\+CN"):
             campaign.checked_declaration(declaration(market=market, cohort=full))
+    # China sola es una campaña propia: como la conjunta, declara la vista completa.
+    chinese = campaign.checked_declaration(declaration(market="CN", cohort=full))
+    assert chinese["market"] == "CN" and chinese["cohort"] == full
+    with pytest.raises(ValueError, match="vista completa de cada origen"):
+        campaign.checked_declaration(declaration(market="CN"))
     for cohort in (
         dict(size=16, rule="otra"),
         dict(size=16, extra=1),
@@ -2193,6 +2198,25 @@ def test_a_joint_campaign_declares_both_markets_and_the_full_view_of_each_origin
         declaration(cohort=dict(size=301, rule="entire_source_view"))
     )
     assert single["market"] == "US"
+
+
+def cn_source(origin=2019):
+    """Vista ficticia de China sola: los activos de la de prueba con identidad de ese mercado."""
+    from tests.training.test_screening_cohorts import reconcile, source
+
+    document = source(origin)
+    view = document["temporal_view"]
+    document["assets"] = [
+        dict(asset, market="CN", symbol=f"{600000 + index}.SH")
+        for index, asset in enumerate(document["assets"])
+    ]
+    document["coverage"] = [
+        dict(market="CN", symbol=a["symbol"], state="encoded", samples=a["samples"])
+        for a in document["assets"]
+    ]
+    document["markets"] = ["CN"]
+    document["temporal_view"] = dict(view, protocol=dict(view["protocol"], market="CN"))
+    return reconcile(document)
 
 
 def test_prepare_writes_the_full_view_of_each_origin_and_checks_its_markets(tmp_path):
@@ -2236,6 +2260,22 @@ def test_prepare_writes_the_full_view_of_each_origin_and_checks_its_markets(tmp_
     )
     kept = campaign.prepare(whole, Layout(tmp_path / "whole", tmp_path / "us-views"))
     assert all(s["markets"] == ["US"] and s["size"] == 301 for s in kept.values())
+    # China sola prepara su propia vista y no acepta la de otro mercado ni la conjunta.
+    only_cn = Layout(tmp_path / "cn", tmp_path / "cn-views")
+    views(only_cn, cn_source)
+    chinese = campaign.checked_declaration(
+        declaration(market="CN", cohort=dict(size=301, rule="entire_source_view"))
+    )
+    alone = campaign.prepare(chinese, only_cn)
+    assert set(alone) == {"2019", "2023"}
+    assert all(s["markets"] == ["CN"] and s["size"] == 301 for s in alone.values())
+    for fold, year in (("fold-014", 2019), ("fold-018", 2023)):
+        written = (only_cn.cohort(year) / "manifest.json").read_bytes()
+        assert written == only_cn.source(fold).read_bytes()
+    with pytest.raises(ValueError, match="no es la de CN"):
+        campaign.prepare(chinese, Layout(tmp_path / "cn-on-us", tmp_path / "us-views"))
+    with pytest.raises(ValueError, match="no es la de US"):
+        campaign.prepare(whole, Layout(tmp_path / "us-on-cn", tmp_path / "cn-views"))
 
 
 def test_the_prepare_command_reports_fingerprint_cohorts_and_full_views(tmp_path, capsys):
@@ -2262,4 +2302,9 @@ def test_the_prepare_command_reports_fingerprint_cohorts_and_full_views(tmp_path
     assert prepared("joint", declaration(market="US+CN", cohort=full), joint_source) == [
         "2019: vista completa de CN+US, 341 activos",
         "2023: vista completa de CN+US, 341 activos",
+    ]
+    alone = dict(size=301, rule="entire_source_view")
+    assert prepared("cn", declaration(market="CN", cohort=alone), cn_source) == [
+        "2019: vista completa de CN, 301 activos",
+        "2023: vista completa de CN, 301 activos",
     ]

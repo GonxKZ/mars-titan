@@ -59,7 +59,7 @@ ROOT = Path(__file__).resolve().parents[3]
 DECLARATION = "configs/experiments/comparison-campaign-gpu-v1.json"
 KIND = "comparison_campaign_v1"
 # Una campaña es de EE. UU. o de la vista conjunta de EE. UU. y China.
-MARKETS = ("US", "US+CN")
+MARKETS = ("US", "CN", "US+CN")
 MACHINES = ("references", "mars_titan")
 # Los orígenes `history` son años anteriores que amplían la evidencia. Forman una segunda
 # etapa, que empieza cuando la primera ha recorrido todos sus niveles.
@@ -313,7 +313,8 @@ def checked_declaration(document, *, root=ROOT, check_recipe_files=True):
         and document.get("kind") == KIND
         and document.get("final_test_access") is False
         and document.get("market") in MARKETS,
-        "La declaración no es la campaña de comparación de US o de US+CN con el test final cerrado",
+        "La declaración no es la campaña de comparación de US, de CN o de US+CN con el test final "
+        "cerrado",
     )
     origins = document.get("origins")
     _require(
@@ -350,10 +351,11 @@ def checked_declaration(document, *, root=ROOT, check_recipe_files=True):
         and cohort.get("rule", FULL_VIEW_RULE) == FULL_VIEW_RULE,
         "La cohorte declara su tamaño y, si usa la vista completa de cada origen, su regla",
     )
-    # La cohorte por huella solo existe para US: la conjunta usa todos los activos de la vista.
+    # La cohorte por huella solo existe para US: China sola y la conjunta usan todos los activos
+    # de la vista.
     _require(
         document["market"] == "US" or cohort.get("rule") == FULL_VIEW_RULE,
-        "Una campaña conjunta usa la vista completa de cada origen",
+        "Una campaña de China o conjunta usa la vista completa de cada origen",
     )
     stopping = document.get("stopping")
     _require(
