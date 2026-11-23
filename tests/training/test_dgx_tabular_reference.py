@@ -210,3 +210,44 @@ def test_alpha_free_fails_closed_when_market_model_missing(state, tmp_path):
 
     with pytest.raises(ValueError, match="alpha_free.*CN|has_market_model"):
         build(cn_root / "estado", tmp_path / "out_fail", alpha_free=True)
+
+
+def test_a_market_factor_that_is_an_index_without_volume_is_read(state, tmp_path):
+    # El factor de China es un índice: su fichero trae apertura, máximo, mínimo y cierre, sin
+    # volumen. Los informes y la referencia solo necesitan la apertura y el cierre.
+    days = np.arange("2011-01-03", "2011-03-01", dtype="datetime64[D]")
+    days = days[np.is_busday(days)]
+    instants = (days.astype("datetime64[us]") + np.timedelta64(7, "h")).astype(np.int64)
+    opened = np.linspace(3000.0, 3100.0, len(days))
+    close = opened * 1.01
+    index = tmp_path / "indice.parquet"
+    pq.write_table(
+        pa.table(
+            dict(
+                session=[str(day) for day in days],
+                open=opened,
+                high=close * 1.001,
+                low=opened * 0.999,
+                close=close,
+                available_at=pa.array(instants, type=pa.int64()).cast(STAMP),
+                source_sha256=["0" * 64] * len(days),
+            )
+        ),
+        index,
+    )
+    source = json.loads((state / "cohorts/2013/manifest.json").read_text())
+    factors = dict(source["market_factors"], CN=dict(prices_path=str(index)))
+    calendar, returns = tabular.market_factor(dict(source, market_factors=factors), "CN")
+    assert calendar.tolist() == days.tolist()
+    np.testing.assert_allclose(returns, 0.01, rtol=1e-12)
+    # Un estado de EE. UU. cuya vista declara también ese factor no deja de poder medirse.
+    joint = tmp_path / "estado/cohorts/2013"
+    joint.mkdir(parents=True)
+    (joint / "manifest.json").write_text(json.dumps(dict(source, market_factors=factors)))
+    offset = report.KnownOffset(tmp_path / "estado", 2013)
+    assert sorted(offset.factors) == ["CN", "US"]
+    np.testing.assert_allclose(offset.factors["CN"][1], 0.01, rtol=1e-12)
+    plain = report.KnownOffset(state, 2013)
+    moment = np.array(["2013-06-03T20:00:00"], dtype="datetime64[us]")
+    one, other = offset.known("US/A00", moment), plain.known("US/A00", moment)
+    assert np.array_equal(one[0], other[0], equal_nan=True)

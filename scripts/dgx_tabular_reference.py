@@ -79,10 +79,14 @@ def market_factor(manifest, market):
     path = Path(declared.get("prices_path") or "")
     if not path.is_file():
         return None, None
-    prices, days = price_table(path)
+    # El factor puede ser un índice, sin volumen: solo se leen su apertura y su cierre (486b2225).
+    table = pq.read_table(path, columns=["open", "close", "available_at"])
+    stamps = table.column("available_at").cast("int64").to_numpy()
+    opened, close = table.column("open").to_numpy(), table.column("close").to_numpy()
     with np.errstate(divide="ignore", invalid="ignore"):
-        valid = (prices[:, 0] > 0) & (prices[:, 3] > 0)
-        return days, np.where(valid, prices[:, 3] / prices[:, 0] - 1, np.nan)
+        valid = (opened > 0) & (close > 0)
+        returns = np.where(valid, close / opened - 1, np.nan)
+    return stamps.astype("datetime64[us]").astype("datetime64[D]"), returns
 
 
 def load_rows(manifest, technical):
