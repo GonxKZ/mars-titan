@@ -104,6 +104,11 @@ from .holographic_network import (
     parse_holographic_network,
 )
 from .huber_memory import HuberMemory
+
+# --- ic_titans_mlp ---
+from .ic_titans_mlp import ICTitansMLP, ICTitansMLPConfig, parse_ic_titans_mlp
+
+# --- fin ic_titans_mlp ---
 from .key_competition_config import KeyCompetition
 from .laplace_scale import LaplaceScaleHead
 from .local_control import MACProjectionConfig, MACProjectionControl, ProjectedMACResult
@@ -296,6 +301,9 @@ class FinancialConfig:
     # CRRM: memoria transversal de rango y residuo maduro (apagada por defecto). Sin
     # declararla, la identidad y el cálculo no cambian.
     cross_sectional_rank_memory: CrossSectionalRankMemoryConfig | None = None
+    # --- ic_titans_mlp ---
+    ic_titans_mlp: ICTitansMLPConfig | None = None
+    # --- fin ic_titans_mlp ---
     # R1, U2 y U1 de #786 sobre el núcleo: pérdida de Huber, semividas geométricas y atención
     # diferencial. Sin declararlas, la identidad y el cálculo no cambian.
     memory_huber: HuberMemory | None = None
@@ -379,6 +387,9 @@ class FinancialConfig:
         self._check_auxiliary_horizons()
         self._check_mature_reliability()
         self._check_cross_sectional_rank_memory()
+        # --- ic_titans_mlp ---
+        self._check_ic_titans_mlp()
+        # --- fin ic_titans_mlp ---
         self._check_core_variants()
         self._check_learning_scale()
         self._check_technical_branch()
@@ -899,6 +910,20 @@ class FinancialConfig:
                     "contraste"
                 )
 
+    # --- ic_titans_mlp ---
+    def _check_ic_titans_mlp(self):
+        """Memoria neuronal supervisada por IC con retención anclada y exclusiones."""
+        object.__setattr__(self, "ic_titans_mlp", parse_ic_titans_mlp(self.ic_titans_mlp))
+        if self.ic_titans_mlp is not None:
+            if self.variant != "mac_online":
+                raise ValueError("ic_titans_mlp necesita mac_online")
+            if self.auxiliary_horizons is not None:
+                raise ValueError(
+                    "Las cabezas auxiliares con IC-Titans-MLP necesitan otro contraste"
+                )
+
+    # --- fin ic_titans_mlp ---
+
     def _check_memory_projections(self):
         """Normalización residual y proyecciones de memoria."""
         if type(self.memory_residual_layer_norm) is not bool:
@@ -1127,6 +1152,10 @@ class FinancialConfig:
             result.update(mature_reliability=self.mature_reliability.identity())
         if self.cross_sectional_rank_memory is not None:
             result.update(cross_sectional_rank_memory=self.cross_sectional_rank_memory.identity())
+        # --- ic_titans_mlp ---
+        if self.ic_titans_mlp is not None:
+            result.update(ic_titans_mlp=self.ic_titans_mlp.identity())
+        # --- fin ic_titans_mlp ---
         if self.memory_huber is not None:
             result.update(memory_huber=self.memory_huber.identity())
         if self.memory_time_scales is not None:
@@ -1220,6 +1249,9 @@ class PreparedDecisions:
     surprise: torch.Tensor | None = None
     # Solo con CRRM: claves transversales [flujos, dim] emitidas en este instante.
     rank_memory_keys: torch.Tensor | None = None
+    # --- ic_titans_mlp ---
+    ic_mlp_keys: torch.Tensor | None = None
+    # --- fin ic_titans_mlp ---
 
 
 @dataclass(frozen=True)
@@ -1297,6 +1329,10 @@ class FinancialPredictor(nn.Module):
             raise ValueError("La fiabilidad madura no se combina con el control local")
         if local_control is not None and config.cross_sectional_rank_memory is not None:
             raise ValueError("La memoria transversal de rango no se combina con el control local")
+        # --- ic_titans_mlp ---
+        if local_control is not None and config.ic_titans_mlp is not None:
+            raise ValueError("IC-Titans-MLP no se combina con el control local")
+        # --- fin ic_titans_mlp ---
         # El presupuesto de C está contrastado con el núcleo sin las variantes de #786.
         if local_control is not None and (
             config.memory_huber is not None
@@ -1574,6 +1610,18 @@ class FinancialPredictor(nn.Module):
             if config.cross_sectional_rank_memory is not None
             else None
         )
+        # --- ic_titans_mlp ---
+        self.ic_titans_mlp = (
+            ICTitansMLP(
+                config.hidden_size,
+                config.ic_titans_mlp,
+                seed=config.seed,
+                dtype=dtype,
+            )
+            if config.ic_titans_mlp is not None
+            else None
+        )
+        # --- fin ic_titans_mlp ---
         # F5 usa su propio generador derivado de la semilla, como PT6.
         self.auxiliary_heads = (
             AuxiliaryHeads(
@@ -1589,6 +1637,10 @@ class FinancialPredictor(nn.Module):
     @property
     def session_level(self):
         """Si alguna operación necesita todas las filas de la sesión en el mismo bloque."""
+        # --- ic_titans_mlp ---
+        if self.ic_titans_mlp is not None:
+            return True
+        # --- fin ic_titans_mlp ---
         objective = self.output_objective
         return (
             self.config.session_rank_inputs is not None
@@ -2250,6 +2302,48 @@ class FinancialPredictor(nn.Module):
             payload, self._parameter_id, device=self.head.weight.device
         )
 
+    # --- ic_titans_mlp ---
+    def _require_ic_mlp_memory(self):
+        if self.ic_titans_mlp is None:
+            raise ValueError("El predictor no declara memoria IC-Titans-MLP")
+
+    def initial_ic_mlp_memory(self):
+        """Estado inicial vacío de IC-Titans-MLP al empezar un recorrido."""
+        self._require_ic_mlp_memory()
+        return self.ic_titans_mlp.initial_state(self._parameter_id)
+
+    def stage_ic_mlp_memory(self, state, flow_ids, prediction_at, keys, *, differentiable=False):
+        """Registrar claves emitidas pendientes de maduración para IC-Titans-MLP."""
+        self._require_ic_mlp_memory()
+        self.ic_titans_mlp.validate_state(state, self._parameter_id)
+        return self.ic_titans_mlp.stage(
+            state, flow_ids, prediction_at, keys, differentiable=differentiable
+        )
+
+    def settle_ic_mlp_memory(self, state, matured, *, differentiable=False, train=True):
+        """Actualizar IC-Titans-MLP con etiquetas ya maduras en orden canónico."""
+        self._require_ic_mlp_memory()
+        self.ic_titans_mlp.validate_state(state, self._parameter_id)
+        return self.ic_titans_mlp.settle(state, matured, differentiable=differentiable, train=train)
+
+    def detach_ic_mlp_memory(self, state, parameter_id=None):
+        """Cortar el grafo de IC-Titans-MLP en la barrera de truncamiento."""
+        self._require_ic_mlp_memory()
+        return self.ic_titans_mlp.detach_state(state, parameter_id or self._parameter_id)
+
+    def export_ic_mlp_memory(self, state):
+        self._require_ic_mlp_memory()
+        self.ic_titans_mlp.validate_state(state, self._parameter_id)
+        return self.ic_titans_mlp.export_state(state)
+
+    def restore_ic_mlp_memory(self, payload):
+        self._require_ic_mlp_memory()
+        return self.ic_titans_mlp.restore_state(
+            payload, self._parameter_id, device=self.head.weight.device
+        )
+
+    # --- fin ic_titans_mlp ---
+
     def _program_fusion(self, price, batch, context, selection):
         """Consultar el prefijo confirmado y preparar una sola escritura del token final."""
         execution = None
@@ -2424,6 +2518,9 @@ class FinancialPredictor(nn.Module):
         session_complete=False,
         reliability=None,
         rank_memory=None,
+        # --- ic_titans_mlp ---
+        ic_mlp_memory=None,
+        # --- fin ic_titans_mlp ---
     ):
         """Predecir un bloque desde el estado de sus flujos y proponer el estado siguiente.
 
@@ -2445,6 +2542,9 @@ class FinancialPredictor(nn.Module):
                 session_complete=session_complete,
                 reliability=reliability,
                 rank_memory=rank_memory,
+                # --- ic_titans_mlp ---
+                ic_mlp_memory=ic_mlp_memory,
+                # --- fin ic_titans_mlp ---
             )
 
     def _prepare(
@@ -2460,6 +2560,9 @@ class FinancialPredictor(nn.Module):
         session_complete=False,
         reliability=None,
         rank_memory=None,
+        # --- ic_titans_mlp ---
+        ic_mlp_memory=None,
+        # --- fin ic_titans_mlp ---
     ):
         check_differentiable(differentiable)
         if torch.is_inference_mode_enabled():
@@ -2586,6 +2689,15 @@ class FinancialPredictor(nn.Module):
             )
         else:
             self.cross_sectional_rank_memory.validate_state(rank_memory, self._parameter_id)
+        # --- ic_titans_mlp ---
+        if self.ic_titans_mlp is None:
+            if ic_mlp_memory is not None:
+                raise ValueError("El predictor no declara memoria IC-Titans-MLP")
+        elif ic_mlp_memory is None:
+            raise ValueError("El predictor declara IC-Titans-MLP y necesita su estado de memoria")
+        else:
+            self.ic_titans_mlp.validate_state(ic_mlp_memory, self._parameter_id)
+        # --- fin ic_titans_mlp ---
         if (self.session_context is None) != (context is None):
             raise ValueError("PT4 recibe su contexto de sesión y el núcleo no admite ninguno")
         if context is not None:
@@ -2729,6 +2841,12 @@ class FinancialPredictor(nn.Module):
                 encoded = encoded + self.cross_sectional_rank_memory.read(
                     rank_memory_keys, markets, rank_memory
                 )
+            # --- ic_titans_mlp ---
+            ic_mlp_keys = None
+            if self.ic_titans_mlp is not None:
+                ic_mlp_keys = self.ic_titans_mlp.keys(encoded, markets, batch.prediction_at)
+                encoded = encoded + self.ic_titans_mlp.read(ic_mlp_keys, markets, ic_mlp_memory)
+            # --- fin ic_titans_mlp ---
             if self.local_control is not None:
                 local_result = self.local_control(
                     self.mac,
@@ -2776,6 +2894,9 @@ class FinancialPredictor(nn.Module):
             outputs,
             surprise=None if sink is None else sink[0],
             rank_memory_keys=rank_memory_keys,
+            # --- ic_titans_mlp ---
+            ic_mlp_keys=ic_mlp_keys,
+            # --- fin ic_titans_mlp ---
             **({"regional_trace": regional_trace} if regional_trace is not None else {}),
         )
 

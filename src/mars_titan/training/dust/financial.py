@@ -102,6 +102,9 @@ class FinancialDustAdapter:
             "opponent_heads",
             "mature_reliability",
             "cross_sectional_rank_memory",
+            # --- ic_titans_mlp ---
+            "ic_titans_mlp",
+            # --- fin ic_titans_mlp ---
             "memory_huber",
             "memory_time_scales",
             "differential_attention",
@@ -133,6 +136,9 @@ class FinancialDustAdapter:
                     "cross_asset_attention",
                     "asset_groups",
                     "session_hologram",
+                    # --- ic_titans_mlp ---
+                    "ic_titans_mlp",
+                    # --- fin ic_titans_mlp ---
                     "output_objective",
                     "auxiliary_heads",
                 )

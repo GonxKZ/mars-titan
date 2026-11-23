@@ -98,6 +98,10 @@ def declared_sources(config):
         sources.append("mars_titan.models.titans.cross_asset_attention")
     if getattr(config, "cross_sectional_rank_memory", None) is not None:
         sources.append("mars_titan.models.titans.cross_sectional_rank_memory")
+    # --- ic_titans_mlp ---
+    if getattr(config, "ic_titans_mlp", None) is not None:
+        sources.append("mars_titan.models.titans.ic_titans_mlp")
+    # --- fin ic_titans_mlp ---
     if getattr(config, "session_hologram", None) is not None:
         sources.append("mars_titan.models.titans.session_hologram")
     if getattr(config, "learning_scale", None) is not None:
@@ -493,6 +497,12 @@ class FrozenFinancialConsumer:
             raise ValueError(
                 "El consumidor congelado aún no recibe la memoria transversal de rango maduro"
             )
+        # --- ic_titans_mlp ---
+        if predictor.ic_titans_mlp is not None:
+            raise ValueError(
+                "El consumidor congelado aún no recibe la memoria neuronal IC-Titans-MLP"
+            )
+        # --- fin ic_titans_mlp ---
         if readout is not None and (
             readout.config.hidden_size != predictor.config.hidden_size
             or readout.step_logit.device != predictor.head.weight.device
