@@ -493,11 +493,11 @@ predicción falsable, e implementar una. Las siete ideas (`g12-invento-titans/ID
 
 | Idea | Qué es | Umbral de refutación que fija | Estado |
 | --- | --- | --- | --- |
-| 1. Memoria transversal de rango con regresión recursiva (CRRM) | Memoria rápida compartida por mercado que aprende de las etiquetas ya maduras: regresión contraída exacta (Cholesky diferenciable) de los rangos de la sesión y del residuo de orden del tronco sobre claves centradas, a tres escalas (5, 21 y 63 sesiones), con una puerta que apaga la lectura en direcciones nunca vistas | +0,004 de IC sobre `titans_mac` y +0,003 sobre su placebo de objetivos barajados | Elegida por el trabajador; en implementación (WP10) |
-| 2. Sorpresa relativa ortogonalizada (CSOS) | Restar al gradiente interno de cada activo la media de los gradientes de la sesión, para que la memoria escriba lo propio del activo y no el choque común | +0,002 | En implementación (WP12-2), sobre la ruta no fusionada |
+| 1. Memoria transversal de rango con regresión recursiva (CRRM) | Memoria rápida compartida por mercado que aprende de las etiquetas ya maduras: regresión contraída exacta (Cholesky diferenciable) de los rangos de la sesión y del residuo de orden del tronco sobre claves centradas, a tres escalas (5, 21 y 63 sesiones), con una puerta que apaga la lectura en direcciones nunca vistas | +0,004 de IC sobre `titans_mac` y +0,003 sobre su placebo de objetivos barajados | Entregada y en la tercera criba (rama `cand-invento-titans` b3dc2d26): 27 pruebas, nueve mutaciones propias muertas, corregida de rendimiento (FM-13) |
+| 2. Sorpresa relativa ortogonalizada (CSOS) | Restar al gradiente interno de cada activo la media de los gradientes de la sesión, para que la memoria escriba lo propio del activo y no el choque común | +0,002 | Código y 53 pruebas pasando cuando se cortó la cuota; pendiente de llevar a la base de integración y de su informe (cuarta criba) |
 | 3. Consolidación de tres factores por activo | Traza por activo consolidada con el crédito de ese activo en el IC ya maduro de la sesión | +0,0025 | Pendiente: reutiliza el mecanismo de etiquetas maduras de la idea 1 |
-| 4. Memoria factorizada con blanqueo espectral (LFM-SW) | Base de factores de mercado actualizada en línea con un paso ortogonalizado y residuo propio de cada activo | +0,003 | En implementación (WP12-4) |
-| 5. Sesgo contrastivo transversal (InfoNCE) | Pérdida interna de la memoria compartida que discrimina cada activo de los demás de su sesión | +0,0025 | En implementación (WP12-5) |
+| 4. Memoria factorizada con blanqueo espectral (LFM-SW) | Base de factores de mercado actualizada en línea con un paso ortogonalizado y residuo propio de cada activo | +0,003 | Código y 30 pruebas pasando cuando se cortó la cuota; choca en veinte puntos del entrenador con CRRM y su autor la llevará a la base de integración (cuarta criba) |
+| 5. Sesgo contrastivo transversal (InfoNCE) | Pérdida interna de la memoria compartida que discrimina cada activo de los demás de su sesión | +0,0025 | Código escrito con 4 de 24 pruebas fallando cuando se cortó la cuota; por terminar (cuarta criba) |
 | 6. Memoria de adelantos y retrasos entre grupos | Matriz rápida que aprende qué grupos de activos anticipan a cuáles con los rangos maduros | +0,0025 | Pendiente: reutiliza el mecanismo de la idea 1 |
 | 7. Memoria supervisada por correlación de rango | La memoria de Titans con la correlación de orden madura como pérdida interna y retención anclada | +0,003 | Pendiente: reutiliza el mecanismo de la idea 1 |
 
@@ -506,6 +506,24 @@ el documento lista sus consultas: no es una prueba de que no exista. Y las refer
 las comprobó el trabajador, no esta investigación: antes de citarlas en un trabajo hay que comprobarlas
 una a una.
 
+### Invenciones propuestas por Gemini para el cerebro holográfico y el núcleo agéntico
+
+Del encargo WP11, con las mismas exigencias (`g12-invento-holo/IDEAS-copia-0558Z.md`):
+
+| Idea | Qué es | Umbral de refutación que fija | Estado |
+| --- | --- | --- | --- |
+| 1. Holograma de sesión (HSI) | Cada sesión se superpone en un holograma pequeño con claves de fase unitaria y cada activo lee de él a los demás en tiempo lineal, restando exactamente su propia contribución, con un canal en fase y otro en cuadratura y suma cero en la sesión | +0,0020 sobre el núcleo (o +0,0030 en el tercio líquido) y +0,0015 sobre la lectura propia | Entregada y en la tercera criba (rama `cand-invento-holo` 5546d89e): 48 pruebas, siete mutaciones propias muertas |
+| 2. Resonador de sesión (CSRF) | Descomposición de cada representación en un par de códigos ligados (enlace de Walsh-Hadamard, unas pocas iteraciones de resonador) más su residuo y el contexto de su celda | +0,0020 sobre el núcleo y +0,0015 sobre el control sin iteración | Código y 46 pruebas pasando cuando se cortó la cuota; pendiente de llevar a la base de integración (cuarta criba) |
+| 3. Atractores de Hopfield con inhibición lateral | Prototipos asociativos con un término repulsivo entre los activos que compiten por el mismo prototipo | +0,0020 y +0,0015 sobre el control solo atractivo | En cola |
+| 4. Árbitro optimista con retraso y descuento de redundancia | Mezclador en línea del agente que descuenta las herramientas redundantes | — (post-entrenamiento) | Encargada al agente de post-entrenamiento |
+| 5. Holograma persistente multiescala | Un holograma que se conserva entre sesiones a varias escalas temporales | — | En cola |
+| 6. Doble hemisferio con ortogonalización | Un segundo hemisferio obligado a ser ortogonal al primero dentro de la sesión | — | En cola |
+| 7. Ponderador por activo con control conforme | Peso por activo gobernado por un controlador conforme y la precisión de cada herramienta | — (post-entrenamiento) | Encargada al agente de post-entrenamiento |
+
+Por encargo aparte (WP5), tres órganos de memoria para el agente: banco denso con temperatura, memoria
+holográfica reducida con regla delta y traza por activo. El agente los ha verificado e integrado (278
+pruebas, once mutaciones suyas muertas, identidad intacta con el campo ausente) y los está midiendo con
+la regla de F6-r y un protocolo fijado antes.
 ## Registro de fallos y lecciones
 
 Esta sección reúne, para poder citarlos, los fallos encontrados en el código, en los datos, en las medidas
@@ -538,6 +556,8 @@ encargo de implementación a Gemini neon xhigh (WP1 a WP12); «agente» es el ag
 | FM-10 | El recorte suave de las entradas se ignoraba en GPU con los kernels fusionados: el escalador elegía los kernels, que solo recortan en duro, sin mirar la opción | Trabajador de WP6, al auditar la fusión; confirmado aquí con una prueba (K-1b) | La prueba en GPU falla antes del arreglo en FP32 y FP64 y pasa después | Arreglado en la rama de kernels (3a49a470). La campaña en curso no usa los kernels | Corregido |
 | FM-11 | El suelo de escala de los 46 rasgos técnicos lo fijaba la mediana de las 512 dimensiones visuales con las que comparten bloque; no se podía retirar la parte visual sin retirar los rasgos; el abandono de modalidad tiraba los rasgos junto con el gráfico | Trabajador de WP6 (auditoría con fichero y línea); neon (A-07) lo había señalado | Leído en `learning_scale.py` y `financial.py` | WP6: suelo propio por subbloque, retirada independiente de cada parte y compuerta de presencia que conserva el peso total | Corregido como opción; medida pendiente |
 | FM-12 | La macro entra sumada y es igual para todos los activos de la sesión: no puede ordenarlos | Propio (H3-a, H3-b) y trabajador de WP6 | Cruzarla con la sensibilidad de cada activo no añade orden: −0,0002, −0,0001, −0,0014 y −0,0003 (t −1,7) | Ya existía una modulación multiplicativa que no ganó en campañas anteriores | Sin corrección que funcione |
+| FM-13 | La primera implementación de CRRM (la memoria transversal de rango) guardaba un vector de clave por fila y los apilaba al madurar las etiquetas: la retropropagación creaba un nodo por activo, cada uno sobre toda la matriz de claves, es decir, coste cuadrático en el número de activos. Además pedía a la GPU una lista de Python en cada emisión y comprobaba la factorización en el momento | Propio, en la prueba de humo de la tercera criba (el ajuste de CRRM tardaba unas tres veces más que su control con 512 activos) y leyendo el código | Con 4.198 activos, en CPU, la retropropagación de tres sesiones tardaba 0,70 s | Arreglado con prueba primero (b3dc2d26): el estado guarda la matriz y las predicciones de la emisión y la fila, una sesión se reúne con una selección, un corte de truncamiento conserva solo las filas pendientes y la comprobación de la factorización es diferida. Mismos números (las 25 pruebas del autor pasan sin tocar); 0,22 s; nueve mutaciones propias muertas | Corregido |
+| FM-14 | Una prueba de la cabeza de escala Laplace falla en la base v11 y en todo lo que deriva de ella (`test_financial_run_laplace_scale`: el gradiente de la cabeza no coincide con el del control de error absoluto) | Propio, al pasar la regresión del bucle de entrenamiento para la parada adaptativa | Falla igual en la v11 sin kernels, en la base con kernels y en la rama de integración | Sin tocar: la opción no se usa en ninguna campaña en curso. Queda como deuda conocida, junto a la prueba del puente adaptativo que ya fallaba | Pendiente |
 
 ### Fallos de los datos y de los rasgos
 
@@ -601,6 +621,8 @@ confirmó al leer el código (está arriba) y esto es lo que no:
 | FO-9 | Los kernels nuevos no dan resultados idénticos bit a bit a los del código anterior: coinciden hasta la sexta o séptima cifra | K-1 | Un cambio de kernels es un cambio de código: solo entre campañas, nunca a mitad |
 | FO-10 | El entorno de Python tenía una instalación editable que apuntaba al árbol compartido | Una herramienta importaba código a medio editar | Copias fijas del código con su ruta antepuesta |
 | FO-11 | Un partidor automático de líneas largas convirtió un literal en una llamada | Aviso de sintaxis | Compilación con los avisos como errores antes de confirmar |
+| FO-12 | La cuota de la cuenta de Gemini se agotó a las 06:23Z tras unas catorce sesiones largas en tres horas y media: cortó a seis trabajadores en vuelo y afecta a todos los modelos de la cuenta | Error 429 de la herramienta, con la hora de restablecimiento (09:13Z) | Lo entregado no se pierde y el código a medias queda en cada copia. Tres de las invenciones cortadas tenían ya sus pruebas pasando. Regla: no más de tres o cuatro sesiones largas a la vez y primero las continuaciones baratas |
+| FO-13 | Un proceso con contexto propio de GPU comparte la GPU por turnos con el servidor de la campaña: va unas tres veces más lento que dentro de él y le quita tiempo a la campaña | La comparación de kernels llevaba 42 pasos por minuto frente a los 131 de su referencia | Detenida a las 07:19Z por redundante: la tercera criba ajusta el mismo núcleo con kernels y se compara con el de la criba 1. Regla: el contexto propio solo para pruebas cortas; los tiempos medidos así no valen como medida de velocidad |
 
 ### Lo que se probó y no funcionó
 
