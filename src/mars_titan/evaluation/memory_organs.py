@@ -41,6 +41,7 @@ import pyarrow.compute as pc
 import pyarrow.parquet as pq
 
 from mars_titan.evaluation import posttraining_pilots as pilots
+from mars_titan.memory import episodic_organs as eo
 from mars_titan.memory import neighbour_residual_memory as nrm
 from mars_titan.memory import view_keys as vk
 
@@ -49,6 +50,7 @@ RUN_KIND = "posttraining_memory_organ_run_v1"
 SCHEMA_VERSION = 1
 SOURCE = "view_memory_keys_v1"
 ARMS = ("combined", "asset_lab")
+EPISODIC_ARMS = eo.EPISODIC_ARMS
 EMITTED = ("calibration", "evaluation")
 DECLARATION = Path("configs") / "experiments" / "posttraining-memory-organs-v1.json"
 SYSTEMD_RUN = "/usr/bin/systemd-run"
@@ -65,6 +67,7 @@ _FIELDS = {
     "combination",
     "placebo_seed",
 }
+_OPTIONAL_FIELDS = {"episodic_organs"}
 _LABEL = re.compile(r"[a-z0-9][a-z0-9_.-]*")
 
 
@@ -81,7 +84,9 @@ def checked_organs(document):
         f"La declaración debe ser {KIND} con schema_version {SCHEMA_VERSION}",
     )
     _require(
-        set(document) == _FIELDS, f"Los órganos declaran exactamente los campos {sorted(_FIELDS)}"
+        _FIELDS <= set(document) <= _FIELDS | _OPTIONAL_FIELDS,
+        f"Los órganos declaran exactamente los campos {sorted(_FIELDS)}"
+        " y, opcionalmente, episodic_organs",
     )
     _require(document["final_test_access"] is False, "Los órganos no abren el test final")
     minimum = pilots.screening().MIN_ASSETS
@@ -89,7 +94,10 @@ def checked_organs(document):
         document["min_assets"] == minimum,
         f"El mínimo de activos por sesión es el del informe de criba ({minimum})",
     )
-    return pilots.checked_memories(document, SOURCE, "la vista de cada origen")
+    pilots.checked_memories(document, SOURCE, "la vista de cada origen")
+    if "episodic_organs" in document:
+        eo.checked_episodic_organs(document["episodic_organs"])
+    return document
 
 
 # --- estados exportados ---------------------------------------------------------------------------
@@ -282,8 +290,9 @@ def emit(
     log=print,
     maturity=None,
     markets=None,
+    sector_map=None,
 ):
-    """Emitir los dos brazos de cada modelo declarado en un origen, semilla a semilla.
+    """Emitir los brazos de cada modelo declarado en un origen, semilla a semilla.
 
     `keys` es la carpeta de claves por vista y `output` la raíz propia de los órganos; ninguna
     puede estar dentro del estado. Un modelo sin trabajo terminado se anota y se emiten los demás.
@@ -291,9 +300,20 @@ def emit(
     un modelo que faltaba: entonces se emite entera otra vez. `maturity` lee la
     madurez de las etiquetas de la vista (por omisión, el lector de la campaña). `markets`
     limita las claves y las emisiones a esos mercados: en un estado conjunto sin el factor de un
-    mercado (D-7), `markets=["US"]` emite solo EE. UU.
+    mercado (D-7), `markets=["US"]` emite solo EE. UU. Con `episodic_organs` declarado se emiten
+    además los órganos nuevos seleccionados; sin él no cambia ni un bit del comportamiento base.
     """
     declaration = checked_organs(declaration)
+    episodic = declaration.get("episodic_organs")
+    if (
+        episodic is not None
+        and "holographic_delta" in episodic
+        and episodic["holographic_delta"]["entity"] == "sector"
+    ):
+        _require(
+            sector_map is not None or bool(episodic["holographic_delta"].get("sector_source")),
+            "El modo entity='sector' necesita sector_source en la declaración o sector_map",
+        )
     state, keys, output = (Path(path).resolve() for path in (state, keys, output))
     _require(state.is_dir(), f"No está el estado {state}")
     for path, what in ((output, "La raíz de los órganos"), (keys, "La carpeta de claves")):
@@ -328,6 +348,7 @@ def emit(
         log=log,
         views={},
         markets=markets,
+        sector_map=sector_map,
     )
     runs = [_emit_seed(context, seed) for seed in seeds]
     return dict(origin=origin, state=str(state), output=str(output), runs=runs)
@@ -416,6 +437,12 @@ def _emit_seed(context, seed):
     )
     matrix = nrm.projection(raw.shape[1], inputs["projection_dim"], seed=inputs["projection_seed"])
     keys = nrm.keys_from_inputs(raw, matrix)
+    episodic_cfg = declaration.get("episodic_organs")
+    regimes = None
+    if episodic_cfg is not None and "holographic_delta" in episodic_cfg:
+        regimes = eo.session_regimes_from_inputs(
+            raw, pilots._session_slices(reference), min_assets=declaration["min_assets"]
+        )
     del raw
     results, table, organs = pilots.memory_study(
         reference,
@@ -426,6 +453,20 @@ def _emit_seed(context, seed):
         log=log,
         organs=True,
     )
+    episodic_results = episodic_organs = episodic_states = None
+    if episodic_cfg is not None:
+        episodic_results, episodic_table, episodic_organs = eo.episodic_study(
+            reference,
+            predictions,
+            keys,
+            episodic_cfg,
+            placebo_seed=declaration["placebo_seed"],
+            regimes=regimes,
+            sector_map=context["sector_map"],
+            threads=context["threads"],
+            log=log,
+        )
+        table = pa.concat_tables([table, episodic_table])
     del keys
     bounds = np.cumsum([0] + [reference[name].rows for name in pilots.SPLITS])
     position = {name: slice(bounds[i], bounds[i + 1]) for i, name in enumerate(pilots.SPLITS)}
@@ -437,6 +478,18 @@ def _emit_seed(context, seed):
         state_sha256=organs["neighbours"]["state_sha256"],
         models=list(organs["order"]),
     )
+    if episodic_organs is not None:
+        episodic_states = {}
+        filenames = dict(dense_bank="dense-bank.npz", holographic_delta="holographic-delta.npz")
+        for organ_name, payload in episodic_organs["shared_states"].items():
+            rel = Path("states") / str(origin) / f"seed-{seed}" / filenames[organ_name]
+            save_state(payload, output / rel)
+            episodic_states[organ_name] = dict(
+                file=str(rel),
+                sha256=pilots._sha256(output / rel),
+                state_sha256=payload["state_sha256"],
+                models=list(episodic_organs["order"]),
+            )
     shared = dict(
         view=view,
         keys=dict(folder=str(folder), view_sha256=view, files=files),
@@ -445,10 +498,23 @@ def _emit_seed(context, seed):
         reference=reference,
         results=results,
         seconds=time.monotonic() - started,
+        episodic_states=episodic_states or {},
     )
     for model in present:
         for name in ARMS:
             _write_arm(context, seed, model, name, records[model], emissions[model], organs, shared)
+        if episodic_organs is not None:
+            for name in episodic_organs["arms"]:
+                _write_episodic_arm(
+                    context,
+                    seed,
+                    model,
+                    name,
+                    records[model],
+                    emissions[model],
+                    episodic_organs,
+                    shared,
+                )
     report = dict(
         schema_version=SCHEMA_VERSION,
         kind=f"{KIND}_report",
@@ -458,7 +524,7 @@ def _emit_seed(context, seed):
         origin=origin,
         seed=seed,
         view_sha256=view,
-        arms=list(ARMS),
+        arms=list(ARMS) if episodic_organs is None else [*ARMS, *episodic_organs["arms"]],
         models=results,
         missing_models=missing,
         inputs=dict(emissions=emissions, keys=shared["keys"]),
@@ -467,6 +533,9 @@ def _emit_seed(context, seed):
         neighbours=near,
         seconds=round(time.monotonic() - started, 1),
     )
+    if episodic_organs is not None:
+        report["episodic_organs"] = episodic_results
+        report["episodic_states"] = episodic_states
     (output / "studies").mkdir(parents=True, exist_ok=True)
     pq.write_table(table, output / "studies" / f"{stem}.parquet")
     # El informe va el último: con él la semilla queda emitida.
@@ -569,6 +638,115 @@ def _write_arm(context, seed, model, name, record, emissions, organs, shared):
         result=dict(best_epoch=None, best_score=None),
     )
     _atomic_json(queue, record)
+
+
+def _write_episodic_arm(context, seed, model, name, record, emissions, organs, shared):
+    """Emitir un órgano episódico nuevo (dense_bank, holographic_delta o asset_trace)."""
+    state, origin, output = context["state"], context["origin"], context["output"]
+    organ = organs["models"][model]
+    chosen = organ["arms"][name]
+    label = f"{model}__{name}"
+    queue = output / "queue" / f"{label}--{origin}--seed-{seed}.json"
+    queue.unlink(missing_ok=True)
+    folder = output / "runs" / label / str(origin) / f"seed-{seed}"
+    temporary = folder.with_name(folder.name + ".tmp")
+    if temporary.exists():
+        shutil.rmtree(temporary)
+    temporary.mkdir(parents=True)
+    parent = _parent(state, model, origin, seed)
+    outputs = {}
+    extra_columns = chosen.get("extra_columns") or {}
+    for split in EMITTED:
+        path = parent / f"{split}-predictions.parquet"
+        _require(pilots._sha256(path) == emissions[split], f"{path} cambió mientras se medía")
+        table = _only_markets(pq.read_table(path), context["markets"])
+        _require(
+            all(column in table.column_names for column in pilots.QUANTILE_COLUMNS),
+            f"{path} no tiene los cinco cuantiles",
+        )
+        order = pilots.emission_order(table)[3]
+        rows = shared["position"][split]
+        moved, quantiles = shifted(
+            shared["reference"][split].sessions,
+            table["prediction"].to_numpy()[order],
+            np.column_stack([table[c].to_numpy() for c in pilots.QUANTILE_COLUMNS])[order],
+            organ["dispersion"][rows],
+            chosen["signal"][rows],
+        )
+        for column, values in (
+            ("prediction", moved),
+            *zip(pilots.QUANTILE_COLUMNS, quantiles.T, strict=True),
+        ):
+            index = table.schema.get_field_index(column)
+            field = table.schema.field(index)
+            restored = np.empty(len(values))
+            restored[order] = values
+            table = table.set_column(index, field, pa.array(restored, type=field.type))
+        for col_name, col_values in extra_columns.items():
+            _require(
+                col_name not in table.column_names,
+                f"{path} ya contiene la columna adicional {col_name}",
+            )
+            slice_vals = col_values[rows]
+            restored = np.empty(len(slice_vals), dtype=np.float64)
+            restored[order] = slice_vals
+            table = table.append_column(col_name, pa.array(restored, type=pa.float64()))
+        pq.write_table(table, temporary / f"{split}-predictions.parquet")
+        outputs[split] = pilots._sha256(temporary / f"{split}-predictions.parquet")
+    states = {}
+    if "state" in chosen:
+        state_file = f"{name.replace('_', '-')}.npz"
+        save_state(chosen["state"], temporary / state_file)
+        states[name] = dict(
+            file=str(folder.relative_to(output) / state_file),
+            sha256=pilots._sha256(temporary / state_file),
+            state_sha256=chosen["state"]["state_sha256"],
+        )
+    elif name in shared["episodic_states"]:
+        states[name] = shared["episodic_states"][name]
+    receipt = dict(
+        schema_version=SCHEMA_VERSION,
+        kind=RUN_KIND,
+        status="completed",
+        model=label,
+        arm=name,
+        parent=dict(model=model, state=str(state), run_id=record.get("run_id")),
+        origin=origin,
+        seed=seed,
+        request=dict(view_sha256=shared["view"], window=record["request"].get("window"), seed=seed),
+        markets=context["markets"],
+        selection=chosen["selection"],
+        ic=chosen["ic"],
+        placebo_ic=chosen["placebo_ic"],
+        inputs=dict(declaration_sha256=context["digest"], emissions=emissions, keys=shared["keys"]),
+        outputs=outputs,
+        state=states,
+        code=dict(
+            memory_organs=pilots._sha256(Path(__file__)),
+            posttraining_pilots=pilots._sha256(Path(pilots.__file__)),
+            episodic_organs=pilots._sha256(Path(eo.__file__)),
+        ),
+        final_test_opened=False,
+    )
+    if "uncertainty_column" in chosen:
+        receipt["uncertainty_column"] = chosen["uncertainty_column"]
+    _atomic_json(temporary / "run.json", receipt)
+    if folder.exists():
+        context["log"](f"{label}: se rehace una emisión a medias")
+        shutil.rmtree(folder)
+    os.replace(temporary, folder)
+    queue_record = dict(
+        status="completed",
+        model=label,
+        tier="memory_organ",
+        year=origin,
+        seed=seed,
+        parent=model,
+        arm=name,
+        attempts=[dict(seconds=round(shared["seconds"], 1))],
+        result=dict(best_epoch=None, best_score=None),
+    )
+    _atomic_json(queue, queue_record)
 
 
 # --- la orden del relevo -------------------------------------------------------------------------

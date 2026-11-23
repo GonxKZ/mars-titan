@@ -721,3 +721,415 @@ def test_the_h9_v3_organs_differ_from_the_nogain_ones_only_in_the_suffix_of_thei
     same = {key for key in nogain if key not in {"models", "description"}}
     assert {key: v3[key] for key in same} == {key: nogain[key] for key in same}
     assert set(v3) == set(nogain)
+
+
+def episodic_section(**changes):
+    section = {
+        "dense_bank": {
+            "window": 5,
+            "k": 20,
+            "temperatures": [0.05, 0.1, 0.2],
+            "clip": 0.1,
+            "kappas": [0.05, 0.1, 0.2],
+        },
+        "holographic_delta": {
+            "dim": 1024,
+            "decay": 0.95,
+            "rate": 0.25,
+            "clip": 0.1,
+            "entity": "asset",
+            "seed": 17,
+            "dtype": "float64",
+            "kappas": [0.05, 0.1, 0.2],
+        },
+        "asset_trace": {
+            "half_lives": [5, 21],
+            "clip": 0.1,
+            "kappas": [0.05, 0.1, 0.2],
+        },
+    }
+    section.update(changes)
+    return section
+
+
+@pytest.mark.parametrize(
+    "bad_section",
+    [
+        {},
+        {"unknown_organ": {}},
+        {"dense_bank": dict(episodic_section()["dense_bank"], window=127)},
+        {"dense_bank": dict(episodic_section()["dense_bank"], k=257)},
+        {"dense_bank": dict(episodic_section()["dense_bank"], temperatures=[0.2, 0.05])},
+        {"holographic_delta": dict(episodic_section()["holographic_delta"], dim=512)},
+        {"holographic_delta": dict(episodic_section()["holographic_delta"], dim=4097)},
+        {"holographic_delta": dict(episodic_section()["holographic_delta"], decay=0.0)},
+        {"holographic_delta": dict(episodic_section()["holographic_delta"], entity="region")},
+        {"asset_trace": dict(episodic_section()["asset_trace"], half_lives=[])},
+        {"asset_trace": dict(episodic_section()["asset_trace"], kappas=[0.0])},
+    ],
+)
+def test_episodic_organs_declaration_validation_rejects_invalid_entries(bad_section):
+    organs.checked_organs(declaration(episodic_organs=episodic_section()))
+    with pytest.raises(ValueError):
+        organs.checked_organs(declaration(episodic_organs=bad_section))
+
+
+def test_episodic_organs_are_individually_selectable_and_leave_existing_arms_bit_identical(
+    emitted, tmp_path
+):
+    from mars_titan.memory import episodic_organs as eo
+
+    # Seleccionar solo un órgano nuevo (asset_trace) emite únicamente ese órgano además de los base.
+    only_trace_doc = declaration(episodic_organs={"asset_trace": episodic_section()["asset_trace"]})
+    out_trace = tmp_path / "solo-traza"
+    emit(emitted, emitted["keys"], out_trace, only_trace_doc)
+    trace_report = json.loads((out_trace / "studies" / f"{ORIGIN}--seed-{SEED}.json").read_text())
+    assert trace_report["arms"] == ["combined", "asset_lab", "asset_trace"]
+    assert (run(out_trace, "a", "asset_trace") / "run.json").is_file()
+    assert not (out_trace / "runs" / "a__dense_bank").exists()
+    assert not (out_trace / "runs" / "a__holographic_delta").exists()
+
+    # Con los tres órganos nuevos activados, los dos brazos existentes no cambian ni un bit.
+    all_doc = declaration(episodic_organs=episodic_section())
+    out_all = tmp_path / "todos"
+    emit(emitted, emitted["keys"], out_all, all_doc)
+    all_report = json.loads((out_all / "studies" / f"{ORIGIN}--seed-{SEED}.json").read_text())
+    assert all_report["arms"] == [
+        "combined",
+        "asset_lab",
+        "dense_bank",
+        "holographic_delta",
+        "asset_trace",
+    ]
+    # Banco denso: emite predicción, cuantiles sin cruzar, incertidumbre alineada y estado.
+    reference, predictions, keys_arr = study(emitted, emitted["keys"] / emitted["view"], all_doc)
+    bounds_arr = np.cumsum([0] + [reference[name].rows for name in SPLITS])
+    split_pos = {name: slice(bounds_arr[i], bounds_arr[i + 1]) for i, name in enumerate(SPLITS)}
+    dense_cfg_doc = all_doc["episodic_organs"]["dense_bank"]
+    direct_dense = eo.DenseBankMemory(
+        eo.DenseBankConfig(
+            window=dense_cfg_doc["window"],
+            k=dense_cfg_doc["k"],
+            temperatures=tuple(dense_cfg_doc["temperatures"]),
+            clip=dense_cfg_doc["clip"],
+        ),
+        models=2,
+    )
+    _, direct_disps, _, _ = eo.replay_dense_bank(
+        direct_dense,
+        markets=np.concatenate([reference[s].market for s in SPLITS]),
+        prediction_at=np.concatenate([reference[s].prediction_at for s in SPLITS]),
+        matures_at=np.concatenate([reference[s].matures_at for s in SPLITS]),
+        keys=keys_arr,
+        predictions=np.column_stack([predictions["a"], predictions["b"]]),
+        target=np.concatenate([reference[s].target for s in SPLITS]),
+    )
+    for model_idx, model in enumerate(("a", "b")):
+        for base_arm in organs.ARMS:
+            base_dir = run(emitted["output"], model, base_arm)
+            new_dir = run(out_all, model, base_arm)
+            for split in organs.EMITTED:
+                left = pq.read_table(base_dir / f"{split}-predictions.parquet")
+                right = pq.read_table(new_dir / f"{split}-predictions.parquet")
+                assert left.equals(right)
+            left_rec = json.loads((base_dir / "run.json").read_text())
+            right_rec = json.loads((new_dir / "run.json").read_text())
+            assert left_rec["selection"] == right_rec["selection"]
+            assert left_rec["ic"] == right_rec["ic"]
+            assert (
+                left_rec["state"]["asset"]["state_sha256"]
+                == right_rec["state"]["asset"]["state_sha256"]
+            )
+
+        # Banco denso: emite predicción, cuantiles sin cruzar, columna de incertidumbre y estado.
+        dense_dir = run(out_all, model, "dense_bank")
+        dense_rec = json.loads((dense_dir / "run.json").read_text())
+        assert dense_rec["uncertainty_column"] == "organ_uncertainty"
+        assert dense_rec["selection"]["selected_on"] == "calibration"
+        chosen_tau = dense_rec["selection"]["tau"]
+        assert chosen_tau in (0.05, 0.1, 0.2)
+        for split in organs.EMITTED:
+            table = pq.read_table(dense_dir / f"{split}-predictions.parquet")
+            assert "organ_uncertainty" in table.column_names
+            order = pilots.emission_order(table)[3]
+            unc = table["organ_uncertainty"].to_numpy()
+            assert np.isfinite(unc).all() and np.all(unc >= 0.0) and np.any(unc > 0.0)
+            # La columna de incertidumbre debe conservar la alineación exacta fila a fila.
+            np.testing.assert_array_equal(
+                unc[order], direct_disps[chosen_tau][split_pos[split], model_idx]
+            )
+            q_mat = np.column_stack([table[c].to_numpy() for c in pilots.QUANTILE_COLUMNS])
+            assert np.all(np.diff(q_mat, axis=1) >= 0.0)
+            data = report.load_split(dense_dir, split)
+            assert np.mean(list(report.session_ic(data).values())) == pytest.approx(
+                dense_rec["ic"][split], abs=1e-12
+            )
+        restored_dense = eo.DenseBankMemory.restore(
+            organs.load_state(out_all / dense_rec["state"]["dense_bank"]["file"])
+        )
+        assert (
+            restored_dense.export()["state_sha256"]
+            == dense_rec["state"]["dense_bank"]["state_sha256"]
+        )
+
+        # Memoria holográfica: estado restaurable y coincidencia de IC.
+        holo_dir = run(out_all, model, "holographic_delta")
+        holo_rec = json.loads((holo_dir / "run.json").read_text())
+        assert holo_rec["selection"]["selected_on"] == "calibration"
+        assert holo_rec["selection"]["dim"] == 1024
+        for split in organs.EMITTED:
+            data = report.load_split(holo_dir, split)
+            assert np.mean(list(report.session_ic(data).values())) == pytest.approx(
+                holo_rec["ic"][split], abs=1e-12
+            )
+        restored_holo = eo.HolographicDeltaMemory.restore(
+            organs.load_state(out_all / holo_rec["state"]["holographic_delta"]["file"])
+        )
+        assert (
+            restored_holo.export()["state_sha256"]
+            == holo_rec["state"]["holographic_delta"]["state_sha256"]
+        )
+
+        # Traza por activo: estado restaurable y coincidencia de IC.
+        trace_dir = run(out_all, model, "asset_trace")
+        trace_rec = json.loads((trace_dir / "run.json").read_text())
+        assert trace_rec["selection"]["selected_on"] == "calibration"
+        assert trace_rec["selection"]["half_life"] in (5, 21)
+        for split in organs.EMITTED:
+            data = report.load_split(trace_dir, split)
+            assert np.mean(list(report.session_ic(data).values())) == pytest.approx(
+                trace_rec["ic"][split], abs=1e-12
+            )
+        restored_trace = eo.AssetResidualTrace.restore(
+            organs.load_state(out_all / trace_rec["state"]["asset_trace"]["file"])
+        )
+        assert (
+            restored_trace.export()["state_sha256"]
+            == trace_rec["state"]["asset_trace"]["state_sha256"]
+        )
+
+    # El informe de criba lee los tres órganos nuevos igual que los existentes.
+    controls = {
+        f"{model}__{arm_name}": model
+        for model in ("a", "b")
+        for arm_name in (*organs.ARMS, *organs.EPISODIC_ARMS)
+    }
+    screening_doc = report.build(
+        emitted["state"],
+        [ORIGIN],
+        SEED,
+        controls,
+        {},
+        references=[out_all],
+        offset=True,
+        decision_splits=("calibration",),
+    )
+    origin_doc = screening_doc["origins"][0]
+    assert origin_doc["missing_splits"] == []
+    for name in controls:
+        rec = json.loads((run(out_all, *name.split("__")) / "run.json").read_text())
+        assert origin_doc["models"][name]["ic"]["evaluation"]["mean"] == pytest.approx(
+            rec["ic"]["evaluation"], abs=1e-12
+        )
+
+
+def test_episodic_organs_causality_and_calibration_only_selection(emitted):
+    """Ningún órgano nuevo lee etiquetas no maduras o futuras ni elige hiperparámetros en eval."""
+    from mars_titan.memory import episodic_organs as eo
+
+    doc = declaration(episodic_organs=episodic_section())
+    reference, predictions, keys = study(emitted, emitted["keys"] / emitted["view"], doc)
+    folder = emitted["keys"] / emitted["view"]
+    assets = np.concatenate([reference[name].asset for name in SPLITS])
+    days = np.concatenate([reference[name].prediction_at for name in SPLITS]) // pilots.DAY_US
+    raw, _ = pilots.lab_inputs(folder, folder / "names.json", assets, days)
+    regimes = eo.session_regimes_from_inputs(
+        raw, pilots._session_slices(reference), min_assets=doc["min_assets"]
+    )
+    first_res, _, first_org = eo.episodic_study(
+        reference,
+        predictions,
+        keys,
+        doc["episodic_organs"],
+        placebo_seed=doc["placebo_seed"],
+        regimes=regimes,
+        log=quiet,
+    )
+    evaluation = reference["evaluation"]
+    _, _, start, end = evaluation.sessions[20]
+    target = evaluation.target.copy()
+    target[start:] = np.random.default_rng(19).normal(0, 0.02, len(target) - start)
+    changed = dict(reference, evaluation=pilots.replace_target(evaluation, target))
+    second_res, _, second_org = eo.episodic_study(
+        changed,
+        predictions,
+        keys,
+        doc["episodic_organs"],
+        placebo_seed=doc["placebo_seed"],
+        regimes=regimes,
+        log=quiet,
+    )
+    cut = reference["validation"].rows + reference["calibration"].rows + end
+    for model in ("a", "b"):
+        for arm_name in organs.EPISODIC_ARMS:
+            before = first_org["models"][model]["arms"][arm_name]
+            after = second_org["models"][model]["arms"][arm_name]
+            assert after["selection"] == before["selection"]
+            assert (
+                first_res[model][arm_name]["calibration"]
+                == second_res[model][arm_name]["calibration"]
+            )
+            np.testing.assert_array_equal(after["signal"][:cut], before["signal"][:cut])
+            assert not np.array_equal(after["signal"][cut:], before["signal"][cut:])
+            if arm_name == "dense_bank":
+                np.testing.assert_array_equal(
+                    after["extra_columns"]["organ_uncertainty"][:cut],
+                    before["extra_columns"]["organ_uncertainty"][:cut],
+                )
+                assert not np.array_equal(
+                    after["extra_columns"]["organ_uncertainty"][cut:],
+                    before["extra_columns"]["organ_uncertainty"][cut:],
+                )
+    # Invertir toda la evaluación no cambia ninguna selección (solo interviene la calibración).
+    flipped = dict(reference, evaluation=pilots.replace_target(evaluation, -evaluation.target))
+    third_res, _, third_org = eo.episodic_study(
+        flipped,
+        predictions,
+        keys,
+        doc["episodic_organs"],
+        placebo_seed=doc["placebo_seed"],
+        regimes=regimes,
+        log=quiet,
+    )
+    for model in ("a", "b"):
+        for arm_name in organs.EPISODIC_ARMS:
+            assert (
+                third_org["models"][model]["arms"][arm_name]["selection"]
+                == first_org["models"][model]["arms"][arm_name]["selection"]
+            )
+            assert (
+                third_res[model][arm_name]["calibration"]
+                == first_res[model][arm_name]["calibration"]
+            )
+            assert (
+                third_res[model][arm_name]["evaluation"] != first_res[model][arm_name]["evaluation"]
+            )
+
+
+def test_holographic_organ_emits_with_sector_map_through_memory_organs(emitted, tmp_path):
+    """La opción entity='sector' funciona de punta a punta con un SectorMap explícito."""
+    from mars_titan.data.sector_map import SectorMap
+
+    manifest = json.loads(emitted["manifest"].read_text())
+    groups = ("CN/unknown", "US/Sec0", "US/Sec1", "US/Sec2", "US/Sec3", "US/unknown")
+    assignments = tuple(
+        sorted(
+            (f"{a['market']}/{a['symbol']}", 1 + (i % 4)) for i, a in enumerate(manifest["assets"])
+        )
+    )
+    sector_map = SectorMap(groups, assignments, (("fixture.csv", "0" * 64),))
+    holo_sec = dict(episodic_section()["holographic_delta"], entity="sector")
+    doc = declaration(episodic_organs={"holographic_delta": holo_sec})
+    out = tmp_path / "organos-sector"
+    organs.emit(
+        doc,
+        emitted["state"],
+        ORIGIN,
+        [SEED],
+        emitted["keys"],
+        out,
+        log=quiet,
+        maturity=provider(emitted),
+        sector_map=sector_map,
+    )
+    rec = json.loads((run(out, "a", "holographic_delta") / "run.json").read_text())
+    assert rec["selection"]["entity"] == "sector"
+    assert np.isfinite(rec["ic"]["evaluation"])
+    # Sin sector_map ni sector_source, entity='sector' falla antes de escribir salidas.
+    with pytest.raises(ValueError, match="sector"):
+        organs.emit(
+            doc,
+            emitted["state"],
+            ORIGIN,
+            [SEED],
+            emitted["keys"],
+            tmp_path / "sin-sector",
+            log=quiet,
+            maturity=provider(emitted),
+        )
+
+
+def test_cli_emitir_accepts_declaration_with_episodic_organs(emitted, tmp_path, monkeypatch):
+    """La orden CLI `emitir` acepta una declaración con `episodic_organs` y emite los cinco."""
+    monkeypatch.setattr(pilots, "_maturity", provider(emitted))
+    decl_path = tmp_path / "declaracion.json"
+    decl_path.write_text(json.dumps(declaration(episodic_organs=episodic_section())))
+    out = tmp_path / "salida-cli"
+    rc = organs.main(
+        [
+            "emitir",
+            "--declaration",
+            str(decl_path),
+            "--state",
+            str(emitted["state"]),
+            "--origin",
+            str(ORIGIN),
+            "--seed",
+            str(SEED),
+            "--keys",
+            str(emitted["keys"]),
+            "--output",
+            str(out),
+            "--threads",
+            "1",
+        ]
+    )
+    assert rc == 0
+    summary = json.loads((out / "studies" / f"{ORIGIN}--seed-{SEED}.json").read_text())
+    assert summary["arms"] == [
+        "combined",
+        "asset_lab",
+        "dense_bank",
+        "holographic_delta",
+        "asset_trace",
+    ]
+
+
+def test_episodic_organs_emit_the_same_for_a_model_alone_or_alongside_others(emitted, tmp_path):
+    """Cada órgano nuevo produce la misma selección y emisión solo o acompañado por otro modelo."""
+    together_out = tmp_path / "ep-juntos"
+    alone_out = tmp_path / "ep-solo"
+    emit(
+        emitted,
+        emitted["keys"],
+        together_out,
+        declaration(models=["a", "b"], episodic_organs=episodic_section()),
+    )
+    emit(
+        emitted,
+        emitted["keys"],
+        alone_out,
+        declaration(models=["a"], episodic_organs=episodic_section()),
+    )
+    for arm_name in organs.EPISODIC_ARMS:
+        left, right = run(together_out, "a", arm_name), run(alone_out, "a", arm_name)
+        rec_l = json.loads((left / "run.json").read_text())
+        rec_r = json.loads((right / "run.json").read_text())
+        assert rec_l["selection"] == rec_r["selection"]
+        for split in organs.EMITTED:
+            assert rec_l["ic"][split] == pytest.approx(rec_r["ic"][split], abs=1e-12)
+            assert rec_l["placebo_ic"][split] == pytest.approx(
+                rec_r["placebo_ic"][split], abs=1e-12
+            )
+            tbl_l = pq.read_table(left / f"{split}-predictions.parquet")
+            tbl_r = pq.read_table(right / f"{split}-predictions.parquet")
+            assert tbl_l.schema == tbl_r.schema
+            np.testing.assert_allclose(
+                tbl_l["prediction"].to_numpy(), tbl_r["prediction"].to_numpy(), atol=1e-14
+            )
+            if arm_name == "dense_bank":
+                np.testing.assert_allclose(
+                    tbl_l["organ_uncertainty"].to_numpy(),
+                    tbl_r["organ_uncertainty"].to_numpy(),
+                    atol=1e-14,
+                )
