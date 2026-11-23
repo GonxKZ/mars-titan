@@ -88,6 +88,8 @@ PREDICTOR_CHANGES = (
     "modality_gating",
     # Memoria transversal de rango y residuo maduro (CRRM).
     "cross_sectional_rank_memory",
+    # Interferómetro holográfico de sesión en fase dual (WP11).
+    "session_hologram",
 )
 # Cambios que se declaran con un nombre en lugar de un objeto.
 NAMED_CHANGES = (
@@ -129,7 +131,8 @@ def checked_predictor_changes(changes):
             "presence_modulation, modality_gating, attention_layout, temporal_encoder, "
             "session_rank_inputs, differential_attention, reference_encoder, "
             "memory_value_normalization y output_query como nombres no vacíos. También admiten "
-            "learning_scale, removed_modalities y technical_branch como objetos no vacíos"
+            "learning_scale, removed_modalities, technical_branch y session_hologram como objetos "
+            "no vacíos"
         )
     return changes
 
