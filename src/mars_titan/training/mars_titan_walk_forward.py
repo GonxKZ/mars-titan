@@ -228,6 +228,12 @@ def _parent(folder, view, seed, control=None):
         is None,
         "El consumidor congelado aún no recibe la memoria transversal de rango maduro",
     )
+    # --- factor_memory ---
+    _require(
+        changes.get("factor_memory", predictor.get("factor_memory")) is None,
+        "El consumidor congelado aún no gestiona la memoria factorial",
+    )
+    # --- fin factor_memory ---
     _verify(folder, report)
     return report, digest
 
@@ -273,6 +279,12 @@ def _frozen_parent(
         options.get("cross_sectional_rank_memory") is None,
         "El consumidor congelado aún no recibe la memoria transversal de rango maduro",
     )
+    # --- factor_memory ---
+    _require(
+        options.get("factor_memory") is None,
+        "El consumidor congelado aún no gestiona la memoria factorial",
+    )
+    # --- fin factor_memory ---
     _require(
         allow_context or options.get("session_context") is None,
         "Este consumidor todavía no recupera el contexto compartido de PT4",

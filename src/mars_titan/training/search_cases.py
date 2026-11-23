@@ -90,6 +90,10 @@ PREDICTOR_CHANGES = (
     "cross_sectional_rank_memory",
     # Interferómetro holográfico de sesión en fase dual (WP11).
     "session_hologram",
+    # --- factor_memory ---
+    # Memoria rápida factorizada con blanqueo espectral de sesión (LFM-SW, Idea 4).
+    "factor_memory",
+    # --- fin factor_memory ---
 )
 # Cambios que se declaran con un nombre en lugar de un objeto.
 NAMED_CHANGES = (
