@@ -108,6 +108,9 @@ class FinancialDustAdapter:
             # --- ic_titans_mlp ---
             "ic_titans_mlp",
             # --- fin ic_titans_mlp ---
+            # --- lead_lag_memory ---
+            "lead_lag_memory",
+            # --- fin lead_lag_memory ---
             "memory_huber",
             "memory_time_scales",
             "differential_attention",

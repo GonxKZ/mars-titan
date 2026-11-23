@@ -107,6 +107,10 @@ def declared_sources(config):
     if getattr(config, "ic_titans_mlp", None) is not None:
         sources.append("mars_titan.models.titans.ic_titans_mlp")
     # --- fin ic_titans_mlp ---
+    # --- lead_lag_memory ---
+    if getattr(config, "lead_lag_memory", None) is not None:
+        sources.append("mars_titan.models.titans.lead_lag_memory")
+    # --- fin lead_lag_memory ---
     if getattr(config, "session_hologram", None) is not None:
         sources.append("mars_titan.models.titans.session_hologram")
     # --- memory_cross_sectional_surprise ---
@@ -610,6 +614,12 @@ class FrozenFinancialConsumer:
                 "El consumidor congelado aún no recibe la memoria neuronal IC-Titans-MLP"
             )
         # --- fin ic_titans_mlp ---
+        # --- lead_lag_memory ---
+        if predictor.lead_lag_memory is not None:
+            raise ValueError(
+                "El consumidor congelado aún no recibe la memoria rápida de desfase entre grupos"
+            )
+        # --- fin lead_lag_memory ---
         if readout is not None and (
             readout.config.hidden_size != predictor.config.hidden_size
             or readout.step_logit.device != predictor.head.weight.device

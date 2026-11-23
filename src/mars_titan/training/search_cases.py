@@ -91,6 +91,9 @@ PREDICTOR_CHANGES = (
     # --- ic_titans_mlp ---
     "ic_titans_mlp",
     # --- fin ic_titans_mlp ---
+    # --- lead_lag_memory ---
+    "lead_lag_memory",
+    # --- fin lead_lag_memory ---
     # Interferómetro holográfico de sesión en fase dual (WP11).
     "session_hologram",
     # --- memory_cross_sectional_surprise ---
