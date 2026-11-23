@@ -81,6 +81,8 @@ PREDICTOR_CHANGES = (
     "reference_encoder",
     # Rama de los rasgos técnicos del bloque del gráfico: columns, bins, embedding y hidden.
     "technical_branch",
+    # Memoria transversal de rango y residuo maduro (CRRM).
+    "cross_sectional_rank_memory",
 )
 # Cambios que se declaran con un nombre en lugar de un objeto.
 NAMED_CHANGES = (

@@ -417,7 +417,7 @@ def clip_parameter_groups(predictor, trainable=None):
             continue
         if name.startswith(("technical_branch.", "head.", "output_objective.", "auxiliary_heads.")):
             buckets["technical_head"].append(name)
-        elif name.startswith(("mac.", "reliability_gates.")):
+        elif name.startswith(("mac.", "reliability_gates.", "cross_sectional_rank_memory.")):
             buckets["mac"].append(name)
         else:
             buckets["backbone_fusion"].append(name)
@@ -648,6 +648,10 @@ class _Pass:
     horizons: object = None
     # Con #791, la señal de fiabilidad madura del recorrido.
     reliability: object = None
+    # Con CRRM, el estado de la memoria transversal de rango y su instantánea para replay.
+    rank_memory: object = None
+    rank_memory_start: object = None
+    rank_memory_labels: list = field(default_factory=list)
 
 
 class ChronologicalInference:
@@ -715,6 +719,8 @@ class ChronologicalInference:
         self.horizons = predictor.config.auxiliary_horizons
         # #791 cambia el ajuste y la inferencia, así que los dos recorridos llevan su señal.
         self.reliability = predictor.config.mature_reliability
+        # CRRM cambia ajuste e inferencia y consume etiquetas maduras en ambos recorridos.
+        self.uses_rank_memory = predictor.cross_sectional_rank_memory is not None
         if torch.backends.mha.get_fastpath_enabled() or torch.is_inference_mode_enabled():
             raise ValueError("El recorrido exige fastpath=False declarado y sin inference_mode")
         if (
@@ -772,6 +778,10 @@ class ChronologicalInference:
         complete = len(validated) == 1
         if self.uses_context and run.context is None:
             run.context = predictor.initial_context(differentiable=graph)
+        if self.uses_rank_memory and run.rank_memory is None:
+            run.rank_memory = predictor.initial_rank_memory()
+        if self.uses_rank_memory and accumulate and run.rank_memory_start is None:
+            run.rank_memory_start = predictor.detach_rank_memory(run.rank_memory)
         context = dict(context=run.context) if self.uses_context else {}
         signal, surprises = self._signal(run), []
         # Las comprobaciones de finitud de todos los bloques del evento se resuelven juntas
@@ -807,14 +817,26 @@ class ChronologicalInference:
                         len(batch.flow_ids), differentiable=graph
                     ).memory
                     state = replace(state, mac=replace(state.mac, memory=memory))
+                prepare_options = (
+                    dict(options, rank_memory=run.rank_memory) if self.uses_rank_memory else options
+                )
                 with nvtx_ranges.phase("titans.prepare"), torch.set_grad_enabled(graph):
                     prepared = predictor.prepare(
                         batch,
                         state,
                         differentiable=graph,
                         session_complete=complete,
-                        **options,
+                        **prepare_options,
                         **context,
+                    )
+                if self.uses_rank_memory and not warmup:
+                    run.rank_memory = predictor.stage_rank_memory(
+                        run.rank_memory,
+                        batch.flow_ids,
+                        batch.prediction_at,
+                        prepared.rank_memory_keys,
+                        prepared.point_predictions,
+                        differentiable=graph and not accumulate,
                     )
                 if self.uses_context:
                     # Los bloques siguientes del evento leen el mismo contexto confirmado.
@@ -976,7 +998,7 @@ class ChronologicalInference:
 
     def _labels(self, run, event, *, train):
         """Resolver etiquetas maduras contra la predicción emitida y su grafo vigente."""
-        markets, moments, errors, matured = [], [], [], []
+        markets, moments, errors, matured, rank_matured = [], [], [], [], []
         for flow, decision_at, value in event.labels:
             key = flow, decision_at
             if key not in run.pending:
@@ -984,6 +1006,8 @@ class ChronologicalInference:
             issued = run.pending.pop(key)
             if self.reliability is not None:
                 matured.append((flow, issued, value))
+            if self.uses_rank_memory:
+                rank_matured.append((flow, decision_at, value))
             if train and run.horizons is not None:
                 run.counters["auxiliary_labels"] += run.horizons.mature(flow, decision_at, value)
             markets.append(flow.split("/", 1)[0])
@@ -1007,6 +1031,18 @@ class ChronologicalInference:
         signal = self._signal(run)
         if signal is not None:
             signal.settle(matured)
+        if self.uses_rank_memory and rank_matured:
+            if run.rank_memory is None:
+                run.rank_memory = self.predictor.initial_rank_memory()
+            accumulate = train and self.recipe.accumulation_rows is not None
+            if accumulate and run.segment:
+                run.rank_memory_labels.append((len(run.segment), tuple(rank_matured)))
+            run.rank_memory = self.predictor.settle_rank_memory(
+                run.rank_memory,
+                rank_matured,
+                differentiable=train and not accumulate,
+                train=train,
+            )
         for start in range(0, len(errors), 4096):
             run.errors.update(
                 markets[start : start + 4096],
@@ -1020,6 +1056,9 @@ class ChronologicalInference:
         run.context = None
         run.horizons = None
         run.reliability = None
+        run.rank_memory = None
+        run.rank_memory_start = None
+        run.rank_memory_labels.clear()
         run.pending.clear()
         run.graphs.clear()
         run.levels.clear()
@@ -1471,7 +1510,17 @@ class ChronologicalTrainer(ChronologicalInference):
             with deferred_checks():
                 members, graphs, batch_outputs, penalties = set(group), {}, [], []
                 loss_to_record = None
-                for batch, plan, whole in run.segment:
+                rank_state = run.rank_memory_start if self.uses_rank_memory else None
+                rank_by_pos = {}
+                if self.uses_rank_memory:
+                    for position, items in run.rank_memory_labels:
+                        rank_by_pos.setdefault(position, []).append(items)
+                for seg_index, (batch, plan, whole) in enumerate(run.segment):
+                    if self.uses_rank_memory:
+                        for items in rank_by_pos.get(seg_index, ()):
+                            rank_state = predictor.settle_rank_memory(
+                                rank_state, items, differentiable=True, train=True
+                            )
                     rows = [i for i, flow in enumerate(batch.flow_ids) if flow in members]
                     if not rows:
                         continue
@@ -1490,9 +1539,25 @@ class ChronologicalTrainer(ChronologicalInference):
                             len(batch.flow_ids), differentiable=True
                         ).memory
                         state = replace(state, mac=replace(state.mac, memory=memory))
+                    replay_plan = (
+                        dict(plan, rank_memory=rank_state) if self.uses_rank_memory else plan
+                    )
                     with torch.enable_grad():
                         prepared = predictor.prepare(
-                            batch, state, differentiable=True, session_complete=complete, **plan
+                            batch,
+                            state,
+                            differentiable=True,
+                            session_complete=complete,
+                            **replay_plan,
+                        )
+                    if self.uses_rank_memory:
+                        rank_state = predictor.stage_rank_memory(
+                            rank_state,
+                            batch.flow_ids,
+                            batch.prediction_at,
+                            prepared.rank_memory_keys,
+                            prepared.point_predictions,
+                            differentiable=True,
                         )
                     states.put(prepared.next_state)
                     if prepared.local_control is not None:
@@ -1715,6 +1780,8 @@ class ChronologicalTrainer(ChronologicalInference):
             run.flows.detach(parameter_id)
             if run.context is not None:
                 run.context = self.predictor.detach_context(run.context, parameter_id)
+            if run.rank_memory is not None:
+                run.rank_memory = self.predictor.detach_rank_memory(run.rank_memory, parameter_id)
         run.penalties.clear()
         run.graphs.clear()
         run.predictions.clear()
@@ -1722,6 +1789,8 @@ class ChronologicalTrainer(ChronologicalInference):
         run.used.clear()
         run.segment.clear()
         run.starts.clear()
+        run.rank_memory_start = None
+        run.rank_memory_labels.clear()
         run.instants = 0
         run.counters["segments"] += 1
 
@@ -1793,7 +1862,14 @@ class ChronologicalTrainer(ChronologicalInference):
         raise ValueError("El recorrido de ajuste terminó sin su cierre declarado")
 
     def _export(self, run):
-        if run.graphs or run.segment or run.starts or run.penalties:
+        if (
+            run.graphs
+            or run.segment
+            or run.starts
+            or run.penalties
+            or run.rank_memory_start is not None
+            or run.rank_memory_labels
+        ):
             raise ValueError("Solo se confirma un recorrido en la barrera posterior a un paso")
         predictor, size = self.predictor, self.predictor.config.max_batch
         flows = sorted(run.flows)
@@ -1826,6 +1902,15 @@ class ChronologicalTrainer(ChronologicalInference):
                 if self.reliability is not None
                 else {}
             ),
+            **(
+                dict(
+                    rank_memory=None
+                    if run.rank_memory is None
+                    else predictor.export_rank_memory(run.rank_memory)
+                )
+                if self.uses_rank_memory
+                else {}
+            ),
         )
 
     def _restore(self, payload):
@@ -1835,6 +1920,10 @@ class ChronologicalTrainer(ChronologicalInference):
             raise ValueError("El recorrido guardado no corresponde a las cabezas auxiliares")
         if (self.reliability is not None) != ("reliability" in payload):
             raise ValueError("El recorrido guardado no corresponde a la señal de fiabilidad")
+        if self.uses_rank_memory != ("rank_memory" in payload):
+            raise ValueError(
+                "El recorrido guardado no corresponde a la memoria transversal de rango"
+            )
         run = _Pass()
         for item in payload["fast"]:
             run.flows.put(self.predictor.restore_state(item, device=self.device))
@@ -1856,6 +1945,8 @@ class ChronologicalTrainer(ChronologicalInference):
             run.horizons = HorizonLabels.restore(self.horizons, payload["horizons"])
         if self.reliability is not None and payload["reliability"] is not None:
             run.reliability = ReliabilitySignal.restore(self.reliability, payload["reliability"])
+        if self.uses_rank_memory and payload["rank_memory"] is not None:
+            run.rank_memory = self.predictor.restore_rank_memory(payload["rank_memory"])
         return run
 
     def _emission(self):
