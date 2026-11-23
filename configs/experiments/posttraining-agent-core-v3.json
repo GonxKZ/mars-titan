@@ -1,0 +1,122 @@
+{
+  "schema_version": 1,
+  "kind": "posttraining_agent_core_v1",
+  "final_test_access": false,
+  "description": "Variante de posttraining-agent-core.json para el brazo v3 de H9: la conjunta de EE. UU. y China con los rasgos long_horizon_v3, en el estado dgx-titans-us-cn-v31/v11-inputs-v3/semillas-42,43,44/todos-e50b6f1e, con los árboles de referencias/h9-us-cn-v3-e50b6f1e, declarada el 23 de noviembre de 2026 a las 00:15 UTC por encargo del coordinador, antes de que exista ningún ajuste de ese brazo. Es la misma configuración de A; solo cambian los nombres de los modelos, con el sufijo _v3 (titans_mac_nogain_v3, lightgbm_technical_v3 y titans_mac_nogain_v3__combined). Mientras falte el factor de mercado de China (D-7), se mide con --market US. La orden exige esta huella o la de la declaración original.",
+  "seed": 42,
+  "min_assets": 30,
+  "parent": "titans_mac_nogain_v3",
+  "tree": "lightgbm_technical_v3",
+  "organ": "titans_mac_nogain_v3__combined",
+  "attention": "cross_asset_attention",
+  "splits": [
+    "calibration",
+    "evaluation"
+  ],
+  "selection_split": "calibration",
+  "align": "strict",
+  "aggregator": {
+    "name": "ridge_cov_active",
+    "lambdas": [
+      2.0,
+      1.0,
+      0.5,
+      0.1
+    ],
+    "half_lives": [
+      null,
+      63.0,
+      21.0
+    ]
+  },
+  "placebo": {
+    "kind": "signal_shuffled_within_session",
+    "seed": 20261122
+  },
+  "aggregator_placebo_seed": 20261122,
+  "operable_scales": [
+    0.001,
+    0.002,
+    0.005,
+    0.01,
+    0.02,
+    0.03,
+    0.05,
+    0.07,
+    0.1,
+    0.15,
+    0.2,
+    0.3,
+    0.5,
+    0.7,
+    1.0,
+    1.5,
+    2.0,
+    3.0,
+    5.0,
+    10.0,
+    30.0,
+    100.0
+  ],
+  "modes": [
+    "label",
+    "operable"
+  ],
+  "abstention": {
+    "coverages": [
+      0.5,
+      0.6,
+      0.7,
+      0.8,
+      0.9,
+      1.0
+    ],
+    "asset_confidence": "minus_abs_difference_of_session_z_ranks_of_parent_and_tree",
+    "session_confidence": "rank_correlation_of_parent_and_tree",
+    "criterion": "calibration_mean_session_ic_with_abstained_at_zero",
+    "asset_magnitude_control": "smallest_abs_session_z_rank_of_the_system",
+    "session_magnitude_control": "smallest_cross_sectional_std_of_the_parent_prediction",
+    "random_draws": 20,
+    "random_seed": 20261122,
+    "liquidity_groups": 3
+  },
+  "conformal": {
+    "levels": [
+      0.8,
+      0.95
+    ],
+    "core": {
+      "0.8": [
+        "quantile_0100",
+        "quantile_0900"
+      ],
+      "0.95": [
+        "quantile_0025",
+        "quantile_0975"
+      ]
+    },
+    "fit_split": "validation",
+    "conformal_split": "calibration",
+    "max_fit_rows": 300000,
+    "fit_seed": 20261122,
+    "liquidity_groups": 3,
+    "volatility_groups": 10
+  },
+  "shapley": {
+    "games": [
+      "rank_average",
+      "ridge_cov_active"
+    ]
+  },
+  "costs": {
+    "tail": 0.1,
+    "base_cost_bps": 5.0,
+    "multipliers": [
+      1.0,
+      2.0,
+      3.0
+    ],
+    "annualization": 252,
+    "cvar": 0.05
+  }
+}

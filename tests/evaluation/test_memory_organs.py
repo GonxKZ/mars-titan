@@ -708,3 +708,16 @@ def test_the_relay_line_passes_the_markets(capsys):
     )
     line = capsys.readouterr().out
     assert " --market US" in line and "mars-titan-memorias-h9-v2-us-2013" in line
+
+
+def test_the_h9_v3_organs_differ_from_the_nogain_ones_only_in_the_suffix_of_their_models():
+    folder = HERE.parents[2] / "configs" / "experiments"
+    nogain = json.loads((folder / "posttraining-memory-organs-nogain-v1.json").read_text())
+    v3 = organs.checked_organs(
+        json.loads((folder / "posttraining-memory-organs-h9-v3.json").read_text())
+    )
+    assert v3["models"] == [model + "_v3" for model in nogain["models"]]
+    assert v3["description"] != nogain["description"]
+    same = {key for key in nogain if key not in {"models", "description"}}
+    assert {key: v3[key] for key in same} == {key: nogain[key] for key in same}
+    assert set(v3) == set(nogain)

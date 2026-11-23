@@ -497,3 +497,23 @@ def test_a_joint_state_needs_its_market_and_measures_only_that_one(tmp_path, mon
     assert {game["sessions"] for game in summary["a3"].values()} == {SESSIONS["evaluation"]}
     days = pq.read_table(folder / "a4-dias.parquet")
     assert days.column("market").unique().to_pylist() == ["US"]
+
+
+def test_the_v3_variant_renames_only_the_models_and_is_registered():
+    base = json.loads(DECLARATION.read_text())
+    variant = json.loads((DECLARATION.parent / "posttraining-agent-core-v3.json").read_text())
+    assert set(variant) == set(base)
+    assert {key for key in base if base[key] != variant[key]} == {
+        "parent",
+        "tree",
+        "organ",
+        "description",
+    }
+    assert variant["parent"] == base["parent"] + "_v3"
+    assert variant["tree"] == base["tree"] + "_v3"
+    assert variant["organ"] == variant["parent"] + "__combined"
+    _, digest = ac.checked_declaration(variant)
+    assert digest in ac.VARIANT_SHA256 and digest != ac.REGISTERED_SHA256
+    # Cualquier otro cambio sobre la variante sigue rechazado.
+    with pytest.raises(ValueError, match="no es la registrada"):
+        ac.checked_declaration(dict(variant, seed=43))

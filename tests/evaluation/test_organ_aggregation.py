@@ -405,3 +405,23 @@ def test_known_rows_takes_the_alpha_of_the_measured_market_rows(tmp_path, monkey
     assert matures["evaluation"].tolist() == [START + DAY, START + 2 * DAY]
     with pytest.raises(ValueError, match="No está el factor de mercado de CN"):
         og.known_rows(tmp_path, YEAR, parent, VIEW, dict(evaluation=every), ["CN", "US"])
+
+
+def test_the_v3_variant_renames_only_the_models_and_is_registered():
+    base = json.loads(DECLARATION.read_text())
+    variant = json.loads((DECLARATION.parent / "posttraining-aggregator-s2-v3.json").read_text())
+    assert set(variant) == set(base)
+    assert {key for key in base if base[key] != variant[key]} == {
+        "parent",
+        "tree",
+        "organ",
+        "description",
+    }
+    assert variant["parent"] == base["parent"] + "_v3"
+    assert variant["tree"] == base["tree"] + "_v3"
+    assert variant["organ"] == variant["parent"] + "__combined"
+    _, digest = og.checked_declaration(variant)
+    assert digest in og.VARIANT_SHA256 and digest != og.REGISTERED_SHA256
+    # Cualquier otro cambio sobre la variante sigue rechazado.
+    with pytest.raises(ValueError, match="no es la registrada"):
+        og.checked_declaration(dict(variant, seed=43))

@@ -63,6 +63,14 @@ from mars_titan.evaluation import posttraining_pilots as pilots
 KIND = "posttraining_agent_core_v1"
 # Huella canónica de configs/experiments/posttraining-agent-core.json, la declaración del núcleo.
 REGISTERED_SHA256 = "7019689c04b8c4ecaf8a09d4d691f1de24dc02f60d12b552e6cda4a60826a6ad"
+# Variantes registradas: la misma configuración con otros nombres de modelo. La prueba comprueba
+# campo a campo que solo cambian el padre, los árboles, el órgano y la descripción.
+VARIANT_SHA256 = {
+    # Brazo v3 de H9 (rasgos long_horizon_v3): los modelos llevan el sufijo _v3.
+    "6587e4877fa0659a2c16f837952a51921195ed8e3b681240aa7c2db973cf642c": (
+        "posttraining-agent-core-v3.json"
+    ),
+}
 SPLITS = og.SPLITS
 AGGREGATED = og.AGGREGATED
 QUANTILES = ("quantile_0025", "quantile_0100", "quantile_0500", "quantile_0900", "quantile_0975")
@@ -80,9 +88,10 @@ def checked_declaration(document):
     _require(isinstance(document, dict), "La declaración del núcleo es un objeto JSON")
     digest = hashlib.sha256(pilots._canonical(document).encode()).hexdigest()
     _require(
-        digest == REGISTERED_SHA256,
+        digest == REGISTERED_SHA256 or digest in VARIANT_SHA256,
         f"La declaración no es la registrada para el núcleo (huella {digest[:12]}, registrada "
-        f"{REGISTERED_SHA256[:12]}): la configuración de las medidas no cambia",
+        f"{REGISTERED_SHA256[:12]} o una de sus variantes con otros nombres de modelo): la "
+        "configuración de las medidas no cambia",
     )
     grid = document["aggregator"]
     _require(

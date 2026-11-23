@@ -52,6 +52,14 @@ from mars_titan.evaluation import posttraining_pilots as pilots
 KIND = "posttraining_organ_aggregation_v1"
 # Huella canónica de configs/experiments/posttraining-aggregator-s2.json, la declaración de S2.
 REGISTERED_SHA256 = "e00daa98e23c120904aeb13fc3ef58cb9019521f49c1eed1940f05b6d83ed15f"
+# Variantes registradas: la misma configuración con otros nombres de modelo. La prueba comprueba
+# campo a campo que solo cambian el padre, los árboles, el órgano y la descripción.
+VARIANT_SHA256 = {
+    # Brazo v3 de H9 (rasgos long_horizon_v3): los modelos llevan el sufijo _v3.
+    "110ea6591a5543d48b1f5adf33c1d0b01efde0e7e4311faed07445a4bf1c8032": (
+        "posttraining-aggregator-s2-v3.json"
+    ),
+}
 MISSING_EXIT = 75  # EX_TEMPFAIL: faltan entradas de otras unidades y la orden se puede repetir
 SPLITS = ("validation", "calibration", "evaluation")
 AGGREGATED = ("calibration", "evaluation")
@@ -96,9 +104,10 @@ def checked_declaration(document):
     _require(isinstance(document, dict), "La declaración de S2 es un objeto JSON")
     digest = hashlib.sha256(pilots._canonical(document).encode()).hexdigest()
     _require(
-        digest == REGISTERED_SHA256,
+        digest == REGISTERED_SHA256 or digest in VARIANT_SHA256,
         f"La declaración no es la registrada para S2 (huella {digest[:12]}, registrada "
-        f"{REGISTERED_SHA256[:12]}): la configuración de un contraste confirmatorio no cambia",
+        f"{REGISTERED_SHA256[:12]} o una de sus variantes con otros nombres de modelo): la "
+        "configuración de un contraste confirmatorio no cambia",
     )
     grid = document["aggregator"]
     _require(
