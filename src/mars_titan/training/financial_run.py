@@ -82,16 +82,25 @@ from .selection import (
     AWAIT,
     CHRONOLOGICAL_MODES,
     COMMON_EPOCH,
+    DECAY_LR,
     FINISH,
     SESSION_RANK_IC,
     VALIDATION_PLATEAU,
     advance_selection,
+    apply_lr_decay,
     awaiting,
     bind_joint_epoch,
+    build_stopping_report,
+    canonical_selection,
+    emit_average_count,
     epoch_decision,
     initial_selection,
+    lr_decay_config,
     metric_definition,
+    retained_epochs,
+    selected_emit_epochs,
     selection_score,
+    smoothing_window,
     validate_selection,
 )
 from .shrink_perturb import ShrinkPerturb, shrink_perturb
@@ -204,7 +213,11 @@ class ChronologicalRecipe:
         # Los controles puntuales conservan la cabeza y validan los mismos hiperparámetros.
         validate_loss("mae" if self.loss in QUANTILE_OBJECTIVES else self.loss, self.huber_delta)
         validate_selection(
-            self.selection, epochs=self.epochs, modes=CHRONOLOGICAL_MODES, initial_reported=True
+            self.selection,
+            epochs=self.epochs,
+            modes=CHRONOLOGICAL_MODES,
+            initial_reported=True,
+            adaptive=True,
         )
         distillation.checked_weight(self.distillation_weight)
         if self.loss in POINT_OBJECTIVES and self.distillation_weight is not None:
@@ -265,6 +278,8 @@ class ChronologicalRecipe:
         options = self.weight_options()
         if self.recency_half_life_years is not None and options["schedule_free"] is not None:
             raise ValueError("La recencia por tasa efectiva no se combina con schedule_free")
+        if lr_decay_config(self.selection) is not None and options["schedule_free"] is not None:
+            raise ValueError("La reducción de tasa no se combina con schedule_free")
 
     def session_ic(self):
         """Término de IC por sesión de la receta, o None si no lo declara."""
@@ -298,6 +313,18 @@ class ChronologicalRecipe:
 
     def identity(self):
         fields = asdict(self)
+        fields["selection"] = canonical_selection(self.selection)
+        # Las opciones nuevas de parada solo entran en la identidad cuando no valen su defecto.
+        if smoothing_window(self.selection) > 1:
+            fields["smoothing_rule"] = "centered_moving_average_truncated_at_phase_boundaries_v1"
+        if lr_decay_config(self.selection) is not None:
+            fields["learning_rate_decay_rule"] = (
+                "multiply_lr_restore_best_model_and_optimizer_reset_patience_v1"
+            )
+        if emit_average_count(self.selection) > 1:
+            fields["emit_weight_averaging"] = (
+                "shared_and_adapter_weights_float64_mean_memories_and_online_state_from_best_epoch_v1"
+            )
         # Sin acumulación se conserva literalmente la identidad anterior y su huella.
         if fields["accumulation_rows"] is None:
             fields.pop("accumulation_rows")
@@ -605,6 +632,99 @@ class Paused(Exception):
     """Solicitud de parada atendida en una barrera ya confirmada."""
 
 
+class _SessionRankIC:
+    """Acumular el IC de rangos de Spearman por sesión durante el ajuste en O(sesiones activas).
+
+    Cada sesión se cierra en cuanto maduran todas sus predicciones pendientes del recorrido
+    (o al cierre del tramo) con exactamente la misma definición que
+    `scale_diagnostics.session_correlations(..., rank=True)`.
+    """
+
+    def __init__(self, min_assets):
+        self.min_assets = int(min_assets)
+        self.pending_counts = {}
+        self.open_sessions = {}
+        self.defined_values = []
+
+    def observe(self, market, decision_at):
+        key = (market, int(decision_at))
+        self.pending_counts[key] = self.pending_counts.get(key, 0) + 1
+
+    def _finish_session(self, key):
+        pair = self.open_sessions.pop(key, None)
+        if pair is None:
+            return
+        preds, targets = pair
+        if len(preds) < self.min_assets:
+            return
+        observed = np.asarray(targets, dtype=np.float64)
+        predicted = np.asarray(preds, dtype=np.float64)
+        if np.ptp(observed) == 0 or np.ptp(predicted) == 0:
+            return
+        from scipy.stats import rankdata
+
+        value = float(np.corrcoef(rankdata(observed), rankdata(predicted))[0, 1])
+        if math.isfinite(value):
+            self.defined_values.append(value)
+
+    def resolve(self, market, decision_at, prediction, target):
+        key = (market, int(decision_at))
+        entry = self.open_sessions.get(key)
+        if entry is None:
+            entry = ([], [])
+            self.open_sessions[key] = entry
+        entry[0].append(float(prediction))
+        entry[1].append(float(target))
+        remaining = self.pending_counts.get(key, 0) - 1
+        if remaining <= 0:
+            self.pending_counts.pop(key, None)
+            self._finish_session(key)
+        else:
+            self.pending_counts[key] = remaining
+
+    def close(self):
+        for key in sorted(self.open_sessions):
+            self._finish_session(key)
+        self.open_sessions.clear()
+        self.pending_counts.clear()
+
+    def summary(self):
+        return dict(
+            session_rank_ic=(
+                float(np.asarray(self.defined_values, dtype=np.float64).mean())
+                if self.defined_values
+                else None
+            ),
+            session_rank_ic_sessions=len(self.defined_values),
+        )
+
+    def export(self):
+        return dict(
+            defined=torch.tensor(self.defined_values, dtype=torch.float64),
+            pending=[[m, t, c] for (m, t), c in sorted(self.pending_counts.items())],
+            open=[
+                [
+                    m,
+                    t,
+                    torch.tensor(preds, dtype=torch.float64),
+                    torch.tensor(targets, dtype=torch.float64),
+                ]
+                for (m, t), (preds, targets) in sorted(self.open_sessions.items())
+            ],
+        )
+
+    @classmethod
+    def restore(cls, min_assets, payload):
+        acc = cls(min_assets)
+        acc.defined_values = [float(v) for v in payload["defined"].tolist()]
+        acc.pending_counts = {(m, int(t)): int(c) for m, t, c in payload["pending"]}
+        acc.open_sessions = {
+            (m, int(t)): (preds.tolist(), targets.tolist())
+            for m, t, preds, targets in payload["open"]
+        }
+        return acc
+
+
 @dataclass
 class _Pass:
     """Estado de un recorrido. Solo flows, pending, errores y contadores se persisten."""
@@ -648,6 +768,8 @@ class _Pass:
     horizons: object = None
     # Con #791, la señal de fiabilidad madura del recorrido.
     reliability: object = None
+    # Con métrica `session_rank_ic`, acumulador en flujo del IC de rangos de entrenamiento.
+    rank_ic: object = None
 
 
 class ChronologicalInference:
@@ -912,6 +1034,8 @@ class ChronologicalInference:
         ]
         for index, (flow, at) in enumerate(keys):
             run.pending[flow, at] = values[index]
+            if run.rank_ic is not None:
+                run.rank_ic.observe(flow.split("/", 1)[0], at)
             if levels is not None:
                 run.levels[flow, at] = levels[index]
             if self.audit is not None:
@@ -986,9 +1110,12 @@ class ChronologicalInference:
                 matured.append((flow, issued, value))
             if train and run.horizons is not None:
                 run.counters["auxiliary_labels"] += run.horizons.mature(flow, decision_at, value)
-            markets.append(flow.split("/", 1)[0])
+            market = flow.split("/", 1)[0]
+            markets.append(market)
             moments.append(decision_at)
             errors.append(issued - value)
+            if train and run.rank_ic is not None:
+                run.rank_ic.resolve(market, decision_at, issued, value)
             run.counters["labels"] += 1
             if self.audit is not None:
                 phase = "train" if train else "validation"
@@ -1015,6 +1142,8 @@ class ChronologicalInference:
             )
 
     def _close(self, run):
+        if run.rank_ic is not None:
+            run.rank_ic.close()
         run.counters["unresolved"] = len(run.pending)
         run.flows.clear()
         run.context = None
@@ -1033,13 +1162,16 @@ class ChronologicalInference:
         counters = dict(run.counters)
         labels = counters["labels_in_loss"]
         counters["mean_loss"] = counters.pop("loss_sum") / labels if labels else None
-        return dict(
+        result = dict(
             samples=summary["samples"],
             session_count=summary["session_count"],
             session_mae=summary["session_mae"],
             session_mse=summary["session_mse"],
             **counters,
         )
+        if run.rank_ic is not None:
+            result.update(run.rank_ic.summary())
+        return result
 
     def evaluate(self, source, *, stop=None, rows=None):
         """Validación temporal con parámetros congelados y memoria rápida reiniciada.
@@ -1298,6 +1430,9 @@ class ChronologicalTrainer(ChronologicalInference):
             self.identity["grad_clip_groups"] = self.clip_groups
         self.run_id = hashlib.sha256(canonical(self.identity).encode()).hexdigest()
         self.global_step, self.selection, self.history, self.train_metrics = 0, None, [], None
+        self.track_train_rank_ic = recipe.selection["metric"] == SESSION_RANK_IC
+        self.lr_decays = []
+        self.epoch_lrs = {}
 
     def _code(self):
         own = {name: sha256(Path(importlib.import_module(name).__file__)) for name in _OWN_MODULES}
@@ -1826,6 +1961,11 @@ class ChronologicalTrainer(ChronologicalInference):
                 if self.reliability is not None
                 else {}
             ),
+            **(
+                dict(rank_ic=None if run.rank_ic is None else run.rank_ic.export())
+                if self.track_train_rank_ic
+                else {}
+            ),
         )
 
     def _restore(self, payload):
@@ -1835,6 +1975,8 @@ class ChronologicalTrainer(ChronologicalInference):
             raise ValueError("El recorrido guardado no corresponde a las cabezas auxiliares")
         if (self.reliability is not None) != ("reliability" in payload):
             raise ValueError("El recorrido guardado no corresponde a la señal de fiabilidad")
+        if self.track_train_rank_ic != ("rank_ic" in payload):
+            raise ValueError("El recorrido guardado no corresponde al IC de rangos del ajuste")
         run = _Pass()
         for item in payload["fast"]:
             run.flows.put(self.predictor.restore_state(item, device=self.device))
@@ -1856,6 +1998,10 @@ class ChronologicalTrainer(ChronologicalInference):
             run.horizons = HorizonLabels.restore(self.horizons, payload["horizons"])
         if self.reliability is not None and payload["reliability"] is not None:
             run.reliability = ReliabilitySignal.restore(self.reliability, payload["reliability"])
+        if self.track_train_rank_ic and payload["rank_ic"] is not None:
+            run.rank_ic = _SessionRankIC.restore(
+                self.recipe.selection["min_assets"], payload["rank_ic"]
+            )
         return run
 
     def _emission(self):
@@ -1917,6 +2063,15 @@ class ChronologicalTrainer(ChronologicalInference):
             if state is not None:
                 self.shadow.load_state_dict(state["weight_average"])
 
+    def _new_train_pass(self):
+        return _Pass(
+            rank_ic=(
+                _SessionRankIC(self.recipe.selection["min_assets"])
+                if self.track_train_rank_ic
+                else None
+            )
+        )
+
     def _load_best(self, report, directory=None):
         """Dejar el predictor con el estado seleccionado que acredita el informe.
 
@@ -1931,6 +2086,75 @@ class ChronologicalTrainer(ChronologicalInference):
         )
         self.predictor.load_state_dict(state["model"])
         return state
+
+    def _load_best_for_resume(self, report):
+        """Restaurar pesos de ajuste (y sombra F2 si procede) del mejor punto de control."""
+        state = load_training_state(
+            self.output / "checkpoints",
+            expected_identity=self.identity,
+            selection="best",
+            expected_sha256=report["best_checkpoint"]["sha256"],
+        )
+        trained = "trained_model" if self.emits_other_weights else "model"
+        self.predictor.load_state_dict(state[trained])
+        if self.shadow is not None:
+            self.shadow.load_state_dict(state["weight_average"])
+        return state
+
+    def _average_emitted_model(self, checkpoints, report, epochs):
+        """Promediar pesos compartidos (y adaptadores) de `epochs` manteniendo memorias de la mejor.
+
+        Los tensores en `roles["shared"]` y `roles["adapters"]` se acumulan en float64 en el
+        orden determinista de `epochs`, se dividen por `len(epochs)` y se devuelven al tipo del
+        parámetro. `mac.persistent` (`persistent_memory`), `mac.memory.initial_weights.*`
+        (`initial_fast_weights`), todos los búferes, `_extra_state` y el estado en línea se
+        toman literalmente de `epochs[0]` (la mejor época), sin promediar.
+        """
+        best_ep = epochs[0]
+        loaded = {}
+        for ep in epochs:
+            ref = report.get("epoch_states", {}).get(str(ep))
+            if ref is None:
+                raise ValueError(f"Falta el estado fijado de la época {ep} para promediar pesos")
+            loaded[ep] = load_training_state(
+                checkpoints,
+                expected_identity=self.identity,
+                selection="pinned",
+                expected_sha256=ref["sha256"],
+            )
+        averaged_roles = ["shared", *(["adapters"] if "adapters" in self.roles else [])]
+        best_only_roles = [
+            role for role in ("persistent_memory", "initial_fast_weights") if self.roles.get(role)
+        ]
+        averaged_names = {name for role in averaged_roles for name in self.roles.get(role, [])}
+        best_state = loaded[best_ep]
+        best_model = best_state["model"]
+        averaged_model = {}
+        count = len(epochs)
+        for name, value in best_model.items():
+            if name in averaged_names and isinstance(value, torch.Tensor):
+                total = torch.zeros_like(value, dtype=torch.float64)
+                for ep in epochs:
+                    total.add_(loaded[ep]["model"][name].to(dtype=torch.float64))
+                mean_value = (total / count).to(dtype=value.dtype)
+                if not torch.isfinite(mean_value).all():
+                    raise ValueError(f"El promedio de pesos produjo valores no finitos en {name}")
+                averaged_model[name] = mean_value
+            elif isinstance(value, torch.Tensor):
+                averaged_model[name] = value.detach().clone()
+            else:
+                averaged_model[name] = value
+        metadata = dict(
+            mode="average",
+            requested=emit_average_count(self.recipe.selection),
+            epochs=list(epochs),
+            best_epoch=best_ep,
+            averaged_roles=averaged_roles,
+            best_only_roles=best_only_roles,
+            memories_and_online_state_epoch=best_ep,
+            source_checkpoints={str(ep): dict(report["epoch_states"][str(ep)]) for ep in epochs},
+        )
+        return averaged_model, best_state, metadata
 
     def load_epoch(self, report, epoch):
         """Dejar cargado el estado fijado de una época evaluada con la época común."""
@@ -1948,23 +2172,43 @@ class ChronologicalTrainer(ChronologicalInference):
 
         Con la meseta conjunta, el ajuste espera en su primera meseta (`AWAIT`) hasta que se
         reanuda con la época común del grupo (`joint_epoch`). Con la época común, espera tras
-        la última época y `joint_epoch` elige el estado fijado de una de ellas.
+        la última época y `joint_epoch` elige el estado fijado de una de ellas. Con opciones
+        adaptativas (`smoothing`, `learning_rate_decay`, `emit`) conserva los estados fijados
+        necesarios, aplica reducciones deterministas y reanudables, promedia los pesos
+        compartidos de las k mejores épocas sin promediar memorias ni estado en línea, y
+        guarda el informe de parada junto a los resultados.
         """
         output, checkpoints = self.output, self.output / "checkpoints"
         if isinstance(self.optimizer, torch.optim.Optimizer):
             require_learning_allowed("ChronologicalTrainer.run de Titans-MAC")
         if type(resume) is not bool or output.is_symlink() or output.exists() != resume:
             raise ValueError("Usa una ejecución nueva o solicita continuar una existente")
-        common = self.recipe.selection.get("stopping") == COMMON_EPOCH
+        options = self.recipe.selection
+        common = options.get("stopping") == COMMON_EPOCH
         if common and self.epoch_scorer is None:
             raise ValueError("La época común necesita puntuar cada validación con su IC")
         # Con el IC de rangos como métrica, cada validación se puntúa también con él.
-        ranked = self.recipe.selection["metric"] == SESSION_RANK_IC
+        ranked = options["metric"] == SESSION_RANK_IC
         if ranked and self.epoch_scorer is None:
             raise ValueError("El IC de rangos por sesión necesita puntuar cada validación")
+        window = smoothing_window(options)
+        decay_cfg = lr_decay_config(options)
+        emit_k = emit_average_count(options)
+        keep_epoch_states = window > 1 or emit_k > 1
+        if decay_cfg is not None and any(
+            "lr" not in group
+            or type(group["lr"]) not in (int, float)
+            or not math.isfinite(group["lr"])
+            or group["lr"] <= 0
+            for group in self.optimizer.param_groups
+        ):
+            raise ValueError(
+                "learning_rate_decay requiere una tasa finita y positiva en cada grupo"
+            )
         stop = stop or StopRequest()
         report_path = output / "run.json"
         cursor, run = dict(epoch=0, phase="validation"), None
+        self.lr_decays, self.epoch_lrs = [], {}
         if resume:
             report = _read_report(report_path)
             if report["identity"] != self.identity:
@@ -1979,6 +2223,9 @@ class ChronologicalTrainer(ChronologicalInference):
             self.global_step, cursor = state["global_step"], state["cursor"]
             self.selection, self.history = state["selection"], state["history"]
             self.train_metrics = state["train_metrics"]
+            if decay_cfg is not None:
+                self.lr_decays = list(state.get("lr_decays", []))
+                self.epoch_lrs = dict(state.get("epoch_lrs", {}))
             if self.traces is not None:
                 self.traces.restore(state.get("traces"))
             if state["run"] is not None:
@@ -2007,8 +2254,20 @@ class ChronologicalTrainer(ChronologicalInference):
             bind_joint_epoch(report, joint_epoch, self.recipe.selection, self.recipe.epochs)
             self._start_weights(report)
 
-        def save(position, current=None, *, best=False, pin=None):
-            # `pin` es la época evaluada cuyo estado se conserva hasta fijar la época común.
+        def save(
+            position,
+            current=None,
+            *,
+            best=False,
+            pin=None,
+            keep_pinned=None,
+            best_sha256=None,
+            retained=None,
+            promoted_epoch=None,
+        ):
+            # `pin` es la época evaluada cuyo estado se conserva para época común, suavizado o
+            # promedio de pesos. `keep_pinned` y `best_sha256` actualizan `latest.json` de forma
+            # atómica en la misma escritura.
             self._check_runtime()
             state = dict(
                 global_step=self.global_step,
@@ -2021,17 +2280,33 @@ class ChronologicalTrainer(ChronologicalInference):
                 train_metrics=self.train_metrics,
                 run=None if current is None else self._export(current),
             )
+            if decay_cfg is not None:
+                state["lr_decays"] = list(self.lr_decays)
+                state["epoch_lrs"] = dict(self.epoch_lrs)
             if self.traces is not None:
                 state["traces"] = self.traces.checkpoint()
             path = save_training_state(
-                checkpoints, state, identity=self.identity, best=best, pin=pin is not None
+                checkpoints,
+                state,
+                identity=self.identity,
+                best=best,
+                pin=pin is not None,
+                keep_pinned=keep_pinned,
+                best_sha256=best_sha256,
             )
             reference = dict(path=str(path.relative_to(output)), sha256=sha256(path))
             report.update(recovery_checkpoint=reference, global_step=self.global_step)
             if best:
                 report["best_checkpoint"] = reference
+            elif promoted_epoch is not None:
+                report["best_checkpoint"] = dict(report["epoch_states"][str(promoted_epoch)])
             if pin is not None:
                 report.setdefault("epoch_states", {})[str(pin)] = reference
+            if retained is not None and "epoch_states" in report:
+                allowed = {str(ep) for ep in retained}
+                report["epoch_states"] = {
+                    key: value for key, value in report["epoch_states"].items() if key in allowed
+                }
             report.update(selection=self.selection, history=self.history, cursor=position)
             atomic_json(report_path, report)
 
@@ -2039,9 +2314,37 @@ class ChronologicalTrainer(ChronologicalInference):
             save(cursor)
         started = time.perf_counter()
         try:
-            options = self.recipe.selection
             while cursor["phase"] != "done":
                 epoch = cursor["epoch"]
+                if cursor["phase"] == "lr_decay":
+                    factor = decay_cfg["factor"]
+                    old_lrs = [float(group["lr"]) for group in self.optimizer.param_groups]
+                    new_lrs = [lr * factor for lr in old_lrs]
+                    if any(not math.isfinite(lr) or lr <= 0 for lr in new_lrs):
+                        raise ValueError(
+                            "La tasa de aprendizaje reducida dejó de ser finita y positiva"
+                        )
+                    best_state = self._load_best_for_resume(report)
+                    self.optimizer.load_state_dict(best_state["optimizer"])
+                    for group, lr in zip(self.optimizer.param_groups, new_lrs, strict=True):
+                        group["lr"] = lr
+                    restored_epoch = self.selection["best_epoch"]
+                    self.selection = apply_lr_decay(self.selection, options)
+                    self.lr_decays.append(
+                        dict(
+                            reduction=self.selection["reductions_done"],
+                            at_epoch=epoch,
+                            restored_epoch=restored_epoch,
+                            factor=factor,
+                            previous_learning_rate=old_lrs[0],
+                            new_learning_rate=new_lrs[0],
+                        )
+                    )
+                    cursor = dict(epoch=epoch, phase="train", event=0, stage="start")
+                    save(cursor)
+                    if stop.requested:
+                        raise Paused
+                    continue
                 if cursor["phase"] == "train" and cursor["stage"] == "start":
                     # Al empezar una época, el ajuste espera al grupo o
                     # termina si ya está en la época conjunta.
@@ -2096,41 +2399,160 @@ class ChronologicalTrainer(ChronologicalInference):
                         self.selection, options, self.recipe.epochs, joint_epoch
                     )
                     finished = decision == FINISH
-                    cursor = (
-                        dict(epoch=epoch, phase="done")
-                        if finished
-                        else dict(epoch=epoch, phase="train", event=0, stage="start")
-                    )
-                    # Con AWAIT, el cursor ya confirmado espera al grupo al empezar la época.
-                    save(
-                        cursor,
-                        best=self.selection["last_improved"],
-                        pin=epoch if common and rows is not None else None,
-                    )
+                    if finished:
+                        cursor = dict(epoch=epoch, phase="done")
+                    elif decision == DECAY_LR:
+                        cursor = dict(epoch=epoch, phase="lr_decay")
+                    else:
+                        cursor = dict(epoch=epoch, phase="train", event=0, stage="start")
+                    if keep_epoch_states:
+                        needed = retained_epochs(self.selection, options)
+                        existing = report.get("epoch_states", {})
+                        keep_digests = {
+                            existing[str(ep)]["sha256"] for ep in needed if str(ep) in existing
+                        }
+                        pin_epoch = epoch if epoch in needed else None
+                        best_ep = self.selection["best_epoch"]
+                        if self.selection["best_score"] is None or best_ep == epoch:
+                            best_flag = True
+                            promote_sha = None
+                            promoted_ep = None
+                        else:
+                            best_flag = False
+                            target_ref = existing.get(str(best_ep))
+                            current_best = report.get("best_checkpoint")
+                            if (
+                                target_ref is not None
+                                and current_best is not None
+                                and current_best["sha256"] != target_ref["sha256"]
+                            ):
+                                promote_sha = target_ref["sha256"]
+                                promoted_ep = best_ep
+                            else:
+                                promote_sha = None
+                                promoted_ep = None
+                        save(
+                            cursor,
+                            best=best_flag,
+                            pin=pin_epoch,
+                            keep_pinned=keep_digests,
+                            best_sha256=promote_sha,
+                            retained=needed,
+                            promoted_epoch=promoted_ep,
+                        )
+                    else:
+                        # Con AWAIT, el cursor ya confirmado espera al grupo al empezar la época.
+                        save(
+                            cursor,
+                            best=self.selection["last_improved"],
+                            pin=epoch if common and rows is not None else None,
+                        )
                     if stop.requested and not finished:
                         raise Paused
                     continue
-                self.train_metrics = self._train_pass(run or _Pass(), cursor, stop, save)
+                if decay_cfg is not None:
+                    self.epoch_lrs[str(epoch + 1)] = float(self.optimizer.param_groups[0]["lr"])
+                self.train_metrics = self._train_pass(
+                    run or self._new_train_pass(), cursor, stop, save
+                )
                 run = None
                 cursor = dict(epoch=epoch + 1, phase="validation")
                 save(cursor)
-            chosen = (
-                chosen_state(
+
+            emitted_epochs = selected_emit_epochs(self.selection, options)
+            if common:
+                chosen = chosen_state(
                     checkpoints, self.identity, report, self.history, self.selection, joint_epoch
                 )
-                if common
-                else dict(
-                    best_epoch=self.selection["best_epoch"],
-                    best_score=self.selection["best_score"],
+                report.update(chosen)
+                self._load_best(report)
+                emitted_epochs = [chosen["best_epoch"]]
+            elif emit_k > 1 and len(emitted_epochs) > 1:
+                averaged_model, best_state, emit_meta = self._average_emitted_model(
+                    checkpoints, report, emitted_epochs
                 )
+                self.predictor.load_state_dict(averaged_model)
+                final_state = dict(
+                    global_step=self.global_step,
+                    cursor=cursor,
+                    model=averaged_model,
+                    optimizer=best_state["optimizer"],
+                    rng=capture_rng(str(self.device)),
+                    selection=self.selection,
+                    history=self.history,
+                    train_metrics=self.train_metrics,
+                    run=None,
+                )
+                if self.emits_other_weights and "trained_model" in best_state:
+                    final_state["trained_model"] = best_state["trained_model"]
+                if self.shadow is not None and "weight_average" in best_state:
+                    final_state["weight_average"] = best_state["weight_average"]
+                if decay_cfg is not None:
+                    final_state["lr_decays"] = list(self.lr_decays)
+                    final_state["epoch_lrs"] = dict(self.epoch_lrs)
+                if self.traces is not None:
+                    final_state["traces"] = self.traces.checkpoint()
+                saved_path = save_training_state(
+                    checkpoints, final_state, identity=self.identity, best=True
+                )
+                reference = dict(
+                    path=str(saved_path.relative_to(output)), sha256=sha256(saved_path)
+                )
+                chosen = dict(
+                    best_checkpoint=reference,
+                    recovery_checkpoint=reference,
+                    best_epoch=emitted_epochs[0],
+                    best_score=self.selection["best_raw_score"],
+                    averaged_epochs=list(emitted_epochs),
+                    emit=emit_meta,
+                )
+                if window > 1:
+                    chosen["best_smoothed_score"] = self.selection["best_score"]
+                report.update(chosen)
+            else:
+                if window > 1:
+                    chosen = dict(
+                        best_epoch=self.selection["best_epoch"],
+                        best_score=self.selection["best_raw_score"],
+                        best_smoothed_score=self.selection["best_score"],
+                    )
+                else:
+                    chosen = dict(
+                        best_epoch=self.selection["best_epoch"],
+                        best_score=self.selection["best_score"],
+                    )
+                report.update(chosen)
+                self._load_best(report)
+            if decay_cfg is not None:
+                report["learning_rate_reductions"] = list(self.lr_decays)
+                lr_map = {int(k): float(v) for k, v in self.epoch_lrs.items()}
+            else:
+                lr_map = {
+                    entry["epoch"]: float(self.recipe.learning_rate)
+                    for entry in self.history
+                    if entry["epoch"] >= 1
+                }
+            stopped_early = cursor["epoch"] < self.recipe.epochs
+            stopping_report = build_stopping_report(
+                self.history,
+                self.selection,
+                options,
+                epochs=self.recipe.epochs,
+                stopped_early=stopped_early,
+                emitted_epochs=emitted_epochs,
+                lr_decays=self.lr_decays,
+                learning_rates=lr_map,
+                best_epoch=report["best_epoch"],
             )
-            report.update(chosen)
-            self._load_best(report)
+            stopping_path = output / "stopping_report.json"
+            atomic_json(stopping_path, stopping_report)
             report.update(
                 status="completed",
-                stopped_early=cursor["epoch"] < self.recipe.epochs,
+                stopped_early=stopped_early,
                 stopping=self.recipe.selection.get("stopping", VALIDATION_PLATEAU),
                 plateau_epoch=self.selection.get("plateau_epoch"),
+                stopping_report=stopping_report,
+                stopping_report_file=dict(path=stopping_path.name, sha256=sha256(stopping_path)),
                 finished_at_utc=datetime.now(UTC).isoformat(),
             )
             return report

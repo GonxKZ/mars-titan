@@ -151,6 +151,7 @@ def _checked_rule(rule, runner):
         epochs=rule["max_epochs"],
         modes=CHRONOLOGICAL_MODES,
         initial_reported=runner == "fit",
+        adaptive=runner == "fit",
     )
     return rule
 
