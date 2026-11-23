@@ -1,4 +1,4 @@
-"""Rasgos técnicos causales de horizonte largo de un activo (`long_horizon_v1`, `_v2` y `_v3`).
+"""Rasgos técnicos causales de horizonte largo de un activo (`long_horizon_v1` a `_v4`).
 
 La etiqueta de la edición histórica es el residuo de la rentabilidad intradía de la sesión
 siguiente, `r(t+1) - alfa(t) - beta(t) * m(t+1)`, con alfa y beta de un OLS con intercepto sobre
@@ -30,6 +30,14 @@ las que pasaron la validación rasgo a rasgo en la tabla de China del origen 201
 tramo de ajuste (señal estable por trimestres y correlación menor de 0,7 con las 46). Medido
 allí: con árboles, de 0,117 a 0,123 de IC de rangos en la evaluación; con una red de dos capas,
 de 0,126 a 0,134. En EE. UU. no cambian el resultado de los árboles.
+
+`long_horizon_v4` conserva las 62 columnas de la v3 con los mismos nombres y posiciones, y
+corrige dos pérdidas de información: entre 63 y 251 sesiones el divisor de volatilidad usa la
+volatilidad de toda la historia disponible en lugar de anular los rasgos (sin cambiar el
+significado de `has_63_sessions` ni `has_252_sessions`), y un día sin volumen deja
+`abnormal_volume` en el límite inferior del recorte (−8) y no entra en la media del impacto de
+Amihud (que se calcula solo sobre los días con negociación de la ventana, o queda ausente si no
+hay ninguno).
 """
 
 import math
@@ -40,6 +48,7 @@ from numpy.lib.stride_tricks import sliding_window_view
 NAME = "long_horizon_v1"
 NAME_V2 = "long_horizon_v2"
 NAME_V3 = "long_horizon_v3"
+NAME_V4 = "long_horizon_v4"
 # Parte mínima de filas válidas en una ventana de la v3.
 COVERAGE = 0.75
 # Por debajo de esta parte de su escala, una diferencia de la v3 es redondeo y no un dato.
@@ -118,8 +127,9 @@ NAMES_V3 = (
     "candle_upper_shadow_5",
     "candle_upper_shadow_21",
 )
+NAMES_V4 = NAMES_V3
 # Columnas de cada versión declarada. Las de una versión anterior son siempre un prefijo.
-VERSIONS = {NAME: NAMES, NAME_V2: NAMES_V2, NAME_V3: NAMES_V3}
+VERSIONS = {NAME: NAMES, NAME_V2: NAMES_V2, NAME_V3: NAMES_V3, NAME_V4: NAMES_V4}
 
 
 def _window_sum(values, window):
@@ -336,7 +346,17 @@ def technical_features(prices, sessions, calendar=None, market=None, version=NAM
             result[:window] = np.nan
             return result
 
-        year = volatility(252)
+        def available_volatility(window, minimum):
+            # Entre `minimum` y `window - 1` sesiones usa los `t` rendimientos disponibles
+            # (`filled[0]` es cero); desde `window` coincide bit a bit con `volatility(window)`.
+            count = np.minimum(np.arange(rows, dtype=np.float64), float(window))
+            mean = _window_sum(filled, window) / count
+            squared = _window_sum(filled * filled, window) / count
+            result = np.sqrt(np.maximum(squared - mean * mean, 0.0))
+            result[:minimum] = np.nan
+            return result
+
+        year = available_volatility(252, 63) if version == NAME_V4 else volatility(252)
         for window in (5, 21, 63, 126, 252):
             features[f"return_{window}"] = change(window) / (year * np.sqrt(window))
         momentum = np.full(rows, np.nan)
@@ -361,9 +381,22 @@ def technical_features(prices, sessions, calendar=None, market=None, version=NAM
         features["dollar_volume_5_over_63"] = np.log(mean_5 / mean_63)
         volume_21 = _window_sum(volume, 21) / 21
         volume_21[:20] = np.nan
-        features["abnormal_volume"] = np.log(volume / volume_21)
-        impact = np.where(dollars > 0, np.abs(filled) / dollars, 0.0)
-        illiquidity = _window_sum(impact, 21) / 21
+        abnormal = np.log(volume / volume_21)
+        if version == NAME_V4:
+            abnormal = np.where(
+                np.isfinite(volume_21) & (volume_21 >= 0.0) & (volume == 0.0),
+                -LIMIT,
+                abnormal,
+            )
+        features["abnormal_volume"] = abnormal
+        if version == NAME_V4:
+            traded = np.isfinite(dollars) & (dollars > 0)
+            impact = np.where(traded, np.abs(filled) / dollars, 0.0)
+            traded_21 = _window_sum(traded.astype(np.float64), 21)
+            illiquidity = np.where(traded_21 > 0, _window_sum(impact, 21) / traded_21, np.nan)
+        else:
+            impact = np.where(dollars > 0, np.abs(filled) / dollars, 0.0)
+            illiquidity = _window_sum(impact, 21) / 21
         illiquidity[:20] = np.nan
         # Ilíquidez de Amihud centrada en 1e-9 por dólar y en unidades de e³.
         features["log_illiquidity_21"] = (np.log(illiquidity) - np.log(1e-9)) / 3
@@ -380,7 +413,7 @@ def technical_features(prices, sessions, calendar=None, market=None, version=NAM
         features["intraday_21"] = sum_intraday / year * np.sqrt(21)
         features["overnight_21"] = sum_overnight / year * np.sqrt(21)
         features["maximum_return_21"] = _window_extreme(filled, 21, np.max) / year
-        if version in (NAME_V2, NAME_V3):
+        if version in (NAME_V2, NAME_V3, NAME_V4):
             clean_intraday = np.where(np.isfinite(intraday_log), intraday_log, 0.0)
             clean_overnight = np.where(np.isfinite(overnight), overnight, 0.0)
             for window in (5, 63, 252):
@@ -402,7 +435,7 @@ def technical_features(prices, sessions, calendar=None, market=None, version=NAM
             fraction = _window_sum(untraded, 63) / 63
             fraction[:62] = np.nan
             features["untraded_63"] = fraction
-        if version == NAME_V3:
+        if version in (NAME_V3, NAME_V4):
             open_v, high_v, low_v, close_v = (
                 np.where(np.isfinite(v) & (v > 0), v, np.nan) for v in (opened, high, low, close)
             )
@@ -459,7 +492,7 @@ def technical_features(prices, sessions, calendar=None, market=None, version=NAM
             ):
                 features[name][inside] = values[position[inside]]
             features["has_market_model"] = np.isfinite(features["alpha_percent"]).astype(np.float64)
-            if version in (NAME_V2, NAME_V3):
+            if version in (NAME_V2, NAME_V3, NAME_V4):
                 # Etiqueta de la sesión anterior, ya realizada al cierre de esta:
                 # r(t) - alfa(t-1) - beta(t-1) * m(t), en desviaciones residuales de t-1.
                 realized = np.full(len(calendar), np.nan)

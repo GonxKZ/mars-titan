@@ -346,3 +346,23 @@ def test_the_extension_may_require_the_market_model():
     ):
         with pytest.raises(ValueError, match="extensión de entradas"):
             checked_extensions(wrong)
+
+
+def test_long_horizon_v4_is_accepted_as_a_distinct_cohort_view(tmp_path):
+    from mars_titan.training.comparison_cohorts import checked_extensions
+
+    origin = tmp_path / "views/fold-014/manifest.json"
+    atomic_json(origin, source())
+    v3_ext = dict(technical="long_horizon_v3")
+    v4_ext = dict(technical="long_horizon_v4")
+    assert checked_extensions(v4_ext) == v4_ext
+    assert checked_extensions(dict(v4_ext, market_model="required")) == dict(
+        v4_ext, market_model="required"
+    )
+    third, _ = cohorts.write_cohort(origin, tmp_path / "v3", size=16, extensions=v3_ext)
+    fourth, receipt = cohorts.write_cohort(origin, tmp_path / "v4", size=16, extensions=v4_ext)
+    assert json.loads(fourth.read_text())["input_extensions"] == v4_ext
+    assert receipt["input_extensions"] == v4_ext
+    assert sha256(fourth) != sha256(third)
+    with pytest.raises(ValueError, match="no corresponde|otra|extensión"):
+        cohorts.write_cohort(origin, tmp_path / "v3", size=16, extensions=v4_ext)

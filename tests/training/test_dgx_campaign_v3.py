@@ -1343,3 +1343,52 @@ def test_the_liquidity_column_follows_the_declared_technical_version():
     )
     with pytest.raises(ValueError, match="columna de liquidez"):
         campaign.checked_declaration(moved, root=ROOT)
+
+
+def test_long_horizon_v4_campaign_declaration_validates_like_v3():
+    experiments = ROOT / "configs/experiments"
+    wide = json.loads((experiments / "us-cn-campaign-v11-inputs-v3.json").read_text())
+    v4 = dict(wide, inputs=dict(technical=technical_features.NAME_V4))
+    campaign.checked_declaration(v4, root=ROOT)
+    # Con una rama técnica de 46 columnas se rechaza porque v4 tiene 62.
+    narrow_branch = dict(columns=46, hidden=128, depth=2, session_ranks=True)
+    wrong_width = dict(
+        v4,
+        models={
+            name: dict(model, predictor_changes=dict(technical_branch=narrow_branch))
+            for name, model in v4["models"].items()
+        },
+    )
+    with pytest.raises(ValueError, match="rama técnica"):
+        campaign.checked_declaration(wrong_width, root=ROOT)
+    # Sobre us-campaign-v11-screen1.json, declarar long_horizon_v4 exige 62 columnas en la rama
+    # y protege también offset_column (-46 ya no es alpha_percent en 62 columnas).
+    screen1 = json.loads((experiments / "us-campaign-v11-screen1.json").read_text())
+    branch_62 = dict(columns=62, hidden=128, depth=2, session_ranks=True)
+    candidate = dict(
+        screen1,
+        inputs=dict(technical=technical_features.NAME_V4),
+        tiers=["core"],
+        recipes=dict(core=screen1["recipes"]["core"]),
+        models=dict(
+            titans_mac_v4=dict(
+                screen1["models"]["titans_mac"],
+                predictor_changes=dict(technical_branch=branch_62),
+            )
+        ),
+    )
+    campaign.checked_declaration(candidate, root=ROOT)
+    icop_moved = dict(
+        screen1,
+        inputs=dict(technical=technical_features.NAME_V4),
+        tiers=["y1_operable"],
+        recipes=dict(core_icop=screen1["recipes"]["core_icop"]),
+        models=dict(
+            titans_mac_icop_v4=dict(
+                screen1["models"]["titans_mac_icop"],
+                predictor_changes=dict(technical_branch=branch_62),
+            )
+        ),
+    )
+    with pytest.raises(ValueError, match="desplazamiento conocido"):
+        campaign.checked_declaration(icop_moved, root=ROOT)
