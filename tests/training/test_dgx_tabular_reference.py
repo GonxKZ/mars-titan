@@ -210,3 +210,17 @@ def test_alpha_free_fails_closed_when_market_model_missing(state, tmp_path):
 
     with pytest.raises(ValueError, match="alpha_free.*CN|has_market_model"):
         build(cn_root / "estado", tmp_path / "out_fail", alpha_free=True)
+
+
+def test_a_required_market_model_stops_the_reference_when_its_factor_is_missing(tmp_path):
+    absent = dict(US=dict(prices_path=str(tmp_path / "no-existe.parquet")))
+    plain = dict(market_factors=absent, input_extensions=dict(technical="long_horizon_v2"))
+    # Sin exigirlo, el factor ausente apaga los rasgos del modelo de mercado, como siempre.
+    assert tabular.market_factor(plain, "US") == (None, None)
+    required = dict(
+        plain, input_extensions=dict(technical="long_horizon_v2", market_model="required")
+    )
+    with pytest.raises(ValueError, match="Falta en este equipo el factor de mercado de US"):
+        tabular.market_factor(required, "US")
+    with pytest.raises(ValueError, match="Falta en este equipo el factor de mercado de CN"):
+        tabular.market_factor(required, "CN")
