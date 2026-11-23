@@ -1,0 +1,50 @@
+{
+  "schema_version": 1,
+  "kind": "posttraining_reliability_v1",
+  "final_test_access": false,
+  "description": "F1 y F2 del encargo del coordinador del 23 de noviembre de 2026 (línea F), declarados antes de medir ninguno en ningún origen. Descriptivo y secundario: no entra en la familia primaria del registro confirmatorio. Predictores: S1 (media de rangos de titans_mac_nogain y lightgbm_technical), S2 (ridge_cov_active con la señal del brazo combinado de los órganos), los árboles y el padre, con la configuración de S2; en lo operable, k·p + α frente a y + α con k elegido en calibración. F1, en la etiqueta y en lo operable, con todas las filas y con el tercio más líquido de cada sesión: fracción de sesiones con IC de rangos > 0 y con decil alto − decil bajo > 0; la de ventanas de 5 y 21 sesiones seguidas de cada mercado, sin solaparse, con esas medias > 0 (intervalos de Wilson al 95 %); curva de precisión selectiva (acierto de signo y relativo a la mediana de los k = max(1, round(n·c/2)) nombres más altos y más bajos de cada sesión) con c en la rejilla declarada, también sin las filas con |α| sobre el tope (cuantil 0, 99 de |α| conocido en calibración), y la parte de nombres elegidos sobre el tope; intervalos de A2 (núcleo tal cual, conformalizado y combinado) al 80 % y al 95 % en evaluación, global, por tercio de liquidez, por decil de volatilidad realizada de 21 sesiones y por trimestre, y el acierto de signo donde el intervalo del padre excluye el cero. F2, en lo operable y sin las filas con |α| sobre el tope, con todas las filas y con el tercio líquido: P(y + α > 0) por regresión isótona creciente sobre la puntuación operable en la primera mitad, en el tiempo, de las sesiones de calibración; umbral de confianza max(P, 1 − P) en la rejilla declarada con control de riesgo en la segunda mitad (Learn-then-Test): cada umbral es válido si la prueba binomial por filas y la normal por conglomerados de sesión de «precisión < 0, 90» dan p ≤ δ / tamaño de la rejilla, con δ = 0, 05; se elige el umbral válido más bajo; en evaluación, cobertura, precisión (Wilson y por conglomerados de sesión), Brier frente al de la tasa base y tabla de calibración; si ningún umbral pasa, la cobertura es 0. Control en lo operable: el alfa conocido solo como puntuación, con las mismas medidas de F1 y F2. Cada orden mide un mercado. Nada se elige en evaluación; 2013 es desarrollo.",
+  "seed": 42,
+  "min_assets": 30,
+  "parent": "titans_mac_nogain",
+  "tree": "lightgbm_technical",
+  "organ": "titans_mac_nogain__combined",
+  "splits": ["calibration", "evaluation"],
+  "selection_split": "calibration",
+  "align": "strict",
+  "aggregator": {"name": "ridge_cov_active", "lambdas": [2.0, 1.0, 0.5, 0.1], "half_lives": [null, 63.0, 21.0]},
+  "aggregator_placebo_seed": 20261122,
+  "operable_scales": [0.001, 0.002, 0.005, 0.01, 0.02, 0.03, 0.05, 0.07, 0.1, 0.15, 0.2, 0.3, 0.5, 0.7, 1.0, 1.5, 2.0, 3.0, 5.0, 10.0, 30.0, 100.0],
+  "modes": ["label", "operable"],
+  "reliability": {
+    "windows": [5, 21],
+    "window_rule": "consecutive_scored_sessions_of_each_market_without_overlap_incomplete_dropped",
+    "coverages": [1.0, 0.5, 0.2, 0.1, 0.05, 0.02, 0.01],
+    "liquid": "top_third_of_liquidity_within_each_session",
+    "alpha_cap_quantile": 0.99,
+    "alpha_cap_split": "calibration"
+  },
+  "directional": {
+    "mode": "operable",
+    "excluded_rows": "abs_alpha_above_cap",
+    "calibrator": "increasing_isotonic_on_the_operable_score",
+    "fit_sessions": "first_half_in_time_of_calibration",
+    "risk_sessions": "second_half_in_time_of_calibration",
+    "target_precision": 0.9,
+    "delta": 0.05,
+    "thresholds": [0.55, 0.6, 0.65, 0.7, 0.75, 0.8, 0.85, 0.9, 0.95, 0.975, 0.99],
+    "tests": ["binomial_over_rows", "normal_over_session_clusters"],
+    "multiplicity": "bonferroni_over_the_grid",
+    "choice": "lowest_valid_threshold",
+    "reliability_bins": 10
+  },
+  "conformal": {
+    "levels": [0.8, 0.95],
+    "core": {"0.8": ["quantile_0100", "quantile_0900"], "0.95": ["quantile_0025", "quantile_0975"]},
+    "fit_split": "validation",
+    "conformal_split": "calibration",
+    "max_fit_rows": 300000,
+    "fit_seed": 20261122,
+    "liquidity_groups": 3,
+    "volatility_groups": 10
+  }
+}

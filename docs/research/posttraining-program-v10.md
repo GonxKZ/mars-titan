@@ -463,6 +463,87 @@ emisiones. La regla queda escrita antes:
   - S1 menos el mejor modelo, S2 menos S1 y S2 menos el placebo, pareadas por sesión con t HAC;
   - el mismo contraste frente al S1 y el S2 de la v10 en 2013.
 
+### 5.11 F, fiabilidad de las emisiones (F1, F2) y F6, el cerebro holográfico: protocolo fijado
+
+Encargo del coordinador del 23 de noviembre de 2026 (línea F): más del 90 % de precisión y
+fiabilidad, sin trampas ni falsear nada. Las medidas son descriptivas y secundarias, fuera de la
+familia primaria.
+- La declaración es `configs/experiments/posttraining-reliability.json` (huella ce01423a…).
+- La orden es `python -m mars_titan.evaluation.reliability medir`, con las entradas, la espera
+  (código 75) y la publicación atómica de S2 y de A. Cada orden mide un mercado.
+- Se fijó en git antes de medir ningún origen.
+- 2013 es desarrollo y solo sirve para elegir. Los orígenes limpios no se miran hasta que el relevo
+  los entrene, y 2024 sigue sellado.
+
+**Expectativa previa** (R-2 del cuaderno): la razón de información diaria en lo operable es 0,65
+(0,66 en el tercio líquido).
+- Con ella, la fracción esperada de sesiones positivas es Φ(0,65) ≈ 0,74, y la de ventanas de 5
+  sesiones Φ(0,65·√5) ≈ 0,93.
+- Un 90 % diario pide 1,28.
+
+**Predictores.** S1, S2, los árboles y el padre, construidos como en S2 (semilla 42, alineación
+estricta y factor operable k elegido en calibración).
+- En lo operable va además un control: el alfa conocido solo como puntuación, que ya ordena y + α
+  por sí mismo (IC 0,045 en R-2). Lo que aporte un predictor se lee frente a él.
+- El tercio líquido se toma ordenando la liquidez dentro de cada sesión, sin filtrar por su signo
+  ni tomar logaritmos (el tropiezo corregido en R-2).
+
+**Regla del artefacto** (fijada antes de medir): el tope es el cuantil 0,99 de |α| conocido en
+calibración.
+- R-1 vio aciertos del 90–97 % en las mayores |predicción|. Eran cortos con alfas patológicos.
+- Las filas sobre el tope no cuentan en F2. En F1, la curva selectiva se da con ellas y sin ellas,
+  junto con la parte de nombres elegidos que lo superan.
+
+- **F1, fiabilidad,** en la etiqueta y en lo operable, con todas las filas y con el tercio líquido:
+  - la fracción de sesiones con IC de rangos > 0 y con decil alto − decil bajo > 0, con intervalos
+    de Wilson al 95 %;
+  - la misma fracción en ventanas de 5 y de 21 sesiones puntuadas seguidas de cada mercado, sin
+    solaparse; la última ventana incompleta se descarta;
+  - la curva de precisión selectiva: acierto de signo y respecto a la mediana de los
+    k = max(1, round(n·c/2)) nombres más altos y más bajos de cada sesión, con
+    c ∈ {1; 0,5; 0,2; 0,1; 0,05; 0,02; 0,01};
+  - los intervalos de A2 al 80 % y al 95 % en la etiqueta (núcleo tal cual, CQR y combinado):
+    cobertura y anchura en total, por tercio de liquidez, por decil de volatilidad realizada de 21
+    sesiones conocida antes de la sesión y por trimestre;
+  - el acierto de signo donde el intervalo del padre excluye el cero.
+- **F2, confianza direccional calibrada,** solo en lo operable y sin las filas sobre el tope:
+  - P(y + α > 0) sale de una regresión isótona creciente sobre la puntuación operable, ajustada en
+    la primera mitad, en el tiempo, de las sesiones de calibración.
+  - El umbral de confianza max(P, 1 − P) se busca en {0,55; 0,6; …; 0,95; 0,975; 0,99} con
+    control de riesgo (Learn-then-Test) en la segunda mitad de esas sesiones.
+    - Un umbral es válido si dos pruebas de «precisión < 0,90» dan p ≤ 0,05/11: la binomial por
+      filas y la normal por conglomerados de sesión.
+    - La segunda impide que unas pocas sesiones enteras pasen por muchas filas independientes.
+    - Se elige el umbral válido más bajo.
+  - En evaluación se informan:
+    - la cobertura y la precisión, de Wilson y por conglomerados de sesión;
+    - el Brier frente al de la tasa base;
+    - la tabla de calibración.
+  - Si ningún umbral pasa, la cobertura es 0 y se dice tal cual.
+- **F6, el cerebro holográfico,** con la regla acordada con el coordinador antes de medir. Se mide
+  tras F1 y F2, en 2013 y sin GPU.
+  1. **H, el holográfico, por semilla.** Es ridge_cov_active de {padre estático
+     titans_mac_disabled_nogain, señal de su brazo combinado}, sin árboles y con la configuración
+     de S2. H3 es la media de rangos por sesión de las semillas 42, 43 y 44.
+     - Antes de mezclar los brazos de la semilla 42 (`organos/v10-nogain`) con los de la 43 y la
+       44 (`organos/v10-v2`) se comprueba que comparten declaración.
+  2. **C3, el núcleo.** Es la media de rangos de titans_mac_nogain en esas tres semillas: la pareja
+     exacta del estático, porque solo cambia la memoria en línea. titans_mac va como lectura
+     secundaria.
+  3. **El conjunto C3⊕H3.** Es la media de rangos con pesos 1/2 fijos; no se elige nada.
+  4. **Criterio para que H entre como segundo cerebro.**
+     - IC(C3⊕H3) − IC(C3) ≥ +0,0020 con t HAC ≥ 2 en la etiqueta, pareado por sesión en
+       evaluación.
+     - Además, ese contraste debe ser > 0 en lo operable.
+     - Si no pasa, H se queda como órgano del agregador.
+  5. **Control a igual número de redes: C3⊕E3,** con E3 el estático sin órganos. Si C3⊕H3 no
+     supera a C3⊕E3 con t ≥ 2, la ganancia viene de la segunda red y no de los órganos, y se dice
+     así.
+  6. **«Se equivoca en sitios distintos».** Se informan la correlación de los IC por sesión de C3 y
+     H3 y la correlación de rangos media entre sus predicciones dentro de cada sesión, sin umbral.
+  7. **Dónde se decide.** 2013 decide. Los orígenes limpios confirman con la misma regla, sin volver
+     a elegir.
+
 ## 6. Etapas con GPU (fase 4)
 
 ### 6.1 Qué queda preparado
