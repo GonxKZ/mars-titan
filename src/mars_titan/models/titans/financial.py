@@ -104,17 +104,16 @@ from .cross_sectional_surprise import (
 from .differential_attention import DIFFERENTIAL_ATTENTION
 from .differential_attention import identity as differential_identity
 
-# --- factor_memory ---
-from .factor_memory import FactorMemoryConfig, LowRankFactorMemory, parse_factor_memory
-
 # --- fin factor_memory ---
-
 # --- dual_hemisphere_brain ---
 from .dual_hemisphere_brain import (
     DualHemisphereBrain,
     DualHemisphereBrainConfig,
     parse_dual_hemisphere_brain,
 )
+
+# --- factor_memory ---
+from .factor_memory import FactorMemoryConfig, LowRankFactorMemory, parse_factor_memory
 
 # --- fin dual_hemisphere_brain ---
 from .financial_inputs import (
