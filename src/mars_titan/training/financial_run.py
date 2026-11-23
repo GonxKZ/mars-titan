@@ -50,7 +50,11 @@ from mars_titan.models.titans.frozen_financial import (
     _numerics,
     declared_sources,
 )
-from mars_titan.models.titans.session_ic_objective import known_offset, parse_session_ic_term
+from mars_titan.models.titans.session_ic_objective import (
+    known_offset,
+    parse_session_ic_term,
+    session_row_weights,
+)
 from mars_titan.models.titans.state import (
     deferred_checks,
     join_mac_rows,
@@ -76,7 +80,12 @@ from .horizon_labels import HorizonLabels
 from .input_pipeline import prepared
 from .kernel_policy import declared_policy, require_policy, valid_precision
 from .learning_hold import require_learning_allowed
-from .quantile_objectives import POINT_OBJECTIVES, QUANTILE_OBJECTIVES, point_objective
+from .quantile_objectives import (
+    POINT_COMPONENT,
+    POINT_OBJECTIVES,
+    QUANTILE_OBJECTIVES,
+    point_objective,
+)
 from .schedule_free import AveragedPoint, ScheduleFree, is_schedule_free
 from .selection import (
     AWAIT,
@@ -689,9 +698,12 @@ class ChronologicalInference:
             raise ValueError("El término de IC por sesión no se combina con un objetivo de salida")
         # Con liquidez, cada fila lleva a la pérdida su columna del bloque del gráfico.
         self.liquidity = self.session_ic is not None and self.session_ic.weighted
-        if self.liquidity and "charts" in (predictor.config.removed_modalities or ()):
+        declares_liquidity = (
+            self.session_ic is not None and self.session_ic.liquidity_column is not None
+        )
+        if declares_liquidity and "charts" in (predictor.config.removed_modalities or ()):
             raise ValueError("La ponderación por liquidez requiere la modalidad charts sin retirar")
-        if self.liquidity and (
+        if declares_liquidity and (
             -self.session_ic.liquidity_column > predictor.config.inputs.dimensions["charts"]
         ):
             raise ValueError("La columna de liquidez no pertenece al bloque del gráfico")
@@ -879,7 +891,12 @@ class ChronologicalInference:
         charts = batch.inputs["charts"]
         columns = [outputs if outputs.ndim == 2 else outputs.unsqueeze(1)]
         if self.liquidity:
-            columns.append(charts[:, self.session_ic.liquidity_column].detach())
+            column = charts[:, self.session_ic.liquidity_column].detach()
+            if self.session_ic.top_third_weighted:
+                # Donde falta la modalidad charts, la liquidez no es conocida y pesa 1.
+                present = batch.presence[:, MODALITIES.index("charts")]
+                column = torch.where(present, column, torch.full_like(column, float("nan")))
+            columns.append(column)
         if self.offset:
             term = self.session_ic
             columns.append(known_offset(charts[:, term.offset_column], term.offset_scale))
@@ -1369,26 +1386,52 @@ class ChronologicalTrainer(ChronologicalInference):
             liquidity, prediction = prediction[:, -1], prediction[:, :-1]
         if (self.offset or self.liquidity) and not self.quantiles:
             prediction = prediction.squeeze(1)
-        loss = self._loss(prediction, target)
+        sessions = (
+            [(flow.split("/", 1)[0], at) for flow, at in keys]
+            if self.session_ic is not None
+            else None
+        )
+        row_weights = (
+            session_row_weights(liquidity, sessions, self.session_ic.liquidity_weight)
+            if self.session_ic is not None and self.session_ic.top_third_weighted
+            else None
+        )
+        loss = self._loss(prediction, target, weights=row_weights)
         if self.session_ic is not None:
             # El punto es el que se emite: la mediana con cuantiles o la salida escalar.
-            sessions = [(flow.split("/", 1)[0], at) for flow, at in keys]
             point = median(prediction) if self.quantiles else prediction
             loss = loss + self.session_ic.term(point, target, sessions, liquidity, offset)
         return loss
 
-    def _loss(self, prediction, target):
+    def _loss(self, prediction, target, *, weights=None):
         """Pérdida anterior sin objetivo por sesión, con su interfaz de dos tensores."""
         functional = torch.nn.functional
+        if weights is None:
+            if self.recipe.loss == PINBALL:
+                return pinball_loss(prediction, target)
+            if self.recipe.loss in POINT_OBJECTIVES:
+                return point_objective(prediction, target, self.recipe.loss)
+            if self.recipe.loss == "mae":
+                return functional.l1_loss(prediction, target)
+            if self.recipe.loss == "mse":
+                return functional.mse_loss(prediction, target)
+            return functional.huber_loss(prediction, target, delta=self.recipe.huber_delta)
         if self.recipe.loss == PINBALL:
-            return pinball_loss(prediction, target)
-        if self.recipe.loss in POINT_OBJECTIVES:
-            return point_objective(prediction, target, self.recipe.loss)
-        if self.recipe.loss == "mae":
-            return functional.l1_loss(prediction, target)
-        if self.recipe.loss == "mse":
-            return functional.mse_loss(prediction, target)
-        return functional.huber_loss(prediction, target, delta=self.recipe.huber_delta)
+            per_row = pinball_loss(prediction, target, reduction="none")
+        elif self.recipe.loss in POINT_OBJECTIVES:
+            per_row = functional.l1_loss(median(prediction), target, reduction="none")
+            if self.recipe.loss == POINT_COMPONENT:
+                per_row = per_row / 10
+        elif self.recipe.loss == "mae":
+            per_row = functional.l1_loss(prediction, target, reduction="none")
+        elif self.recipe.loss == "mse":
+            per_row = functional.mse_loss(prediction, target, reduction="none")
+        else:
+            per_row = functional.huber_loss(
+                prediction, target, reduction="none", delta=self.recipe.huber_delta
+            )
+        weights = weights.to(per_row.dtype)
+        return (weights * per_row).sum() / weights.sum()
 
     def _distilled(self, loss, prediction, keys):
         """Objetivo del tramo: la tarea o, con profesor, su mezcla con la distancia a él."""

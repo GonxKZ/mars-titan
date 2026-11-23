@@ -147,6 +147,21 @@ class SessionICTerm:
     El primero ordena lo que se puede operar y el segundo conserva el orden de la etiqueta, que
     es el contraste de la campaña. En la red tabular, el término desplazado solo gana IC
     operable y pierde el de la etiqueta; los dos juntos conservan los dos.
+
+    Con `liquidity_column` y `liquidity_weight` (número ≥ 1, por defecto ausente = 1) las filas
+    del tercio más líquido de cada sesión con liquidez conocida pesan `liquidity_weight` y el
+    resto (incluidas las filas sin liquidez finita conocida) pesan 1, tanto en la correlación
+    ponderada del término como en la media ponderada de la pérdida declarada (pinball). El
+    umbral se elige por sesión con la entrada `(2 · m) // 3` de los `m` valores finitos
+    ordenados (empates incluidos, invariante al orden de las filas). Con valor 1 el cálculo es
+    exactamente el actual y no entra en `identity()`. No se combina con `liquidity_power`.
+
+    Con `stability` (número ≥ 0, por defecto ausente = 0) al término se le suma
+    `stability · weight · σ(ρ)` cuando hay al menos dos sesiones válidas en el grupo de
+    acumulación, donde `σ(ρ)` es la desviación típica muestral regularizada (con suelo `eps²`
+    para garantizar gradientes finitos también con correlaciones iguales o predicción constante).
+    Con `plain_weight` se aplica la misma regla a cada rama con su propio peso. Con valor 0 el
+    cálculo es exactamente el actual y no entra en `identity()`.
     """
 
     weight: float = 1.0
@@ -154,6 +169,10 @@ class SessionICTerm:
     # Columna del bloque del gráfico con la liquidez de cada fila, contada desde el final.
     liquidity_column: int | None = None
     liquidity_power: float | None = None
+    # Factor de peso (>= 1) del tercio más líquido de cada sesión en correlación y pinball.
+    liquidity_weight: float | None = None
+    # Penalización (>= 0) de la desviación típica de las correlaciones entre sesiones del tramo.
+    stability: float = 0.0
     # Columna del bloque del gráfico con el desplazamiento conocido de la etiqueta, contada
     # desde el final, y el factor que la lleva a las unidades de la etiqueta.
     offset_column: int | None = None
@@ -168,15 +187,35 @@ class SessionICTerm:
         if not 0 < weight <= 1e3:
             raise ValueError("weight debe ser positivo y acotado")
         object.__setattr__(self, "weight", weight)
-        if (self.liquidity_column is None) != (self.liquidity_power is None):
-            raise ValueError("La liquidez del término declara su columna y su exponente")
-        if self.liquidity_column is not None:
-            if type(self.liquidity_column) is not int or not -4096 <= self.liquidity_column < 0:
-                raise ValueError("liquidity_column cuenta desde el final del bloque: es negativa")
+        if self.liquidity_weight is not None:
+            liq_weight = _number(self.liquidity_weight, "liquidity_weight")
+            if not 1.0 <= liq_weight <= 1e3:
+                raise ValueError("liquidity_weight debe ser un número entre 1 y 1000")
+            object.__setattr__(self, "liquidity_weight", liq_weight)
+        if self.liquidity_power is not None:
             power = _number(self.liquidity_power, "liquidity_power")
             if not 0 < power <= 8:
                 raise ValueError("liquidity_power debe estar entre 0 y 8")
             object.__setattr__(self, "liquidity_power", power)
+        if self.liquidity_column is not None:
+            if type(self.liquidity_column) is not int or not -4096 <= self.liquidity_column < 0:
+                raise ValueError("liquidity_column cuenta desde el final del bloque: es negativa")
+        if self.liquidity_power is not None and self.liquidity_column is None:
+            raise ValueError("La liquidez del término declara su columna y su exponente")
+        if self.top_third_weighted and self.liquidity_column is None:
+            raise ValueError("liquidity_weight mayor que 1 requiere liquidity_column")
+        if (
+            self.liquidity_column is not None
+            and self.liquidity_power is None
+            and self.liquidity_weight is None
+        ):
+            raise ValueError("La liquidez del término declara su columna y su exponente o su peso")
+        if self.liquidity_power is not None and self.top_third_weighted:
+            raise ValueError("liquidity_weight no se combina con liquidity_power")
+        stability = _number(self.stability, "stability")
+        if not 0.0 <= stability <= 1e3:
+            raise ValueError("stability debe ser un número entre 0 y 1000")
+        object.__setattr__(self, "stability", stability)
         if (self.offset_column is None) != (self.offset_scale is None):
             raise ValueError("El desplazamiento del término declara su columna y su escala")
         if self.offset_column is not None:
@@ -195,9 +234,14 @@ class SessionICTerm:
             object.__setattr__(self, "plain_weight", plain)
 
     @property
+    def top_third_weighted(self):
+        """Si el tercio más líquido de cada sesión pesa más que el resto."""
+        return self.liquidity_weight is not None and self.liquidity_weight > 1.0
+
+    @property
     def weighted(self):
         """Si la correlación pondera las filas por liquidez."""
-        return self.liquidity_column is not None
+        return self.liquidity_power is not None or self.top_third_weighted
 
     @property
     def shifted(self):
@@ -219,13 +263,23 @@ class SessionICTerm:
             standardization_floor=dict(relative=RELATIVE_FLOOR, absolute="dtype_eps_squared"),
         )
         # Sin la liquidez se conserva literalmente la identidad anterior.
-        if self.weighted:
+        if self.liquidity_power is not None:
             result.update(
                 liquidity_column=self.liquidity_column,
                 liquidity_power=self.liquidity_power,
                 row_weighting=(
                     "offset_0.05_plus_session_position_of_the_chart_column_to_the_power_"
                     "normalized_to_sum_one"
+                ),
+                liquidity_source="chart_block_column_counted_from_the_end_as_received",
+            )
+        elif self.top_third_weighted:
+            result.update(
+                liquidity_column=self.liquidity_column,
+                liquidity_weight=self.liquidity_weight,
+                row_weighting=(
+                    "top_third_of_known_liquidity_per_session_at_ge_sorted_2n_over_3_"
+                    "weighted_by_liquidity_weight_others_and_unknown_1_for_correlation_and_loss"
                 ),
                 liquidity_source="chart_block_column_counted_from_the_end_as_received",
             )
@@ -245,16 +299,38 @@ class SessionICTerm:
                 plain_weight=self.plain_weight,
                 plain="same_correlation_without_the_offset_subtracted_with_its_own_weight",
             )
+        if self.stability > 0.0:
+            result.update(
+                stability=self.stability,
+                stability_penalty=(
+                    "stability_times_weight_times_regularized_sample_std_of_session_"
+                    "correlations_when_at_least_two_sessions"
+                ),
+            )
         return result
+
+    def _combine(self, correlations, weight):
+        value = -weight * correlations.mean()
+        if self.stability > 0.0 and len(correlations) >= 2:
+            value = value + self.stability * weight * session_correlation_std(correlations)
+        return value
 
     def term(self, point, target, sessions, liquidity=None, offset=None):
         """−w por la correlación media de las sesiones del tramo, o cero si no hay ninguna."""
-        if self.weighted != (liquidity is not None):
-            raise ValueError("El término recibe la liquidez de cada fila solo si la declara")
+        if self.weighted:
+            if liquidity is None:
+                raise ValueError("El término recibe la liquidez de cada fila solo si la declara")
+        elif liquidity is not None:
+            if self.liquidity_column is None:
+                raise ValueError("El término recibe la liquidez de cada fila solo si la declara")
+            if liquidity.shape != point.shape:
+                raise ValueError("La liquidez debe ir fila a fila con el punto")
         if self.shifted != (offset is not None) or (
             offset is not None and offset.shape != point.shape
         ):
             raise ValueError("El término recibe el desplazamiento de cada fila solo si lo declara")
+        active_liquidity = liquidity if self.weighted else None
+        active_weight = self.liquidity_weight if self.top_third_weighted else None
         plain = None
         if offset is not None:
             if self.plain_weight is not None:
@@ -264,8 +340,9 @@ class SessionICTerm:
                     target,
                     sessions,
                     self.minimum_rows,
-                    liquidity=liquidity,
+                    liquidity=active_liquidity,
                     power=self.liquidity_power,
+                    liquidity_weight=active_weight,
                 )
             if offset.device != point.device:
                 raise ValueError(
@@ -280,15 +357,29 @@ class SessionICTerm:
             target,
             sessions,
             self.minimum_rows,
-            liquidity=liquidity,
+            liquidity=active_liquidity,
             power=self.liquidity_power,
+            liquidity_weight=active_weight,
         )
         if not len(correlations):
             return point.sum() * 0
-        value = -self.weight * correlations.mean()
+        value = self._combine(correlations, self.weight)
         if plain is not None:
-            value = value + -self.plain_weight * plain.mean()
+            value = value + self._combine(plain, self.plain_weight)
         return value
+
+
+_OPTIONAL_TERM_KEYS = frozenset(
+    {
+        "liquidity_column",
+        "liquidity_power",
+        "liquidity_weight",
+        "stability",
+        "offset_column",
+        "offset_scale",
+        "plain_weight",
+    }
+)
 
 
 def parse_session_ic_term(raw):
@@ -298,19 +389,17 @@ def parse_session_ic_term(raw):
     if type(raw) is SessionICTerm:
         raw.__post_init__()
         return raw
-    if type(raw) is dict and {"weight", "minimum_rows"} <= set(raw):
-        extra = set(raw) - {"weight", "minimum_rows"}
-        liquidity, offset = (
-            {"liquidity_column", "liquidity_power"},
-            {"offset_column", "offset_scale"},
-        )
-        plain = {"plain_weight"}
-        whole = (set(), liquidity, offset, liquidity | offset)
-        if extra in whole or extra in (offset | plain, liquidity | offset | plain):
-            return SessionICTerm(**raw)
+    required = {"weight", "minimum_rows"}
+    if (
+        type(raw) is dict
+        and required <= set(raw) <= required | _OPTIONAL_TERM_KEYS
+        and all(raw[key] is not None for key in raw if key in _OPTIONAL_TERM_KEYS)
+    ):
+        return SessionICTerm(**raw)
     raise ValueError(
-        "session_ic_term debe declarar weight y minimum_rows (y liquidity_column con "
-        "liquidity_power, u offset_column con offset_scale y, con ellas, plain_weight), o ser None"
+        "session_ic_term debe declarar weight y minimum_rows (y opcionalmente liquidity_column "
+        "con liquidity_power o liquidity_weight, stability, u offset_column con offset_scale y, "
+        "con ellas, plain_weight), o ser None"
     )
 
 
@@ -333,6 +422,89 @@ def liquidity_weights(values, power):
     position = ((lower + upper + 1).to(values.dtype) / 2 - 0.5) / values.numel()
     weights = (0.05 + position) ** power
     return weights / weights.sum()
+
+
+def top_third_weights(values, weight):
+    """Pesos brutos de una sesión: `weight` en el tercio superior conocido y 1 en el resto.
+
+    El umbral es la entrada `(2 · m) // 3` de los `m` valores finitos ordenados (empates
+    incluidos), invariante al orden de las filas. Las filas con liquidez no finita (o todas
+    si ninguna es finita) reciben peso 1.
+    """
+    if (
+        not isinstance(values, torch.Tensor)
+        or values.ndim != 1
+        or values.numel() == 0
+        or values.dtype not in (torch.float32, torch.float64)
+    ):
+        raise ValueError("La liquidez necesita un vector no vacío en FP32 o FP64")
+    weight = _number(weight, "liquidity_weight")
+    if not 1.0 <= weight <= 1e3:
+        raise ValueError("liquidity_weight debe ser un número entre 1 y 1000")
+    values = values.detach()
+    ones = torch.ones_like(values)
+    if weight == 1.0:
+        return ones
+    known = torch.isfinite(values)
+    # Las filas sin liquidez conocida van al final y nunca fijan ni superan el umbral.
+    infinite = torch.full((), torch.inf, dtype=values.dtype, device=values.device)
+    ordered = torch.where(known, values, infinite).sort().values
+    count = known.sum(dtype=torch.int64)
+    index = ((2 * count) // 3).clamp(max=values.numel() - 1)
+    threshold = ordered.index_select(0, index.unsqueeze(0)).squeeze(0)
+    finite_values = torch.where(known, values, -infinite)
+    top = known & (finite_values >= threshold)
+    return torch.where(top, torch.full_like(values, weight), ones)
+
+
+def session_row_weights(liquidity, sessions, weight):
+    """Pesos brutos fila a fila del tramo, eligiendo el tercio líquido dentro de cada sesión."""
+    if (
+        not isinstance(liquidity, torch.Tensor)
+        or liquidity.ndim != 1
+        or len(sessions) != len(liquidity)
+        or liquidity.dtype not in (torch.float32, torch.float64)
+    ):
+        raise ValueError("Los pesos por sesión necesitan la liquidez de cada fila en FP32 o FP64")
+    weight = _number(weight, "liquidity_weight")
+    if not 1.0 <= weight <= 1e3:
+        raise ValueError("liquidity_weight debe ser un número entre 1 y 1000")
+    source = liquidity.detach()
+    if len(source) == 0:
+        return source.clone()
+    if weight == 1.0:
+        return torch.ones_like(source)
+    groups = {}
+    for row, key in enumerate(sessions):
+        groups.setdefault(key, []).append(row)
+    result = torch.ones_like(source)
+    for rows in groups.values():
+        if rows[-1] - rows[0] + 1 == len(rows):
+            start, stop = rows[0], rows[-1] + 1
+            result[start:stop] = top_third_weights(source[start:stop], weight)
+        else:
+            index = _row_index(rows, source.device)
+            result.index_copy_(0, index, top_third_weights(source.index_select(0, index), weight))
+    return result
+
+
+def session_correlation_std(correlations):
+    """Desviación típica muestral regularizada de las correlaciones por sesión (>= 2).
+
+    El suelo eps² de la precisión garantiza un gradiente finito y nulo cuando todas las
+    sesiones comparten la misma correlación, incluida la predicción constante.
+    """
+    if (
+        not isinstance(correlations, torch.Tensor)
+        or correlations.ndim != 1
+        or correlations.numel() < 2
+        or correlations.dtype not in (torch.float32, torch.float64)
+    ):
+        raise ValueError("La desviación típica necesita al menos dos correlaciones en FP32 o FP64")
+    centered = correlations - correlations.mean()
+    variance = centered.square().sum() / (correlations.numel() - 1)
+    epsilon = torch.finfo(correlations.dtype).eps
+    return torch.sqrt(variance + epsilon * epsilon)
 
 
 def weighted_standardized(values, weights):
@@ -394,12 +566,15 @@ def standardized_scores(scores, markets):
     return result
 
 
-def session_correlations(scores, target, sessions, minimum_rows, *, liquidity=None, power=None):
+def session_correlations(
+    scores, target, sessions, minimum_rows, *, liquidity=None, power=None, liquidity_weight=None
+):
     """Correlación regularizada por sesión entre puntuaciones y rangos normales del objetivo.
 
     Usa el suelo de `standardized`. Una sesión con objetivo constante aporta cero. Devuelve
     una entrada por sesión con suficientes filas, en el orden de primera aparición. Con
-    `liquidity` y `power`, cada sesión pondera sus filas con `liquidity_weights`.
+    `liquidity` y `power`, cada sesión pondera sus filas con `liquidity_weights`. Con
+    `liquidity` y `liquidity_weight > 1`, pondera con `top_third_weights` normalizados a suma uno.
     """
     if (
         scores.ndim != 1
@@ -408,10 +583,26 @@ def session_correlations(scores, target, sessions, minimum_rows, *, liquidity=No
         or scores.dtype != target.dtype
     ):
         raise ValueError("Puntuaciones, objetivos y sesiones deben ir fila a fila")
-    if (liquidity is None) != (power is None) or (
-        liquidity is not None and liquidity.shape != scores.shape
-    ):
-        raise ValueError("La ponderación necesita la liquidez de cada fila y su exponente")
+    if liquidity_weight is not None:
+        liquidity_weight = _number(liquidity_weight, "liquidity_weight")
+        if not 1.0 <= liquidity_weight <= 1e3:
+            raise ValueError("liquidity_weight debe ser un número entre 1 y 1000")
+    uses_power = power is not None
+    uses_top_third = liquidity_weight is not None and liquidity_weight > 1.0
+    if uses_power and uses_top_third:
+        raise ValueError("No se combinan power y liquidity_weight en la correlación ponderada")
+    if uses_power or uses_top_third:
+        if (
+            liquidity is None
+            or liquidity.shape != scores.shape
+            or liquidity.device != scores.device
+        ):
+            raise ValueError("La ponderación necesita la liquidez de cada fila y su factor")
+    elif liquidity is not None:
+        if liquidity_weight is None:
+            raise ValueError("La ponderación necesita la liquidez de cada fila y su exponente")
+        if liquidity.shape != scores.shape or liquidity.device != scores.device:
+            raise ValueError("La liquidez debe ir fila a fila con las puntuaciones")
     groups = {}
     for row, key in enumerate(sessions):
         groups.setdefault(key, []).append(row)
@@ -423,17 +614,25 @@ def session_correlations(scores, target, sessions, minimum_rows, *, liquidity=No
             start, stop = rows[0], rows[-1] + 1
             score = scores[start:stop]
             labels = target[start:stop].unsqueeze(-1)
-            liq = None if liquidity is None else liquidity.detach()[start:stop]
+            liq = None if not (uses_power or uses_top_third) else liquidity.detach()[start:stop]
         else:
             index = _row_index(rows, scores.device)
             score = scores.index_select(0, index)
             labels = target.index_select(0, index).unsqueeze(-1)
-            liq = None if liquidity is None else liquidity.detach().index_select(0, index)
+            liq = (
+                None
+                if not (uses_power or uses_top_third)
+                else liquidity.detach().index_select(0, index)
+            )
         normal = gaussian_ranks(labels, torch.ones_like(labels, dtype=torch.bool)).squeeze(-1)
         if liq is None:
             values.append((standardized(score) * standardized(normal)).mean())
             continue
-        weights = liquidity_weights(liq, power)
+        if uses_power:
+            weights = liquidity_weights(liq, power)
+        else:
+            raw = top_third_weights(liq, liquidity_weight).to(score.dtype)
+            weights = raw / raw.sum()
         product = weighted_standardized(score, weights) * weighted_standardized(normal, weights)
         values.append((weights * product).sum())
     if not values:
