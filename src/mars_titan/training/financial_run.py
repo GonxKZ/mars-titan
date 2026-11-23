@@ -701,7 +701,8 @@ class ChronologicalInference:
         declares_liquidity = (
             self.session_ic is not None and self.session_ic.liquidity_column is not None
         )
-        if declares_liquidity and "charts" in (predictor.config.removed_modalities or ()):
+        removed = predictor.config.removed_modalities or ()
+        if declares_liquidity and any(name in removed for name in ("charts", "charts_technical")):
             raise ValueError("La ponderación por liquidez requiere la modalidad charts sin retirar")
         if declares_liquidity and (
             -self.session_ic.liquidity_column > predictor.config.inputs.dimensions["charts"]
@@ -709,7 +710,7 @@ class ChronologicalInference:
             raise ValueError("La columna de liquidez no pertenece al bloque del gráfico")
         # Con el desplazamiento conocido, cada fila lleva además el suyo a la pérdida.
         self.offset = self.session_ic is not None and self.session_ic.shifted
-        if self.offset and "charts" in (predictor.config.removed_modalities or ()):
+        if self.offset and any(name in removed for name in ("charts", "charts_technical")):
             raise ValueError("El desplazamiento conocido requiere la modalidad charts sin retirar")
         if self.offset and (
             -self.session_ic.offset_column > predictor.config.inputs.dimensions["charts"]

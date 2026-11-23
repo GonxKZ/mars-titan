@@ -84,10 +84,13 @@ PREDICTOR_CHANGES = (
     # Opciones de memoria neuronal y consulta de salida de MAC (WP4).
     "memory_value_normalization",
     "output_query",
+    # Compuerta softmax enmascarada por presencia en la fusión común: presence_softmax_v1.
+    "modality_gating",
 )
 # Cambios que se declaran con un nombre en lugar de un objeto.
 NAMED_CHANGES = (
     "presence_modulation",
+    "modality_gating",
     "attention_layout",
     "temporal_encoder",
     "session_rank_inputs",
@@ -121,10 +124,10 @@ def checked_predictor_changes(changes):
             "cross_asset_attention, asset_groups, sector_map, laplace_scale_head, "
             "auxiliary_horizons, opponent_heads, "
             "mature_reliability, memory_huber y memory_time_scales como objetos no vacíos, y "
-            "presence_modulation, attention_layout, temporal_encoder, session_rank_inputs, "
-            "differential_attention, reference_encoder, memory_value_normalization y output_query "
-            "como nombres no vacíos. También "
-            "admiten learning_scale, removed_modalities y technical_branch como objetos no vacíos"
+            "presence_modulation, modality_gating, attention_layout, temporal_encoder, "
+            "session_rank_inputs, differential_attention, reference_encoder, "
+            "memory_value_normalization y output_query como nombres no vacíos. También admiten "
+            "learning_scale, removed_modalities y technical_branch como objetos no vacíos"
         )
     return changes
 

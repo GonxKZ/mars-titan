@@ -24,6 +24,7 @@ from .laplace_scale import LaplaceScale
 from .local_control import MACProjectionControl
 from .opponent_heads import OpponentSpread
 from .output_objectives import reads_scalar_point
+from .presence_modulation import PresenceModalityGate
 from .regional_execution import RegionalExecution
 from .regional_fusion import RegionalFusion
 from .regional_hierarchy import RegionalHierarchy
@@ -219,6 +220,8 @@ def _module_settings(module):
         settings["evidence_bridge"] = module.config.identity()
     elif type(module) is LearningScaler:
         settings["learning_scale"] = module.config.identity()
+    elif type(module) is PresenceModalityGate:
+        fields = ("hidden_size",)
     elif type(module).__module__ in _KRON_MODULES:
         settings["kronlstm"] = module.configuration
     settings.update((name, getattr(module, name)) for name in fields)

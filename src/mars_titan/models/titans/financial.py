@@ -108,13 +108,17 @@ from .output_objectives import build_objective, check_objectives, objective_iden
 from .presence_modulation import (
     FILM,
     MACRO_FILM,
+    MODALITY_GATINGS,
     PRESENCE_MODULATIONS,
+    PRESENCE_SOFTMAX,
     WIDE_FUSION,
     MacroFiLM,
     PresenceFiLM,
+    PresenceModalityGate,
     WideFusionBranch,
     film_parameters,
     macro_film_parameters,
+    modality_gating_parameters,
     wide_parameters_per_unit,
     wide_units,
 )
@@ -179,6 +183,8 @@ FUSION_DROPOUTS = (0.1, 0.2)
 MODALITY_DROPOUT = "modality_dropout_v1"
 # Transformación de una modalidad retirada del predictor, en el ajuste y al emitir.
 REMOVED_MODALITIES = "removed_modalities_v1"
+CHART_SUBBLOCKS = ("charts_visual", "charts_technical")
+_REMOVABLE_ORDER = ("news", "charts", *CHART_SUBBLOCKS, "fundamentals", "macro")
 FUSION_DROPOUT = "fusion_dropout_v1"
 # Las máscaras dependen de la semilla del predictor, de la época del ajuste y de la huella del
 # lote, no del flujo del generador global: la pasada sin grafo, su repetición con grafo de la
@@ -313,6 +319,9 @@ class FinancialConfig:
     # multiplica por exp de un escalar aprendido, que absorbe la escala cuando otra parte de
     # la pérdida no depende de ella.
     median_gain: str | None = None
+    # None conserva la fusión común. `presence_softmax_v1` pondera los bloques presentes con
+    # softmax enmascarado por presencia y conserva el peso total M = 5.
+    modality_gating: str | None = None
 
     def __post_init__(self):
         if self.memory_inner_gradient not in INNER_GRADIENTS:
@@ -356,6 +365,8 @@ class FinancialConfig:
         self._check_core_variants()
         self._check_learning_scale()
         self._check_technical_branch()
+        self._check_chart_technical_split()
+        self._check_modality_gating()
         self._check_median_gain()
         self._check_memory_projections()
         self._check_runtime_limits()
@@ -493,11 +504,12 @@ class FinancialConfig:
             return
         names = declared.get("names") if isinstance(declared, dict) else declared
         removable = MODALITIES[1:]
+        allowed = _REMOVABLE_ORDER
         if (
             (isinstance(declared, dict) and set(declared) != {"names"})
             or not isinstance(names, (list, tuple))
             or not names
-            or any(type(name) is not str or name not in removable for name in names)
+            or any(type(name) is not str or name not in allowed for name in names)
             or len(set(names)) != len(names)
             or not masked_inputs(self.inputs.input_policy)
         ):
@@ -505,12 +517,19 @@ class FinancialConfig:
                 "removed_modalities declara en names modalidades distintas del precio, sin "
                 "repetir, con la política con máscaras"
             )
-        if len(names) == len(removable):
+        selected = set(names)
+        if ("charts" in selected and selected & set(CHART_SUBBLOCKS)) or (
+            set(CHART_SUBBLOCKS) <= selected
+        ):
+            raise ValueError(
+                "removed_modalities no admite combinar charts con charts_visual o charts_technical"
+            )
+        if set(removable) <= selected:
             raise ValueError("removed_modalities no puede retirar todas las modalidades")
         if self.auxiliary_horizons is not None:
             # F5 vuelve a calcular el token fila a fila con las entradas que recibió.
             raise ValueError("removed_modalities con horizontes auxiliares necesita otro contraste")
-        ordered = tuple(name for name in removable if name in names)
+        ordered = tuple(name for name in allowed if name in selected)
         object.__setattr__(self, "removed_modalities", ordered)
 
     def _check_presence_modulation(self):
@@ -681,6 +700,69 @@ class FinancialConfig:
             raise ValueError("technical_branch declara más columnas que el bloque del gráfico")
         if self.removed_modalities is not None and "charts" in self.removed_modalities:
             raise ValueError("technical_branch lee el bloque del gráfico y no admite retirarlo")
+
+    def _chart_technical_columns(self):
+        """Anchura del subbloque técnico al final de `charts`, o None si no se declara."""
+        if (
+            self.learning_scale is not None
+            and self.learning_scale.chart_technical_columns is not None
+        ):
+            return self.learning_scale.chart_technical_columns
+        if self.technical_branch is not None:
+            return self.technical_branch.columns
+        return None
+
+    def _check_chart_technical_split(self):
+        """Coherencia del subbloque técnico de `charts` para escalado y supresión parcial."""
+        charts_width = self.inputs.dimensions["charts"]
+        scale_cols = (
+            None if self.learning_scale is None else self.learning_scale.chart_technical_columns
+        )
+        if scale_cols is not None:
+            if scale_cols >= charts_width:
+                raise ValueError(
+                    "chart_technical_columns debe ser menor que la anchura del bloque charts"
+                )
+            if self.technical_branch is not None and scale_cols != self.technical_branch.columns:
+                raise ValueError(
+                    "chart_technical_columns debe coincidir con columns de technical_branch"
+                )
+        removed = self.removed_modalities or ()
+        if any(name in removed for name in CHART_SUBBLOCKS):
+            columns = self._chart_technical_columns()
+            if columns is None or columns >= charts_width:
+                raise ValueError(
+                    "Retirar charts_visual o charts_technical requiere declarar "
+                    "chart_technical_columns en learning_scale o technical_branch menor que charts"
+                )
+            if "charts_technical" in removed and self.technical_branch is not None:
+                raise ValueError(
+                    "technical_branch lee los rasgos técnicos del gráfico y no admite retirarlos"
+                )
+
+    def _check_modality_gating(self):
+        """Compuerta de modalidades enmascarada por presencia en la fusión común."""
+        if self.modality_gating is None:
+            return
+        if (
+            type(self.modality_gating) is not str
+            or self.modality_gating not in MODALITY_GATINGS
+            or not masked_inputs(self.inputs.input_policy)
+        ):
+            raise ValueError(
+                "modality_gating admite presence_softmax_v1 con la política con máscaras"
+            )
+        if (
+            self.regional_fusion is not None
+            or self.regional_execution is not None
+            or self.regional_variant is not None
+            or self.holographic_network is not None
+            or self.axial_time_region is not None
+            or self.fractal_shared_operator is not None
+        ):
+            raise ValueError(
+                "modality_gating actúa en la fusión común y no se combina con operadores regionales"
+            )
 
     def _check_session_mixers(self):
         """Exclusiones entre los operadores que mezclan activos."""
@@ -936,14 +1018,15 @@ class FinancialConfig:
                 )
             )
         if self.removed_modalities is not None:
-            result.update(
-                removed_modalities=dict(
-                    name=REMOVED_MODALITIES,
-                    names=list(self.removed_modalities),
-                    route="presence_bit_false_and_zero_inputs",
-                    phase="fit_and_emission",
-                )
+            removed = dict(
+                name=REMOVED_MODALITIES,
+                names=list(self.removed_modalities),
+                route="presence_bit_false_and_zero_inputs",
+                phase="fit_and_emission",
             )
+            if any(name in self.removed_modalities for name in CHART_SUBBLOCKS):
+                removed["chart_technical_columns"] = self._chart_technical_columns()
+            result.update(removed_modalities=removed)
         if self.technical_branch is not None:
             result.update(technical_branch=self.technical_branch.identity())
         if self.memory_projections != "linear_v1":
@@ -1030,6 +1113,15 @@ class FinancialConfig:
                     parameters=macro_film_parameters(self.hidden_size),
                     initial="zero",
                     scale="one_plus_tanh_of_linear_macro_block",
+                )
+            )
+        if self.modality_gating == PRESENCE_SOFTMAX:
+            result.update(
+                modality_gating=dict(
+                    name=PRESENCE_SOFTMAX,
+                    parameters=modality_gating_parameters(self.hidden_size),
+                    initial="zero_logits_uniform_over_present_modalities",
+                    scale="modality_count_times_masked_softmax",
                 )
             )
         # #836: solo aparecen si se declaran, así que las identidades anteriores no cambian.
@@ -1240,6 +1332,12 @@ class FinancialPredictor(nn.Module):
         self.fusion_branch = (
             WideFusionBranch(config.hidden_size, seed=config.seed)
             if config.presence_modulation == WIDE_FUSION
+            else None
+        )
+        # Compuerta de modalidades enmascarada por presencia: arranca en cero sin consumir RNG.
+        self.modality_gating = (
+            PresenceModalityGate(config.hidden_size, dtype=dtype)
+            if config.modality_gating == PRESENCE_SOFTMAX
             else None
         )
         self.regional_fusion = (
@@ -2091,6 +2189,14 @@ class FinancialPredictor(nn.Module):
             # Los bloques por familia leen las entradas y los codificadores de la referencia.
             def modulation(blocks, presence):
                 return self.holographic_network(blocks, presence, inputs, self.encoders)
+        elif self.modality_gating is not None:
+            if modulation is None:
+                modulation = self.modality_gating
+            else:
+                inner = modulation
+
+                def modulation(blocks, presence):
+                    return self.modality_gating(inner(blocks, presence), presence)
 
         return fuse_modalities(
             price,
@@ -2267,12 +2373,26 @@ class FinancialPredictor(nn.Module):
         if self.session_level and session_complete is not True:
             raise ValueError("Las operaciones por sesión necesitan la sesión completa en un bloque")
         markets = tuple(flow.split("/", 1)[0] for flow in batch.flow_ids)
+        chart_keep = None
         if self.config.removed_modalities is not None:
             # Antes de cualquier otra transformación: el predictor no ve nunca la modalidad.
-            keep = torch.ones_like(batch.presence)
-            for name in self.config.removed_modalities:
-                keep[:, MODALITIES.index(name)] = False
-            batch = batch.with_absences(keep, REMOVED_MODALITIES)
+            whole = [name for name in self.config.removed_modalities if name in MODALITIES[1:]]
+            if whole:
+                keep = torch.ones_like(batch.presence)
+                for name in whole:
+                    keep[:, MODALITIES.index(name)] = False
+                batch = batch.with_absences(keep, REMOVED_MODALITIES)
+            subblocks = [name for name in self.config.removed_modalities if name in CHART_SUBBLOCKS]
+            if subblocks:
+                charts = batch.inputs["charts"]
+                split = charts.shape[1] - self.config._chart_technical_columns()
+                chart_keep = torch.ones_like(charts, dtype=torch.bool)
+                if "charts_visual" in subblocks:
+                    chart_keep[:, :split] = False
+                if "charts_technical" in subblocks:
+                    chart_keep[:, split:] = False
+                masked_charts = torch.where(chart_keep, charts, torch.zeros_like(charts))
+                batch = batch.derived(dict(batch.inputs, charts=masked_charts), REMOVED_MODALITIES)
         if self.training and self.config.modality_dropout is not None:
             # Antes de los rangos y de la escala: la ausencia añadida es idéntica a una real.
             with self._dropout_masks(batch, MODALITY_DROPOUT):
@@ -2281,7 +2401,25 @@ class FinancialPredictor(nn.Module):
                     >= self.config.modality_dropout
                 )
             keep[:, MODALITIES.index("prices")] = True
-            batch = batch.with_absences(keep, MODALITY_DROPOUT)
+            split_cols = (
+                None
+                if self.config.learning_scale is None
+                else self.config.learning_scale.chart_technical_columns
+            )
+            if split_cols is not None:
+                charts_idx = MODALITIES.index("charts")
+                keep_visual = keep[:, charts_idx].clone()
+                keep[:, charts_idx] = True
+                batch = batch.with_absences(keep, MODALITY_DROPOUT)
+                charts = batch.inputs["charts"]
+                split = charts.shape[1] - split_cols
+                drop_mask = torch.ones_like(charts, dtype=torch.bool)
+                drop_mask[:, :split] = keep_visual.unsqueeze(1)
+                chart_keep = drop_mask if chart_keep is None else (chart_keep & drop_mask)
+                masked_charts = torch.where(chart_keep, charts, torch.zeros_like(charts))
+                batch = batch.derived(dict(batch.inputs, charts=masked_charts), MODALITY_DROPOUT)
+            else:
+                batch = batch.with_absences(keep, MODALITY_DROPOUT)
         received = batch
         if self.config.session_rank_inputs is not None:
             # Rangos entre las filas del bloque, que son todas las de su instante y mercado.
@@ -2291,9 +2429,12 @@ class FinancialPredictor(nn.Module):
         if self.learning_scaler is not None:
             # Todo lo posterior lee las entradas normalizadas. Los grupos de H4 siguen leyendo
             # la ventana recibida, sin transformar.
-            batch = batch.derived(
-                self.learning_scaler(batch.inputs, batch.presence), LEARNING_TRANSFORM
-            )
+            scaled_inputs = self.learning_scaler(batch.inputs, batch.presence)
+            if chart_keep is not None:
+                scaled_inputs["charts"] = torch.where(
+                    chart_keep, scaled_inputs["charts"], torch.zeros_like(scaled_inputs["charts"])
+                )
+            batch = batch.derived(scaled_inputs, LEARNING_TRANSFORM)
         if self.local_control is None:
             if control_selection is not None or control_context_id is not None:
                 raise ValueError("El predictor anterior no admite una selección de C")
