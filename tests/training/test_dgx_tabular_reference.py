@@ -265,3 +265,15 @@ def test_a_market_factor_that_is_an_index_without_volume_is_read(state, tmp_path
     moment = np.array(["2013-06-03T20:00:00"], dtype="datetime64[us]")
     one, other = offset.known("US/A00", moment), plain.known("US/A00", moment)
     assert np.array_equal(one[0], other[0], equal_nan=True)
+
+
+def test_the_reference_supports_long_horizon_v4(state, tmp_path):
+    manifest = json.loads((state / "cohorts/2013/manifest.json").read_text())
+    v4_dir = tmp_path / "estado_v4/cohorts/2013"
+    v4_dir.mkdir(parents=True)
+    (v4_dir / "manifest.json").write_text(
+        json.dumps(dict(manifest, input_extensions=dict(technical="long_horizon_v4")))
+    )
+    _, receipt = build(tmp_path / "estado_v4", tmp_path / "referencia_v4", trees=[20])
+    assert receipt["technical"] == "long_horizon_v4"
+    assert len(receipt["features"]) == 63 and receipt["features"][-1] == "market"
