@@ -143,11 +143,18 @@ class KnownOffset:
             "datetime64[D]"
         )
 
-    def _intraday(self, path):
-        prices, days = self._table(path)
+    @staticmethod
+    def _intraday(path):
+        """Días y rendimiento intradía de un factor de mercado.
+
+        El factor puede ser un índice, sin volumen: solo se leen su apertura y su cierre.
+        """
+        table = pq.read_table(path, columns=["open", "close", "available_at"])
+        days = table.column("available_at").cast("int64").to_numpy().astype("datetime64[us]")
+        opened, close = table.column("open").to_numpy(), table.column("close").to_numpy()
         with np.errstate(divide="ignore", invalid="ignore"):
-            valid = (prices[:, 0] > 0) & (prices[:, 3] > 0)
-            return days, np.where(valid, prices[:, 3] / prices[:, 0] - 1, np.nan)
+            valid = (opened > 0) & (close > 0)
+            return days.astype("datetime64[D]"), np.where(valid, close / opened - 1, np.nan)
 
     def alpha(self, asset, instants):
         """Alfa de un activo en cada instante de predicción, o NaN sin modelo de mercado."""
