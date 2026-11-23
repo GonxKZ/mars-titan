@@ -208,3 +208,41 @@ cambiar cuántos se confirman o qué modelos se dan por conocidos, no.
 4. Fijar el techo de unidades de cómputo y la reserva.
 5. Decir qué se ajusta primero después de la paridad: la criba de la base nueva o el ajuste
    final de la base actual.
+
+## Cuaderno y complementos para la RTX PRO 6000
+
+`scripts/colab_rtx6000/` reúne lo que acompaña al kit en la máquina G4 de Colab. Nada de ello
+entrena: ordena los pasos del kit y decide cuántos trabajadores y cuántas unidades se gastan.
+
+- `colab_rtx6000_bootstrap.ipynb` es el cuaderno que se abre en Colab. Lo genera
+  `notebook_validator.py --generate` y solo llama a los guiones del kit, en este orden: arranque
+  del equipo, comprobación de FP32 estricto y del kernel de escritura, MPS y sonda de
+  trabajadores, preparación del origen, cola en `tmux`, guarda de unidades y cierre.
+- `mps_probe.py` arranca CUDA MPS, comprueba que responde y lo deja activo para la cola. Si MPS
+  no está permitido, la cola corre con procesos independientes.
+- `concurrency_probe.py` mide 1, 2, 4 y 6 trabajadores (memoria, pasos por minuto) y aconseja
+  cuántos usar.
+- `cu_budget_guard.py` lleva la cuenta de las unidades gastadas entre relevos y dice si cabe el
+  siguiente trabajo antes del techo de 22,5 h o de la reserva.
+- `kernel_sm120_plan.py` pasa la escritura fusionada por su nivel 0 (bit a bit) y su nivel 1
+  (frente a FP64) y revisa el PTX que se compila para `sm_120`.
+
+El cuaderno se ajusta en su primera celda: carpeta del paquete y bundle en Drive, commit
+autorizado, vistas, declaración, receta de las entradas y, con las vistas US+CN, el zip del
+factor de mercado de China. El kit se clona de la rama `dgx-trainning`; el código que entrena
+es el del commit autorizado.
+
+Tres cosas que el cuaderno garantiza y que sus pruebas ejecutan de verdad
+(`tests/tooling/colab_rtx6000/test_notebook_cells.py`, con dobles del kit y una cola de mentira):
+
+- La cola se lanza desde un guion que lleva escrito su entorno (equipo, cuBLAS determinista,
+  Triton en IEEE y MPS si está activo), así que no depende del entorno de un servidor `tmux`
+  anterior, y cada argumento conserva sus espacios.
+- La parada la recibe el proceso de la cola, que para en su siguiente barrera. Se busca solo
+  dentro de la sesión que anotó el lanzador (`campana.sid`), nunca por nombre en toda la máquina.
+- La copia final al espejo espera a que la cola haya parado. Si no para en el margen
+  (`ESPERA_PARADA_S`), no se copia, no queda un `final_sync.json` antiguo y la máquina no se
+  suelta.
+
+Lo que solo se puede medir en la propia máquina sigue sin medir: la tarifa de unidades por hora,
+los pasos por minuto con cada número de trabajadores y si el contenedor permite MPS.
