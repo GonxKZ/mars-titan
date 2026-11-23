@@ -188,8 +188,35 @@ class CrossSectionalRankMemoryState:
     config_id: str
     parameter_id: str
     markets: dict[str, MarketRankStatistics]
-    # Clave: (flow, decision_at) -> (vector de clave [dim], predicción emitida float).
-    pending: dict[tuple[str, int], tuple[Tensor, float]]
+    # Clave: (flow, decision_at) -> (matriz de claves de su emisión [filas, dim], predicciones
+    # emitidas de esa emisión [filas], fila). Se guardan la matriz y el vector de la emisión, no un
+    # valor por fila: así una sesión se reúne con una selección, el grafo del metagradiente no
+    # crece con el número de activos y registrar una emisión no espera a la GPU.
+    pending: dict[tuple[str, int], tuple[Tensor, Tensor, int]]
+
+
+def _gather_pending(entries: list[tuple[Tensor, Tensor, int]]) -> tuple[Tensor, Tensor]:
+    """Reunir, en el orden dado, las claves [n, dim] y las predicciones emitidas [n] pendientes."""
+    sources: dict[int, tuple[Tensor, Tensor, list[int], list[int]]] = {}
+    for position, (keys, issued, row) in enumerate(entries):
+        _, _, positions, picked = sources.setdefault(id(keys), (keys, issued, [], []))
+        positions.append(position)
+        picked.append(row)
+    key_parts, issued_parts, order = [], [], []
+    for keys, issued, positions, picked in sources.values():
+        index = torch.tensor(picked, dtype=torch.int64, device=keys.device)
+        key_parts.append(keys.index_select(0, index))
+        issued_parts.append(issued.index_select(0, index))
+        order.extend(positions)
+    if len(key_parts) == 1:
+        return key_parts[0], issued_parts[0]
+    inverse = torch.empty(len(order), dtype=torch.int64)
+    inverse[torch.tensor(order, dtype=torch.int64)] = torch.arange(len(order), dtype=torch.int64)
+    inverse = inverse.to(key_parts[0].device)
+    return (
+        torch.cat(key_parts, dim=0).index_select(0, inverse),
+        torch.cat(issued_parts, dim=0).index_select(0, inverse),
+    )
 
 
 def _market(flow: str) -> str:
@@ -388,7 +415,11 @@ class CrossSectionalRankMemory(nn.Module):
                 k_m = keys.index_select(0, index)
             sym = 0.5 * (stats.cov + stats.cov.transpose(-1, -2))
             system = sym + ridge[:, None, None] * eye
-            chol = torch.linalg.cholesky(system)
+            # Sin esperar a la GPU: el fallo de la factorización se comprueba diferido.
+            chol, info = torch.linalg.cholesky_ex(system, check_errors=False)
+            require_true(
+                (info == 0).all(), "El sistema regularizado de CRRM no es definido positivo"
+            )
             weights = torch.cholesky_solve(stats.rhs, chol)
             raw_pred = torch.einsum("nd,rdc->nrc", k_m, weights)
             k_rhs = k_m.transpose(0, 1).unsqueeze(0).expand(scales, dim, len(members))
@@ -445,13 +476,13 @@ class CrossSectionalRankMemory(nn.Module):
         check_finite(keys, "Las claves pendientes de CRRM")
         check_finite(issued_predictions, "Las predicciones emitidas para CRRM")
         stored_keys = keys if differentiable else keys.detach()
-        issued_values = issued_predictions.detach().tolist()
+        issued = issued_predictions.detach().to(device=reference.device, dtype=reference.dtype)
         pending = dict(state.pending)
         for row, (flow, at) in enumerate(zip(flow_ids, prediction_at, strict=True)):
             entry_key = (flow, int(at))
             if entry_key in pending:
                 raise ValueError("CRRM ya tiene registrada esa emisión pendiente")
-            pending[entry_key] = (stored_keys[row], float(issued_values[row]))
+            pending[entry_key] = (stored_keys, issued, row)
         return replace(state, pending=pending)
 
     def _shuffle_permutation(self, market: str, decision_at: int, count: int) -> Tensor:
@@ -479,7 +510,7 @@ class CrossSectionalRankMemory(nn.Module):
             return state
         reference = self._reference()
         pending = dict(state.pending)
-        grouped: dict[tuple[int, str], list[tuple[str, Tensor, float, float]]] = {}
+        grouped: dict[tuple[int, str], list[tuple[str, Tensor, Tensor, int, float]]] = {}
         for flow, decision_at, outcome in matured:
             if (
                 isinstance(outcome, bool)
@@ -490,9 +521,8 @@ class CrossSectionalRankMemory(nn.Module):
             entry_key = (flow, int(decision_at))
             if entry_key not in pending:
                 raise ValueError("La etiqueta madura de CRRM no tiene clave emitida pendiente")
-            key_vec, issued_val = pending.pop(entry_key)
             grouped.setdefault((int(decision_at), _market(flow)), []).append(
-                (flow, key_vec, issued_val, float(outcome))
+                (flow, *pending.pop(entry_key), float(outcome))
             )
         if self.config.mode == EVAL_FROZEN and not train:
             return replace(state, pending=pending)
@@ -505,14 +535,11 @@ class CrossSectionalRankMemory(nn.Module):
             rows = sorted(grouped[decision_at, market], key=lambda item: item[0])
             if len(rows) < self.config.minimum_rows:
                 continue
-            k_mat = torch.stack([item[1] for item in rows], dim=0)
+            k_mat, issued = _gather_pending([item[1:4] for item in rows])
             if not differentiable:
                 k_mat = k_mat.detach()
-            issued = torch.tensor(
-                [item[2] for item in rows], dtype=reference.dtype, device=reference.device
-            )
             outcomes = torch.tensor(
-                [item[3] for item in rows], dtype=reference.dtype, device=reference.device
+                [item[4] for item in rows], dtype=reference.dtype, device=reference.device
             )
             present = torch.ones((len(rows), 1), dtype=torch.bool, device=reference.device)
             normal_ranks = gaussian_ranks(outcomes.unsqueeze(-1), present).squeeze(-1)
@@ -571,7 +598,26 @@ class CrossSectionalRankMemory(nn.Module):
             )
             for market, stats in state.markets.items()
         }
-        pending = {key: (value[0].detach(), value[1]) for key, value in state.pending.items()}
+        # Cada matriz de emisión se corta una vez. Si de una emisión solo quedan pendientes algunas
+        # filas, se guardan esas filas y no la matriz entera, para que no se acumule.
+        remaining: dict[int, tuple[Tensor, Tensor, list[tuple[tuple[str, int], int]]]] = {}
+        for key, (keys, issued, row) in state.pending.items():
+            remaining.setdefault(id(keys), (keys, issued, []))[2].append((key, row))
+        pending = {}
+        for keys, issued, entries in remaining.values():
+            if len(entries) < len(keys):
+                index = torch.tensor(
+                    [row for _, row in entries], dtype=torch.int64, device=keys.device
+                )
+                compact_keys = keys.detach().index_select(0, index)
+                compact_issued = issued.index_select(0, index)
+                for position, (key, _) in enumerate(entries):
+                    pending[key] = (compact_keys, compact_issued, position)
+            else:
+                clean = keys.detach()
+                for key, row in entries:
+                    pending[key] = (clean, issued, row)
+        pending = {key: pending[key] for key in state.pending}
         return replace(
             state,
             parameter_id=parameter_id or state.parameter_id,
@@ -584,11 +630,14 @@ class CrossSectionalRankMemory(nn.Module):
         detached = self.detach_state(state)
         keys_sorted = sorted(detached.pending)
         if keys_sorted:
-            pending_keys = torch.stack(
-                [detached.pending[k][0].cpu().clone() for k in keys_sorted], dim=0
+            gathered_keys, gathered_issued = _gather_pending(
+                [detached.pending[k] for k in keys_sorted]
             )
+            pending_keys = gathered_keys.cpu().clone()
+            pending_issued = gathered_issued.to(dtype=torch.float64).cpu().clone()
         else:
             pending_keys = torch.empty((0, self.config.dim), dtype=self._reference().dtype)
+            pending_issued = torch.empty((0,), dtype=torch.float64)
         return dict(
             schema_version=1,
             configuration=self.config.identity(),
@@ -605,9 +654,7 @@ class CrossSectionalRankMemory(nn.Module):
                 flows=[flow for flow, _ in keys_sorted],
                 decision_at=torch.tensor([at for _, at in keys_sorted], dtype=torch.int64),
                 keys=pending_keys,
-                issued=torch.tensor(
-                    [detached.pending[k][1] for k in keys_sorted], dtype=torch.float64
-                ),
+                issued=pending_issued,
             ),
         )
 
@@ -640,13 +687,13 @@ class CrossSectionalRankMemory(nn.Module):
         raw_pending = payload["pending"]
         flows = raw_pending["flows"]
         moments = raw_pending["decision_at"].tolist()
-        issued = raw_pending["issued"].tolist()
+        issued = raw_pending["issued"].to(device=target_device, dtype=reference.dtype, copy=True)
         key_tensor = raw_pending["keys"].to(device=target_device, dtype=reference.dtype, copy=True)
         if not (len(flows) == len(moments) == len(issued) == len(key_tensor)):
             raise ValueError("Las claves pendientes guardadas de CRRM no concilian")
         pending = {
-            (flow, int(at)): (key_tensor[row], float(val))
-            for row, (flow, at, val) in enumerate(zip(flows, moments, issued, strict=True))
+            (flow, int(at)): (key_tensor, issued, row)
+            for row, (flow, at) in enumerate(zip(flows, moments, strict=True))
         }
         state = CrossSectionalRankMemoryState(self.fingerprint(), parameter_id, markets, pending)
         self.validate_state(state, parameter_id)

@@ -551,6 +551,90 @@ def test_constant_targets_and_constant_all_zero_scalar_head_produce_finite_gradi
             assert torch.isfinite(param.grad).all(), name
 
 
+def _graph_nodes(tensor):
+    seen, stack = set(), [tensor.grad_fn]
+    while stack:
+        node = stack.pop()
+        if node is None or node in seen:
+            continue
+        seen.add(node)
+        stack.extend(parent for parent, _ in node.next_functions)
+    return len(seen)
+
+
+def test_the_graph_of_a_settled_session_does_not_grow_with_its_rows():
+    """Las claves pendientes se reúnen con una operación por emisión, no con una por fila."""
+    sizes = {}
+    for rows in (8, 64):
+        layer = active_layer()
+        flows = [f"US/A{index:03d}" for index in range(rows)]
+        when = [START] * rows
+        keys = layer.keys(encoded(rows=rows), ["US"] * rows, when)
+        issued = torch.linspace(-1.0, 1.0, rows, dtype=keys.dtype)
+        state = layer.stage(
+            layer.initial_state("p"), flows, when, keys, issued, differentiable=True
+        )
+        assert len(state.pending) == rows
+        matured = [
+            (flow, START, float(value))
+            for flow, value in zip(flows, torch.randn(rows), strict=True)
+        ]
+        settled = layer.settle(state, matured, differentiable=True)
+        assert len(settled.pending) == 0
+        sizes[rows] = _graph_nodes(settled.markets["US"].cov)
+        # El metagradiente llega a las claves emitidas y es finito.
+        (gradient,) = torch.autograd.grad(settled.markets["US"].rhs.sum(), keys)
+        assert torch.isfinite(gradient).all() and gradient.abs().sum() > 0
+    assert sizes[8] == sizes[64], sizes
+
+
+def test_detaching_keeps_only_the_rows_still_pending_and_exports_them_in_order():
+    layer = active_layer()
+    rows = 12
+    flows = [f"US/A{index:03d}" for index in range(rows)]
+    when = [START] * rows
+    keys = layer.keys(encoded(rows=rows), ["US"] * rows, when)
+    issued = torch.linspace(-1.0, 1.0, rows, dtype=keys.dtype)
+    state = layer.stage(layer.initial_state("p"), flows, when, keys, issued, differentiable=True)
+    matured = [(flow, START, 0.01 * index) for index, flow in enumerate(flows[:9])]
+    partial = layer.detach_state(layer.settle(state, matured, differentiable=True))
+    assert sorted(flow for flow, _ in partial.pending) == flows[9:]
+    for (flow, _), (source, emitted, row) in partial.pending.items():
+        position = flows.index(flow)
+        assert source.shape == (3, keys.shape[1]) and not source.requires_grad
+        assert emitted.shape == (3,) and not emitted.requires_grad
+        assert torch.equal(source[row], keys.detach()[position])
+        assert torch.equal(emitted[row], issued[position])
+    exported = layer.export_state(partial)["pending"]
+    assert exported["flows"] == flows[9:]
+    assert torch.equal(exported["keys"], keys.detach()[9:])
+    restored = layer.restore_state(layer.export_state(partial), "p", device="cpu")
+    again = layer.export_state(restored)["pending"]
+    assert again["flows"] == flows[9:] and torch.equal(again["keys"], keys.detach()[9:])
+
+
+def test_a_session_staged_in_two_blocks_settles_like_one_emission():
+    """Una sesión que llega en dos bloques da los mismos estadísticos que emitida de una vez."""
+    layer = active_layer()
+    rows = 10
+    flows = [f"US/A{index:03d}" for index in range(rows)]
+    when = [START] * rows
+    keys = layer.keys(encoded(rows=rows), ["US"] * rows, when).detach()
+    issued = torch.linspace(-1.0, 1.0, rows, dtype=keys.dtype)
+    matured = [(flow, START, 0.01 * (index % 4) - 0.02) for index, flow in enumerate(flows)]
+    whole = layer.settle(layer.stage(layer.initial_state("p"), flows, when, keys, issued), matured)
+    # Los dos bloques llegan en orden distinto al canónico de los flujos.
+    first, second = [1, 4, 7, 8, 9], [0, 2, 3, 5, 6]
+    state = layer.initial_state("p")
+    for block in (first, second):
+        state = layer.stage(
+            state, [flows[i] for i in block], [START] * len(block), keys[block], issued[block]
+        )
+    split = layer.settle(state, list(reversed(matured)))
+    assert torch.equal(split.markets["US"].cov, whole.markets["US"].cov)
+    assert torch.equal(split.markets["US"].rhs, whole.markets["US"].rhs)
+
+
 def test_export_restore_detach_and_state_dict_contracts():
     predictor = model(cross_sectional_rank_memory=VARIANT)
     with torch.no_grad():
