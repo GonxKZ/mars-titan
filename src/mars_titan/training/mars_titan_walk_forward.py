@@ -223,6 +223,11 @@ def _parent(folder, view, seed, control=None):
         changes.get("mature_reliability", predictor.get("mature_reliability")) is None,
         "El consumidor congelado aún no recibe la fiabilidad madura",
     )
+    _require(
+        changes.get("cross_sectional_rank_memory", predictor.get("cross_sectional_rank_memory"))
+        is None,
+        "El consumidor congelado aún no recibe la memoria transversal de rango maduro",
+    )
     _verify(folder, report)
     return report, digest
 
@@ -263,6 +268,10 @@ def _frozen_parent(
     _require(
         options.get("mature_reliability") is None,
         "El consumidor congelado aún no recibe la fiabilidad madura",
+    )
+    _require(
+        options.get("cross_sectional_rank_memory") is None,
+        "El consumidor congelado aún no recibe la memoria transversal de rango maduro",
     )
     _require(
         allow_context or options.get("session_context") is None,

@@ -86,6 +86,8 @@ PREDICTOR_CHANGES = (
     "output_query",
     # Compuerta softmax enmascarada por presencia en la fusión común: presence_softmax_v1.
     "modality_gating",
+    # Memoria transversal de rango y residuo maduro (CRRM).
+    "cross_sectional_rank_memory",
 )
 # Cambios que se declaran con un nombre en lugar de un objeto.
 NAMED_CHANGES = (

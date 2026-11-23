@@ -95,6 +95,8 @@ def declared_sources(config):
         sources.append("mars_titan.models.titans.technical_branch")
     if getattr(config, "cross_asset_attention", None) is not None:
         sources.append("mars_titan.models.titans.cross_asset_attention")
+    if getattr(config, "cross_sectional_rank_memory", None) is not None:
+        sources.append("mars_titan.models.titans.cross_sectional_rank_memory")
     if getattr(config, "learning_scale", None) is not None:
         sources.append("mars_titan.models.learning_scale")
     if getattr(config, "reference_encoder", None) == "dlinear":
@@ -442,6 +444,11 @@ class FrozenFinancialConsumer:
         # Ni recibe la señal de fiabilidad madura de #791, que sus puertas necesitan.
         if predictor.reliability_gates is not None:
             raise ValueError("El consumidor congelado aún no recibe la fiabilidad madura")
+        # Ni la memoria transversal de rango maduro (CRRM), que se actualiza con etiquetas maduras.
+        if predictor.cross_sectional_rank_memory is not None:
+            raise ValueError(
+                "El consumidor congelado aún no recibe la memoria transversal de rango maduro"
+            )
         if readout is not None and (
             readout.config.hidden_size != predictor.config.hidden_size
             or readout.step_logit.device != predictor.head.weight.device

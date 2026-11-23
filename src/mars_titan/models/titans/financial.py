@@ -78,6 +78,11 @@ from .cross_asset_attention import (
     CrossAssetAttentionConfig,
     parse_cross_asset_attention,
 )
+from .cross_sectional_rank_memory import (
+    CrossSectionalRankMemory,
+    CrossSectionalRankMemoryConfig,
+    parse_cross_sectional_rank_memory,
+)
 from .differential_attention import DIFFERENTIAL_ATTENTION
 from .differential_attention import identity as differential_identity
 from .financial_inputs import (
@@ -280,6 +285,9 @@ class FinancialConfig:
     # #791: fiabilidad madura en las puertas de escritura y olvido de Titans. Sin
     # declararla, la identidad y el cálculo no cambian.
     mature_reliability: MatureReliability | None = None
+    # CRRM: memoria transversal de rango y residuo maduro (apagada por defecto). Sin
+    # declararla, la identidad y el cálculo no cambian.
+    cross_sectional_rank_memory: CrossSectionalRankMemoryConfig | None = None
     # R1, U2 y U1 de #786 sobre el núcleo: pérdida de Huber, semividas geométricas y atención
     # diferencial. Sin declararlas, la identidad y el cálculo no cambian.
     memory_huber: HuberMemory | None = None
@@ -362,6 +370,7 @@ class FinancialConfig:
         self._check_session_mixers()
         self._check_auxiliary_horizons()
         self._check_mature_reliability()
+        self._check_cross_sectional_rank_memory()
         self._check_core_variants()
         self._check_learning_scale()
         self._check_technical_branch()
@@ -849,6 +858,22 @@ class FinancialConfig:
         ):
             raise ValueError("mature_reliability necesita MatureReliability y mac_online")
 
+    def _check_cross_sectional_rank_memory(self):
+        """Memoria transversal de rango maduro y exclusiones declaradas."""
+        object.__setattr__(
+            self,
+            "cross_sectional_rank_memory",
+            parse_cross_sectional_rank_memory(self.cross_sectional_rank_memory),
+        )
+        if self.cross_sectional_rank_memory is not None:
+            if self.variant != "mac_online":
+                raise ValueError("cross_sectional_rank_memory necesita mac_online")
+            if self.auxiliary_horizons is not None:
+                raise ValueError(
+                    "Las cabezas auxiliares con memoria transversal de rango necesitan otro "
+                    "contraste"
+                )
+
     def _check_memory_projections(self):
         """Normalización residual y proyecciones de memoria."""
         if type(self.memory_residual_layer_norm) is not bool:
@@ -1073,6 +1098,8 @@ class FinancialConfig:
             result.update(auxiliary_horizons=self.auxiliary_horizons.identity())
         if self.mature_reliability is not None:
             result.update(mature_reliability=self.mature_reliability.identity())
+        if self.cross_sectional_rank_memory is not None:
+            result.update(cross_sectional_rank_memory=self.cross_sectional_rank_memory.identity())
         if self.memory_huber is not None:
             result.update(memory_huber=self.memory_huber.identity())
         if self.memory_time_scales is not None:
@@ -1164,6 +1191,8 @@ class PreparedDecisions:
     outputs: torch.Tensor | None = None
     # Solo con el control de sorpresa de #791: [flujos] pérdida asociativa sin grafo.
     surprise: torch.Tensor | None = None
+    # Solo con CRRM: claves transversales [flujos, dim] emitidas en este instante.
+    rank_memory_keys: torch.Tensor | None = None
 
 
 @dataclass(frozen=True)
@@ -1239,6 +1268,8 @@ class FinancialPredictor(nn.Module):
         # C vuelve a calcular la escritura de MAC sin la señal de #791.
         if local_control is not None and config.mature_reliability is not None:
             raise ValueError("La fiabilidad madura no se combina con el control local")
+        if local_control is not None and config.cross_sectional_rank_memory is not None:
+            raise ValueError("La memoria transversal de rango no se combina con el control local")
         # El presupuesto de C está contrastado con el núcleo sin las variantes de #786.
         if local_control is not None and (
             config.memory_huber is not None
@@ -1497,6 +1528,17 @@ class FinancialPredictor(nn.Module):
             if config.mature_reliability is not None
             else None
         )
+        # CRRM usa su propio generador derivado y empieza con salida nula.
+        self.cross_sectional_rank_memory = (
+            CrossSectionalRankMemory(
+                config.hidden_size,
+                config.cross_sectional_rank_memory,
+                seed=config.seed,
+                dtype=dtype,
+            )
+            if config.cross_sectional_rank_memory is not None
+            else None
+        )
         # F5 usa su propio generador derivado de la semilla, como PT6.
         self.auxiliary_heads = (
             AuxiliaryHeads(
@@ -1516,6 +1558,7 @@ class FinancialPredictor(nn.Module):
         return (
             self.config.session_rank_inputs is not None
             or self.cross_asset_attention is not None
+            or self.cross_sectional_rank_memory is not None
             or self.asset_groups is not None
             or self.fractal_shared_operator is not None
             or (objective is not None and objective.session_level)
@@ -2126,6 +2169,51 @@ class FinancialPredictor(nn.Module):
         if self.session_context is None:
             raise ValueError("El predictor no declara contexto de sesión")
 
+    def _require_rank_memory(self):
+        if self.cross_sectional_rank_memory is None:
+            raise ValueError("El predictor no declara memoria transversal de rango")
+
+    def initial_rank_memory(self):
+        """Estado inicial vacío de CRRM al empezar un recorrido."""
+        self._require_rank_memory()
+        return self.cross_sectional_rank_memory.initial_state(self._parameter_id)
+
+    def stage_rank_memory(
+        self, state, flow_ids, prediction_at, keys, issued_predictions, *, differentiable=False
+    ):
+        """Registrar claves emitidas y predicciones pendientes de maduración."""
+        self._require_rank_memory()
+        self.cross_sectional_rank_memory.validate_state(state, self._parameter_id)
+        return self.cross_sectional_rank_memory.stage(
+            state, flow_ids, prediction_at, keys, issued_predictions, differentiable=differentiable
+        )
+
+    def settle_rank_memory(self, state, matured, *, differentiable=False, train=True):
+        """Actualizar CRRM con etiquetas ya maduras en orden canónico."""
+        self._require_rank_memory()
+        self.cross_sectional_rank_memory.validate_state(state, self._parameter_id)
+        return self.cross_sectional_rank_memory.settle(
+            state, matured, differentiable=differentiable, train=train
+        )
+
+    def detach_rank_memory(self, state, parameter_id=None):
+        """Cortar el grafo de CRRM en la barrera de truncamiento y actualizar huella."""
+        self._require_rank_memory()
+        return self.cross_sectional_rank_memory.detach_state(
+            state, parameter_id or self._parameter_id
+        )
+
+    def export_rank_memory(self, state):
+        self._require_rank_memory()
+        self.cross_sectional_rank_memory.validate_state(state, self._parameter_id)
+        return self.cross_sectional_rank_memory.export_state(state)
+
+    def restore_rank_memory(self, payload):
+        self._require_rank_memory()
+        return self.cross_sectional_rank_memory.restore_state(
+            payload, self._parameter_id, device=self.head.weight.device
+        )
+
     def _program_fusion(self, price, batch, context, selection):
         """Consultar el prefijo confirmado y preparar una sola escritura del token final."""
         execution = None
@@ -2299,6 +2387,7 @@ class FinancialPredictor(nn.Module):
         context_selection=None,
         session_complete=False,
         reliability=None,
+        rank_memory=None,
     ):
         """Predecir un bloque desde el estado de sus flujos y proponer el estado siguiente.
 
@@ -2319,6 +2408,7 @@ class FinancialPredictor(nn.Module):
                 context_selection=context_selection,
                 session_complete=session_complete,
                 reliability=reliability,
+                rank_memory=rank_memory,
             )
 
     def _prepare(
@@ -2333,6 +2423,7 @@ class FinancialPredictor(nn.Module):
         context_selection=None,
         session_complete=False,
         reliability=None,
+        rank_memory=None,
     ):
         check_differentiable(differentiable)
         if torch.is_inference_mode_enabled():
@@ -2449,6 +2540,16 @@ class FinancialPredictor(nn.Module):
             raise ValueError("El predictor declara la fiabilidad madura y necesita su señal")
         else:
             self.reliability_gates.validate(reliability, len(batch.flow_ids))
+        if self.cross_sectional_rank_memory is None:
+            if rank_memory is not None:
+                raise ValueError("El predictor no declara la memoria transversal de rango")
+        elif rank_memory is None:
+            raise ValueError(
+                "El predictor declara la memoria transversal de rango y necesita su estado de "
+                "memoria transversal"
+            )
+        else:
+            self.cross_sectional_rank_memory.validate_state(rank_memory, self._parameter_id)
         if (self.session_context is None) != (context is None):
             raise ValueError("PT4 recibe su contexto de sesión y el núcleo no admite ninguno")
         if context is not None:
@@ -2577,6 +2678,16 @@ class FinancialPredictor(nn.Module):
             if mixer is not None and mixer.config.position == "after_technical":
                 # La mezcla lee la representación con su residuo técnico, la que ve la cabeza.
                 encoded = mixer(encoded, markets, batch.prediction_at)
+            rank_memory_keys = None
+            if self.cross_sectional_rank_memory is not None:
+                # Claves transversales centradas sobre la representación previa a CRRM y lectura
+                # asociativa exclusivamente desde las sesiones ya maduras de `rank_memory`.
+                rank_memory_keys = self.cross_sectional_rank_memory.keys(
+                    encoded, markets, batch.prediction_at
+                )
+                encoded = encoded + self.cross_sectional_rank_memory.read(
+                    rank_memory_keys, markets, rank_memory
+                )
             if self.local_control is not None:
                 local_result = self.local_control(
                     self.mac,
@@ -2623,6 +2734,7 @@ class FinancialPredictor(nn.Module):
             next_context,
             outputs,
             surprise=None if sink is None else sink[0],
+            rank_memory_keys=rank_memory_keys,
             **({"regional_trace": regional_trace} if regional_trace is not None else {}),
         )
 

@@ -100,6 +100,7 @@ class FinancialDustAdapter:
             "session_ic_objective",
             "opponent_heads",
             "mature_reliability",
+            "cross_sectional_rank_memory",
             "memory_huber",
             "memory_time_scales",
             "differential_attention",
