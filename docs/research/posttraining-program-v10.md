@@ -1081,6 +1081,55 @@ existente, con un placebo de igual capacidad y con mutantes.
   - Once mutantes, todos muertos.
 - **Commits:** d630e1d6 (código y declaraciones).
 
+**Idea 7, ACPTPA (corregida donde no funcionaba tal cual).** El agente con pesos por activo y
+herramienta: en cada sesión, cada activo mezcla las herramientas con los pesos del agente
+multiplicados por la precisión que cada herramienta declara para ese activo.
+- **Intervalo de cada herramienta, al 80 %.** Sus cuantiles 0,1 y 0,9. El árbol no tiene cabeza
+  de cuantiles y usa el de un predictor puntual, ŷ ± q.
+- **Umbral conforme PID.** Uno por herramienta y decil de volatilidad de la sesión. Se actualiza
+  al madurar cada sesión con la fracción de sus filas fuera del intervalo.
+  - Corrección: el texto suma los tres términos al umbral anterior, lo que integra dos veces el
+    error. Se usa la forma posicional del artículo que cita (Angelopoulos, Candès y Tibshirani,
+    2023): q = q₀ + B·(η_P·e + η_I·Σe + η_D·Δe), con e = err − α, q₀ por conformidad partida en
+    la primera sesión madura y B la media de |puntuación| en ella. Ganancias 1, 0,1 y 0,1.
+- **Precisión.** La anchura calibrada w = (q90 − q10) + 2q da ω = (w⁺ + ε·w̄)^−γ, con w̄ la media
+  de la fila y ε = 0,05. El activo i mezcla con p_k·ω_ik normalizados, con p los pesos del agente.
+- **γ, por teoría de decisión conforme** (Lekeufack y otros, 2024) frente a la decisión segura
+  γ = 0, que es el agente. Al madurar la sesión s, γ ← clip(γ + η_γ·(L_s(0) − L_s(γ_s)), 0, 8),
+  con L = (1 − IC)/2 en el tercio líquido.
+  - Consecuencia del diseño, no un fallo: en γ = 0 la emisión es la segura, la diferencia es
+    cero y γ ya no se mueve. Por eso el γ inicial (0,5, 1 o 2) y el paso (5, 20 u 80) se eligen
+    en calibración, por el IC medio; si empatan, el primero.
+- **Placebo de igual capacidad.** El mismo cálculo y la misma elección, pero cada sesión reparte
+  sus vectores de precisión entre sus activos con una permutación sin puntos fijos, fijada por
+  semilla, mercado e instante. Conserva la distribución de pesos de la sesión y rompe su
+  relación con cada activo.
+- **agent_abstaining.** El agente con la abstención del agente cognitivo (ventana de 63 sesiones
+  maduras, margen 0): la sesión vale IC 0 si ninguna herramienta tiene IC medio maduro por encima
+  del margen. Es el término de comparación que pide su autor.
+- **Medida.** Las herramientas de hoy (`posttraining-tool-arbiters-acptpa.json`, 1cea160d…), con
+  el marco común. Además, en el tercio más líquido de cada sesión, el IC por sesión y la
+  fiabilidad (la fracción de sesiones con IC > 0) de cada variante.
+- **Regla.**
+  - ACPTPA entra si mejora a S2 y a su placebo en lo operable, las dos veces con t ≥ 2.
+  - La etiqueta y el tercio líquido se informan.
+- **Refutación de su autor.** Queda refutada si no mejora la fiabilidad del tercio líquido al
+  agente con abstención en +0,02 ni el IC operable al agente sin ella en +0,002, con t ≥ 2.
+  Basta una de las dos para que su predicción se cumpla.
+- **Pruebas y mutantes.**
+  - 61 pruebas en el fichero común, entre ellas una cuenta independiente de los umbrales PID, la
+    causalidad de los umbrales y de γ (ninguna puntuación ni etiqueta antes de madurar), la
+    elección solo en calibración, que la mezcla de cada fila es convexa y la regla de abstención
+    en el empate con el margen.
+  - Dieciocho mutantes del coordinador (`mut_acptpa.py`), todos muertos. Dos sobrevivían a las
+    pruebas iniciales (la mezcla sin normalizar y el empate con el margen) y motivaron las dos
+    últimas pruebas.
+- **Quién.** El agente la implementó y se cortó por el límite semanal de su modelo con una
+  prueba fallando: la de causalidad de γ usaba un flujo en el que γ caía a 0, donde ya no se
+  mueve, y no podía distinguir una fuga. El coordinador cambió el flujo de la prueba (la
+  herramienta informativa es la estrecha y el paso es 1, así γ se mueve sin tocar sus topes),
+  terminó la verificación y lanza la medida.
+
 ## 6. Etapas con GPU (fase 4)
 
 ### 6.1 Qué queda preparado

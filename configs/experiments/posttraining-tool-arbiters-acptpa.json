@@ -1,0 +1,125 @@
+{
+  "schema_version": 1,
+  "kind": "posttraining_tool_arbiters_v1",
+  "final_test_access": false,
+  "description": "ACPTPA (idea 7 de Gemini) frente a S2, al agente (AdaNormalHedge.TV, la ponderación constante por sesión), al agente con la abstención del agente cognitivo (ventana y margen de posttraining-agent-v8-2013.json), a la media uniforme y a su placebo de igual capacidad (los vectores de precisión repartidos entre otros activos de la sesión), programa §5.15, declarado antes de medir. Herramientas de hoy; el árbol, sin cabeza de cuantiles, con el intervalo de un predictor puntual. Umbral conforme PID por herramienta y decil de volatilidad en la forma posicional (corrección declarada), γ por teoría de decisión conforme frente a γ = 0 con el riesgo (1 − IC)/2 del tercio líquido; γ inicial y paso elegidos en calibración. Regla: entra si mejora a S2 y a su placebo con t de Newey-West ≥ 2 en lo operable, pareado por sesión en evaluación sobre la media de semillas. Su autor la da por refutada si no mejora la fiabilidad del tercio líquido en +0,020 frente al agente con abstención ni el IC operable en +0,0020 frente a la ponderación constante, cada una con t ≥ 2. 2013 decide; 2024 sigue sellado.",
+  "seeds": [
+    42,
+    43,
+    44
+  ],
+  "tree_seed": 42,
+  "min_assets": 30,
+  "s2": {
+    "parent": "titans_mac_nogain",
+    "tree": "lightgbm_technical",
+    "organ": "titans_mac_nogain__combined"
+  },
+  "tools": [
+    {
+      "name": "titans_mac_nogain",
+      "source": "state"
+    },
+    {
+      "name": "titans_mac",
+      "source": "state"
+    },
+    {
+      "name": "mars_titan_m3",
+      "source": "state"
+    },
+    {
+      "name": "mars_titan_cognitive",
+      "source": "state"
+    },
+    {
+      "name": "lightgbm_technical",
+      "source": "reference"
+    },
+    {
+      "name": "titans_mac_nogain__combined",
+      "source": "organs"
+    }
+  ],
+  "splits": [
+    "calibration",
+    "evaluation"
+  ],
+  "selection_split": "calibration",
+  "align": "strict",
+  "modes": [
+    "label",
+    "operable"
+  ],
+  "operable_scales": [
+    0.001,
+    0.002,
+    0.005,
+    0.01,
+    0.02,
+    0.03,
+    0.05,
+    0.07,
+    0.1,
+    0.15,
+    0.2,
+    0.3,
+    0.5,
+    0.7,
+    1.0,
+    1.5,
+    2.0,
+    3.0,
+    5.0,
+    10.0,
+    30.0,
+    100.0
+  ],
+  "aggregator_placebo_seed": 20261122,
+  "arbiters": {
+    "acptpa": {
+      "alpha": 0.2,
+      "quantiles": [
+        "quantile_0100",
+        "quantile_0900"
+      ],
+      "point_tools": [
+        "lightgbm_technical"
+      ],
+      "volatility_groups": 10,
+      "liquidity_groups": 3,
+      "pid_gains": [
+        1.0,
+        0.1,
+        0.1
+      ],
+      "epsilon": 0.05,
+      "gamma_starts": [
+        0.5,
+        1.0,
+        2.0
+      ],
+      "gamma_steps": [
+        5.0,
+        20.0,
+        80.0
+      ],
+      "gamma_max": 8.0,
+      "placebo_seed": 20261124,
+      "agent_abstention": {
+        "window": 63,
+        "margin": 0.0
+      }
+    }
+  },
+  "rule": {
+    "primary_mode": "operable",
+    "min_t": 2.0,
+    "author": {
+      "mode": "operable",
+      "liquid_reliability_vs_agent_abstaining": 0.02,
+      "ic_vs_agent": 0.002,
+      "min_t": 2.0
+    }
+  }
+}
