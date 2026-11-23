@@ -21,7 +21,11 @@ from mars_titan.memory.episodic_codec import FrozenEpisodeCodec
 from mars_titan.memory.native_backend import load_native
 from mars_titan.memory.write_policy import CompositeScoreConfig
 from mars_titan.memory.write_scores import fit_write_scalers
-from mars_titan.models.titans.episodic_readout import EpisodicReadout, EpisodicReadoutConfig
+from mars_titan.models.titans.episodic_readout import (
+    MAX_NEIGHBORS,
+    EpisodicReadout,
+    EpisodicReadoutConfig,
+)
 from mars_titan.models.titans.financial import FinancialConfig, FinancialPredictor
 from mars_titan.models.titans.local_control import MACProjectionConfig
 from mars_titan.training import mars_titan_run as mt
@@ -286,7 +290,7 @@ def test_recipe_declarations_that_break_the_contract_are_rejected(tmp_path, chan
     "options",
     [
         dict(update_instants=0),
-        dict(neighbors=9),
+        dict(neighbors=MAX_NEIGHBORS + 1),
         dict(bank_capacity=7),
         dict(learning_rate=0.0),
         dict(temperature=0.0),

@@ -84,6 +84,8 @@ HIDDEN_GROUPS_ONLY = "hidden_groups_only_v1"
 KINDS = (HOLOGRAPHIC_NETWORK, CATALOG_MEMBERSHIP_ONLY, HIDDEN_GROUPS_ONLY)
 AREA_COUNTS = (5, 19, 38)
 TOPOLOGIES = ("ring", "small_world", "complete")
+INITIALIZATIONS = ("zero_chain", "single_zero_v1")
+_SINGLE_ZERO_SCALE = 0.01
 # Orden del informe de la segunda ola. Son las doce categorías del catálogo macro.
 MACRO_FAMILIES = (
     "inflation",
@@ -134,6 +136,7 @@ class HolographicNetworkConfig:
     local_gain: float = 0.25
     summary_gain: float = 0.25
     levels: int = 1
+    initialization: str = "zero_chain"
 
     def __post_init__(self):
         if type(self.kind) is not str or self.kind not in KINDS:
@@ -142,6 +145,8 @@ class HolographicNetworkConfig:
             raise ValueError(f"La red holográfica admite {AREA_COUNTS} áreas")
         if type(self.topology) is not str or self.topology not in TOPOLOGIES:
             raise ValueError(f"La topología de las áreas debe ser una de {TOPOLOGIES}")
+        if type(self.initialization) is not str or self.initialization not in INITIALIZATIONS:
+            raise ValueError(f"La inicialización de la red holográfica admite {INITIALIZATIONS}")
         if self.kind == HIDDEN_GROUPS_ONLY:
             bounded_integer(self.hidden_groups, "ranuras ocultas", 1, 46)
             if self.rank is not None or self.leakage is not None or self.topology != "complete":
@@ -179,18 +184,29 @@ class HolographicNetworkConfig:
         return self.catalog_areas + self.hidden_groups
 
     def identity(self):
+        fields = asdict(self)
+        initialization = fields.pop("initialization")
         membership = "none"
         if self.kind != HIDDEN_GROUPS_ONLY:
             membership = "softmax_over_areas_of_catalog_log_weights"
             if self.kind == HOLOGRAPHIC_NETWORK:
-                membership += "_plus_learned_delta_from_zero"
-        return dict(
+                membership += (
+                    "_plus_learned_delta_from_zero"
+                    if initialization == "zero_chain"
+                    else "_plus_learned_delta_small_init"
+                )
+        area_weights = (
+            "shared_block_projection_plus_low_rank_adapter_up_from_zero"
+            if initialization == "zero_chain"
+            else "shared_block_projection_plus_low_rank_adapter_small_init"
+        )
+        result = dict(
             schema_version=1,
-            **asdict(self),
+            **fields,
             seed_family=_SEED_FAMILY,
             family_blocks="modality_encoder_applied_to_the_family_columns_only",
             membership=membership,
-            area_weights="shared_block_projection_plus_low_rank_adapter_up_from_zero",
+            area_weights=area_weights,
             area_embedding="learned_per_area_without_asset_identity",
             hidden_groups_rule="soft_moe_dispatch_over_blocks_and_combine_over_slots",
             small_world="ring_plus_chords_at_a_quarter_of_the_areas_from_8_areas",
@@ -204,6 +220,9 @@ class HolographicNetworkConfig:
             rows="each_row_alone",
             parameter_updates="none_in_forward",
         )
+        if initialization != "zero_chain":
+            result["initialization"] = initialization
+        return result
 
 
 def parse_holographic_network(raw):
@@ -213,7 +232,9 @@ def parse_holographic_network(raw):
     if type(raw) is HolographicNetworkConfig:
         raw.__post_init__()
         return raw
-    if isinstance(raw, dict) and set(raw) == set(HolographicNetworkConfig.__dataclass_fields__):
+    fields = set(HolographicNetworkConfig.__dataclass_fields__)
+    required = fields - {"initialization"}
+    if isinstance(raw, dict) and required <= set(raw) <= fields:
         return HolographicNetworkConfig(**raw)
     raise ValueError("holographic_network debe declarar toda su configuración o ser None")
 
@@ -394,6 +415,15 @@ class HolographicNetwork(nn.Module):
                 self.area_norm = nn.LayerNorm(hidden_size)
                 if config.kind == HOLOGRAPHIC_NETWORK:
                     self.membership_delta = nn.Parameter(torch.zeros(areas, blocks))
+                if config.initialization == "single_zero_v1":
+                    # Los sorteos adicionales van después de los compartidos para no desplazarlos.
+                    up_scale = _SINGLE_ZERO_SCALE / math.sqrt(config.rank)
+                    with torch.no_grad():
+                        self.area_up.copy_(torch.randn(areas, config.rank, hidden_size) * up_scale)
+                        if config.kind == HOLOGRAPHIC_NETWORK:
+                            self.membership_delta.copy_(
+                                torch.randn(areas, blocks) * _SINGLE_ZERO_SCALE
+                            )
         nn.init.zeros_(self.readout.weight)
         # La estructura deriva de la configuración y de la disposición, que fija la identidad,
         # así que sus buffers no viajan en el checkpoint.

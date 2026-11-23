@@ -34,6 +34,11 @@ REFINEMENT_INITIALIZATIONS = ("pytorch_default", "zero_refinement")
 # R3 de #786: `familiarity` es la puerta que depende de la familiaridad de cada fila y
 # `constant` su control, con la misma puerta sin ese término.
 FAMILIARITY_GATES = ("familiarity", "constant")
+MAX_NEIGHBORS = 256
+LEARNED_TEMPERATURE_MIN = 0.02
+LEARNED_TEMPERATURE_MAX = 1.0
+LABEL_PATHS = ("concatenated", "direct_v1")
+MAX_LABEL_SCALE = 1000.0
 
 
 @dataclass(frozen=True)
@@ -51,11 +56,14 @@ class EpisodicReadoutConfig:
     refinement_initialization: str = "pytorch_default"
     evidence_bridge: "EvidenceBridgeConfig | None" = None
     familiarity_gate: str | None = None
+    learned_temperature: bool = False
+    label_path: str = "concatenated"
+    label_scale: float = 1.0
 
     def __post_init__(self):
         _digest_id(self.codec_id, "El codec")
         bounded_integer(self.hidden_size, "dimensión", 1, 128)
-        bounded_integer(self.neighbors, "vecinos", 1, 8)
+        bounded_integer(self.neighbors, "vecinos", 1, MAX_NEIGHBORS)
         bounded_integer(self.max_batch, "lote", 1, MAX_BLOCK_ROWS)
         bounded_integer(self.seed, "semilla", 0, 2**32 - 1)
         bounded_integer(self.max_working_bytes, "presupuesto de lectura", 1024, MAX_STATE_BYTES)
@@ -77,6 +85,34 @@ class EpisodicReadoutConfig:
         ):
             raise ValueError("La temperatura debe ser finita y pertenecer a [1e-4, 100]")
         object.__setattr__(self, "temperature", float(self.temperature))
+        if type(self.learned_temperature) is not bool:
+            raise ValueError("learned_temperature debe ser booleano")
+        if self.learned_temperature and (
+            self.mode != "bank"
+            or self.evidence_bridge is not None
+            or not LEARNED_TEMPERATURE_MIN < self.temperature < LEARNED_TEMPERATURE_MAX
+        ):
+            raise ValueError(
+                "learned_temperature requiere modo bank, sin puente regional y temperatura "
+                "inicial estrictamente en (0.02, 1.0)"
+            )
+        if type(self.label_path) is not str or self.label_path not in LABEL_PATHS:
+            raise ValueError(f"label_path debe ser uno de {LABEL_PATHS}")
+        if (
+            type(self.label_scale) not in (int, float)
+            or not math.isfinite(self.label_scale)
+            or not 0 < self.label_scale <= MAX_LABEL_SCALE
+        ):
+            raise ValueError(f"label_scale debe ser finito y pertenecer a (0, {MAX_LABEL_SCALE}]")
+        object.__setattr__(self, "label_scale", float(self.label_scale))
+        if self.label_path == "direct_v1" and (
+            self.mode != "bank" or self.evidence_bridge is not None
+        ):
+            raise ValueError("label_path='direct_v1' requiere modo bank y sin puente regional")
+        if self.label_path == "concatenated" and self.label_scale != 1.0:
+            raise ValueError(
+                "label_scale distinto de 1.0 solo se declara con label_path='direct_v1'"
+            )
         # Sin banco no hay episodios que pesar, y las lecturas regionales no tienen una sola
         # familiaridad por fila.
         if self.familiarity_gate is not None and (
@@ -113,6 +149,9 @@ class EpisodicReadoutConfig:
         episodes = fields.pop("episode_selection")
         initialization = fields.pop("refinement_initialization")
         gate = fields.pop("familiarity_gate")
+        learned_temperature = fields.pop("learned_temperature")
+        label_path = fields.pop("label_path")
+        label_scale = fields.pop("label_scale")
         fields.pop("evidence_bridge")
         result = dict(
             **fields,
@@ -145,6 +184,17 @@ class EpisodicReadoutConfig:
                 gated="tanh_change_of_each_refinement_before_its_step",
                 without_episodes="reference_step",
             )
+        if learned_temperature:
+            result.update(
+                learned_temperature=True,
+                temperature_bounds=[LEARNED_TEMPERATURE_MIN, LEARNED_TEMPERATURE_MAX],
+            )
+        if label_path != "concatenated":
+            result.update(
+                label_path=label_path,
+                label_scale=label_scale,
+                direct_label="attention_weighted_mature_label_times_scale_via_zero_init_gain",
+            )
         if self.evidence_bridge is not None:
             result.update(
                 schema_version=2,
@@ -167,6 +217,8 @@ class EpisodeRead:
     presence: torch.Tensor
     # Solo con la puerta de R3: [filas, 1], el coseno medio de la lectura sin gradiente.
     familiarity: torch.Tensor | None = None
+    # Solo con label_path="direct_v1": [filas, 1], media ponderada de etiquetas maduras reescalada.
+    mature_label: torch.Tensor | None = None
 
 
 @dataclass(frozen=True)
@@ -174,6 +226,7 @@ class _SelectedEpisodes:
     keys: torch.Tensor
     projected: torch.Tensor
     ids: torch.Tensor
+    labels: torch.Tensor | None = None
 
 
 @dataclass(frozen=True)
@@ -224,6 +277,14 @@ class EpisodicReadout(nn.Module):
                 self.familiarity_bias = nn.Parameter(torch.zeros((), dtype=dtype))
                 if config.familiarity_gate == "familiarity":
                     self.familiarity_weight = nn.Parameter(torch.zeros((), dtype=dtype))
+            if config.learned_temperature:
+                fraction = (config.temperature - LEARNED_TEMPERATURE_MIN) / (
+                    LEARNED_TEMPERATURE_MAX - LEARNED_TEMPERATURE_MIN
+                )
+                logit = math.log(fraction) - math.log1p(-fraction)
+                self.temperature_logit = nn.Parameter(torch.tensor(logit, dtype=dtype))
+            if config.label_path == "direct_v1":
+                self.label_gain = nn.Parameter(torch.zeros((), dtype=dtype))
         self.evidence_bridge = None
         if config.evidence_bridge is not None:
             from .evidence_bridge import SharedEvidenceBridge
@@ -233,6 +294,44 @@ class EpisodicReadout(nn.Module):
             self.evidence_bridge.value.load_state_dict(self.value_projection.state_dict())
             del self.query_projection, self.value_projection
         self.to(device=device, dtype=dtype)
+
+    def effective_temperature(self):
+        """Temperatura activa de la atención: fija o aprendida acotada en [0.02, 1.0]."""
+        if not self.config.learned_temperature:
+            return self.config.temperature
+        check_finite(self.temperature_logit, "La temperatura aprendida")
+        span = LEARNED_TEMPERATURE_MAX - LEARNED_TEMPERATURE_MIN
+        return LEARNED_TEMPERATURE_MIN + span * self.temperature_logit.sigmoid()
+
+    def apply_direct_label(self, predictions, quantiles, read):
+        """Sumar la vía directa de etiquetas maduras a la predicción y cuantiles."""
+        if self.config.label_path != "direct_v1":
+            return predictions, quantiles
+        check_finite(self.label_gain, "La ganancia directa de etiquetas")
+        mature = getattr(read, "mature_label", None)
+        if (
+            not isinstance(mature, torch.Tensor)
+            or mature.ndim != 2
+            or mature.shape != (len(predictions), 1)
+            or mature.dtype != predictions.dtype
+            or mature.device != predictions.device
+        ):
+            raise ValueError("La vía directa necesita la etiqueta madura de la lectura")
+        check_finite(mature, "La etiqueta madura de la lectura")
+        present = read.presence.squeeze(-1)
+        shift = torch.where(
+            present,
+            (self.label_gain * mature).squeeze(-1),
+            torch.zeros_like(predictions),
+        )
+        check_finite(shift, "La corrección directa de etiquetas")
+        if quantiles is not None:
+            quantiles = quantiles + shift.unsqueeze(-1)
+            check_finite(quantiles, "Los cuantiles refinados")
+            return median(quantiles), quantiles
+        predictions = predictions + shift
+        check_finite(predictions, "La predicción refinada")
+        return predictions, None
 
     def get_extra_state(self):
         return dict(configuration=self.config.identity(), dtype=str(self.step_logit.dtype))
@@ -295,6 +394,9 @@ class EpisodicReadout(nn.Module):
         if self.config.familiarity_gate is not None:
             # Cosenos, su producto por los pesos, familiaridad, puerta y cambio escalado.
             per_step += batch * (2 * neighbors + width + 4) * size
+        if self.config.label_path == "direct_v1":
+            # Etiquetas maduras seleccionadas, media ponderada reescalada y desplazamiento.
+            per_step += batch * (neighbors + 2) * size
         total = 65536 + selection + per_step * refinements * (4 if differentiable else 1)
         if self.evidence_bridge is not None:
             total += refinements * self.evidence_bridge.estimated_bytes(
@@ -403,6 +505,8 @@ class EpisodicReadout(nn.Module):
             return regional_read(self, state, snapshot, context_id, cutoff, positions)
         count = 0 if snapshot is None else min(snapshot.count, self.config.neighbors)
         gated = self.config.familiarity_gate == "familiarity"
+        direct = self.config.label_path == "direct_v1"
+        temperature = self.effective_temperature()
         if count == 0:
             return (
                 EpisodeRead(
@@ -412,6 +516,7 @@ class EpisodicReadout(nn.Module):
                     torch.zeros((len(state), 1), dtype=torch.bool, device=state.device),
                     # Sin episodios la puerta no actúa y la familiaridad queda en cero.
                     state.new_zeros((len(state), 1)) if gated else None,
+                    state.new_zeros((len(state), 1)) if direct else None,
                 ),
                 None,
                 None,
@@ -421,10 +526,16 @@ class EpisodicReadout(nn.Module):
         query = _normalize(raw)
         if cached is not None:
             similarity = (cached.keys * query.unsqueeze(1)).sum(-1)
-            logits = similarity / self.config.temperature
+            logits = similarity / temperature
             weights = logits.softmax(-1)
             read = (cached.projected * weights.unsqueeze(-1)).sum(1)
             check_finite(read, "La lectura episódica")
+            mature_label = None
+            if direct:
+                mature_label = (weights * cached.labels).sum(-1, keepdim=True) * (
+                    self.config.label_scale
+                )
+                check_finite(mature_label, "La etiqueta madura de la lectura")
             return (
                 EpisodeRead(
                     read,
@@ -432,6 +543,7 @@ class EpisodicReadout(nn.Module):
                     cached.ids,
                     torch.ones((len(state), 1), dtype=torch.bool, device=state.device),
                     _familiarity(similarity, weights) if gated else None,
+                    mature_label,
                 ),
                 None,
                 cached,
@@ -460,12 +572,13 @@ class EpisodicReadout(nn.Module):
             keys.index_select(0, flat).reshape(len(state), count, 64).to(dtype=state.dtype)
         )
         similarity = (selected_keys * query.unsqueeze(1)).sum(-1)
-        logits = similarity / self.config.temperature
+        logits = similarity / temperature
         weights = logits.softmax(-1)
+        raw_labels = labels.index_select(0, flat).to(dtype=state.dtype)
         selected_values = torch.cat(
             (
                 values.index_select(0, flat),
-                labels.index_select(0, flat).to(dtype=state.dtype).unsqueeze(-1),
+                raw_labels.unsqueeze(-1),
             ),
             dim=-1,
         )
@@ -474,6 +587,13 @@ class EpisodicReadout(nn.Module):
         check_finite(projected, "Los valores proyectados")
         read = (projected * weights.unsqueeze(-1)).sum(1)
         check_finite(read, "La lectura episódica")
+        selected_labels = mature_label = None
+        if direct:
+            selected_labels = raw_labels.reshape(len(state), count)
+            mature_label = (weights * selected_labels).sum(-1, keepdim=True) * (
+                self.config.label_scale
+            )
+            check_finite(mature_label, "La etiqueta madura de la lectura")
         selected_ids = ids.index_select(0, flat).reshape(len(state), count)
         return (
             EpisodeRead(
@@ -482,9 +602,10 @@ class EpisodicReadout(nn.Module):
                 selected_ids,
                 torch.ones((len(state), 1), dtype=torch.bool, device=state.device),
                 _familiarity(similarity, weights) if gated else None,
+                mature_label,
             ),
             indices,
-            _SelectedEpisodes(selected_keys, projected, selected_ids),
+            _SelectedEpisodes(selected_keys, projected, selected_ids, selected_labels),
         )
 
     def _validate_read(self, state, snapshot, context_id, cutoff, *, refinements=None):
@@ -683,6 +804,10 @@ def _apply_episodic_readout(
     )
     with torch.set_grad_enabled(differentiable):
         predictions, quantiles = head_predictions(head, result.state)
+        if extension.config.label_path == "direct_v1":
+            predictions, quantiles = extension.apply_direct_label(
+                predictions, quantiles, result.reads[-1]
+            )
     return EpisodicPrediction(predictions, result, quantiles)
 
 
