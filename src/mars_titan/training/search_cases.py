@@ -90,6 +90,10 @@ PREDICTOR_CHANGES = (
     "cross_sectional_rank_memory",
     # Interferómetro holográfico de sesión en fase dual (WP11).
     "session_hologram",
+    # --- session_resonator ---
+    # Resonador holográfico de descomposición latente transversal (CSRF, WP13-2).
+    "session_resonator",
+    # --- fin session_resonator ---
 )
 # Cambios que se declaran con un nombre en lugar de un objeto.
 NAMED_CHANGES = (

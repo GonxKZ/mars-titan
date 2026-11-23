@@ -106,6 +106,9 @@ class FinancialDustAdapter:
             "memory_time_scales",
             "differential_attention",
             "memory_value_normalization",
+            # --- session_resonator ---
+            "session_resonator",
+            # --- fin session_resonator ---
         )
         if (
             config.variant != "transformer_direct"
@@ -135,6 +138,9 @@ class FinancialDustAdapter:
                     "session_hologram",
                     "output_objective",
                     "auxiliary_heads",
+                    # --- session_resonator ---
+                    "session_resonator",
+                    # --- fin session_resonator ---
                 )
             )
             or type(predictor.price_encoder) is not CompactPriceTransformer
