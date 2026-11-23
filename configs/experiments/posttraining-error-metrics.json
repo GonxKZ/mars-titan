@@ -2,7 +2,7 @@
   "schema_version": 1,
   "kind": "posttraining_error_metrics_v1",
   "final_test_access": false,
-  "description": "F7, las métricas de error de las emisiones y su calibración. Encargo del dueño por el coordinador (23 de noviembre de 2026): que todas las métricas de error que se calculan siempre sean las menores. Se miden con forecast_scores.score_sessions (cada sesión con el mismo peso) en evaluación: MAE, RMSE, pinball de cada cuantil y su media, error de cobertura de los intervalos del 80 y del 95 % y ECE de la probabilidad de subida implícita en los cuantiles. Predictores: el padre de S2, la media de sus tres semillas, el núcleo de la criba como referencia, S1 y S2, en la etiqueta y en lo operable, con los controles cero (cuantiles de climatología) y, en lo operable, alfa solo. La calibración se ajusta en calibración con etiquetas maduras y no toca el orden de la sesión: el punto pasa a λ·s con el factor LAD del repositorio, y los cuantiles se centran en λ·s con las anchuras de la cabeza por un factor por nivel que minimiza la pinball. Regla: una versión calibrada entra si en evaluación no empeora ninguna métrica de la regla frente a la sin calibrar; se entrega la más completa que pase, elegida con 2013 y confirmada en los orígenes limpios. Con un IC de Pearson de 0,14 el margen sobre predecir cero es del orden del 1 %, y el informe lo dice así.",
+  "description": "F7, las métricas de error de las emisiones y su calibración. Encargo del dueño por el coordinador (23 de noviembre de 2026): que todas las métricas de error que se calculan siempre sean las menores. Se miden con forecast_scores.score_sessions (cada sesión con el mismo peso) en evaluación: MAE, RMSE, pinball de cada cuantil y su media, error de cobertura de los intervalos del 80 y del 95 % y ECE de la probabilidad de subida implícita en los cuantiles. Predictores: el padre de S2, la media de sus tres semillas, S1 y S2 y, como referencias, el núcleo de la criba y el modelo entrenado solo con pinball (noic), en la etiqueta y en lo operable, con los controles cero (cuantiles de climatología) y, en lo operable, alfa solo. La calibración se ajusta en calibración con etiquetas maduras y no toca el orden de la sesión: el punto pasa a λ·s con el factor LAD del repositorio, y los cuantiles se centran en λ·s con las anchuras de la cabeza por un factor por nivel que minimiza la pinball. Regla: una versión calibrada entra si en evaluación no empeora ninguna métrica de la regla frente a la sin calibrar; se entrega la más completa que pase, elegida con 2013 y confirmada en los orígenes limpios. El noic da el mejor nivel con estos datos: si la versión entregada del modelo de orden lo iguala sin perder IC, es la entrega. Con un IC de Pearson de 0,14 el margen sobre predecir cero es del orden del 1 %, y el informe lo dice así.",
   "seed": 42,
   "min_assets": 30,
   "parent": "titans_mac_nogain",
@@ -17,7 +17,8 @@
   "predictors": {
     "parent": {"model": "titans_mac_nogain", "seeds": [42], "quantiles": "own_head"},
     "seeds": {"model": "titans_mac_nogain", "seeds": [42, 43, 44], "combination": "seed_mean_v1", "quantiles": "vincent_mean_of_the_heads"},
-    "core": {"model": "titans_mac", "seeds": [42], "quantiles": "own_head", "role": "reference_of_the_screening_report"},
+    "core": {"model": "titans_mac", "seeds": [42], "quantiles": "own_head", "role": "reference_of_the_screening_report", "optional": true},
+    "noic": {"model": "titans_mac_noic", "seeds": [42], "quantiles": "own_head", "role": "reference_of_the_best_level_trained_only_with_pinball", "optional": true},
     "s1": {"game": "rank_average", "members": ["parent", "tree"], "quantiles": "none_dimensionless_session_score"},
     "s2": {"game": "ridge_cov_active", "members": ["parent", "tree", "signal"], "quantiles": "none_dimensionless_session_score"}
   },
@@ -54,7 +55,8 @@
     "quantiles": "centre_at_the_calibrated_point_and_head_widths_times_a_pinball_optimal_scale_per_level",
     "level_scale": "exact_minimiser_weighted_quantile_of_residual_over_width_with_weights_session_times_abs_width_at_least_zero",
     "crossing": "rows_sorted_monotone_rearrangement",
-    "widths": {"parent": "own_head", "seeds": "own_head", "core": "own_head", "s1": "parent_head", "s2": "parent_head"}
+    "widths": {"parent": "own_head", "seeds": "own_head", "core": "own_head", "noic": "own_head", "s1": "parent_head", "s2": "parent_head"},
+    "isotonic": "not_used_its_blocks_tie_the_order_of_the_session_and_would_lose_ic"
   },
   "versions": ["raw", "point", "full"],
   "rule": {
@@ -63,7 +65,12 @@
     "without_uncalibrated": {"label": "zero", "operable": "alpha"},
     "chosen_with": "2013_development",
     "clean_origins": "confirmation_only",
-    "paired": "newey_west_t_of_session_differences_for_mae_mse_and_mean_pinball"
+    "paired": "newey_west_t_of_session_differences_for_mae_mse_and_mean_pinball",
+    "reaches_reference": "delivered_mae_and_mean_pinball_at_most_those_of_noic_as_emitted_with_the_rank_ic_of_the_ranking_model_unchanged"
+  },
+  "references": {
+    "roles": ["core", "noic"],
+    "when": "included_if_completed_with_its_three_splits_when_the_required_inputs_are_complete_otherwise_reported_absent"
   },
   "honesty": {
     "rmse_bound": "one_minus_sqrt_one_minus_rho_squared_with_rho_the_mean_session_pearson_ic"

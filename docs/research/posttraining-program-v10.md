@@ -727,7 +727,7 @@ se cumple: la capa no entra.
 Es el encargo del dueño, transmitido por el coordinador el 23 de noviembre: «mejorar las métricas de
 error, es decir que sea el menor, de todas las métricas existentes calculadas siempre».
 - La declaración es `configs/experiments/posttraining-error-metrics.json` (huella
-  939f49a5…).
+  42fae0ce…).
 - La separación es la de F: 2013 es desarrollo, los orígenes limpios confirman y 2024 sigue sellado.
 
 **Punto de partida, con su escala.**
@@ -743,6 +743,16 @@ error, es decir que sea el menor, de todas las métricas existentes calculadas s
 - El informe da esa cota con el ρ medido y no promete reducciones que el ruido de la etiqueta no
   permite.
 
+**Orden y nivel** (adenda del coordinador, antes de medir). El término de orden cuesta error de
+nivel. En la criba de 2013, semilla 42:
+- titans_mac: MAE 0,011089 con IC 0,1132;
+- titans_mac_noic: MAE 0,010996 (−0,8 %) con IC 0,1077;
+- titans_mac_nogain: el mejor IC (0,1163) y el peor MAE (0,027454).
+
+La calibración es donde se pueden tener las dos cosas: el orden del modelo de orden y el nivel
+recalibrado. Por eso el noic entra como referencia de nivel. Si la versión entregada del modelo de
+orden lo iguala sin perder IC, esa es la entrega.
+
 **Qué se mide.** En evaluación, con `forecast_scores.score_sessions` (las métricas que el
 repositorio calcula siempre, cada sesión con el mismo peso):
 - MAE y RMSE de la predicción puntual.
@@ -757,8 +767,11 @@ repositorio calcula siempre, cada sesión con el mismo peso):
 - el padre (titans_mac_nogain, semilla 42), con punto y cuantiles;
 - las semillas: la media de 42, 43 y 44 del padre (`seed_ensemble.seed_mean`; los cuantiles, con
   la media de Vincent);
-- el núcleo de la criba (titans_mac, semilla 42), como referencia de la cifra de partida;
-- S1 y S2, con sus puntuaciones de sesión.
+- S1 y S2, con sus puntuaciones de sesión;
+- dos referencias, si están emitidas en el origen (si no, el informe dice que faltan):
+  - el núcleo de la criba (titans_mac, semilla 42), por la cifra de partida;
+  - el modelo entrenado solo con pinball (titans_mac_noic, semilla 42), que da el mejor nivel con
+    estos datos.
 
 En lo operable:
 - La puntuación es k·p + α, con el k del criterio del agregador en calibración. Para el padre es el
@@ -806,6 +819,14 @@ de evaluación, y se aplica sin cambios. No toca el orden dentro de la sesión.
   sesión, para que se vea si es ruido.
 - La versión entregada se elige con 2013 y queda fijada. En los orígenes limpios la regla solo
   confirma, y si no confirma se dice qué métrica empeora.
+- Lectura de nivel: la versión entregada iguala al noic si su MAE y su pinball media no son
+  mayores que los del noic tal como se emite. El IC de rangos no cambia con la calibración, por
+  construcción (λ > 0), y se comprueba.
+- No se usa la isótona de la mediana: sus bloques empatan el orden de la sesión y perderían IC.
+- El agregador ya exige que toda etiqueta de calibración madure antes de la primera decisión
+  evaluada. El filtro de madurez de F7 es una segunda guarda.
+- La orden es `python -m mars_titan.evaluation.error_metrics medir`, con las entradas de S2 y las
+  carpetas de las semillas y las referencias. `informe --summary` rehace el resumen sin medir.
 
 ## 6. Etapas con GPU (fase 4)
 
