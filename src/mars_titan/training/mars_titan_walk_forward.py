@@ -334,6 +334,9 @@ def _readout(variant, codec, predictor, recipe, seed):
         max_working_bytes=recipe.max_working_bytes,
         refinement_initialization=recipe.refinement_initialization,
         familiarity_gate=recipe.familiarity_gate,
+        learned_temperature=recipe.learned_temperature,
+        label_path=recipe.label_path,
+        label_scale=recipe.label_scale,
         seed=seed,
         # El lector atiende los mismos bloques que su padre. Con 256 conserva su identidad.
         max_batch=predictor.config.max_batch,
