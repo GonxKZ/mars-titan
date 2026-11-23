@@ -517,3 +517,19 @@ def test_the_v3_variant_renames_only_the_models_and_is_registered():
     # Cualquier otro cambio sobre la variante sigue rechazado.
     with pytest.raises(ValueError, match="no es la registrada"):
         ac.checked_declaration(dict(variant, seed=43))
+
+
+def test_the_random_control_is_summed_in_session_order_whatever_the_hash_seed():
+    # Las claves de sesión llevan el mercado como texto: el orden de un conjunto depende de la
+    # semilla de hash del proceso y, con él, el último bit de la media y el orden de a1-sesiones.
+    rng = np.random.default_rng(3)
+    sizes = [35] * 40
+    bounds = list(zip(np.cumsum([0] + sizes[:-1]), np.cumsum(sizes), strict=True))
+    keys = [("CN" if i % 2 else "US", 1_000 + i) for i in range(len(sizes))]
+    rows = sum(sizes)
+    score, target = rng.normal(size=rows), rng.normal(size=rows)
+    keep = rng.random(rows) > 0.3
+    _, random = ac.equal_count_controls(score, keep, bounds, draws=4, seed=7)
+    for covered in (False, True):
+        result = ac._random_mean(score, target, bounds, keys, random, covered=covered, min_assets=5)
+        assert list(result) == sorted(result)

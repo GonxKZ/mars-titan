@@ -211,7 +211,8 @@ def _random_mean(score_z, target, bounds, keys, random, *, covered, min_assets):
             )
         )
     common = set.intersection(*(set(d) for d in per_draw)) if per_draw else set()
-    return {key: float(np.mean([d[key] for d in per_draw])) for key in common}
+    # En orden de sesión: el de un conjunto depende de la semilla de hash del proceso.
+    return {key: float(np.mean([d[key] for d in per_draw])) for key in sorted(common)}
 
 
 def asset_abstention(cal, ev, settings, tool, *, min_assets):
