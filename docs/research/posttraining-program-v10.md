@@ -388,6 +388,12 @@ entran en la familia primaria.
 **Resultado de 2013** (medido; descriptivo y secundario).
 - Fuente: v10, semilla 42, evaluación de 251 sesiones, t HAC por sesión; `nucleo/2013`, copia
   e8910918, 1.264 s de CPU.
+- Órgano: el de `organos/v10-nogain` (declaración nogain-v1), como en la prueba de S2 de 2013, porque
+  `organos/v10-v2` de 2013 no existía. Los orígenes del plan leen `organos/v10-v2`, cuya lectura por
+  vecinos es conjunta con más modelos. Por eso 2013 queda como desarrollo y no entra en la serie por
+  origen.
+- A1 se cierra como negativo (decisión del coordinador del 23-11) y no se encadena como contraste.
+  En los orígenes sin atención, A3 tiene cuatro componentes y no se compara con el de 2013.
 - Oráculo: los IC de S1 y S2 reproducen los de la orden de S2, 0,1180 / 0,0886 y 0,1191 / 0,0890.
 
 - **A1, abstención.**
