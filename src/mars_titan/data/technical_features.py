@@ -21,9 +21,11 @@ posición del cierre en el rango del día. Medido en el origen 2013 de EE. UU. c
 
 `long_horizon_v3` conserva las 46 columnas de la v2, bit a bit, y añade 16 de precio y volumen:
 las sesiones desde el máximo y el mínimo de la ventana, la parte de los movimientos y de las
-sesiones que fueron al alza, la correlación entre precio y volumen, la variabilidad del volumen y
-del volumen ponderado por el movimiento, y la sombra superior media de la vela. Cada una va
-centrada en su punto neutro, de modo que el cero de la historia insuficiente no señala nada. Son
+sesiones que fueron al alza, la correlación entre el logaritmo del cierre y el del volumen más
+uno, la variabilidad del volumen y del volumen ponderado por el movimiento, y la sombra superior
+media de la vela. Cada una va centrada en su punto neutro, de modo que el cero de la historia
+insuficiente no señala nada. Una ventana sin movimiento no es historia insuficiente: en ella los
+días desde el extremo y la fracción de subidas valen −1, la firma de un activo suspendido. Son
 las que pasaron la validación rasgo a rasgo en la tabla de China del origen 2013, solo con el
 tramo de ajuste (señal estable por trimestres y correlación menor de 0,7 con las 46). Medido
 allí: con árboles, de 0,117 a 0,123 de IC de rangos en la evaluación; con una red de dos capas,
@@ -40,6 +42,8 @@ NAME_V2 = "long_horizon_v2"
 NAME_V3 = "long_horizon_v3"
 # Parte mínima de filas válidas en una ventana de la v3.
 COVERAGE = 0.75
+# Por debajo de esta parte de su escala, una diferencia de la v3 es redondeo y no un dato.
+NEGLIGIBLE = 1e-12
 # Ventana y mínimo de pares del OLS de la etiqueta.
 HISTORY, MINIMUM = 252, 126
 LIMIT = 8.0
@@ -141,15 +145,29 @@ def _windows(values, window, first=0):
 
 
 def _since_extreme(values, window, largest):
-    """Sesiones desde el extremo más reciente de la ventana: −1 si es hoy, 1 el más antiguo."""
+    """Sesiones desde el extremo más reciente de la ventana: −1 si es hoy, 1 el más antiguo.
+
+    Necesita el valor de la sesión, además de la cobertura mínima. En una ventana sin
+    movimiento el empate lo gana hoy y vale −1, para el máximo y para el mínimo.
+    """
     result = np.full(len(values), np.nan)
     windows, start = _windows(values, window)
     if windows is None:
         return result
     valid = np.isfinite(windows)
-    # Del revés, para que un empate lo gane la sesión más reciente.
+    # Del revés, para que un empate lo gane la sesión más reciente. Empatan los valores que
+    # distan del extremo menos que el redondeo: en un tramo sin negociar los precios ajustados
+    # bailan en el último bit.
     recent = np.where(valid, windows, -np.inf if largest else np.inf)[:, ::-1]
-    age = (np.argmax if largest else np.argmin)(recent, axis=1)
+    extreme = recent.max(axis=1) if largest else recent.min(axis=1)
+    margin = NEGLIGIBLE * np.abs(np.where(np.isfinite(extreme), extreme, 0.0))
+    with np.errstate(invalid="ignore"):
+        tied = (
+            recent >= (extreme - margin)[:, None]
+            if largest
+            else recent <= (extreme + margin)[:, None]
+        )
+    age = np.argmax(tied, axis=1)
     known = (valid.sum(axis=1) >= math.ceil(COVERAGE * window)) & valid[:, -1]
     result[start:] = np.where(known, 2.0 * age / (window - 1) - 1.0, np.nan)
     return result
@@ -164,7 +182,8 @@ def _up_share(returns, window, first):
     valid = np.isfinite(windows)
     clean = np.where(valid, windows, 0.0)
     total = np.abs(clean).sum(axis=1)
-    known = (valid.sum(axis=1) >= math.ceil(COVERAGE * window)) & (total > 0)
+    # Un movimiento total del tamaño del redondeo no es movimiento.
+    known = (valid.sum(axis=1) >= math.ceil(COVERAGE * window)) & (total > NEGLIGIBLE)
     with np.errstate(divide="ignore", invalid="ignore"):
         share = np.maximum(clean, 0.0).sum(axis=1) / total
     result[start:] = np.where(known, 2.0 * share - 1.0, np.nan)
@@ -172,29 +191,37 @@ def _up_share(returns, window, first):
 
 
 def _up_fraction(returns, window, first):
-    """Parte de las sesiones válidas de la ventana que cerraron al alza, de −1 a 1."""
+    """Parte de las sesiones válidas de la ventana que cerraron al alza, de −1 a 1.
+
+    Una sesión sin cambio no es una subida: una ventana sin movimiento vale −1.
+    """
     result = np.full(len(returns), np.nan)
     windows, start = _windows(returns, window, first)
     if windows is None:
         return result
     valid = np.isfinite(windows)
     count = valid.sum(axis=1)
-    rising = (valid & (windows > 0)).sum(axis=1)
+    with np.errstate(invalid="ignore"):
+        # Una subida del tamaño del redondeo no es una subida.
+        rising = (valid & (windows > NEGLIGIBLE)).sum(axis=1)
     known = count >= math.ceil(COVERAGE * window)
     result[start:] = np.where(known, 2.0 * rising / np.maximum(count, 1) - 1.0, np.nan)
     return result
 
 
 def _centered(windows, valid):
-    """Cada ventana menos su media sobre las filas válidas, y si tiene más de un valor distinto."""
+    """Cada ventana menos su media sobre las filas válidas, y si sus valores se separan.
+
+    Una ventana constante no tiene dispersión. Se decide con sus extremos, respecto a su
+    mayor valor absoluto, y no con una resta de sumas, que deja residuos de redondeo.
+    """
     count = np.maximum(valid.sum(axis=1), 1)
     mean = np.where(valid, windows, 0.0).sum(axis=1) / count
     spread = np.where(valid, windows, -np.inf).max(axis=1) - np.where(valid, windows, np.inf).min(
         axis=1
     )
-    # Una ventana constante no tiene dispersión: se decide con sus extremos y no con una resta
-    # de sumas, que deja residuos de redondeo.
-    varies = spread > 1e-12 * np.maximum(np.abs(mean), 1.0)
+    largest = np.where(valid, np.abs(windows), 0.0).max(axis=1)
+    varies = spread > NEGLIGIBLE * np.maximum(largest, np.finfo(float).tiny)
     return np.where(valid, windows - mean[:, None], 0.0), mean, varies
 
 
@@ -406,7 +433,8 @@ def technical_features(prices, sessions, calendar=None, market=None, version=NAM
             )
             span = high_v - low_v
             shadow = np.clip((high_v - np.maximum(open_v, close_v)) / span, 0.0, 1.0)
-            shadow = np.where(span > 0, shadow, np.nan)
+            # Un rango del tamaño del redondeo no es una vela.
+            shadow = np.where(span > NEGLIGIBLE * high_v, shadow, np.nan)
             for window in (5, 21):
                 # Una sombra superior de un cuarto del rango es lo habitual: su punto neutro.
                 features[f"candle_upper_shadow_{window}"] = 4.0 * (

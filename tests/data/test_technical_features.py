@@ -518,3 +518,117 @@ def test_the_third_version_needs_three_quarters_of_each_window():
     gaps = technical.technical_features(broken, sessions, version=technical.NAME_V3)
     assert gaps[160, index["up_move_share_oc_14"]] == 0
     assert gaps[175, index["up_move_share_oc_14"]] != 0
+
+
+def _third(prices, sessions):
+    return technical.technical_features(prices, sessions, version=technical.NAME_V3)
+
+
+def test_the_third_version_counts_valid_rows_at_the_exact_boundary():
+    _, sessions, prices, _ = market_prices(seed=11)
+    prices, sessions = prices[:300].copy(), sessions[:300]
+    index = {name: 46 + column for column, name in enumerate(ADDED_V3)}
+    # Once de catorce bastan y diez no: tres cuartos de la ventana, redondeados hacia arriba.
+    for missing, known in ((3, True), (4, False)):
+        holed = prices.copy()
+        holed[150 : 150 + missing, 3] = np.nan
+        value = _third(holed, sessions)[163, index["up_move_share_oc_14"]]
+        assert (value != 0) == known, missing
+    # Con el volumen, dieciséis de veintiuno: un volumen negativo no es un dato y cuenta como
+    # ausente, igual que un precio que no es positivo.
+    for missing, known in ((5, True), (6, False)):
+        holed = prices.copy()
+        holed[190 : 190 + missing, 4] = -1.0
+        value = _third(holed, sessions)[205, index["volume_cv_21"]]
+        assert (value != 0) == known, missing
+
+
+def test_the_third_version_needs_the_price_of_the_session_and_breaks_ties_to_the_latest():
+    _, sessions, prices, _ = market_prices(seed=11)
+    prices, sessions = prices[:300].copy(), sessions[:300]
+    index = {name: 46 + column for column, name in enumerate(ADDED_V3)}
+    high, low = index["days_since_high_21"], index["days_since_low_63"]
+    spiked = prices.copy()
+    spiked[195, 1] *= 1.5
+    whole = _third(spiked, sessions)
+    assert whole[200, high] == pytest.approx(-0.5) and whole[201, high] == pytest.approx(-0.4)
+    # Sin el precio de hoy no hay «días desde el máximo», aunque la ventana tenga datos de sobra.
+    for bad in (np.nan, 0.0, -5.0):
+        holed = spiked.copy()
+        holed[200, 1] = bad
+        third = _third(holed, sessions)
+        assert third[200, high] == 0, bad
+        assert third[201, high] == pytest.approx(-0.4), bad
+    # Dos mínimos iguales: cuenta el más reciente, a siete sesiones.
+    tied = prices.copy()
+    tied[195, 2] = tied[198, 2] = tied[150:230, 2].min() * 0.5
+    assert _third(tied, sessions)[205, low] == pytest.approx(2 * 7 / 62 - 1)
+
+
+def test_the_third_version_on_a_window_without_movement_or_with_rounding_noise():
+    sessions = pd.bdate_range("2012-01-02", periods=300).values.astype("datetime64[D]")
+    index = {name: 46 + column for column, name in enumerate(ADDED_V3)}
+    # Sin movimiento no falta historia: el extremo «es hoy» y ninguna sesión subió. Es la
+    # firma de un activo suspendido. El resto de columnas no tiene nada que medir.
+    still = np.tile(np.array([10.0, 10.0, 10.0, 10.0, 0.0]), (300, 1))
+    quiet = _third(still, sessions)
+    for name in ADDED_V3:
+        column = quiet[252:, index[name]]
+        expected = -1.0 if name.startswith(("days_since", "up_day_fraction")) else 0.0
+        assert (column == expected).all(), name
+    # Un volumen constante no tiene variabilidad, se sume como se sume.
+    for level in (0.3, 0.1, 0.7, 1 / 3, 1e6 / 7):
+        constant = still.copy()
+        constant[:, 4] = level
+        assert (_third(constant, sessions)[:, index["volume_cv_21"]] == 0).all(), level
+    # Un rango del tamaño del redondeo no es una vela, ni un movimiento así una subida.
+    noisy = np.tile(np.array([10.0, 10.0, 10.0, 10.0, 1e6]), (300, 1))
+    noisy[:, 1] = np.nextafter(10.0, 11.0)
+    assert (_third(noisy, sessions)[:, index["candle_upper_shadow_5"]] == 0).all()
+    creeping = np.full(300, 10.0)
+    for row in range(1, 300):
+        creeping[row] = np.nextafter(creeping[row - 1], np.inf)
+    crept = np.column_stack([creeping] * 4 + [np.full(300, 1e6)])
+    assert (_third(crept, sessions)[:, index["up_move_share_cc_14"]] == 0).all()
+
+
+@pytest.mark.parametrize("rows", [1, 2, 4])
+def test_the_third_version_on_a_series_shorter_than_every_window(rows):
+    _, sessions, prices, _ = market_prices(seed=11)
+    third = _third(prices[:rows], sessions[:rows])
+    assert third.shape == (rows, 62) and (third[:, 46:] == 0).all()
+
+
+def test_the_third_version_reads_rounding_noise_in_an_untraded_stretch_as_no_movement():
+    _, sessions, prices, _ = market_prices(seed=11)
+    prices, sessions = prices[:300].copy(), sessions[:300]
+    index = {name: 46 + column for column, name in enumerate(ADDED_V3)}
+    # Cien sesiones sin negociar cuyos precios ajustados bailan en el último bit, como en los
+    # datos reales: la apertura, el máximo, el mínimo y el cierre valen el nivel o el número
+    # siguiente.
+    level = prices[199, 3]
+    noise = np.random.default_rng(3).integers(0, 2, size=(100, 4)).astype(bool)
+    prices[200:, :4] = np.where(noise, np.nextafter(level, np.inf), level)
+    prices[200:, 4] = 0.0
+    third = _third(prices, sessions)
+    # Con la ventana entera dentro del tramo: ninguna subida y el extremo es hoy.
+    still = ("up_day_fraction_oc_63", "up_day_fraction_cc_63", "up_day_fraction_cc_21")
+    still += ("days_since_high_21", "days_since_high_63", "days_since_low_63")
+    for name in still:
+        window = int(name.rsplit("_", 1)[1])
+        assert (third[200 + window :, index[name]] == -1.0).all(), name
+    # Y nada que medir en los movimientos, las velas, la variabilidad ni la correlación.
+    empty = ("up_move_share_oc_14", "up_move_share_cc_14", "candle_upper_shadow_5")
+    empty += ("candle_upper_shadow_21", "volume_cv_21", "move_weighted_volume_cv_oc_21")
+    empty += ("move_weighted_volume_cv_cc_21", "price_volume_corr_63")
+    for name in empty:
+        window = int(name.rsplit("_", 1)[1])
+        assert (third[200 + window :, index[name]] == 0).all(), name
+    # Con negociación pero el precio clavado: el ruido del último bit no se correlaciona con
+    # el volumen, que sí varía.
+    pinned = prices.copy()
+    pinned[200:, 4] = np.random.default_rng(4).uniform(1e5, 5e6, 100)
+    traded = _third(pinned, sessions)
+    assert (traded[263:, index["price_volume_corr_63"]] == 0).all()
+    assert (traded[221:, index["volume_cv_21"]] != 0).all()
+    assert (traded[263:, index["up_day_fraction_oc_63"]] == -1.0).all()
