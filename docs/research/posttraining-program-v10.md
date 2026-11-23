@@ -932,6 +932,91 @@ en `errores/2013-093a0caa`. **Entra.**
 - La candidata no llega a la cabeza del propio noic, porque su centro es λ·S2: pinball 0,002723
   frente a 0,002702, y ECE 0,028 frente a 0,0065.
 
+### 5.14 WP5, los órganos episódicos nuevos del holográfico: revisión y protocolo (fijado antes de medir)
+
+**Encargo.** El coordinador pide verificar e integrar el parche WP5 de Gemini (neon xhigh), que
+trae tres órganos nuevos para el cerebro holográfico, apagados por defecto y seleccionables con el
+campo `episodic_organs` de la declaración de órganos. Es código ajeno sin revisar: si algo no pasa
+la revisión, no se integra.
+- **Banco denso:** vecinos por coseno sobre las filas maduras de las últimas sesiones, pesos
+  softmax(coseno/τ), media y dispersión ponderadas del residuo y − p recortado.
+- **Memoria holográfica con regla delta:** claves activo ⊛ régimen observable por convolución
+  circular, escritura del residuo que la memoria aún no predice y lectura por correlación circular.
+- **Traza por activo:** media exponencial del residuo maduro, con semivida en sesiones maduras.
+
+**Revisión (antes de integrar).**
+- **Aplicación.** El parche, hecho sobre bad39c05, se aplica limpio sobre 0fe44aa1, primero en una
+  copia aparte. Toca `memory_organs.py` (+188) y añade `memory/episodic_organs.py` y dos ficheros
+  de pruebas.
+- **Causalidad.** Es la de las memorias existentes:
+  - antes de leer la cohorte (mercado, t), solo maduran cohortes de ese mercado con madurez ≤ t;
+  - la madurez de una cohorte es la máxima de sus filas;
+  - toda etiqueta madura después de su decisión, así que nunca se lee la misma sesión;
+  - nada madura en 2024.
+- **Régimen y selección.** El régimen de la holográfica sale de las medianas, dentro de la sesión,
+  de return_63 y volatility_21_over_252 de las claves, escaladas con las filas de ajuste. τ, la
+  semivida y κ se eligen solo por el IC medio de calibración.
+- **Placebos:**
+  - el banco, con sus valores permutados en cada cohorte;
+  - la holográfica, con una memoria paralela que escribe los residuos permutados entre pares;
+  - la traza, con sus lecturas permutadas entre los activos de la sesión.
+- **Pruebas.** Pasan las 63 del parche y las de los módulos relacionados (278 en total).
+- **Mutantes míos sobre lo nuevo: once, todos muertos.**
+  - Madurez adelantada en los tres órganos.
+  - Placebo igual al real: en el banco y en la holográfica, al escribir y al leer.
+  - Elección en evaluación, en el banco y en la traza.
+  - Régimen con la mediana de todas las filas, futuro incluido.
+  - Tipificación con la escala de toda la serie.
+  - Lectura desalineada una fila al emitir.
+- **Identidad con el campo ausente.** Se emitió el estado sintético de las pruebas con el código
+  anterior y con el nuevo: los 25 archivos son iguales (16 byte a byte; los 9 JSON, iguales salvo
+  la huella `code.memory_organs` y los tiempos). Con el campo presente, los brazos existentes salen
+  byte a byte iguales y la tabla del estudio conserva sus filas.
+- **Integración:** 70277226 (el módulo) y 15a11b44 (la emisión). Las declaraciones, las variantes
+  de F6 y `episodic_contrasts` van en fa49edf2.
+
+**Protocolo.**
+1. **Emisión.**
+   - Declaración `posttraining-memory-organs-wp5-v10.json` (6c862b76…): la de v2 para
+     titans_mac_nogain y su estático titans_mac_disabled_nogain, con la configuración de los tres
+     órganos que propuso el parche, sin tocarla.
+   - Origen 2013, US, semillas 42, 43 y 44, raíz `organos/wp5-v10`.
+   - Una unidad por semilla, con pilotos-b congelado.
+2. **Identidad en datos reales.** Los brazos existentes de los dos modelos (parquet de calibración
+   y de evaluación, y el estado por activo) deben salir byte a byte iguales a los publicados: la
+   semilla 42 en `organos/v10-nogain` y la 43 y la 44 en `organos/v10-v2`. Si alguno difiere, no
+   se lee nada más y se dice.
+   - Este paso recorre, con el campo presente, el mismo código de los brazos existentes. Con el
+     campo ausente solo cambian ramas que no se ejecutan, y eso ya está comprobado en el estado
+     sintético.
+3. **Cada órgano frente a su padre y a su placebo** (`episodic_contrasts`; descriptivo).
+   - En evaluación se miden órgano − padre, placebo − padre y órgano − placebo, por semilla y en la
+     media de semillas, con la t de Newey-West de la criba.
+   - El placebo falla como debe si no gana al padre con t ≥ 2. Si le gana, es una alarma: el
+     órgano no se lee hasta saber por qué.
+   - Hay señal propia si el órgano gana al padre y a su placebo, las dos veces con t ≥ 2.
+   - El padre de la regla es el estático. titans_mac_nogain va como segundo padre, para leer el
+     órgano sobre el núcleo.
+4. **La regla de F6 sin cambiarla, una vez por órgano.**
+   - Declaraciones `posttraining-holographic-wp5-<brazo>.json` (9ea3c63c… del banco, 8272fe12… de la
+     holográfica y 1053e40e… de la traza). Solo cambian el órgano de F6 por
+     titans_mac_disabled_nogain__<brazo>.
+   - H entra como segundo cerebro si IC(C3⊕H3) − IC(C3) ≥ +0,0020 con t ≥ 2 en la etiqueta y es
+     > 0 en lo operable. El control a igual número de redes es C3⊕E3.
+   - La vara del coordinador es la correlación de los IC por sesión de C3 y H3 en la etiqueta: por
+     debajo de 0,94, la señal es distinta. Con el órgano combinado de F6 fue 0,936.
+   - Se miden tres variantes a la vez. Si entra alguna, se dice también si pasaría con la
+     corrección de Bonferroni para tres (t ≥ 2,39). La confirmación sigue siendo de los orígenes
+     limpios, con la misma regla.
+5. **Lo de siempre.** 2013 es desarrollo y solo elige, los orígenes limpios no se miran y 2024
+   sigue sellado.
+
+**Coste.** Se midió con datos sintéticos del tamaño real (500 activos, 64 dimensiones, un hilo):
+- el banco denso tarda 0,31 s por cohorte con el banco lleno;
+- la holográfica, 0,12 s por sesión.
+
+Lo caro de cada semilla es rehacer los brazos existentes, de 30 a 80 min según la carga.
+
 ## 6. Etapas con GPU (fase 4)
 
 ### 6.1 Qué queda preparado
