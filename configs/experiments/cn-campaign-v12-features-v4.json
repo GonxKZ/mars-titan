@@ -1,0 +1,159 @@
+{
+  "schema_version": 1,
+  "kind": "comparison_campaign_v1",
+  "market": "CN",
+  "final_test_access": false,
+  "description": "China sola (v12): el núcleo con los rasgos long_horizon_v4 (62 columnas en la rama técnica). Tres semillas.",
+  "cohort": {
+    "size": 810,
+    "rule": "entire_source_view"
+  },
+  "seeds": [
+    42,
+    43,
+    44
+  ],
+  "origins": [
+    {
+      "year": 2011,
+      "fold": "fold-000",
+      "role": "development"
+    },
+    {
+      "year": 2012,
+      "fold": "fold-001",
+      "role": "development"
+    },
+    {
+      "year": 2013,
+      "fold": "fold-002",
+      "role": "development"
+    },
+    {
+      "year": 2014,
+      "fold": "fold-003",
+      "role": "development"
+    },
+    {
+      "year": 2015,
+      "fold": "fold-004",
+      "role": "development"
+    },
+    {
+      "year": 2016,
+      "fold": "fold-005",
+      "role": "development"
+    },
+    {
+      "year": 2017,
+      "fold": "fold-006",
+      "role": "development"
+    },
+    {
+      "year": 2018,
+      "fold": "fold-007",
+      "role": "development"
+    },
+    {
+      "year": 2019,
+      "fold": "fold-008",
+      "role": "development"
+    },
+    {
+      "year": 2020,
+      "fold": "fold-009",
+      "role": "development"
+    },
+    {
+      "year": 2021,
+      "fold": "fold-010",
+      "role": "development"
+    },
+    {
+      "year": 2022,
+      "fold": "fold-011",
+      "role": "development"
+    },
+    {
+      "year": 2023,
+      "fold": "fold-012",
+      "role": "confirmation"
+    }
+  ],
+  "tiers": [
+    "core"
+  ],
+  "recipes": {
+    "core": "configs/titans/dgx-us-core-u2-ic3-dense-gr-v9.json"
+  },
+  "stopping": {
+    "fit": {
+      "metric": "session_rank_ic",
+      "min_assets": 30,
+      "stopping": "validation_plateau",
+      "patience": 3,
+      "min_delta": 0.0,
+      "max_epochs": 48,
+      "initial_state": "reported"
+    },
+    "reader": {
+      "metric": "session_rank_ic",
+      "min_assets": 30,
+      "stopping": "validation_plateau",
+      "patience": 3,
+      "min_delta": 0.0,
+      "max_epochs": 24
+    }
+  },
+  "execution": {
+    "pipeline": {
+      "decode_workers": 4,
+      "prefetch_batches": 6,
+      "group_cache_mib": 2048,
+      "prepare_workers": 3
+    },
+    "workers": {
+      "mars_titan": 4,
+      "references": 1
+    },
+    "learning_traces": {
+      "every": 8,
+      "max_bytes": 67108864
+    },
+    "order": "seed_tier",
+    "threads": {
+      "intra": 20,
+      "interop": 20
+    }
+  },
+  "budget": {
+    "min_free_gib": 60,
+    "memory_gib": {
+      "mars_titan": 24
+    },
+    "cuda_gib": {
+      "mars_titan": 16
+    },
+    "deadline_utc": "2026-12-01T11:00:00+00:00"
+  },
+  "models": {
+    "titans_mac_t62": {
+      "machine": "mars_titan",
+      "recipe": "core",
+      "runner": "fit",
+      "tier": "core",
+      "variant": "mac_online",
+      "predictor_changes": {
+        "technical_branch": {
+          "columns": 62,
+          "hidden": 128,
+          "depth": 2,
+          "session_ranks": true
+        }
+      }
+    }
+  },
+  "inputs": {
+    "technical": "long_horizon_v4"
+  }
+}
