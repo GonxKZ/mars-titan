@@ -1130,6 +1130,37 @@ multiplicados por la precisión que cada herramienta declara para ese activo.
   herramienta informativa es la estrecha y el paso es 1, así γ se mueve sin tocar sus topes),
   terminó la verificación y lanza la medida.
 
+**Resultado en 2013 (23 de noviembre; código b6947a21; `arbitros/{hoy,wp5,acptpa}/2013`).** Media
+de las semillas 42, 43 y 44 por sesión, evaluación, contrastes pareados con t de Newey-West.
+
+| Variante | IC en la etiqueta | IC en lo operable |
+| --- | --- | --- |
+| S2 | 0,1183 | 0,0884 |
+| agent | 0,1173 | 0,0861 |
+| agent_uniform | 0,1175 | 0,0855 |
+| DODEA (herramientas de hoy) | 0,1169 | 0,0856 |
+| su placebo | 0,1175 | 0,0858 |
+| DODEA (con los órganos de WP5) | 0,1171 | 0,0852 |
+| ACPTPA | 0,1173 | 0,0860 |
+| su placebo | 0,1173 | 0,0860 |
+| tools_ridge | 0,1185 | 0,0887 |
+
+- **DODEA no entra y su autor la da por refutada.** En lo operable, frente a S2 −0,0028
+  (t −2,25) y frente a su placebo −0,0002 (t −0,48); frente al agente −0,0005 y frente a la
+  uniforme +0,0001. Con los órganos de WP5 como herramientas añadidas: frente a S2 −0,0033
+  (t −2,11) y frente a su placebo +0,0001 (t +0,73).
+- **ACPTPA no entra y su autor la da por refutada.** En lo operable, frente a S2 −0,0024
+  (t −1,69); frente a su placebo y frente al agente, 0,0000. El exponente elegido en calibración
+  se queda cerca de cero en evaluación (de 0,01 a 0,08 de media): el controlador vuelve a la
+  decisión segura. En el tercio líquido la fiabilidad es la del agente (0,741).
+- **Lo que queda.** S2 sigue siendo el mejor agregador y la regresión sobre todas las
+  herramientas lo iguala (+0,0003, t 0,29): las herramientas de hoy se parecen demasiado para que
+  un árbitro más fino tenga de dónde sacar ventaja.
+- **Un fallo de la medida, corregido antes de leer nada.** La orden nunca había corrido con datos
+  reales y rechazaba el registro de los árboles, que no lleva `status` y declara
+  `final_test_access`. La prueba sintética lo fabricaba como un ajuste de la campaña. Ahora los
+  árboles se comprueban como en el agregador y la prueba escribe el registro real (b6947a21).
+
 ## 6. Etapas con GPU (fase 4)
 
 ### 6.1 Qué queda preparado
