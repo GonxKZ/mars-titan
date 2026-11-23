@@ -68,7 +68,7 @@ from mars_titan.models.quantile_head import LEVELS, QUANTILE_COLUMNS
 
 KIND = "posttraining_error_metrics_v1"
 # Huella canónica de configs/experiments/posttraining-error-metrics.json, la declaración de F7.
-REGISTERED_SHA256 = "42fae0ceaf90086e964b2fde4fd69d1697c1e58cf4cbdb01ee0422474a49885f"
+REGISTERED_SHA256 = "606db891582cf1a6acd62414f9e1e1c18a1599be0a14073d5180229a039c93b8"
 AGGREGATED = og.AGGREGATED
 MODES = ("label", "operable")
 HEADS = ("parent", "seeds", "core", "noic")
@@ -124,6 +124,14 @@ def checked_declaration(document):
         )
         and document["references"]["roles"] == list(REFERENCES),
         "Los predictores declarados no son el padre de S2, sus semillas y las dos referencias",
+    )
+    layer = document["delivery"]["coverage_layer"]
+    _require(
+        document["delivery"]["widths_source"] == ["noic", "core"]
+        and tuple(layer["levels"]) == (0.8, 0.9, 0.95)
+        and all(set(pair) <= set(QUANTILE_COLUMNS) for pair in layer["bands"].values())
+        and list(layer["bands"]) == [str(level) for level in layer["levels"]],
+        "La entrega de F7-b no declara las anchuras ni la capa de cobertura de F",
     )
     return document, digest
 
@@ -392,7 +400,20 @@ def _by_market(values, market, markets):
     return result
 
 
-def _frame(mode, split, results, table, points, quantiles, alpha, matures, index, factors, markets):
+def _frame(
+    mode,
+    split,
+    results,
+    table,
+    points,
+    quantiles,
+    alpha,
+    volatility,
+    matures,
+    index,
+    factors,
+    markets,
+):
     """Las filas de S2 de un modo y un tramo, con el objetivo, las puntuaciones y las cabezas."""
     aligned = results["s2"]["aligned"][split]
     ids = list(aligned["sample_id"])
@@ -436,6 +457,7 @@ def _frame(mode, split, results, table, points, quantiles, alpha, matures, index
             label=label,
             alpha=known,
             matures=np.asarray(matures[split], dtype=np.int64)[rows],
+            volatility=np.asarray(volatility[split], dtype=np.float64)[rows],
             scores=scores,
             heads=heads,
         )
@@ -514,9 +536,8 @@ def _session_rows(mode, predictor, version, scores, markets):
     ]
 
 
-def _mode(tool, mode, frames, min_assets, measured, predictors):
-    """Controles, versiones, contrastes y regla de un modo."""
-    operable = mode == "operable"
+def _matured(frames, measured, mode):
+    """Las filas de calibración cuya etiqueta madura antes de la primera evaluación de su mercado."""
     cal_all, ev = frames["calibration"], frames["evaluation"]
     first = {
         m: int(ev["instants"][ev["market"] == m].min())
@@ -532,7 +553,14 @@ def _mode(tool, mode, frames, min_assets, measured, predictors):
     _require(
         matured.any(), f"Ninguna etiqueta de calibración de {mode} madura antes de la evaluación"
     )
-    cal = _subset(cal_all, np.flatnonzero(matured))
+    return _subset(cal_all, np.flatnonzero(matured))
+
+
+def _mode(tool, mode, frames, min_assets, measured, predictors):
+    """Controles, versiones, contrastes y regla de un modo."""
+    operable = mode == "operable"
+    cal_all, ev = frames["calibration"], frames["evaluation"]
+    cal = _matured(frames, measured, mode)
     weights = sd.session_weights(_panel(cal, np.zeros(len(cal["ids"]))))
     present = [m for m in measured if np.any(cal["market"] == m)]
 
@@ -690,7 +718,7 @@ def measure(
             f"{sources[role]} no emite los cuantiles {QUANTILE_COLUMNS}",
         )
     view = records["parent"]["request"]["view_sha256"]
-    alpha, _, _, matures = ac.known_rows(state, origin, parent, view)
+    alpha, _, volatility, matures = ac.known_rows(state, origin, parent, view)
     say("alfa conocido y madurez")
 
     def column(role, split, name):
@@ -768,7 +796,7 @@ def measure(
                 operable_scales=tuple(declaration["operable_scales"]),
             )
 
-        modes, rows, operable_factors = {}, [], {}
+        modes, rows, operable_factors, kept = {}, [], {}, {}
         for mode in MODES:
             operable = mode == "operable"
             results = {system: aggregate(members, operable) for system, members in rel.SYSTEMS}
@@ -793,6 +821,7 @@ def measure(
                     points,
                     quantiles,
                     alpha,
+                    volatility,
                     matures,
                     index,
                     factors,
@@ -800,12 +829,15 @@ def measure(
                 )
                 for split in AGGREGATED
             }
+            kept[mode] = frames
             modes[mode], mode_rows = _mode(
                 tool, mode, frames, min_assets, tuple(measured), present_predictors
             )
             rows += mode_rows
             for predictor, item in modes[mode]["predictors"].items():
                 say(f"{mode}/{predictor}: entrega {item['verdict']['delivered']}")
+        handed = delivery(kept, declaration, min_assets, tuple(measured), included)
+        say(f"F7-b: {handed.get('verdict', handed.get('status'))}")
         shutil.rmtree(work / "entradas")
         code = og._code_identity()
         for name, module in (
@@ -827,6 +859,7 @@ def measure(
                 references=dict(included=included, absent=absent),
                 operable_factors=operable_factors,
                 modes=modes,
+                delivery=handed,
                 seconds=round(time.monotonic() - started),
             )
         )
@@ -840,6 +873,241 @@ def measure(
         shutil.rmtree(work, ignore_errors=True)
     say(f"publicado en {target}")
     return summary
+
+
+# ---------------------------------------------------------------------------------------------
+# F7-b: la entrega con el orden de S2, el nivel LAD y las anchuras del modelo solo pinball
+
+
+def _sessions_rows(frame):
+    """(mercado, instante, inicio, fin) de las sesiones de un marco en orden canónico."""
+    market, instants = frame["market"], frame["instants"]
+    change = np.r_[True, (market[1:] != market[:-1]) | (instants[1:] != instants[:-1])]
+    starts = np.flatnonzero(change)
+    ends = np.r_[starts[1:], len(instants)]
+    return [
+        (str(market[s]), int(instants[s]), int(s), int(e))
+        for s, e in zip(starts, ends, strict=True)
+    ]
+
+
+def halves(frame):
+    """Las dos mitades en el tiempo de un tramo: los ⌊n/2⌋ primeros instantes y el resto."""
+    instants = np.unique(frame["instants"])
+    _require(len(instants) >= 4, "La calibración necesita al menos cuatro sesiones para partirse")
+    cut = int(instants[len(instants) // 2 - 1])
+    return (
+        _subset(frame, np.flatnonzero(frame["instants"] <= cut)),
+        _subset(frame, np.flatnonzero(frame["instants"] > cut)),
+        cut,
+    )
+
+
+def candidate_fit(fit, source, present):
+    """λ de S2 y factores de nivel de las anchuras de `source`, ajustados en `fit`."""
+    panel = _panel(fit, fit["scores"]["s2"])
+    factors = sd.market_shrinkage(panel, panel.prediction)
+    _require(
+        all(factors.get(m) is not None and factors[m] > 0 for m in present),
+        "El factor LAD de S2 es nulo: no hay entrega en unidades de rendimiento",
+    )
+    weights = sd.session_weights(panel)
+    center = fit["scores"]["s2"] * _by_market(factors, fit["market"], present)
+    widths = fit["heads"][source] - fit["heads"][source][:, [MEDIAN]]
+    scales = {}
+    for m in present:
+        rows = fit["market"] == m
+        scales[m] = level_scales(
+            fit["target"][rows] - center[rows], widths[rows], weights[rows]
+        ).tolist()
+    return dict(lad=factors, level_scales=scales)
+
+
+def candidate_head(frame, fitted, source, present):
+    """Centro λ·S2 y cabeza candidata de un marco con los parámetros ajustados."""
+    center = frame["scores"]["s2"] * _by_market(fitted["lad"], frame["market"], present)
+    widths = frame["heads"][source] - frame["heads"][source][:, [MEDIAN]]
+    return center, recalibrated(
+        center, widths, _by_market(fitted["level_scales"], frame["market"], present)
+    )
+
+
+def coverage_layer(fit, run, fit_head, run_head, layer):
+    """Mondrian+ACI de F sobre una cabeza: puntuaciones conformes en `fit` y ACI en `run`."""
+    fit_sessions, sessions = _sessions_rows(fit), _sessions_rows(run)
+    groups_fit = ac.within_session_groups(
+        fit["volatility"], ac.bounds_of(fit_sessions), layer["volatility_groups"]
+    )
+    groups = ac.within_session_groups(
+        run["volatility"], ac.bounds_of(sessions), layer["volatility_groups"]
+    )
+    maturity = np.array([int(run["matures"][s:e].max()) for _, _, s, e in sessions])
+    markets = np.asarray(run["market"]).astype(str)
+    result = {}
+    for level in layer["levels"]:
+        low, high = (QUANTILE_COLUMNS.index(name) for name in layer["bands"][str(level)])
+        scores = ac.conformity(fit_head[:, low], fit_head[:, high], fit["target"])
+        lower, upper, path = rel.adaptive_bands(
+            run_head[:, low],
+            run_head[:, high],
+            run["target"],
+            sessions,
+            maturity,
+            scores,
+            level,
+            layer["aci_gamma"],
+            groups=groups,
+            score_groups=groups_fit,
+        )
+        item = dict(
+            **ac.interval_summary(lower, upper, run["target"]),
+            volatility=ac.interval_summary(lower, upper, run["target"], groups)["groups"],
+            market=ac.interval_summary(lower, upper, run["target"], markets)["groups"],
+            aci=path,
+        )
+        item["coverage_error"] = abs(item["coverage"] - level)
+        item["interval_score"] = float(
+            np.mean(pilots.interval_score_rows(lower, upper, run["target"], level))
+        )
+        item["reasons"] = rel.interval_rule(item, level, layer["rule"])
+        result[str(level)] = item
+    return result
+
+
+def raw_bands(frame, head, layer):
+    """Cobertura de las bandas de una cabeza sin capa, en los niveles que tienen sus dos cuantiles."""
+    result = {}
+    for level in layer["levels"]:
+        low, high = (QUANTILE_COLUMNS.index(name) for name in layer["bands"][str(level)])
+        if not math.isclose(LEVELS[high] - LEVELS[low], level):
+            continue
+        item = ac.interval_summary(head[:, low], head[:, high], frame["target"])
+        result[str(level)] = dict(
+            coverage=item["coverage"],
+            coverage_error=abs(item["coverage"] - level),
+            width=item["width"],
+        )
+    return result
+
+
+def _flat(entry):
+    """Las métricas que decide la regla de F7-b, planas."""
+    values = {f"pinball@{k}": v for k, v in entry["pinball"].items()}
+    values["mean_pinball"] = entry["mean_pinball"]
+    for key in ("sign_ece", "sign_ece_operable", "mae", "rmse"):
+        if key in entry:
+            values[key] = entry[key]
+    values.update({f"coverage_error@{k}": v["coverage_error"] for k, v in entry["layer"].items()})
+    return values
+
+
+def delivery(frames, declaration, min_assets, measured, included):
+    """F7-b: la candidata (orden de S2, nivel LAD, anchuras del noic o del núcleo) frente a lo que
+    ya entra (cabeza del padre con el Mondrian+ACI de F)."""
+    settings = declaration["delivery"]
+    source = next((r for r in settings["widths_source"] if r in included), None)
+    if source is None:
+        return dict(status="absent", reason="no están emitidos ni el noic ni el núcleo")
+    layer = settings["coverage_layer"]
+    label, operable = frames["label"], frames["operable"]
+    cal, ev = _matured(label, measured, "label"), label["evaluation"]
+    present = [m for m in measured if np.any(cal["market"] == m)]
+    # Decisión en calibración: se ajusta en la primera mitad y se puntúa en la segunda.
+    first, second, cut = halves(cal)
+    fitted = candidate_fit(first, source, present)
+    _, fit_head = candidate_head(first, fitted, source, present)
+    center, run_head = candidate_head(second, fitted, source, present)
+    decision = {}
+    for name, heads in (
+        ("incumbent", (first["heads"]["parent"], second["heads"]["parent"])),
+        ("candidate", (fit_head, run_head)),
+    ):
+        scored = metrics(
+            fs.score_sessions(_panel(second, center, heads[1]), rank_ic_min_assets=min_assets)
+        )
+        decision[name] = dict(
+            mean_pinball=scored["mean_pinball"],
+            pinball=scored["pinball"],
+            layer=coverage_layer(first, second, heads[0], heads[1], layer),
+        )
+    decision["candidate_without_layer"] = raw_bands(second, run_head, layer)
+    keys = ["mean_pinball", *(f"coverage_error@{level}" for level in layer["levels"])]
+    mine, theirs = _flat(decision["candidate"]), _flat(decision["incumbent"])
+    worse_calibration = [k for k in keys if mine[k] > theirs[k]]
+    chosen = "incumbent" if worse_calibration else "candidate"
+    # Evaluación: todo se ajusta otra vez con la calibración entera, como en F.
+    fitted_all = candidate_fit(cal, source, present)
+    _, cal_head = candidate_head(cal, fitted_all, source, present)
+    center_ev, ev_head = candidate_head(ev, fitted_all, source, present)
+    op_ev = operable["evaluation"]
+    position = {sid: i for i, sid in enumerate(ev["ids"])}
+    rows = np.array([position[s] for s in op_ev["ids"]], dtype=np.int64)
+    evaluation = {}
+    for name, heads in (
+        ("incumbent", (cal["heads"]["parent"], ev["heads"]["parent"])),
+        ("candidate", (cal_head, ev_head)),
+    ):
+        scored = metrics(
+            fs.score_sessions(_panel(ev, center_ev, heads[1]), rank_ic_min_assets=min_assets)
+        )
+        shifted = metrics(
+            fs.score_sessions(
+                _panel(
+                    op_ev,
+                    op_ev["alpha"] + center_ev[rows],
+                    op_ev["alpha"][:, None] + heads[1][rows],
+                ),
+                rank_ic_min_assets=min_assets,
+            )
+        )
+        evaluation[name] = dict(
+            mae=scored["mae"],
+            rmse=scored["rmse"],
+            mean_pinball=scored["mean_pinball"],
+            pinball=scored["pinball"],
+            sign_ece=scored["sign_ece"],
+            sign_ece_operable=shifted["sign_ece"],
+            layer=coverage_layer(cal, ev, heads[0], heads[1], layer),
+        )
+    evaluation["candidate_without_layer"] = raw_bands(ev, ev_head, layer)
+    mine, theirs = _flat(evaluation["candidate"]), _flat(evaluation["incumbent"])
+    worse_evaluation = [k for k, v in mine.items() if v > theirs[k]]
+    superfluous = {
+        level: bool(
+            decision["candidate_without_layer"][level]["coverage_error"]
+            <= decision["candidate"]["layer"][level]["coverage_error"]
+            and evaluation["candidate_without_layer"][level]["coverage_error"]
+            <= evaluation["candidate"]["layer"][level]["coverage_error"]
+        )
+        for level in decision["candidate_without_layer"]
+    }
+    enters = chosen == "candidate" and not worse_evaluation
+    model = declaration["predictors"][source]["model"]
+    return dict(
+        status="measured",
+        widths_source=source,
+        widths_model=model,
+        calibration=dict(
+            cut=cut,
+            first_rows=len(first["ids"]),
+            second_rows=len(second["ids"]),
+            fitted=fitted,
+            **decision,
+        ),
+        chosen_in_calibration=chosen,
+        worse_in_calibration=worse_calibration,
+        evaluation=dict(fitted=fitted_all, **evaluation),
+        worse_in_evaluation=worse_evaluation,
+        enters=enters,
+        layer_superfluous=superfluous,
+        verdict="entra" if enters else "no entra",
+        provenance=dict(
+            order="S2 (ridge_cov_active de padre, árboles y señal del órgano)",
+            level="escala LAD de S2",
+            widths=f"{model}, semilla {declaration['predictors'][source]['seeds'][0]}",
+            coverage="Mondrian+ACI de F",
+        ),
+    )
 
 
 def _f(value, digits=6):
@@ -892,6 +1160,7 @@ def markdown(summary):
         *(f"- Referencia ausente, {NAMES[r]}: {why}." for r, why in absent.items()),
         "",
     ]
+    lines += _delivery_lines(summary.get("delivery") or {})
     for mode, entry in summary["modes"].items():
         controls = CONTROLS[mode]
         lines += [
@@ -990,6 +1259,82 @@ def markdown(summary):
                 )
         lines.append("")
     return "\n".join(lines) + "\n"
+
+
+def _delivery_lines(handed):
+    """La sección de F7-b: de qué modelo sale cada pieza, la decisión en calibración y la regla."""
+    lines = ["## F7-b, la entrega y de dónde sale cada pieza", ""]
+    if handed.get("status") != "measured":
+        return lines + [f"No se mide: {handed.get('reason', 'sin datos')}.", ""]
+    source = handed["provenance"]
+    lines += [
+        f"- Orden: {source['order']}.",
+        f"- Nivel: {source['level']} (λ {', '.join(f'{m} {_f(v, 5)}' for m, v in handed['evaluation']['fitted']['lad'].items())}).",
+        f"- Anchuras: {source['widths']}, multiplicadas por su factor de pinball en cada nivel. Esto "
+        "obliga a que la base emita un modelo solo pinball por origen y semilla.",
+        f"- Cobertura: {source['coverage']}, encima de las anchuras elegidas.",
+        "",
+        f"**Decisión en calibración** (ajuste hasta el instante {handed['calibration']['cut']}, "
+        f"{handed['calibration']['first_rows']} filas; puntuación en las "
+        f"{handed['calibration']['second_rows']} siguientes): se queda "
+        f"**{'la candidata' if handed['chosen_in_calibration'] == 'candidate' else 'lo que ya entra'}**"
+        + (
+            f"; la candidata empeora {', '.join(handed['worse_in_calibration'])}."
+            if handed["worse_in_calibration"]
+            else "."
+        ),
+        "",
+        "| Tramo | Versión | Pinball media | Error de cobertura 80 | Error de cobertura 90 | Error de cobertura 95 | Anchura 90 | Peor decil de volatilidad 90 |",
+        "|---|---|---|---|---|---|---|---|",
+    ]
+    for split, part in (
+        ("calibración, 2.ª mitad", handed["calibration"]),
+        ("evaluación", handed["evaluation"]),
+    ):
+        for name, shown in (("incumbent", "lo que ya entra"), ("candidate", "candidata")):
+            item = part[name]
+            layer = item["layer"]
+            worst = min(g["coverage"] for g in layer["0.9"]["volatility"].values())
+            lines.append(
+                f"| {split} | {shown} | {_f(item['mean_pinball'])} | {_f(layer['0.8']['coverage_error'], 4)} | "
+                f"{_f(layer['0.9']['coverage_error'], 4)} | {_f(layer['0.95']['coverage_error'], 4)} | "
+                f"{_f(layer['0.9']['width'], 5)} | {_f(worst, 3)} |"
+            )
+        raw = part["candidate_without_layer"]
+        lines.append(
+            f"| {split} | candidata sin capa | — | {_f(raw['0.8']['coverage_error'], 4)} | — | "
+            f"{_f(raw['0.95']['coverage_error'], 4)} | — | — |"
+        )
+    ev = handed["evaluation"]
+    lines += [
+        "",
+        f"ECE de la probabilidad de signo en evaluación: lo que ya entra {_f(ev['incumbent']['sign_ece'], 4)} "
+        f"(operable {_f(ev['incumbent']['sign_ece_operable'], 4)}); la candidata {_f(ev['candidate']['sign_ece'], 4)} "
+        f"(operable {_f(ev['candidate']['sign_ece_operable'], 4)}).",
+        "",
+        "**Regla en evaluación** (ninguna métrica de F7 peor que lo que ya entra): "
+        + ("**entra**." if handed["enters"] else "**no entra**")
+        + (
+            f"; empeora {', '.join(handed['worse_in_evaluation'])}."
+            if handed["worse_in_evaluation"]
+            else ""
+        )
+        + (
+            ""
+            if handed["enters"] or handed["worse_in_evaluation"]
+            else ", porque en calibración se quedó lo que ya entra."
+        ),
+        "",
+        "Capa de cobertura: el 90 % solo existe con ella, porque la cabeza no tiene los niveles 0,05 y "
+        "0,95. "
+        + "; ".join(
+            f"al {float(level) * 100:.0f} % {'sobraría' if flag else 'hace falta'}"
+            for level, flag in handed["layer_superfluous"].items()
+        )
+        + " (sin capa no peor en calibración y en evaluación).",
+        "",
+    ]
+    return lines
 
 
 def parser():

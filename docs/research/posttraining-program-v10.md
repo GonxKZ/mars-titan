@@ -721,13 +721,21 @@ se cumple: la capa no entra.
     (límite declarado).
 - Lectura: en 2013 la señal diaria ya es lo mejor de la rejilla. La banda cambia rotación por bruto
   sin ganar a 3 pb, y solo queda por delante a partir de unos 5 pb, sin significación.
+- P mide un solo mercado por orden; con dos, falla con su motivo. Así el libro, la rotación y las
+  ventanas no mezclan sesiones de dos mercados.
+
+**Corrección por la auditoría** (23 de noviembre), en la precisión selectiva de F1:
+- Con n impar y c = 1, round(n/2) podía meter la fila mediana en las dos colas.
+- Ahora k = min(max(1, round(n·c/2)), ⌊n/2⌋), y esa fila no cuenta en ninguna.
+- El efecto en la columna «Todo» de 2013 es como mucho una fila de unas 2.700 por sesión. No se
+  rehace la medida; los orígenes limpios ya usan la corrección.
 
 ### 5.13 F7, las métricas de error: protocolo (fijado antes de medir)
 
 Es el encargo del dueño, transmitido por el coordinador el 23 de noviembre: «mejorar las métricas de
 error, es decir que sea el menor, de todas las métricas existentes calculadas siempre».
 - La declaración es `configs/experiments/posttraining-error-metrics.json` (huella
-  42fae0ce…).
+  606db891…).
 - La separación es la de F: 2013 es desarrollo, los orígenes limpios confirman y 2024 sigue sellado.
 
 **Punto de partida, con su escala.**
@@ -865,6 +873,47 @@ el núcleo en lo operable.
 
 *Lectura.* La pieza que entra es la escala LAD del punto. Los cuantiles de la entrega tienen que
 salir de una cabeza bien escalada (el noic o el núcleo), no de la del padre sin ganancia.
+
+**F7-b, la entrega con las anchuras del modelo solo pinball** (adenda fijada antes de medir de
+nuevo 2013, con las tres condiciones del coordinador). Está en la sección `delivery` de la
+declaración.
+
+*La candidata:*
+- el orden de S2;
+- el nivel con la escala LAD de S2;
+- las anchuras de la cabeza del noic (o del núcleo, si no hay noic), centradas en λ·S2 y con su
+  factor de pinball por nivel;
+- encima, el Mondrian+ACI de F, con la misma configuración que la de F.
+
+*Lo que ya entra:* el punto λ·S2, los cuantiles de la cabeza del padre tal como se emiten y el
+Mondrian+ACI de F sobre esa cabeza.
+
+*Decisión en calibración:*
+- Se parte en dos mitades en el tiempo: la primera ajusta λ, los factores y las puntuaciones
+  conformes, y la segunda puntúa.
+- La candidata se queda si no empeora la pinball media ni el error de cobertura al 80, 90 y 95 %.
+
+*Regla en evaluación:*
+- Todo se ajusta de nuevo con la calibración entera.
+- La candidata entra si no empeora ninguna métrica de F7 frente a lo que ya entra: pinball de cada
+  nivel y media, ECE en la etiqueta y en lo operable, y error de cobertura de los intervalos
+  entregados al 80, 90 y 95 %. El MAE y el RMSE son iguales por construcción.
+
+*La capa:*
+- Sigue encima salvo que, sin ella, las bandas de la candidata no sean peores en error de
+  cobertura al 80 y al 95 % en las dos lecturas.
+- El 90 % la necesita siempre, porque la cabeza no tiene los niveles 0,05 y 0,95.
+
+*Procedencia.* El informe dice de qué modelo sale cada pieza:
+- orden: S2;
+- nivel: la escala LAD;
+- anchuras: el noic, o el núcleo de respaldo;
+- cobertura: el Mondrian+ACI de F.
+
+Esto obliga a que la base emita un modelo solo pinball por origen y semilla.
+
+*Comprobación.* Lo que ya entra reproduce exactamente, en la prueba, las coberturas del
+Mondrian+ACI de F.
 
 ## 6. Etapas con GPU (fase 4)
 

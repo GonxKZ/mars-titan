@@ -74,5 +74,19 @@
   },
   "honesty": {
     "rmse_bound": "one_minus_sqrt_one_minus_rho_squared_with_rho_the_mean_session_pearson_ic"
+  },
+  "delivery": {
+    "name": "f7b_order_of_s2_level_lad_widths_of_the_pinball_model",
+    "mode": "label_for_intervals_and_pinball_operable_only_for_the_sign_ece",
+    "system": "s2",
+    "point": "lad_scale_of_s2_as_in_f7",
+    "widths_source": ["noic", "core"],
+    "widths": "first_emitted_reference_head_minus_its_median_times_the_pinball_optimal_level_scale_centred_at_the_lad_point_rows_sorted",
+    "incumbent": "point_lad_of_s2_quantiles_of_the_parent_head_as_emitted_intervals_mondrian_aci_of_f_over_the_parent_head",
+    "coverage_layer": {"method": "mondrian_by_volatility_deciles_within_each_session_with_aci_per_session_market_and_group", "levels": [0.8, 0.9, 0.95], "bands": {"0.8": ["quantile_0100", "quantile_0900"], "0.9": ["quantile_0100", "quantile_0900"], "0.95": ["quantile_0025", "quantile_0975"]}, "aci_gamma": 0.05, "volatility_groups": 10, "rule": {"total_tolerance": 0.02, "group_shortfall": 0.05}, "same_as": "posttraining-reliability.json_adaptive_intervals_core_mondrian_aci"},
+    "decision": {"split": "calibration_halves_in_time_first_half_fits_second_half_scores", "metrics": ["mean_pinball", "coverage_error@0.8", "coverage_error@0.9", "coverage_error@0.95"], "comparison": "strict_candidate_no_worse_than_the_incumbent"},
+    "evaluation_rule": "refit_on_the_whole_calibration_and_no_f7_metric_worse_than_the_incumbent_pinball_each_level_mean_pinball_sign_ece_label_and_operable_and_coverage_error_of_the_delivered_intervals_at_0.8_0.9_0.95",
+    "layer_superfluous": "raw_bands_of_the_candidate_no_worse_in_coverage_error_at_0.8_and_0.95_than_with_the_layer_in_the_calibration_half_and_in_evaluation_0.9_always_needs_the_layer",
+    "provenance": {"order": "s2", "level": "lad_scale_of_s2", "widths": "noic_or_core_as_fallback", "coverage": "mondrian_aci_of_f"}
   }
 }

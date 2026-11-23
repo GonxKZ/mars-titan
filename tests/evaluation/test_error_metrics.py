@@ -9,6 +9,7 @@ import pytest
 
 from mars_titan.evaluation import error_metrics as em
 from mars_titan.evaluation import organ_aggregation as og
+from mars_titan.evaluation import reliability as rel
 from mars_titan.evaluation import scale_diagnostics as sd
 from tests.evaluation import test_agent_core as core
 
@@ -97,6 +98,22 @@ def test_recalibrated_quantiles_never_cross_and_sorting_never_raises_the_pinball
         return np.maximum(levels * u, (levels - 1) * u).sum(axis=1)
 
     assert np.all(total(ordered) <= total(crossed) + 1e-15)
+
+
+def test_calibration_halves_split_the_sessions_in_time():
+    instants = np.repeat([1, 2, 3, 4, 5], 2)
+    frame = dict(
+        markets=("US",),
+        ids=[f"r{i}" for i in range(10)],
+        market=np.array(["US"] * 10, dtype=object),
+        instants=instants,
+        target=np.arange(10.0),
+        scores={},
+        heads={},
+    )
+    first, second, cut = em.halves(frame)
+    assert cut == 2 and first["ids"] == ["r0", "r1", "r2", "r3"]
+    assert second["instants"].tolist() == [3, 3, 4, 4, 5, 5]
 
 
 def _item(mae, rmse, pinball=None, coverage=(0.0, 0.0), ece=0.0):
@@ -212,8 +229,9 @@ def test_f7_of_an_origin(tmp_path, monkeypatch, capsys):
     # El alfa solo en lo operable deja el error de la etiqueta: |y + α − α| = |y|.
     assert operable["controls"]["alpha"]["mae"] == pytest.approx(label["controls"]["zero"]["mae"])
     assert summary["operable_factors"]["parent"] in declaration()["operable_scales"]
+    assert summary["delivery"]["widths_source"] == "core"
     report = (folder / "resumen.md").read_text(encoding="utf-8")
-    assert "Lo que cabe esperar" in report and "noic" in report
+    assert "Lo que cabe esperar" in report and "noic" in report and "F7-b" in report
     assert pq.read_table(folder / "sesiones.parquet").num_rows > 0
     capsys.readouterr()
     assert em.main(_arguments(paths, output)) == 0
@@ -227,6 +245,33 @@ def test_f7_of_an_origin(tmp_path, monkeypatch, capsys):
     assert summary["references"]["included"] == ["core", "noic"]
     reading = summary["modes"]["label"]["predictors"]["parent"]["verdict"]["noic"]
     assert {"mae", "mean_pinball", "mae_versus", "rank_ic"} <= set(reading)
+    handed = summary["delivery"]
+    assert handed["widths_source"] == "noic" and handed["widths_model"] == "titans_mac_noic"
+    # Lo que ya entra es el Mondrian+ACI de F sobre la cabeza del padre: se reproduce con F.
+    parent = paths["state"] / "runs" / "titans_mac_nogain" / str(core.YEAR) / "seed-42"
+    tables = {
+        s: pq.read_table(parent / f"{s}-predictions.parquet").sort_by(og.ORDER)
+        for s in og.AGGREGATED
+    }
+    _, liquidity, volatility, matures = core._known(paths)(None, core.YEAR, tables, None)
+    covariates = {s: dict(volatility=volatility[s], liquidity=liquidity[s]) for s in og.AGGREGATED}
+    f_declaration = json.loads(
+        (core.ROOT / "configs" / "experiments" / "posttraining-reliability.json").read_text()
+    )
+    settings = dict(f_declaration["conformal"], **f_declaration["adaptive_intervals"])
+    delivered = rel.adaptive_intervals(tables, covariates, matures, settings)
+    for level, item in handed["evaluation"]["incumbent"]["layer"].items():
+        f_item = delivered[level]["candidates"]["core_mondrian_aci"]
+        assert item["coverage"] == pytest.approx(f_item["coverage"], abs=1e-12)
+        assert item["width"] == pytest.approx(f_item["width"], rel=1e-9)
+    # La regla se recalcula con las cifras publicadas.
+    flat = {name: em._flat(handed["evaluation"][name]) for name in ("incumbent", "candidate")}
+    assert handed["worse_in_evaluation"] == [
+        k for k, v in flat["candidate"].items() if v > flat["incumbent"][k]
+    ]
+    assert handed["enters"] == (
+        handed["chosen_in_calibration"] == "candidate" and not handed["worse_in_evaluation"]
+    )
     report = other / str(core.YEAR) / "resumen.md"
     text = report.read_text(encoding="utf-8")
     assert "Nivel de referencia" in text

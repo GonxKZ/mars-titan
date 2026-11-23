@@ -662,3 +662,12 @@ def test_without_the_trees_it_waits_and_exits_with_code_75(tmp_path, capsys):
     paths = core.campaign(tmp_path, tree=False)
     assert rel.main(_arguments(paths, tmp_path / "f", "--wait-hours", "0")) == og.MISSING_EXIT
     assert "lightgbm_technical" in capsys.readouterr().err
+
+
+def test_no_row_is_both_long_and_short_with_an_odd_session():
+    # Con n = 31 y c = 1, round(15,5) = 16 tomaría la mediana en las dos colas.
+    score = np.arange(31.0)
+    target = score - 15.0
+    curve = rel.selective_precision(score, target, [(0, 31)], [1.0, 0.2], min_assets=3)
+    assert curve["1.0"]["names"] == 30
+    assert curve["1.0"]["sign"]["hits"] == 30

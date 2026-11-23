@@ -340,6 +340,11 @@ def measure(
             role: {s: og.only(table, measured) for s, table in splits.items()}
             for role, splits in tables.items()
         }
+    _require(
+        len(measured) == 1,
+        f"P mide un solo mercado por orden ({measured}): el libro, la rotación y las ventanas no "
+        "mezclan sesiones de dos mercados; usa un --market por orden",
+    )
     say(f"mercados medidos: {measured} (el estado tiene {present})")
     for role, splits in tables.items():
         for split, table in splits.items():

@@ -192,8 +192,9 @@ def window_rates(measured, keys, width):
 def selective_precision(score, target, bounds, coverages, *, min_assets, keep=None, flagged=None):
     """Acierto de las colas de cada sesión según la fracción de nombres en la que se actúa.
 
-    Con cobertura c se toman los k = max(1, round(n·c/2)) nombres más altos de la señal (largos) y
-    los k más bajos (cortos). El acierto de signo cuenta largos con objetivo > 0 y cortos con
+    Con cobertura c se toman los k = min(max(1, round(n·c/2)), ⌊n/2⌋) nombres más altos de la
+    señal (largos) y los k más bajos (cortos). Con n impar y c = 1 la fila mediana no entra en
+    ninguna cola, así que ninguna fila cuenta a la vez como larga y como corta. El acierto de signo cuenta largos con objetivo > 0 y cortos con
     objetivo < 0; el relativo, respecto a la mediana de la sesión. Con `flagged` se cuenta además
     la parte de nombres elegidos marcados (los de |α| sobre el tope).
     """
@@ -210,7 +211,7 @@ def selective_precision(score, target, bounds, coverages, *, min_assets, keep=No
         order = np.argsort(s, kind="stable")
         median = float(np.median(y))
         for c in coverages:
-            k = max(1, int(round(n * c / 2)))
+            k = min(max(1, int(round(n * c / 2))), n // 2)
             low, high = order[:k], order[-k:]
             marked = 0 if flagged is None else int(flagged[rows][np.r_[low, high]].sum())
             counts[c] += (

@@ -199,3 +199,12 @@ def test_p_of_an_origin(tmp_path, monkeypatch, capsys):
     capsys.readouterr()
     assert pl.main(_arguments(paths, output)) == 0
     assert "ya calculado" in capsys.readouterr().out
+
+
+def test_p_refuses_two_markets_in_one_order(tmp_path, monkeypatch, capsys):
+    monkeypatch.setattr(core, "ASSETS", 40)
+    paths = core.campaign(tmp_path, markets=("US", "CN"))
+    monkeypatch.setattr(pl.ac, "known_rows", core._known(paths))
+    output = tmp_path / "cartera"
+    assert pl.main(_arguments(paths, output, "--market", "US", "--market", "CN")) == 1
+    assert "un solo mercado" in capsys.readouterr().err
