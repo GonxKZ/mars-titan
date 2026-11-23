@@ -155,7 +155,11 @@ def view_maturity(path, input_policy, expected_sha256, partitions=PARTITIONS, da
     sus archivos.
     """
     if dataset is None:
-        dataset = CorpusDataset(Path(path), cache_bytes=0, input_policy=input_policy)
+        # Caché pequeña en memoria para no leer y validar 3 veces cada labels.parquet al extraer
+        # validation, calibration y evaluation del mismo activo.
+        dataset = CorpusDataset(
+            Path(path), cache_bytes=16 * 1024 * 1024, input_policy=input_policy
+        )
     _require(
         Path(dataset.path).resolve() == Path(path).resolve(),
         "El corpus abierto no es la vista pedida",
@@ -169,19 +173,39 @@ def view_maturity(path, input_policy, expected_sha256, partitions=PARTITIONS, da
         name: dict(asset_id=[], market=[], prediction_at=[], target=[], matures_at=[])
         for name in partitions
     }
-    for asset in sorted(dataset.assets, key=lambda row: (row["market"], row["symbol"])):
-        if not any(asset["counts"][name] for name in partitions):
-            continue
+    active_assets = [
+        asset
+        for asset in sorted(dataset.assets, key=lambda row: (row["market"], row["symbol"]))
+        if any(asset["counts"][name] for name in partitions)
+    ]
+
+    def _read_asset(asset):
         with pq.ParquetFile(dataset._file(asset, "samples")) as file:
             rows = file.metadata.num_rows
         _require(1 <= rows <= MAX_SAMPLE_ROWS, "Las muestras superan el presupuesto de filas")
+        found = {}
         for name in partitions:
             if not asset["counts"][name]:
                 continue
             _, moments, targets, maturity = dataset._labels(asset, name, rows)
+            found[name] = (moments, targets, maturity)
+        return asset, found
+
+    if len(active_assets) > 4:
+        from concurrent.futures import ThreadPoolExecutor
+
+        with ThreadPoolExecutor(max_workers=4) as pool:
+            loaded = list(pool.map(_read_asset, active_assets))
+    else:
+        loaded = [_read_asset(asset) for asset in active_assets]
+
+    for asset, found in loaded:
+        aid = f"{asset['market']}/{asset['symbol']}"
+        mkt = asset["market"]
+        for name, (moments, targets, maturity) in found.items():
             part = columns[name]
-            part["asset_id"] += [f"{asset['market']}/{asset['symbol']}"] * len(moments)
-            part["market"] += [asset["market"]] * len(moments)
+            part["asset_id"] += [aid] * len(moments)
+            part["market"] += [mkt] * len(moments)
             part["prediction_at"].append(moments)
             part["target"].append(targets)
             part["matures_at"].append(maturity)

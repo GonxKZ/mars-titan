@@ -13,11 +13,8 @@ def outside_source(source: Path, destination: Path) -> None:
 
 
 def sha256(path: Path) -> str:
-    digest = hashlib.sha256()
     with path.open("rb") as stream:
-        while block := stream.read(4 * 1024 * 1024):
-            digest.update(block)
-    return digest.hexdigest()
+        return hashlib.file_digest(stream, "sha256").hexdigest()
 
 
 def atomic_json(path: Path, value: object) -> None:

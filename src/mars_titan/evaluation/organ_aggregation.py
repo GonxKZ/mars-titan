@@ -412,28 +412,42 @@ def _write_component(folder, tables, prediction, alpha, matures):
     return folder
 
 
-def _measure(declaration, tool, inputs, names, best, decision, mode, work):
+def _measure(
+    declaration, tool, inputs, names, best, decision, mode, work, *, raw_by_split=None, cache=None
+):
     runs = {}
+    is_operable = mode == "operable"
+    decl_splits = tuple(declaration["splits"])
+    decl_scales = tuple(declaration["operable_scales"])
     for config, members in CONFIGS.items():
         runs[config] = oa.run_aggregation(
             {names[role]: inputs[role] for role in members},
-            splits=tuple(declaration["splits"]),
+            splits=decl_splits,
             selection_split=declaration["selection_split"],
             min_assets=declaration["min_assets"],
             align=declaration["align"],
-            operable=mode == "operable",
+            operable=is_operable,
             alpha_col="alpha",
             maturity_col="matures_at",
             placebo_seed=declaration["aggregator_placebo_seed"],
-            operable_scales=tuple(declaration["operable_scales"]),
+            operable_scales=decl_scales,
+            aggregators=("rank_average", "ridge_cov_active"),
+            include_placebos=(config == "senal"),
+            include_asset_abstention=False,
+            preloaded_raw=raw_by_split,
+            precomputed_cache=cache,
         )
         report = oa.render_markdown(oa._json_safe_report(runs[config]))
         (work / "informes" / f"{mode}-{config}.md").write_text(report, encoding="utf-8")
     two = runs["dos"]
     evaluation = two["aligned"]["evaluation"]
     ics = {
-        name: oa.session_rank_ic(
-            evaluation, evaluation["predictions"][:, i], min_assets=declaration["min_assets"]
+        name: (
+            cache["individual_ics"][name]["evaluation"]
+            if cache is not None
+            else oa.session_rank_ic(
+                evaluation, evaluation["predictions"][:, i], min_assets=declaration["min_assets"]
+            )
         )
         for i, name in enumerate(two["model_names"])
     }
@@ -674,19 +688,52 @@ def aggregate(
     work = Path(output) / f".{origin}.{os.getpid()}.tmp"
     try:
         (work / "informes").mkdir(parents=True)
-        inputs = {
-            role: _write_component(
-                work / "entradas" / names[role], tables["parent"], values, alpha, matures
+        raw_base = {
+            s: oa.build_raw_split_base(
+                tables["parent"][s], alpha=alpha[s], matures_at=matures[s], already_sorted=True
             )
-            for role, values in predictions.items()
+            for s in AGGREGATED
         }
+        inputs = {role: names[role] for role in predictions}
         modes, series = {}, {}
+        decl_splits = tuple(declaration["splits"])
+        decl_scales = tuple(declaration["operable_scales"])
         for mode in declaration["modes"]:
+            is_operable = mode == "operable"
+            raw_by_split = {
+                s: {
+                    names[role]: oa.build_raw_split(
+                        raw_base[s], values[s], include_alpha=is_operable
+                    )
+                    for role, values in predictions.items()
+                }
+                for s in AGGREGATED
+            }
+            cache = (
+                oa.build_shared_panel_cache(
+                    raw_by_split,
+                    splits=decl_splits,
+                    min_assets=declaration["min_assets"],
+                    align=declaration["align"],
+                    operable=is_operable,
+                    operable_scales=decl_scales,
+                )
+                if declaration["align"] == "strict"
+                else None
+            )
             modes[mode], series[mode] = _measure(
-                declaration, tool, inputs, names, best, decision, mode, work
+                declaration,
+                tool,
+                inputs,
+                names,
+                best,
+                decision,
+                mode,
+                work,
+                raw_by_split=raw_by_split,
+                cache=cache,
             )
             say(f"{MODE_NAMES[mode]}: S2 − S1 {modes[mode]['s2']['vs_s1']['mean']}")
-        shutil.rmtree(work / "entradas")
         summary = _plain(
             dict(
                 schema_version=1,

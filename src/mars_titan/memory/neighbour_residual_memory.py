@@ -30,6 +30,7 @@ fechas del test final. Cosenos en FP32 (como las claves); pesos, valores y sumas
 
 from __future__ import annotations
 
+import ctypes
 import hashlib
 import json
 import math
@@ -40,6 +41,7 @@ from dataclasses import dataclass
 import numpy as np
 
 from mars_titan.environments.cohorts import FINAL_TEST_START_US
+from mars_titan.memory import _fast_kernels as fk
 from mars_titan.memory import asset_residual_memory as arm
 
 KIND = "neighbour_residual_memory"
@@ -119,6 +121,9 @@ class NeighbourConfig:
     # Con exclude_own, una consulta no lee las filas de su propio activo: mide la parte de la
     # lectura que viene de activos parecidos y no de la historia del mismo activo.
     exclude_own: bool = False
+    # Decaimiento temporal causal opcional en cohortes dentro de la ventana del banco:
+    # con None (por omisión) conserva literalmente la identidad y las lecturas v2.
+    recency_half_life: float | None = None
 
     def __post_init__(self):
         _require(
@@ -136,12 +141,21 @@ class NeighbourConfig:
                 f"{name} es un número finito y positivo",
             )
         _require(type(self.exclude_own) is bool, "exclude_own es un booleano")
+        if self.recency_half_life is not None:
+            _require(
+                type(self.recency_half_life) in (int, float)
+                and math.isfinite(self.recency_half_life)
+                and self.recency_half_life > 0,
+                "recency_half_life es un número finito y positivo o None",
+            )
 
     def identity(self):
         identity = dict(window=self.window, k=self.k, tau=float(self.tau), clip=float(self.clip))
-        # Sin exclusión la identidad conserva literalmente su forma anterior.
+        # Sin exclusión ni decaimiento temporal la identidad conserva literalmente su forma anterior.
         if self.exclude_own:
             identity["exclude_own"] = True
+        if self.recency_half_life is not None:
+            identity["recency_half_life"] = float(self.recency_half_life)
         return identity
 
 
@@ -222,10 +236,61 @@ class _Scratch:
         return self._sims[:need].reshape(rows, size), self._mask[:need].reshape(rows, size)
 
 
+class _HeapScratch:
+    """Búferes reutilizables para lectura streaming por cohortes sin concatenar claves."""
+
+    def __init__(self):
+        self._sims = np.empty(0, dtype=np.float32)
+        self._heap_v = np.empty(0, dtype=np.float32)
+        self._heap_i = np.empty(0, dtype=np.int64)
+        self._heap_f = np.empty(0, dtype=np.int64)
+
+    def views(self, rows, max_tile, k):
+        need_s = rows * max_tile
+        if self._sims.size < need_s:
+            self._sims = np.empty(need_s, dtype=np.float32)
+        need_h = rows * k
+        if self._heap_v.size < need_h:
+            self._heap_v = np.empty(need_h, dtype=np.float32)
+            self._heap_i = np.empty(need_h, dtype=np.int64)
+        if self._heap_f.size < rows:
+            self._heap_f = np.empty(rows, dtype=np.int64)
+        return (
+            self._sims[:need_s].reshape(rows, max_tile),
+            self._heap_v[:need_h].reshape(rows, k),
+            self._heap_i[:need_h].reshape(rows, k),
+            self._heap_f[:rows],
+        )
+
+
+def _recency_bias(bank, half_life):
+    """Sesgo logarítmico causal −edad · ln(2) / h por fila del banco (edad 0 = cohorte más reciente)."""
+    total = sum(len(c["keys"]) for c in bank)
+    bias = np.empty(total, dtype=np.float64)
+    rate = math.log(2.0) / float(half_life)
+    n_cohorts = len(bank)
+    offset = 0
+    for idx, cohort in enumerate(bank):
+        count = len(cohort["keys"])
+        age = float(n_cohorts - 1 - idx)
+        bias[offset : offset + count] = -age * rate
+        offset += count
+    return bias
+
+
+def _torch_module():
+    try:
+        import torch
+
+        return torch
+    except ImportError:
+        return None
+
+
 class NeighbourMemory:
     """Banco causal por mercado y lectura por vecinos para M modelos a la vez."""
 
-    def __init__(self, config, models, *, threads=1):
+    def __init__(self, config, models, *, threads=1, device="cpu"):
         _require(isinstance(config, NeighbourConfig), "La configuración es NeighbourConfig")
         _require(
             type(models) is int and 1 <= models <= MAX_MODELS,
@@ -237,15 +302,18 @@ class NeighbourMemory:
             type(threads) is int and 1 <= threads <= MAX_THREADS,
             f"Los hilos de la lectura son un entero entre 1 y {MAX_THREADS}",
         )
+        _require(device in ("cpu", "cuda"), "device debe ser 'cpu' o 'cuda'")
         self.config = config
         self.models = models
         self.threads = threads
+        self.device = device
         self._markets = {}
         # Búferes reutilizados (no son estado): uno por hilo de lectura y el banco contiguo de
         # cada mercado.
         self._scratch = queue.SimpleQueue()
         for _ in range(threads):
             self._scratch.put(_Scratch())
+        self._heap_scratch = _HeapScratch()
         self._joined = {}
 
     def _join(self, market, name, parts):
@@ -266,28 +334,164 @@ class NeighbourMemory:
             self._markets[market] = _Market()
         return self._markets[market]
 
+    def _neighbours_streaming_native(
+        self, lib, state, keys, values, shuffled, k, tau, recency, assets
+    ):
+        """Lectura exacta en streaming por cohortes con torch.mm + min-heap C99/OpenMP.
+
+        Evita concatenar `bank_keys` (42 MB por sesión) y evita la matriz de similitudes de
+        [CHUNK, total_bank] (84 MB), manteniendo la matriz de similitudes acotada al tamaño de
+        un bloque de consultas por una cohorte, con desempate exacto por fila más antigua y
+        paridad independiente del número de hilos.
+        """
+        rows = len(keys)
+        reads = np.empty((rows, self.models), dtype=np.float64)
+        placebo = None if shuffled is None else np.empty((rows, self.models), dtype=np.float64)
+        max_tile = max(len(c["keys"]) for c in state.bank)
+        q_chunk = min(rows, CHUNK)
+        sims_full, heap_v, heap_i, heap_f = self._heap_scratch.views(q_chunk, max_tile, k)
+        torch = _torch_module()
+        use_torch_cpu = torch is not None and self.device == "cpu"
+        use_torch_cuda = torch is not None and self.device == "cuda" and torch.cuda.is_available()
+        if use_torch_cpu:
+            prev_threads = torch.get_num_threads()
+            torch.set_num_threads(self.threads)
+        else:
+            prev_threads = None
+        values_c = np.ascontiguousarray(values, dtype=np.float64)
+        shuffled_c = None if shuffled is None else np.ascontiguousarray(shuffled, dtype=np.float64)
+        recency_c = None if recency is None else np.ascontiguousarray(recency, dtype=np.float64)
+        exclude_own = 1 if self.config.exclude_own else 0
+        q_assets_all = None if assets is None else np.ascontiguousarray(assets, dtype=np.int64)
+        try:
+            if use_torch_cuda:
+                # Ruta opcional en GPU (p. ej. Colab RTX PRO 6000 / DGX GB10 libre):
+                # SGEMM FP32 determinista en GPU y min-heap exacto en C99.
+                q_gpu = torch.from_numpy(np.ascontiguousarray(keys)).to("cuda")
+                bank_gpu = [
+                    torch.from_numpy(np.ascontiguousarray(c["keys"])).to("cuda")
+                    for c in state.bank
+                ]
+            else:
+                q_gpu = bank_gpu = None
+            for start in range(0, rows, q_chunk):
+                end = min(start + q_chunk, rows)
+                nr = end - start
+                heap_f[:nr] = 0
+                q_sub = np.ascontiguousarray(keys[start:end], dtype=np.float32)
+                qa_ptr = (
+                    None
+                    if q_assets_all is None
+                    else q_assets_all[start:end].ctypes.data_as(ctypes.c_void_p)
+                )
+                col_offset = 0
+                for c_idx, cohort in enumerate(state.bank):
+                    ck = cohort["keys"]
+                    ns = len(ck)
+                    sims_view = sims_full[:nr, :ns]
+                    if use_torch_cuda:
+                        prod = torch.mm(q_gpu[start:end], bank_gpu[c_idx].T)
+                        sims_view[...] = prod.cpu().numpy()
+                    elif use_torch_cpu:
+                        torch.mm(
+                            torch.from_numpy(q_sub),
+                            torch.from_numpy(ck).T,
+                            out=torch.from_numpy(sims_view),
+                        )
+                    else:
+                        np.matmul(q_sub, ck.T, out=sims_view)
+                    ba_ptr = (
+                        None
+                        if not exclude_own
+                        else np.ascontiguousarray(cohort["assets"], dtype=np.int64).ctypes.data_as(
+                            ctypes.c_void_p
+                        )
+                    )
+                    lib.nrm_heap_update_tile_f32(
+                        ctypes.c_int64(nr),
+                        ctypes.c_int64(ns),
+                        ctypes.c_int64(col_offset),
+                        ctypes.c_int64(k),
+                        sims_view.ctypes.data_as(ctypes.c_void_p),
+                        ctypes.c_int(exclude_own),
+                        qa_ptr,
+                        ba_ptr,
+                        heap_v[:nr].ctypes.data_as(ctypes.c_void_p),
+                        heap_i[:nr].ctypes.data_as(ctypes.c_void_p),
+                        heap_f[:nr].ctypes.data_as(ctypes.c_void_p),
+                        ctypes.c_int(self.threads),
+                    )
+                    col_offset += ns
+                if recency_c is None:
+                    lib.nrm_heap_finalize_gather_f64(
+                        ctypes.c_int64(nr),
+                        ctypes.c_int64(k),
+                        ctypes.c_int64(self.models),
+                        heap_v[:nr].ctypes.data_as(ctypes.c_void_p),
+                        heap_i[:nr].ctypes.data_as(ctypes.c_void_p),
+                        heap_f[:nr].ctypes.data_as(ctypes.c_void_p),
+                        values_c.ctypes.data_as(ctypes.c_void_p),
+                        None if shuffled_c is None else shuffled_c.ctypes.data_as(ctypes.c_void_p),
+                        ctypes.c_double(tau),
+                        reads[start:end].ctypes.data_as(ctypes.c_void_p),
+                        None if placebo is None else placebo[start:end].ctypes.data_as(ctypes.c_void_p),
+                        ctypes.c_int(self.threads),
+                    )
+                else:
+                    lib.nrm_heap_finalize_gather_recency_f64(
+                        ctypes.c_int64(nr),
+                        ctypes.c_int64(k),
+                        ctypes.c_int64(self.models),
+                        heap_v[:nr].ctypes.data_as(ctypes.c_void_p),
+                        heap_i[:nr].ctypes.data_as(ctypes.c_void_p),
+                        heap_f[:nr].ctypes.data_as(ctypes.c_void_p),
+                        values_c.ctypes.data_as(ctypes.c_void_p),
+                        None if shuffled_c is None else shuffled_c.ctypes.data_as(ctypes.c_void_p),
+                        recency_c.ctypes.data_as(ctypes.c_void_p),
+                        ctypes.c_double(tau),
+                        reads[start:end].ctypes.data_as(ctypes.c_void_p),
+                        None if placebo is None else placebo[start:end].ctypes.data_as(ctypes.c_void_p),
+                        ctypes.c_int(self.threads),
+                    )
+        finally:
+            if prev_threads is not None:
+                torch.set_num_threads(prev_threads)
+        return reads, placebo
+
     def _neighbours(self, state, keys, placebo_seed, market, prediction_at, assets=None):
         rows = len(keys)
         reads = np.zeros((rows, self.models))
         placebo = None if placebo_seed is None else np.zeros((rows, self.models))
         if not state.bank:
             return reads, placebo
-        bank_keys = self._join(market, "keys", [c["keys"] for c in state.bank])
-        values = self._join(market, "values", [c["values"] for c in state.bank])
-        bank_assets = None
-        if self.config.exclude_own:
-            bank_assets = self._join(market, "assets", [c["assets"] for c in state.bank])
         _require(
-            bank_keys.shape[1] == keys.shape[1],
+            state.bank[0]["keys"].shape[1] == keys.shape[1],
             f"Las claves de {market} en {prediction_at} no tienen la dimensión del banco",
         )
+        values = self._join(market, "values", [c["values"] for c in state.bank])
         shuffled = None
         if placebo_seed is not None:
             sequence = np.random.SeedSequence([placebo_seed, _market_seed(market), prediction_at])
             shuffled = values[np.random.default_rng(sequence).permutation(len(values))]
-        size = len(bank_keys)
+        size = len(values)
         k = min(self.config.k, size)
         tau = float(self.config.tau)
+        recency = (
+            None
+            if self.config.recency_half_life is None
+            else _recency_bias(state.bank, self.config.recency_half_life)
+        )
+
+        lib = fk.load_library()
+        if lib is not None and size >= 32:
+            return self._neighbours_streaming_native(
+                lib, state, keys, values, shuffled, k, tau, recency, assets
+            )
+
+        bank_keys = self._join(market, "keys", [c["keys"] for c in state.bank])
+        bank_assets = None
+        if self.config.exclude_own:
+            bank_assets = self._join(market, "assets", [c["assets"] for c in state.bank])
 
         def read(start):
             scratch = self._scratch.get()
@@ -308,16 +512,17 @@ class NeighbourMemory:
             else:
                 index = np.broadcast_to(np.arange(size), sims.shape)
             top = np.take_along_axis(sims, index, axis=1).astype(np.float64)
+            logits = top / tau if recency is None else top / tau + recency[index]
             if bank_assets is None:
-                weights = np.exp((top - top.max(axis=1, keepdims=True)) / tau)
+                weights = np.exp(logits - logits.max(axis=1, keepdims=True))
                 weights /= weights.sum(axis=1, keepdims=True)
             else:
                 # Las filas del propio activo pesan cero. Una consulta sin otro activo en el
                 # banco lee cero, como con el banco vacío.
-                best = top.max(axis=1, keepdims=True)
+                best = logits.max(axis=1, keepdims=True)
                 found = np.isfinite(best)
                 weights = np.where(
-                    np.isfinite(top), np.exp((top - np.where(found, best, 0.0)) / tau), 0.0
+                    np.isfinite(logits), np.exp(logits - np.where(found, best, 0.0)), 0.0
                 )
                 total = weights.sum(axis=1, keepdims=True)
                 weights = np.divide(weights, total, out=np.zeros_like(weights), where=total > 0)

@@ -562,31 +562,54 @@ def known_rows(state, origin, tables, view):
         instants = table.column("prediction_at").cast(pa.int64()).to_numpy()
         for row, asset in enumerate(assets):
             places.setdefault(asset, []).append((split, row, instants[row]))
-    for asset, rows in places.items():
+
+    idx_has = names.index("has_market_model")
+    idx_alpha = names.index("alpha_percent")
+    idx_liq = names.index("log_dollar_volume_21")
+    idx_v252 = names.index("log_volatility_252")
+    idx_v21 = names.index("volatility_21_over_252")
+
+    def _compute_asset(item):
+        asset, rows = item
         market, symbol = asset.split("/", 1)
         prices, days = base._table(base.prepared / market / symbol / "prices.parquet")
         features = base.module.technical_features(
             prices, days, *base.factors.get(market, (None, None))
         )
-        known = features[:, names.index("has_market_model")] > 0
+        known = features[:, idx_has] > 0
         values = (
-            np.where(
-                known, features[:, names.index("alpha_percent")].astype(np.float64) / 100, np.nan
-            ),
-            features[:, names.index("log_dollar_volume_21")].astype(np.float64),
-            (
-                features[:, names.index("log_volatility_252")]
-                + features[:, names.index("volatility_21_over_252")]
-            ).astype(np.float64),
+            np.where(known, features[:, idx_alpha].astype(np.float64) / 100, np.nan),
+            features[:, idx_liq].astype(np.float64),
+            (features[:, idx_v252] + features[:, idx_v21]).astype(np.float64),
         )
         wanted = np.array([r[2] for r in rows]).astype("datetime64[us]").astype("datetime64[D]")
         position = np.searchsorted(days, wanted)
         inside = position < len(days)
         inside[inside] = days[position[inside]] == wanted[inside]
-        for (split, row, _), found, at in zip(rows, inside, position, strict=True):
-            if found:
-                for column, value in zip(columns[split], values, strict=True):
-                    column[row] = value[at]
+        hits = np.flatnonzero(inside)
+        if not len(hits):
+            return ()
+        at = position[hits]
+        return tuple(
+            (rows[i][0], rows[i][1], values[0][a], values[1][a], values[2][a])
+            for i, a in zip(hits, at, strict=True)
+        )
+
+    items = list(places.items())
+    if len(items) > 4:
+        from concurrent.futures import ThreadPoolExecutor
+
+        with ThreadPoolExecutor(max_workers=4) as pool:
+            computed = list(pool.map(_compute_asset, items))
+    else:
+        computed = [_compute_asset(item) for item in items]
+
+    for entries in computed:
+        for split, row, v0, v1, v2 in entries:
+            cols = columns[split]
+            cols[0][row] = v0
+            cols[1][row] = v1
+            cols[2][row] = v2
     maturity = pilots._maturity(Path(state) / "cohorts" / str(origin) / "manifest.json", view)
     matures = {}
     for split, table in tables.items():
@@ -735,6 +758,14 @@ def _a2(declaration, parent, tree, covariates):
         widths[split] = parent[split].column("quantile_0900").to_numpy().astype(
             np.float64
         ) - parent[split].column("quantile_0100").to_numpy().astype(np.float64)
+        inst_us = parent[split].column("prediction_at").cast(pa.int64()).to_numpy()
+        uniq_us, inv_us = np.unique(inst_us, return_inverse=True)
+        uniq_q = np.array(
+            [
+                f"{d.astype('datetime64[Y]').astype(int) + 1970}T{(d.astype('datetime64[M]').astype(int) % 12) // 3 + 1}"
+                for d in uniq_us.astype("datetime64[us]")
+            ]
+        )
         groups[split] = dict(
             liquidity=within_session_groups(
                 covariates[split]["liquidity"], bounds, settings["liquidity_groups"]
@@ -742,16 +773,7 @@ def _a2(declaration, parent, tree, covariates):
             volatility=within_session_groups(
                 covariates[split]["volatility"], bounds, settings["volatility_groups"]
             ),
-            quarter=np.array(
-                [
-                    f"{d.astype('datetime64[Y]').astype(int) + 1970}T{(d.astype('datetime64[M]').astype(int) % 12) // 3 + 1}"
-                    for d in parent[split]
-                    .column("prediction_at")
-                    .cast(pa.int64())
-                    .to_numpy()
-                    .astype("datetime64[us]")
-                ]
-            ),
+            quarter=uniq_q[inv_us],
         )
     target = {s: parent[s].column("target").to_numpy().astype(np.float64) for s in SPLITS}
     fit, conformal = settings["fit_split"], settings["conformal_split"]
@@ -919,21 +941,25 @@ def _a4(declaration, tool, views):
     for name, (keys, gross, turnover, book, view) in series.items():
         table = cost_table(gross, turnover, settings)
         deciles = within_session_groups(view["score"], view["bounds"], 10)
-        by_decile = [
-            float(
-                np.mean(
-                    [
-                        view["target"][s:e][deciles[s:e] == d].mean()
-                        for s, e in view["bounds"]
-                        if (deciles[s:e] == d).any()
-                    ]
-                )
-            )
-            for d in range(10)
-        ]
+        dec_sums = [[] for _ in range(10)]
+        tgt_arr = view["target"]
+        for s, e in view["bounds"]:
+            seg_d = deciles[s:e]
+            valid = seg_d >= 0
+            if not valid.any():
+                continue
+            d_v = seg_d[valid]
+            y_v = tgt_arr[s:e][valid]
+            cnt = np.bincount(d_v, minlength=10)
+            tot = np.bincount(d_v, weights=y_v, minlength=10)
+            for d in range(10):
+                if cnt[d] > 0:
+                    dec_sums[d].append(tot[d] / cnt[d])
+        by_decile = [float(np.mean(vals)) for vals in dec_sums]
         liquidity = view["liquidity"]
+        v_assets = view["assets"]
         legs = [
-            liquidity[s + np.flatnonzero([view["assets"][i] in b for i in range(s, e)])]
+            liquidity[[i for i in range(s, e) if v_assets[i] in b]]
             for (s, e), b in zip(view["bounds"], book, strict=True)
         ]
         books[name] = dict(
@@ -1081,11 +1107,11 @@ def measure(
     work = Path(output) / f".{origin}.{os.getpid()}.tmp"
     try:
         (work / "informes").mkdir(parents=True)
-        inputs = {
-            p: og._write_component(
-                work / "entradas" / names[p], parent, predictions[p], alpha, matures
+        raw_base = {
+            s: oa.build_raw_split_base(
+                parent[s], alpha=alpha[s], matures_at=matures[s], already_sorted=True
             )
-            for p in players
+            for s in AGGREGATED
         }
         coalitions = [
             frozenset(c)
@@ -1095,21 +1121,50 @@ def measure(
         games = {mode: dict(rank_average={}, ridge_cov_active={}) for mode in modes}
         views = {}
         factors = {}
+        decl_splits = tuple(declaration["splits"])
+        decl_scales = tuple(declaration["operable_scales"])
         for mode in modes:
+            is_operable = mode == "operable"
+            raw_by_split = {
+                s: {
+                    names[p]: oa.build_raw_split(
+                        raw_base[s], predictions[p][s], include_alpha=is_operable
+                    )
+                    for p in players
+                }
+                for s in AGGREGATED
+            }
+            cache = (
+                oa.build_shared_panel_cache(
+                    raw_by_split,
+                    splits=decl_splits,
+                    min_assets=declaration["min_assets"],
+                    align=declaration["align"],
+                    operable=is_operable,
+                    operable_scales=decl_scales,
+                )
+                if declaration["align"] == "strict"
+                else None
+            )
             everyone, systems, rows_of = None, {}, {}
             for coalition in coalitions:
                 members = [p for p in players if p in coalition]
                 result = oa.run_aggregation(
-                    {names[p]: inputs[p] for p in members},
-                    splits=tuple(declaration["splits"]),
+                    {names[p]: names[p] for p in members},
+                    splits=decl_splits,
                     selection_split=declaration["selection_split"],
                     min_assets=declaration["min_assets"],
                     align=declaration["align"],
-                    operable=mode == "operable",
+                    operable=is_operable,
                     alpha_col="alpha",
                     maturity_col="matures_at",
                     placebo_seed=declaration["aggregator_placebo_seed"],
-                    operable_scales=tuple(declaration["operable_scales"]),
+                    operable_scales=decl_scales,
+                    aggregators=("rank_average", "ridge_cov_active"),
+                    include_placebos=False,
+                    include_asset_abstention=False,
+                    preloaded_raw=raw_by_split,
+                    precomputed_cache=cache,
                 )
                 for game in games[mode]:
                     games[mode][game][coalition] = result["aggregators"][game][
@@ -1146,10 +1201,14 @@ def measure(
                 ev = everyone[split]
                 for p in players:
                     if split == "evaluation":
-                        ics = oa.session_rank_ic(
-                            ev,
-                            ev["predictions"][:, positions[p]],
-                            min_assets=declaration["min_assets"],
+                        ics = (
+                            cache["individual_ics"][names[p]]["evaluation"]
+                            if cache is not None
+                            else oa.session_rank_ic(
+                                ev,
+                                ev["predictions"][:, positions[p]],
+                                min_assets=declaration["min_assets"],
+                            )
                         )
                         for game in games[mode]:
                             games[mode][game][frozenset((p,))] = ics
@@ -1169,7 +1228,6 @@ def measure(
         say("A3 Shapley")
         a4, a4_rows = _a4(declaration, tool, views) if "operable" in modes else ({}, [])
         say("A4 costes")
-        shutil.rmtree(work / "entradas")
         summary = og._plain(
             dict(
                 schema_version=1,

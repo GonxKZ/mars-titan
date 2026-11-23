@@ -138,25 +138,41 @@ def standardized_ranks(values: np.ndarray) -> np.ndarray:
     return (centered / scale).astype(np.float32)
 
 
-def rank_ic_vector(prediction: np.ndarray, target: np.ndarray) -> float:
-    """IC de rangos (Spearman) en FP32 determinista entre dos vectores de una sesión."""
-    pred = np.asarray(prediction, dtype=np.float32)
+def _prep_target_ranks(target: np.ndarray) -> tuple[np.ndarray, float]:
+    """Precalcula rangos centrados y norma L2² en FP32 del objetivo de una sesión."""
     targ = np.asarray(target, dtype=np.float32)
-    if pred.size < 2 or pred.size != targ.size:
+    if targ.size < 2:
+        return np.empty(0, dtype=np.float32), 0.0
+    r_y = average_ranks(targ).astype(np.float32)
+    ly = r_y - np.float32(np.mean(r_y, dtype=np.float32))
+    n_y = float(np.sum(ly * ly, dtype=np.float32))
+    return ly, n_y
+
+
+def _rank_ic_prepped(prediction: np.ndarray, ly: np.ndarray, n_y: float) -> float:
+    """IC de rangos (Spearman) en FP32 bit-exacto contra rangos del objetivo precalculados."""
+    pred = np.asarray(prediction, dtype=np.float32)
+    if pred.size < 2 or pred.size != ly.size or n_y <= 0.0:
         return float("nan")
     r_p = average_ranks(pred).astype(np.float32)
-    r_y = average_ranks(targ).astype(np.float32)
     lp = r_p - np.float32(np.mean(r_p, dtype=np.float32))
-    ly = r_y - np.float32(np.mean(r_y, dtype=np.float32))
-    # Normas en FP32 determinista (sin reordenación paralela)
     n_p = float(np.sum(lp * lp, dtype=np.float32))
-    n_y = float(np.sum(ly * ly, dtype=np.float32))
     denom = math.sqrt(n_p * n_y)
     if denom <= 0.0 or not math.isfinite(denom):
         return float("nan")
     num = float(np.sum(lp * ly, dtype=np.float32))
     val = num / denom
     return float(max(-1.0, min(1.0, val))) if math.isfinite(val) else float("nan")
+
+
+def rank_ic_vector(prediction: np.ndarray, target: np.ndarray) -> float:
+    """IC de rangos (Spearman) en FP32 determinista entre dos vectores de una sesión."""
+    pred = np.asarray(prediction, dtype=np.float32)
+    targ = np.asarray(target, dtype=np.float32)
+    if pred.size < 2 or pred.size != targ.size:
+        return float("nan")
+    ly, n_y = _prep_target_ranks(targ)
+    return _rank_ic_prepped(pred, ly, n_y)
 
 
 def combine_session_scores(z_session: np.ndarray, weights: np.ndarray) -> np.ndarray:
@@ -178,6 +194,7 @@ def session_rank_ic(
     min_assets: int = MIN_ASSETS,
     abstained: np.ndarray | None = None,
     exposure: np.ndarray | None = None,
+    _target_cache: list[tuple[np.ndarray, float] | None] | None = None,
 ) -> dict[tuple[str, int], float]:
     """IC de rangos por sesión `{(mercado, instante): IC}`.
 
@@ -193,9 +210,15 @@ def session_rank_ic(
     for s_idx, (market, instant, start, end) in enumerate(data["sessions"]):
         if end - start < min_assets:
             continue
-        y_seg = target[start:end]
-        if float(np.ptp(y_seg)) == 0.0:
-            continue
+        if _target_cache is not None and _target_cache[s_idx] is not None:
+            ly, n_y = _target_cache[s_idx]  # type: ignore[misc]
+            if n_y <= 0.0:
+                continue
+        else:
+            y_seg = target[start:end]
+            if float(np.ptp(y_seg)) == 0.0:
+                continue
+            ly, n_y = _prep_target_ranks(y_seg)
         if abstained is not None and bool(abstained[s_idx]):
             result[(market, instant)] = 0.0
             continue
@@ -209,7 +232,7 @@ def session_rank_ic(
             if exp_val <= 0.0:
                 result[(market, instant)] = 0.0
                 continue
-        value = rank_ic_vector(pred[start:end], y_seg)
+        value = _rank_ic_prepped(pred[start:end], ly, n_y)
         if not math.isnan(value):
             result[(market, instant)] = float(exp_val * value) if exp_val != 1.0 else value
     return result
@@ -484,6 +507,103 @@ def load_split(
     )
 
 
+def build_raw_split_base(
+    table: pa.Table,
+    *,
+    alpha: np.ndarray | None = None,
+    matures_at: np.ndarray | None = None,
+    already_sorted: bool = False,
+) -> dict[str, Any]:
+    """Construye la estructura compartida de un tramo en memoria, idéntica a `load_split`.
+
+    Permite compartir metadatos, sesiones, objetivo, `alpha` y `matures_at` entre múltiples
+    componentes alineados sin escribir ni releer ficheros Parquet temporales.
+    """
+    if not already_sorted:
+        table = table.sort_by(
+            [("market", "ascending"), ("prediction_at", "ascending"), ("sample_id", "ascending")]
+        )
+    _require(table.num_rows > 0, "La tabla del tramo está vacía")
+    for col in ("sample_id", "asset_id", "market", "prediction_at", "target"):
+        _require(table.column(col).null_count == 0, f"La columna '{col}' contiene nulos")
+
+    instant = _to_int64_us(table.column("prediction_at"))
+    _require(
+        int(instant.max()) < FINAL_TEST_START_US,
+        "Violación del sello de 2024: prediction_at >= 2024-01-01 UTC",
+    )
+
+    mat_arr = None
+    if matures_at is not None:
+        mat_arr = np.asarray(matures_at, dtype=np.int64)
+        _require(len(mat_arr) == len(instant), "Longitud de matures_at incompatible")
+        _require(bool(np.all(mat_arr > instant)), "Etiquetas con madurez <= instante de decisión")
+        _require(
+            int(mat_arr.max()) < FINAL_TEST_START_US,
+            "Violación del sello de 2024: matures_at >= 2024-01-01 UTC",
+        )
+
+    target32 = table.column("target").to_numpy().astype(np.float32)
+    _require(bool(np.isfinite(target32).all()), "Valores no finitos en 'target'")
+
+    alpha32 = None
+    if alpha is not None:
+        alpha32 = np.asarray(alpha, dtype=np.float64).astype(np.float32)
+        _require(len(alpha32) == len(instant), "Longitud de alpha incompatible")
+
+    market_col = table.column("market").combine_chunks().dictionary_encode()
+    codes = market_col.indices.to_numpy(zero_copy_only=False)
+    market_names = market_col.dictionary.to_pylist()
+    sample_ids = table.column("sample_id").to_pylist()
+    asset_ids = table.column("asset_id").to_pylist()
+
+    if len(sample_ids) > 1:
+        same_key = (codes[1:] == codes[:-1]) & (instant[1:] == instant[:-1])
+        dup_positions = np.flatnonzero(same_key)
+        for pos in dup_positions:
+            if sample_ids[pos] == sample_ids[pos + 1]:
+                raise ValueError(
+                    f"Clave duplicada ({market_names[codes[pos]]}, {instant[pos]}, {sample_ids[pos]})"
+                )
+
+    change = (instant[1:] != instant[:-1]) | (codes[1:] != codes[:-1])
+    starts = np.r_[0, np.flatnonzero(change) + 1]
+    ends = np.r_[starts[1:], len(instant)]
+    sessions = [
+        (str(market_names[codes[int(s)]]), int(instant[int(s)]), int(s), int(e))
+        for s, e in zip(starts, ends, strict=True)
+    ]
+
+    return dict(
+        sample=sample_digest(table.column("sample_id")),
+        sample_id=sample_ids,
+        asset_id=asset_ids,
+        market_codes=codes,
+        market_names=market_names,
+        prediction_at=instant,
+        target=target32,
+        alpha=alpha32,
+        matures_at=mat_arr,
+        sessions=sessions,
+    )
+
+
+def build_raw_split(
+    base: dict[str, Any],
+    prediction: np.ndarray,
+    *,
+    include_alpha: bool = True,
+) -> dict[str, Any]:
+    """Adjunta una predicción en FP32 a una base creada por `build_raw_split_base`."""
+    pred32 = np.asarray(prediction, dtype=np.float32)
+    _require(len(pred32) == len(base["target"]), "Longitud de prediction incompatible")
+    _require(bool(np.isfinite(pred32).all()), "Valores no finitos en 'prediction'")
+    out = dict(base, prediction=pred32)
+    if not include_alpha:
+        out["alpha"] = None
+    return out
+
+
 def _rebuild_sessions(
     markets: list[str],
     instants: np.ndarray,
@@ -729,7 +849,7 @@ def mature_session_indices(
             matures.shape == times.shape and bool(np.all(matures > times)),
             "Toda etiqueta debe madurar estrictamente después de su instante de decisión",
         )
-        return np.flatnonzero((np.arange(n) < current_idx) & (matures <= times[current_idx]))
+        return np.flatnonzero(matures[:current_idx] <= times[current_idx])
     cutoff = current_idx - maturity_lag
     if cutoff < 0:
         return np.empty(0, dtype=np.int64)
@@ -815,17 +935,30 @@ def ridge_stacking_weights(
         math.isfinite(se_shrinkage) and se_shrinkage >= 0.0,
         f"se_shrinkage debe ser finito y >= 0; se recibió {se_shrinkage!r}",
     )
-    times = np.arange(n_sessions, dtype=np.int64) if session_times is None else session_times
+    times = np.arange(n_sessions, dtype=np.int64) if session_times is None else np.asarray(session_times, dtype=np.int64)
     sc = np.ones(n_sessions, dtype=bool) if scored is None else np.asarray(scored, dtype=bool)
+    if type(maturity_lag) is not int or maturity_lag < 1:
+        raise ValueError(f"maturity_lag debe ser un entero >= 1; se recibió {maturity_lag!r}")
+    mat_arr = None
+    if session_matures is not None:
+        mat_arr = np.asarray(session_matures, dtype=np.int64)
+        _require(
+            mat_arr.shape == times.shape and bool(np.all(mat_arr > times)),
+            "Toda etiqueta debe madurar estrictamente después de su instante de decisión",
+        )
 
     uniform = np.full(n_models, 1.0 / n_models, dtype=np.float64)
     out = np.empty((n_sessions, n_models), dtype=np.float64)
     eye = np.eye(n_models, dtype=np.float64)
+    ics_clean = np.nan_to_num(ics, nan=0.0)
+    covs_clean = np.nan_to_num(covs, nan=0.0)
 
     for t in range(n_sessions):
-        matured = mature_session_indices(times, session_matures, t, maturity_lag=maturity_lag)
-        if matured.size > 0:
-            matured = matured[sc[matured]]
+        if mat_arr is not None:
+            matured = np.flatnonzero((mat_arr[:t] <= times[t]) & sc[:t])
+        else:
+            cutoff = t - maturity_lag
+            matured = np.flatnonzero(sc[: cutoff + 1]) if cutoff >= 0 else np.empty(0, dtype=np.int64)
         if window is not None and matured.size > window:
             matured = matured[-window:]
         if matured.size == 0:
@@ -842,13 +975,13 @@ def ridge_stacking_weights(
         norm_w = decay / sw
         n_eff = float((sw * sw) / np.sum(decay * decay))
 
-        hist_ic = np.nan_to_num(ics[matured], nan=0.0)
+        hist_ic = ics_clean[matured]
         b_mean = (norm_w[:, None] * hist_ic).sum(axis=0)
 
         if use_current_cov:
-            cov_t = np.nan_to_num(covs[t], nan=0.0)
+            cov_t = covs_clean[t]
         else:
-            cov_t = np.tensordot(norm_w, np.nan_to_num(covs[matured], nan=0.0), axes=(0, 0))
+            cov_t = np.tensordot(norm_w, covs_clean[matured], axes=(0, 0))
 
         if se_shrinkage > 0.0:
             if k >= 2:
@@ -1313,22 +1446,31 @@ def _fit_operable_scales_on_calibration(
     skip = exclude_keys or set()
 
     chosen: dict[str, float] = {}
+    # Precalcular por sesión los activos con alfa finito y los rangos centrados de `y + alpha`.
+    prepped_sessions: list[tuple[int, int, np.ndarray, np.ndarray, np.ndarray, float]] = []
+    for mkt, inst, start, end in cal_aligned["sessions"]:
+        if (mkt, inst) in skip:
+            continue
+        a_seg = alpha[start:end]
+        known = np.isfinite(a_seg)
+        if int(known.sum()) < min_assets:
+            continue
+        a_k = a_seg[known]
+        y_op = target[start:end][known] + a_k
+        ly, n_y = _prep_target_ranks(y_op)
+        prepped_sessions.append((start, end, known, a_k, ly, n_y))
+
     for m_idx, name in enumerate(names):
         p_col = preds[:, m_idx]
+        p_segs = [p_col[start:end][known] for start, end, known, _, _, _ in prepped_sessions]
         best_k = scales[0]
         best_score = -2.0
         for factor in scales:
+            f32 = np.float32(factor)
             vals = []
-            for mkt, inst, start, end in cal_aligned["sessions"]:
-                if (mkt, inst) in skip:
-                    continue
-                a_seg = alpha[start:end]
-                known = np.isfinite(a_seg)
-                if int(known.sum()) < min_assets:
-                    continue
-                y_op = target[start:end][known] + a_seg[known]
-                p_op = np.float32(factor) * p_col[start:end][known] + a_seg[known]
-                v = rank_ic_vector(p_op, y_op)
+            for p_k, (_, _, _, a_k, ly, n_y) in zip(p_segs, prepped_sessions, strict=True):
+                p_op = f32 * p_k + a_k
+                v = _rank_ic_prepped(p_op, ly, n_y)
                 if math.isfinite(v):
                     vals.append(v)
             score = float(np.mean(vals)) if vals else -2.0
@@ -1403,6 +1545,7 @@ def _build_market_streams(
     for mkt in markets:
         z_sessions: list[np.ndarray] = []
         y_sessions: list[np.ndarray] = []
+        y_ranks: list[tuple[np.ndarray, float] | None] = []
         raw_p_sessions: list[np.ndarray] = []
         times_list: list[int] = []
         matures_list: list[int] | None = []
@@ -1435,9 +1578,12 @@ def _build_market_streams(
                 n_rows = end - start
                 is_scored = bool(n_rows >= min_assets and float(np.ptp(y_seg)) > 0.0)
                 if is_scored:
-                    row_ics = [rank_ic_vector(p_seg[:, col], y_seg) for col in range(n_models)]
+                    ly, n_y = _prep_target_ranks(y_seg)
+                    y_rank_entry: tuple[np.ndarray, float] | None = (ly, n_y)
+                    row_ics = [_rank_ic_prepped(p_seg[:, col], ly, n_y) for col in range(n_models)]
                     row_ics = [0.0 if math.isnan(v) else v for v in row_ics]
                 else:
+                    y_rank_entry = None
                     row_ics = [0.0] * n_models
 
                 z64 = z_seg.astype(np.float64)
@@ -1447,6 +1593,7 @@ def _build_market_streams(
 
                 z_sessions.append(z_seg)
                 y_sessions.append(y_seg)
+                y_ranks.append(y_rank_entry)
                 raw_p_sessions.append(p_seg)
                 times_list.append(inst)
                 if has_explicit_mat:
@@ -1463,6 +1610,7 @@ def _build_market_streams(
         streams[mkt] = dict(
             z_sessions=z_sessions,
             y_sessions=y_sessions,
+            y_ranks=y_ranks,
             raw_p_sessions=raw_p_sessions,
             times=np.asarray(times_list, dtype=np.int64),
             matures=np.asarray(matures_list, dtype=np.int64) if has_explicit_mat else None,
@@ -1476,6 +1624,202 @@ def _build_market_streams(
             scored=np.asarray(scored_list, dtype=bool),
         )
     return streams
+
+
+def _extend_market_streams(
+    base_streams: dict[str, dict[str, Any]],
+    aligned_splits: dict[str, dict[str, Any]],
+    extra_splits: tuple[str, ...],
+    *,
+    min_assets: int,
+) -> dict[str, dict[str, Any]]:
+    """Añade tramos posteriores a `base_streams` sin recalcular rangos de los tramos previos."""
+    if not extra_splits:
+        return base_streams
+    extra = _build_market_streams(aligned_splits, extra_splits, min_assets=min_assets)
+    markets = sorted(set(base_streams) | set(extra))
+    merged: dict[str, dict[str, Any]] = {}
+    for mkt in markets:
+        if mkt not in base_streams:
+            merged[mkt] = extra[mkt]
+            continue
+        if mkt not in extra:
+            merged[mkt] = base_streams[mkt]
+            continue
+        a, b = base_streams[mkt], extra[mkt]
+        ics_arr = np.concatenate([a["ics"], b["ics"]], axis=0)
+        merged[mkt] = dict(
+            z_sessions=a["z_sessions"] + b["z_sessions"],
+            y_sessions=a["y_sessions"] + b["y_sessions"],
+            y_ranks=a["y_ranks"] + b["y_ranks"],
+            raw_p_sessions=a["raw_p_sessions"] + b["raw_p_sessions"],
+            times=np.concatenate([a["times"], b["times"]]),
+            matures=(
+                np.concatenate([a["matures"], b["matures"]])
+                if a["matures"] is not None and b["matures"] is not None
+                else None
+            ),
+            split_tags=a["split_tags"] + b["split_tags"],
+            session_indices_in_split=a["session_indices_in_split"] + b["session_indices_in_split"],
+            ics=ics_arr,
+            losses=(1.0 - ics_arr) / 2.0,
+            covs=np.concatenate([a["covs"], b["covs"]], axis=0),
+            target_dispersion=np.concatenate([a["target_dispersion"], b["target_dispersion"]]),
+            model_disagreement=np.concatenate([a["model_disagreement"], b["model_disagreement"]]),
+            scored=np.concatenate([a["scored"], b["scored"]]),
+        )
+    return merged
+
+
+def _slice_streams_for_models(
+    streams: dict[str, dict[str, Any]],
+    col_indices: list[int],
+    *,
+    allowed_splits: set[str] | None = None,
+) -> dict[str, dict[str, Any]]:
+    """Extrae un subconjunto de modelos (y opcionalmente de tramos) desde un stream compartido."""
+    idx_arr = np.asarray(col_indices, dtype=np.int64)
+    out: dict[str, dict[str, Any]] = {}
+    for mkt, st in streams.items():
+        if allowed_splits is None:
+            row_idx = list(range(len(st["split_tags"])))
+        else:
+            row_idx = [i for i, sp in enumerate(st["split_tags"]) if sp in allowed_splits]
+        if not row_idx:
+            continue
+        r_arr = np.asarray(row_idx, dtype=np.int64)
+        ics_sub = st["ics"][np.ix_(r_arr, idx_arr)]
+        covs_sub = st["covs"][r_arr][:, idx_arr, :][:, :, idx_arr]
+        out[mkt] = dict(
+            z_sessions=[st["z_sessions"][i][:, idx_arr] for i in row_idx],
+            y_sessions=[st["y_sessions"][i] for i in row_idx],
+            y_ranks=[st["y_ranks"][i] for i in row_idx],
+            raw_p_sessions=[st["raw_p_sessions"][i][:, idx_arr] for i in row_idx],
+            times=st["times"][r_arr],
+            matures=None if st["matures"] is None else st["matures"][r_arr],
+            split_tags=[st["split_tags"][i] for i in row_idx],
+            session_indices_in_split=[st["session_indices_in_split"][i] for i in row_idx],
+            ics=ics_sub,
+            losses=(1.0 - ics_sub) / 2.0,
+            covs=covs_sub,
+            target_dispersion=st["target_dispersion"][r_arr],
+            model_disagreement=st["model_disagreement"][r_arr],
+            scored=st["scored"][r_arr],
+        )
+    return out
+
+
+def _target_cache_for_split(
+    aligned_split: dict[str, Any],
+    streams: dict[str, dict[str, Any]],
+    split_name: str,
+) -> list[tuple[np.ndarray, float] | None]:
+    """Construye la lista `_target_cache` alineada con `aligned_split['sessions']`."""
+    cache: list[tuple[np.ndarray, float] | None] = [None] * len(aligned_split["sessions"])
+    for st in streams.values():
+        for local_idx, sp in enumerate(st["split_tags"]):
+            if sp == split_name:
+                cache[st["session_indices_in_split"][local_idx]] = st["y_ranks"][local_idx]
+    return cache
+
+
+def build_shared_panel_cache(
+    raw_by_split: dict[str, dict[str, dict[str, Any]]],
+    *,
+    splits: tuple[str, ...] = SPLITS,
+    maturity_lag: int = 1,
+    min_assets: int = MIN_ASSETS,
+    align: str = "strict",
+    operable: bool = False,
+    operable_scales: tuple[float, ...] = OPERABLE_SCALES,
+) -> dict[str, Any]:
+    """Precalcula alineación, transformación operable, rangos por jugador e IC una sola vez.
+
+    Reutilizable en todas las coaliciones de `agent_core`, `organ_aggregation` y `reliability`
+    sin repetir `standardized_ranks`, `_fit_operable_scales_on_calibration` ni lecturas Parquet.
+    """
+    _require(align == "strict", "build_shared_panel_cache solo soporta align='strict'")
+    aligned_all = {sp: align_models_split(raw_by_split[sp], align=align) for sp in splits}
+    _validate_chronological_splits(aligned_all)
+    cal_embargo = _calibration_embargo_keys(aligned_all["calibration"], maturity_lag=maturity_lag)
+
+    scales: dict[str, float] | None = None
+    baseline_alpha_ic: dict[str, Any] | None = None
+    if operable:
+        _require(
+            len(operable_scales) >= 2
+            and all(isinstance(s, float) and math.isfinite(s) and s > 0 for s in operable_scales)
+            and list(operable_scales) == sorted(set(operable_scales)),
+            "La rejilla de factores operables son reales positivos, distintos y crecientes",
+        )
+        scales = _fit_operable_scales_on_calibration(
+            aligned_all["calibration"],
+            min_assets=min_assets,
+            exclude_keys=cal_embargo,
+            scales=tuple(operable_scales),
+        )
+        eval_raw = aligned_all["evaluation"]
+        alpha_eval = eval_raw["alpha"]
+        known_eval = np.isfinite(alpha_eval)
+        base_plus_op = {}
+        base_minus_lbl = {}
+        for m, inst, s, e in eval_raw["sessions"]:
+            k_seg = known_eval[s:e]
+            if int(k_seg.sum()) < min_assets:
+                continue
+            a_seg = alpha_eval[s:e][k_seg]
+            y_seg = eval_raw["target"][s:e][k_seg]
+            v_op = rank_ic_vector(a_seg, y_seg + a_seg)
+            v_lbl = rank_ic_vector(-a_seg, y_seg)
+            if math.isfinite(v_op):
+                base_plus_op[(m, inst)] = v_op
+            if math.isfinite(v_lbl):
+                base_minus_lbl[(m, inst)] = v_lbl
+        baseline_alpha_ic = dict(
+            plus_alpha_on_operable=summarize_session_dict(base_plus_op),
+            minus_alpha_on_label=summarize_session_dict(base_minus_lbl),
+        )
+        aligned_all = {
+            sp: _transform_split_to_operable(aligned_all[sp], scales) for sp in splits
+        }
+
+    full_streams = _build_market_streams(aligned_all, splits, min_assets=min_assets)
+    all_names = aligned_all["evaluation"]["model_names"]
+    target_caches = {
+        sp: _target_cache_for_split(aligned_all[sp], full_streams, sp) for sp in splits
+    }
+    individual_ics: dict[str, dict[str, dict[tuple[str, int], float]]] = {}
+    individual_summary: dict[str, dict[str, Any]] = {}
+    for m_idx, name in enumerate(all_names):
+        individual_ics[name] = {}
+        individual_summary[name] = {}
+        for sp in splits:
+            ics_sp = session_rank_ic(
+                aligned_all[sp],
+                aligned_all[sp]["predictions"][:, m_idx],
+                min_assets=min_assets,
+                _target_cache=target_caches[sp],
+            )
+            individual_ics[name][sp] = ics_sp
+            individual_summary[name][sp] = summarize_session_dict(ics_sp)
+
+    return dict(
+        splits=tuple(splits),
+        maturity_lag=maturity_lag,
+        min_assets=min_assets,
+        align=align,
+        operable=operable,
+        operable_scales=tuple(operable_scales),
+        model_names=all_names,
+        aligned_all=aligned_all,
+        full_streams=full_streams,
+        target_caches=target_caches,
+        cal_embargo=cal_embargo,
+        scales=scales,
+        baseline_alpha_ic=baseline_alpha_ic,
+        individual_ics=individual_ics,
+        individual_summary=individual_summary,
+    )
 
 
 def _emit_split_predictions_from_weights(
@@ -1528,6 +1872,31 @@ def _mean_ic_on_splits(
     exclude_keys_by_split: dict[str, set[tuple[str, int]]] | None = None,
 ) -> float:
     vals: list[float] = []
+    if exposure_by_market is None:
+        # Ruta rápida sin asignar `pred_out` completo ni reordenar los rangos del objetivo.
+        for sp in target_splits:
+            excl = (exclude_keys_by_split or {}).get(sp, set())
+            for mkt in sorted(streams):
+                st = streams[mkt]
+                w_m = weights_by_market[mkt]
+                times = st["times"]
+                scored = st["scored"]
+                z_sessions = st["z_sessions"]
+                y_ranks = st["y_ranks"]
+                for local_idx, tag in enumerate(st["split_tags"]):
+                    if tag != sp or not scored[local_idx]:
+                        continue
+                    if (mkt, int(times[local_idx])) in excl:
+                        continue
+                    yr = y_ranks[local_idx]
+                    if yr is None:
+                        continue
+                    comb = combine_session_scores(z_sessions[local_idx], w_m[local_idx])
+                    v = _rank_ic_prepped(comb, yr[0], yr[1])
+                    if not math.isnan(v):
+                        vals.append(v)
+        return float(np.mean(vals)) if vals else -2.0
+
     for sp in target_splits:
         pred, _, abst, exp = _emit_split_predictions_from_weights(
             aligned_splits,
@@ -1541,13 +1910,26 @@ def _mean_ic_on_splits(
             pred,
             min_assets=min_assets,
             abstained=abst,
-            exposure=exp if exposure_by_market is not None else None,
+            exposure=exp,
         )
         excl = (exclude_keys_by_split or {}).get(sp, set())
         for k, v in ics.items():
             if k not in excl:
                 vals.append(v)
     return float(np.mean(vals)) if vals else -2.0
+
+
+ALL_AGGREGATORS = (
+    "rank_average",
+    "ridge_rolling",
+    "ridge_ewma",
+    "ridge_cov_active",
+    "hedge",
+    "hedge_fixed_share",
+    "adanormalhedge",
+    "regime_weights",
+    "session_abstention",
+)
 
 
 def run_aggregation(
@@ -1564,6 +1946,11 @@ def run_aggregation(
     placebo_seed: int = 20261122,
     abstention_cost: float = 0.02,
     operable_scales: tuple[float, ...] = OPERABLE_SCALES,
+    aggregators: tuple[str, ...] | None = None,
+    include_placebos: bool = True,
+    include_asset_abstention: bool = True,
+    preloaded_raw: dict[str, dict[str, dict[str, Any]]] | None = None,
+    precomputed_cache: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Ejecuta la agregación causal completa sobre los tramos declarados sin fuga de evaluación.
 
@@ -1590,106 +1977,197 @@ def run_aggregation(
         )
     _require(type(maturity_lag) is int and maturity_lag >= 1, "maturity_lag debe ser entero >= 1")
 
-    raw_by_split: dict[str, dict[str, dict[str, Any]]] = {}
-    for sp in splits:
-        raw_by_split[sp] = {
-            name: load_split(
-                run_path,
-                sp,
-                alpha_col=alpha_col if operable else None,
-                maturity_col=maturity_col,
-            )
-            for name, run_path in sorted(model_runs.items())
-        }
+    if aggregators is None:
+        active_aggs = list(ALL_AGGREGATORS)
+    else:
+        unknown_aggs = [a for a in aggregators if a not in ALL_AGGREGATORS]
+        _require(not unknown_aggs, f"Agregadores desconocidos: {unknown_aggs}")
+        # Mantener `rank_average` primero como referencia y el orden canónico
+        req_set = set(aggregators) | {"rank_average"}
+        if include_placebos:
+            req_set.add("ridge_cov_active")
+        active_aggs = [a for a in ALL_AGGREGATORS if a in req_set]
+    active_set = set(active_aggs)
 
-    aligned_splits = {sp: align_models_split(raw_by_split[sp], align=align) for sp in splits}
-    _validate_chronological_splits(aligned_splits)
-
-    alignment_info = {
-        sp: dict(
-            common_rows=aligned_splits[sp]["common_rows"],
-            dropped_rows=aligned_splits[sp]["dropped_rows"],
-            sessions=len(aligned_splits[sp]["sessions"]),
-            scorable_sessions=sum(
-                1 for _, _, s, e in aligned_splits[sp]["sessions"] if e - s >= min_assets
-            ),
-        )
-        for sp in splits
-    }
-
-    # Embargo de las últimas (maturity_lag - 1) sesiones de calibración si no hay matures_at explícito
-    cal_embargo = _calibration_embargo_keys(
-        aligned_splits["calibration"], maturity_lag=maturity_lag
+    req_names = sorted(model_runs)
+    use_cache = (
+        precomputed_cache is not None
+        and align == "strict"
+        and tuple(splits) == precomputed_cache["splits"]
+        and maturity_lag == precomputed_cache["maturity_lag"]
+        and min_assets == precomputed_cache["min_assets"]
+        and operable == precomputed_cache["operable"]
+        and (not operable or tuple(operable_scales) == precomputed_cache["operable_scales"])
+        and all(n in precomputed_cache["model_names"] for n in req_names)
     )
 
-    operable_info: dict[str, Any] = dict(enabled=False, scales=None, baseline_alpha_ic=None)
-    if operable:
-        _require(
-            len(operable_scales) >= 2
-            and all(isinstance(s, float) and math.isfinite(s) and s > 0 for s in operable_scales)
-            and list(operable_scales) == sorted(set(operable_scales)),
-            "La rejilla de factores operables son reales positivos, distintos y crecientes",
-        )
-        scales = _fit_operable_scales_on_calibration(
-            aligned_splits["calibration"],
-            min_assets=min_assets,
-            exclude_keys=cal_embargo,
-            scales=tuple(operable_scales),
-        )
-        # Baseline +alpha sobre lo operable y -alpha sobre la etiqueta en evaluación
-        eval_raw = aligned_splits["evaluation"]
-        alpha_eval = eval_raw["alpha"]
-        known_eval = np.isfinite(alpha_eval)
-        base_plus_op = {}
-        base_minus_lbl = {}
-        for m, inst, s, e in eval_raw["sessions"]:
-            k_seg = known_eval[s:e]
-            if int(k_seg.sum()) < min_assets:
-                continue
-            a_seg = alpha_eval[s:e][k_seg]
-            y_seg = eval_raw["target"][s:e][k_seg]
-            v_op = rank_ic_vector(a_seg, y_seg + a_seg)
-            v_lbl = rank_ic_vector(-a_seg, y_seg)
-            if math.isfinite(v_op):
-                base_plus_op[(m, inst)] = v_op
-            if math.isfinite(v_lbl):
-                base_minus_lbl[(m, inst)] = v_lbl
-
+    if use_cache:
+        cache = precomputed_cache  # type: ignore[assignment]
+        all_names = cache["model_names"]
+        col_indices = [all_names.index(n) for n in req_names]
+        idx_arr = np.asarray(col_indices, dtype=np.int64)
         aligned_splits = {
-            sp: _transform_split_to_operable(aligned_splits[sp], scales) for sp in splits
+            sp: dict(
+                cache["aligned_all"][sp],
+                model_names=req_names,
+                predictions=cache["aligned_all"][sp]["predictions"][:, idx_arr],
+                dropped_rows={n: 0 for n in req_names},
+            )
+            for sp in splits
         }
-        operable_info = dict(
-            enabled=True,
-            scales=scales,
-            # Componentes cuyo factor elegido cae en un borde de la rejilla: la rejilla es corta.
-            scales_on_boundary=sorted(
-                name
-                for name, factor in scales.items()
-                if factor in (operable_scales[0], operable_scales[-1])
-            ),
-            baseline_alpha_ic=dict(
-                plus_alpha_on_operable=summarize_session_dict(base_plus_op),
-                minus_alpha_on_label=summarize_session_dict(base_minus_lbl),
-            ),
+        alignment_info = {
+            sp: dict(
+                common_rows=aligned_splits[sp]["common_rows"],
+                dropped_rows=aligned_splits[sp]["dropped_rows"],
+                sessions=len(aligned_splits[sp]["sessions"]),
+                scorable_sessions=sum(
+                    1 for _, _, s, e in aligned_splits[sp]["sessions"] if e - s >= min_assets
+                ),
+            )
+            for sp in splits
+        }
+        cal_embargo = cache["cal_embargo"]
+        if operable:
+            scales = {n: cache["scales"][n] for n in req_names}
+            operable_info: dict[str, Any] = dict(
+                enabled=True,
+                scales=scales,
+                scales_on_boundary=sorted(
+                    name
+                    for name, factor in scales.items()
+                    if factor in (operable_scales[0], operable_scales[-1])
+                ),
+                baseline_alpha_ic=cache["baseline_alpha_ic"],
+            )
+        else:
+            operable_info = dict(enabled=False, scales=None, baseline_alpha_ic=None)
+        model_names = req_names
+        n_models = len(model_names)
+        individual_ics = {n: cache["individual_ics"][n] for n in model_names}
+        individual_summary = {n: cache["individual_summary"][n] for n in model_names}
+        target_caches = cache["target_caches"]
+        pre_eval_splits = tuple(sp for sp in splits if sp != "evaluation")
+        pre_streams = _slice_streams_for_models(
+            cache["full_streams"], col_indices, allowed_splits=set(pre_eval_splits)
+        )
+        full_streams = _slice_streams_for_models(cache["full_streams"], col_indices)
+    else:
+        raw_by_split: dict[str, dict[str, dict[str, Any]]] = {}
+        if preloaded_raw is not None:
+            for sp in splits:
+                raw_by_split[sp] = {name: preloaded_raw[sp][name] for name in req_names}
+        else:
+            for sp in splits:
+                raw_by_split[sp] = {
+                    name: load_split(
+                        run_path,
+                        sp,
+                        alpha_col=alpha_col if operable else None,
+                        maturity_col=maturity_col,
+                    )
+                    for name, run_path in sorted(model_runs.items())
+                }
+
+        aligned_splits = {sp: align_models_split(raw_by_split[sp], align=align) for sp in splits}
+        _validate_chronological_splits(aligned_splits)
+
+        alignment_info = {
+            sp: dict(
+                common_rows=aligned_splits[sp]["common_rows"],
+                dropped_rows=aligned_splits[sp]["dropped_rows"],
+                sessions=len(aligned_splits[sp]["sessions"]),
+                scorable_sessions=sum(
+                    1 for _, _, s, e in aligned_splits[sp]["sessions"] if e - s >= min_assets
+                ),
+            )
+            for sp in splits
+        }
+
+        # Embargo de las últimas (maturity_lag - 1) sesiones de calibración si no hay matures_at explícito
+        cal_embargo = _calibration_embargo_keys(
+            aligned_splits["calibration"], maturity_lag=maturity_lag
         )
 
-    model_names = aligned_splits["evaluation"]["model_names"]
-    n_models = len(model_names)
-
-    # 1) IC individual por modelo y tramo + selección causal del mejor componente individual
-    individual_ics: dict[str, dict[str, dict[tuple[str, int], float]]] = {}
-    individual_summary: dict[str, dict[str, Any]] = {}
-    for m_idx, name in enumerate(model_names):
-        individual_ics[name] = {}
-        individual_summary[name] = {}
-        for sp in splits:
-            ics_sp = session_rank_ic(
-                aligned_splits[sp],
-                aligned_splits[sp]["predictions"][:, m_idx],
-                min_assets=min_assets,
+        operable_info = dict(enabled=False, scales=None, baseline_alpha_ic=None)
+        if operable:
+            _require(
+                len(operable_scales) >= 2
+                and all(isinstance(s, float) and math.isfinite(s) and s > 0 for s in operable_scales)
+                and list(operable_scales) == sorted(set(operable_scales)),
+                "La rejilla de factores operables son reales positivos, distintos y crecientes",
             )
-            individual_ics[name][sp] = ics_sp
-            individual_summary[name][sp] = summarize_session_dict(ics_sp)
+            scales = _fit_operable_scales_on_calibration(
+                aligned_splits["calibration"],
+                min_assets=min_assets,
+                exclude_keys=cal_embargo,
+                scales=tuple(operable_scales),
+            )
+            # Baseline +alpha sobre lo operable y -alpha sobre la etiqueta en evaluación
+            eval_raw = aligned_splits["evaluation"]
+            alpha_eval = eval_raw["alpha"]
+            known_eval = np.isfinite(alpha_eval)
+            base_plus_op = {}
+            base_minus_lbl = {}
+            for m, inst, s, e in eval_raw["sessions"]:
+                k_seg = known_eval[s:e]
+                if int(k_seg.sum()) < min_assets:
+                    continue
+                a_seg = alpha_eval[s:e][k_seg]
+                y_seg = eval_raw["target"][s:e][k_seg]
+                v_op = rank_ic_vector(a_seg, y_seg + a_seg)
+                v_lbl = rank_ic_vector(-a_seg, y_seg)
+                if math.isfinite(v_op):
+                    base_plus_op[(m, inst)] = v_op
+                if math.isfinite(v_lbl):
+                    base_minus_lbl[(m, inst)] = v_lbl
+
+            aligned_splits = {
+                sp: _transform_split_to_operable(aligned_splits[sp], scales) for sp in splits
+            }
+            operable_info = dict(
+                enabled=True,
+                scales=scales,
+                # Componentes cuyo factor elegido cae en un borde de la rejilla: la rejilla es corta.
+                scales_on_boundary=sorted(
+                    name
+                    for name, factor in scales.items()
+                    if factor in (operable_scales[0], operable_scales[-1])
+                ),
+                baseline_alpha_ic=dict(
+                    plus_alpha_on_operable=summarize_session_dict(base_plus_op),
+                    minus_alpha_on_label=summarize_session_dict(base_minus_lbl),
+                ),
+            )
+
+        model_names = aligned_splits["evaluation"]["model_names"]
+        n_models = len(model_names)
+
+        # Construir streams previos a evaluación y extender con evaluación sin reordenar dos veces.
+        pre_eval_splits = tuple(sp for sp in splits if sp != "evaluation")
+        eval_only_splits = tuple(sp for sp in splits if sp == "evaluation")
+        pre_streams = _build_market_streams(aligned_splits, pre_eval_splits, min_assets=min_assets)
+        full_streams = _extend_market_streams(
+            pre_streams, aligned_splits, eval_only_splits, min_assets=min_assets
+        )
+        target_caches = {
+            sp: _target_cache_for_split(aligned_splits[sp], full_streams, sp) for sp in splits
+        }
+
+        # 1) IC individual por modelo y tramo (reutilizando rangos de objetivo cacheados)
+        individual_ics = {}
+        individual_summary = {}
+        for m_idx, name in enumerate(model_names):
+            individual_ics[name] = {}
+            individual_summary[name] = {}
+            for sp in splits:
+                ics_sp = session_rank_ic(
+                    aligned_splits[sp],
+                    aligned_splits[sp]["predictions"][:, m_idx],
+                    min_assets=min_assets,
+                    _target_cache=target_caches[sp],
+                )
+                individual_ics[name][sp] = ics_sp
+                individual_summary[name][sp] = summarize_session_dict(ics_sp)
 
     decision_splits = (
         tuple(s for s in ("validation", "calibration") if s in splits)
@@ -1709,8 +2187,6 @@ def run_aggregation(
     best_model_name = max(model_names, key=lambda nm: (decision_scores[nm], -model_names.index(nm)))
 
     # 2) Selección de hiperparámetros EXCLUSIVAMENTE en tramos previos a `evaluation`
-    pre_eval_splits = tuple(sp for sp in splits if sp != "evaluation")
-    pre_streams = _build_market_streams(aligned_splits, pre_eval_splits, min_assets=min_assets)
     tune_splits = decision_splits
     tune_exclude_map = {"calibration": cal_embargo}
 
@@ -1732,194 +2208,32 @@ def run_aggregation(
                 best_cfg = cfg
         return dict(best_cfg)
 
-    cfg_ridge_rolling = _tune_grid(
-        [dict(lam=lam, window=win) for lam in RIDGE_LAMBDAS for win in RIDGE_WINDOWS],
-        lambda st, cfg: ridge_stacking_weights(
-            st["ics"],
-            st["covs"],
-            lam=cfg["lam"],
-            window=cfg["window"],
-            session_times=st["times"],
-            session_matures=st["matures"],
-            maturity_lag=maturity_lag,
-            scored=st["scored"],
-            use_current_cov=False,
-            se_shrinkage=0.0,
-        ),
-    )
-
-    cfg_ridge_ewma = _tune_grid(
-        [dict(lam=lam, half_life=hl) for lam in RIDGE_LAMBDAS for hl in RIDGE_HALF_LIVES],
-        lambda st, cfg: ridge_stacking_weights(
-            st["ics"],
-            st["covs"],
-            lam=cfg["lam"],
-            half_life=cfg["half_life"],
-            session_times=st["times"],
-            session_matures=st["matures"],
-            maturity_lag=maturity_lag,
-            scored=st["scored"],
-            use_current_cov=False,
-            se_shrinkage=0.0,
-        ),
-    )
-
-    cfg_ridge_cov_active = _tune_grid(
-        [dict(lam=lam, half_life=hl) for lam in RIDGE_LAMBDAS for hl in RIDGE_HALF_LIVES],
-        lambda st, cfg: ridge_stacking_weights(
-            st["ics"],
-            st["covs"],
-            lam=cfg["lam"],
-            half_life=cfg["half_life"],
-            session_times=st["times"],
-            session_matures=st["matures"],
-            maturity_lag=maturity_lag,
-            scored=st["scored"],
-            use_current_cov=True,
-            se_shrinkage=1.0,
-        ),
-    )
-
-    cfg_hedge = _tune_grid(
-        [dict(eta=eta) for eta in HEDGE_ETAS],
-        lambda st, cfg: hedge_weights(
-            st["losses"],
-            eta=cfg["eta"],
-            session_times=st["times"],
-            session_matures=st["matures"],
-            maturity_lag=maturity_lag,
-            scored=st["scored"],
-        ),
-    )
-
-    cfg_hedge_fs = _tune_grid(
-        [
-            dict(eta=eta, alpha=alpha)
-            for eta in (2.0, 4.0, 8.0)
-            for alpha in (1.0 / 63.0, 1.0 / 21.0)
-        ],
-        lambda st, cfg: hedge_weights(
-            st["losses"],
-            eta=cfg["eta"],
-            fixed_share_alpha=cfg["alpha"],
-            session_times=st["times"],
-            session_matures=st["matures"],
-            maturity_lag=maturity_lag,
-            scored=st["scored"],
-        ),
-    )
-
-    cfg_regime = _tune_grid(
-        [dict(tau=tau, eta=eta) for tau in REGIME_TAUS for eta in (2.0, 4.0)],
-        lambda st, cfg: regime_conditioned_weights(
-            st["ics"],
-            st["target_dispersion"],
-            window=10,
-            tau=cfg["tau"],
-            eta=cfg["eta"],
-            session_times=st["times"],
-            session_matures=st["matures"],
-            maturity_lag=maturity_lag,
-            scored=st["scored"],
-            min_history=15,
-            observable_is_target_based=True,
-        )[0],
-    )
-
-    # Abstención de sesión: elegir umbral estrictamente en tune_splits maximizando utilidad neta
-    # `mean(e_t * (IC_t - abstention_cost))` sujeta a `coverage >= MIN_CALL_COVERAGE`.
-    w_ra_pre = {
-        mkt: rank_average_weights(len(st["times"]), n_models) for mkt, st in pre_streams.items()
-    }
-    ra_ics_pre: dict[str, np.ndarray] = {}
-    for mkt, st in pre_streams.items():
-        ra_ics_pre[mkt] = np.array(
-            [
-                rank_ic_vector(
-                    combine_session_scores(st["z_sessions"][i], w_ra_pre[mkt][i]),
-                    st["y_sessions"][i],
-                )
-                if st["scored"][i]
-                else float("nan")
-                for i in range(len(st["times"]))
-            ],
-            dtype=np.float64,
-        )
-
-    best_abs_cfg: dict[str, Any] | None = None
-    best_abs_util = -1e9
-    for thr in ABSTENTION_THRESHOLDS:
-        e_vals: list[float] = []
-        u_vals: list[float] = []
-        for mkt, st in pre_streams.items():
-            exp_vec = evaluate_session_abstention(
-                ra_ics_pre[mkt],
-                window=21,
-                threshold=thr,
-                session_times=st["times"],
-                session_matures=st["matures"],
-                maturity_lag=maturity_lag,
-                cost_per_session=abstention_cost,
-            )["exposure"]
-            for i, sp in enumerate(st["split_tags"]):
-                if sp not in tune_splits:
-                    continue
-                if sp == "calibration" and (mkt, int(st["times"][i])) in cal_embargo:
-                    continue
-                ic_i = float(ra_ics_pre[mkt][i])
-                if not math.isfinite(ic_i):
-                    continue
-                e_i = float(exp_vec[i])
-                e_vals.append(e_i)
-                u_vals.append(e_i * (ic_i - abstention_cost))
-        cov_cal = float(np.mean(e_vals)) if e_vals else 1.0
-        util_cal = float(np.mean(u_vals)) if u_vals else -2.0
-        if cov_cal < MIN_CALL_COVERAGE:
-            continue
-        if util_cal > best_abs_util + 1e-12:
-            best_abs_util = util_cal
-            best_abs_cfg = dict(
-                window=21,
-                threshold=thr,
-                calibration_coverage=cov_cal,
-                calibration_net_utility=util_cal,
-            )
-    if best_abs_cfg is None:
-        # Respaldo conservador si ningún umbral cumple cobertura mínima: permanecer siempre activo
-        u_always = [
-            float(ra_ics_pre[mkt][i]) - abstention_cost
-            for mkt, st in pre_streams.items()
-            for i, sp in enumerate(st["split_tags"])
-            if sp in tune_splits
-            and not (sp == "calibration" and (mkt, int(st["times"][i])) in cal_embargo)
-            and math.isfinite(float(ra_ics_pre[mkt][i]))
-        ]
-        best_abs_cfg = dict(
-            window=21,
-            threshold=-2.0,
-            calibration_coverage=1.0,
-            calibration_net_utility=float(np.mean(u_always)) if u_always else None,
-        )
-
-    selected_hyperparams = dict(
-        ridge_rolling=cfg_ridge_rolling,
-        ridge_ewma=cfg_ridge_ewma,
-        ridge_cov_active=cfg_ridge_cov_active,
-        hedge=cfg_hedge,
-        hedge_fixed_share=cfg_hedge_fs,
-        regime_weights=cfg_regime,
-        session_abstention=best_abs_cfg,
-    )
-
-    # 3) Pasada causal única sobre la secuencia completa validation -> calibration -> evaluation
-    full_streams = _build_market_streams(aligned_splits, splits, min_assets=min_assets)
-
+    selected_hyperparams: dict[str, Any] = {}
     weights_map: dict[str, dict[str, np.ndarray]] = {
         "rank_average": {
             mkt: rank_average_weights(len(st["times"]), n_models)
             for mkt, st in full_streams.items()
-        },
-        "ridge_rolling": {
+        }
+    }
+
+    if "ridge_rolling" in active_set:
+        cfg_ridge_rolling = _tune_grid(
+            [dict(lam=lam, window=win) for lam in RIDGE_LAMBDAS for win in RIDGE_WINDOWS],
+            lambda st, cfg: ridge_stacking_weights(
+                st["ics"],
+                st["covs"],
+                lam=cfg["lam"],
+                window=cfg["window"],
+                session_times=st["times"],
+                session_matures=st["matures"],
+                maturity_lag=maturity_lag,
+                scored=st["scored"],
+                use_current_cov=False,
+                se_shrinkage=0.0,
+            ),
+        )
+        selected_hyperparams["ridge_rolling"] = cfg_ridge_rolling
+        weights_map["ridge_rolling"] = {
             mkt: ridge_stacking_weights(
                 st["ics"],
                 st["covs"],
@@ -1933,8 +2247,26 @@ def run_aggregation(
                 se_shrinkage=0.0,
             )
             for mkt, st in full_streams.items()
-        },
-        "ridge_ewma": {
+        }
+
+    if "ridge_ewma" in active_set:
+        cfg_ridge_ewma = _tune_grid(
+            [dict(lam=lam, half_life=hl) for lam in RIDGE_LAMBDAS for hl in RIDGE_HALF_LIVES],
+            lambda st, cfg: ridge_stacking_weights(
+                st["ics"],
+                st["covs"],
+                lam=cfg["lam"],
+                half_life=cfg["half_life"],
+                session_times=st["times"],
+                session_matures=st["matures"],
+                maturity_lag=maturity_lag,
+                scored=st["scored"],
+                use_current_cov=False,
+                se_shrinkage=0.0,
+            ),
+        )
+        selected_hyperparams["ridge_ewma"] = cfg_ridge_ewma
+        weights_map["ridge_ewma"] = {
             mkt: ridge_stacking_weights(
                 st["ics"],
                 st["covs"],
@@ -1948,8 +2280,27 @@ def run_aggregation(
                 se_shrinkage=0.0,
             )
             for mkt, st in full_streams.items()
-        },
-        "ridge_cov_active": {
+        }
+
+    cfg_ridge_cov_active: dict[str, Any] | None = None
+    if "ridge_cov_active" in active_set:
+        cfg_ridge_cov_active = _tune_grid(
+            [dict(lam=lam, half_life=hl) for lam in RIDGE_LAMBDAS for hl in RIDGE_HALF_LIVES],
+            lambda st, cfg: ridge_stacking_weights(
+                st["ics"],
+                st["covs"],
+                lam=cfg["lam"],
+                half_life=cfg["half_life"],
+                session_times=st["times"],
+                session_matures=st["matures"],
+                maturity_lag=maturity_lag,
+                scored=st["scored"],
+                use_current_cov=True,
+                se_shrinkage=1.0,
+            ),
+        )
+        selected_hyperparams["ridge_cov_active"] = cfg_ridge_cov_active
+        weights_map["ridge_cov_active"] = {
             mkt: ridge_stacking_weights(
                 st["ics"],
                 st["covs"],
@@ -1963,8 +2314,22 @@ def run_aggregation(
                 se_shrinkage=1.0,
             )
             for mkt, st in full_streams.items()
-        },
-        "hedge": {
+        }
+
+    if "hedge" in active_set:
+        cfg_hedge = _tune_grid(
+            [dict(eta=eta) for eta in HEDGE_ETAS],
+            lambda st, cfg: hedge_weights(
+                st["losses"],
+                eta=cfg["eta"],
+                session_times=st["times"],
+                session_matures=st["matures"],
+                maturity_lag=maturity_lag,
+                scored=st["scored"],
+            ),
+        )
+        selected_hyperparams["hedge"] = cfg_hedge
+        weights_map["hedge"] = {
             mkt: hedge_weights(
                 st["losses"],
                 eta=cfg_hedge["eta"],
@@ -1974,8 +2339,27 @@ def run_aggregation(
                 scored=st["scored"],
             )
             for mkt, st in full_streams.items()
-        },
-        "hedge_fixed_share": {
+        }
+
+    if "hedge_fixed_share" in active_set:
+        cfg_hedge_fs = _tune_grid(
+            [
+                dict(eta=eta, alpha=alpha)
+                for eta in (2.0, 4.0, 8.0)
+                for alpha in (1.0 / 63.0, 1.0 / 21.0)
+            ],
+            lambda st, cfg: hedge_weights(
+                st["losses"],
+                eta=cfg["eta"],
+                fixed_share_alpha=cfg["alpha"],
+                session_times=st["times"],
+                session_matures=st["matures"],
+                maturity_lag=maturity_lag,
+                scored=st["scored"],
+            ),
+        )
+        selected_hyperparams["hedge_fixed_share"] = cfg_hedge_fs
+        weights_map["hedge_fixed_share"] = {
             mkt: hedge_weights(
                 st["losses"],
                 eta=cfg_hedge_fs["eta"],
@@ -1986,8 +2370,10 @@ def run_aggregation(
                 scored=st["scored"],
             )
             for mkt, st in full_streams.items()
-        },
-        "adanormalhedge": {
+        }
+
+    if "adanormalhedge" in active_set:
+        weights_map["adanormalhedge"] = {
             mkt: adanormalhedge_weights(
                 st["losses"],
                 session_times=st["times"],
@@ -1996,8 +2382,27 @@ def run_aggregation(
                 scored=st["scored"],
             )
             for mkt, st in full_streams.items()
-        },
-        "regime_weights": {
+        }
+
+    if "regime_weights" in active_set:
+        cfg_regime = _tune_grid(
+            [dict(tau=tau, eta=eta) for tau in REGIME_TAUS for eta in (2.0, 4.0)],
+            lambda st, cfg: regime_conditioned_weights(
+                st["ics"],
+                st["target_dispersion"],
+                window=10,
+                tau=cfg["tau"],
+                eta=cfg["eta"],
+                session_times=st["times"],
+                session_matures=st["matures"],
+                maturity_lag=maturity_lag,
+                scored=st["scored"],
+                min_history=15,
+                observable_is_target_based=True,
+            )[0],
+        )
+        selected_hyperparams["regime_weights"] = cfg_regime
+        weights_map["regime_weights"] = {
             mkt: regime_conditioned_weights(
                 st["ics"],
                 st["target_dispersion"],
@@ -2012,58 +2417,135 @@ def run_aggregation(
                 observable_is_target_based=True,
             )[0]
             for mkt, st in full_streams.items()
-        },
-    }
+        }
 
-    # Abstención de sesión aplicada sobre la señal base causal `rank_average`
     abs_exposure_map: dict[str, np.ndarray] = {}
     abs_diag_eval: dict[str, Any] = {}
-    for mkt, st in full_streams.items():
-        w_ra = weights_map["rank_average"][mkt]
-        ra_ics = np.array(
-            [
-                rank_ic_vector(
-                    combine_session_scores(st["z_sessions"][i], w_ra[i]), st["y_sessions"][i]
-                )
-                if st["scored"][i]
-                else float("nan")
-                for i in range(len(st["times"]))
-            ],
-            dtype=np.float64,
-        )
-        res_abs = evaluate_session_abstention(
-            ra_ics,
-            window=best_abs_cfg["window"],
-            threshold=best_abs_cfg["threshold"],
-            session_times=st["times"],
-            session_matures=st["matures"],
-            maturity_lag=maturity_lag,
-            cost_per_session=abstention_cost,
-        )
-        abs_exposure_map[mkt] = res_abs["exposure"]
-        eval_mask = np.array([sp == "evaluation" for sp in st["split_tags"]], dtype=bool)
-        if eval_mask.any():
-            e_ev = res_abs["exposure"][eval_mask]
-            ic_ev = ra_ics[eval_mask]
-            valid_ev = np.isfinite(ic_ev)
-            e_v, ic_v = e_ev[valid_ev], ic_ev[valid_ev]
-            cov = float(np.mean(e_v)) if e_v.size else 0.0
-            abs_diag_eval[mkt] = dict(
-                coverage=cov,
-                eligible_coverage=bool(cov >= MIN_CALL_COVERAGE),
-                unconditional_ic=float(np.mean(e_v * ic_v)) if e_v.size else None,
-                active_ic=(
-                    float(np.sum(e_v * ic_v) / np.sum(e_v))
-                    if e_v.size and float(np.sum(e_v)) > 0.0
-                    else None
-                ),
-                net_utility=float(np.mean(e_v * (ic_v - abstention_cost))) if e_v.size else None,
-                abstained_sessions=int(np.sum(e_v == 0.0)),
+    if "session_abstention" in active_set:
+        w_ra_pre = {
+            mkt: rank_average_weights(len(st["times"]), n_models)
+            for mkt, st in pre_streams.items()
+        }
+        ra_ics_pre: dict[str, np.ndarray] = {}
+        for mkt, st in pre_streams.items():
+            ra_ics_pre[mkt] = np.array(
+                [
+                    _rank_ic_prepped(
+                        combine_session_scores(st["z_sessions"][i], w_ra_pre[mkt][i]),
+                        st["y_ranks"][i][0],
+                        st["y_ranks"][i][1],
+                    )
+                    if st["scored"][i] and st["y_ranks"][i] is not None
+                    else float("nan")
+                    for i in range(len(st["times"]))
+                ],
+                dtype=np.float64,
             )
 
-    weights_map["session_abstention"] = weights_map["rank_average"]
+        best_abs_cfg: dict[str, Any] | None = None
+        best_abs_util = -1e9
+        for thr in ABSTENTION_THRESHOLDS:
+            e_vals: list[float] = []
+            u_vals: list[float] = []
+            for mkt, st in pre_streams.items():
+                exp_vec = evaluate_session_abstention(
+                    ra_ics_pre[mkt],
+                    window=21,
+                    threshold=thr,
+                    session_times=st["times"],
+                    session_matures=st["matures"],
+                    maturity_lag=maturity_lag,
+                    cost_per_session=abstention_cost,
+                )["exposure"]
+                for i, sp in enumerate(st["split_tags"]):
+                    if sp not in tune_splits:
+                        continue
+                    if sp == "calibration" and (mkt, int(st["times"][i])) in cal_embargo:
+                        continue
+                    ic_i = float(ra_ics_pre[mkt][i])
+                    if not math.isfinite(ic_i):
+                        continue
+                    e_i = float(exp_vec[i])
+                    e_vals.append(e_i)
+                    u_vals.append(e_i * (ic_i - abstention_cost))
+            cov_cal = float(np.mean(e_vals)) if e_vals else 1.0
+            util_cal = float(np.mean(u_vals)) if u_vals else -2.0
+            if cov_cal < MIN_CALL_COVERAGE:
+                continue
+            if util_cal > best_abs_util + 1e-12:
+                best_abs_util = util_cal
+                best_abs_cfg = dict(
+                    window=21,
+                    threshold=thr,
+                    calibration_coverage=cov_cal,
+                    calibration_net_utility=util_cal,
+                )
+        if best_abs_cfg is None:
+            u_always = [
+                float(ra_ics_pre[mkt][i]) - abstention_cost
+                for mkt, st in pre_streams.items()
+                for i, sp in enumerate(st["split_tags"])
+                if sp in tune_splits
+                and not (sp == "calibration" and (mkt, int(st["times"][i])) in cal_embargo)
+                and math.isfinite(float(ra_ics_pre[mkt][i]))
+            ]
+            best_abs_cfg = dict(
+                window=21,
+                threshold=-2.0,
+                calibration_coverage=1.0,
+                calibration_net_utility=float(np.mean(u_always)) if u_always else None,
+            )
+        selected_hyperparams["session_abstention"] = best_abs_cfg
 
-    # Evaluar todos los agregadores y contrastes pareados
+        for mkt, st in full_streams.items():
+            w_ra = weights_map["rank_average"][mkt]
+            ra_ics = np.array(
+                [
+                    _rank_ic_prepped(
+                        combine_session_scores(st["z_sessions"][i], w_ra[i]),
+                        st["y_ranks"][i][0],
+                        st["y_ranks"][i][1],
+                    )
+                    if st["scored"][i] and st["y_ranks"][i] is not None
+                    else float("nan")
+                    for i in range(len(st["times"]))
+                ],
+                dtype=np.float64,
+            )
+            res_abs = evaluate_session_abstention(
+                ra_ics,
+                window=best_abs_cfg["window"],
+                threshold=best_abs_cfg["threshold"],
+                session_times=st["times"],
+                session_matures=st["matures"],
+                maturity_lag=maturity_lag,
+                cost_per_session=abstention_cost,
+            )
+            abs_exposure_map[mkt] = res_abs["exposure"]
+            eval_mask = np.array([sp == "evaluation" for sp in st["split_tags"]], dtype=bool)
+            if eval_mask.any():
+                e_ev = res_abs["exposure"][eval_mask]
+                ic_ev = ra_ics[eval_mask]
+                valid_ev = np.isfinite(ic_ev)
+                e_v, ic_v = e_ev[valid_ev], ic_ev[valid_ev]
+                cov = float(np.mean(e_v)) if e_v.size else 0.0
+                abs_diag_eval[mkt] = dict(
+                    coverage=cov,
+                    eligible_coverage=bool(cov >= MIN_CALL_COVERAGE),
+                    unconditional_ic=float(np.mean(e_v * ic_v)) if e_v.size else None,
+                    active_ic=(
+                        float(np.sum(e_v * ic_v) / np.sum(e_v))
+                        if e_v.size and float(np.sum(e_v)) > 0.0
+                        else None
+                    ),
+                    net_utility=float(np.mean(e_v * (ic_v - abstention_cost)))
+                    if e_v.size
+                    else None,
+                    abstained_sessions=int(np.sum(e_v == 0.0)),
+                )
+        weights_map["session_abstention"] = weights_map["rank_average"]
+
+    # Evaluar los agregadores pedidos y contrastes pareados
     best_ind_eval_ics = individual_ics[best_model_name]["evaluation"]
     best_ind_cal_ics = individual_ics[best_model_name]["calibration"]
 
@@ -2071,19 +2553,7 @@ def run_aggregation(
     ra_eval_ics: dict[tuple[str, int], float] = {}
     ra_cal_ics: dict[tuple[str, int], float] = {}
 
-    # Primero rank_average para tener su serie como referencia
-    agg_order = [
-        "rank_average",
-        "ridge_rolling",
-        "ridge_ewma",
-        "ridge_cov_active",
-        "hedge",
-        "hedge_fixed_share",
-        "adanormalhedge",
-        "regime_weights",
-        "session_abstention",
-    ]
-    for agg_name in agg_order:
+    for agg_name in active_aggs:
         exp_map = abs_exposure_map if agg_name == "session_abstention" else None
         per_split_summary = {}
         per_split_ics = {}
@@ -2101,6 +2571,7 @@ def run_aggregation(
                 min_assets=min_assets,
                 abstained=abst_sp,
                 exposure=exp_sp if exp_map is not None else None,
+                _target_cache=target_caches[sp],
             )
             per_split_ics[sp] = ics_sp
             per_split_summary[sp] = summarize_session_dict(ics_sp)
@@ -2142,72 +2613,80 @@ def run_aggregation(
         agg_results[agg_name] = entry
 
     # Abstención selectiva intrasesión por activo en evaluación (con control |z| y placebo)
-    eval_preds_by_sess = [
-        aligned_splits["evaluation"]["predictions"][s:e]
-        for _, _, s, e in aligned_splits["evaluation"]["sessions"]
-    ]
-    eval_targs_by_sess = [
-        aligned_splits["evaluation"]["target"][s:e]
-        for _, _, s, e in aligned_splits["evaluation"]["sessions"]
-    ]
-    asset_abstention_eval = evaluate_asset_abstention(
-        eval_preds_by_sess,
-        eval_targs_by_sess,
-        keep_fraction=0.5,
-        seed=placebo_seed,
-        min_assets=min_assets,
-    )
+    asset_abstention_eval: dict[str, Any] | None = None
+    if include_asset_abstention:
+        eval_preds_by_sess = [
+            aligned_splits["evaluation"]["predictions"][s:e]
+            for _, _, s, e in aligned_splits["evaluation"]["sessions"]
+        ]
+        eval_targs_by_sess = [
+            aligned_splits["evaluation"]["target"][s:e]
+            for _, _, s, e in aligned_splits["evaluation"]["sessions"]
+        ]
+        asset_abstention_eval = evaluate_asset_abstention(
+            eval_preds_by_sess,
+            eval_targs_by_sess,
+            keep_fraction=0.5,
+            seed=placebo_seed,
+            min_assets=min_assets,
+        )
 
     # 4) Placebos obligatorios: (a) pesos barajados en el tiempo, (b) etiquetas maduras permutadas entre expertos
-    rng = np.random.default_rng(placebo_seed)
-    shf_weights_map: dict[str, np.ndarray] = {}
-    perm_weights_map: dict[str, np.ndarray] = {}
-    for mkt, st in full_streams.items():
-        w_src = weights_map["ridge_cov_active"][mkt].copy()
-        eval_idxs = np.flatnonzero([sp == "evaluation" for sp in st["split_tags"]])
-        if eval_idxs.size > 1:
-            w_src[eval_idxs] = w_src[rng.permutation(eval_idxs)]
-        shf_weights_map[mkt] = w_src
+    placebos: dict[str, Any] = {}
+    if include_placebos and cfg_ridge_cov_active is not None:
+        rng = np.random.default_rng(placebo_seed)
+        shf_weights_map: dict[str, np.ndarray] = {}
+        perm_weights_map: dict[str, np.ndarray] = {}
+        for mkt, st in full_streams.items():
+            w_src = weights_map["ridge_cov_active"][mkt].copy()
+            eval_idxs = np.flatnonzero([sp == "evaluation" for sp in st["split_tags"]])
+            if eval_idxs.size > 1:
+                w_src[eval_idxs] = w_src[rng.permutation(eval_idxs)]
+            shf_weights_map[mkt] = w_src
 
-        # Permutar columnas de IC maduro por sesión (destruye qué modelo acertó preservando covarianza)
-        perm_ics = st["ics"].copy()
-        for row_i in range(perm_ics.shape[0]):
-            perm_ics[row_i] = perm_ics[row_i, rng.permutation(n_models)]
-        perm_weights_map[mkt] = ridge_stacking_weights(
-            perm_ics,
-            st["covs"],
-            lam=cfg_ridge_cov_active["lam"],
-            half_life=cfg_ridge_cov_active["half_life"],
-            session_times=st["times"],
-            session_matures=st["matures"],
-            maturity_lag=maturity_lag,
-            scored=st["scored"],
-            use_current_cov=True,
-            se_shrinkage=1.0,
-        )
+            # Permutar columnas de IC maduro por sesión (destruye qué modelo acertó preservando covarianza)
+            perm_ics = st["ics"].copy()
+            for row_i in range(perm_ics.shape[0]):
+                perm_ics[row_i] = perm_ics[row_i, rng.permutation(n_models)]
+            perm_weights_map[mkt] = ridge_stacking_weights(
+                perm_ics,
+                st["covs"],
+                lam=cfg_ridge_cov_active["lam"],
+                half_life=cfg_ridge_cov_active["half_life"],
+                session_times=st["times"],
+                session_matures=st["matures"],
+                maturity_lag=maturity_lag,
+                scored=st["scored"],
+                use_current_cov=True,
+                se_shrinkage=1.0,
+            )
 
-    placebos = {}
-    for p_name, p_map in (
-        ("placebo_shuffled_weights", shf_weights_map),
-        ("placebo_permuted_labels", perm_weights_map),
-    ):
-        p_pred, p_w, _, _ = _emit_split_predictions_from_weights(
-            aligned_splits, full_streams, p_map, "evaluation"
-        )
-        p_ics = session_rank_ic(aligned_splits["evaluation"], p_pred, min_assets=min_assets)
-        placebos[p_name] = dict(
-            summary=summarize_session_dict(p_ics),
-            contrasts=dict(
-                vs_best_individual=paired_contrast(p_ics, best_ind_eval_ics),
-                vs_rank_average=paired_contrast(p_ics, ra_eval_ics),
-                vs_ridge_cov_active=paired_contrast(
-                    p_ics, agg_results["ridge_cov_active"]["evaluation_session_ics"]
+        for p_name, p_map in (
+            ("placebo_shuffled_weights", shf_weights_map),
+            ("placebo_permuted_labels", perm_weights_map),
+        ):
+            p_pred, p_w, _, _ = _emit_split_predictions_from_weights(
+                aligned_splits, full_streams, p_map, "evaluation"
+            )
+            p_ics = session_rank_ic(
+                aligned_splits["evaluation"],
+                p_pred,
+                min_assets=min_assets,
+                _target_cache=target_caches["evaluation"],
+            )
+            placebos[p_name] = dict(
+                summary=summarize_session_dict(p_ics),
+                contrasts=dict(
+                    vs_best_individual=paired_contrast(p_ics, best_ind_eval_ics),
+                    vs_rank_average=paired_contrast(p_ics, ra_eval_ics),
+                    vs_ridge_cov_active=paired_contrast(
+                        p_ics, agg_results["ridge_cov_active"]["evaluation_session_ics"]
+                    ),
                 ),
-            ),
-            mean_evaluation_weights={
-                model_names[m]: float(np.mean(p_w[:, m])) for m in range(n_models)
-            },
-        )
+                mean_evaluation_weights={
+                    model_names[m]: float(np.mean(p_w[:, m])) for m in range(n_models)
+                },
+            )
 
     return dict(
         schema_version=1,
@@ -2309,34 +2788,36 @@ def render_markdown(doc: dict[str, Any]) -> str:
             f"{_fmt(c_ra['mean'])} ({_fmt(c_ra['t_hac'], 2)}) | {w_str} |"
         )
 
-    lines += [
-        "",
-        "## 3. Placebos obligatorios en evaluación",
-        "",
-        "| Placebo | IC eval. | vs mejor ind. (Δ / t HAC) | vs `ridge_cov_active` (Δ / t HAC) |",
-        "| --- | ---: | ---: | ---: |",
-    ]
-    for p_name, p_entry in doc["placebos"].items():
-        ev = p_entry["summary"]["all"]
-        cb = p_entry["contrasts"]["vs_best_individual"]
-        cr = p_entry["contrasts"]["vs_ridge_cov_active"]
-        lines.append(
-            f"| `{p_name}` | {_fmt(ev['mean'])} | {_fmt(cb['mean'])} ({_fmt(cb['t_hac'], 2)}) | "
-            f"{_fmt(cr['mean'])} ({_fmt(cr['t_hac'], 2)}) |"
-        )
+    if doc.get("placebos"):
+        lines += [
+            "",
+            "## 3. Placebos obligatorios en evaluación",
+            "",
+            "| Placebo | IC eval. | vs mejor ind. (Δ / t HAC) | vs `ridge_cov_active` (Δ / t HAC) |",
+            "| --- | ---: | ---: | ---: |",
+        ]
+        for p_name, p_entry in doc["placebos"].items():
+            ev = p_entry["summary"]["all"]
+            cb = p_entry["contrasts"]["vs_best_individual"]
+            cr = p_entry["contrasts"]["vs_ridge_cov_active"]
+            lines.append(
+                f"| `{p_name}` | {_fmt(ev['mean'])} | {_fmt(cb['mean'])} ({_fmt(cb['t_hac'], 2)}) | "
+                f"{_fmt(cr['mean'])} ({_fmt(cr['t_hac'], 2)}) |"
+            )
 
-    aa = doc["asset_abstention_evaluation"]
-    lines += [
-        "",
-        "## 4. Abstención selectiva por activo en evaluación (cobertura emparejada)",
-        "",
-        f"- Cobertura efectiva: `{_fmt(100.0 * aa['coverage'], 1)} %` ({aa['sessions']} sesiones)",
-        f"- IC activo señal/desacuerdo: `{_fmt(aa['active_ic_signal_to_disagreement'])}` vs control magnitud `|z|`: "
-        f"`{_fmt(aa['active_ic_magnitude_control'])}` vs placebo aleatorio: `{_fmt(aa['active_ic_random_placebo'])}`",
-        f"- IC sesión completa (abstenidos=0): señal/desacuerdo `{_fmt(aa['full_session_ic_signal_to_disagreement'])}`, "
-        f"magnitud `{_fmt(aa['full_session_ic_magnitude_control'])}`, base sin abstener `{_fmt(aa['base_full_ic'])}`",
-        "",
-    ]
+    aa = doc.get("asset_abstention_evaluation")
+    if aa is not None:
+        lines += [
+            "",
+            "## 4. Abstención selectiva por activo en evaluación (cobertura emparejada)",
+            "",
+            f"- Cobertura efectiva: `{_fmt(100.0 * aa['coverage'], 1)} %` ({aa['sessions']} sesiones)",
+            f"- IC activo señal/desacuerdo: `{_fmt(aa['active_ic_signal_to_disagreement'])}` vs control magnitud `|z|`: "
+            f"`{_fmt(aa['active_ic_magnitude_control'])}` vs placebo aleatorio: `{_fmt(aa['active_ic_random_placebo'])}`",
+            f"- IC sesión completa (abstenidos=0): señal/desacuerdo `{_fmt(aa['full_session_ic_signal_to_disagreement'])}`, "
+            f"magnitud `{_fmt(aa['full_session_ic_magnitude_control'])}`, base sin abstener `{_fmt(aa['base_full_ic'])}`",
+            "",
+        ]
     return "\n".join(lines)
 
 

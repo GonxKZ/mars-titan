@@ -687,26 +687,55 @@ def measure(
     work = Path(output) / f".{origin}.{os.getpid()}.tmp"
     try:
         work.mkdir(parents=True)
-        inputs = {
-            p: og._write_component(
-                work / "entradas" / names[p], parent, predictions[p], alpha, matures
+        raw_base = {
+            s: oa.build_raw_split_base(
+                parent[s], alpha=alpha[s], matures_at=matures[s], already_sorted=True
             )
-            for p in names
+            for s in AGGREGATED
         }
         f1, f1_rows, f2, versus, factors = {}, [], {}, {}, None
+        decl_splits = tuple(declaration["splits"])
+        decl_scales = tuple(declaration["operable_scales"])
         for mode in declaration["modes"]:
+            is_operable = mode == "operable"
+            raw_by_split = {
+                s: {
+                    names[p]: oa.build_raw_split(
+                        raw_base[s], predictions[p][s], include_alpha=is_operable
+                    )
+                    for p in names
+                }
+                for s in AGGREGATED
+            }
+            cache = (
+                oa.build_shared_panel_cache(
+                    raw_by_split,
+                    splits=decl_splits,
+                    min_assets=min_assets,
+                    align=declaration["align"],
+                    operable=is_operable,
+                    operable_scales=decl_scales,
+                )
+                if declaration["align"] == "strict"
+                else None
+            )
             results = {
                 system: oa.run_aggregation(
-                    {names[p]: inputs[p] for p in members},
-                    splits=tuple(declaration["splits"]),
+                    {names[p]: names[p] for p in members},
+                    splits=decl_splits,
                     selection_split=declaration["selection_split"],
                     min_assets=min_assets,
                     align=declaration["align"],
-                    operable=mode == "operable",
+                    operable=is_operable,
                     alpha_col="alpha",
                     maturity_col="matures_at",
                     placebo_seed=declaration["aggregator_placebo_seed"],
-                    operable_scales=tuple(declaration["operable_scales"]),
+                    operable_scales=decl_scales,
+                    aggregators=("rank_average", "ridge_cov_active"),
+                    include_placebos=False,
+                    include_asset_abstention=False,
+                    preloaded_raw=raw_by_split,
+                    precomputed_cache=cache,
                 )
                 for system, members in SYSTEMS
             }
@@ -722,12 +751,22 @@ def measure(
             views = _views(mode, results, names, parent, liquidity, alpha, cap)
             say(f"{mode}: S1 y S2 agregados")
             sessions_of = {}
+            ordered_predictors = CONTROLS.get(mode, ()) + PREDICTORS
+            first_ev = views[(ordered_predictors[0], "evaluation")]
+            first_cal = views[(ordered_predictors[0], "calibration")]
+            liquid_shared = dict(
+                evaluation=liquid_rows(first_ev["liquidity"], first_ev["bounds"]),
+                calibration=(
+                    liquid_rows(first_cal["liquidity"], first_cal["bounds"])
+                    if mode == "operable"
+                    else None
+                ),
+            )
             # Los controles van primero: la mejora de cada predictor se mide frente a ellos.
-            for predictor in CONTROLS.get(mode, ()) + PREDICTORS:
+            for predictor in ordered_predictors:
                 ev, cal = views[(predictor, "evaluation")], views[(predictor, "calibration")]
-                liquid = dict(evaluation=liquid_rows(ev["liquidity"], ev["bounds"]))
                 for scope in SCOPES:
-                    keep = None if scope == "all" else liquid["evaluation"]
+                    keep = None if scope == "all" else liquid_shared["evaluation"]
                     item, rows, scored = reliability(
                         tool, ev, settings, min_assets=min_assets, keep=keep
                     )
@@ -746,13 +785,12 @@ def measure(
                         )
                 if mode != "operable":
                     continue
-                liquid["calibration"] = liquid_rows(cal["liquidity"], cal["bounds"])
                 for scope in SCOPES:
                     pair = []
                     for split, item in (("calibration", cal), ("evaluation", ev)):
                         keep = ~item["outlier"]
                         if scope == "liquid":
-                            keep &= liquid[split]
+                            keep &= liquid_shared[split]
                         pair.append(restricted(item, keep))
                     f2[f"{predictor}/{scope}"] = directional(*pair, declaration["directional"])
             say(f"{mode}: F1{' y F2' if mode == 'operable' else ''}")
@@ -768,7 +806,6 @@ def measure(
                 without_alpha_outliers=zero_excluding(low, high, y, keep=clean),
             )
         say("intervalos")
-        shutil.rmtree(work / "entradas")
         code = og._code_identity()
         code["files"]["reliability"] = pilots._sha256(Path(__file__))
         code["files"]["agent_core"] = pilots._sha256(Path(ac.__file__))
