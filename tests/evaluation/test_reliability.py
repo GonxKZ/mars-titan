@@ -150,6 +150,115 @@ def test_a_null_target_is_an_error_in_both_directions():
     assert right.tolist() == [False, False, True, True, False]
 
 
+def test_minimum_blocks_keep_the_fit_increasing_and_the_totals():
+    rng = np.random.default_rng(12)
+    x = rng.standard_normal(1000)
+    y = (x + rng.standard_normal(1000) > 0).astype(float)
+    edges, values = rel.isotonic_fit(x, y, min_rows=100)
+    counts = np.bincount(np.searchsorted(edges, x, side="left"), minlength=len(edges))
+    assert counts.min() >= 100 and len(edges) <= 10
+    assert np.all(np.diff(values) > 0)
+    assert float((counts * values).sum()) == pytest.approx(float(y.sum()))
+    # Sin señal, un extremo de tres filas que acierta da P = 1 en la isótona sola; con bloques de
+    # 100 filas, el escalón de arriba es la media de al menos 100 filas.
+    noise = (rng.random(1000) < 0.5).astype(float)
+    x2, y2 = np.r_[x, [9, 9.1, 9.2]], np.r_[noise, [1, 1, 1]]
+    assert rel.isotonic_predict(rel.isotonic_fit(x2, y2), [9.5])[0] == 1.0
+    edges2, values2 = rel.isotonic_fit(x2, y2, min_rows=100)
+    top = x2 > edges2[-2]
+    assert top.sum() >= 100 and values2[-1] == pytest.approx(float(y2[top].mean()))
+    assert values2[-1] < 0.75
+
+
+def test_calibration_error_by_hand():
+    entry = rel.calibration_error(np.array([0.05, 0.15, 0.15]), np.array([0.0, 1.0, 0.0]), 10)
+    assert entry["ece"] == pytest.approx((0.05 + 2 * 0.35) / 3)
+    assert entry["mce"] == pytest.approx(0.35)
+    assert entry["table"][1]["rows"] == 2 and entry["table"][9]["rows"] == 0
+    seen = rel.probability_range(np.array([0.2, 0.5, 0.95]), np.array([-1.0, 1.0, -1.0]), 0.9)
+    assert seen["at_target_rows"] == 1 and seen["at_target_precision"]["hits"] == 0
+    assert seen["max_confidence"] == pytest.approx(0.95)
+
+
+def _bands(rng, sessions=60, rows=200, scale=(1.0,), over=1.0):
+    """Bandas ±1 alrededor de cero; el objetivo tiene la escala de su grupo (ruido normal)."""
+    groups = np.tile(np.arange(rows) % len(scale), sessions)
+    target = rng.standard_normal(sessions * rows) * np.asarray(scale)[groups]
+    lower, upper = np.full(len(target), -over), np.full(len(target), over)
+    spans = [("US", 1000 + t, t * rows, (t + 1) * rows) for t in range(sessions)]
+    return lower, upper, target, spans, groups
+
+
+def test_static_adaptive_bands_are_the_split_cqr():
+    rng = np.random.default_rng(13)
+    lower, upper, target, spans, _ = _bands(rng)
+    scores = ac_conformity(lower[:4000], upper[:4000], rng.standard_normal(4000))
+    low, high, _ = rel.adaptive_bands(
+        lower, upper, target, spans, np.zeros(len(spans)), scores, 0.8, 0.0
+    )
+    correction = rel.ac.conformal_correction(scores, 0.8)
+    assert np.allclose(low, lower - correction) and np.allclose(high, upper + correction)
+
+
+def ac_conformity(lower, upper, target):
+    return rel.ac.conformity(lower, upper, target)
+
+
+def test_aci_only_learns_from_mature_sessions_and_tracks_the_nominal():
+    rng = np.random.default_rng(14)
+    # Calibración con ruido 1 y evaluación con ruido 1,5: la CQR estática se queda corta.
+    lower, upper, target, spans, _ = _bands(rng, scale=(1.5,))
+    scores = rel.ac.conformity(np.full(5000, -1.0), np.full(5000, 1.0), rng.standard_normal(5000))
+    never = np.full(len(spans), np.iinfo(np.int64).max)
+    static = rel.adaptive_bands(lower, upper, target, spans, never, scores, 0.8, 0.0)
+    frozen = rel.adaptive_bands(lower, upper, target, spans, never, scores, 0.8, 0.05)
+    assert np.array_equal(static[0], frozen[0])
+    soon = np.array([instant + 1 for _, instant, _, _ in spans])
+    low, high, path = rel.adaptive_bands(lower, upper, target, spans, soon, scores, 0.8, 0.05)
+    covered = lambda lo, hi: float(((target >= lo) & (target <= hi)).mean())  # noqa: E731
+    assert covered(*static[:2]) < 0.7
+    assert abs(covered(low, high) - 0.8) < abs(covered(*static[:2]) - 0.8) / 2
+    assert path["alpha_min"] < 0.2
+
+
+def test_mondrian_bands_cover_each_group():
+    rng = np.random.default_rng(15)
+    lower, upper, target, spans, groups = _bands(rng, scale=(0.5, 2.0))
+    cal_groups = np.arange(8000) % 2
+    cal_target = rng.standard_normal(8000) * np.where(cal_groups == 0, 0.5, 2.0)
+    scores = rel.ac.conformity(np.full(8000, -1.0), np.full(8000, 1.0), cal_target)
+    maturity = np.zeros(len(spans))
+    pooled = rel.adaptive_bands(lower, upper, target, spans, maturity, scores, 0.8, 0.0)
+    mondrian = rel.adaptive_bands(
+        lower,
+        upper,
+        target,
+        spans,
+        maturity,
+        scores,
+        0.8,
+        0.0,
+        groups=groups,
+        score_groups=cal_groups,
+    )
+    for band, close in ((pooled, False), (mondrian, True)):
+        inside = (target >= band[0]) & (target <= band[1])
+        rates = [float(inside[groups == g].mean()) for g in (0, 1)]
+        assert all(abs(r - 0.8) < 0.03 for r in rates) is close
+
+
+def test_the_interval_rule_of_r1():
+    rule = declaration()["adaptive_intervals"]["rule"]
+    good = dict(
+        coverage=0.81, volatility={"0": dict(coverage=0.76)}, market={"US": dict(coverage=0.81)}
+    )
+    assert rel.interval_rule(good, 0.8, rule) == []
+    total = dict(good, coverage=0.831)
+    assert len(rel.interval_rule(total, 0.8, rule)) == 1
+    decile = dict(good, volatility={"0": dict(coverage=0.74), "1": dict(coverage=0.9)})
+    assert rel.interval_rule(decile, 0.8, rule) == ["decil de volatilidad con 0.740"]
+
+
 def test_clustered_precision_by_hand():
     entry = rel.clustered_precision([9, 1], [10, 10])
     assert entry["rate"] == 0.5
@@ -320,7 +429,13 @@ def _summary_for_verdicts():
                 precision=dict(rate=precision, low=precision - 0.02, high=precision + 0.02),
                 clustered=dict(rate=precision, low=low, high=precision + 0.03),
             )
-        return dict(chosen_threshold=chosen, evaluation=dict(at_threshold=at))
+        seen = dict(rows=100, min=0.4, max=0.6, max_confidence=0.6, at_target_rows=0)
+        part = dict(range=seen, calibration_error=dict(ece=0.01))
+        return dict(
+            chosen_threshold=chosen,
+            evaluation=dict(at_threshold=at),
+            parts=dict(fit=part, risk=part, evaluation=part),
+        )
 
     return dict(
         f1={
@@ -332,6 +447,7 @@ def _summary_for_verdicts():
         },
         versus_alpha={"s2/all": dict(mean=0.01, t_nw=2.5)},
         f2={"s2/all": f2(0.9, 0.01, 0.93, 0.88), "alpha/all": f2(None, None, None, None)},
+        intervals=dict(adaptive={"0.8": dict(delivered="core_mondrian")}),
     )
 
 
@@ -345,6 +461,8 @@ def test_the_delivery_verdicts_follow_the_declared_rules():
     )
     assert verdict["f1"]["label/s2/all"] == dict(sessions="no")
     assert verdict["f2"]["enters"] and verdict["f2"]["reasons"] == []
+    assert verdict["f2"]["confidence"]["statement"] == "no hay casos al 90 %"
+    assert verdict["intervals"] == {"0.8": "core_mondrian"}
     summary["versus_alpha"]["s2/all"]["t_nw"] = 1.9
     assert rel.verdicts(summary, rules)["f1"]["operable/s2/all"]["over_alpha"] is False
     summary["f2"]["alpha/all"] = summary["f2"]["s2/all"]
@@ -357,7 +475,9 @@ def test_the_delivery_verdicts_follow_the_declared_rules():
     summary["f2"]["s2/all"]["evaluation"]["at_threshold"]["coverage"] = 0.0005
     reasons = rel.verdicts(summary, rules)["f2"]["reasons"]
     assert len(reasons) == 3 and "cobertura prácticamente cero" in reasons
-    summary["f2"]["s2/all"] = dict(chosen_threshold=None, evaluation=dict(at_threshold=None))
+    summary["f2"]["s2/all"] = dict(
+        summary["f2"]["s2/all"], chosen_threshold=None, evaluation=dict(at_threshold=None)
+    )
     assert rel.verdicts(summary, rules)["f2"]["reasons"] == [
         "ningún umbral pasa el control de riesgo en calibración"
     ]
@@ -426,7 +546,7 @@ def test_f1_and_f2_of_an_origin(tmp_path, monkeypatch, capsys):
     assert versus["sessions"] == len(alone)
     assert versus["mean"] == pytest.approx(float((operable - alone).mean()), abs=1e-9)
     assert set(summary["versus_alpha"]) == {f"{p}/{s}" for p in rel.PREDICTORS for s in rel.SCOPES}
-    assert set(summary["verdicts"]["f2"]) == {"system", "enters", "reasons"}
+    assert set(summary["verdicts"]["f2"]) == {"system", "enters", "reasons", "confidence"}
     assert summary["verdicts"]["f2"]["system"] == "s2/all"
     liquid = summary["f1"]["operable/s2/liquid"]
     assert liquid["sessions"] == len(expected) and liquid["selective"]["1.0"]["names"] < 96 * 60
@@ -443,6 +563,20 @@ def test_f1_and_f2_of_an_origin(tmp_path, monkeypatch, capsys):
     assert len(levels["0.8"]["systems"]["core_raw"]["volatility"]) == 10
     assert set(summary["intervals"]["zero_excluding"]) == {"0.8", "0.95"}
     assert (folder / "f1-sesiones.parquet").is_file()
+    for split, sessions in (("calibration", 40), ("evaluation", 60)):
+        emitted = pq.read_table(folder / f"s2-confianza-{split}.parquet")
+        assert emitted.num_rows == sessions * 96
+        probability = emitted.column("probability_up").to_numpy()
+        assert probability.min() >= 0 and probability.max() <= 1
+    adaptive = summary["intervals"]["adaptive"]
+    assert set(adaptive) == {"0.8", "0.95"}
+    for level, entry in adaptive.items():
+        assert list(entry["candidates"]) == declaration()["adaptive_intervals"]["candidates"]
+        static = entry["candidates"]["core_cqr"]["coverage"]
+        assert static == pytest.approx(levels[level]["systems"]["core_cqr"]["coverage"], abs=1e-12)
+        assert entry["delivered"] in (None, *entry["candidates"])
+    assert set(summary["verdicts"]["intervals"]) == {"0.8", "0.95"}
+    assert "casos al 90" in summary["verdicts"]["f2"]["confidence"]["statement"]
     assert "F2, confianza direccional" in (folder / "resumen.md").read_text(encoding="utf-8")
     assert [p.name for p in output.iterdir()] == [str(core.YEAR)]
     capsys.readouterr()

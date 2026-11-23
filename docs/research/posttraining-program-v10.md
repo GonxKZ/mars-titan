@@ -468,7 +468,7 @@ emisiones. La regla queda escrita antes:
 Encargo del coordinador del 23 de noviembre de 2026 (línea F): más del 90 % de precisión y
 fiabilidad, sin trampas ni falsear nada. Las medidas son descriptivas y secundarias, fuera de la
 familia primaria.
-- La declaración es `configs/experiments/posttraining-reliability.json` (huella b3d399ef…).
+- La declaración es `configs/experiments/posttraining-reliability.json` (huella 5fb27d72…).
 - La orden es `python -m mars_titan.evaluation.reliability medir`, con las entradas, la espera
   (código 75) y la publicación atómica de S2 y de A. Cada orden mide un mercado.
 - Se fijó en git antes de medir ningún origen.
@@ -534,6 +534,38 @@ calibración.
     - en evaluación cubre ≥ 0,001 de las filas en ≥ 10 sesiones;
     - su precisión es ≥ 0,90, con el límite inferior por conglomerados de sesión ≥ 0,85;
     - cubre más que el alfa solo con su propio umbral.
+- **Piezas añadidas tras la primera lectura de 2013 (desarrollo), fijadas antes de medirlas:**
+  - **Confianza de signo que emite S2.** Es la P calibrada de F2 sobre lo operable de S2 con todas
+    las filas, emitida por fila en calibración y en evaluación (`s2-confianza-<tramo>.parquet`).
+    - La isótona lleva bloques de al menos el 1 % de las filas de ajuste. En la primera lectura,
+      un bloque extremo de pocas filas daba P = 1 a 348 filas de evaluación, que acertaban 0,59.
+    - Se informan su rango real, el ECE y el MCE (10 intervalos) en la mitad de ajuste, en la de
+      riesgo y en evaluación, y la frase expresa de si hay o no casos al 90 %.
+  - **Intervalos adaptativos** sobre los cuantiles del padre en la etiqueta, en este orden:
+    1. CQR;
+    2. CQR con ACI por sesión (γ = 0,05; cada mercado con su α; solo aprende de sesiones con
+       etiquetas maduras);
+    3. CQR por decil de volatilidad dentro de la sesión (Mondrian);
+    4. Mondrian con ACI por decil.
+  - **Regla de R-1 para los intervalos:** a menos de 0,02 de la nominal en total, y ningún decil
+    de volatilidad ni mercado más de 0,05 por debajo.
+    - Se entrega el primero que pasa; si ninguno pasa, se dice.
+    - Los grupos de Mondrian son los mismos deciles que mira la regla. Pasarla en calibración sale
+      por construcción; lo que se mide es si se sostiene en evaluación.
+- **Primera lectura de 2013** (desarrollo; declaración b3d399ef…, US, semilla 42):
+  - **F1.** Sesiones con IC > 0 con todos los nombres:
+    - S2 da 0,956 [0,923; 0,975] en la etiqueta y 0,944 [0,909; 0,966] en lo operable, con una
+      mejora sobre el alfa solo de +0,0440 (t 10,2).
+    - En ventanas de 5 sesiones, 1,000 [0,929; 1,000].
+  - **Tercio líquido operable:** 0,741 [0,683; 0,791] a diario y 0,940 [0,838; 0,979] en
+    ventanas de 5, con una mejora sobre el alfa de +0,0278 (t 4,3).
+  - **Precisión selectiva,** lejos del 90 %: las colas del 1 % operables aciertan 0,588.
+  - **F2:** ningún umbral pasa, y la cobertura con precisión ≥ 0,90 es cero. No entra como
+    selector.
+  - **Intervalos:**
+    - el 80 % del núcleo cubre 0,889;
+    - la CQR cubre 0,831, de 0,772 a 0,885 por decil de volatilidad;
+    - al 95 %, 0,966 y 0,961.
 - **F6, el cerebro holográfico,** con la regla acordada con el coordinador antes de medir. Se mide
   tras F1 y F2, en 2013 y sin GPU.
   1. **H, el holográfico, por semilla.** Es ridge_cov_active de {padre estático
