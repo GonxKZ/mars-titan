@@ -253,7 +253,15 @@ def campaign(tmp_path, assets=core.ASSETS, quantiles=False):
         (organ / "run.json").write_text(json.dumps(record))
     write_run(
         reference / "runs" / "lightgbm_technical" / str(core.YEAR) / "seed-42",
-        dict(status="completed", final_test_opened=False, run_id="arbol"),
+        # Como el registro real de los árboles (`dgx_tabular_reference`): sin `status` ni
+        # `final_test_opened`, con su modelo, su semilla y `final_test_access`.
+        dict(
+            kind="dgx_tabular_reference",
+            model="lightgbm_technical",
+            year=core.YEAR,
+            seed=42,
+            final_test_access=False,
+        ),
         og.SPLITS,
         lambda s: shared[s][1][2] + 0.8 * rng.standard_normal(shared[s][1].shape[1]),
         intervals=False,
@@ -391,6 +399,40 @@ def test_an_organ_of_another_fit_and_a_missing_input_fail_with_a_reason(
     (missing / "evaluation-predictions.parquet").unlink()
     assert ta.main(_arguments(paths, tmp_path / "b")) == og.MISSING_EXIT
     assert "mars_titan_m3" in capsys.readouterr().err
+
+
+@pytest.mark.parametrize(
+    ("change", "reason"),
+    [
+        (dict(final_test_access=True), "no son los árboles declarados"),
+        (dict(model="xgboost_technical"), "no son los árboles declarados"),
+        (dict(seed=43), "no son los árboles declarados"),
+    ],
+)
+def test_a_tree_record_that_is_not_the_declared_one_is_refused(
+    tmp_path, monkeypatch, capsys, change, reason
+):
+    paths = campaign(tmp_path)
+    monkeypatch.setattr(ta.ac, "known_rows", core._known(paths))
+    record = (
+        paths["reference"] / "runs" / "lightgbm_technical" / str(core.YEAR) / "seed-42" / "run.json"
+    )
+    record.write_text(json.dumps(dict(json.loads(record.read_text()), **change)))
+    assert ta.main(_arguments(paths, tmp_path / "x")) == 1
+    assert reason in capsys.readouterr().err
+
+
+def test_a_missing_tree_record_is_listed_and_nothing_is_written(tmp_path, monkeypatch, capsys):
+    paths = campaign(tmp_path)
+    monkeypatch.setattr(ta.ac, "known_rows", core._known(paths))
+    record = (
+        paths["reference"] / "runs" / "lightgbm_technical" / str(core.YEAR) / "seed-42" / "run.json"
+    )
+    record.unlink()
+    # Una entrada que falta es un fallo temporal (75): la orden puede esperar a que llegue.
+    assert ta.main(_arguments(paths, tmp_path / "x")) == 75
+    assert "lightgbm_technical" in capsys.readouterr().err
+    assert not (tmp_path / "x").exists()
 
 
 def test_the_streams_give_dodea_the_covariance_of_the_session():

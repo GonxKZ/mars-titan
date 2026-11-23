@@ -686,13 +686,19 @@ def missing_inputs(declaration, sources, manifest):
     missing = [] if manifest.is_file() else [f"el manifiesto de la cohorte {manifest}"]
     for role, folder in sources.items():
         record = folder / "run.json"
-        try:
-            status = json.loads(record.read_text(encoding="utf-8")).get("status")
-        except (OSError, ValueError):
-            status = None
-        if status != "completed":
-            missing.append(f"{role}: {record} (estado {status!r})")
+        if not record.is_file():
+            missing.append(f"{role}: {record}")
             continue
+        # El registro de los árboles se escribe al terminar y no lleva `status`: basta con que
+        # exista, como en el agregador (`organ_aggregation.missing_inputs`).
+        if roles(declaration)[role][1] != "reference":
+            try:
+                status = json.loads(record.read_text(encoding="utf-8")).get("status")
+            except (OSError, ValueError):
+                status = None
+            if status != "completed":
+                missing.append(f"{role}: {record} (estado {status!r})")
+                continue
         missing += [
             f"{role}: {folder / f'{split}-predictions.parquet'}"
             for split in _needed(declaration, role)
@@ -714,8 +720,19 @@ def checked_records(declaration, origin, records, prints):
     """Registros terminados, sin test final, una vista y cada órgano emitido de su padre."""
     views = set()
     for role, record in records.items():
-        _require(record.get("final_test_opened") is False, f"{role} abrió el test final")
         name, source, seed = roles(declaration)[role]
+        if source == "reference":
+            # Los árboles declaran su modelo, su semilla y `final_test_access`, como en el
+            # agregador (`organ_aggregation._checked_sources`).
+            _require(
+                record.get("model") == name
+                and record.get("seed") == declaration["tree_seed"]
+                and record.get("final_test_access") is False,
+                f"{role} no son los árboles declarados ({name}, semilla "
+                f"{declaration['tree_seed']}, sin test final)",
+            )
+            continue
+        _require(record.get("final_test_opened") is False, f"{role} abrió el test final")
         if source == "state":
             views.add((record.get("request") or {}).get("view_sha256"))
         if source != "organs":
