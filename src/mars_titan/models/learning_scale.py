@@ -374,6 +374,8 @@ class LearningScaler(nn.Module):
             window.is_cuda
             and window.dtype in (torch.float32, torch.float64)
             and not (torch.is_grad_enabled() and window.requires_grad)
+            # Los kernels fusionados solo implementan el recorte duro.
+            and not self.config.smooth_clip
         )
         if use_cuda_fused:
             from mars_titan.models.titans.fused_cuda_kernels import (

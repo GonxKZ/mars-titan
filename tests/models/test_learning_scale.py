@@ -426,6 +426,33 @@ def test_the_smooth_clip_stays_close_to_the_hard_one_near_the_centre_and_keeps_a
     )
 
 
+@pytest.mark.cuda
+@pytest.mark.parametrize("dtype", [torch.float32, torch.float64])
+def test_the_smooth_clip_is_the_same_on_cuda_as_on_cpu(dtype):
+    """Los kernels fusionados solo recortan en duro: con el recorte suave no pueden entrar."""
+    module, tensors, presence = smooth_scaler(clip=2.0)
+    module = module.to(dtype)
+    drifted = {name: value.to(dtype).clone() for name, value in tensors.items()}
+    grid = torch.linspace(-60.0, 60.0, len(drifted["charts"]), dtype=dtype)
+    drifted["charts"] = module.charts_center + grid.unsqueeze(1) / module.charts_inverse
+    expected = module(drifted, presence)
+    device = torch.device("cuda:0")
+    module = module.to(device)
+    with torch.no_grad():
+        result = module(
+            {name: value.to(device) for name, value in drifted.items()}, presence.to(device)
+        )
+    tolerance = 1e-5 if dtype == torch.float32 else 1e-11
+    for name in MODALITIES:
+        torch.testing.assert_close(
+            result[name].cpu(), expected[name], rtol=tolerance, atol=tolerance, msg=name
+        )
+    # El recorte duro empataría las filas lejanas; el suave las sigue ordenando también en CUDA.
+    charts = result["charts"].cpu()
+    assert (charts[1:] >= charts[:-1]).all() and float(charts.abs().max()) <= 2.0
+    assert int((charts[1:] == charts[:-1]).all(dim=1).sum()) < len(grid) // 2
+
+
 def test_the_smooth_clip_saturates_at_the_bound_for_values_that_would_overflow_the_square():
     module, tensors, presence = smooth_scaler(clip=2.0)
     module = module.to(torch.float32)
