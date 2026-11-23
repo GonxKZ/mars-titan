@@ -75,10 +75,25 @@ muchas veces. Más de la mitad del IC operable es un factor lento y conocido (R-
    refuerzo solo como política de actuar, abstenerse y tamaño si supera a su control supervisado. Los dos informes
    desaconsejan el refuerzo para generar la señal.
 
-**Calendario.** Día 23: cribas de la v11 y H9, ajuste real con los kernels, candidatos de la tercera criba. Día 24:
-lectura, base v12 congelada, paridad en 2013 y paquete de Colab regenerado (subir y lanzar en Colab espera la orden
-del dueño). Días 24 a 29: v12 en los diez orígenes limpios, EE. UU. y China, con sus controles, en la DGX y en Colab
-(1.000 unidades). Día 30: medidas finales y puertas. 2024 sigue sellado.
+**Calendario (actualizado el 23 a las 07:30Z).** Día 23: termina la primera criba de la v11 y arranca la tercera
+(S-3) sobre la base v12 con kernels, 28 modelos; por la tarde y la noche, cuarta criba con las invenciones de Gemini que
+quedan y con lo que la tercera deje abierto. La equivalencia de los kernels se lee comparando el núcleo de la tercera
+criba con el de la primera (misma receta, semilla y origen); la comparación aparte se detuvo por redundante. Día 24:
+lectura de las dos cribas, verificación a fondo de lo que pase, base v12 congelada con lo ganado (ya decidido: un
+modelo por mercado, H11-r; rasgos corregidos, D-9br; un modelo solo pinball por origen para los cuantiles, F7-r) y
+paquete de Colab regenerado; subir y lanzar en Colab espera la orden del dueño. Días 24 a 29: v12 en los orígenes
+limpios, EE. UU. y China, con sus controles, en la DGX y en Colab (1.000 unidades). Día 30: medidas finales y puertas.
+2024 sigue sellado.
+
+**Orden de la campaña final (pedido por el dueño el 23 a las 07:33Z).** Lo que se entrega es el modelo del último
+origen: ajuste del 30-06-2000 al 30-03-2022 (5.472 sesiones), validación de abril a septiembre de 2022, calibración de
+octubre a diciembre de 2022 y evaluación en 2023 (249 sesiones). Ese origen va el primero, en EE. UU. y en China y con
+las tres semillas, para todos los modelos de la base v12. Los orígenes de 2014 a 2022 van detrás y solo sirven de
+certificado de fiabilidad: se recortan antes que el modelo final si falta tiempo o unidades. Los orígenes de 2005 (prueba
+de humo, 512 activos, una época) y de 2013 (cribas) no producen modelos que se entreguen. Pendiente de decisión del
+dueño: un último reajuste con la misma receta desplazada un año (ajuste hasta marzo de 2023, validación y calibración
+con el resto de 2023) para que sea ese el modelo que se mida en 2024 cuando se abra; las vistas actuales no lo
+contienen (terminan en el origen de 2023) y prepararlo no exige abrir 2024.
 
 ## Hipótesis abiertas
 
