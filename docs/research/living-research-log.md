@@ -33,6 +33,52 @@ conservan. El detalle de la campaña DGX está en
 | Objetivo operable en la red tabular | +0,0040 a +0,0063 de IC operable con MAE más IC operable y +0,0077 a +0,0104 con el IC operable solo (tres semillas) | Opción nueva en la base v11, en la cola de la DGX con y sin ganancia. Devuelto a la etiqueta pierde entre 0,001 y 0,002. Restar el alfa exacto en la cabeza no añade (H6-b) |
 | Combinación con los árboles (media de rangos de tres modelos) | 0,1185 | +0,0022 sobre el mejor individual (t = 3,3). Los pesos aprendidos en línea no la mejoran (A-1) |
 
+## Plan hacia la entrega del 1 de diciembre (12:00 de España, 2026-12-01T11:00Z)
+
+Escrito el 23 de noviembre, tras leer la sesión interactiva de Gemini (kernels y plan), los dos informes
+independientes pedidos por el dueño (`gemini-90-neon-7` y `gemini-90-carbon-7`) y las medidas R-1 a R-3, F-1 y K-1.
+Los tres informes y las medidas coinciden; lo que sigue solo recoge lo comprobado aquí.
+
+**Qué «90 %» se puede afirmar sin trampas y cuál no.**
+
+| Medida, sobre lo que se opera | Hoy (2013, desarrollo) | Se puede afirmar |
+| --- | --- | --- |
+| Acierto de signo por acción y día, a cualquier cobertura | 0,52 a 0,59 | No. Pide un IC de 0,4 a 0,95; no existe ni calibrando (F-2) |
+| Sesiones con IC > 0, todos los nombres, con el agregador | 0,944 [0,909–0,966] | Sí, si los orígenes limpios lo sostienen (regla R-1n) |
+| Sesiones con IC > 0, tercio líquido | 0,73 a 0,74 | No al 100 % de las sesiones. Solo con una puerta que hoy no existe (R-2) o subiendo la razón de información de 0,66 a 1,28 |
+| Semanas de 5 sesiones con IC medio > 0, tercio líquido | 0,92 a 0,94 | Sí, con los siete orígenes limpios juntos |
+| Cobertura de los intervalos del 90 y del 95 % | 0,967 al 95 % | Sí, con intervalos adaptativos que aguanten los años de volatilidad |
+| Días con resultado neto de costes positivo | por medir | No. Un 90 % diario neto pide un Sharpe por encima de 20. Mensual, con rotación controlada, es el horizonte en el que cabe |
+
+**Avisos que acompañan a cualquier cifra.** El universo solo tiene supervivientes (D-1, D-2): no hay datos de las
+empresas que dejaron de cotizar y eso favorece a las señales de reversión. 2013 fue un año tranquilo y se ha mirado
+muchas veces. Más de la mitad del IC operable es un factor lento y conocido (R-3r): las mejoras se miden sobre «alfa solo».
+
+**Qué entra en la base final (v12) y cómo se decide.**
+
+1. Ya demostrado, entra: conjunto de tres semillas o más; conjunto de familias distintas (Titans, atención, árboles,
+   órganos de memoria con el agregador); rasgos por mercado (EE. UU. 46; China con los 16 de la v3 y su factor real);
+   `market_model: required`; medidas de fiabilidad F1 en cada origen; probabilidad de signo calibrada en lugar de la
+   confianza de los cuantiles; kernels FP32 nuevos si el ajuste real de 2013 sale equivalente (K-1).
+2. Candidatos de una variable para una tercera criba en 2013, cada uno con su control: objetivo sobre lo operable sin
+   alfa, con peso por liquidez y penalización de la irregularidad diaria (H13, además del término operable de la v11);
+   rangos de la rama técnica sin contar las filas ausentes; rasgos que hoy se anulan el primer año de cada acción y
+   volumen anómalo en días sin negociación; normalización de los valores que escribe la memoria y tramo de
+   retropropagación más largo; cabezas a 3 y 5 sesiones (R-3r); un modelo por mercado si H11 lo confirma.
+3. Cerebro holográfico como modelo distinto. Hecho comprobado: sus lectores se quedan en la época 0 (objetivo sin IC,
+   8 vecinos, 1.024 episodios, temperatura 1) y copian al núcleo. Dos vías, con fecha de decisión el 25: la que ya se
+   puede medir (red estática más órganos episódicos densos y agregador, F6) y el rediseño dentro del modelo (banco denso
+   de residuos madurados, 128 a 256 vecinos, lectura directa y pérdida de IC). Entra el que gane a añadir semillas del
+   núcleo a igual coste.
+4. Post-entrenamiento: intervalos adaptativos, capa de cartera con rotación controlada para las medidas netas, y
+   refuerzo solo como política de actuar, abstenerse y tamaño si supera a su control supervisado. Los dos informes
+   desaconsejan el refuerzo para generar la señal.
+
+**Calendario.** Día 23: cribas de la v11 y H9, ajuste real con los kernels, candidatos de la tercera criba. Día 24:
+lectura, base v12 congelada, paridad en 2013 y paquete de Colab regenerado (subir y lanzar en Colab espera la orden
+del dueño). Días 24 a 29: v12 en los diez orígenes limpios, EE. UU. y China, con sus controles, en la DGX y en Colab
+(1.000 unidades). Día 30: medidas finales y puertas. 2024 sigue sellado.
+
 ## Hipótesis abiertas
 
 ### H1. La memoria no aprende porque no ve el resultado
