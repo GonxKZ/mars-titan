@@ -27,6 +27,7 @@ from .output_objectives import reads_scalar_point
 from .regional_execution import RegionalExecution
 from .regional_fusion import RegionalFusion
 from .regional_hierarchy import RegionalHierarchy
+from .session_hologram import HolographicSessionInterferometer, SessionHologramConfig
 from .session_ic_objective import SessionScale
 
 _TRANSFORMER_ACTIVATION = torch.nn.functional.gelu
@@ -94,6 +95,8 @@ def declared_sources(config):
         sources.append("mars_titan.models.titans.technical_branch")
     if getattr(config, "cross_asset_attention", None) is not None:
         sources.append("mars_titan.models.titans.cross_asset_attention")
+    if getattr(config, "session_hologram", None) is not None:
+        sources.append("mars_titan.models.titans.session_hologram")
     if getattr(config, "learning_scale", None) is not None:
         sources.append("mars_titan.models.learning_scale")
     if getattr(config, "reference_encoder", None) == "dlinear":
@@ -204,6 +207,14 @@ def _module_settings(module):
         module.config.__post_init__()
         fields = ("hidden_size", "head_dim")
         settings["cross_asset_attention"] = module.config.identity()
+    elif type(module) is HolographicSessionInterferometer:
+        if type(module.config) is not SessionHologramConfig:
+            raise ValueError(
+                "El interferómetro holográfico no conserva su configuración identificada"
+            )
+        module.config.__post_init__()
+        fields = ("hidden_size", "band_dim", "readout_dim")
+        settings["session_hologram"] = module.config.identity()
     elif type(module) in (SessionScale, LaplaceScale, OpponentSpread):
         settings["output_objective"] = module.config.identity()
     elif type(module) is RegionalFusion:
@@ -251,6 +262,39 @@ def _validate_cross_asset_attention(predictor):
         )
     ):
         raise ValueError("La atención entre activos no corresponde a la configuración declarada")
+
+
+def _validate_session_hologram(predictor):
+    """Comprobar que el interferómetro holográfico coincide con su configuración."""
+    declared, module = predictor.config.session_hologram, predictor.session_hologram
+    if declared is None and module is None:
+        return
+    if (
+        type(declared) is not SessionHologramConfig
+        or type(module) is not HolographicSessionInterferometer
+        or type(module.config) is not SessionHologramConfig
+    ):
+        raise ValueError(
+            "El interferómetro holográfico no corresponde a la configuración declarada"
+        )
+    declared.__post_init__()
+    module.config.__post_init__()
+    if (
+        module.config != declared
+        or module.hidden_size != predictor.config.hidden_size
+        or predictor.config.hidden_size % declared.bands != 0
+        or module.band_dim != predictor.config.hidden_size // declared.bands
+        or module.readout_dim != 2 * predictor.config.hidden_size + 2 * declared.bands
+        or not isinstance(getattr(module, "out", None), torch.nn.Linear)
+        or any(
+            parameter.device != predictor.head.weight.device
+            or parameter.dtype != predictor.head.weight.dtype
+            for parameter in module.parameters()
+        )
+    ):
+        raise ValueError(
+            "El interferómetro holográfico no corresponde a la configuración declarada"
+        )
 
 
 def _validate_intervention(readout):
@@ -449,6 +493,7 @@ class FrozenFinancialConsumer:
             )
         self.predictor, self.readout = predictor, readout
         _validate_cross_asset_attention(predictor)
+        _validate_session_hologram(predictor)
         _validate_intervention(readout)
         self._models = (("predictor", predictor),) + ((("readout", readout),) if readout else ())
         self._signature, modes = _execution_signature(self._models)
@@ -531,9 +576,12 @@ class FrozenFinancialConsumer:
             raise ValueError("La preparación necesita un evento y corte únicos")
         if warmup and snapshot is not None:
             raise ValueError("El calentamiento no consulta un banco episódico")
-        if self.predictor.cross_asset_attention is not None and session_complete is not True:
+        if (
+            self.predictor.cross_asset_attention is not None
+            or self.predictor.session_hologram is not None
+        ) and session_complete is not True:
             raise ValueError(
-                "La atención entre activos necesita la sesión completa en un bloque "
+                "El mezclador entre activos necesita la sesión completa en un bloque "
                 "(session_complete=True)"
             )
         options = {}

@@ -94,6 +94,7 @@ class FinancialDustAdapter:
             "fractal_shared_operator",
             "cross_asset_attention",
             "asset_groups",
+            "session_hologram",
             "laplace_scale_head",
             "auxiliary_horizons",
             "session_rank_inputs",
@@ -128,6 +129,7 @@ class FinancialDustAdapter:
                     "fusion_branch",
                     "cross_asset_attention",
                     "asset_groups",
+                    "session_hologram",
                     "output_objective",
                     "auxiliary_heads",
                 )

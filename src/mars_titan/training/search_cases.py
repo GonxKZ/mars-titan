@@ -81,6 +81,8 @@ PREDICTOR_CHANGES = (
     "reference_encoder",
     # Rama de los rasgos técnicos del bloque del gráfico: columns, bins, embedding y hidden.
     "technical_branch",
+    # Interferómetro holográfico de sesión en fase dual (WP11).
+    "session_hologram",
 )
 # Cambios que se declaran con un nombre en lugar de un objeto.
 NAMED_CHANGES = (
@@ -118,7 +120,8 @@ def checked_predictor_changes(changes):
             "mature_reliability, memory_huber y memory_time_scales como objetos no vacíos, y "
             "presence_modulation, attention_layout, temporal_encoder, session_rank_inputs, "
             "differential_attention y reference_encoder como nombres no vacíos. También "
-            "admiten learning_scale, removed_modalities y technical_branch como objetos no vacíos"
+            "admiten learning_scale, removed_modalities, technical_branch y session_hologram "
+            "como objetos no vacíos"
         )
     return changes
 

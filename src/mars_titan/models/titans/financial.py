@@ -140,6 +140,11 @@ from .regional_variants import (
 from .reliability_gates import MatureReliability, ReliabilityGates
 from .scale_invariant_time import ScaleInvariantTime
 from .session_context import SECTOR_MEAN, SESSION_CONTEXTS, SessionContext
+from .session_hologram import (
+    HolographicSessionInterferometer,
+    SessionHologramConfig,
+    parse_session_hologram,
+)
 from .session_ic_objective import SessionICObjective
 from .session_ranks import SESSION_RANK_INPUTS, rank_session_inputs
 from .session_ranks import identity as session_rank_identity
@@ -261,6 +266,9 @@ class FinancialConfig:
     # de fuga lee el sector actual de sector_map. Sin declararla, la identidad y el cálculo
     # no cambian.
     asset_groups: AssetGroupsConfig | None = None
+    # WP11: interferómetro holográfico de sesión en fase dual (O(N), sin eco propio). Sin
+    # declararlo, la identidad y el cálculo no cambian.
+    session_hologram: SessionHologramConfig | None = None
     # F1 de #749: escala de Laplace, otro objetivo de salida excluyente con el de IC.
     laplace_scale_head: LaplaceScaleHead | None = None
     # F5 de #749: cabezas auxiliares de horizontes largos. Sin declararlas nada cambia.
@@ -698,6 +706,22 @@ class FinancialConfig:
         # H4 y C3 también mezclan las filas de la sesión, cada uno con su propia agrupación.
         if self.asset_groups is not None and self.fractal_shared_operator is not None:
             raise ValueError("H4 y C3 mezclan la sesión de dos formas y no se combinan")
+        object.__setattr__(self, "session_hologram", parse_session_hologram(self.session_hologram))
+        hologram = self.session_hologram
+        if hologram is not None:
+            if hologram.position == "after_technical" and self.technical_branch is None:
+                raise ValueError(
+                    "El interferómetro holográfico después de la rama técnica necesita la rama "
+                    "técnica declarada (technical_branch)"
+                )
+            if (
+                self.cross_asset_attention is not None
+                or self.asset_groups is not None
+                or self.fractal_shared_operator is not None
+            ):
+                raise ValueError(
+                    "El interferómetro holográfico de sesión no se combina con C5, H4 ni C3"
+                )
 
     def _check_auxiliary_horizons(self):
         """Cabezas auxiliares y operaciones que impiden recalcular su token."""
@@ -734,6 +758,7 @@ class FinancialConfig:
                 or self.cross_asset_attention is not None
                 or self.asset_groups is not None
                 or self.fractal_shared_operator is not None
+                or self.session_hologram is not None
             ):
                 raise ValueError(
                     "Las cabezas auxiliares con operaciones por sesión necesitan otro contraste"
@@ -967,6 +992,8 @@ class FinancialConfig:
             if self.asset_groups.mode == CURRENT_SECTOR:
                 groups.update(sectors=self.sector_map.identity())
             result.update(asset_groups=groups)
+        if self.session_hologram is not None:
+            result.update(session_hologram=self.session_hologram.identity())
         if self.auxiliary_horizons is not None:
             result.update(auxiliary_horizons=self.auxiliary_horizons.identity())
         if self.mature_reliability is not None:
@@ -1371,6 +1398,14 @@ class FinancialPredictor(nn.Module):
             if config.technical_branch is not None
             else None
         )
+        # WP11: usa su propio generador derivado y puerta inicial a cero sobre W_out no nula.
+        self.session_hologram = (
+            HolographicSessionInterferometer(
+                config.hidden_size, config.session_hologram, seed=config.seed, dtype=dtype
+            )
+            if config.session_hologram is not None
+            else None
+        )
         # #791 empieza con pesos nulos y no consume ningún generador.
         self.reliability_gates = (
             ReliabilityGates(config.mature_reliability, dtype=dtype)
@@ -1398,6 +1433,7 @@ class FinancialPredictor(nn.Module):
             or self.cross_asset_attention is not None
             or self.asset_groups is not None
             or self.fractal_shared_operator is not None
+            or self.session_hologram is not None
             or (objective is not None and objective.session_level)
             or (self.technical_branch is not None and self.technical_branch.session_level)
         )
@@ -2388,6 +2424,9 @@ class FinancialPredictor(nn.Module):
             if mixer is not None and mixer.config.position == "after_mac":
                 # Mezcla las filas de cada mercado e instante del bloque, que es la sesión entera.
                 encoded = mixer(encoded, markets, batch.prediction_at)
+            hologram = self.session_hologram
+            if hologram is not None and hologram.config.position == "after_mac":
+                encoded = hologram(encoded, markets, batch.prediction_at)
             if self.asset_groups is not None:
                 # Los grupos salen de la ventana recibida, sin los rangos de F4.
                 encoded = self.asset_groups(
@@ -2407,6 +2446,8 @@ class FinancialPredictor(nn.Module):
             if mixer is not None and mixer.config.position == "after_technical":
                 # La mezcla lee la representación con su residuo técnico, la que ve la cabeza.
                 encoded = mixer(encoded, markets, batch.prediction_at)
+            if hologram is not None and hologram.config.position == "after_technical":
+                encoded = hologram(encoded, markets, batch.prediction_at)
             if self.local_control is not None:
                 local_result = self.local_control(
                     self.mac,
