@@ -39,7 +39,7 @@ número cambia de una sesión a otra.
 | Configuración | Una `dataclass` congelada con `kind`, `mode`, `position` y sus tamaños, validada en `__post_init__`, con `identity()` y una función `parse_<nombre>(raw)` que admite `None`, un `dict` o la propia configuración |
 | Módulo | `nn.Module(hidden_size, config, *, seed, dtype)` con `forward(encoded, markets, prediction_at)`. Sus pesos salen de un generador propio derivado de `seed`: no consume el generador global |
 | Controles | En el mismo módulo, con los mismos parámetros y la misma inicialización: `self_only` (cada fila se lee solo a sí misma) y `shuffled_peers` (la lectura de los demás, permutada dentro de la sesión con una semilla derivada). Sin ellos no se puede decir de dónde sale una ganancia |
-| Registro | El campo en `FinancialConfig` (ausente por defecto), su identidad solo cuando está declarado y su nombre en `OBJECT_CHANGES` de `search_cases.py`. Cada bloque añadido va entre marcas `# --- <nombre> ---` para que las fusiones no choquen |
+| Registro | El campo en `FinancialConfig` (ausente por defecto), su identidad solo cuando está declarado y su nombre en `PREDICTOR_CHANGES` de `search_cases.py`. Cada bloque añadido va entre marcas `# --- <nombre> ---` para que las fusiones no choquen |
 
 ## Reglas que comprueban las pruebas
 
