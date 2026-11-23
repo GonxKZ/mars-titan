@@ -1017,3 +1017,25 @@ def test_the_fourth_version_is_deterministic_and_keeps_dense_branch_gradients_fi
             assert param.grad is not None and torch.isfinite(param.grad).all(), (dtype, name)
         assert branch.outer.weight.grad.abs().sum() > 0
         assert branch.outer.bias.grad.abs().sum() > 0
+
+
+def test_the_fifth_version_is_the_second_schema_with_the_corrections_of_the_fourth():
+    _, sessions, table, market = market_prices(seed=17)
+    prices, sessions, market = table[:300].copy(), sessions[:300], market[:300]
+    prices[40, 4] = 0.0
+    second, fourth, fifth = (
+        technical.technical_features(prices, sessions, sessions, market, version=version)
+        for version in (technical.NAME_V2, technical.NAME_V4, technical.NAME_V5)
+    )
+    assert technical.NAMES_V5 == technical.NAMES_V2
+    assert technical.VERSIONS[technical.NAME_V5] == technical.NAMES_V2
+    assert fifth.shape == second.shape == (300, 46)
+    # Son, celda a celda, las 46 primeras columnas de la cuarta versión.
+    assert np.array_equal(fifth, fourth[:, :46])
+    # Y se separan de la segunda justo donde actúan las dos correcciones.
+    idx = {name: i for i, name in enumerate(technical.NAMES_V2)}
+    changed = (fifth != second).any(axis=1)
+    assert not changed[:20].any() and changed[63:252].all()
+    assert second[100, idx["return_5"]] == 0.0 and fifth[100, idx["return_5"]] != 0.0
+    assert second[40, idx["abnormal_volume"]] == 0.0
+    assert fifth[40, idx["abnormal_volume"]] == -technical.LIMIT

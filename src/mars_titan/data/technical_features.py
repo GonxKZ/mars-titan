@@ -1,4 +1,4 @@
-"""Rasgos técnicos causales de horizonte largo de un activo (`long_horizon_v1` a `_v4`).
+"""Rasgos técnicos causales de horizonte largo de un activo (`long_horizon_v1` a `_v5`).
 
 La etiqueta de la edición histórica es el residuo de la rentabilidad intradía de la sesión
 siguiente, `r(t+1) - alfa(t) - beta(t) * m(t+1)`, con alfa y beta de un OLS con intercepto sobre
@@ -38,6 +38,10 @@ significado de `has_63_sessions` ni `has_252_sessions`), y un día sin volumen d
 `abnormal_volume` en el límite inferior del recorte (−8) y no entra en la media del impacto de
 Amihud (que se calcula solo sobre los días con negociación de la ventana, o queda ausente si no
 hay ninguno).
+
+`long_horizon_v5` son las 46 columnas de la v2 con esas dos mismas correcciones: celda a celda,
+las 46 primeras columnas de la v4. Es la versión para el mercado que no usa las 16 columnas
+añadidas por la v3.
 """
 
 import math
@@ -49,6 +53,7 @@ NAME = "long_horizon_v1"
 NAME_V2 = "long_horizon_v2"
 NAME_V3 = "long_horizon_v3"
 NAME_V4 = "long_horizon_v4"
+NAME_V5 = "long_horizon_v5"
 # Parte mínima de filas válidas en una ventana de la v3.
 COVERAGE = 0.75
 # Por debajo de esta parte de su escala, una diferencia de la v3 es redondeo y no un dato.
@@ -128,8 +133,18 @@ NAMES_V3 = (
     "candle_upper_shadow_21",
 )
 NAMES_V4 = NAMES_V3
-# Columnas de cada versión declarada. Las de una versión anterior son siempre un prefijo.
-VERSIONS = {NAME: NAMES, NAME_V2: NAMES_V2, NAME_V3: NAMES_V3, NAME_V4: NAMES_V4}
+NAMES_V5 = NAMES_V2
+# Versiones que llevan las dos correcciones de la cuarta.
+CORRECTED = (NAME_V4, NAME_V5)
+# Columnas de cada versión declarada. De la primera a la cuarta, las de una versión son un prefijo
+# de las de la siguiente; la quinta son las 46 de la segunda.
+VERSIONS = {
+    NAME: NAMES,
+    NAME_V2: NAMES_V2,
+    NAME_V3: NAMES_V3,
+    NAME_V4: NAMES_V4,
+    NAME_V5: NAMES_V5,
+}
 
 
 def _window_sum(values, window):
@@ -356,7 +371,7 @@ def technical_features(prices, sessions, calendar=None, market=None, version=NAM
             result[:minimum] = np.nan
             return result
 
-        year = available_volatility(252, 63) if version == NAME_V4 else volatility(252)
+        year = available_volatility(252, 63) if version in CORRECTED else volatility(252)
         for window in (5, 21, 63, 126, 252):
             features[f"return_{window}"] = change(window) / (year * np.sqrt(window))
         momentum = np.full(rows, np.nan)
@@ -382,14 +397,14 @@ def technical_features(prices, sessions, calendar=None, market=None, version=NAM
         volume_21 = _window_sum(volume, 21) / 21
         volume_21[:20] = np.nan
         abnormal = np.log(volume / volume_21)
-        if version == NAME_V4:
+        if version in CORRECTED:
             abnormal = np.where(
                 np.isfinite(volume_21) & (volume_21 >= 0.0) & (volume == 0.0),
                 -LIMIT,
                 abnormal,
             )
         features["abnormal_volume"] = abnormal
-        if version == NAME_V4:
+        if version in CORRECTED:
             traded = np.isfinite(dollars) & (dollars > 0)
             impact = np.where(traded, np.abs(filled) / dollars, 0.0)
             traded_21 = _window_sum(traded.astype(np.float64), 21)
@@ -413,7 +428,7 @@ def technical_features(prices, sessions, calendar=None, market=None, version=NAM
         features["intraday_21"] = sum_intraday / year * np.sqrt(21)
         features["overnight_21"] = sum_overnight / year * np.sqrt(21)
         features["maximum_return_21"] = _window_extreme(filled, 21, np.max) / year
-        if version in (NAME_V2, NAME_V3, NAME_V4):
+        if version in (NAME_V2, NAME_V3, NAME_V4, NAME_V5):
             clean_intraday = np.where(np.isfinite(intraday_log), intraday_log, 0.0)
             clean_overnight = np.where(np.isfinite(overnight), overnight, 0.0)
             for window in (5, 63, 252):
@@ -492,7 +507,7 @@ def technical_features(prices, sessions, calendar=None, market=None, version=NAM
             ):
                 features[name][inside] = values[position[inside]]
             features["has_market_model"] = np.isfinite(features["alpha_percent"]).astype(np.float64)
-            if version in (NAME_V2, NAME_V3, NAME_V4):
+            if version in (NAME_V2, NAME_V3, NAME_V4, NAME_V5):
                 # Etiqueta de la sesión anterior, ya realizada al cierre de esta:
                 # r(t) - alfa(t-1) - beta(t-1) * m(t), en desviaciones residuales de t-1.
                 realized = np.full(len(calendar), np.nan)

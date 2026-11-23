@@ -1392,3 +1392,25 @@ def test_long_horizon_v4_campaign_declaration_validates_like_v3():
     )
     with pytest.raises(ValueError, match="desplazamiento conocido"):
         campaign.checked_declaration(icop_moved, root=ROOT)
+
+
+def test_long_horizon_v5_keeps_the_46_columns_and_the_known_offset_of_the_second_version():
+    experiments = ROOT / "configs/experiments"
+    screen1 = json.loads((experiments / "us-campaign-v11-screen1.json").read_text())
+    v5 = dict(screen1, inputs=dict(technical=technical_features.NAME_V5))
+    # La misma declaración vale tal cual: 46 columnas y alpha_percent en la columna -46.
+    campaign.checked_declaration(v5, root=ROOT)
+    branch_62 = dict(columns=62, hidden=128, depth=2, session_ranks=True)
+    wide_branch = dict(
+        v5,
+        tiers=["core"],
+        recipes=dict(core=screen1["recipes"]["core"]),
+        models=dict(
+            titans_mac_wide=dict(
+                screen1["models"]["titans_mac"],
+                predictor_changes=dict(technical_branch=branch_62),
+            )
+        ),
+    )
+    with pytest.raises(ValueError, match="rama técnica"):
+        campaign.checked_declaration(wide_branch, root=ROOT)
