@@ -91,9 +91,21 @@ octubre a diciembre de 2022 y evaluación en 2023 (249 sesiones). Ese origen va 
 las tres semillas, para todos los modelos de la base v12. Los orígenes de 2014 a 2022 van detrás y solo sirven de
 certificado de fiabilidad: se recortan antes que el modelo final si falta tiempo o unidades. Los orígenes de 2005 (prueba
 de humo, 512 activos, una época) y de 2013 (cribas) no producen modelos que se entreguen. Pendiente de decisión del
-dueño: un último reajuste con la misma receta desplazada un año (ajuste hasta marzo de 2023, validación y calibración
-con el resto de 2023) para que sea ese el modelo que se mida en 2024 cuando se abra; las vistas actuales no lo
-contienen (terminan en el origen de 2023) y prepararlo no exige abrir 2024.
+dueño, y lo último en la cola: un reajuste con la misma receta desplazada un año (ajuste hasta marzo de 2023, validación
+y calibración con el resto de 2023), que sería el modelo de uso de 2024 en adelante. No se puede examinar: los datos
+preparados terminan el 29-12-2023 y las vistas terminan en el origen de 2023, así que el examen del modelo final es 2023
+y la fecha de 2024 del contrato es una barrera, no un conjunto disponible.
+
+**Presupuesto de la campaña final (estimado el 23 a las 07:45Z; la velocidad en Colab no está medida).** Medido en la
+primera criba de la v11 (origen 2013, 4.198 activos): un trabajador hace de 130 a 150 pasos por minuto, lo mismo con
+tres que con cinco a la vez; los doce modelos terminados necesitaron de 7 a 22 épocas (media 11,6); cinco trabajadores
+dan cerca de un millón de pasos al día. Una época del origen de 2023 son 2.736 pasos en EE. UU. y 1.910 en China (810
+activos, ajuste desde julio de 2006). Con unos doce modelos de GPU por mercado y tres semillas, el origen final son de
+1,6 a 2,0 millones de pasos (unos dos días de la DGX sola); los nueve orígenes de 2014 a 2022, unos 12,5 millones; el
+reajuste opcional, otros dos. Cada RTX PRO 6000 se estima entre 0,8 y 2,3 veces la DGX (de 4 a 6 trabajadores por la
+memoria del anfitrión, hasta 20 GiB por trabajo del núcleo; velocidad por trabajador entre una y dos veces): con dos y
+la DGX, todo son de tres a seis días y de 1.050 a 2.200 unidades de cómputo a 7,5 por hora. La prueba de velocidad en
+Colab (hora y media con la instalación) espera la orden del dueño.
 
 ## Hipótesis abiertas
 
