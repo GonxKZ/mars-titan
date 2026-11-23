@@ -915,6 +915,23 @@ Esto obliga a que la base emita un modelo solo pinball por origen y semilla.
 *Comprobación.* Lo que ya entra reproduce exactamente, en la prueba, las coberturas del
 Mondrian+ACI de F.
 
+**Resultado de F7-b en 2013** (huella 606db891…; `errores/2013`). La lectura sin F7-b queda
+en `errores/2013-093a0caa`. **Entra.**
+- En calibración (segunda mitad), la candidata gana en todo:
+  - pinball media 0,002974, frente a 0,004796;
+  - errores de cobertura de 0,0029, 0,0036 y 0,0017, frente a 0,0104, 0,0073 y 0,0049.
+- En evaluación no empeora ninguna métrica:
+  - pinball media 0,002723, frente a 0,004767 (−43 %), y mejor en cada nivel;
+  - ECE 0,028, frente a 0,148 (en lo operable, 0,030 frente a 0,177);
+  - cobertura de 0,7996, 0,9003 y 0,9499 (errores de 0,0004, 0,0003 y 0,0001), frente a 0,8034,
+    0,9022 y 0,9515;
+  - al 90 %, los deciles de volatilidad quedan entre 0,899 y 0,901.
+- Con la misma cobertura, los intervalos son más estrechos: al 90 % la anchura media es 0,0466,
+  frente a 0,0607 (−23 %), y la puntuación de intervalo 0,0746, frente a 0,0872 (−14 %).
+- La capa hace falta: sin ella, el error de cobertura sube a 0,0155 al 80 % y a 0,0051 al 95 %.
+- La candidata no llega a la cabeza del propio noic, porque su centro es λ·S2: pinball 0,002723
+  frente a 0,002702, y ECE 0,028 frente a 0,0065.
+
 ## 6. Etapas con GPU (fase 4)
 
 ### 6.1 Qué queda preparado
