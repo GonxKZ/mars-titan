@@ -47,6 +47,7 @@ import time
 from pathlib import Path
 
 import numpy as np
+import pyarrow as pa
 import pyarrow.parquet as pq
 from scipy.stats import binom, norm
 
@@ -57,7 +58,7 @@ from mars_titan.evaluation import posttraining_pilots as pilots
 
 KIND = "posttraining_reliability_v1"
 # Huella canónica de configs/experiments/posttraining-reliability.json, la declaración de F.
-REGISTERED_SHA256 = "b3d399efec55453c2030549fa3a9916c50a0aef353591018d3f19f47b999f565"
+REGISTERED_SHA256 = "cdb1c5111e2b1d47199f28c82cbd6f6b19f66ecda768ebe02effcbc0a8a93f15"
 SPLITS, AGGREGATED = og.SPLITS, og.AGGREGATED
 PREDICTORS = ("s1", "s2", "tree", "parent")
 # Control de lo operable: el alfa conocido solo, como puntuación. Ya ordena y + α por sí mismo
@@ -142,6 +143,35 @@ def session_measures(tool, score, target, bounds, *, min_assets, keep=None):
     return result
 
 
+def block_interval(values, keys, settings):
+    """Media (una fracción si son indicadores) con su intervalo por arranque estacionario.
+
+    Politis y Romano (1994): bloques de longitud geométrica con media `mean_block` sesiones,
+    circulares dentro de cada mercado y en el orden del tiempo, `draws` remuestras con semilla
+    fija; el intervalo son los percentiles 2,5 y 97,5. Wilson supone sesiones independientes; este
+    no.
+    """
+    values = np.asarray(values, dtype=np.float64)
+    if not len(values):
+        return None
+    rng = np.random.default_rng(settings["seed"])
+    draws, p = settings["draws"], 1.0 / settings["mean_block"]
+    total = np.zeros(draws)
+    markets = {}
+    for i, key in enumerate(keys):
+        markets.setdefault(key[0], []).append((key[1], i))
+    for market in sorted(markets):
+        x = values[[i for _, i in sorted(markets[market])]]
+        n = len(x)
+        new = rng.random((draws, n)) < p
+        new[:, 0] = True
+        first = np.maximum.accumulate(np.where(new, np.arange(n), 0), axis=1)
+        begin = np.take_along_axis(rng.integers(n, size=(draws, n)), first, axis=1)
+        total += x[(begin + np.arange(n) - first) % n].sum(axis=1)
+    low, high = np.quantile(total / len(values), [0.025, 0.975])
+    return dict(rate=float(values.mean()), low=float(low), high=float(high))
+
+
 def window_rates(measured, keys, width):
     """Ventanas de `width` sesiones puntuadas seguidas de cada mercado, sin solaparse (la última
     incompleta se descarta): fracción con IC medio > 0 y con diferencia de deciles media > 0."""
@@ -212,6 +242,7 @@ def reliability(tool, view, settings, *, min_assets, keep=None):
     ics = np.array([m[1] for m in measured])
     spreads = np.array([m[2] for m in measured])
     sessions = len(measured)
+    scored_keys = [view["keys"][i] for i, _, _ in measured]
     clean = ~view["outlier"] if keep is None else keep & ~view["outlier"]
     curve = dict(min_assets=min_assets)
     result = dict(
@@ -220,7 +251,9 @@ def reliability(tool, view, settings, *, min_assets, keep=None):
         ic_std=float(ics.std(ddof=1)) if sessions > 1 else None,
         ic_worst=float(ics.min()) if sessions else None,
         ic_positive=wilson(int((ics > 0).sum()), sessions),
+        ic_positive_block=block_interval(ics > 0, scored_keys, settings["block_interval"]),
         spread_positive=wilson(int((spreads > 0).sum()), sessions),
+        spread_positive_block=block_interval(spreads > 0, scored_keys, settings["block_interval"]),
         spread_mean_bps=1e4 * float(spreads.mean()) if sessions else None,
         windows={str(w): window_rates(measured, view["keys"], w) for w in settings["windows"]},
         selective=selective_precision(
@@ -248,7 +281,7 @@ def reliability(tool, view, settings, *, min_assets, keep=None):
     return result, rows, measured
 
 
-def improvement(tool, measured, baseline, keys, windows):
+def improvement(tool, measured, baseline, keys, windows, block):
     """Mejora por sesión de una señal sobre otra en las sesiones que puntúan las dos: diferencia de
     IC (media, t de Newey-West de la criba e intervalo al 95 %), de deciles, fracción de sesiones
     con mejora > 0 (Wilson) y ventanas con mejora media > 0."""
@@ -267,14 +300,17 @@ def improvement(tool, measured, baseline, keys, windows):
         interval=None if se is None else [stats["mean"] - Z95 * se, stats["mean"] + Z95 * se],
         spread_mean_bps=1e4 * float(np.mean([c[2] for c in common])),
         positive=wilson(int((differences > 0).sum()), len(differences)),
+        positive_block=block_interval(differences > 0, [keys[i] for i, _, _ in common], block),
         windows={str(w): window_rates(common, keys, w) for w in windows},
     )
 
 
-def _claim(entry, low):
+def _claim(entry, low, block=None):
+    """Demostrado si el límite inferior de Wilson (y el de bloques, si lo hay) llega a `low`;
+    compatible si solo llega el punto."""
     if not entry:
         return "sin datos"
-    if entry["low"] >= low:
+    if entry["low"] >= low and (block is None or block["low"] >= low):
         return "demostrado"
     return "compatible" if entry["rate"] >= low else "no"
 
@@ -292,7 +328,7 @@ def verdicts(summary, rules):
     for key, item in summary["f1"].items():
         mode, predictor, scope = key.split("/")
         reading = dict(
-            sessions=_claim(item["ic_positive"], low),
+            sessions=_claim(item["ic_positive"], low, item.get("ic_positive_block")),
             **{f"windows_{w}": _claim(v["ic"], low) for w, v in item["windows"].items()},
         )
         versus = summary["versus_alpha"].get(f"{predictor}/{scope}") if mode == "operable" else None
@@ -327,7 +363,40 @@ def verdicts(summary, rules):
             reasons.append("el límite inferior por sesiones no llega al declarado")
         if not at["coverage"] > (alpha_at["coverage"] if alpha_at else 0.0):
             reasons.append("no cubre más que el alfa solo con su propio umbral")
-    return dict(f1=f1, f2=dict(system=f"{system}/{scope}", enters=not reasons, reasons=reasons))
+    target_precision = rules["f2_target_precision"]
+    seen = item["parts"]["evaluation"]["range"]
+    if not seen.get("at_target_rows"):
+        statement = f"no hay casos al {target_precision:.0%}".replace("%", " %")
+    else:
+        statement = (
+            f"hay {seen['at_target_rows']} filas con confianza ≥ {target_precision} y acierto "
+            f"{seen['at_target_precision']['rate']:.3f}; el control de riesgo "
+            + ("las valida" if item["chosen_threshold"] is not None else "no las valida")
+        )
+    adaptive = summary["intervals"]["adaptive"]
+    return dict(
+        f1=f1,
+        f2=dict(
+            system=f"{system}/{scope}",
+            enters=not reasons,
+            reasons=reasons,
+            confidence=dict(
+                emitted="probabilidad calibrada (isótona con bloques mínimos)",
+                range=[seen.get("min"), seen.get("max")],
+                max_confidence=seen.get("max_confidence"),
+                statement=statement,
+                ece={part: v["calibration_error"]["ece"] for part, v in item["parts"].items()},
+            ),
+        ),
+        intervals={
+            level: dict(
+                delivered=entry["delivered"],
+                confirmed=entry["confirmed"],
+                reasons=entry["candidates"][entry["delivered"]]["reasons"],
+            )
+            for level, entry in adaptive.items()
+        },
+    )
 
 
 def zero_excluding(low, high, target, keep=None):
@@ -348,11 +417,15 @@ def zero_excluding(low, high, target, keep=None):
 # F2: piezas puras
 
 
-def isotonic_fit(x, y):
+def isotonic_fit(x, y, min_rows=1):
     """Regresión isótona creciente de `y` sobre `x` (fusión de bloques adyacentes).
 
     Devuelve el borde derecho de cada bloque y su valor: una función escalonada creciente. Los
     empates en `x` se agrupan antes, así que el resultado no depende del orden de las filas.
+    Con `min_rows` > 1, los bloques consecutivos se funden de izquierda a derecha hasta reunir al
+    menos esas filas, y un resto final se une al último: la función sigue siendo creciente y
+    ningún escalón descansa en un puñado de filas (en 2013, un bloque extremo de pocas filas daba
+    P = 1 con un acierto real de 0,59).
     """
     x, y = np.asarray(x, dtype=np.float64), np.asarray(y, dtype=np.float64)
     _require(
@@ -372,6 +445,23 @@ def isotonic_fit(x, y):
             weight[-2] += weight[-1]
             right[-2] = right[-1]
             del total[-1], weight[-1], right[-1]
+    if min_rows > 1:
+        groups, acc_total, acc_weight = [], 0.0, 0.0
+        for value_sum, count, edge in zip(total, weight, right, strict=True):
+            acc_total, acc_weight = acc_total + value_sum, acc_weight + count
+            if acc_weight >= min_rows:
+                groups.append([acc_total, acc_weight, edge])
+                acc_total, acc_weight = 0.0, 0.0
+        if acc_weight > 0:
+            if groups:
+                groups[-1][0] += acc_total
+                groups[-1][1] += acc_weight
+                groups[-1][2] = right[-1]
+            else:
+                groups.append([acc_total, acc_weight, right[-1]])
+        total = [g[0] for g in groups]
+        weight = [g[1] for g in groups]
+        right = [g[2] for g in groups]
     return np.array(right), np.array(total) / np.array(weight)
 
 
@@ -458,18 +548,65 @@ def risk_tests(probability, target, session, sessions, thresholds, *, precision,
     return (min(valid) if valid else None), tests
 
 
+def calibration_error(probability, outcome, bins):
+    """Tabla de calibración por intervalos iguales de P y su error esperado (ECE) y máximo (MCE)."""
+    group = np.clip((probability * bins).astype(np.int64), 0, bins - 1)
+    table, ece, mce, total = [], 0.0, None, len(probability)
+    for b in range(bins):
+        inside = group == b
+        rows = int(inside.sum())
+        predicted = float(probability[inside].mean()) if rows else None
+        observed = float(outcome[inside].mean()) if rows else None
+        table.append(
+            dict(
+                low=b / bins, high=(b + 1) / bins, rows=rows, predicted=predicted, observed=observed
+            )
+        )
+        if rows:
+            gap = abs(predicted - observed)
+            ece += rows / total * gap
+            mce = gap if mce is None else max(mce, gap)
+    return dict(rows=total, ece=ece if total else None, mce=mce, table=table)
+
+
+def probability_range(probability, target, target_precision):
+    """Rango real de P y las filas cuya confianza llega a la precisión buscada, con su acierto."""
+    if not len(probability):
+        return dict(rows=0)
+    confidence = np.maximum(probability, 1 - probability)
+    mask, direction = acted(probability, target_precision)
+    hits = int((correct(target, direction) & mask).sum())
+    return dict(
+        rows=len(probability),
+        min=float(probability.min()),
+        max=float(probability.max()),
+        quantiles={
+            str(q): float(np.quantile(probability, q)) for q in (0.01, 0.05, 0.5, 0.95, 0.99)
+        },
+        max_confidence=float(confidence.max()),
+        at_target_rows=int(mask.sum()),
+        at_target_precision=wilson(hits, int(mask.sum())),
+    )
+
+
 def directional(cal, ev, settings):
-    """F2 de una señal operable: calibración, umbral con control de riesgo y lectura en evaluación."""
+    """F2 de una señal operable: calibración, umbral con control de riesgo y lectura en evaluación.
+
+    La probabilidad calibrada es también la confianza de signo que se emite: van su rango real y su
+    error de calibración en la mitad de ajuste (dentro de muestra), en la de riesgo y en evaluación.
+    """
     _require(len(cal["bounds"]) >= 2, "F2 necesita al menos dos sesiones de calibración")
     order = sorted(range(len(cal["bounds"])), key=lambda i: (cal["keys"][i][1], cal["keys"][i][0]))
     half = len(order) // 2
     fit = np.concatenate([np.arange(*cal["bounds"][i]) for i in order[:half]])
     risk = np.concatenate([np.arange(*cal["bounds"][i]) for i in order[half:]])
-    model = isotonic_fit(cal["score"][fit], (cal["target"][fit] > 0).astype(np.float64))
+    min_rows = max(1, math.ceil(settings["min_block_share"] * len(fit)))
+    model = isotonic_fit(cal["score"][fit], (cal["target"][fit] > 0).astype(np.float64), min_rows)
     thresholds = list(settings["thresholds"])
     cal_session = session_index(cal["bounds"], len(cal["score"]))
+    risk_probability = isotonic_predict(model, cal["score"][risk])
     chosen, tests = risk_tests(
-        isotonic_predict(model, cal["score"][risk]),
+        risk_probability,
         cal["target"][risk],
         np.unique(cal_session[risk], return_inverse=True)[1],
         len(order) - half,
@@ -479,19 +616,16 @@ def directional(cal, ev, settings):
     )
     probability = isotonic_predict(model, ev["score"])
     outcome = (ev["target"] > 0).astype(np.float64)
-    bins = settings["reliability_bins"]
-    group = np.clip((probability * bins).astype(np.int64), 0, bins - 1)
-    table = []
-    for b in range(bins):
-        inside = group == b
-        table.append(
-            dict(
-                low=b / bins,
-                high=(b + 1) / bins,
-                rows=int(inside.sum()),
-                predicted=float(probability[inside].mean()) if inside.any() else None,
-                observed=float(outcome[inside].mean()) if inside.any() else None,
-            )
+    bins, target_precision = settings["reliability_bins"], settings["target_precision"]
+    parts = {}
+    for name, p, y in (
+        ("fit", isotonic_predict(model, cal["score"][fit]), cal["target"][fit]),
+        ("risk", risk_probability, cal["target"][risk]),
+        ("evaluation", probability, ev["target"]),
+    ):
+        parts[name] = dict(
+            range=probability_range(p, y, target_precision),
+            calibration_error=calibration_error(p, (y > 0).astype(np.float64), bins),
         )
     ev_session, sessions = session_index(ev["bounds"], len(ev["score"])), len(ev["bounds"])
     curve = []
@@ -511,20 +645,202 @@ def directional(cal, ev, settings):
         )
     base = float(outcome.mean()) if len(outcome) else None
     return dict(
-        calibrator=dict(blocks=len(model[1]), fit_rows=len(fit), risk_rows=len(risk)),
+        calibrator=dict(
+            blocks=len(model[1]),
+            fit_rows=len(fit),
+            risk_rows=len(risk),
+            min_rows=min_rows,
+            edges=model[0].tolist(),
+            values=model[1].tolist(),
+        ),
         chosen_threshold=chosen,
         risk_tests=tests,
+        parts=parts,
         evaluation=dict(
             rows=len(probability),
             sessions=sessions,
             base_rate=base,
             brier=float(np.mean((probability - outcome) ** 2)) if len(outcome) else None,
             brier_base=float(np.mean((base - outcome) ** 2)) if len(outcome) else None,
-            calibration=table,
             at_threshold=None if chosen is None else curve[thresholds.index(chosen)],
             curve=curve,
         ),
     )
+
+
+def confidence_table(view, item, cap_flag):
+    """La confianza de signo que emite un sistema: P calibrada por fila, con su dirección."""
+    model = (np.asarray(item["calibrator"]["edges"]), np.asarray(item["calibrator"]["values"]))
+    probability = isotonic_predict(model, view["score"])
+    return pa.table(
+        dict(
+            sample_id=pa.array(view["sample_id"], pa.string()),
+            probability_up=pa.array(probability, pa.float64()),
+            confidence=pa.array(np.maximum(probability, 1 - probability), pa.float64()),
+            direction=pa.array(np.where(probability >= 0.5, 1, -1).astype(np.int8)),
+            alpha_over_cap=pa.array(np.asarray(cap_flag, dtype=bool)),
+        )
+    )
+
+
+# ---------------------------------------------------------------------------------------------
+# Intervalos adaptativos
+
+
+def _conformal_quantile(ordered, level):
+    """Cuantil ⌈(n + 1)·nivel⌉/n de unas puntuaciones ordenadas, con el nivel acotado a
+    [1/(n + 1), n/(n + 1)] para que la banda sea siempre finita."""
+    n = len(ordered)
+    level = min(max(level, 1 / (n + 1)), n / (n + 1))
+    return float(ordered[min(max(math.ceil((n + 1) * level), 1), n) - 1])
+
+
+def adaptive_bands(
+    lower, upper, target, sessions, maturity, scores, level, gamma, groups=None, score_groups=None
+):
+    """CQR por grupo con ACI por sesión (Gibbs y Candès, 2021) sobre unas bandas.
+
+    `sessions` son (mercado, instante, inicio, fin) en el orden de las filas, y `maturity` el
+    instante en que madura la última etiqueta de cada una. Cada mercado y cada grupo llevan su
+    propio nivel α, que empieza en 1 − nivel. Al llegar a una sesión entran en la recursión
+    α ← α + γ·(1 − nivel − fallo) las sesiones anteriores ya maduras, en orden; el fallo es la
+    parte de filas del grupo que su banda no cubrió. La corrección de la sesión es el cuantil
+    conforme 1 − α de las puntuaciones de calibración del grupo (las de todos si el grupo no tiene).
+    Con γ = 0 es la CQR estática; sin grupos, la global.
+    """
+    groups = np.zeros(len(target), dtype=np.int64) if groups is None else np.asarray(groups)
+    score_groups = (
+        np.zeros(len(scores), dtype=np.int64) if score_groups is None else np.asarray(score_groups)
+    )
+    pooled = np.sort(np.asarray(scores, dtype=np.float64))
+    ordered = {}
+    for g in np.unique(groups).tolist():
+        own = np.sort(np.asarray(scores, dtype=np.float64)[score_groups == g])
+        ordered[g] = own if len(own) else pooled
+    low, high = np.array(lower, dtype=np.float64), np.array(upper, dtype=np.float64)
+    nominal = 1 - level
+    by_market, levels = {}, []
+    for index, (market, instant, start, end) in enumerate(sessions):
+        by_market.setdefault(market, []).append((int(instant), index, int(start), int(end)))
+    for market in sorted(by_market):
+        alpha = dict.fromkeys(ordered, nominal)
+        pending = []
+        for instant, index, start, end in sorted(by_market[market]):
+            ready = sorted(p for p in pending if p[0] <= instant)
+            pending = [p for p in pending if p[0] > instant]
+            for _, _, g, miss in ready:
+                alpha[g] += gamma * (nominal - miss)
+            segment = groups[start:end]
+            for g in np.unique(segment).tolist():
+                rows = start + np.flatnonzero(segment == g)
+                q = _conformal_quantile(ordered[g], 1 - alpha[g])
+                low[rows], high[rows] = lower[rows] - q, upper[rows] + q
+                inside = (target[rows] >= low[rows]) & (target[rows] <= high[rows])
+                pending.append((int(maturity[index]), instant, g, 1.0 - float(inside.mean())))
+            levels.append(float(np.mean(list(alpha.values()))))
+    return (
+        low,
+        high,
+        dict(
+            alpha_mean=float(np.mean(levels)) if levels else None,
+            alpha_min=float(np.min(levels)) if levels else None,
+            alpha_max=float(np.max(levels)) if levels else None,
+        ),
+    )
+
+
+def interval_rule(item, level, rule):
+    """Regla de R-1: a menos de `total_tolerance` de la nominal en total, y ningún decil de
+    volatilidad ni mercado más de `group_shortfall` por debajo."""
+    reasons = []
+    if abs(item["coverage"] - level) > rule["total_tolerance"]:
+        reasons.append(f"cobertura total {item['coverage']:.3f} frente a {level}")
+    worst = min(g["coverage"] for g in item["volatility"].values())
+    if worst < level - rule["group_shortfall"]:
+        reasons.append(f"decil de volatilidad con {worst:.3f}")
+    for market, part in item["market"].items():
+        if part["coverage"] < level - rule["group_shortfall"]:
+            reasons.append(f"mercado {market} con {part['coverage']:.3f}")
+    return reasons
+
+
+def _quarters(table):
+    instants = table.column("prediction_at").cast(pa.int64()).to_numpy().astype("datetime64[us]")
+    years = instants.astype("datetime64[Y]").astype(int) + 1970
+    quarters = (instants.astype("datetime64[M]").astype(int) % 12) // 3 + 1
+    return np.array([f"{y}T{q}" for y, q in zip(years, quarters, strict=True)])
+
+
+def adaptive_intervals(parent, covariates, matures, settings):
+    """Candidatos de intervalo sobre los cuantiles del padre, medidos en evaluación con la regla."""
+    sessions = {s: ac._sessions_of(parent[s]) for s in AGGREGATED}
+    bounds = {s: ac.bounds_of(sessions[s]) for s in AGGREGATED}
+    target = {s: parent[s].column("target").to_numpy().astype(np.float64) for s in AGGREGATED}
+    volatility = {
+        s: ac.within_session_groups(
+            covariates[s]["volatility"], bounds[s], settings["volatility_groups"]
+        )
+        for s in AGGREGATED
+    }
+    liquidity = ac.within_session_groups(
+        covariates["evaluation"]["liquidity"], bounds["evaluation"], settings["liquidity_groups"]
+    )
+    markets = np.asarray(parent["evaluation"].column("market").to_pylist())
+    quarters = _quarters(parent["evaluation"])
+    maturity = np.array(
+        [int(np.max(matures["evaluation"][start:end])) for start, end in bounds["evaluation"]]
+    )
+    result = {}
+    for level in settings["levels"]:
+        low_name, high_name = settings["core"][str(level)]
+        band = {
+            s: (
+                parent[s].column(low_name).to_numpy().astype(np.float64),
+                parent[s].column(high_name).to_numpy().astype(np.float64),
+            )
+            for s in AGGREGATED
+        }
+        scores = ac.conformity(*band["calibration"], target["calibration"])
+        candidates = {}
+        for name, gamma, grouped in (
+            ("core_cqr", 0.0, False),
+            ("core_cqr_aci", settings["aci_gamma"], False),
+            ("core_mondrian", 0.0, True),
+            ("core_mondrian_aci", settings["aci_gamma"], True),
+        ):
+            low, high, path = adaptive_bands(
+                *band["evaluation"],
+                target["evaluation"],
+                sessions["evaluation"],
+                maturity,
+                scores,
+                level,
+                gamma,
+                groups=volatility["evaluation"] if grouped else None,
+                score_groups=volatility["calibration"] if grouped else None,
+            )
+            y = target["evaluation"]
+            item = dict(
+                **ac.interval_summary(low, high, y),
+                volatility=ac.interval_summary(low, high, y, volatility["evaluation"])["groups"],
+                liquidity=ac.interval_summary(low, high, y, liquidity)["groups"],
+                quarter=ac.interval_summary(low, high, y, quarters)["groups"],
+                market=ac.interval_summary(low, high, y, markets)["groups"],
+                aci=path,
+            )
+            item["reasons"] = interval_rule(item, level, settings["rule"])
+            item["passes"] = not item["reasons"]
+            candidates[name] = item
+        delivered = settings["delivered"]
+        result[str(level)] = dict(
+            candidates=candidates,
+            delivered=delivered,
+            confirmed=candidates[delivered]["passes"],
+            first_passing=next(
+                (n for n in settings["candidates"] if candidates[n]["passes"]), None
+            ),
+        )
+    return result
 
 
 ROW_ARRAYS = ("score", "target", "liquidity", "alpha", "outlier")
@@ -588,6 +904,7 @@ def _views(mode, results, names, parent, liquidity, alpha, cap):
             liquidity=np.asarray(liquidity[split], dtype=np.float64)[rows],
             alpha=known,
             outlier=np.abs(np.nan_to_num(known, nan=0.0)) > cap,
+            sample_id=list(aligned["sample_id"]),
         )
         scores = dict(
             s1=results["s1"]["aggregators"][GAMES["s1"]]["split_predictions"][split],
@@ -782,6 +1099,7 @@ def measure(
                             sessions_of[("alpha", scope)],
                             ev["keys"],
                             settings["windows"],
+                            settings["block_interval"],
                         )
                 if mode != "operable":
                     continue
@@ -793,8 +1111,22 @@ def measure(
                             keep &= liquid_shared[split]
                         pair.append(restricted(item, keep))
                     f2[f"{predictor}/{scope}"] = directional(*pair, declaration["directional"])
+                emit = declaration["directional"]["emit"]
+                if predictor == emit["system"]:
+                    item = f2[f"{predictor}/{emit['scope']}"]
+                    for split, view_ in (("calibration", cal), ("evaluation", ev)):
+                        pq.write_table(
+                            confidence_table(view_, item, view_["outlier"]),
+                            work / f"{predictor}-confianza-{split}.parquet",
+                        )
             say(f"{mode}: F1{' y F2' if mode == 'operable' else ''}")
         intervals = ac._a2(declaration, parent, tables["tree"], covariates)
+        intervals["adaptive"] = adaptive_intervals(
+            parent,
+            covariates,
+            matures,
+            dict(declaration["conformal"], **declaration["adaptive_intervals"]),
+        )
         y = parent["evaluation"].column("target").to_numpy().astype(np.float64)
         clean = ~(np.abs(np.nan_to_num(np.asarray(alpha["evaluation"], dtype=np.float64))) > cap)
         intervals["zero_excluding"] = {}
@@ -874,14 +1206,14 @@ def markdown(summary):
         "",
         "## F1, fiabilidad por sesión y en ventanas",
         "",
-        "| Modo / predictor / filas | Sesiones | IC medio | Peor IC | IC > 0 | Deciles > 0 | Ventanas de 5 con IC > 0 | Ventanas de 21 con IC > 0 |",
-        "|---|---|---|---|---|---|---|---|",
+        "| Modo / predictor / filas | Sesiones | IC medio | Peor IC | IC > 0 (Wilson) | IC > 0 (bloques) | Deciles > 0 | Ventanas de 5 con IC > 0 | Ventanas de 21 con IC > 0 |",
+        "|---|---|---|---|---|---|---|---|---|",
     ]
     for key, item in summary["f1"].items():
         windows = item["windows"]
         lines.append(
             f"| {key} | {item['sessions']} | {_f(item['ic_mean'])} | {_f(item['ic_worst'])} | "
-            f"{_p(item['ic_positive'])} | {_p(item['spread_positive'])} | "
+            f"{_p(item['ic_positive'])} | {_p(item['ic_positive_block'])} | {_p(item['spread_positive'])} | "
             f"{_p(windows['5']['ic'])} | {_p(windows['21']['ic'])} |"
         )
     lines += [
@@ -930,7 +1262,25 @@ def markdown(summary):
             )
         lines.append(f"| {key} | {cells} | {_f(ev['brier'])} / {_f(ev['brier_base'])} |")
     verdict = summary["verdicts"]["f2"]
+    confidence = verdict["confidence"]
     lines += [
+        "",
+        "| Predictor / filas | Rango de P en evaluación | Confianza máxima | Filas con confianza ≥ 0,90 (acierto) | ECE ajuste / riesgo / evaluación |",
+        "|---|---|---|---|---|",
+    ]
+    for key, item in summary["f2"].items():
+        seen = item["parts"]["evaluation"]["range"]
+        ece = [item["parts"][p]["calibration_error"]["ece"] for p in ("fit", "risk", "evaluation")]
+        lines.append(
+            f"| {key} | [{_f(seen.get('min'), 3)}; {_f(seen.get('max'), 3)}] | "
+            f"{_f(seen.get('max_confidence'), 3)} | {seen.get('at_target_rows', 0)} "
+            f"({_p(seen.get('at_target_precision'))}) | {' / '.join(_f(e, 4) for e in ece)} |"
+        )
+    lines += [
+        "",
+        f"Confianza de signo que emite {verdict['system']}: {confidence['emitted']}, con rango "
+        f"[{_f(confidence['range'][0], 3)}; {_f(confidence['range'][1], 3)}] en evaluación; "
+        f"{confidence['statement']}.",
         "",
         f"F2 en la entrega ({verdict['system']}): "
         + ("entra." if verdict["enters"] else "no entra: " + "; ".join(verdict["reasons"]) + "."),
@@ -953,6 +1303,23 @@ def markdown(summary):
                 f"{_f(part['width'], 5)}; por decil de volatilidad, de {_f(min(deciles), 3)} a "
                 f"{_f(max(deciles), 3)}"
             )
+    lines += [
+        "",
+        "| Nivel / candidato | Cobertura | Anchura media | Peor decil de volatilidad | α medio de ACI | Pasa la regla |",
+        "|---|---|---|---|---|---|",
+    ]
+    for level, entry in summary["intervals"]["adaptive"].items():
+        for name, item in entry["candidates"].items():
+            worst = min(g["coverage"] for g in item["volatility"].values())
+            lines.append(
+                f"| {level} / {name} | {_f(item['coverage'], 3)} | {_f(item['width'], 5)} | "
+                f"{_f(worst, 3)} | {_f(item['aci']['alpha_mean'], 3)} | "
+                f"{'sí' if item['passes'] else 'no: ' + '; '.join(item['reasons'])} |"
+            )
+        lines.append(
+            f"| {level} / entregado (fijo, elegido con 2013) | {entry['delivered']} | | | | "
+            + ("confirma la regla |" if entry["confirmed"] else "no confirma la regla |")
+        )
     for level, item in summary["intervals"]["zero_excluding"].items():
         for scope, part in item.items():
             lines.append(

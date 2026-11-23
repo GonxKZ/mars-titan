@@ -468,7 +468,7 @@ emisiones. La regla queda escrita antes:
 Encargo del coordinador del 23 de noviembre de 2026 (línea F): más del 90 % de precisión y
 fiabilidad, sin trampas ni falsear nada. Las medidas son descriptivas y secundarias, fuera de la
 familia primaria.
-- La declaración es `configs/experiments/posttraining-reliability.json` (huella b3d399ef…).
+- La declaración es `configs/experiments/posttraining-reliability.json` (huella cdb1c511…).
 - La orden es `python -m mars_titan.evaluation.reliability medir`, con las entradas, la espera
   (código 75) y la publicación atómica de S2 y de A. Cada orden mide un mercado.
 - Se fijó en git antes de medir ningún origen.
@@ -525,8 +525,11 @@ calibración.
   - Si ningún umbral pasa, la cobertura es 0 y se dice tal cual.
 - **Reglas de entrega,** leídas mecánicamente por la orden (`verdicts`), sin juicio después de
   medir:
-  - **F1.** Una fiabilidad ≥ 0,90 está demostrada si el límite inferior de Wilson llega a 0,90.
-    Si solo llega el punto, es compatible.
+  - **F1.** Una fiabilidad por sesión ≥ 0,90 está demostrada si llegan a 0,90 dos límites
+    inferiores: el de Wilson y el del arranque estacionario por bloques (media de 5 sesiones, 2.000
+    remuestras). El segundo hace falta porque Wilson supone sesiones independientes.
+    - En ventanas basta el de Wilson.
+    - Si solo llega el punto, la fiabilidad es compatible.
   - **Atribución en lo operable.** Se atribuye al modelo si su mejora sobre el alfa solo tiene
     media > 0 y t ≥ 2. Si no, es persistencia del alfa.
   - **F2** entra como capa de confianza de S2 (operable, todas las filas) si se cumplen todas:
@@ -534,6 +537,55 @@ calibración.
     - en evaluación cubre ≥ 0,001 de las filas en ≥ 10 sesiones;
     - su precisión es ≥ 0,90, con el límite inferior por conglomerados de sesión ≥ 0,85;
     - cubre más que el alfa solo con su propio umbral.
+- **Piezas añadidas tras la primera lectura de 2013 (desarrollo), fijadas antes de medirlas:**
+  - **Confianza de signo que emite S2.** Es la P calibrada de F2 sobre lo operable de S2 con todas
+    las filas, emitida por fila en calibración y en evaluación (`s2-confianza-<tramo>.parquet`).
+    - La isótona lleva bloques de al menos el 1 % de las filas de ajuste. En la primera lectura,
+      un bloque extremo de pocas filas daba P = 1 a 348 filas de evaluación, que acertaban 0,59.
+    - Se informan su rango real, el ECE y el MCE (10 intervalos) en la mitad de ajuste, en la de
+      riesgo y en evaluación, y la frase expresa de si hay o no casos al 90 %.
+  - **Intervalos adaptativos** sobre los cuantiles del padre en la etiqueta, en este orden:
+    1. CQR;
+    2. CQR con ACI por sesión (γ = 0,05; cada mercado con su α; solo aprende de sesiones con
+       etiquetas maduras);
+    3. CQR por decil de volatilidad dentro de la sesión (Mondrian);
+    4. Mondrian con ACI por decil.
+  - **Regla de R-1 para los intervalos:** a menos de 0,02 de la nominal en total, y ningún decil
+    de volatilidad ni mercado más de 0,05 por debajo.
+    - Se entrega el primero que pasa; si ninguno pasa, se dice.
+    - Los grupos de Mondrian son los mismos deciles que mira la regla. Pasarla en calibración sale
+      por construcción; lo que se mide es si se sostiene en evaluación.
+  - **Intervalo de la entrega fijado con 2013.** Con la segunda lectura de 2013 (desarrollo), y de
+    acuerdo con el coordinador, se fija Mondrian con ACI como intervalo de la entrega en los
+    orígenes limpios.
+    - La regla de R-1 es su confirmación en cada origen; los demás candidatos se informan como
+      comparación.
+    - Se añade el nivel del 90 %, el que se leerá como «fiabilidad del 90 %». Se construye desde la
+      banda de los cuantiles 0,10–0,90 con el mismo método y se mide igual.
+- **Primera lectura de 2013** (desarrollo; declaración b3d399ef…, US, semilla 42):
+  - **F1.** Sesiones con IC > 0 con todos los nombres:
+    - S2 da 0,956 [0,923; 0,975] en la etiqueta y 0,944 [0,909; 0,966] en lo operable, con una
+      mejora sobre el alfa solo de +0,0440 (t 10,2).
+    - En ventanas de 5 sesiones, 1,000 [0,929; 1,000].
+  - **Tercio líquido operable:** 0,741 [0,683; 0,791] a diario y 0,940 [0,838; 0,979] en
+    ventanas de 5, con una mejora sobre el alfa de +0,0278 (t 4,3).
+  - **Precisión selectiva,** lejos del 90 %: las colas del 1 % operables aciertan 0,588.
+  - **F2:** ningún umbral pasa, y la cobertura con precisión ≥ 0,90 es cero. No entra como
+    selector.
+  - **Intervalos:**
+    - el 80 % del núcleo cubre 0,889;
+    - la CQR cubre 0,831, de 0,772 a 0,885 por decil de volatilidad;
+    - al 95 %, 0,966 y 0,961.
+- **Segunda lectura de 2013** (declaración 5fb27d72…):
+  - **Confianza de signo de S2.** En evaluación su rango es [0,391; 0,570] y su confianza máxima
+    0,609, así que no hay casos al 90 %. El ECE es 0,011 en la mitad de riesgo y 0,028 en
+    evaluación.
+  - **Intervalos al 80 %:**
+    - la CQR (0,831) y Mondrian (0,830) no pasan por la cobertura total;
+    - CQR+ACI pasa con 0,803, pero su peor decil es 0,762;
+    - Mondrian+ACI pasa con 0,803 y deciles de 0,801 a 0,805.
+  - **Intervalos al 95 %:** pasan los cuatro. Mondrian+ACI cubre 0,951, con deciles de 0,950 a
+    0,952.
 - **F6, el cerebro holográfico,** con la regla acordada con el coordinador antes de medir. Se mide
   tras F1 y F2, en 2013 y sin GPU.
   1. **H, el holográfico, por semilla.** Es ridge_cov_active de {padre estático
@@ -557,6 +609,13 @@ calibración.
      H3 y la correlación de rangos media entre sus predicciones dentro de cada sesión, sin umbral.
   7. **Dónde se decide.** 2013 decide. Los orígenes limpios confirman con la misma regla, sin volver
      a elegir.
+  - **Orden y declaración.**
+    - La declaración es `configs/experiments/posttraining-holographic.json` (huella 0316226e…).
+    - La orden es `python -m mars_titan.evaluation.holographic medir`, con una raíz de órganos
+      por semilla (`--organs SEMILLA=RAÍZ`).
+    - Las raíces `organos/v10-nogain` y `organos/v10-v2` solo difieren en la descripción y en la
+      lista de modelos. La orden lo comprueba antes de mezclarlas, y también que cada órgano es el
+      del ajuste declarado del estático.
 
 ## 6. Etapas con GPU (fase 4)
 
