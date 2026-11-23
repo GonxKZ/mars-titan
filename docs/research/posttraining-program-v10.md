@@ -468,7 +468,7 @@ emisiones. La regla queda escrita antes:
 Encargo del coordinador del 23 de noviembre de 2026 (línea F): más del 90 % de precisión y
 fiabilidad, sin trampas ni falsear nada. Las medidas son descriptivas y secundarias, fuera de la
 familia primaria.
-- La declaración es `configs/experiments/posttraining-reliability.json` (huella ce01423a…).
+- La declaración es `configs/experiments/posttraining-reliability.json` (huella b3d399ef…).
 - La orden es `python -m mars_titan.evaluation.reliability medir`, con las entradas, la espera
   (código 75) y la publicación atómica de S2 y de A. Cada orden mide un mercado.
 - Se fijó en git antes de medir ningún origen.
@@ -484,7 +484,10 @@ familia primaria.
 **Predictores.** S1, S2, los árboles y el padre, construidos como en S2 (semilla 42, alineación
 estricta y factor operable k elegido en calibración).
 - En lo operable va además un control: el alfa conocido solo como puntuación, que ya ordena y + α
-  por sí mismo (IC 0,045 en R-2). Lo que aporte un predictor se lee frente a él.
+  por sí mismo. En R-3r da un IC de 0,047 con todos los nombres y de 0,037 en el tercio líquido.
+- Lo que aporte cada predictor se mide como mejora sobre él: la diferencia pareada del IC por
+  sesión, con su t de Newey-West y su intervalo al 95 %, y la fracción de sesiones y de ventanas
+  con mejora > 0.
 - El tercio líquido se toma ordenando la liquidez dentro de cada sesión, sin filtrar por su signo
   ni tomar logaritmos (el tropiezo corregido en R-2).
 
@@ -520,6 +523,17 @@ calibración.
     - el Brier frente al de la tasa base;
     - la tabla de calibración.
   - Si ningún umbral pasa, la cobertura es 0 y se dice tal cual.
+- **Reglas de entrega,** leídas mecánicamente por la orden (`verdicts`), sin juicio después de
+  medir:
+  - **F1.** Una fiabilidad ≥ 0,90 está demostrada si el límite inferior de Wilson llega a 0,90.
+    Si solo llega el punto, es compatible.
+  - **Atribución en lo operable.** Se atribuye al modelo si su mejora sobre el alfa solo tiene
+    media > 0 y t ≥ 2. Si no, es persistencia del alfa.
+  - **F2** entra como capa de confianza de S2 (operable, todas las filas) si se cumplen todas:
+    - hay un umbral válido en calibración;
+    - en evaluación cubre ≥ 0,001 de las filas en ≥ 10 sesiones;
+    - su precisión es ≥ 0,90, con el límite inferior por conglomerados de sesión ≥ 0,85;
+    - cubre más que el alfa solo con su propio umbral.
 - **F6, el cerebro holográfico,** con la regla acordada con el coordinador antes de medir. Se mide
   tras F1 y F2, en 2013 y sin GPU.
   1. **H, el holográfico, por semilla.** Es ridge_cov_active de {padre estático

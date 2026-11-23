@@ -296,6 +296,73 @@ def test_the_alpha_cap_uses_calibration_alone():
         rel.alpha_cap(dict(calibration=np.full(3, np.nan)), settings)
 
 
+def test_the_improvement_pairs_the_sessions_that_both_score():
+    tool = og._screening()
+    keys = [("US", 1), ("US", 2), ("US", 3), ("US", 4)]
+    measured = [(0, 0.1, 0.01), (1, 0.2, 0.02), (2, 0.05, 0.0), (3, 0.3, 0.01)]
+    baseline = [(0, 0.05, 0.0), (2, 0.1, 0.0), (3, 0.1, 0.02)]
+    item = rel.improvement(tool, measured, baseline, keys, [2])
+    assert item["sessions"] == 3
+    assert item["mean"] == pytest.approx((0.05 - 0.05 + 0.2) / 3)
+    assert item["positive"]["hits"] == 2
+    assert item["spread_mean_bps"] == pytest.approx(1e4 * (0.01 + 0.0 - 0.01) / 3)
+    assert item["windows"]["2"]["windows"] == 1
+    assert rel.improvement(tool, measured, [], keys, [2])["sessions"] == 0
+
+
+def _summary_for_verdicts():
+    def f2(chosen, coverage, precision, low, sessions=40):
+        at = None
+        if chosen is not None:
+            at = dict(
+                coverage=coverage,
+                sessions_with_action=sessions,
+                precision=dict(rate=precision, low=precision - 0.02, high=precision + 0.02),
+                clustered=dict(rate=precision, low=low, high=precision + 0.03),
+            )
+        return dict(chosen_threshold=chosen, evaluation=dict(at_threshold=at))
+
+    return dict(
+        f1={
+            "operable/s2/all": dict(
+                ic_positive=dict(rate=0.95, low=0.91, high=0.97),
+                windows={"5": dict(ic=dict(rate=0.92, low=0.85, high=0.97)), "21": dict(ic=None)},
+            ),
+            "label/s2/all": dict(ic_positive=dict(rate=0.80, low=0.75, high=0.85), windows={}),
+        },
+        versus_alpha={"s2/all": dict(mean=0.01, t_nw=2.5)},
+        f2={"s2/all": f2(0.9, 0.01, 0.93, 0.88), "alpha/all": f2(None, None, None, None)},
+    )
+
+
+def test_the_delivery_verdicts_follow_the_declared_rules():
+    rules = declaration()["delivery"]
+    summary = _summary_for_verdicts()
+    verdict = rel.verdicts(summary, rules)
+    reading = verdict["f1"]["operable/s2/all"]
+    assert reading == dict(
+        sessions="demostrado", windows_5="compatible", windows_21="sin datos", over_alpha=True
+    )
+    assert verdict["f1"]["label/s2/all"] == dict(sessions="no")
+    assert verdict["f2"]["enters"] and verdict["f2"]["reasons"] == []
+    summary["versus_alpha"]["s2/all"]["t_nw"] = 1.9
+    assert rel.verdicts(summary, rules)["f1"]["operable/s2/all"]["over_alpha"] is False
+    summary["f2"]["alpha/all"] = summary["f2"]["s2/all"]
+    assert rel.verdicts(summary, rules)["f2"]["reasons"] == [
+        "no cubre más que el alfa solo con su propio umbral"
+    ]
+    summary = _summary_for_verdicts()
+    summary["f2"]["s2/all"]["evaluation"]["at_threshold"]["precision"]["rate"] = 0.89
+    summary["f2"]["s2/all"]["evaluation"]["at_threshold"]["clustered"]["low"] = 0.8
+    summary["f2"]["s2/all"]["evaluation"]["at_threshold"]["coverage"] = 0.0005
+    reasons = rel.verdicts(summary, rules)["f2"]["reasons"]
+    assert len(reasons) == 3 and "cobertura prácticamente cero" in reasons
+    summary["f2"]["s2/all"] = dict(chosen_threshold=None, evaluation=dict(at_threshold=None))
+    assert rel.verdicts(summary, rules)["f2"]["reasons"] == [
+        "ningún umbral pasa el control de riesgo en calibración"
+    ]
+
+
 def _arguments(paths, output, *extra):
     arguments = core._arguments(paths, output, *extra)
     arguments[arguments.index("--declaration") + 1] = str(DECLARATION)
@@ -355,6 +422,12 @@ def test_f1_and_f2_of_an_origin(tmp_path, monkeypatch, capsys):
     assert summary["f1"]["operable/alpha/all"]["ic_mean"] == pytest.approx(
         float(alone.mean()), abs=1e-9
     )
+    versus = summary["versus_alpha"]["parent/all"]
+    assert versus["sessions"] == len(alone)
+    assert versus["mean"] == pytest.approx(float((operable - alone).mean()), abs=1e-9)
+    assert set(summary["versus_alpha"]) == {f"{p}/{s}" for p in rel.PREDICTORS for s in rel.SCOPES}
+    assert set(summary["verdicts"]["f2"]) == {"system", "enters", "reasons"}
+    assert summary["verdicts"]["f2"]["system"] == "s2/all"
     liquid = summary["f1"]["operable/s2/liquid"]
     assert liquid["sessions"] == len(expected) and liquid["selective"]["1.0"]["names"] < 96 * 60
     assert summary["alpha_cap"] > 0

@@ -57,7 +57,7 @@ from mars_titan.evaluation import posttraining_pilots as pilots
 
 KIND = "posttraining_reliability_v1"
 # Huella canónica de configs/experiments/posttraining-reliability.json, la declaración de F.
-REGISTERED_SHA256 = "ce01423a203be3918f073b42fb7c333a95a5cc7c6926ae6d8f14cfee1b2cb077"
+REGISTERED_SHA256 = "b3d399efec55453c2030549fa3a9916c50a0aef353591018d3f19f47b999f565"
 SPLITS, AGGREGATED = og.SPLITS, og.AGGREGATED
 PREDICTORS = ("s1", "s2", "tree", "parent")
 # Control de lo operable: el alfa conocido solo, como puntuación. Ya ordena y + α por sí mismo
@@ -245,7 +245,89 @@ def reliability(tool, view, settings, *, min_assets, keep=None):
         dict(market=str(view["keys"][i][0]), prediction_at=int(view["keys"][i][1]), ic=v, spread=s)
         for i, v, s in measured
     ]
-    return result, rows
+    return result, rows, measured
+
+
+def improvement(tool, measured, baseline, keys, windows):
+    """Mejora por sesión de una señal sobre otra en las sesiones que puntúan las dos: diferencia de
+    IC (media, t de Newey-West de la criba e intervalo al 95 %), de deciles, fracción de sesiones
+    con mejora > 0 (Wilson) y ventanas con mejora media > 0."""
+    base = {index: (value, spread) for index, value, spread in baseline}
+    common = [(i, v - base[i][0], s - base[i][1]) for i, v, s in measured if i in base]
+    if not common:
+        return dict(sessions=0, mean=None, t_nw=None, interval=None, positive=None, windows={})
+    differences = np.array([c[1] for c in common])
+    stats = tool.summary({keys[i]: d for i, d, _ in common})
+    t = stats["t_nw"]
+    se = abs(stats["mean"] / t) if t not in (None, 0) and math.isfinite(t) else None
+    return dict(
+        sessions=len(common),
+        mean=stats["mean"],
+        t_nw=t,
+        interval=None if se is None else [stats["mean"] - Z95 * se, stats["mean"] + Z95 * se],
+        spread_mean_bps=1e4 * float(np.mean([c[2] for c in common])),
+        positive=wilson(int((differences > 0).sum()), len(differences)),
+        windows={str(w): window_rates(common, keys, w) for w in windows},
+    )
+
+
+def _claim(entry, low):
+    if not entry:
+        return "sin datos"
+    if entry["low"] >= low:
+        return "demostrado"
+    return "compatible" if entry["rate"] >= low else "no"
+
+
+def verdicts(summary, rules):
+    """Lectura mecánica de las reglas de entrega declaradas, sin juicio después de medir.
+
+    - F1: una fiabilidad ≥ 0,90 se da por demostrada si el límite inferior de Wilson llega a 0,90 y
+      por compatible si solo llega el punto. En lo operable, se atribuye al modelo si su mejora
+      sobre el alfa solo tiene media > 0 y t ≥ el declarado.
+    - F2 entra como capa de confianza del sistema declarado si todas sus condiciones se cumplen.
+    """
+    low, min_t = rules["f1_claim_wilson_low"], rules["f1_attribution_min_t"]
+    f1 = {}
+    for key, item in summary["f1"].items():
+        mode, predictor, scope = key.split("/")
+        reading = dict(
+            sessions=_claim(item["ic_positive"], low),
+            **{f"windows_{w}": _claim(v["ic"], low) for w, v in item["windows"].items()},
+        )
+        versus = summary["versus_alpha"].get(f"{predictor}/{scope}") if mode == "operable" else None
+        if versus is not None:
+            reading["over_alpha"] = bool(
+                versus["mean"] is not None
+                and versus["mean"] > 0
+                and versus["t_nw"] is not None
+                and versus["t_nw"] >= min_t
+            )
+        f1[key] = reading
+    system, scope = rules["f2_system"], rules["f2_scope"]
+    item, alpha = summary["f2"][f"{system}/{scope}"], summary["f2"][f"alpha/{scope}"]
+    at, alpha_at = item["evaluation"]["at_threshold"], alpha["evaluation"]["at_threshold"]
+    reasons = []
+    if item["chosen_threshold"] is None:
+        reasons.append("ningún umbral pasa el control de riesgo en calibración")
+    else:
+        if (
+            at["coverage"] < rules["f2_min_coverage"]
+            or at["sessions_with_action"] < rules["f2_min_sessions"]
+        ):
+            reasons.append("cobertura prácticamente cero")
+        if at["precision"] is None or at["precision"]["rate"] < rules["f2_min_precision"]:
+            reasons.append("la precisión de evaluación no llega a la declarada")
+        clustered = at["clustered"]
+        if (
+            clustered is None
+            or clustered["low"] is None
+            or clustered["low"] < rules["f2_min_clustered_low"]
+        ):
+            reasons.append("el límite inferior por sesiones no llega al declarado")
+        if not at["coverage"] > (alpha_at["coverage"] if alpha_at else 0.0):
+            reasons.append("no cubre más que el alfa solo con su propio umbral")
+    return dict(f1=f1, f2=dict(system=f"{system}/{scope}", enters=not reasons, reasons=reasons))
 
 
 def zero_excluding(low, high, target, keep=None):
@@ -611,7 +693,7 @@ def measure(
             )
             for p in names
         }
-        f1, f1_rows, f2, factors = {}, [], {}, None
+        f1, f1_rows, f2, versus, factors = {}, [], {}, {}, None
         for mode in declaration["modes"]:
             results = {
                 system: oa.run_aggregation(
@@ -639,16 +721,29 @@ def measure(
                 factors = scales["s2"]
             views = _views(mode, results, names, parent, liquidity, alpha, cap)
             say(f"{mode}: S1 y S2 agregados")
-            for predictor in PREDICTORS + CONTROLS.get(mode, ()):
+            sessions_of = {}
+            # Los controles van primero: la mejora de cada predictor se mide frente a ellos.
+            for predictor in CONTROLS.get(mode, ()) + PREDICTORS:
                 ev, cal = views[(predictor, "evaluation")], views[(predictor, "calibration")]
                 liquid = dict(evaluation=liquid_rows(ev["liquidity"], ev["bounds"]))
                 for scope in SCOPES:
                     keep = None if scope == "all" else liquid["evaluation"]
-                    item, rows = reliability(tool, ev, settings, min_assets=min_assets, keep=keep)
+                    item, rows, scored = reliability(
+                        tool, ev, settings, min_assets=min_assets, keep=keep
+                    )
                     f1[f"{mode}/{predictor}/{scope}"] = item
                     f1_rows += [
                         dict(mode=mode, predictor=predictor, scope=scope, **r) for r in rows
                     ]
+                    sessions_of[(predictor, scope)] = scored
+                    if mode == "operable" and predictor not in CONTROLS[mode]:
+                        versus[f"{predictor}/{scope}"] = improvement(
+                            tool,
+                            scored,
+                            sessions_of[("alpha", scope)],
+                            ev["keys"],
+                            settings["windows"],
+                        )
                 if mode != "operable":
                     continue
                 liquid["calibration"] = liquid_rows(cal["liquidity"], cal["bounds"])
@@ -698,11 +793,13 @@ def measure(
                 alpha_known={s: float(np.isfinite(alpha[s]).mean()) for s in SPLITS},
                 alpha_cap=cap,
                 f1=f1,
+                versus_alpha=versus,
                 f2=f2,
                 intervals=intervals,
                 seconds=round(time.monotonic() - started),
             )
         )
+        summary["verdicts"] = verdicts(summary, declaration["delivery"])
         pq.write_table(ac._series_table(f1_rows), work / "f1-sesiones.parquet")
         (work / "resumen.md").write_text(markdown(summary), encoding="utf-8")
         (work / "resumen.json").write_text(
@@ -766,6 +863,20 @@ def markdown(summary):
         )
     lines += [
         "",
+        "## Mejora sobre el alfa solo, en lo operable (IC por sesión, pareado)",
+        "",
+        "| Predictor / filas | Sesiones | Media | t | Intervalo al 95 % | Sesiones con mejora | Ventanas de 5 con mejora |",
+        "|---|---|---|---|---|---|---|",
+    ]
+    for key, item in summary["versus_alpha"].items():
+        interval = item["interval"]
+        lines.append(
+            f"| {key} | {item['sessions']} | {_f(item['mean'])} | {_f(item['t_nw'], 2)} | "
+            f"{'—' if interval is None else f'[{_f(interval[0])}; {_f(interval[1])}]'} | "
+            f"{_p(item['positive'])} | {_p((item['windows'].get('5') or {}).get('ic'))} |"
+        )
+    lines += [
+        "",
         "## F2, confianza direccional calibrada en lo operable (sin |α| sobre el tope)",
         "",
         "| Predictor / filas | Umbral elegido | Cobertura | Precisión (Wilson) | Precisión (sesiones) | Brier / tasa base |",
@@ -781,6 +892,21 @@ def markdown(summary):
                 f"{_p(at['precision'])} | {_p(at['clustered'])}"
             )
         lines.append(f"| {key} | {cells} | {_f(ev['brier'])} / {_f(ev['brier_base'])} |")
+    verdict = summary["verdicts"]["f2"]
+    lines += [
+        "",
+        f"F2 en la entrega ({verdict['system']}): "
+        + ("entra." if verdict["enters"] else "no entra: " + "; ".join(verdict["reasons"]) + "."),
+        "",
+        "F1, fiabilidad ≥ 0,90 demostrada (límite de Wilson) o compatible (solo el punto): "
+        + "; ".join(
+            f"{key} {name}: {value}"
+            for key, reading in summary["verdicts"]["f1"].items()
+            for name, value in reading.items()
+            if value in ("demostrado", "compatible")
+        )
+        + ".",
+    ]
     lines += ["", "## Intervalos en evaluación (etiqueta)", ""]
     for level, item in summary["intervals"]["levels"].items():
         for name, part in item["systems"].items():
