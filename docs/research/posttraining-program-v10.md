@@ -609,6 +609,13 @@ calibración.
      H3 y la correlación de rangos media entre sus predicciones dentro de cada sesión, sin umbral.
   7. **Dónde se decide.** 2013 decide. Los orígenes limpios confirman con la misma regla, sin volver
      a elegir.
+  - **Orden y declaración.**
+    - La declaración es `configs/experiments/posttraining-holographic.json` (huella 0316226e…).
+    - La orden es `python -m mars_titan.evaluation.holographic medir`, con una raíz de órganos
+      por semilla (`--organs SEMILLA=RAÍZ`).
+    - Las raíces `organos/v10-nogain` y `organos/v10-v2` solo difieren en la descripción y en la
+      lista de modelos. La orden lo comprueba antes de mezclarlas, y también que cada órgano es el
+      del ajuste declarado del estático.
 
 ## 6. Etapas con GPU (fase 4)
 
