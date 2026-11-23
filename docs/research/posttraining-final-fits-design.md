@@ -32,8 +32,15 @@ hipótesis H10 (protocolo 47ede1c7).
 **El hallazgo.**
 - La vista declara para China el factor CSI 300 (`…/csi300-inherited-gaps-recovery/price-factor-2006-2023-v16/prices.parquet`,
   huella b96cd972…).
-- Ese fichero no está en la DGX. Comprobado el 23-11: tampoco está en este equipo, mientras que el
+- Ese fichero no está en la DGX. Comprobado el 23-11: tampoco estaba en este equipo, mientras que el
   de EE. UU. (SPY, 3540094000…) sí está.
+- **Actualización (23-11, 01:05Z).** El dueño entregó el CSI 300 y el coordinador lo instaló en la
+  ruta declarada, con su huella b96cd972… y 4.374 sesiones, de 2006-01-04 a 2023-12-29.
+  - El coordinador lo comprobó con las 997.642 filas de China de la cohorte de 2013:
+    |etiqueta − (r − α − β·m)| es de 5e-17 de media y de 3e-15 como máximo.
+  - La comprobación de los factores de S2 y de A pasa ya en China y en EE. UU., en los dos estados de
+    H9.
+  - La opción 1 de abajo queda cumplida en este equipo.
 - `corpus_inputs._market_factor` apaga entonces sin aviso los rasgos del modelo de mercado:
   alpha_percent, alpha_t, beta, log_residual_volatility, has_market_model, realized_label_1/5/21,
   alpha_21_percent y alpha_63_percent valen cero en todos los activos chinos.
@@ -65,6 +72,12 @@ Por eso todo ajuste con China hasta hoy ha entrenado sin el modelo de mercado.
 - **Regla común: fallar en vez de apagar.**
   - Si un mercado con filas declara un factor cuyo fichero no está o no conserva su huella, el
     ajuste no arranca.
+  - Cómo se declara: `market_model: required` en la extensión de entradas de la cohorte (opción
+    nueva de v11-candidatos, f7609bcb). Con ella, el lector para cuando falta el factor que la vista
+    declara para un mercado, en vez de dejar a cero sus rasgos del modelo de mercado. La referencia
+    de árboles sigue la misma regla.
+    - Los ajustes finales de C1–C3 y el paquete de Colab la declaran siempre.
+    - Sin la clave nada cambia, así que las vistas existentes conservan su identidad.
   - El recibo de cada ajuste guarda, por mercado y tramo, la fracción de filas con
     has_market_model = 1. En China, desde 2008, debe ser la misma que en la vista.
 
@@ -83,21 +96,28 @@ Por eso todo ajuste con China hasta hoy ha entrenado sin el modelo de mercado.
 1. Los ficheros de factor de cada mercado con sus huellas, en las rutas que declara su manifiesto:
    - SPY;
    - para China, el CSI 300 restaurado, o el factor elegido en H10 con su receta y su huella.
-2. Una comprobación previa que corre antes de cargar la GPU y para con un mensaje. Exige, por
+2. Las declaraciones con `market_model: required`, para que el propio lector pare si falta un
+   factor.
+3. Una comprobación previa que corre antes de cargar la GPU y para con un mensaje. Exige, por
    mercado:
    - que el factor declarado existe y conserva su huella;
    - que la fracción de has_market_model = 1 en el tramo de ajuste supera la de la vista menos un
      margen fijo;
    - que el ancho de rasgos y las columnas contadas desde el final cuadran con la versión
      declarada.
-3. La versión de rasgos con su lista de nombres, para derivar por nombre las columnas que se
+4. La versión de rasgos con su lista de nombres, para derivar por nombre las columnas que se
    cuentan desde el final.
-4. El recibo de la comprobación dentro del run.json del ajuste.
+5. El recibo de la comprobación dentro del run.json del ajuste.
 
 **Lectura por mercado.**
 - Toda medida de estos post-entrenamientos sobre estados conjuntos (H9:
   `dgx-titans-us-cn-v31/v11-inputs-v2|v3`) se lee por mercado (`dgx_seed_contrasts.py --market`).
-- El IC operable y los costes solo existen en EE. UU. mientras China no tenga alfa conocido.
+- El IC operable y los costes exigen el alfa conocido de cada mercado. Con el CSI 300 instalado,
+  China ya lo tiene.
+- H9 se mide con `--market US` (las líneas del plan v42), y China se puede medir aparte con
+  `--market CN`.
+- No se propone leer los dos mercados juntos: la decisión de S1 y S2 mezclaría mercados cuyo mejor
+  modelo puede ser distinto.
 
 ## C1. Destilación del conjunto hacia el núcleo
 
