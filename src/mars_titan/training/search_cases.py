@@ -117,6 +117,9 @@ PREDICTOR_CHANGES = (
     # Cerebro de atractores de Hopfield escasos con inhibición lateral de orden (RSHRB).
     "hopfield_rank_brain",
     # --- fin hopfield_rank_brain ---
+    # --- three_factor_consolidation ---
+    "three_factor_consolidation",
+    # --- fin three_factor_consolidation ---
 )
 # Cambios que se declaran con un nombre en lugar de un objeto.
 NAMED_CHANGES = (

@@ -252,6 +252,13 @@ def _parent(folder, view, seed, control=None):
         "El consumidor congelado aún no recibe la memoria rápida de desfase entre grupos",
     )
     # --- fin lead_lag_memory ---
+    # --- three_factor_consolidation ---
+    _require(
+        changes.get("three_factor_consolidation", predictor.get("three_factor_consolidation"))
+        is None,
+        "El consumidor congelado aún no recibe la consolidación sináptica de tres factores",
+    )
+    # --- fin three_factor_consolidation ---
     _verify(folder, report)
     return report, digest
 
@@ -321,6 +328,12 @@ def _frozen_parent(
         "El consumidor congelado aún no recibe la memoria rápida de desfase entre grupos",
     )
     # --- fin lead_lag_memory ---
+    # --- three_factor_consolidation ---
+    _require(
+        options.get("three_factor_consolidation") is None,
+        "El consumidor congelado aún no recibe la consolidación sináptica de tres factores",
+    )
+    # --- fin three_factor_consolidation ---
     _require(
         allow_context or options.get("session_context") is None,
         "Este consumidor todavía no recupera el contexto compartido de PT4",

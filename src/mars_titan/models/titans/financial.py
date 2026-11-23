@@ -236,6 +236,15 @@ from .technical_branch import (
     parse_technical_branch,
 )
 
+# --- three_factor_consolidation ---
+from .three_factor_consolidation import (
+    ThreeFactorConsolidation,
+    ThreeFactorConsolidationConfig,
+    parse_three_factor_consolidation,
+)
+
+# --- fin three_factor_consolidation ---
+
 VARIANTS = ("transformer_direct", "mac_disabled", "mac_frozen", "mac_online")
 # Probabilidad máxima de los dropout declarados: por encima, la mitad de las activaciones o de
 # las modalidades desaparecería en cada paso y el ajuste dejaría de parecerse a la emisión.
@@ -367,6 +376,9 @@ class FinancialConfig:
     # --- lead_lag_memory ---
     lead_lag_memory: LeadLagMemoryConfig | None = None
     # --- fin lead_lag_memory ---
+    # --- three_factor_consolidation ---
+    three_factor_consolidation: ThreeFactorConsolidationConfig | None = None
+    # --- fin three_factor_consolidation ---
     # R1, U2 y U1 de #786 sobre el núcleo: pérdida de Huber, semividas geométricas y atención
     # diferencial. Sin declararlas, la identidad y el cálculo no cambian.
     memory_huber: HuberMemory | None = None
@@ -481,6 +493,9 @@ class FinancialConfig:
         # --- hopfield_rank_brain ---
         self._check_hopfield_rank_brain()
         # --- fin hopfield_rank_brain ---
+        # --- three_factor_consolidation ---
+        self._check_three_factor_consolidation()
+        # --- fin three_factor_consolidation ---
         self._check_core_variants()
         self._check_learning_scale()
         self._check_technical_branch()
@@ -1121,6 +1136,25 @@ class FinancialConfig:
 
     # --- fin hopfield_rank_brain ---
 
+    # --- three_factor_consolidation ---
+    def _check_three_factor_consolidation(self):
+        """Consolidación sináptica de tres factores (D3F-LR) y exclusiones declaradas."""
+        object.__setattr__(
+            self,
+            "three_factor_consolidation",
+            parse_three_factor_consolidation(self.three_factor_consolidation),
+        )
+        if self.three_factor_consolidation is not None:
+            if self.variant != "mac_online":
+                raise ValueError("three_factor_consolidation necesita mac_online")
+            if self.auxiliary_horizons is not None:
+                raise ValueError(
+                    "Las cabezas auxiliares con consolidación de tres factores necesitan otro "
+                    "contraste"
+                )
+
+    # --- fin three_factor_consolidation ---
+
     def _check_memory_projections(self):
         """Normalización residual y proyecciones de memoria."""
         if type(self.memory_residual_layer_norm) is not bool:
@@ -1379,6 +1413,10 @@ class FinancialConfig:
         if self.lead_lag_memory is not None:
             result.update(lead_lag_memory=self.lead_lag_memory.identity())
         # --- fin lead_lag_memory ---
+        # --- three_factor_consolidation ---
+        if self.three_factor_consolidation is not None:
+            result.update(three_factor_consolidation=self.three_factor_consolidation.identity())
+        # --- fin three_factor_consolidation ---
         if self.memory_huber is not None:
             result.update(memory_huber=self.memory_huber.identity())
         if self.memory_time_scales is not None:
@@ -1500,6 +1538,9 @@ class PreparedDecisions:
     # --- lead_lag_memory ---
     lead_lag_memberships: torch.Tensor | None = None
     # --- fin lead_lag_memory ---
+    # --- three_factor_consolidation ---
+    three_factor_emission: tuple[torch.Tensor, torch.Tensor, torch.Tensor] | None = None
+    # --- fin three_factor_consolidation ---
 
 
 @dataclass(frozen=True)
@@ -1597,6 +1638,10 @@ class FinancialPredictor(nn.Module):
                 "La memoria rápida de desfase entre grupos no se combina con el control local"
             )
         # --- fin lead_lag_memory ---
+        # --- three_factor_consolidation ---
+        if local_control is not None and config.three_factor_consolidation is not None:
+            raise ValueError("La consolidación de tres factores no se combina con el control local")
+        # --- fin three_factor_consolidation ---
         # El presupuesto de C está contrastado con el núcleo sin las variantes de #786.
         if local_control is not None and (
             config.memory_huber is not None
@@ -1921,6 +1966,18 @@ class FinancialPredictor(nn.Module):
             else None
         )
         # --- fin lead_lag_memory ---
+        # --- three_factor_consolidation ---
+        self.three_factor_consolidation = (
+            ThreeFactorConsolidation(
+                config.hidden_size,
+                config.three_factor_consolidation,
+                seed=config.seed,
+                dtype=dtype,
+            )
+            if config.three_factor_consolidation is not None
+            else None
+        )
+        # --- fin three_factor_consolidation ---
         # F5 usa su propio generador derivado de la semilla, como PT6.
         self.auxiliary_heads = (
             AuxiliaryHeads(
@@ -1976,6 +2033,10 @@ class FinancialPredictor(nn.Module):
         if self.hopfield_rank_brain is not None:
             return True
         # --- fin hopfield_rank_brain ---
+        # --- three_factor_consolidation ---
+        if self.three_factor_consolidation is not None:
+            return True
+        # --- fin three_factor_consolidation ---
         objective = self.output_objective
         # --- memory_cross_sectional_surprise ---
         if self.config.memory_cross_sectional_surprise is not None:
@@ -2826,6 +2887,68 @@ class FinancialPredictor(nn.Module):
 
     # --- fin lead_lag_memory ---
 
+    # --- three_factor_consolidation ---
+    def _require_three_factor(self):
+        if self.three_factor_consolidation is None:
+            raise ValueError("El predictor no declara consolidación de tres factores")
+
+    def initial_three_factor_state(self):
+        """Estado inicial vacío de D3F-LR al empezar un recorrido."""
+        self._require_three_factor()
+        return self.three_factor_consolidation.initial_state(self._parameter_id)
+
+    def stage_three_factor_state(
+        self,
+        state,
+        flow_ids,
+        prediction_at,
+        emission,
+        issued_predictions,
+        *,
+        record_pending=True,
+        differentiable=False,
+    ):
+        """Avanzar trazas de elegibilidad y registrar emisiones pendientes de maduración."""
+        self._require_three_factor()
+        self.three_factor_consolidation.validate_state(state, self._parameter_id)
+        return self.three_factor_consolidation.stage(
+            state,
+            flow_ids,
+            prediction_at,
+            emission,
+            issued_predictions,
+            record_pending=record_pending,
+            differentiable=differentiable,
+        )
+
+    def settle_three_factor_state(self, state, matured, *, differentiable=False, train=True):
+        """Consolidar D3F-LR con etiquetas ya maduras en orden canónico."""
+        self._require_three_factor()
+        self.three_factor_consolidation.validate_state(state, self._parameter_id)
+        return self.three_factor_consolidation.settle(
+            state, matured, differentiable=differentiable, train=train
+        )
+
+    def detach_three_factor_state(self, state, parameter_id=None):
+        """Cortar el grafo de D3F-LR en la barrera de truncamiento y actualizar huella."""
+        self._require_three_factor()
+        return self.three_factor_consolidation.detach_state(
+            state, parameter_id or self._parameter_id
+        )
+
+    def export_three_factor_state(self, state):
+        self._require_three_factor()
+        self.three_factor_consolidation.validate_state(state, self._parameter_id)
+        return self.three_factor_consolidation.export_state(state)
+
+    def restore_three_factor_state(self, payload):
+        self._require_three_factor()
+        return self.three_factor_consolidation.restore_state(
+            payload, self._parameter_id, device=self.head.weight.device
+        )
+
+    # --- fin three_factor_consolidation ---
+
     def _program_fusion(self, price, batch, context, selection):
         """Consultar el prefijo confirmado y preparar una sola escritura del token final."""
         execution = None
@@ -3012,6 +3135,9 @@ class FinancialPredictor(nn.Module):
         # --- lead_lag_memory ---
         lead_lag_memory=None,
         # --- fin lead_lag_memory ---
+        # --- three_factor_consolidation ---
+        three_factor_state=None,
+        # --- fin three_factor_consolidation ---
     ):
         """Predecir un bloque desde el estado de sus flujos y proponer el estado siguiente.
 
@@ -3045,6 +3171,9 @@ class FinancialPredictor(nn.Module):
                 # --- lead_lag_memory ---
                 lead_lag_memory=lead_lag_memory,
                 # --- fin lead_lag_memory ---
+                # --- three_factor_consolidation ---
+                three_factor_state=three_factor_state,
+                # --- fin three_factor_consolidation ---
             )
 
     def _prepare(
@@ -3072,6 +3201,9 @@ class FinancialPredictor(nn.Module):
         # --- lead_lag_memory ---
         lead_lag_memory=None,
         # --- fin lead_lag_memory ---
+        # --- three_factor_consolidation ---
+        three_factor_state=None,
+        # --- fin three_factor_consolidation ---
     ):
         check_differentiable(differentiable)
         if torch.is_inference_mode_enabled():
@@ -3220,6 +3352,18 @@ class FinancialPredictor(nn.Module):
         else:
             self.lead_lag_memory.validate_state(lead_lag_memory, self._parameter_id)
         # --- fin lead_lag_memory ---
+        # --- three_factor_consolidation ---
+        if self.three_factor_consolidation is None:
+            if three_factor_state is not None:
+                raise ValueError("El predictor no declara la consolidación de tres factores")
+        elif three_factor_state is None:
+            raise ValueError(
+                "El predictor declara la consolidación de tres factores y necesita su estado "
+                "de consolidación"
+            )
+        else:
+            self.three_factor_consolidation.validate_state(three_factor_state, self._parameter_id)
+        # --- fin three_factor_consolidation ---
         if (self.session_context is None) != (context is None):
             raise ValueError("PT4 recibe su contexto de sesión y el núcleo no admite ninguno")
         if context is not None:
@@ -3442,6 +3586,14 @@ class FinancialPredictor(nn.Module):
                     encoded, lead_lag_memberships, markets, batch.prediction_at, lead_lag_memory
                 )
             # --- fin lead_lag_memory ---
+            # --- three_factor_consolidation ---
+            three_factor_emission = None
+            if self.three_factor_consolidation is not None:
+                d3f_delta, three_factor_emission = self.three_factor_consolidation.read_and_trace(
+                    encoded, batch.flow_ids, markets, batch.prediction_at, three_factor_state
+                )
+                encoded = encoded + d3f_delta
+            # --- fin three_factor_consolidation ---
             if self.local_control is not None:
                 local_result = self.local_control(
                     self.mac,
@@ -3501,6 +3653,9 @@ class FinancialPredictor(nn.Module):
             # --- lead_lag_memory ---
             lead_lag_memberships=lead_lag_memberships,
             # --- fin lead_lag_memory ---
+            # --- three_factor_consolidation ---
+            three_factor_emission=three_factor_emission,
+            # --- fin three_factor_consolidation ---
             **({"regional_trace": regional_trace} if regional_trace is not None else {}),
         )
 

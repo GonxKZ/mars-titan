@@ -138,6 +138,10 @@ def declared_sources(config):
     if getattr(config, "hopfield_rank_brain", None) is not None:
         sources.append("mars_titan.models.titans.hopfield_rank_brain")
     # --- fin hopfield_rank_brain ---
+    # --- three_factor_consolidation ---
+    if getattr(config, "three_factor_consolidation", None) is not None:
+        sources.append("mars_titan.models.titans.three_factor_consolidation")
+    # --- fin three_factor_consolidation ---
     if getattr(config, "learning_scale", None) is not None:
         sources.append("mars_titan.models.learning_scale")
     if getattr(config, "reference_encoder", None) == "dlinear":
@@ -669,6 +673,12 @@ class FrozenFinancialConsumer:
                 "El consumidor congelado aún no recibe la memoria rápida de desfase entre grupos"
             )
         # --- fin lead_lag_memory ---
+        # --- three_factor_consolidation ---
+        if predictor.three_factor_consolidation is not None:
+            raise ValueError(
+                "El consumidor congelado aún no recibe la consolidación sináptica de tres factores"
+            )
+        # --- fin three_factor_consolidation ---
         if readout is not None and (
             readout.config.hidden_size != predictor.config.hidden_size
             or readout.step_logit.device != predictor.head.weight.device

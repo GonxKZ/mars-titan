@@ -114,6 +114,9 @@ class FinancialDustAdapter:
             # --- lead_lag_memory ---
             "lead_lag_memory",
             # --- fin lead_lag_memory ---
+            # --- three_factor_consolidation ---
+            "three_factor_consolidation",
+            # --- fin three_factor_consolidation ---
             "memory_huber",
             "memory_time_scales",
             "differential_attention",
