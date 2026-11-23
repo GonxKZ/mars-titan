@@ -103,6 +103,7 @@ class FinancialDustAdapter:
             "memory_huber",
             "memory_time_scales",
             "differential_attention",
+            "memory_value_normalization",
         )
         if (
             config.variant != "transformer_direct"
@@ -111,6 +112,7 @@ class FinancialDustAdapter:
             or config.refinements != 1
             or config.memory_residual_layer_norm
             or config.memory_projections != "linear_v1"
+            or config.output_query != "raw"
             or predictor.local_control is not None
             or any(getattr(config, name) is not None for name in optional)
             or any(

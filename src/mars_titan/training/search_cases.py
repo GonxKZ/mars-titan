@@ -81,6 +81,9 @@ PREDICTOR_CHANGES = (
     "reference_encoder",
     # Rama de los rasgos técnicos del bloque del gráfico: columns, bins, embedding y hidden.
     "technical_branch",
+    # Opciones de memoria neuronal y consulta de salida de MAC (WP4).
+    "memory_value_normalization",
+    "output_query",
 )
 # Cambios que se declaran con un nombre en lugar de un objeto.
 NAMED_CHANGES = (
@@ -90,6 +93,8 @@ NAMED_CHANGES = (
     "session_rank_inputs",
     "differential_attention",
     "reference_encoder",
+    "memory_value_normalization",
+    "output_query",
 )
 
 
@@ -117,7 +122,8 @@ def checked_predictor_changes(changes):
             "auxiliary_horizons, opponent_heads, "
             "mature_reliability, memory_huber y memory_time_scales como objetos no vacíos, y "
             "presence_modulation, attention_layout, temporal_encoder, session_rank_inputs, "
-            "differential_attention y reference_encoder como nombres no vacíos. También "
+            "differential_attention, reference_encoder, memory_value_normalization y output_query "
+            "como nombres no vacíos. También "
             "admiten learning_scale, removed_modalities y technical_branch como objetos no vacíos"
         )
     return changes

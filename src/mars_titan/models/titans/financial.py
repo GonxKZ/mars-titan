@@ -57,8 +57,12 @@ from .config import (
     INNER_GRADIENTS,
     MAX_BLOCK_ROWS,
     MAX_STATE_BYTES,
+    OUTPUT_QUERIES,
     PAPER_CONVOLUTION_KERNEL,
     PAPER_PROJECTIONS,
+    PROJECTED_OUTPUT_QUERY,
+    RAW_OUTPUT_QUERY,
+    VALUE_LAYER_NORM,
     GateBias,
     MACConfig,
     MemoryConfig,
@@ -284,6 +288,10 @@ class FinancialConfig:
     # Derivada interna de la escritura de MAC. autograd_v1 conserva la identidad. analytic_v1
     # usa las derivadas cerradas de associative_gradient.py con el mismo metagradiente.
     memory_inner_gradient: str = AUTOGRAD_INNER_GRADIENT
+    # Normalización opcional de los valores objetivo de escritura (`layer_norm_v1`) y consulta
+    # de salida de MAC (`projected_v1`). Con sus valores por defecto, nada cambia.
+    memory_value_normalization: str | None = None
+    output_query: str = RAW_OUTPUT_QUERY
     # Regularización declarada de la DGX. `fusion_dropout` es la probabilidad del dropout de
     # las capas de la fusión multimodal (el nn.Dropout que la referencia ya construye).
     # `modality_dropout` retira en ajuste cada modalidad presente distinta del precio con esa
@@ -767,6 +775,13 @@ class FinancialConfig:
             self.memory_projections not in MEMORY_PROJECTIONS
         ):
             raise ValueError("memory_projections debe ser linear_v1 o " + PAPER_PROJECTIONS)
+        if self.memory_value_normalization is not None and (
+            type(self.memory_value_normalization) is not str
+            or self.memory_value_normalization != VALUE_LAYER_NORM
+        ):
+            raise ValueError(f"memory_value_normalization debe ser None o {VALUE_LAYER_NORM}")
+        if type(self.output_query) is not str or self.output_query not in OUTPUT_QUERIES:
+            raise ValueError(f"output_query debe ser {RAW_OUTPUT_QUERY} o {PROJECTED_OUTPUT_QUERY}")
 
     def _check_runtime_limits(self):
         """Dimensiones, semilla, presupuesto y banco permitido."""
@@ -903,6 +918,10 @@ class FinancialConfig:
         # Igual que gate_bias: solo aparece si se declara y figura en las cuatro variantes.
         if self.memory_inner_gradient != AUTOGRAD_INNER_GRADIENT:
             result.update(memory_inner_gradient=self.memory_inner_gradient)
+        if self.memory_value_normalization is not None:
+            result.update(memory_value_normalization=self.memory_value_normalization)
+        if self.output_query != RAW_OUTPUT_QUERY:
+            result.update(output_query=self.output_query)
         if self.fusion_dropout is not None:
             result.update(dropout=float(self.fusion_dropout))
         if self.fusion_dropout is not None or self.modality_dropout is not None:
@@ -1289,6 +1308,7 @@ class FinancialPredictor(nn.Module):
                     gate_bias=config.gate_bias,
                     residual_layer_norm=config.memory_residual_layer_norm,
                     key_competition=config.memory_key_competition,
+                    value_normalization=config.memory_value_normalization,
                 ),
                 sector_map=config.sector_map,
             )
@@ -1321,6 +1341,7 @@ class FinancialPredictor(nn.Module):
                         huber=config.memory_huber,
                         time_scales=config.memory_time_scales,
                         inner_gradient=config.memory_inner_gradient,
+                        value_normalization=config.memory_value_normalization,
                     ),
                     heads=4,
                     persistent_tokens=config.persistent_tokens,
@@ -1329,6 +1350,7 @@ class FinancialPredictor(nn.Module):
                     parameter_seed=config.seed,
                     attention_layout=config.attention_layout,
                     differential_attention=config.differential_attention,
+                    output_query=config.output_query,
                 ),
                 dtype=dtype,
             )
