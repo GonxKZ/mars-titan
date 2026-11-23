@@ -13,6 +13,7 @@ from .config import (
     ANALYTIC_INNER_GRADIENT,
     FUSED_INNER_GRADIENT,
     LAYER_NORM_EPS,
+    VALUE_LAYER_NORM,
     MemoryConfig,
     bounded_integer,
     require_identity,
@@ -391,6 +392,12 @@ class NeuralMemory(nn.Module):
             values = F.silu(values)
         return values, window
 
+    def _normalize_values(self, values: Tensor) -> Tensor:
+        """Normalización por capa sin parámetros sobre los valores objetivo de escritura."""
+        if self.config.value_normalization == VALUE_LAYER_NORM:
+            return F.layer_norm(values, (self.config.dim,), eps=LAYER_NORM_EPS)
+        return values
+
     def _read_memory(self, query, state, translation=None, *, allow_fused: bool = True):
         if self.bank_readout is None:
             return self._apply_memory(
@@ -676,6 +683,7 @@ class NeuralMemory(nn.Module):
                 keys = competitive_normalize(keys, self.config.key_competition)
             elif self.config.normalize_qk:
                 keys = F.normalize(keys, dim=-1, eps=1e-12)
+            values = self._normalize_values(values)
             gates = self._gates(*logits)
             local, prediction = self._associative_problem(keys.unsqueeze(0), state, differentiable)
             residual = prediction.squeeze(0) - values
@@ -800,6 +808,7 @@ class NeuralMemory(nn.Module):
                 keys = competitive_normalize(keys, self.config.key_competition)
             elif self.config.normalize_qk:
                 keys = F.normalize(keys, dim=-1, eps=1e-12)
+            values = self._normalize_values(values)
             if gate_shift is not None:
                 if "write" in gate_shift:
                     theta_logits = theta_logits + gate_shift["write"]
@@ -933,6 +942,7 @@ class NeuralMemory(nn.Module):
                     keys = competitive_normalize(keys, self.config.key_competition)
                 elif self.config.normalize_qk:
                     keys = F.normalize(keys, dim=-1, eps=1e-12)
+                values = self._normalize_values(values)
                 if gate_shift is not None:
                     if "write" in gate_shift:
                         theta_logits = theta_logits + gate_shift["write"]

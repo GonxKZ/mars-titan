@@ -7,7 +7,7 @@ from torch import Tensor, nn
 from torch.nn import functional as F
 
 from .causal_convolution import CausalDepthwiseConvolution
-from .config import MACConfig, require_identity
+from .config import RAW_OUTPUT_QUERY, MACConfig, require_identity
 from .differential_attention import DifferentialMap
 from .key_competition import competitive_normalize
 from .neural_memory import NeuralMemory
@@ -95,6 +95,14 @@ class TitansMAC(nn.Module):
             device=device,
             storage_ids=storage_ids,
         )
+
+    def _output_query(self, output: Tensor) -> Tensor:
+        """Consulta de la puerta de salida: cruda o proyectada y normalizada L2."""
+        if self.config.output_query == RAW_OUTPUT_QUERY:
+            return output
+        projected = self.query_projection(output)
+        check_finite(projected, "La consulta de salida")
+        return F.normalize(projected, dim=-1, eps=1e-12)
 
     def forward(
         self,
@@ -203,6 +211,7 @@ class TitansMAC(nn.Module):
                     )
             check_finite(observed, "La salida de atención")
             output = observed[:, -1]
+            post_query = self._output_query(output) if enabled else output
             if (
                 self.config.memory_mode == "online"
                 and enabled
@@ -213,7 +222,7 @@ class TitansMAC(nn.Module):
                 next_memory, read_after = self.memory.update_and_read(
                     observed,
                     state.memory,
-                    output,
+                    post_query,
                     differentiable=differentiable,
                     gate_shift=gate_shift,
                     surprise=surprise,
@@ -232,7 +241,9 @@ class TitansMAC(nn.Module):
                 else:
                     next_memory = copy_state(state.memory, differentiable=differentiable)
                 if enabled:
-                    output = output * self.memory.read(output.unsqueeze(1), next_memory).squeeze(1)
+                    output = output * self.memory.read(
+                        post_query.unsqueeze(1), next_memory
+                    ).squeeze(1)
                 else:
                     output = output.clone()
                     # Sin memoria no se calculan consultas y la ventana conserva su valor.

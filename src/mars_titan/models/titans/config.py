@@ -66,6 +66,15 @@ def _logit(probability: float) -> float:
 
 # Valor por defecto de torch.nn.LayerNorm. Las fuentes no fijan el épsilon de la memoria.
 LAYER_NORM_EPS = 1e-5
+# Normalización opcional de los valores objetivo de escritura en la memoria asociativa.
+# Sin declararla (None) los valores pasan sin cambios y la identidad no cambia.
+VALUE_LAYER_NORM = "layer_norm_v1"
+VALUE_NORMALIZATIONS = (None, VALUE_LAYER_NORM)
+# Consulta de la puerta de salida en MAC: cruda ("raw", valor por defecto que conserva la
+# identidad) o proyectada y normalizada L2 ("projected_v1", como las demás lecturas).
+RAW_OUTPUT_QUERY = "raw"
+PROJECTED_OUTPUT_QUERY = "projected_v1"
+OUTPUT_QUERIES = (RAW_OUTPUT_QUERY, PROJECTED_OUTPUT_QUERY)
 # Derivada interna de la escritura. autograd_v1 es la ruta histórica con torch.autograd.grad y
 # conserva la identidad. analytic_v1 escribe las mismas derivadas en forma cerrada
 # (associative_gradient.py) y entra en la identidad cuando se declara.
@@ -367,11 +376,23 @@ class MemoryConfig(FingerprintOnce):
     huber: HuberMemory | None = None
     time_scales: ScaleInvariantTime | None = None
     inner_gradient: str = AUTOGRAD_INNER_GRADIENT
+    # Sin declararla (None), los valores objetivo de escritura no se normalizan ni entran en la
+    # identidad. Con "layer_norm_v1", pasan por el mismo LayerNorm sin parámetros que la salida.
+    value_normalization: str | None = None
 
     def __post_init__(self) -> None:
         bounded_integer(self.dim, "dim", 1, 512)
         if self.inner_gradient not in INNER_GRADIENTS:
             raise ValueError("inner_gradient debe ser autograd_v1, analytic_v1 o fused_v1")
+        if self.value_normalization is not None and (
+            type(self.value_normalization) is not str
+            or self.value_normalization != VALUE_LAYER_NORM
+        ):
+            raise ValueError(f"value_normalization debe ser None o {VALUE_LAYER_NORM}")
+        if self.value_normalization is not None and self.dim < 2:
+            raise ValueError(
+                "LayerNorm sobre una sola dimensión anula siempre los valores objetivo"
+            )
         if self.inner_gradient != AUTOGRAD_INNER_GRADIENT and (
             self.bank_readout is not None or self.multiscale is not None or self.huber is not None
         ):
@@ -502,6 +523,7 @@ class MemoryConfig(FingerprintOnce):
         fields.pop("huber")
         fields.pop("time_scales")
         inner_gradient = fields.pop("inner_gradient")
+        value_normalization = fields.pop("value_normalization")
         # Sin bias ni residual se conserva literalmente la identidad v1 y su huella.
         extension = (
             {}
@@ -568,6 +590,12 @@ class MemoryConfig(FingerprintOnce):
                 "outer_gradient": "closed_form_vjp_recomputed_per_flow",
                 "kernel": "triton_one_program_per_flow_no_atomics",
             }
+        if value_normalization is not None:
+            extension["value_normalization"] = {
+                "form": value_normalization,
+                "layer_norm_eps": LAYER_NORM_EPS,
+                "layer_norm_affine": False,
+            }
         return {
             **fields,
             **extension,
@@ -599,6 +627,8 @@ class MACConfig(FingerprintOnce):
     attention_layout: str = "batch_first_v1"
     # U1 de #786. Sin declararla, la identidad y el cálculo no cambian.
     differential_attention: str | None = None
+    # Consulta de la puerta de salida. "raw" conserva la identidad y el cálculo actuales.
+    output_query: str = RAW_OUTPUT_QUERY
 
     def __post_init__(self) -> None:
         if not isinstance(self.memory, MemoryConfig):
@@ -616,6 +646,8 @@ class MACConfig(FingerprintOnce):
             raise ValueError("attention_layout no pertenece a las disposiciones admitidas")
         if self.differential_attention not in (None, DIFFERENTIAL_ATTENTION):
             raise ValueError(f"differential_attention admite {DIFFERENTIAL_ATTENTION} o None")
+        if type(self.output_query) is not str or self.output_query not in OUTPUT_QUERIES:
+            raise ValueError(f"output_query debe ser {RAW_OUTPUT_QUERY} o {PROJECTED_OUTPUT_QUERY}")
 
     def identity(self) -> dict:
         result = {
@@ -637,4 +669,12 @@ class MACConfig(FingerprintOnce):
             result.pop("differential_attention")
         else:
             result["differential_attention"] = differential_identity()
+        if self.output_query == RAW_OUTPUT_QUERY:
+            result.pop("output_query")
+        else:
+            result["output_query"] = {
+                "form": self.output_query,
+                "projection": "shared_query_projection_then_l2",
+                "normalization_eps": 1e-12,
+            }
         return result
