@@ -1,0 +1,921 @@
+{
+  "schema_version": 1,
+  "kind": "comparison_campaign_v1",
+  "market": "US",
+  "final_test_access": false,
+  "description": "Quinta criba (v12) en EE. UU., origen 2013, unificada con la cuarta, que no llegó a correr: el núcleo; cada invención de Gemini sola (las cinco de la cuarta criba, la escritura no fusionada que necesita una de ellas y las de la segunda ronda: memoria de adelanto y retardo entre grupos, cerebro de Hopfield disperso con inhibición lateral, consolidación de tres factores, holograma de sesión persistente y doble hemisferio ortogonalizado); el núcleo agéntico con sus variantes de lectura; y, en un nivel por invención, su placebo de asociación y sus controles secundarios, que solo se ajustan si la invención pasa la primera puerta de la regla (S-5).",
+  "source_declaration_sha256": "836c79a6122fc14a1566826ece99f3708849a7d481361c334acd693383c88716",
+  "cohort": {
+    "size": 4198,
+    "rule": "entire_source_view"
+  },
+  "seeds": [
+    42,
+    43,
+    44
+  ],
+  "origins": [
+    {
+      "fold": "fold-000",
+      "role": "development",
+      "year": 2005
+    },
+    {
+      "fold": "fold-001",
+      "role": "development",
+      "year": 2006
+    },
+    {
+      "fold": "fold-002",
+      "role": "development",
+      "year": 2007
+    },
+    {
+      "fold": "fold-003",
+      "role": "development",
+      "year": 2008
+    },
+    {
+      "fold": "fold-004",
+      "role": "development",
+      "year": 2009
+    },
+    {
+      "fold": "fold-005",
+      "role": "development",
+      "year": 2010
+    },
+    {
+      "fold": "fold-006",
+      "role": "development",
+      "year": 2011
+    },
+    {
+      "fold": "fold-007",
+      "role": "development",
+      "year": 2012
+    },
+    {
+      "fold": "fold-008",
+      "role": "development",
+      "year": 2013
+    },
+    {
+      "fold": "fold-009",
+      "role": "development",
+      "year": 2014
+    },
+    {
+      "fold": "fold-010",
+      "role": "development",
+      "year": 2015
+    },
+    {
+      "fold": "fold-011",
+      "role": "development",
+      "year": 2016
+    },
+    {
+      "fold": "fold-012",
+      "role": "development",
+      "year": 2017
+    },
+    {
+      "fold": "fold-013",
+      "role": "development",
+      "year": 2018
+    },
+    {
+      "fold": "fold-014",
+      "role": "development",
+      "year": 2019
+    },
+    {
+      "fold": "fold-015",
+      "role": "development",
+      "year": 2020
+    },
+    {
+      "fold": "fold-016",
+      "role": "development",
+      "year": 2021
+    },
+    {
+      "fold": "fold-017",
+      "role": "development",
+      "year": 2022
+    },
+    {
+      "fold": "fold-018",
+      "role": "confirmation",
+      "year": 2023
+    }
+  ],
+  "tiers": [
+    "core",
+    "s5_candidates",
+    "s5_agentic",
+    "s5_b_csos",
+    "s5_b_lfmsw",
+    "s5_b_infonce",
+    "s5_b_ic_mlp",
+    "s5_b_session_resonator",
+    "s5_b_llfm",
+    "s5_b_rshrb",
+    "s5_b_d3f",
+    "s5_b_mpsh",
+    "s5_b_codhb"
+  ],
+  "recipes": {
+    "core": "configs/titans/dgx-us-core-u2-ic3-dense-gr-v9.json",
+    "reader_cognitive": "configs/titans/dgx-us-reader-cognitive-v2-s-v10.json",
+    "reader_cognitive_constant": "configs/titans/dgx-us-reader-cognitive-constant-v2-s-v10.json",
+    "reader_cognitive_ic": "configs/titans/dgx-us-reader-cognitive-ic3-v7-s-v10.json",
+    "reader_cognitive_ic_k64": "configs/titans/dgx-us-reader-cognitive-ic3-v7-s-v10-k64-v12.json",
+    "reader_cognitive_ic_t01": "configs/titans/dgx-us-reader-cognitive-ic3-v7-s-v10-t01-v12.json",
+    "reader_cognitive_ic_direct": "configs/titans/dgx-us-reader-cognitive-ic3-v7-s-v10-direct-v12.json"
+  },
+  "stopping": {
+    "fit": {
+      "metric": "session_rank_ic",
+      "min_assets": 30,
+      "stopping": "validation_plateau",
+      "patience": 3,
+      "min_delta": 0.0,
+      "max_epochs": 48,
+      "initial_state": "reported"
+    },
+    "reader": {
+      "metric": "session_rank_ic",
+      "min_assets": 30,
+      "stopping": "validation_plateau",
+      "patience": 3,
+      "min_delta": 0.0,
+      "max_epochs": 24
+    }
+  },
+  "execution": {
+    "pipeline": {
+      "decode_workers": 4,
+      "prefetch_batches": 6,
+      "group_cache_mib": 2048,
+      "prepare_workers": 3
+    },
+    "workers": {
+      "mars_titan": 4,
+      "references": 1
+    },
+    "learning_traces": {
+      "every": 8,
+      "max_bytes": 67108864
+    },
+    "order": "seed_tier",
+    "threads": {
+      "intra": 20,
+      "interop": 20
+    }
+  },
+  "budget": {
+    "min_free_gib": 60,
+    "memory_gib": {
+      "mars_titan": 24
+    },
+    "cuda_gib": {
+      "mars_titan": 16
+    },
+    "deadline_utc": "2026-12-01T11:00:00+00:00"
+  },
+  "models": {
+    "titans_mac": {
+      "machine": "mars_titan",
+      "recipe": "core",
+      "runner": "fit",
+      "tier": "core",
+      "variant": "mac_online"
+    },
+    "titans_mac_analytic": {
+      "machine": "mars_titan",
+      "recipe": "core",
+      "runner": "fit",
+      "tier": "s5_candidates",
+      "variant": "mac_online",
+      "predictor_changes": {
+        "memory_inner_gradient": "analytic_v1"
+      }
+    },
+    "titans_mac_csos": {
+      "machine": "mars_titan",
+      "recipe": "core",
+      "runner": "fit",
+      "tier": "s5_candidates",
+      "variant": "mac_online",
+      "predictor_changes": {
+        "memory_inner_gradient": "analytic_v1",
+        "memory_cross_sectional_surprise": {
+          "mode": "same_session",
+          "bound": 1.0,
+          "eps": 1e-06,
+          "seed": 0
+        }
+      }
+    },
+    "titans_mac_csos_shuffled": {
+      "machine": "mars_titan",
+      "recipe": "core",
+      "runner": "fit",
+      "tier": "s5_b_csos",
+      "variant": "mac_online",
+      "predictor_changes": {
+        "memory_inner_gradient": "analytic_v1",
+        "memory_cross_sectional_surprise": {
+          "mode": "shuffled_session",
+          "bound": 1.0,
+          "eps": 1e-06,
+          "seed": 0
+        }
+      }
+    },
+    "titans_mac_lfmsw": {
+      "machine": "mars_titan",
+      "recipe": "core",
+      "runner": "fit",
+      "tier": "s5_candidates",
+      "variant": "mac_online",
+      "predictor_changes": {
+        "factor_memory": {
+          "factors": 16,
+          "mode": "online"
+        }
+      }
+    },
+    "titans_mac_lfmsw_random": {
+      "machine": "mars_titan",
+      "recipe": "core",
+      "runner": "fit",
+      "tier": "s5_b_lfmsw",
+      "variant": "mac_online",
+      "predictor_changes": {
+        "factor_memory": {
+          "factors": 16,
+          "mode": "random_basis"
+        }
+      }
+    },
+    "titans_mac_lfmsw_eval_frozen": {
+      "machine": "mars_titan",
+      "recipe": "core",
+      "runner": "fit",
+      "tier": "s5_b_lfmsw",
+      "variant": "mac_online",
+      "predictor_changes": {
+        "factor_memory": {
+          "factors": 16,
+          "mode": "eval_frozen"
+        }
+      }
+    },
+    "titans_mac_infonce": {
+      "machine": "mars_titan",
+      "recipe": "core",
+      "runner": "fit",
+      "tier": "s5_candidates",
+      "variant": "mac_online",
+      "predictor_changes": {
+        "contrastive_memory": {
+          "prototypes": 32,
+          "temperature": 0.2,
+          "mode": "infonce"
+        }
+      }
+    },
+    "titans_mac_infonce_shuffled": {
+      "machine": "mars_titan",
+      "recipe": "core",
+      "runner": "fit",
+      "tier": "s5_b_infonce",
+      "variant": "mac_online",
+      "predictor_changes": {
+        "contrastive_memory": {
+          "prototypes": 32,
+          "temperature": 0.2,
+          "mode": "shuffled_values"
+        }
+      }
+    },
+    "titans_mac_infonce_eval_frozen": {
+      "machine": "mars_titan",
+      "recipe": "core",
+      "runner": "fit",
+      "tier": "s5_b_infonce",
+      "variant": "mac_online",
+      "predictor_changes": {
+        "contrastive_memory": {
+          "prototypes": 32,
+          "temperature": 0.2,
+          "mode": "eval_frozen"
+        }
+      }
+    },
+    "titans_mac_infonce_l2_shared": {
+      "machine": "mars_titan",
+      "recipe": "core",
+      "runner": "fit",
+      "tier": "s5_b_infonce",
+      "variant": "mac_online",
+      "predictor_changes": {
+        "contrastive_memory": {
+          "prototypes": 32,
+          "temperature": 0.2,
+          "mode": "l2_shared"
+        }
+      }
+    },
+    "titans_mac_ic_mlp": {
+      "machine": "mars_titan",
+      "recipe": "core",
+      "runner": "fit",
+      "tier": "s5_candidates",
+      "variant": "mac_online",
+      "predictor_changes": {
+        "ic_titans_mlp": {
+          "dim": 32,
+          "alpha_half_life": 21.0,
+          "eta": 0.5,
+          "theta": 0.05,
+          "anchor": 0.1,
+          "grad_clip": 1.0,
+          "inner_steps": 1,
+          "minimum_rows": 8,
+          "seed": 0,
+          "mode": "matured_rank"
+        }
+      }
+    },
+    "titans_mac_ic_mlp_shuffled": {
+      "machine": "mars_titan",
+      "recipe": "core",
+      "runner": "fit",
+      "tier": "s5_b_ic_mlp",
+      "variant": "mac_online",
+      "predictor_changes": {
+        "ic_titans_mlp": {
+          "dim": 32,
+          "alpha_half_life": 21.0,
+          "eta": 0.5,
+          "theta": 0.05,
+          "anchor": 0.1,
+          "grad_clip": 1.0,
+          "inner_steps": 1,
+          "minimum_rows": 8,
+          "seed": 0,
+          "mode": "shuffled_targets"
+        }
+      }
+    },
+    "titans_mac_ic_mlp_eval_frozen": {
+      "machine": "mars_titan",
+      "recipe": "core",
+      "runner": "fit",
+      "tier": "s5_b_ic_mlp",
+      "variant": "mac_online",
+      "predictor_changes": {
+        "ic_titans_mlp": {
+          "dim": 32,
+          "alpha_half_life": 21.0,
+          "eta": 0.5,
+          "theta": 0.05,
+          "anchor": 0.1,
+          "grad_clip": 1.0,
+          "inner_steps": 1,
+          "minimum_rows": 8,
+          "seed": 0,
+          "mode": "eval_frozen"
+        }
+      }
+    },
+    "titans_mac_ic_mlp_unanchored": {
+      "machine": "mars_titan",
+      "recipe": "core",
+      "runner": "fit",
+      "tier": "s5_b_ic_mlp",
+      "variant": "mac_online",
+      "predictor_changes": {
+        "ic_titans_mlp": {
+          "dim": 32,
+          "alpha_half_life": 21.0,
+          "eta": 0.5,
+          "theta": 0.05,
+          "anchor": 0.1,
+          "grad_clip": 1.0,
+          "inner_steps": 1,
+          "minimum_rows": 8,
+          "seed": 0,
+          "mode": "unanchored"
+        }
+      }
+    },
+    "titans_mac_session_resonator": {
+      "machine": "mars_titan",
+      "recipe": "core",
+      "runner": "fit",
+      "tier": "s5_candidates",
+      "variant": "mac_online",
+      "predictor_changes": {
+        "session_resonator": {
+          "codes_a": 8,
+          "codes_b": 8,
+          "iterations": 2,
+          "mode": "resonator"
+        }
+      }
+    },
+    "titans_mac_session_resonator_shuffled": {
+      "machine": "mars_titan",
+      "recipe": "core",
+      "runner": "fit",
+      "tier": "s5_b_session_resonator",
+      "variant": "mac_online",
+      "predictor_changes": {
+        "session_resonator": {
+          "codes_a": 8,
+          "codes_b": 8,
+          "iterations": 2,
+          "mode": "shuffled_peers"
+        }
+      }
+    },
+    "titans_mac_session_resonator_t0": {
+      "machine": "mars_titan",
+      "recipe": "core",
+      "runner": "fit",
+      "tier": "s5_b_session_resonator",
+      "variant": "mac_online",
+      "predictor_changes": {
+        "session_resonator": {
+          "codes_a": 8,
+          "codes_b": 8,
+          "iterations": 0,
+          "mode": "no_iteration"
+        }
+      }
+    },
+    "mars_titan_cognitive": {
+      "machine": "mars_titan",
+      "runner": "reader",
+      "parent": "titans_mac",
+      "recipe": "reader_cognitive",
+      "search_case": "lr1e-3",
+      "components": {
+        "episodic_bank": "m3",
+        "refinements": 4
+      },
+      "tier": "s5_agentic"
+    },
+    "mars_titan_cognitive_constant_gate": {
+      "machine": "mars_titan",
+      "runner": "reader",
+      "parent": "titans_mac",
+      "recipe": "reader_cognitive_constant",
+      "search_case": "lr1e-3",
+      "components": {
+        "episodic_bank": "m3",
+        "refinements": 4
+      },
+      "tier": "s5_agentic"
+    },
+    "mars_titan_cognitive_ic": {
+      "machine": "mars_titan",
+      "runner": "reader",
+      "parent": "titans_mac",
+      "recipe": "reader_cognitive_ic",
+      "search_case": "lr1e-3",
+      "components": {
+        "episodic_bank": "m3",
+        "refinements": 4
+      },
+      "tier": "s5_agentic"
+    },
+    "mars_titan_cognitive_ic_k64": {
+      "machine": "mars_titan",
+      "runner": "reader",
+      "parent": "titans_mac",
+      "recipe": "reader_cognitive_ic_k64",
+      "search_case": "lr1e-3",
+      "components": {
+        "episodic_bank": "m3",
+        "refinements": 4
+      },
+      "tier": "s5_agentic"
+    },
+    "mars_titan_cognitive_ic_t01": {
+      "machine": "mars_titan",
+      "runner": "reader",
+      "parent": "titans_mac",
+      "recipe": "reader_cognitive_ic_t01",
+      "search_case": "lr1e-3",
+      "components": {
+        "episodic_bank": "m3",
+        "refinements": 4
+      },
+      "tier": "s5_agentic"
+    },
+    "mars_titan_cognitive_ic_direct": {
+      "machine": "mars_titan",
+      "runner": "reader",
+      "parent": "titans_mac",
+      "recipe": "reader_cognitive_ic_direct",
+      "search_case": "lr1e-3",
+      "components": {
+        "episodic_bank": "m3",
+        "refinements": 4
+      },
+      "tier": "s5_agentic"
+    },
+    "titans_mac_llfm": {
+      "machine": "mars_titan",
+      "recipe": "core",
+      "runner": "fit",
+      "tier": "s5_candidates",
+      "variant": "mac_online",
+      "predictor_changes": {
+        "lead_lag_memory": {
+          "groups": 16,
+          "lag_scales": [
+            1,
+            5
+          ],
+          "decay": 0.05,
+          "learning_rate": 0.2,
+          "damping": 1.0,
+          "minimum_rows": 8,
+          "seed": 0,
+          "mode": "lead_lag"
+        }
+      }
+    },
+    "titans_mac_llfm_shuffled": {
+      "machine": "mars_titan",
+      "recipe": "core",
+      "runner": "fit",
+      "tier": "s5_b_llfm",
+      "variant": "mac_online",
+      "predictor_changes": {
+        "lead_lag_memory": {
+          "groups": 16,
+          "lag_scales": [
+            1,
+            5
+          ],
+          "decay": 0.05,
+          "learning_rate": 0.2,
+          "damping": 1.0,
+          "minimum_rows": 8,
+          "seed": 0,
+          "mode": "shuffled_targets"
+        }
+      }
+    },
+    "titans_mac_llfm_static": {
+      "machine": "mars_titan",
+      "recipe": "core",
+      "runner": "fit",
+      "tier": "s5_b_llfm",
+      "variant": "mac_online",
+      "predictor_changes": {
+        "lead_lag_memory": {
+          "groups": 16,
+          "lag_scales": [
+            1,
+            5
+          ],
+          "decay": 0.05,
+          "learning_rate": 0.2,
+          "damping": 1.0,
+          "minimum_rows": 8,
+          "seed": 0,
+          "mode": "static_prior"
+        }
+      }
+    },
+    "titans_mac_llfm_eval_frozen": {
+      "machine": "mars_titan",
+      "recipe": "core",
+      "runner": "fit",
+      "tier": "s5_b_llfm",
+      "variant": "mac_online",
+      "predictor_changes": {
+        "lead_lag_memory": {
+          "groups": 16,
+          "lag_scales": [
+            1,
+            5
+          ],
+          "decay": 0.05,
+          "learning_rate": 0.2,
+          "damping": 1.0,
+          "minimum_rows": 8,
+          "seed": 0,
+          "mode": "eval_frozen"
+        }
+      }
+    },
+    "titans_mac_rshrb": {
+      "machine": "mars_titan",
+      "recipe": "core",
+      "runner": "fit",
+      "tier": "s5_candidates",
+      "variant": "mac_online",
+      "predictor_changes": {
+        "hopfield_rank_brain": {
+          "prototypes": 32,
+          "steps": 2,
+          "position": "after_technical",
+          "mode": "repulsive"
+        }
+      }
+    },
+    "titans_mac_rshrb_shuffled": {
+      "machine": "mars_titan",
+      "recipe": "core",
+      "runner": "fit",
+      "tier": "s5_b_rshrb",
+      "variant": "mac_online",
+      "predictor_changes": {
+        "hopfield_rank_brain": {
+          "prototypes": 32,
+          "steps": 2,
+          "position": "after_technical",
+          "mode": "shuffled_peers"
+        }
+      }
+    },
+    "titans_mac_rshrb_attractive": {
+      "machine": "mars_titan",
+      "recipe": "core",
+      "runner": "fit",
+      "tier": "s5_b_rshrb",
+      "variant": "mac_online",
+      "predictor_changes": {
+        "hopfield_rank_brain": {
+          "prototypes": 32,
+          "steps": 2,
+          "position": "after_technical",
+          "mode": "attractive_only"
+        }
+      }
+    },
+    "titans_mac_rshrb_repulsive_only": {
+      "machine": "mars_titan",
+      "recipe": "core",
+      "runner": "fit",
+      "tier": "s5_b_rshrb",
+      "variant": "mac_online",
+      "predictor_changes": {
+        "hopfield_rank_brain": {
+          "prototypes": 32,
+          "steps": 2,
+          "position": "after_technical",
+          "mode": "repulsive_only"
+        }
+      }
+    },
+    "titans_mac_d3f": {
+      "machine": "mars_titan",
+      "recipe": "core",
+      "runner": "fit",
+      "tier": "s5_candidates",
+      "variant": "mac_online",
+      "predictor_changes": {
+        "three_factor_consolidation": {
+          "dim": 16,
+          "trace_tau": 5.0,
+          "consolidation_tau": 21.0,
+          "credit_scale": 1.0,
+          "max_gain": 0.25,
+          "minimum_rows": 8,
+          "seed": 0,
+          "mode": "three_factor"
+        }
+      }
+    },
+    "titans_mac_d3f_shuffled": {
+      "machine": "mars_titan",
+      "recipe": "core",
+      "runner": "fit",
+      "tier": "s5_b_d3f",
+      "variant": "mac_online",
+      "predictor_changes": {
+        "three_factor_consolidation": {
+          "dim": 16,
+          "trace_tau": 5.0,
+          "consolidation_tau": 21.0,
+          "credit_scale": 1.0,
+          "max_gain": 0.25,
+          "minimum_rows": 8,
+          "seed": 0,
+          "mode": "shuffled_credit"
+        }
+      }
+    },
+    "titans_mac_d3f_eval_frozen": {
+      "machine": "mars_titan",
+      "recipe": "core",
+      "runner": "fit",
+      "tier": "s5_b_d3f",
+      "variant": "mac_online",
+      "predictor_changes": {
+        "three_factor_consolidation": {
+          "dim": 16,
+          "trace_tau": 5.0,
+          "consolidation_tau": 21.0,
+          "credit_scale": 1.0,
+          "max_gain": 0.25,
+          "minimum_rows": 8,
+          "seed": 0,
+          "mode": "eval_frozen"
+        }
+      }
+    },
+    "titans_mac_d3f_cross": {
+      "machine": "mars_titan",
+      "recipe": "core",
+      "runner": "fit",
+      "tier": "s5_b_d3f",
+      "variant": "mac_online",
+      "predictor_changes": {
+        "three_factor_consolidation": {
+          "dim": 16,
+          "trace_tau": 5.0,
+          "consolidation_tau": 21.0,
+          "credit_scale": 1.0,
+          "max_gain": 0.25,
+          "minimum_rows": 8,
+          "seed": 0,
+          "mode": "cross_only"
+        }
+      }
+    },
+    "titans_mac_d3f_local": {
+      "machine": "mars_titan",
+      "recipe": "core",
+      "runner": "fit",
+      "tier": "s5_b_d3f",
+      "variant": "mac_online",
+      "predictor_changes": {
+        "three_factor_consolidation": {
+          "dim": 16,
+          "trace_tau": 5.0,
+          "consolidation_tau": 21.0,
+          "credit_scale": 1.0,
+          "max_gain": 0.25,
+          "minimum_rows": 8,
+          "seed": 0,
+          "mode": "local_only"
+        }
+      }
+    },
+    "titans_mac_mpsh": {
+      "machine": "mars_titan",
+      "recipe": "core",
+      "runner": "fit",
+      "tier": "s5_candidates",
+      "variant": "mac_online",
+      "predictor_changes": {
+        "persistent_session_hologram": {
+          "bands": 4,
+          "phase_dim": 16,
+          "half_lives": [
+            1,
+            5,
+            10
+          ],
+          "position": "after_technical",
+          "seed": 0,
+          "mode": "persistent"
+        }
+      }
+    },
+    "titans_mac_mpsh_shuffled": {
+      "machine": "mars_titan",
+      "recipe": "core",
+      "runner": "fit",
+      "tier": "s5_b_mpsh",
+      "variant": "mac_online",
+      "predictor_changes": {
+        "persistent_session_hologram": {
+          "bands": 4,
+          "phase_dim": 16,
+          "half_lives": [
+            1,
+            5,
+            10
+          ],
+          "position": "after_technical",
+          "seed": 0,
+          "mode": "shuffled_history"
+        }
+      }
+    },
+    "titans_mac_mpsh_instant": {
+      "machine": "mars_titan",
+      "recipe": "core",
+      "runner": "fit",
+      "tier": "s5_b_mpsh",
+      "variant": "mac_online",
+      "predictor_changes": {
+        "persistent_session_hologram": {
+          "bands": 4,
+          "phase_dim": 16,
+          "half_lives": [
+            1,
+            5,
+            10
+          ],
+          "position": "after_technical",
+          "seed": 0,
+          "mode": "instant_only"
+        }
+      }
+    },
+    "titans_mac_mpsh_self": {
+      "machine": "mars_titan",
+      "recipe": "core",
+      "runner": "fit",
+      "tier": "s5_b_mpsh",
+      "variant": "mac_online",
+      "predictor_changes": {
+        "persistent_session_hologram": {
+          "bands": 4,
+          "phase_dim": 16,
+          "half_lives": [
+            1,
+            5,
+            10
+          ],
+          "position": "after_technical",
+          "seed": 0,
+          "mode": "self_only"
+        }
+      }
+    },
+    "titans_mac_codhb": {
+      "machine": "mars_titan",
+      "recipe": "core",
+      "runner": "fit",
+      "tier": "s5_candidates",
+      "variant": "mac_online",
+      "predictor_changes": {
+        "dual_hemisphere_brain": {
+          "dim": 32,
+          "ridge": 0.0001,
+          "mode": "orthogonal"
+        }
+      }
+    },
+    "titans_mac_codhb_shuffled": {
+      "machine": "mars_titan",
+      "recipe": "core",
+      "runner": "fit",
+      "tier": "s5_b_codhb",
+      "variant": "mac_online",
+      "predictor_changes": {
+        "dual_hemisphere_brain": {
+          "dim": 32,
+          "ridge": 0.0001,
+          "mode": "shuffled_peers"
+        }
+      }
+    },
+    "titans_mac_codhb_unorth": {
+      "machine": "mars_titan",
+      "recipe": "core",
+      "runner": "fit",
+      "tier": "s5_b_codhb",
+      "variant": "mac_online",
+      "predictor_changes": {
+        "dual_hemisphere_brain": {
+          "dim": 32,
+          "ridge": 0.0001,
+          "mode": "unorthogonalized"
+        }
+      }
+    },
+    "titans_mac_codhb_self": {
+      "machine": "mars_titan",
+      "recipe": "core",
+      "runner": "fit",
+      "tier": "s5_b_codhb",
+      "variant": "mac_online",
+      "predictor_changes": {
+        "dual_hemisphere_brain": {
+          "dim": 32,
+          "ridge": 0.0001,
+          "mode": "self_only"
+        }
+      }
+    }
+  },
+  "inputs": {
+    "technical": "long_horizon_v2"
+  }
+}
