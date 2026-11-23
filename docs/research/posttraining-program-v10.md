@@ -626,7 +626,7 @@ calibración.
     - Correlaciones: la de los IC por sesión de C3 y H3 es 0,94 (0,78 en lo operable); la de rangos
       dentro de la sesión, 0,85 (0,77).
 
-### 5.12 P, la capa de cartera para las medidas netas: protocolo (diseño, sin medir)
+### 5.12 P, la capa de cartera para las medidas netas: protocolo y resultado en 2013
 
 Es el encargo del coordinador del 23 de noviembre: las medidas netas de una cartera sencilla sobre
 la puntuación operable de S2.
@@ -698,6 +698,114 @@ Si no, no entra, y las cifras se dan tal cual.
 - Los deciles salen del percentil de punto medio del rango suavizado.
 - La orden es `python -m mars_titan.evaluation.portfolio_layer medir`, con las mismas entradas
   que S2.
+
+**Resultado en 2013** (desarrollo; US; semilla 42; huella 828ee84c…; `cartera/2013`). La regla no
+se cumple: la capa no entra.
+- Tercio líquido (lectura principal):
+  - En calibración ganó λ = 1 con salida 0,2, es decir, la banda sin suavizado. Ningún punto con
+    suavizado superó a la señal diaria.
+  - La capa rota 1,20 por sesión, frente a 1,82 del control, y su bruto baja de 23,6 a 21,1 pb.
+  - Capa − control: −0,60 pb a 3 pb (t −0,70; intervalo [−2,30; 1,09]) y +0,65 pb a 5 pb
+    (t 0,75).
+  - Neto de la capa a 3 pb: 17,5 pb por sesión (t 5,3), con Sharpe 4,6 y caída máxima de 292 pb.
+  - Sesiones con neto > 0: 0,633 [0,572; 0,691] (bloques [0,574; 0,693]).
+  - Ventanas de 5 con neto > 0: 0,80 [0,67; 0,89]. Ventanas de 21: 0,91 [0,62; 0,98], con solo
+    11 ventanas.
+  - Frente al alfa solo: +4,1 pb a 3 pb (t 1,2).
+- Todos los nombres (lectura secundaria):
+  - En calibración ganó el propio control (λ = 1, salida 0,1), así que capa y control coinciden.
+  - Neto a 3 pb: 48,8 pb (t 15,9). Sesiones con neto > 0: 0,892 [0,848; 0,925] (bloques
+    [0,853; 0,932]). Todas las ventanas de 5 y de 21 dan neto > 0.
+  - Frente al alfa solo: +18,6 pb (t 7,4).
+  - No es una cifra operable: los nombres ilíquidos pagan el mismo coste por lado que los líquidos
+    (límite declarado).
+- Lectura: en 2013 la señal diaria ya es lo mejor de la rejilla. La banda cambia rotación por bruto
+  sin ganar a 3 pb, y solo queda por delante a partir de unos 5 pb, sin significación.
+
+### 5.13 F7, las métricas de error: protocolo (fijado antes de medir)
+
+Es el encargo del dueño, transmitido por el coordinador el 23 de noviembre: «mejorar las métricas de
+error, es decir que sea el menor, de todas las métricas existentes calculadas siempre».
+- La declaración es `configs/experiments/posttraining-error-metrics.json` (huella
+  939f49a5…).
+- La separación es la de F: 2013 es desarrollo, los orígenes limpios confirman y 2024 sigue sellado.
+
+**Punto de partida, con su escala.**
+- En 2013 el núcleo de la criba (titans_mac) da un MAE de 0,011089, frente a 0,011169 de predecir
+  cero (−0,7 %). Con su factor LAD de calibración (0,76) baja a 0,011056 (−1,0 %).
+- El padre de S2 (titans_mac_nogain, semilla 42) emite una amplitud unas 15 veces mayor de la que
+  le corresponde:
+  - MAE 0,027454 (+146 % sobre cero), con factor LAD 0,066;
+  - cobertura del 80 % de 0,889 y ECE de 0,148.
+  - Con su factor LAD baja a 0,011034 (−1,2 %).
+- Con un IC de Pearson ρ, el mejor predictor lineal reduce el error cuadrático en ρ² y el RMSE en
+  1 − √(1 − ρ²). Con ρ = 0,14, eso es un 2 % y un 1 %, y el MAE se mueve en el mismo orden.
+- El informe da esa cota con el ρ medido y no promete reducciones que el ruido de la etiqueta no
+  permite.
+
+**Qué se mide.** En evaluación, con `forecast_scores.score_sessions` (las métricas que el
+repositorio calcula siempre, cada sesión con el mismo peso):
+- MAE y RMSE de la predicción puntual.
+- Pinball de cada cuantil emitido (0,025; 0,1; 0,5; 0,9; 0,975) y su media.
+- Error de cobertura |cobertura − nominal| de los intervalos centrales del 80 y del 95 %.
+- ECE (10 tramos) de la probabilidad de subida implícita en los cuantiles, con la regla del
+  repositorio.
+- Fuera de la regla, como información: puntuación de intervalo, Brier de signo, frecuencia de cada
+  nivel e IC de rangos.
+
+**Predictores.** Todos en la etiqueta y en lo operable, sobre las filas de S2 de cada modo:
+- el padre (titans_mac_nogain, semilla 42), con punto y cuantiles;
+- las semillas: la media de 42, 43 y 44 del padre (`seed_ensemble.seed_mean`; los cuantiles, con
+  la media de Vincent);
+- el núcleo de la criba (titans_mac, semilla 42), como referencia de la cifra de partida;
+- S1 y S2, con sus puntuaciones de sesión.
+
+En lo operable:
+- La puntuación es k·p + α, con el k del criterio del agregador en calibración. Para el padre es el
+  de S2; para las semillas y el núcleo se calcula con la misma función.
+- Los cuantiles son α + q.
+
+S1 y S2 emiten combinaciones de puntuaciones z por sesión, sin unidades de rendimiento. Su versión
+sin calibrar no tiene MAE ni cuantiles, así que solo se miden calibradas y frente a los controles.
+
+**Controles:**
+- Cero: predicción puntual 0. Sus cuantiles son la climatología de calibración: los cuantiles del
+  objetivo por mercado, con cada sesión con el mismo peso.
+- En lo operable, además, alfa solo: predicción α, con α + la climatología de la etiqueta como
+  cuantiles.
+
+Cómo se compara con un control:
+- En las pérdidas (MAE, RMSE, pinball) se da la mejora relativa 1 − M/M_control.
+- En los errores de calibración (cobertura, ECE) se da la diferencia, porque la climatología está
+  calibrada en promedio por construcción.
+
+**Calibración.** Se ajusta en calibración, solo con las etiquetas maduras antes de la primera sesión
+de evaluación, y se aplica sin cambios. No toca el orden dentro de la sesión.
+- Punto: λ·s, con λ el factor LAD del repositorio (`scale_diagnostics.market_shrinkage`: la mediana
+  ponderada de y/s por mercado, con cada sesión con el mismo peso, en [0, 1]). Un λ = 0 no se
+  entrega, porque rompería el orden.
+- Cuantiles:
+  - el centro pasa a λ·s;
+  - las anchuras de la cabeza (q_τ − q_0,5) se multiplican por un factor por nivel s_τ ≥ 0, el
+    minimizador exacto de la pinball de calibración (el cuantil ponderado del cociente entre residuo
+    y anchura);
+  - si dos niveles se cruzan, se ordenan por fila; ese reordenamiento nunca sube la pinball sumada;
+  - S1 y S2 usan las anchuras del padre, y las semillas las suyas.
+- Hay tres versiones: sin calibrar; «punto» (λ·s con los cuantiles emitidos); y «completa» (punto y
+  cuantiles).
+
+**Regla**, por predictor y modo, en evaluación:
+- Una versión calibrada entra si no empeora ninguna métrica de la regla frente a la sin calibrar.
+  Las de la regla son MAE, RMSE, pinball de cada nivel y su media, error de cobertura del 80 y del
+  95 % y ECE. La comparación es estricta, sin tolerancia.
+- Se entrega la más completa que pase: la «completa»; si no, la «punto»; si no, la sin calibrar.
+- S1 y S2 no tienen versión sin calibrar. Se comparan con el control de su modo (cero en la
+  etiqueta, alfa solo en lo operable), y si no pasa ninguna versión no se entregan en unidades de
+  rendimiento.
+- Cada diferencia de MAE, error cuadrático y pinball media lleva su t de Newey-West, pareada por
+  sesión, para que se vea si es ruido.
+- La versión entregada se elige con 2013 y queda fijada. En los orígenes limpios la regla solo
+  confirma, y si no confirma se dice qué métrica empeora.
 
 ## 6. Etapas con GPU (fase 4)
 
