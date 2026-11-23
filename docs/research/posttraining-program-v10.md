@@ -828,6 +828,44 @@ de evaluación, y se aplica sin cambios. No toca el orden dentro de la sesión.
 - La orden es `python -m mars_titan.evaluation.error_metrics medir`, con las entradas de S2 y las
   carpetas de las semillas y las referencias. `informe --summary` rehace el resumen sin medir.
 
+**Resultado en 2013** (desarrollo; US; semilla 42; huella 42fae0ce…; `errores/2013`; pilotos-b
+congelado y descongelado).
+
+*Escala.*
+- El IC de Pearson medio en la etiqueta va de 0,075 (S1) a 0,174 (noic). La cota del RMSE sobre
+  predecir cero va, por tanto, del 0,3 al 1,5 %.
+- Las rebajas medidas quedan dentro de la cota: el RMSE baja del 0,2 % (S2) al 1,1 % (noic) y el
+  MAE del 0,5 al 1,8 %.
+
+*Punto (escala LAD).* Entra para el padre, las semillas, el noic, S1 y S2 en los dos modos, y para
+el núcleo en lo operable.
+- Padre: λ = 0,066. Su MAE pasa de 0,027449 a 0,011034, es decir, de −145,7 % a +1,2 % sobre
+  cero; el RMSE mejora un 0,8 %.
+- S2: λ = 0,0014. Sobre cero, el MAE mejora un 0,5 % y el RMSE un 0,2 % en la etiqueta. En lo
+  operable mejora un 0,2 % sobre cero y un 1,8 % sobre alfa solo.
+- El núcleo (titans_mac) se queda sin calibrar en la etiqueta. Con λ = 0,76 el MAE baja
+  (t −12,2), pero el error cuadrático sube 3,7·10⁻⁷ (t 1,7), y la regla es estricta.
+
+*Cuantiles (versión completa).* Solo entran para el núcleo en lo operable: la pinball baja
+4·10⁻⁵ (t −13,7) y el error de cobertura del 80 % pasa de 0,053 a 0,014.
+- La cabeza del padre sin ganancia no sirve para recentrar. Sus anchuras van atadas a una mediana
+  unas 15 veces más amplia, y recentradas suben el error de cobertura del 80 % de 0,089 a 0,161. A
+  S1 y S2, que usan esas anchuras, les pasa lo mismo.
+- El noic ya está calibrado: pinball 0,002702 (un 16,9 % mejor que la climatología) y ECE 0,0065.
+  La recalibración empeora sus colas bajas y su ECE.
+
+*Nivel del noic.* Las t de este punto son descriptivas, fuera del protocolo.
+- En la etiqueta no lo iguala ningún modelo de orden calibrado: el padre queda un 0,3 % peor en
+  MAE (t 5,2) y S2 un 1,0 % peor (t 9,6). Al tipificar por sesión, S2 pierde la amplitud
+  transversal: su IC de Pearson es 0,078, frente a 0,158 del padre.
+- En lo operable S2 sí lo iguala, con más IC de rangos (0,089 frente a 0,079):
+  - MAE −4·10⁻⁶ (t −0,6);
+  - error cuadrático −1,7·10⁻⁶ (t −2,9).
+- El noic con su propia escala LAD sigue algo por delante: MAE 0,010965, frente a 0,010973 de S2.
+
+*Lectura.* La pieza que entra es la escala LAD del punto. Los cuantiles de la entrega tienen que
+salir de una cabeza bien escalada (el noic o el núcleo), no de la del padre sin ganancia.
+
 ## 6. Etapas con GPU (fase 4)
 
 ### 6.1 Qué queda preparado
