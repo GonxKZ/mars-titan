@@ -1351,9 +1351,16 @@ más.
     trimestre da −0,0039).
   - A = +0,0004 (t 0,9) e I = +0,0008 (t 1,1).
   - Lectura: en la v10, escribir en evaluación suma poco, pero suma, y sin coste. Una sola semilla.
-- **N con las semillas 43 y 44** (aaa64e35, `posttraining-write-twins-v10-n.json`): solo la paridad
-  en línea y la red evaluada sin escribir. Los dos trabajos de la semilla 42 se reutilizan. En GPU
-  desde el 23-11 a las 00:38Z.
+- **N con tres semillas** (aaa64e35, `posttraining-write-twins-v10-n.json`; `gemelos/v10-n/report.json`;
+  medido el 23-11): la misma red, evaluada escribiendo en la memoria y sin escribir. Los dos trabajos
+  de la semilla 42 se reutilizan.
+  - Evaluación (251 sesiones, tres semillas): N = +0,0014 (t 6,5; IC del 95 % [+0,0010; +0,0018];
+    MDE80 0,0006). Por semilla: +0,0012, +0,0009 y +0,0020.
+  - Es positivo en los cuatro trimestres de 2013 (de +0,0010 a +0,0019, t de 2,2 a 5,1) y no decae
+    (−0,0006 al año, t −1,0).
+  - Mismo signo en validación (+0,0009, t 2,3) y en calibración (+0,0013, t 2,2).
+  - Lectura: escribir en la memoria durante la evaluación aporta +0,0014 de IC, en torno al 1,2 % del
+    IC del núcleo. Con tres semillas queda demostrado, y sin coste: la receta final evalúa en línea.
 - **Brazos con reinicio** (ae7eb3fa, f611f7a5; aprobados por el coordinador):
   - R0 evalúa desde el estado inicial de la memoria y del contexto al abrirse la decisión, sin calcular el calentamiento.
   - R63 vuelve además a ese estado cada 63 instantes medidos.
