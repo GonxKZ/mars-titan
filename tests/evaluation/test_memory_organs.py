@@ -49,22 +49,25 @@ def snapshot(folder):
     }
 
 
-def campaign(root, *, models=("a", "b"), assets=32, seed=0):
+def campaign(root, *, models=("a", "b"), assets=32, seed=0, markets=("US",)):
     """Un estado pequeño: la vista de su cohorte, las emisiones de cada modelo y su cola.
 
     Los modelos aciertan la mitad del objetivo y fallan un efecto persistente de cada activo,
     que la memoria por activo puede recoger.
     """
     state = root / "estado"
-    manifest = views.write_view(state / "cohorts" / str(ORIGIN), assets=assets, seed=seed)
+    manifest = views.write_view(
+        state / "cohorts" / str(ORIGIN), assets=assets, seed=seed, markets=markets
+    )
     document = json.loads(manifest.read_text())
-    columns = {name: [] for name in ("asset", "at", "target", "matures", "part", "code")}
+    columns = {name: [] for name in ("asset", "market", "at", "target", "matures", "part", "code")}
     for code, entry in enumerate(document["assets"]):
         labels = pq.read_table(
             Path(document["roots"]["labels"]) / entry["market"] / entry["symbol"] / "labels.parquet"
         )
         at = labels["prediction_at"].cast(pa.int64()).to_numpy()
         columns["asset"].append(np.full(len(at), f"{entry['market']}/{entry['symbol']}"))
+        columns["market"].append(np.full(len(at), entry["market"]))
         columns["at"].append(at)
         columns["target"].append(labels["target"].to_numpy())
         columns["matures"].append(np.r_[at[1:], at[-1] + pilots.DAY_US])
@@ -72,7 +75,7 @@ def campaign(root, *, models=("a", "b"), assets=32, seed=0):
         columns["code"].append(np.full(len(at), code))
     data = {name: np.concatenate(values) for name, values in columns.items()}
     rng = np.random.default_rng(seed + 1)
-    persistent = rng.normal(size=assets)
+    persistent = rng.normal(size=assets * len(markets))
     rows = len(data["at"])
     base = 0.5 * data["target"] - 0.004 * persistent[data["code"]] + 0.01 * rng.normal(size=rows)
     predictions = {
@@ -85,7 +88,7 @@ def campaign(root, *, models=("a", "b"), assets=32, seed=0):
         maturity[split] = pa.table(
             dict(
                 asset_id=pa.array(data["asset"][keep]),
-                market=pa.array(np.full(int(keep.sum()), "US")),
+                market=pa.array(data["market"][keep]),
                 prediction_at=moments,
                 target=pa.array(data["target"][keep], pa.float64()),
                 matures_at=pa.array(data["matures"][keep], pa.int64()),
@@ -632,3 +635,76 @@ def test_a_temporary_left_by_another_writer_does_not_break_an_atomic_write(tmp_p
     assert organs.load_state(saved) == {"x": [1.0, 2.0]}
     leftovers = sorted(p.name for p in tmp_path.iterdir())
     assert leftovers == ["declaration.json", "declaration.json.tmp", "estado.npz", "estado.npz.tmp"]
+
+
+def test_a_joint_view_emits_only_the_markets_asked_for(tmp_path):
+    data = campaign(tmp_path, markets=("CN", "US"))
+    keys = tmp_path / "claves"
+    # Sin el factor de China (D-7), las claves de toda la vista no se construyen: falla con su ruta.
+    document = json.loads(data["manifest"].read_text())
+    Path(document["market_factors"]["CN"]["prices_path"]).unlink()
+    with pytest.raises(ValueError, match="No se pudieron construir las claves"):
+        emit(data, keys, tmp_path / "organos")
+    output = tmp_path / "organos-us"
+    organs.emit(
+        declaration(),
+        data["state"],
+        ORIGIN,
+        [SEED],
+        keys,
+        output,
+        log=quiet,
+        maturity=provider(data),
+        markets=["US"],
+    )
+    assert (keys / f"{data['view']}-US" / "keys.json").is_file()
+    for model in data["models"]:
+        for name in organs.ARMS:
+            folder = run(output, model, name)
+            assert json.loads((folder / "run.json").read_text())["markets"] == ["US"]
+            for split in organs.EMITTED:
+                table = pq.read_table(folder / f"{split}-predictions.parquet")
+                assert table["market"].unique().to_pylist() == ["US"]
+    with pytest.raises(ValueError, match="mercados"):
+        organs.emit(
+            declaration(),
+            data["state"],
+            ORIGIN,
+            [SEED],
+            keys,
+            output,
+            log=quiet,
+            maturity=provider(data),
+            markets=["CN", "US"],
+        )
+
+
+def test_the_relay_line_passes_the_markets(capsys):
+    assert (
+        organs.main(
+            [
+                "linea",
+                "--label",
+                "h9-v2-us",
+                "--state",
+                "/estado",
+                "--origin",
+                "2013",
+                "--seed",
+                "42",
+                "--tree",
+                "/copia",
+                "--python",
+                "/py",
+                "--keys",
+                "/claves",
+                "--output",
+                "/organos",
+                "--market",
+                "US",
+            ]
+        )
+        == 0
+    )
+    line = capsys.readouterr().out
+    assert " --market US" in line and "mars-titan-memorias-h9-v2-us-2013" in line

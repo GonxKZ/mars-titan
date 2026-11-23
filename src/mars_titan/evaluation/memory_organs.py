@@ -37,6 +37,7 @@ from pathlib import Path
 
 import numpy as np
 import pyarrow as pa
+import pyarrow.compute as pc
 import pyarrow.parquet as pq
 
 from mars_titan.evaluation import posttraining_pilots as pilots
@@ -200,8 +201,8 @@ def _finished(folder):
     return record if record.get("status") == "completed" else None
 
 
-def _claim(output, declaration, digest):
-    """Una raíz de órganos pertenece a una sola declaración."""
+def _claim(output, declaration, digest, markets=None):
+    """Una raíz de órganos pertenece a una sola declaración y a una sola elección de mercados."""
     saved = output / "declaration.json"
     if saved.is_file():
         previous = json.loads(saved.read_text(encoding="utf-8"))
@@ -211,11 +212,30 @@ def _claim(output, declaration, digest):
         )
     else:
         _atomic_json(saved, declaration)
+    chosen = output / "markets.json"
+    if chosen.is_file():
+        previous = json.loads(chosen.read_text(encoding="utf-8")).get("markets")
+        _require(
+            previous == markets,
+            f"{output} es de los mercados {previous or 'todos'}, no de {markets or 'todos'}",
+        )
+    else:
+        _atomic_json(chosen, dict(markets=markets))
 
 
-def _keys(manifest, view, root, log):
-    """Las claves de la vista (construidas en un proceso aparte si faltan) y su recibo."""
-    folder = root / view
+def _only_markets(table, markets):
+    """Las filas de unos mercados (todas sin elección), en el mismo orden."""
+    if not markets:
+        return table
+    return table.filter(pc.is_in(table["market"], value_set=pa.array(list(markets))))
+
+
+def _keys(manifest, view, root, log, markets=None):
+    """Las claves de la vista (construidas en un proceso aparte si faltan) y su recibo.
+
+    Con `markets`, solo las de esos mercados, en su propia carpeta (`<vista>-<mercados>`).
+    """
+    folder = root / (view if not markets else f"{view}-{'+'.join(markets)}")
     if not folder.exists():
         partial = folder.with_name(folder.name + ".tmp")
         if partial.exists():
@@ -227,6 +247,8 @@ def _keys(manifest, view, root, log):
         paths = [source, *filter(None, [os.environ.get("PYTHONPATH")])]
         command = [sys.executable, "-m", "mars_titan.memory.view_keys", "construir"]
         command += ["--manifest", str(manifest), "--output", str(folder)]
+        for market in markets or ():
+            command += ["--market", market]
         # Un proceso aparte devuelve su memoria al terminar: la de los órganos tiene tope.
         done = subprocess.run(
             command, env=dict(os.environ, PYTHONPATH=os.pathsep.join(paths)), check=False
@@ -241,17 +263,35 @@ def _keys(manifest, view, root, log):
         receipt.get("kind") == vk.KIND and receipt.get("view_sha256") == view,
         f"Las claves de {folder} son de otra vista ({receipt.get('view_sha256')} ≠ {view})",
     )
+    _require(
+        not markets or sorted(receipt.get("markets") or {}) == list(markets),
+        f"Las claves de {folder} no son de los mercados {markets}",
+    )
     return folder, receipt
 
 
-def emit(declaration, state, origin, seeds, keys, output, *, threads=1, log=print, maturity=None):
+def emit(
+    declaration,
+    state,
+    origin,
+    seeds,
+    keys,
+    output,
+    *,
+    threads=1,
+    log=print,
+    maturity=None,
+    markets=None,
+):
     """Emitir los dos brazos de cada modelo declarado en un origen, semilla a semilla.
 
     `keys` es la carpeta de claves por vista y `output` la raíz propia de los órganos; ninguna
     puede estar dentro del estado. Un modelo sin trabajo terminado se anota y se emiten los demás.
     Una semilla ya emitida (con su informe en `studies/`) no se rehace, salvo que haya terminado
     un modelo que faltaba: entonces se emite entera otra vez. `maturity` lee la
-    madurez de las etiquetas de la vista (por omisión, el lector de la campaña).
+    madurez de las etiquetas de la vista (por omisión, el lector de la campaña). `markets`
+    limita las claves y las emisiones a esos mercados: en un estado conjunto sin el factor de un
+    mercado (D-7), `markets=["US"]` emite solo EE. UU.
     """
     declaration = checked_organs(declaration)
     state, keys, output = (Path(path).resolve() for path in (state, keys, output))
@@ -267,8 +307,14 @@ def emit(declaration, state, origin, seeds, keys, output, *, threads=1, log=prin
         seeds and all(type(seed) is int for seed in seeds) and len(set(seeds)) == len(seeds),
         "Las semillas son enteros distintos",
     )
+    if markets is not None:
+        markets = sorted(set(markets))
+        _require(
+            markets and all(isinstance(m, str) and m.isalnum() for m in markets),
+            f"Los mercados {markets} no son códigos válidos",
+        )
     digest = hashlib.sha256(pilots._canonical(declaration).encode()).hexdigest()
-    _claim(output, declaration, digest)
+    _claim(output, declaration, digest, markets)
     context = dict(
         declaration=declaration,
         digest=digest,
@@ -281,6 +327,7 @@ def emit(declaration, state, origin, seeds, keys, output, *, threads=1, log=prin
         threads=threads,
         log=log,
         views={},
+        markets=markets,
     )
     runs = [_emit_seed(context, seed) for seed in seeds]
     return dict(origin=origin, state=str(state), output=str(output), runs=runs)
@@ -329,7 +376,11 @@ def _emit_seed(context, seed):
     view = views.pop()
     if view not in context["views"]:
         tables = context["maturity"](context["manifest"], view)
-        context["views"][view] = (tables, *_keys(context["manifest"], view, context["keys"], log))
+        tables = {name: _only_markets(table, context["markets"]) for name, table in tables.items()}
+        context["views"][view] = (
+            tables,
+            *_keys(context["manifest"], view, context["keys"], log, context["markets"]),
+        )
     tables, folder, receipt = context["views"][view]
     reference, predictions, emissions = None, {}, {}
     for model in present:
@@ -338,7 +389,9 @@ def _emit_seed(context, seed):
         for name in pilots.SPLITS:
             path = parent / f"{name}-predictions.parquet"
             emissions[model][name] = pilots._sha256(path)
-            splits[name] = pilots.load_split(pq.read_table(path), tables[name], name)
+            table = _only_markets(pq.read_table(path), context["markets"])
+            _require(table.num_rows > 0, f"{path} no tiene filas de {context['markets']}")
+            splits[name] = pilots.load_split(table, tables[name], name)
         reference = reference or splits
         for name in pilots.SPLITS:
             same = all(
@@ -442,7 +495,7 @@ def _write_arm(context, seed, model, name, record, emissions, organs, shared):
     for split in EMITTED:
         path = parent / f"{split}-predictions.parquet"
         _require(pilots._sha256(path) == emissions[split], f"{path} cambió mientras se medía")
-        table = pq.read_table(path)
+        table = _only_markets(pq.read_table(path), context["markets"])
         _require(
             all(column in table.column_names for column in pilots.QUANTILE_COLUMNS),
             f"{path} no tiene los cinco cuantiles",
@@ -487,6 +540,7 @@ def _write_arm(context, seed, model, name, record, emissions, organs, shared):
         origin=origin,
         seed=seed,
         request=dict(view_sha256=shared["view"], window=record["request"].get("window"), seed=seed),
+        markets=context["markets"],
         selection=chosen["selection"],
         ic={split: shared["results"][model][split][name] for split in EMITTED},
         inputs=dict(declaration_sha256=context["digest"], emissions=emissions, keys=shared["keys"]),
@@ -521,7 +575,18 @@ def _write_arm(context, seed, model, name, record, emissions, organs, shared):
 
 
 def relay_line(
-    *, label, state, origin, seeds, tree, python, keys, output, declaration=None, threads=3
+    *,
+    label,
+    state,
+    origin,
+    seeds,
+    tree,
+    python,
+    keys,
+    output,
+    declaration=None,
+    threads=3,
+    markets=None,
 ):
     """La línea `orden|…` del plan del relevo que emite los órganos de un origen.
 
@@ -568,6 +633,9 @@ def relay_line(
     for seed in seeds:
         words += ["--seed", str(seed)]
     words += ["--keys", str(keys), "--output", str(output), "--threads", str(threads)]
+    for market in sorted(set(markets or ())):
+        _require(market.isalnum(), f"El mercado {market!r} no es un código válido")
+        words += ["--market", market]
     return f"orden|{SYSTEMD_RUN}|{' '.join(words)}"
 
 
@@ -582,6 +650,13 @@ def parser():
     emitting.add_argument("--keys", type=Path, required=True, help="Carpeta de claves por vista")
     emitting.add_argument("--output", type=Path, required=True, help="Raíz propia de los órganos")
     emitting.add_argument("--threads", type=int, default=3)
+    emitting.add_argument(
+        "--market",
+        action="append",
+        dest="markets",
+        metavar="MERCADO",
+        help="Emitir solo este mercado (repetible); todos si se omite",
+    )
     line = commands.add_parser("linea", help="Línea del plan del relevo para un origen")
     line.add_argument("--label", required=True, help="Nombre corto del estado (v11)")
     line.add_argument("--state", type=Path, required=True)
@@ -593,6 +668,7 @@ def parser():
     line.add_argument("--output", type=Path, required=True)
     line.add_argument("--declaration", type=Path)
     line.add_argument("--threads", type=int, default=3)
+    line.add_argument("--market", action="append", dest="markets", metavar="MERCADO")
     return parser
 
 
@@ -618,6 +694,7 @@ def main(argv=None):
         args.output,
         threads=args.threads,
         log=log,
+        markets=args.markets,
     )
     print(json.dumps(summary, ensure_ascii=False, indent=1), flush=True)
     return 0
