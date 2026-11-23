@@ -106,6 +106,15 @@ from .holographic_network import (
 from .huber_memory import HuberMemory
 from .key_competition_config import KeyCompetition
 from .laplace_scale import LaplaceScaleHead
+
+# --- lead_lag_memory ---
+from .lead_lag_memory import (
+    LeadLagMemory,
+    LeadLagMemoryConfig,
+    parse_lead_lag_memory,
+)
+
+# --- fin lead_lag_memory ---
 from .local_control import MACProjectionConfig, MACProjectionControl, ProjectedMACResult
 from .mac import TitansMAC
 from .opponent_heads import OpponentHeads
@@ -296,6 +305,9 @@ class FinancialConfig:
     # CRRM: memoria transversal de rango y residuo maduro (apagada por defecto). Sin
     # declararla, la identidad y el cálculo no cambian.
     cross_sectional_rank_memory: CrossSectionalRankMemoryConfig | None = None
+    # --- lead_lag_memory ---
+    lead_lag_memory: LeadLagMemoryConfig | None = None
+    # --- fin lead_lag_memory ---
     # R1, U2 y U1 de #786 sobre el núcleo: pérdida de Huber, semividas geométricas y atención
     # diferencial. Sin declararlas, la identidad y el cálculo no cambian.
     memory_huber: HuberMemory | None = None
@@ -379,6 +391,9 @@ class FinancialConfig:
         self._check_auxiliary_horizons()
         self._check_mature_reliability()
         self._check_cross_sectional_rank_memory()
+        # --- lead_lag_memory ---
+        self._check_lead_lag_memory()
+        # --- fin lead_lag_memory ---
         self._check_core_variants()
         self._check_learning_scale()
         self._check_technical_branch()
@@ -899,6 +914,24 @@ class FinancialConfig:
                     "contraste"
                 )
 
+    # --- lead_lag_memory ---
+    def _check_lead_lag_memory(self):
+        """Memoria rápida de desfase dinámico entre grupos y exclusiones declaradas."""
+        object.__setattr__(
+            self,
+            "lead_lag_memory",
+            parse_lead_lag_memory(self.lead_lag_memory),
+        )
+        if self.lead_lag_memory is not None:
+            if self.variant != "mac_online":
+                raise ValueError("lead_lag_memory necesita mac_online")
+            if self.auxiliary_horizons is not None:
+                raise ValueError(
+                    "Las cabezas auxiliares con memoria rápida de desfase necesitan otro contraste"
+                )
+
+    # --- fin lead_lag_memory ---
+
     def _check_memory_projections(self):
         """Normalización residual y proyecciones de memoria."""
         if type(self.memory_residual_layer_norm) is not bool:
@@ -1127,6 +1160,10 @@ class FinancialConfig:
             result.update(mature_reliability=self.mature_reliability.identity())
         if self.cross_sectional_rank_memory is not None:
             result.update(cross_sectional_rank_memory=self.cross_sectional_rank_memory.identity())
+        # --- lead_lag_memory ---
+        if self.lead_lag_memory is not None:
+            result.update(lead_lag_memory=self.lead_lag_memory.identity())
+        # --- fin lead_lag_memory ---
         if self.memory_huber is not None:
             result.update(memory_huber=self.memory_huber.identity())
         if self.memory_time_scales is not None:
@@ -1220,6 +1257,9 @@ class PreparedDecisions:
     surprise: torch.Tensor | None = None
     # Solo con CRRM: claves transversales [flujos, dim] emitidas en este instante.
     rank_memory_keys: torch.Tensor | None = None
+    # --- lead_lag_memory ---
+    lead_lag_memberships: torch.Tensor | None = None
+    # --- fin lead_lag_memory ---
 
 
 @dataclass(frozen=True)
@@ -1297,6 +1337,12 @@ class FinancialPredictor(nn.Module):
             raise ValueError("La fiabilidad madura no se combina con el control local")
         if local_control is not None and config.cross_sectional_rank_memory is not None:
             raise ValueError("La memoria transversal de rango no se combina con el control local")
+        # --- lead_lag_memory ---
+        if local_control is not None and config.lead_lag_memory is not None:
+            raise ValueError(
+                "La memoria rápida de desfase entre grupos no se combina con el control local"
+            )
+        # --- fin lead_lag_memory ---
         # El presupuesto de C está contrastado con el núcleo sin las variantes de #786.
         if local_control is not None and (
             config.memory_huber is not None
@@ -1574,6 +1620,18 @@ class FinancialPredictor(nn.Module):
             if config.cross_sectional_rank_memory is not None
             else None
         )
+        # --- lead_lag_memory ---
+        self.lead_lag_memory = (
+            LeadLagMemory(
+                config.hidden_size,
+                config.lead_lag_memory,
+                seed=config.seed,
+                dtype=dtype,
+            )
+            if config.lead_lag_memory is not None
+            else None
+        )
+        # --- fin lead_lag_memory ---
         # F5 usa su propio generador derivado de la semilla, como PT6.
         self.auxiliary_heads = (
             AuxiliaryHeads(
@@ -1589,6 +1647,10 @@ class FinancialPredictor(nn.Module):
     @property
     def session_level(self):
         """Si alguna operación necesita todas las filas de la sesión en el mismo bloque."""
+        # --- lead_lag_memory ---
+        if self.lead_lag_memory is not None:
+            return True
+        # --- fin lead_lag_memory ---
         objective = self.output_objective
         return (
             self.config.session_rank_inputs is not None
@@ -2250,6 +2312,64 @@ class FinancialPredictor(nn.Module):
             payload, self._parameter_id, device=self.head.weight.device
         )
 
+    # --- lead_lag_memory ---
+    def _require_lead_lag_memory(self):
+        if self.lead_lag_memory is None:
+            raise ValueError("El predictor no declara memoria rápida de desfase entre grupos")
+
+    def initial_lead_lag_memory(self):
+        """Estado inicial vacío de LL-FM al empezar un recorrido."""
+        self._require_lead_lag_memory()
+        return self.lead_lag_memory.initial_state(self._parameter_id)
+
+    def stage_lead_lag_memory(
+        self,
+        state,
+        flow_ids,
+        prediction_at,
+        memberships,
+        issued_predictions,
+        *,
+        differentiable=False,
+    ):
+        """Registrar pertenencias emitidas y predicciones pendientes de maduración."""
+        self._require_lead_lag_memory()
+        self.lead_lag_memory.validate_state(state, self._parameter_id)
+        return self.lead_lag_memory.stage(
+            state,
+            flow_ids,
+            prediction_at,
+            memberships,
+            issued_predictions,
+            differentiable=differentiable,
+        )
+
+    def settle_lead_lag_memory(self, state, matured, *, differentiable=False, train=True):
+        """Actualizar LL-FM con etiquetas ya maduras en orden canónico."""
+        self._require_lead_lag_memory()
+        self.lead_lag_memory.validate_state(state, self._parameter_id)
+        return self.lead_lag_memory.settle(
+            state, matured, differentiable=differentiable, train=train
+        )
+
+    def detach_lead_lag_memory(self, state, parameter_id=None):
+        """Cortar el grafo de LL-FM en la barrera de truncamiento y actualizar huella."""
+        self._require_lead_lag_memory()
+        return self.lead_lag_memory.detach_state(state, parameter_id or self._parameter_id)
+
+    def export_lead_lag_memory(self, state):
+        self._require_lead_lag_memory()
+        self.lead_lag_memory.validate_state(state, self._parameter_id)
+        return self.lead_lag_memory.export_state(state)
+
+    def restore_lead_lag_memory(self, payload):
+        self._require_lead_lag_memory()
+        return self.lead_lag_memory.restore_state(
+            payload, self._parameter_id, device=self.head.weight.device
+        )
+
+    # --- fin lead_lag_memory ---
+
     def _program_fusion(self, price, batch, context, selection):
         """Consultar el prefijo confirmado y preparar una sola escritura del token final."""
         execution = None
@@ -2424,6 +2544,9 @@ class FinancialPredictor(nn.Module):
         session_complete=False,
         reliability=None,
         rank_memory=None,
+        # --- lead_lag_memory ---
+        lead_lag_memory=None,
+        # --- fin lead_lag_memory ---
     ):
         """Predecir un bloque desde el estado de sus flujos y proponer el estado siguiente.
 
@@ -2445,6 +2568,9 @@ class FinancialPredictor(nn.Module):
                 session_complete=session_complete,
                 reliability=reliability,
                 rank_memory=rank_memory,
+                # --- lead_lag_memory ---
+                lead_lag_memory=lead_lag_memory,
+                # --- fin lead_lag_memory ---
             )
 
     def _prepare(
@@ -2460,6 +2586,9 @@ class FinancialPredictor(nn.Module):
         session_complete=False,
         reliability=None,
         rank_memory=None,
+        # --- lead_lag_memory ---
+        lead_lag_memory=None,
+        # --- fin lead_lag_memory ---
     ):
         check_differentiable(differentiable)
         if torch.is_inference_mode_enabled():
@@ -2586,6 +2715,19 @@ class FinancialPredictor(nn.Module):
             )
         else:
             self.cross_sectional_rank_memory.validate_state(rank_memory, self._parameter_id)
+        # --- lead_lag_memory ---
+        if self.lead_lag_memory is None:
+            if lead_lag_memory is not None:
+                raise ValueError(
+                    "El predictor no declara la memoria rápida de desfase entre grupos"
+                )
+        elif lead_lag_memory is None:
+            raise ValueError(
+                "El predictor declara la memoria rápida de desfase y necesita su estado"
+            )
+        else:
+            self.lead_lag_memory.validate_state(lead_lag_memory, self._parameter_id)
+        # --- fin lead_lag_memory ---
         if (self.session_context is None) != (context is None):
             raise ValueError("PT4 recibe su contexto de sesión y el núcleo no admite ninguno")
         if context is not None:
@@ -2729,6 +2871,16 @@ class FinancialPredictor(nn.Module):
                 encoded = encoded + self.cross_sectional_rank_memory.read(
                     rank_memory_keys, markets, rank_memory
                 )
+            # --- lead_lag_memory ---
+            lead_lag_memberships = None
+            if self.lead_lag_memory is not None:
+                lead_lag_memberships = self.lead_lag_memory.memberships(
+                    encoded, markets, batch.prediction_at
+                )
+                encoded = encoded + self.lead_lag_memory.read(
+                    encoded, lead_lag_memberships, markets, batch.prediction_at, lead_lag_memory
+                )
+            # --- fin lead_lag_memory ---
             if self.local_control is not None:
                 local_result = self.local_control(
                     self.mac,
@@ -2776,6 +2928,9 @@ class FinancialPredictor(nn.Module):
             outputs,
             surprise=None if sink is None else sink[0],
             rank_memory_keys=rank_memory_keys,
+            # --- lead_lag_memory ---
+            lead_lag_memberships=lead_lag_memberships,
+            # --- fin lead_lag_memory ---
             **({"regional_trace": regional_trace} if regional_trace is not None else {}),
         )
 

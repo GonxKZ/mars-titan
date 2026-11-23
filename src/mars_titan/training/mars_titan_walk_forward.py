@@ -228,6 +228,12 @@ def _parent(folder, view, seed, control=None):
         is None,
         "El consumidor congelado aún no recibe la memoria transversal de rango maduro",
     )
+    # --- lead_lag_memory ---
+    _require(
+        changes.get("lead_lag_memory", predictor.get("lead_lag_memory")) is None,
+        "El consumidor congelado aún no recibe la memoria rápida de desfase entre grupos",
+    )
+    # --- fin lead_lag_memory ---
     _verify(folder, report)
     return report, digest
 
@@ -273,6 +279,12 @@ def _frozen_parent(
         options.get("cross_sectional_rank_memory") is None,
         "El consumidor congelado aún no recibe la memoria transversal de rango maduro",
     )
+    # --- lead_lag_memory ---
+    _require(
+        options.get("lead_lag_memory") is None,
+        "El consumidor congelado aún no recibe la memoria rápida de desfase entre grupos",
+    )
+    # --- fin lead_lag_memory ---
     _require(
         allow_context or options.get("session_context") is None,
         "Este consumidor todavía no recupera el contexto compartido de PT4",

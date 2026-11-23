@@ -455,6 +455,10 @@ def clip_parameter_groups(predictor, trainable=None):
             buckets["technical_head"].append(name)
         elif name.startswith(("mac.", "reliability_gates.", "cross_sectional_rank_memory.")):
             buckets["mac"].append(name)
+        # --- lead_lag_memory ---
+        elif name.startswith("lead_lag_memory."):
+            buckets["mac"].append(name)
+        # --- fin lead_lag_memory ---
         else:
             buckets["backbone_fusion"].append(name)
     groups = {group: names for group, names in buckets.items() if names}
@@ -781,6 +785,11 @@ class _Pass:
     rank_memory: object = None
     rank_memory_start: object = None
     rank_memory_labels: list = field(default_factory=list)
+    # --- lead_lag_memory ---
+    lead_lag_memory: object = None
+    lead_lag_memory_start: object = None
+    lead_lag_memory_labels: list = field(default_factory=list)
+    # --- fin lead_lag_memory ---
     # Con métrica `session_rank_ic`, acumulador en flujo del IC de rangos de entrenamiento.
     rank_ic: object = None
 
@@ -856,6 +865,9 @@ class ChronologicalInference:
         self.reliability = predictor.config.mature_reliability
         # CRRM cambia ajuste e inferencia y consume etiquetas maduras en ambos recorridos.
         self.uses_rank_memory = predictor.cross_sectional_rank_memory is not None
+        # --- lead_lag_memory ---
+        self.uses_lead_lag_memory = predictor.lead_lag_memory is not None
+        # --- fin lead_lag_memory ---
         if torch.backends.mha.get_fastpath_enabled() or torch.is_inference_mode_enabled():
             raise ValueError("El recorrido exige fastpath=False declarado y sin inference_mode")
         if (
@@ -917,6 +929,12 @@ class ChronologicalInference:
             run.rank_memory = predictor.initial_rank_memory()
         if self.uses_rank_memory and accumulate and run.rank_memory_start is None:
             run.rank_memory_start = predictor.detach_rank_memory(run.rank_memory)
+        # --- lead_lag_memory ---
+        if self.uses_lead_lag_memory and run.lead_lag_memory is None:
+            run.lead_lag_memory = predictor.initial_lead_lag_memory()
+        if self.uses_lead_lag_memory and accumulate and run.lead_lag_memory_start is None:
+            run.lead_lag_memory_start = predictor.detach_lead_lag_memory(run.lead_lag_memory)
+        # --- fin lead_lag_memory ---
         context = dict(context=run.context) if self.uses_context else {}
         signal, surprises = self._signal(run), []
         # Las comprobaciones de finitud de todos los bloques del evento se resuelven juntas
@@ -955,6 +973,10 @@ class ChronologicalInference:
                 prepare_options = (
                     dict(options, rank_memory=run.rank_memory) if self.uses_rank_memory else options
                 )
+                # --- lead_lag_memory ---
+                if self.uses_lead_lag_memory:
+                    prepare_options = dict(prepare_options, lead_lag_memory=run.lead_lag_memory)
+                # --- fin lead_lag_memory ---
                 with nvtx_ranges.phase("titans.prepare"), torch.set_grad_enabled(graph):
                     prepared = predictor.prepare(
                         batch,
@@ -973,6 +995,17 @@ class ChronologicalInference:
                         prepared.point_predictions,
                         differentiable=graph and not accumulate,
                     )
+                # --- lead_lag_memory ---
+                if self.uses_lead_lag_memory and not warmup:
+                    run.lead_lag_memory = predictor.stage_lead_lag_memory(
+                        run.lead_lag_memory,
+                        batch.flow_ids,
+                        batch.prediction_at,
+                        prepared.lead_lag_memberships,
+                        prepared.point_predictions,
+                        differentiable=graph and not accumulate,
+                    )
+                # --- fin lead_lag_memory ---
                 if self.uses_context:
                     # Los bloques siguientes del evento leen el mismo contexto confirmado.
                     context = dict(context=prepared.next_context)
@@ -1141,6 +1174,9 @@ class ChronologicalInference:
     def _labels(self, run, event, *, train):
         """Resolver etiquetas maduras contra la predicción emitida y su grafo vigente."""
         markets, moments, errors, matured, rank_matured = [], [], [], [], []
+        # --- lead_lag_memory ---
+        lead_lag_matured = []
+        # --- fin lead_lag_memory ---
         for flow, decision_at, value in event.labels:
             key = flow, decision_at
             if key not in run.pending:
@@ -1150,6 +1186,10 @@ class ChronologicalInference:
                 matured.append((flow, issued, value))
             if self.uses_rank_memory:
                 rank_matured.append((flow, decision_at, value))
+            # --- lead_lag_memory ---
+            if self.uses_lead_lag_memory:
+                lead_lag_matured.append((flow, decision_at, value))
+            # --- fin lead_lag_memory ---
             if train and run.horizons is not None:
                 run.counters["auxiliary_labels"] += run.horizons.mature(flow, decision_at, value)
             market = flow.split("/", 1)[0]
@@ -1188,6 +1228,20 @@ class ChronologicalInference:
                 differentiable=train and not accumulate,
                 train=train,
             )
+        # --- lead_lag_memory ---
+        if self.uses_lead_lag_memory and lead_lag_matured:
+            if run.lead_lag_memory is None:
+                run.lead_lag_memory = self.predictor.initial_lead_lag_memory()
+            accumulate = train and self.recipe.accumulation_rows is not None
+            if accumulate and run.segment:
+                run.lead_lag_memory_labels.append((len(run.segment), tuple(lead_lag_matured)))
+            run.lead_lag_memory = self.predictor.settle_lead_lag_memory(
+                run.lead_lag_memory,
+                lead_lag_matured,
+                differentiable=train and not accumulate,
+                train=train,
+            )
+        # --- fin lead_lag_memory ---
         for start in range(0, len(errors), 4096):
             run.errors.update(
                 markets[start : start + 4096],
@@ -1206,6 +1260,11 @@ class ChronologicalInference:
         run.rank_memory = None
         run.rank_memory_start = None
         run.rank_memory_labels.clear()
+        # --- lead_lag_memory ---
+        run.lead_lag_memory = None
+        run.lead_lag_memory_start = None
+        run.lead_lag_memory_labels.clear()
+        # --- fin lead_lag_memory ---
         run.pending.clear()
         run.graphs.clear()
         run.levels.clear()
@@ -1694,12 +1753,26 @@ class ChronologicalTrainer(ChronologicalInference):
                 if self.uses_rank_memory:
                     for position, items in run.rank_memory_labels:
                         rank_by_pos.setdefault(position, []).append(items)
+                # --- lead_lag_memory ---
+                lead_lag_state = run.lead_lag_memory_start if self.uses_lead_lag_memory else None
+                lead_lag_by_pos = {}
+                if self.uses_lead_lag_memory:
+                    for position, items in run.lead_lag_memory_labels:
+                        lead_lag_by_pos.setdefault(position, []).append(items)
+                # --- fin lead_lag_memory ---
                 for seg_index, (batch, plan, whole) in enumerate(run.segment):
                     if self.uses_rank_memory:
                         for items in rank_by_pos.get(seg_index, ()):
                             rank_state = predictor.settle_rank_memory(
                                 rank_state, items, differentiable=True, train=True
                             )
+                    # --- lead_lag_memory ---
+                    if self.uses_lead_lag_memory:
+                        for items in lead_lag_by_pos.get(seg_index, ()):
+                            lead_lag_state = predictor.settle_lead_lag_memory(
+                                lead_lag_state, items, differentiable=True, train=True
+                            )
+                    # --- fin lead_lag_memory ---
                     rows = [i for i, flow in enumerate(batch.flow_ids) if flow in members]
                     if not rows:
                         continue
@@ -1721,6 +1794,10 @@ class ChronologicalTrainer(ChronologicalInference):
                     replay_plan = (
                         dict(plan, rank_memory=rank_state) if self.uses_rank_memory else plan
                     )
+                    # --- lead_lag_memory ---
+                    if self.uses_lead_lag_memory:
+                        replay_plan = dict(replay_plan, lead_lag_memory=lead_lag_state)
+                    # --- fin lead_lag_memory ---
                     with torch.enable_grad():
                         prepared = predictor.prepare(
                             batch,
@@ -1738,6 +1815,17 @@ class ChronologicalTrainer(ChronologicalInference):
                             prepared.point_predictions,
                             differentiable=True,
                         )
+                    # --- lead_lag_memory ---
+                    if self.uses_lead_lag_memory:
+                        lead_lag_state = predictor.stage_lead_lag_memory(
+                            lead_lag_state,
+                            batch.flow_ids,
+                            batch.prediction_at,
+                            prepared.lead_lag_memberships,
+                            prepared.point_predictions,
+                            differentiable=True,
+                        )
+                    # --- fin lead_lag_memory ---
                     states.put(prepared.next_state)
                     if prepared.local_control is not None:
                         penalties.append(prepared.local_control.penalty)
@@ -1961,6 +2049,12 @@ class ChronologicalTrainer(ChronologicalInference):
                 run.context = self.predictor.detach_context(run.context, parameter_id)
             if run.rank_memory is not None:
                 run.rank_memory = self.predictor.detach_rank_memory(run.rank_memory, parameter_id)
+            # --- lead_lag_memory ---
+            if run.lead_lag_memory is not None:
+                run.lead_lag_memory = self.predictor.detach_lead_lag_memory(
+                    run.lead_lag_memory, parameter_id
+                )
+            # --- fin lead_lag_memory ---
         run.penalties.clear()
         run.graphs.clear()
         run.predictions.clear()
@@ -1970,6 +2064,10 @@ class ChronologicalTrainer(ChronologicalInference):
         run.starts.clear()
         run.rank_memory_start = None
         run.rank_memory_labels.clear()
+        # --- lead_lag_memory ---
+        run.lead_lag_memory_start = None
+        run.lead_lag_memory_labels.clear()
+        # --- fin lead_lag_memory ---
         run.instants = 0
         run.counters["segments"] += 1
 
@@ -2050,6 +2148,10 @@ class ChronologicalTrainer(ChronologicalInference):
             or run.rank_memory_labels
         ):
             raise ValueError("Solo se confirma un recorrido en la barrera posterior a un paso")
+        # --- lead_lag_memory ---
+        if run.lead_lag_memory_start is not None or run.lead_lag_memory_labels:
+            raise ValueError("Solo se confirma un recorrido en la barrera posterior a un paso")
+        # --- fin lead_lag_memory ---
         predictor, size = self.predictor, self.predictor.config.max_batch
         flows = sorted(run.flows)
         fast = [
@@ -2090,6 +2192,17 @@ class ChronologicalTrainer(ChronologicalInference):
                 if self.uses_rank_memory
                 else {}
             ),
+            # --- lead_lag_memory ---
+            **(
+                dict(
+                    lead_lag_memory=None
+                    if run.lead_lag_memory is None
+                    else predictor.export_lead_lag_memory(run.lead_lag_memory)
+                )
+                if self.uses_lead_lag_memory
+                else {}
+            ),
+            # --- fin lead_lag_memory ---
             **(
                 dict(rank_ic=None if run.rank_ic is None else run.rank_ic.export())
                 if self.track_train_rank_ic
@@ -2108,6 +2221,12 @@ class ChronologicalTrainer(ChronologicalInference):
             raise ValueError(
                 "El recorrido guardado no corresponde a la memoria transversal de rango"
             )
+        # --- lead_lag_memory ---
+        if self.uses_lead_lag_memory != ("lead_lag_memory" in payload):
+            raise ValueError(
+                "El recorrido guardado no corresponde a la memoria rápida de desfase entre grupos"
+            )
+        # --- fin lead_lag_memory ---
         if self.track_train_rank_ic != ("rank_ic" in payload):
             raise ValueError("El recorrido guardado no corresponde al IC de rangos del ajuste")
         run = _Pass()
@@ -2133,6 +2252,10 @@ class ChronologicalTrainer(ChronologicalInference):
             run.reliability = ReliabilitySignal.restore(self.reliability, payload["reliability"])
         if self.uses_rank_memory and payload["rank_memory"] is not None:
             run.rank_memory = self.predictor.restore_rank_memory(payload["rank_memory"])
+        # --- lead_lag_memory ---
+        if self.uses_lead_lag_memory and payload["lead_lag_memory"] is not None:
+            run.lead_lag_memory = self.predictor.restore_lead_lag_memory(payload["lead_lag_memory"])
+        # --- fin lead_lag_memory ---
         if self.track_train_rank_ic and payload["rank_ic"] is not None:
             run.rank_ic = _SessionRankIC.restore(
                 self.recipe.selection["min_assets"], payload["rank_ic"]
