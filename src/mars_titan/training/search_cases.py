@@ -123,6 +123,9 @@ PREDICTOR_CHANGES = (
     # --- persistent_session_hologram ---
     "persistent_session_hologram",
     # --- fin persistent_session_hologram ---
+    # --- dual_hemisphere_brain ---
+    "dual_hemisphere_brain",
+    # --- fin dual_hemisphere_brain ---
 )
 # Cambios que se declaran con un nombre en lugar de un objeto.
 NAMED_CHANGES = (

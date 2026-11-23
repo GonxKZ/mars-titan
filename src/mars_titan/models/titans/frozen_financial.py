@@ -16,6 +16,11 @@ from mars_titan.models.quantile_routing import QuantileRouting
 from .bank_readout import BankReadout
 from .config import canonical
 from .cross_asset_attention import CrossAssetAttention, CrossAssetAttentionConfig
+
+# --- dual_hemisphere_brain ---
+from .dual_hemisphere_brain import DualHemisphereBrain, DualHemisphereBrainConfig
+
+# --- fin dual_hemisphere_brain ---
 from .episodic_readout import EpisodicReadout, apply_episodic_readout
 from .episodic_snapshot import EpisodeSnapshot
 from .evidence_bridge import SharedEvidenceBridge
@@ -146,6 +151,10 @@ def declared_sources(config):
     if getattr(config, "persistent_session_hologram", None) is not None:
         sources.append("mars_titan.models.titans.persistent_session_hologram")
     # --- fin persistent_session_hologram ---
+    # --- dual_hemisphere_brain ---
+    if getattr(config, "dual_hemisphere_brain", None) is not None:
+        sources.append("mars_titan.models.titans.dual_hemisphere_brain")
+    # --- fin dual_hemisphere_brain ---
     if getattr(config, "learning_scale", None) is not None:
         sources.append("mars_titan.models.learning_scale")
     if getattr(config, "reference_encoder", None) == "dlinear":
@@ -306,6 +315,16 @@ def _module_settings(module):
         fields = ("hidden_size", "prototypes_count", "steps")
         settings["hopfield_rank_brain"] = module.config.identity()
     # --- fin hopfield_rank_brain ---
+    # --- dual_hemisphere_brain ---
+    if type(module) is DualHemisphereBrain:
+        if type(module.config) is not DualHemisphereBrainConfig:
+            raise ValueError(
+                "El cerebro de doble hemisferio no conserva su configuración identificada"
+            )
+        module.config.__post_init__()
+        fields = ("hidden_size", "news_dim", "fundamentals_dim", "macro_dim")
+        settings["dual_hemisphere_brain"] = module.config.identity()
+    # --- fin dual_hemisphere_brain ---
     settings.update((name, getattr(module, name)) for name in fields)
     return settings
 
@@ -461,6 +480,44 @@ def _validate_hopfield_rank_brain(predictor):
 
 
 # --- fin hopfield_rank_brain ---
+
+
+# --- dual_hemisphere_brain ---
+def _validate_dual_hemisphere_brain(predictor):
+    """Comprobar que el cerebro de doble hemisferio coincide con su configuración."""
+    declared, module = predictor.config.dual_hemisphere_brain, predictor.dual_hemisphere_brain
+    if declared is None and module is None:
+        return
+    if (
+        type(declared) is not DualHemisphereBrainConfig
+        or type(module) is not DualHemisphereBrain
+        or type(module.config) is not DualHemisphereBrainConfig
+    ):
+        raise ValueError(
+            "El cerebro de doble hemisferio no corresponde a la configuración declarada"
+        )
+    declared.__post_init__()
+    module.config.__post_init__()
+    dims = predictor.config.inputs.dimensions
+    if (
+        module.config != declared
+        or module.hidden_size != predictor.config.hidden_size
+        or module.news_dim != dims["news"]
+        or module.fundamentals_dim != dims["fundamentals"]
+        or module.macro_dim != dims["macro"]
+        or not isinstance(getattr(module, "out", None), torch.nn.Linear)
+        or any(
+            parameter.device != predictor.head.weight.device
+            or parameter.dtype != predictor.head.weight.dtype
+            for parameter in module.parameters()
+        )
+    ):
+        raise ValueError(
+            "El cerebro de doble hemisferio no corresponde a la configuración declarada"
+        )
+
+
+# --- fin dual_hemisphere_brain ---
 
 
 def _validate_intervention(readout):
@@ -710,6 +767,9 @@ class FrozenFinancialConsumer:
         # --- hopfield_rank_brain ---
         _validate_hopfield_rank_brain(predictor)
         # --- fin hopfield_rank_brain ---
+        # --- dual_hemisphere_brain ---
+        _validate_dual_hemisphere_brain(predictor)
+        # --- fin dual_hemisphere_brain ---
         _validate_intervention(readout)
         self._models = (("predictor", predictor),) + ((("readout", readout),) if readout else ())
         self._signature, modes = _execution_signature(self._models)
@@ -824,6 +884,13 @@ class FrozenFinancialConsumer:
                 "(session_complete=True)"
             )
         # --- fin hopfield_rank_brain ---
+        # --- dual_hemisphere_brain ---
+        if self.predictor.dual_hemisphere_brain is not None and session_complete is not True:
+            raise ValueError(
+                "El cerebro de doble hemisferio necesita la sesión completa en un bloque "
+                "(session_complete=True)"
+            )
+        # --- fin dual_hemisphere_brain ---
         options = {}
         if self.predictor.local_control is not None:
             options.update(control_selection=selection, control_context_id=context_id)
