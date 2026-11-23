@@ -1017,6 +1017,70 @@ la revisión, no se integra.
 
 Lo caro de cada semilla es rehacer los brazos existentes, de 30 a 80 min según la carga.
 
+### 5.15 Ideas 4 y 7 de Gemini para el núcleo agéntico: protocolo (fijado antes de medir)
+
+**Encargo.** El dueño quiere que todas las invenciones de Gemini se prueben sí o sí y que entre lo
+que de verdad ayude. Dos de sus siete ideas son de post-entrenamiento:
+- la 4, DODEA: árbitro optimista con retraso y descuento de redundancia;
+- la 7, ACPTPA: ponderador por activo con control conforme PID.
+
+Los textos son de un modelo externo: se tratan como propuesta, y sus referencias de 2026 no están
+comprobadas. Cada una va como pieza nueva, seleccionable por declaración, sin cambiar nada de lo
+existente, con un placebo de igual capacidad y con mutantes.
+
+**Marco común (`evaluation/tool_arbiters.py`).**
+- **Herramientas.** Son emisiones alineadas fila a fila con el padre de S2 (comprobado en 2013:
+  las mismas filas en calibración y en evaluación). Cada sesión las tipifica por rangos, como el
+  agregador en línea. La pérdida de una herramienta en una sesión madura es (1 − IC)/2.
+- **Variantes, todas sobre las mismas filas:**
+  - **agent:** AdaNormalHedge.TV con las pérdidas maduras (`online_arbiters.mature_mixture`),
+    sin abstención, que no forma parte de ninguna de las dos ideas;
+  - **agent_uniform:** la media uniforme;
+  - **S2:** la configuración registrada (ridge_cov_active sobre titans_mac_nogain, el árbol y la
+    señal de su brazo combinado), en cada semilla y con el árbol de la 42;
+  - **tools_ridge:** la misma regresión sobre las herramientas, solo como referencia.
+- **Medida.** Semillas 42, 43 y 44, en la etiqueta y en lo operable (el k de cada herramienta se
+  elige en calibración). La serie de cada variante es la media de sus IC por sesión en las
+  semillas. Los contrastes son pareados por sesión en evaluación, con la t de Newey-West de la
+  criba. Todo hiperparámetro se elige en calibración.
+
+**Idea 4, DODEA (corregida donde no funcionaba tal cual).**
+- **Optimismo con retraso.** La pista de cada herramienta es la media exponencial de sus pérdidas
+  maduras. Al decidir con D sesiones todavía sin madurar, cada copia de AdaNormalHedge.TV suma
+  D·(h̄ − h_k) a su arrepentimiento y D·|h̄ − h_k| a su magnitud, con h̄ = p·h.
+  - Corrección: el texto suma una sola pista. Una por sesión pendiente es la forma del artículo que
+    cita (Flaspohler y otros, 2021) y coincide con la del texto si D = 1.
+  - El estado aprende como el del agente; las pistas solo cambian la mezcla emitida.
+- **Descuento de redundancia.** La mezcla emitida es Proj_Δ((Σ_t + μI)⁻¹ p), con Σ_t la covarianza
+  contemporánea de las herramientas tipificadas (la del agregador, sin etiquetas) y la proyección
+  euclídea del texto.
+  - Esa proyección no es invariante a la escala: con herramientas muy redundantes, (Σ + μI)⁻¹ p
+    suma menos de 1 y la proyección acerca la mezcla a la uniforme. Se deja como está, porque es
+    la fórmula del autor, y el placebo controla ese efecto.
+- **Rejilla y elección.** Semivida de la pista 1, 5 o 21 sesiones maduras; μ 0,1, 0,3, 1 o 3.
+  Gana el punto de más IC medio en calibración; si empatan, el primero.
+- **Placebo de igual capacidad.** El mismo cálculo y la misma elección en su rejilla, pero cada
+  herramienta recibe la pista y la redundancia de otra: una permutación sin puntos fijos, distinta
+  en cada sesión y fijada por semilla. Así se separa el mecanismo de «un agregador más».
+- **Dos medidas.**
+  - Herramientas de hoy (`posttraining-tool-arbiters-hoy.json`, 52d2946d…): titans_mac_nogain,
+    titans_mac, mars_titan_m3, mars_titan_cognitive, lightgbm_technical y el brazo combinado del
+    núcleo (organos/v10-nogain en la 42; v10-v2 en la 43 y la 44).
+  - Las mismas más los tres órganos de WP5 del núcleo (`posttraining-tool-arbiters-wp5.json`,
+    4b051af3…), de `organos/wp5-v10`, cuando termine WP5 y si su identidad pasa.
+  - El autor espera ganancia nula sin herramientas nuevas decorrelacionadas.
+- **Regla (cada medida por separado).**
+  - DODEA entra si mejora a S2 y a su placebo en lo operable, las dos veces con t ≥ 2.
+  - La etiqueta se informa.
+- **Refutación de su autor.** Queda refutada si no gana +0,0025 de IC operable a agent y +0,0030
+  a agent_uniform. Se exige t ≥ 2 en cada contraste en lugar de su Romano-Wolf con p ≤ 0,05, que
+  con dos contrastes no es más exigente.
+- **Pruebas y mutantes.**
+  - 27 pruebas, entre ellas una cuenta independiente de DODEA, la causalidad (ninguna pérdida
+    antes de madurar, ninguna redundancia posterior) y la elección solo en calibración.
+  - Once mutantes, todos muertos.
+- **Commits:** d630e1d6 (código y declaraciones).
+
 ## 6. Etapas con GPU (fase 4)
 
 ### 6.1 Qué queda preparado
