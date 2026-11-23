@@ -59,6 +59,9 @@ class LearningScale:
     # False recorta en seco en ±clip. True usa z / sqrt(1 + (z / clip)^2), que queda dentro
     # del mismo intervalo y conserva el orden y el gradiente de los valores extremos.
     smooth_clip: bool = False
+    # None aplica `_floored` al bloque `charts` completo. Un entero k separa las últimas k
+    # columnas (rasgos técnicos) del prefijo visual para calcular su suelo relativo aparte.
+    chart_technical_columns: int | None = None
 
     def __post_init__(self):
         if (
@@ -72,6 +75,11 @@ class LearningScale:
             raise ValueError(
                 "learning_scale necesita clip entre 1 y 100 y dos opciones booleanas explícitas"
             )
+        if self.chart_technical_columns is not None and (
+            type(self.chart_technical_columns) is not int
+            or not 1 <= self.chart_technical_columns <= 512
+        ):
+            raise ValueError("chart_technical_columns debe ser None o un entero entre 1 y 512")
 
     def identity(self):
         result = dict(
@@ -89,12 +97,19 @@ class LearningScale:
         # Sin el recorte suave la identidad anterior se conserva literalmente.
         if self.smooth_clip:
             result["clip_shape"] = "z_over_sqrt_of_one_plus_z_over_clip_squared_v1"
+        # Sin separar el subbloque técnico la identidad anterior se conserva literalmente.
+        if self.chart_technical_columns is not None:
+            result["chart_technical_block"] = dict(
+                columns=self.chart_technical_columns,
+                position="last_columns_of_charts",
+                floor="independent_relative_floor_per_subblock_v1",
+            )
         return result
 
 
 # Campos que toda receta declara y los que puede añadir.
 _REQUIRED_FIELDS = frozenset({"clip", "price_returns", "zero_median"})
-_OPTIONAL_FIELDS = frozenset({"smooth_clip"})
+_OPTIONAL_FIELDS = frozenset({"smooth_clip", "chart_technical_columns"})
 # Más allá de este múltiplo del recorte, el recorte suave ya vale el propio recorte en FP32.
 # Acotar ahí evita que el cuadrado desborde y anule la salida.
 _SMOOTH_LIMIT = 1e6
@@ -225,7 +240,16 @@ def fit_statistics(config, inputs, presence, targets):
     result["prices"] = center, np.where(scale >= _MIN_FP32_SCALE, scale, 1.0)
     for name in DENSE:
         center, scale = _robust(inputs[name][presence[:, PRESENCE_BIT[name]]])
-        result[name] = center, _floored(scale)
+        if name == "charts" and config.chart_technical_columns is not None:
+            split = len(scale) - config.chart_technical_columns
+            if split <= 0:
+                raise ValueError(
+                    "chart_technical_columns debe ser menor que la anchura del bloque charts"
+                )
+            floored = np.concatenate([_floored(scale[:split]), _floored(scale[split:])])
+            result[name] = center, floored
+        else:
+            result[name] = center, _floored(scale)
     for name in NUMERIC:
         values = inputs[name]
         third, remainder = divmod(values.shape[1], 3)
@@ -290,6 +314,13 @@ class LearningScaler(nn.Module):
         }
         if any(self.widths[name] % 3 for name in NUMERIC):
             raise ValueError("Una modalidad numérica necesita valores, presencia y antigüedad")
+        if (
+            config.chart_technical_columns is not None
+            and config.chart_technical_columns >= self.widths["charts"]
+        ):
+            raise ValueError(
+                "chart_technical_columns debe ser menor que la anchura del bloque charts"
+            )
         for name, width in self.widths.items():
             self.register_buffer(f"{name}_center", torch.zeros(width, dtype=dtype))
             self.register_buffer(f"{name}_inverse", torch.ones(width, dtype=dtype))
