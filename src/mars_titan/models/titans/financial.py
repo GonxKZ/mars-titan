@@ -2402,7 +2402,14 @@ class FinancialPredictor(nn.Module):
                 branch = self.technical_branch
                 charts = batch.inputs["charts"]
                 # Con rangos por sesión, entre las filas del bloque de cada mercado.
-                residual = branch(charts, markets) if branch.session_level else branch(charts)
+                if branch.uses_raw_charts:
+                    # Los indicadores de ausencia se leen sin escalar (`received`), antes de
+                    # que `learning_scaler` desplace el 1 a 0 cuando la mediana es 1.
+                    residual = branch(charts, markets, raw_charts=received.inputs["charts"])
+                elif branch.session_level:
+                    residual = branch(charts, markets)
+                else:
+                    residual = branch(charts)
                 encoded = encoded + residual
             if mixer is not None and mixer.config.position == "after_technical":
                 # La mezcla lee la representación con su residuo técnico, la que ve la cabeza.
