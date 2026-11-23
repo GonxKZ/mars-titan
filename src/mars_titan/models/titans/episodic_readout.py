@@ -440,7 +440,12 @@ class EpisodicReadout(nn.Module):
         if positions is None:
             with torch.no_grad():
                 scores = query.double() @ keys.T
-                indices = torch.argsort(scores, dim=-1, descending=True, stable=True)[:, :count]
+                if scores.is_cuda and scores.shape[1] <= 1024 and 1 <= count <= 8:
+                    from .fused_cuda_kernels import fused_stable_topk_desc
+
+                    indices = fused_stable_topk_desc(scores, count)
+                else:
+                    indices = torch.argsort(scores, dim=-1, descending=True, stable=True)[:, :count]
         elif (
             not isinstance(positions, torch.Tensor)
             or positions.dtype != torch.int64

@@ -149,6 +149,7 @@ from .state import (
     check_finite,
     deferred_checks,
     finite_indicator,
+    has_deferred_checks,
     is_finite,
     mac_tensors,
     map_mac_rows,
@@ -1059,6 +1060,17 @@ class RegionalPreparedDecisions(PreparedDecisions):
     regional_trace: dict | None = None
 
 
+_DTYPE_STR_CACHE: dict[torch.dtype, str] = {}
+
+
+def _dtype_str(dtype):
+    value = _DTYPE_STR_CACHE.get(dtype)
+    if value is None:
+        value = torch.empty((), dtype=dtype).numpy().dtype.str
+        _DTYPE_STR_CACHE[dtype] = value
+    return value
+
+
 def _tensor_digest(value):
     array = value.detach().cpu().contiguous().numpy()
     digest = hashlib.sha256(str((array.shape, array.dtype.str)).encode())
@@ -1515,10 +1527,32 @@ class FinancialPredictor(nn.Module):
         return module
 
     def _parameter_digest(self):
-        fingerprints = {
-            name: _tensor_digest(value)
-            for name, value in (*self.named_parameters(), *self.named_buffers())
-        }
+        items = (*self.named_parameters(), *self.named_buffers())
+        by_device: dict[torch.device, list] = {}
+        fingerprints = {}
+        for name, value in items:
+            if value.is_cuda and value.numel() > 0:
+                flat = value.detach().contiguous().reshape(-1).view(torch.uint8)
+                by_device.setdefault(value.device, []).append(
+                    (name, tuple(value.shape), _dtype_str(value.dtype), flat)
+                )
+            else:
+                fingerprints[name] = _tensor_digest(value)
+        for device, entries in by_device.items():
+            # Empaquetar todos los parámetros CUDA en un único búfer reduce 63 llamadas
+            # cudaMemcpyAsync (que serializan por IPC bajo MPS) a 1 sola copia D2H.
+            packed = entries[0][3] if len(entries) == 1 else torch.cat([e[3] for e in entries])
+            buf = torch.empty(packed.numel(), dtype=torch.uint8, pin_memory=True)
+            buf.copy_(packed, non_blocking=True)
+            torch.cuda.current_stream(device).synchronize()
+            raw = memoryview(buf.numpy())
+            offset = 0
+            for name, shape, dtype_str, flat in entries:
+                nbytes = flat.numel()
+                digest = hashlib.sha256(str((shape, dtype_str)).encode())
+                digest.update(raw[offset : offset + nbytes])
+                fingerprints[name] = digest.hexdigest()
+                offset += nbytes
         return hashlib.sha256(canonical(fingerprints).encode()).hexdigest()
 
     def _regional_execution_component(self):
@@ -1849,12 +1883,14 @@ class FinancialPredictor(nn.Module):
         ):
             raise ValueError("Los flujos deben ser identificadores únicos de mercado y activo")
 
-    def _validate_state(self, state, *, device=None):
+    def _validate_state(self, state, *, device=None, defer_slots=None):
         self._validate_cursor(state)
         if self.mac:
             if not isinstance(state.mac, MACState):
                 raise ValueError("Falta el estado MAC identificado")
-            self.mac.memory.validate_state(state.mac.memory, device=device)
+            self.mac.memory.validate_state(
+                state.mac.memory, device=device, defer_slots=defer_slots
+            )
             if state.mac.config_id != self.mac.config.fingerprint():
                 raise ValueError("El contrato MAC del estado no coincide")
             self.mac.validate_query_window(state.mac, device=device)
@@ -2173,7 +2209,18 @@ class FinancialPredictor(nn.Module):
         check_differentiable(differentiable)
         if torch.is_inference_mode_enabled():
             raise ValueError("inference_mode impide la actualización asociativa, utilice no_grad")
-        self._validate_state(state)
+        defer_slots = (
+            []
+            if (
+                self.mac is not None
+                and self.mac.config.memory_mode == "online"
+                and self.head.weight.is_cuda
+                and self.mac.memory.supports_fused_write_and_read()
+                and has_deferred_checks()
+            )
+            else None
+        )
+        self._validate_state(state, defer_slots=defer_slots)
         if (
             not isinstance(batch, DecisionBatch)
             or batch.input_contract_id != self.config.inputs.fingerprint()
@@ -2260,9 +2307,20 @@ class FinancialPredictor(nn.Module):
             # El relleno de una sesión ausente en todo el mercado no llega al codificador. Sus
             # dos comprobaciones de finitud se difieren con las demás, en el mismo orden, en
             # lugar de esperar a la GPU antes de lanzar el resto de la emisión.
-            price, encoder_checks = self.price_encoder.encode_last(
-                gate_price_window(batch.inputs["prices"])
-            )
+            raw_prices = batch.inputs["prices"]
+            if self.learning_scaler is not None:
+                # `learning_scaler` ya deja en +0.0 las sesiones ausentes del bloque de precios.
+                price, encoder_checks = self.price_encoder.encode_last(raw_prices)
+            elif (
+                raw_prices.is_cuda
+                and raw_prices.shape[-1] == len(PRICE_WINDOW_CHANNELS)
+                and type(self.price_encoder).__name__ == "CompactPriceTransformer"
+            ):
+                price, encoder_checks = self.price_encoder.encode_last(raw_prices, gate_last=True)
+            else:
+                price, encoder_checks = self.price_encoder.encode_last(
+                    gate_price_window(raw_prices)
+                )
             for value, message in encoder_checks:
                 require_finite(value, message)
             next_regions = None
@@ -2318,7 +2376,11 @@ class FinancialPredictor(nn.Module):
                     sink = gates["surprise"] = []
             if self.mac:
                 encoded, next_mac = self.mac(
-                    observed.unsqueeze(1), state.mac, differentiable=differentiable, **gates
+                    observed.unsqueeze(1),
+                    state.mac,
+                    differentiable=differentiable,
+                    input_slots=defer_slots,
+                    **gates,
                 )
             else:
                 encoded, next_mac = token, None

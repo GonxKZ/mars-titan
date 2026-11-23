@@ -16,6 +16,7 @@ from .state import (
     check_differentiable,
     check_finite,
     copy_state,
+    has_deferred_checks,
     require_payload,
 )
 
@@ -65,10 +66,12 @@ class TitansMAC(nn.Module):
             self.memory.initial_windows(batch_size, 1),
         )
 
-    def _validate_state(self, state: MACState) -> None:
+    def _validate_state(
+        self, state: MACState, *, defer_slots: list[int | None] | None = None
+    ) -> None:
         if not isinstance(state, MACState) or state.config_id != self.config.fingerprint():
             raise ValueError("El estado MAC pertenece a otro contrato de configuración")
-        self.memory.validate_state(state.memory)
+        self.memory.validate_state(state.memory, defer_slots=defer_slots)
         self.validate_query_window(state)
 
     def validate_query_window(self, state: MACState, *, device=None) -> None:
@@ -101,12 +104,26 @@ class TitansMAC(nn.Module):
         differentiable: bool = False,
         gate_shift: dict | None = None,
         surprise: list | None = None,
+        input_slots: list[int | None] | None = None,
     ) -> tuple[Tensor, MACState]:
         """`gate_shift` y `surprise` llegan a la escritura de la memoria, que solo existe online."""
         check_differentiable(differentiable)
         if (gate_shift is not None or surprise is not None) and self.config.memory_mode != "online":
             raise ValueError("Las puertas moduladas necesitan la memoria online")
-        self._validate_state(state)
+        can_fuse_write_read = (
+            self.config.memory_mode == "online"
+            and self.config.memory_mode != "disabled"
+            and isinstance(segment, Tensor)
+            and segment.ndim == 3
+            and segment.shape[1] == 1
+            and segment.is_cuda
+            and self.memory.supports_fused_write_and_read()
+        )
+        if input_slots is None and can_fuse_write_read and has_deferred_checks():
+            input_slots = []
+            self._validate_state(state, defer_slots=input_slots)
+        else:
+            self._validate_state(state)
         self.memory.validate_input(segment, state.memory)
         batch, length, _ = segment.shape
         if length > self.config.max_segment:
@@ -121,6 +138,17 @@ class TitansMAC(nn.Module):
             raise ValueError("La atención supera el presupuesto de elementos")
         windows = state.convolution
         with torch.set_grad_enabled(differentiable):
+            use_fused_attn = (
+                enabled
+                and length == 1
+                and self.differential is None
+                and segment.is_cuda
+                and segment.dtype in (torch.float32, torch.float64)
+                and not torch.is_autocast_enabled("cuda")
+                and self.config.memory.dim in (32, 64, 128)
+                and self.config.heads in (1, 2, 4, 8)
+                and (self.config.memory.dim // self.config.heads) in (8, 16, 32, 64, 128)
+            )
             if enabled:
                 queries, window = self.memory.project(
                     self.query_projection(segment),
@@ -133,44 +161,82 @@ class TitansMAC(nn.Module):
                 elif self.config.memory.normalize_qk:
                     queries = F.normalize(queries, dim=-1, eps=1e-12)
                 retrieved = self.memory.read(queries, state.memory)
-                prefix = self.persistent.unsqueeze(0).expand(batch, -1, -1)
-                packed = torch.cat((prefix, retrieved, segment), dim=1)
+                if not use_fused_attn:
+                    prefix = self.persistent.unsqueeze(0).expand(batch, -1, -1)
+                    packed = torch.cat((prefix, retrieved, segment), dim=1)
             else:
                 packed = segment
-            check_finite(packed, "La entrada de atención")
-            mask = torch.ones(
-                packed_length, packed_length, dtype=torch.bool, device=segment.device
-            ).triu(1)
-            if self.config.attention_layout == "sequence_contiguous_v1":
-                # MultiheadAttention transpone antes de QKV. Hacer contigua esa vista evita
-                # que matmul elija mm o bmm según requires_grad en la proyección sin sesgo.
-                packed = packed.transpose(0, 1).contiguous().transpose(0, 1)
-            attended, _ = self.attention(packed, packed, packed, attn_mask=mask, need_weights=False)
-            observed = attended[:, -length:]
-            if self.differential is not None:
-                # U1 resta el segundo mapa con los valores de la MHA. Con λ nulo resta cero.
-                values_weight = self.attention.in_proj_weight[2 * self.config.memory.dim :]
-                observed = observed - self.differential(
-                    packed, values_weight, self.attention.out_proj, mask, length
+            if use_fused_attn:
+                from .fused_memory_write import fused_mac_last_token_attention
+
+                check_finite(self.persistent, "La entrada de atención")
+                check_finite(retrieved, "La entrada de atención")
+                check_finite(segment, "La entrada de atención")
+                dim = self.config.memory.dim
+                in_weight = self.attention.in_proj_weight
+                kv_weight = in_weight[dim:]
+                kv_prefix = F.linear(self.persistent, kv_weight)
+                kv_ret = F.linear(retrieved.squeeze(1), kv_weight)
+                qkv_seg = F.linear(segment.squeeze(1), in_weight)
+                mixed = fused_mac_last_token_attention(
+                    qkv_seg[:, :dim], kv_prefix, kv_ret, qkv_seg[:, dim:], self.config.heads
                 )
+                observed = self.attention.out_proj(mixed).unsqueeze(1)
+            else:
+                check_finite(packed, "La entrada de atención")
+                mask = torch.ones(
+                    packed_length, packed_length, dtype=torch.bool, device=segment.device
+                ).triu(1)
+                if self.config.attention_layout == "sequence_contiguous_v1":
+                    # MultiheadAttention transpone antes de QKV. Hacer contigua esa vista evita
+                    # que matmul elija mm o bmm según requires_grad en la proyección sin sesgo.
+                    packed = packed.transpose(0, 1).contiguous().transpose(0, 1)
+                attended, _ = self.attention(
+                    packed, packed, packed, attn_mask=mask, need_weights=False
+                )
+                observed = attended[:, -length:]
+                if self.differential is not None:
+                    # U1 resta el segundo mapa con los valores de la MHA. Con λ nulo resta cero.
+                    values_weight = self.attention.in_proj_weight[2 * self.config.memory.dim :]
+                    observed = observed - self.differential(
+                        packed, values_weight, self.attention.out_proj, mask, length
+                    )
             check_finite(observed, "La salida de atención")
-            if self.config.memory_mode == "online":
-                next_memory = self.memory.update(
+            output = observed[:, -1]
+            if (
+                self.config.memory_mode == "online"
+                and enabled
+                and length == 1
+                and segment.is_cuda
+                and self.memory.supports_fused_write_and_read()
+            ):
+                next_memory, read_after = self.memory.update_and_read(
                     observed,
                     state.memory,
+                    output,
                     differentiable=differentiable,
                     gate_shift=gate_shift,
                     surprise=surprise,
+                    input_slots=input_slots,
                 )
+                output = output * read_after
             else:
-                next_memory = copy_state(state.memory, differentiable=differentiable)
-            output = observed[:, -1]
-            if enabled:
-                output = output * self.memory.read(output.unsqueeze(1), next_memory).squeeze(1)
-            else:
-                output = output.clone()
-                # Sin memoria no se calculan consultas y la ventana conserva su valor.
-                windows = tuple(window.clone() for window in windows)
+                if self.config.memory_mode == "online":
+                    next_memory = self.memory.update(
+                        observed,
+                        state.memory,
+                        differentiable=differentiable,
+                        gate_shift=gate_shift,
+                        surprise=surprise,
+                    )
+                else:
+                    next_memory = copy_state(state.memory, differentiable=differentiable)
+                if enabled:
+                    output = output * self.memory.read(output.unsqueeze(1), next_memory).squeeze(1)
+                else:
+                    output = output.clone()
+                    # Sin memoria no se calculan consultas y la ventana conserva su valor.
+                    windows = tuple(window.clone() for window in windows)
             check_finite(output, "La salida de MAC")
         if not differentiable:
             output = output.detach()

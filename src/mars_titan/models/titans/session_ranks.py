@@ -81,6 +81,13 @@ def gaussian_ranks(values, present):
     infinite = torch.full((), torch.inf, dtype=values.dtype, device=values.device)
     # Las posiciones ausentes se ordenan al final y no cuentan como menores que ninguna presente.
     masked = torch.where(present, values, infinite).T.contiguous()
+    if values.is_cuda and values.shape[0] > 1:
+        from .fused_cuda_kernels import fused_tie_rank_probabilities
+
+        ordered, indices = masked.sort(dim=-1)
+        counts = present.sum(dim=0, dtype=torch.int64)
+        probability = fused_tie_rank_probabilities(ordered, indices, counts)
+        return torch.special.ndtri(probability)
     ordered = masked.sort(dim=-1).values
     lower = torch.searchsorted(ordered, masked, right=False)
     upper = torch.searchsorted(ordered, masked, right=True)
@@ -92,9 +99,15 @@ def gaussian_ranks(values, present):
     return torch.special.ndtri(torch.where(present, probability, 0.5))
 
 
-def _ranked_inputs(inputs, rows):
-    """Transformar las filas `rows` de un mercado y devolver sus valores derivados."""
-    prices = inputs["prices"].index_select(0, rows)
+def _row_index(rows, device):
+    if device.type != "cuda":
+        return torch.tensor(rows, dtype=torch.int64, device=device)
+    return torch.tensor(rows, dtype=torch.int64, pin_memory=True).to(
+        device=device, non_blocking=True
+    )
+
+
+def _ranked_slice(prices, numeric):
     size, steps, channels = prices.shape
     # Las ventanas anteriores a la v3.1 no tienen bit de presencia y todas sus sesiones existen.
     step_present = (
@@ -107,10 +120,16 @@ def _ranked_inputs(inputs, rows):
     ranked = gaussian_ranks(values, present.reshape(size, -1)).reshape(
         size, steps, PRICE_VALUE_CHANNELS
     )
-    numeric = inputs["fundamentals"].index_select(0, rows)
     data, masks, ages = numeric.chunk(3, dim=1)
     fundamentals = torch.cat((gaussian_ranks(data, masks > 0), masks, ages), dim=1)
     return torch.cat((ranked, prices[..., PRICE_VALUE_CHANNELS:]), dim=-1), fundamentals
+
+
+def _ranked_inputs(inputs, rows):
+    """Transformar las filas `rows` de un mercado y devolver sus valores derivados."""
+    return _ranked_slice(
+        inputs["prices"].index_select(0, rows), inputs["fundamentals"].index_select(0, rows)
+    )
 
 
 def rank_session_inputs(inputs, markets):
@@ -121,15 +140,28 @@ def rank_session_inputs(inputs, markets):
     if inputs["fundamentals"].shape[1] % 3 or len(markets) != len(prices):
         raise ValueError("Los fundamentales necesitan valores, máscaras y edades por fila")
     result = dict(inputs)
+    if len(prices) == 0:
+        result.update(prices=prices.clone(), fundamentals=inputs["fundamentals"].clone())
+        return result
+    first = markets[0]
+    if all(value == first for value in markets):
+        ranked_prices, ranked_fundamentals = _ranked_slice(prices, inputs["fundamentals"])
+        result.update(prices=ranked_prices, fundamentals=ranked_fundamentals)
+        return result
     ranked_prices, ranked_fundamentals = prices.clone(), inputs["fundamentals"].clone()
     for market in sorted(set(markets)):
-        rows = torch.tensor(
-            [i for i, value in enumerate(markets) if value == market],
-            dtype=torch.int64,
-            device=prices.device,
-        )
-        price_values, fundamental_values = _ranked_inputs(inputs, rows)
-        ranked_prices.index_copy_(0, rows, price_values)
-        ranked_fundamentals.index_copy_(0, rows, fundamental_values)
+        positions = [i for i, value in enumerate(markets) if value == market]
+        if positions[-1] - positions[0] + 1 == len(positions):
+            start, stop = positions[0], positions[-1] + 1
+            price_values, fundamental_values = _ranked_slice(
+                prices[start:stop], inputs["fundamentals"][start:stop]
+            )
+            ranked_prices[start:stop] = price_values
+            ranked_fundamentals[start:stop] = fundamental_values
+        else:
+            rows = _row_index(positions, prices.device)
+            price_values, fundamental_values = _ranked_inputs(inputs, rows)
+            ranked_prices.index_copy_(0, rows, price_values)
+            ranked_fundamentals.index_copy_(0, rows, fundamental_values)
     result.update(prices=ranked_prices, fundamentals=ranked_fundamentals)
     return result

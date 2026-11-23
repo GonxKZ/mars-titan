@@ -294,6 +294,20 @@ class LearningScaler(nn.Module):
             self.register_buffer(f"{name}_center", torch.zeros(width, dtype=dtype))
             self.register_buffer(f"{name}_inverse", torch.ones(width, dtype=dtype))
         self.register_buffer("fitted", torch.zeros((), dtype=torch.bool))
+        self._fitted_cache = None
+
+    def _is_fitted(self):
+        """Comprobar `self.fitted` sin sincronizar CUDA mientras el buffer no cambie."""
+        flag = self.fitted
+        if flag.device.type != "cuda":
+            return bool(flag)
+        key = (id(flag), flag._version)
+        cached = self._fitted_cache
+        if cached is not None and cached[0] == key:
+            return cached[1]
+        value = bool(flag)
+        self._fitted_cache = (key, value)
+        return value
 
     def load(self, statistics):
         """Copiar las estadísticas de `fit_statistics` tras comprobar su forma y su rango."""
@@ -351,30 +365,88 @@ class LearningScaler(nn.Module):
         después de escalar: una sesión sin mercado, un bloque denso sin dato y un valor
         numérico no observado.
         """
-        if not bool(self.fitted):
+        if not self._is_fitted():
             raise ValueError("Faltan las estadísticas del tramo de ajuste de learning_scale")
         result = {}
         window = inputs["prices"]
-        if self.config.price_returns:
-            window = price_returns(window)
         channels = len(PRICE_FEATURES)
-        scaled = self._scale("prices", window[..., :channels])
-        zero = torch.zeros((), dtype=scaled.dtype, device=scaled.device)
-        if window.shape[-1] > channels:
-            scaled = torch.where(window[..., -1:] > 0, scaled, zero)
-        result["prices"] = torch.cat([scaled, window[..., channels:]], dim=-1)
-        for name, bit in PRESENCE_BIT.items():
-            result[name] = torch.where(
-                presence[:, bit : bit + 1], self._scale(name, inputs[name]), zero
+        use_cuda_fused = (
+            window.is_cuda
+            and window.dtype in (torch.float32, torch.float64)
+            and not (torch.is_grad_enabled() and window.requires_grad)
+        )
+        if use_cuda_fused:
+            from mars_titan.models.titans.fused_cuda_kernels import (
+                fused_price_returns_and_scale,
+                fused_scale_numeric_triple,
+                fused_scale_presence,
             )
+        if (
+            use_cuda_fused
+            and window.ndim == 3
+            and window.shape[1] == 64
+            and window.shape[2] in (channels, channels + 1)
+        ):
+            result["prices"] = fused_price_returns_and_scale(
+                window,
+                self.prices_center,
+                self.prices_inverse,
+                do_returns=self.config.price_returns,
+                do_scale=True,
+                clip=self.config.clip,
+            )
+        else:
+            if self.config.price_returns:
+                window = price_returns(window)
+            scaled = self._scale("prices", window[..., :channels])
+            zero = torch.zeros((), dtype=scaled.dtype, device=scaled.device)
+            if window.shape[-1] > channels:
+                scaled = torch.where(window[..., -1:] > 0, scaled, zero)
+            result["prices"] = torch.cat([scaled, window[..., channels:]], dim=-1)
+        zero = torch.zeros((), dtype=result["prices"].dtype, device=result["prices"].device)
+        for name, bit in PRESENCE_BIT.items():
+            values = inputs[name]
+            if (
+                use_cuda_fused
+                and values.is_cuda
+                and values.ndim == 2
+                and not (torch.is_grad_enabled() and values.requires_grad)
+            ):
+                result[name] = fused_scale_presence(
+                    values,
+                    getattr(self, f"{name}_center"),
+                    getattr(self, f"{name}_inverse"),
+                    presence,
+                    bit,
+                    clip=self.config.clip,
+                )
+            else:
+                result[name] = torch.where(
+                    presence[:, bit : bit + 1], self._scale(name, values), zero
+                )
         for name in NUMERIC:
             values = inputs[name]
             third = self.widths[name] // 3
-            observed = values[..., third : 2 * third]
-            scaled = self._scale(name, values)
-            # Un valor no observado se queda en cero, igual que en la edición.
-            result[name] = torch.cat(
-                [scaled[..., :third] * observed, observed, scaled[..., 2 * third :] * observed],
-                dim=-1,
-            )
+            if (
+                use_cuda_fused
+                and values.is_cuda
+                and values.ndim == 2
+                and third > 0
+                and not (torch.is_grad_enabled() and values.requires_grad)
+            ):
+                result[name] = fused_scale_numeric_triple(
+                    values,
+                    getattr(self, f"{name}_center"),
+                    getattr(self, f"{name}_inverse"),
+                    third=third,
+                    clip=self.config.clip,
+                )
+            else:
+                observed = values[..., third : 2 * third]
+                scaled = self._scale(name, values)
+                # Un valor no observado se queda en cero, igual que en la edición.
+                result[name] = torch.cat(
+                    [scaled[..., :third] * observed, observed, scaled[..., 2 * third :] * observed],
+                    dim=-1,
+                )
         return result
