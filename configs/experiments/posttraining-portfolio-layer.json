@@ -1,0 +1,65 @@
+{
+  "schema_version": 1,
+  "kind": "posttraining_portfolio_layer_v1",
+  "final_test_access": false,
+  "description": "P, la capa de cartera para las medidas netas (encargo del coordinador del 23 de noviembre de 2026), declarada antes de escribir su código y de medir (programa §5.12). Descriptivo y secundario. Puntuación operable de S2 con su configuración, tipificada en rangos dentro de cada sesión, sin las filas con |α| sobre el tope de F (cuantil 0,99 de calibración); lectura principal en el tercio más líquido de cada sesión y secundaria con todos los nombres. Libro largo del decil alto y corto del bajo, pesos iguales por pata, neutral en dinero, exposición bruta 2, rendimiento y + α. Suavizado: media exponencial por activo del rango tipificado con λ en {1; 0,6; 0,4; 0,25; 0,15}; banda de no operar por histéresis de rangos con salida en el extremo {0,1; 0,2; 0,3}; (λ, salida) elegidos en calibración por el neto medio a 3 pb por lado. Coste c·Σ|Δw| con c en {2; 3; 5} pb por lado. Control: la señal diaria sin suavizar ni banda; referencia: el alfa solo. En evaluación: neto medio, rotación, Sharpe anualizado, caída máxima y coste de equilibrio por coste; fracción de ventanas de 1, 5 y 21 sesiones con neto > 0 (Wilson y arranque estacionario) y su neto medio; capa − control pareada por sesión con t de Newey-West. Regla (alcance líquido): entra si su neto a 3 pb supera al control con t ≥ 2 y su neto a 5 pb es > 0 con t ≥ 2. Límites: ejecución al precio de la decisión, coste fijo por lado sin impacto, sin modelar la disponibilidad de cortos.",
+  "seed": 42,
+  "min_assets": 30,
+  "parent": "titans_mac_nogain",
+  "tree": "lightgbm_technical",
+  "organ": "titans_mac_nogain__combined",
+  "splits": ["calibration", "evaluation"],
+  "selection_split": "calibration",
+  "align": "strict",
+  "aggregator": {"name": "ridge_cov_active", "lambdas": [2.0, 1.0, 0.5, 0.1], "half_lives": [null, 63.0, 21.0]},
+  "aggregator_placebo_seed": 20261122,
+  "operable_scales": [0.001, 0.002, 0.005, 0.01, 0.02, 0.03, 0.05, 0.07, 0.1, 0.15, 0.2, 0.3, 0.5, 0.7, 1.0, 1.5, 2.0, 3.0, 5.0, 10.0, 30.0, 100.0],
+  "universe": {
+    "alpha_cap_quantile": 0.99,
+    "alpha_cap_split": "calibration",
+    "scopes": ["liquid", "all"],
+    "primary_scope": "liquid",
+    "liquid": "top_third_of_liquidity_within_each_session"
+  },
+  "book": {
+    "tail": 0.1,
+    "weights": "equal_within_each_leg",
+    "neutral": "dollar",
+    "gross": 2.0,
+    "target": "operable_label_plus_alpha"
+  },
+  "smoothing": {
+    "kind": "ema_of_the_session_z_rank_per_asset",
+    "lambdas": [1.0, 0.6, 0.4, 0.25, 0.15],
+    "absent_previous": "restart_at_the_current_z_rank"
+  },
+  "band": {
+    "kind": "rank_hysteresis",
+    "entry_tail": 0.1,
+    "exit_tails": [0.1, 0.2, 0.3]
+  },
+  "choice": {
+    "split": "calibration",
+    "criterion": "mean_net_pnl",
+    "cost_bps": 3.0,
+    "per_scope": true
+  },
+  "costs_bps_per_side": [2.0, 3.0, 5.0],
+  "horizons": [1, 5, 21],
+  "control": "daily_signal_without_smoothing_or_band",
+  "reference": "alpha_alone",
+  "block_interval": {
+    "method": "stationary_bootstrap",
+    "mean_block": 5,
+    "draws": 2000,
+    "seed": 20261123
+  },
+  "annualization": 252,
+  "rule": {
+    "scope": "liquid",
+    "beats_control_cost_bps": 3.0,
+    "beats_control_min_t": 2.0,
+    "positive_cost_bps": 5.0,
+    "positive_min_t": 2.0
+  }
+}

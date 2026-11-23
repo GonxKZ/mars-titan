@@ -616,6 +616,79 @@ calibración.
     - Las raíces `organos/v10-nogain` y `organos/v10-v2` solo difieren en la descripción y en la
       lista de modelos. La orden lo comprueba antes de mezclarlas, y también que cada órgano es el
       del ajuste declarado del estático.
+  - **Resultado de F6 en 2013** (desarrollo; declaración 0316226e…, US). H se queda como
+    órgano del agregador.
+    - La regla da IC(C3⊕H3) − IC(C3) = −0,0002 (t −0,24; [−0,0019; +0,0015]) en la etiqueta y
+      +0,0009 (t 0,70) en lo operable, lejos de +0,0020 con t ≥ 2.
+    - H3 solo queda por debajo del núcleo: −0,0069 (t −3,8).
+    - El control C3⊕H3 − C3⊕E3 da +0,0018 (t 2,8): los órganos hacen del estático mejor compañero,
+      pero no lo bastante para sumar al núcleo. H3 − E3 da +0,0019 (t 1,5).
+    - Correlaciones: la de los IC por sesión de C3 y H3 es 0,94 (0,78 en lo operable); la de rangos
+      dentro de la sesión, 0,85 (0,77).
+
+### 5.12 P, la capa de cartera para las medidas netas: protocolo (diseño, sin medir)
+
+Es el encargo del coordinador del 23 de noviembre: las medidas netas de una cartera sencilla sobre
+la puntuación operable de S2.
+- La declaración es `configs/experiments/posttraining-portfolio-layer.json` (huella 13b9792a…),
+  fijada antes de escribir el código y de medir.
+- Es descriptivo y secundario.
+- Tiene la misma separación que F: 2013 es desarrollo, los orígenes limpios confirman y 2024 sigue
+  sellado.
+
+**Por qué** (R-3r del cuaderno):
+- La señal persiste: guarda un 73 % al día siguiente y un 53 % a cinco sesiones.
+- Los libros diarios de deciles de A4 rotan en torno a 1,5 veces al día.
+- Los brutos de A4 (unos 56 pb diarios en S2) incluyen los nombres con |α| patológico. Esta capa
+  los excluye.
+
+**Universo y puntuación.**
+- La puntuación es la operable de S2 (k·p + α), con las entradas y la configuración de S2 (semilla
+  42). Se tipifica en rangos dentro de cada sesión.
+- Se excluyen las filas con |α| sobre el tope de F (cuantil 0,99 de calibración).
+- La lectura principal es el tercio más líquido de cada sesión, donde de 2 a 5 pb por lado son
+  plausibles. Todos los nombres van como lectura secundaria.
+
+**Libro.**
+- Largo el decil alto y corto el bajo, con pesos iguales dentro de cada pata, neutral en dinero y
+  con exposición bruta 2.
+- El rendimiento de la sesión es el objetivo operable y + α de sus nombres.
+
+**Suavizado y banda.**
+- Media exponencial por activo del rango tipificado: s̃ₜ = λ·zₜ + (1 − λ)·s̃ₜ₋₁. Si el activo no
+  estaba en la sesión anterior, s̃ₜ = zₜ. La rejilla es λ ∈ {1; 0,6; 0,4; 0,25; 0,15}.
+- La banda de no operar es una histéresis de rangos: un nombre entra en el decil extremo y solo
+  sale si abandona el extremo q_sal, con q_sal ∈ {0,1 (sin banda); 0,2; 0,3}.
+- (λ, q_sal) se elige en calibración, por el resultado neto medio a 3 pb por lado, en cada alcance.
+  La rejilla es pequeña porque calibración tiene unas 60 sesiones.
+
+**Costes y rotación.**
+- El coste de la sesión es c·Σ|wₜ − wₜ₋₁| (por lado), con c ∈ {2; 3; 5} pb.
+- La rotación es Σ|Δw| por sesión.
+
+**Control.**
+- El mismo libro con la señal diaria sin suavizar ni banda (λ = 1, q_sal = 0,1) y los mismos costes.
+- Como referencia va el libro del alfa solo.
+
+**Medidas en evaluación.**
+- Por coste se informan:
+  - el neto medio en pb por sesión y la rotación;
+  - el Sharpe anualizado (√252) y la caída máxima;
+  - el coste de equilibrio.
+- Por horizonte h ∈ {1; 5; 21} sesiones, en ventanas sin solapar: la fracción de ventanas con neto
+  > 0 (Wilson y arranque estacionario por bloques, como en F) y su neto medio.
+- La diferencia capa − control por sesión a cada coste, pareada y con t de Newey-West.
+
+**Regla de entrega** (alcance líquido). La capa entra si, en evaluación, se cumplen las dos:
+- su neto a 3 pb por lado supera al del control con t ≥ 2;
+- su neto a 5 pb por lado es > 0 con t ≥ 2.
+
+Si no, no entra, y las cifras se dan tal cual.
+
+**Límites declarados:**
+- La ejecución es al precio de la decisión, con coste fijo por lado y sin impacto de mercado.
+- No se modela si los cortos están disponibles.
+- Los costes son los mismos en todo el tercio líquido.
 
 ## 6. Etapas con GPU (fase 4)
 
