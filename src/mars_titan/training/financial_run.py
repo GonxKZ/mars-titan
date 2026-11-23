@@ -455,6 +455,10 @@ def clip_parameter_groups(predictor, trainable=None):
             buckets["technical_head"].append(name)
         elif name.startswith(("mac.", "reliability_gates.", "cross_sectional_rank_memory.")):
             buckets["mac"].append(name)
+        # --- three_factor_consolidation ---
+        elif name.startswith("three_factor_consolidation."):
+            buckets["mac"].append(name)
+        # --- fin three_factor_consolidation ---
         else:
             buckets["backbone_fusion"].append(name)
     groups = {group: names for group, names in buckets.items() if names}
@@ -781,6 +785,11 @@ class _Pass:
     rank_memory: object = None
     rank_memory_start: object = None
     rank_memory_labels: list = field(default_factory=list)
+    # --- three_factor_consolidation ---
+    three_factor_state: object = None
+    three_factor_start: object = None
+    three_factor_labels: list = field(default_factory=list)
+    # --- fin three_factor_consolidation ---
     # Con métrica `session_rank_ic`, acumulador en flujo del IC de rangos de entrenamiento.
     rank_ic: object = None
 
@@ -856,6 +865,9 @@ class ChronologicalInference:
         self.reliability = predictor.config.mature_reliability
         # CRRM cambia ajuste e inferencia y consume etiquetas maduras en ambos recorridos.
         self.uses_rank_memory = predictor.cross_sectional_rank_memory is not None
+        # --- three_factor_consolidation ---
+        self.uses_three_factor = predictor.three_factor_consolidation is not None
+        # --- fin three_factor_consolidation ---
         if torch.backends.mha.get_fastpath_enabled() or torch.is_inference_mode_enabled():
             raise ValueError("El recorrido exige fastpath=False declarado y sin inference_mode")
         if (
@@ -917,6 +929,12 @@ class ChronologicalInference:
             run.rank_memory = predictor.initial_rank_memory()
         if self.uses_rank_memory and accumulate and run.rank_memory_start is None:
             run.rank_memory_start = predictor.detach_rank_memory(run.rank_memory)
+        # --- three_factor_consolidation ---
+        if self.uses_three_factor and run.three_factor_state is None:
+            run.three_factor_state = predictor.initial_three_factor_state()
+        if self.uses_three_factor and accumulate and run.three_factor_start is None:
+            run.three_factor_start = predictor.detach_three_factor_state(run.three_factor_state)
+        # --- fin three_factor_consolidation ---
         context = dict(context=run.context) if self.uses_context else {}
         signal, surprises = self._signal(run), []
         # Las comprobaciones de finitud de todos los bloques del evento se resuelven juntas
@@ -955,6 +973,12 @@ class ChronologicalInference:
                 prepare_options = (
                     dict(options, rank_memory=run.rank_memory) if self.uses_rank_memory else options
                 )
+                # --- three_factor_consolidation ---
+                if self.uses_three_factor:
+                    prepare_options = dict(
+                        prepare_options, three_factor_state=run.three_factor_state
+                    )
+                # --- fin three_factor_consolidation ---
                 with nvtx_ranges.phase("titans.prepare"), torch.set_grad_enabled(graph):
                     prepared = predictor.prepare(
                         batch,
@@ -973,6 +997,18 @@ class ChronologicalInference:
                         prepared.point_predictions,
                         differentiable=graph and not accumulate,
                     )
+                # --- three_factor_consolidation ---
+                if self.uses_three_factor:
+                    run.three_factor_state = predictor.stage_three_factor_state(
+                        run.three_factor_state,
+                        batch.flow_ids,
+                        batch.prediction_at,
+                        prepared.three_factor_emission,
+                        prepared.point_predictions,
+                        record_pending=not warmup,
+                        differentiable=graph and not accumulate,
+                    )
+                # --- fin three_factor_consolidation ---
                 if self.uses_context:
                     # Los bloques siguientes del evento leen el mismo contexto confirmado.
                     context = dict(context=prepared.next_context)
@@ -1141,6 +1177,9 @@ class ChronologicalInference:
     def _labels(self, run, event, *, train):
         """Resolver etiquetas maduras contra la predicción emitida y su grafo vigente."""
         markets, moments, errors, matured, rank_matured = [], [], [], [], []
+        # --- three_factor_consolidation ---
+        three_factor_matured = []
+        # --- fin three_factor_consolidation ---
         for flow, decision_at, value in event.labels:
             key = flow, decision_at
             if key not in run.pending:
@@ -1150,6 +1189,10 @@ class ChronologicalInference:
                 matured.append((flow, issued, value))
             if self.uses_rank_memory:
                 rank_matured.append((flow, decision_at, value))
+            # --- three_factor_consolidation ---
+            if self.uses_three_factor:
+                three_factor_matured.append((flow, decision_at, value))
+            # --- fin three_factor_consolidation ---
             if train and run.horizons is not None:
                 run.counters["auxiliary_labels"] += run.horizons.mature(flow, decision_at, value)
             market = flow.split("/", 1)[0]
@@ -1188,6 +1231,20 @@ class ChronologicalInference:
                 differentiable=train and not accumulate,
                 train=train,
             )
+        # --- three_factor_consolidation ---
+        if self.uses_three_factor and three_factor_matured:
+            if run.three_factor_state is None:
+                run.three_factor_state = self.predictor.initial_three_factor_state()
+            accumulate = train and self.recipe.accumulation_rows is not None
+            if accumulate and run.segment:
+                run.three_factor_labels.append((len(run.segment), tuple(three_factor_matured)))
+            run.three_factor_state = self.predictor.settle_three_factor_state(
+                run.three_factor_state,
+                three_factor_matured,
+                differentiable=train and not accumulate,
+                train=train,
+            )
+        # --- fin three_factor_consolidation ---
         for start in range(0, len(errors), 4096):
             run.errors.update(
                 markets[start : start + 4096],
@@ -1206,6 +1263,11 @@ class ChronologicalInference:
         run.rank_memory = None
         run.rank_memory_start = None
         run.rank_memory_labels.clear()
+        # --- three_factor_consolidation ---
+        run.three_factor_state = None
+        run.three_factor_start = None
+        run.three_factor_labels.clear()
+        # --- fin three_factor_consolidation ---
         run.pending.clear()
         run.graphs.clear()
         run.levels.clear()
@@ -1694,12 +1756,26 @@ class ChronologicalTrainer(ChronologicalInference):
                 if self.uses_rank_memory:
                     for position, items in run.rank_memory_labels:
                         rank_by_pos.setdefault(position, []).append(items)
+                # --- three_factor_consolidation ---
+                three_factor_state = run.three_factor_start if self.uses_three_factor else None
+                three_factor_by_pos = {}
+                if self.uses_three_factor:
+                    for position, items in run.three_factor_labels:
+                        three_factor_by_pos.setdefault(position, []).append(items)
+                # --- fin three_factor_consolidation ---
                 for seg_index, (batch, plan, whole) in enumerate(run.segment):
                     if self.uses_rank_memory:
                         for items in rank_by_pos.get(seg_index, ()):
                             rank_state = predictor.settle_rank_memory(
                                 rank_state, items, differentiable=True, train=True
                             )
+                    # --- three_factor_consolidation ---
+                    if self.uses_three_factor:
+                        for items in three_factor_by_pos.get(seg_index, ()):
+                            three_factor_state = predictor.settle_three_factor_state(
+                                three_factor_state, items, differentiable=True, train=True
+                            )
+                    # --- fin three_factor_consolidation ---
                     rows = [i for i, flow in enumerate(batch.flow_ids) if flow in members]
                     if not rows:
                         continue
@@ -1721,6 +1797,10 @@ class ChronologicalTrainer(ChronologicalInference):
                     replay_plan = (
                         dict(plan, rank_memory=rank_state) if self.uses_rank_memory else plan
                     )
+                    # --- three_factor_consolidation ---
+                    if self.uses_three_factor:
+                        replay_plan = dict(replay_plan, three_factor_state=three_factor_state)
+                    # --- fin three_factor_consolidation ---
                     with torch.enable_grad():
                         prepared = predictor.prepare(
                             batch,
@@ -1738,6 +1818,18 @@ class ChronologicalTrainer(ChronologicalInference):
                             prepared.point_predictions,
                             differentiable=True,
                         )
+                    # --- three_factor_consolidation ---
+                    if self.uses_three_factor:
+                        three_factor_state = predictor.stage_three_factor_state(
+                            three_factor_state,
+                            batch.flow_ids,
+                            batch.prediction_at,
+                            prepared.three_factor_emission,
+                            prepared.point_predictions,
+                            record_pending=True,
+                            differentiable=True,
+                        )
+                    # --- fin three_factor_consolidation ---
                     states.put(prepared.next_state)
                     if prepared.local_control is not None:
                         penalties.append(prepared.local_control.penalty)
@@ -1961,6 +2053,12 @@ class ChronologicalTrainer(ChronologicalInference):
                 run.context = self.predictor.detach_context(run.context, parameter_id)
             if run.rank_memory is not None:
                 run.rank_memory = self.predictor.detach_rank_memory(run.rank_memory, parameter_id)
+            # --- three_factor_consolidation ---
+            if run.three_factor_state is not None:
+                run.three_factor_state = self.predictor.detach_three_factor_state(
+                    run.three_factor_state, parameter_id
+                )
+            # --- fin three_factor_consolidation ---
         run.penalties.clear()
         run.graphs.clear()
         run.predictions.clear()
@@ -1970,6 +2068,10 @@ class ChronologicalTrainer(ChronologicalInference):
         run.starts.clear()
         run.rank_memory_start = None
         run.rank_memory_labels.clear()
+        # --- three_factor_consolidation ---
+        run.three_factor_start = None
+        run.three_factor_labels.clear()
+        # --- fin three_factor_consolidation ---
         run.instants = 0
         run.counters["segments"] += 1
 
@@ -2041,6 +2143,10 @@ class ChronologicalTrainer(ChronologicalInference):
         raise ValueError("El recorrido de ajuste terminó sin su cierre declarado")
 
     def _export(self, run):
+        # --- three_factor_consolidation ---
+        if run.three_factor_start is not None or run.three_factor_labels:
+            raise ValueError("Solo se confirma un recorrido en la barrera posterior a un paso")
+        # --- fin three_factor_consolidation ---
         if (
             run.graphs
             or run.segment
@@ -2090,6 +2196,17 @@ class ChronologicalTrainer(ChronologicalInference):
                 if self.uses_rank_memory
                 else {}
             ),
+            # --- three_factor_consolidation ---
+            **(
+                dict(
+                    three_factor_state=None
+                    if run.three_factor_state is None
+                    else predictor.export_three_factor_state(run.three_factor_state)
+                )
+                if self.uses_three_factor
+                else {}
+            ),
+            # --- fin three_factor_consolidation ---
             **(
                 dict(rank_ic=None if run.rank_ic is None else run.rank_ic.export())
                 if self.track_train_rank_ic
@@ -2108,6 +2225,12 @@ class ChronologicalTrainer(ChronologicalInference):
             raise ValueError(
                 "El recorrido guardado no corresponde a la memoria transversal de rango"
             )
+        # --- three_factor_consolidation ---
+        if self.uses_three_factor != ("three_factor_state" in payload):
+            raise ValueError(
+                "El recorrido guardado no corresponde a la consolidación de tres factores"
+            )
+        # --- fin three_factor_consolidation ---
         if self.track_train_rank_ic != ("rank_ic" in payload):
             raise ValueError("El recorrido guardado no corresponde al IC de rangos del ajuste")
         run = _Pass()
@@ -2133,6 +2256,12 @@ class ChronologicalTrainer(ChronologicalInference):
             run.reliability = ReliabilitySignal.restore(self.reliability, payload["reliability"])
         if self.uses_rank_memory and payload["rank_memory"] is not None:
             run.rank_memory = self.predictor.restore_rank_memory(payload["rank_memory"])
+        # --- three_factor_consolidation ---
+        if self.uses_three_factor and payload["three_factor_state"] is not None:
+            run.three_factor_state = self.predictor.restore_three_factor_state(
+                payload["three_factor_state"]
+            )
+        # --- fin three_factor_consolidation ---
         if self.track_train_rank_ic and payload["rank_ic"] is not None:
             run.rank_ic = _SessionRankIC.restore(
                 self.recipe.selection["min_assets"], payload["rank_ic"]

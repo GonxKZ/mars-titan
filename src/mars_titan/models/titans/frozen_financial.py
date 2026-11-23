@@ -100,6 +100,10 @@ def declared_sources(config):
         sources.append("mars_titan.models.titans.cross_sectional_rank_memory")
     if getattr(config, "session_hologram", None) is not None:
         sources.append("mars_titan.models.titans.session_hologram")
+    # --- three_factor_consolidation ---
+    if getattr(config, "three_factor_consolidation", None) is not None:
+        sources.append("mars_titan.models.titans.three_factor_consolidation")
+    # --- fin three_factor_consolidation ---
     if getattr(config, "learning_scale", None) is not None:
         sources.append("mars_titan.models.learning_scale")
     if getattr(config, "reference_encoder", None) == "dlinear":
@@ -493,6 +497,12 @@ class FrozenFinancialConsumer:
             raise ValueError(
                 "El consumidor congelado aún no recibe la memoria transversal de rango maduro"
             )
+        # --- three_factor_consolidation ---
+        if predictor.three_factor_consolidation is not None:
+            raise ValueError(
+                "El consumidor congelado aún no recibe la consolidación sináptica de tres factores"
+            )
+        # --- fin three_factor_consolidation ---
         if readout is not None and (
             readout.config.hidden_size != predictor.config.hidden_size
             or readout.step_logit.device != predictor.head.weight.device

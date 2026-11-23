@@ -90,6 +90,9 @@ PREDICTOR_CHANGES = (
     "cross_sectional_rank_memory",
     # Interferómetro holográfico de sesión en fase dual (WP11).
     "session_hologram",
+    # --- three_factor_consolidation ---
+    "three_factor_consolidation",
+    # --- fin three_factor_consolidation ---
 )
 # Cambios que se declaran con un nombre en lugar de un objeto.
 NAMED_CHANGES = (

@@ -102,6 +102,9 @@ class FinancialDustAdapter:
             "opponent_heads",
             "mature_reliability",
             "cross_sectional_rank_memory",
+            # --- three_factor_consolidation ---
+            "three_factor_consolidation",
+            # --- fin three_factor_consolidation ---
             "memory_huber",
             "memory_time_scales",
             "differential_attention",
