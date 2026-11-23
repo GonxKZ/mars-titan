@@ -53,6 +53,24 @@ completa, igual que `session_rank_inputs_v1`.
 Las ramas no tienen estado y solo leen entradas disponibles en la emisión. Sin `session_ranks`
 no mezclan filas. El residuo queda en la representación de trabajo, así que un lector ajustado
 sobre el núcleo lo recibe sin cambios.
+
+Con `ensemble_members` en `{4, 8, 16}`, las capas lineales de `technical_branch_v2` pasan a ser
+capas BatchEnsemble (Wen, Tran y Ba, ICLR 2020, https://arxiv.org/abs/2002.06715) con la
+inicialización de TabM (Gorishniy, Kotelnikov y Babenko, ICLR 2025,
+https://arxiv.org/abs/2410.24210): cada capa comparte su matriz W y añade por miembro i un vector
+multiplicativo de entrada r_i, uno de salida s_i y un sesgo b_i,
+
+    y_i = ((x_i ∘ r_i) Wᵀ) ∘ s_i + b_i,
+
+ejecutando los K miembros en paralelo sobre una dimensión de miembros [filas, K, dimensión] y
+devolviendo al final la media de los K miembros con la misma forma que hoy. Solo los vectores de
+entrada r de la primera capa se inicializan aleatoriamente en ±1 (con un generador derivado de la
+semilla e idéntico en FP32 y FP64) y todos los demás vectores multiplicativos empiezan en 1, de
+modo que al arrancar la rama se comporta como TabM-mini; los pesos compartidos conservan la misma
+inicialización que con K = 1 y la última capa sigue arrancando en cero. Desviación declarada
+frente a TabM: allí cada miembro recibe su propia pérdida y se promedia solo al inferir; aquí la
+rama emite un residuo interno sumado a la representación de trabajo, por lo que la media sobre los
+K miembros se toma a la salida de la rama antes de la cabeza.
 """
 
 import hashlib
@@ -67,6 +85,7 @@ from .state import check_finite
 
 TECHNICAL_BRANCH = "technical_branch_v1"
 TECHNICAL_DENSE = "technical_branch_v2"
+ENSEMBLE_MEMBERS = (1, 4, 8, 16)
 
 
 @dataclass(frozen=True)
@@ -115,6 +134,8 @@ class TechnicalDenseConfig:
     layer_norm: bool = False
     # Multiplicar cada entrada de la red por una escala aprendida que empieza en uno.
     feature_scaling: bool = False
+    # Miembros del conjunto eficiente BatchEnsemble tipo TabM (1 = red simple; 4, 8 o 16).
+    ensemble_members: int = 1
 
     def __post_init__(self):
         bounded_integer(self.columns, "columnas de la rama técnica", 1, 512)
@@ -128,6 +149,8 @@ class TechnicalDenseConfig:
             raise ValueError("feature_scaling de la rama técnica debe ser un booleano")
         if self.layer_norm and self.hidden < 2:
             raise ValueError("LayerNorm en la rama técnica necesita hidden >= 2")
+        if type(self.ensemble_members) is not int or self.ensemble_members not in ENSEMBLE_MEMBERS:
+            raise ValueError("ensemble_members de la rama técnica debe ser 1, 4, 8 o 16")
 
     def identity(self):
         result = dict(
@@ -162,6 +185,14 @@ class TechnicalDenseConfig:
         # Sin la escala por entrada se conserva literalmente la identidad anterior.
         if self.feature_scaling:
             result["feature_scaling"] = "learned_scale_per_input_initialized_at_one_v1"
+        # Sin conjunto se conserva literalmente la identidad anterior.
+        if self.ensemble_members > 1:
+            result.update(
+                ensemble_members=self.ensemble_members,
+                ensemble="batch_ensemble_tabm_v1",
+                ensemble_initialization="first_input_random_signs_rest_ones",
+                ensemble_aggregation="mean_over_members",
+            )
         return result
 
 
@@ -181,11 +212,13 @@ def parse_technical_branch(raw):
         "session_ranks",
         "layer_norm",
         "feature_scaling",
+        "ensemble_members",
     }:
         return TechnicalDenseConfig(**raw)
     raise ValueError(
         "technical_branch debe declarar columns, bins, embedding y hidden, o columns, hidden y "
-        "depth (y opcionalmente session_ranks, layer_norm y feature_scaling), o ser None"
+        "depth (y opcionalmente session_ranks, layer_norm, feature_scaling y ensemble_members), "
+        "o ser None"
     )
 
 
@@ -276,6 +309,44 @@ class TechnicalBranch(nn.Module):
         return residual
 
 
+class BatchEnsembleLinear(nn.Module):
+    """Capa lineal BatchEnsemble vectorizada: ((x ∘ r_i) Wᵀ) ∘ s_i + b_i para K miembros."""
+
+    def __init__(self, in_features, out_features, members, *, dtype=torch.float32):
+        super().__init__()
+        bounded_integer(in_features, "entradas de BatchEnsembleLinear", 1, 4096)
+        bounded_integer(out_features, "salidas de BatchEnsembleLinear", 1, 4096)
+        if type(members) is not int or members not in ENSEMBLE_MEMBERS or members < 2:
+            raise ValueError("BatchEnsembleLinear necesita 4, 8 o 16 miembros")
+        if dtype not in (torch.float32, torch.float64):
+            raise ValueError("BatchEnsembleLinear necesita precisión FP32 o FP64")
+        self.in_features = in_features
+        self.out_features = out_features
+        self.members = members
+        # Usa nn.Linear con el generador activo para heredar exactamente su inicialización.
+        base = nn.Linear(in_features, out_features, dtype=dtype)
+        device = base.weight.device
+        self.weight = nn.Parameter(base.weight.detach().clone())
+        self.r = nn.Parameter(torch.ones((members, in_features), device=device, dtype=dtype))
+        self.s = nn.Parameter(torch.ones((members, out_features), device=device, dtype=dtype))
+        self.bias = nn.Parameter(base.bias.detach().unsqueeze(0).expand(members, -1).clone())
+
+    def forward(self, values):
+        """Aplicar los K miembros en paralelo sobre [filas, miembros, entradas]."""
+        if (
+            not isinstance(values, torch.Tensor)
+            or values.ndim != 3
+            or values.shape[1] != self.members
+            or values.shape[2] != self.in_features
+            or values.dtype != self.weight.dtype
+        ):
+            raise ValueError(
+                "BatchEnsembleLinear necesita un tensor [filas, miembros, entradas] compatible"
+            )
+        projected = nn.functional.linear(values * self.r, self.weight)
+        return projected * self.s + self.bias
+
+
 class TechnicalDense(nn.Module):
     """Residuo de la representación de cada flujo: red densa sobre sus rasgos técnicos."""
 
@@ -296,16 +367,41 @@ class TechnicalDense(nn.Module):
         widths = [first, *([config.hidden] * config.depth)]
         with torch.device("cpu"), torch.random.fork_rng(devices=[]):
             torch.random.default_generator.manual_seed(int.from_bytes(derived[:7], "little"))
-            self.layers = nn.ModuleList(
-                nn.Linear(before, after, dtype=dtype)
-                for before, after in zip(widths[:-1], widths[1:], strict=True)
-            )
-            # Se crea con el generador derivado para no consumir el global.
-            self.outer = nn.Linear(config.hidden, hidden_size, dtype=dtype)
+            if config.ensemble_members == 1:
+                self.layers = nn.ModuleList(
+                    nn.Linear(before, after, dtype=dtype)
+                    for before, after in zip(widths[:-1], widths[1:], strict=True)
+                )
+                # Se crea con el generador derivado para no consumir el global.
+                self.outer = nn.Linear(config.hidden, hidden_size, dtype=dtype)
+            else:
+                members = config.ensemble_members
+                self.layers = nn.ModuleList(
+                    BatchEnsembleLinear(before, after, members, dtype=dtype)
+                    for before, after in zip(widths[:-1], widths[1:], strict=True)
+                )
+                self.outer = BatchEnsembleLinear(config.hidden, hidden_size, members, dtype=dtype)
         # La salida empieza en cero: el predictor emite lo mismo que sin la rama.
         with torch.no_grad():
             self.outer.weight.zero_()
             self.outer.bias.zero_()
+        if config.ensemble_members > 1:
+            # Inicialización estilo TabM-mini: solo los vectores r de la primera capa arrancan
+            # aleatorios en ±1; los demás r y s empiezan en 1.
+            ensemble_derived = hashlib.sha256(
+                f"{TECHNICAL_DENSE}/ensemble/{seed}".encode()
+            ).digest()
+            with torch.device("cpu"), torch.random.fork_rng(devices=[]):
+                torch.random.default_generator.manual_seed(
+                    int.from_bytes(ensemble_derived[:7], "little")
+                )
+                with torch.no_grad():
+                    signs = (
+                        torch.randint(0, 2, self.layers[0].r.shape, dtype=torch.int64).to(dtype)
+                        * 2.0
+                        - 1.0
+                    )
+                    self.layers[0].r.copy_(signs)
         # LayerNorm se construye fuera del generador derivado (pesos 1, sesgo 0, sin consumo RNG).
         self.norms = (
             nn.ModuleList(
@@ -379,12 +475,17 @@ class TechnicalDense(nn.Module):
             raise ValueError("La rama técnica necesita el bloque del gráfico con sus columnas")
         if bool(config.layer_norm) != (self.norms is not None):
             raise ValueError("La normalización de la rama técnica no coincide con su configuración")
+        actual_members = self.outer.members if isinstance(self.outer, BatchEnsembleLinear) else 1
+        if actual_members != config.ensemble_members:
+            raise ValueError("El conjunto de la rama técnica no coincide con su configuración")
         hidden = charts[:, charts.shape[1] - config.columns :]
         if config.session_ranks:
             # Los rangos no llevan gradiente hacia las entradas: son una función a trozos constante.
             hidden = torch.cat((hidden, self.ranks(hidden.detach(), markets)), dim=1)
         if self.input_scale is not None:
             hidden = hidden * self.input_scale
+        if config.ensemble_members > 1:
+            hidden = hidden.unsqueeze(1).expand(-1, config.ensemble_members, -1)
         if self.norms is not None:
             for layer, norm in zip(self.layers, self.norms, strict=True):
                 hidden = nn.functional.silu(norm(layer(hidden)))
@@ -392,6 +493,8 @@ class TechnicalDense(nn.Module):
             for layer in self.layers:
                 hidden = nn.functional.silu(layer(hidden))
         residual = self.outer(hidden)
+        if config.ensemble_members > 1:
+            residual = residual.mean(dim=1)
         check_finite(residual, "El residuo de la rama técnica")
         return residual
 
