@@ -151,7 +151,7 @@ class NeighbourConfig:
 
     def identity(self):
         identity = dict(window=self.window, k=self.k, tau=float(self.tau), clip=float(self.clip))
-        # Sin exclusión ni decaimiento temporal la identidad conserva literalmente su forma anterior.
+        # Sin exclusión ni decaimiento temporal conserva literalmente su forma anterior.
         if self.exclude_own:
             identity["exclude_own"] = True
         if self.recency_half_life is not None:
@@ -264,7 +264,7 @@ class _HeapScratch:
 
 
 def _recency_bias(bank, half_life):
-    """Sesgo logarítmico causal −edad · ln(2) / h por fila del banco (edad 0 = cohorte más reciente)."""
+    """Sesgo logarítmico causal −edad · ln(2) / h por fila (edad 0 = cohorte más reciente)."""
     total = sum(len(c["keys"]) for c in bank)
     bias = np.empty(total, dtype=np.float64)
     rate = math.log(2.0) / float(half_life)
@@ -434,7 +434,11 @@ class NeighbourMemory:
                         None if shuffled_c is None else shuffled_c.ctypes.data_as(ctypes.c_void_p),
                         ctypes.c_double(tau),
                         reads[start:end].ctypes.data_as(ctypes.c_void_p),
-                        None if placebo is None else placebo[start:end].ctypes.data_as(ctypes.c_void_p),
+                        (
+                            None
+                            if placebo is None
+                            else placebo[start:end].ctypes.data_as(ctypes.c_void_p)
+                        ),
                         ctypes.c_int(self.threads),
                     )
                 else:
@@ -450,7 +454,11 @@ class NeighbourMemory:
                         recency_c.ctypes.data_as(ctypes.c_void_p),
                         ctypes.c_double(tau),
                         reads[start:end].ctypes.data_as(ctypes.c_void_p),
-                        None if placebo is None else placebo[start:end].ctypes.data_as(ctypes.c_void_p),
+                        (
+                            None
+                            if placebo is None
+                            else placebo[start:end].ctypes.data_as(ctypes.c_void_p)
+                        ),
                         ctypes.c_int(self.threads),
                     )
         finally:

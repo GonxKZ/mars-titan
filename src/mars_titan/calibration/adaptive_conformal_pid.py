@@ -58,7 +58,9 @@ def _finite_sample_quantile(scores: np.ndarray, nominal: float) -> float:
     return float(arr[-1]) if rank > n else float(arr[rank - 1])
 
 
-def _interval_indices(levels: tuple[float, ...], nominals: tuple[float, ...]) -> list[tuple[int, int]]:
+def _interval_indices(
+    levels: tuple[float, ...], nominals: tuple[float, ...]
+) -> list[tuple[int, int]]:
     pairs: list[tuple[int, int]] = []
     for nom in nominals:
         lo_level = round((1.0 - nom) / 2.0, 6)
@@ -74,7 +76,7 @@ def _interval_indices(levels: tuple[float, ...], nominals: tuple[float, ...]) ->
 
 
 def make_stratified_groups(markets: np.ndarray, strata: np.ndarray) -> np.ndarray:
-    """Combina mercado y estrato causal (p. ej. decil de volatilidad) en claves de grupo Mondrian."""
+    """Combina mercado y estrato causal (p. ej. decil de volatilidad) en claves Mondrian."""
     m = np.asarray(markets).astype(str)
     s = np.asarray(strata)
     _require(len(m) == len(s), "markets y strata deben tener la misma longitud")
@@ -213,7 +215,10 @@ class NormalizedConformalPID:
         nominals_t = tuple(float(v) for v in nominals)
         pairs = _interval_indices(levels_t, nominals_t)
         _require(
-            q.ndim == 2 and q.shape[1] == len(levels_t) and len(y) == len(q) == len(g) and len(y) > 0,
+            q.ndim == 2
+            and q.shape[1] == len(levels_t)
+            and len(y) == len(q) == len(g)
+            and len(y) > 0,
             "Dimensiones incompatibles en calibración de NormalizedConformalPID",
         )
         _require(
@@ -254,9 +259,13 @@ class NormalizedConformalPID:
                 ratio = 1.0
                 if scale_mode == "volatility":
                     pos_e = eg[np.isfinite(eg) & (eg > 0.0)]  # type: ignore[index]
-                    s_floor = float(np.quantile(pos_e, floor_quantile)) if pos_e.size > 0 else w_floor
+                    s_floor = (
+                        float(np.quantile(pos_e, floor_quantile)) if pos_e.size > 0 else w_floor
+                    )
                     s_floor = max(s_floor, 1e-6)
-                    s_ceil = float(np.quantile(pos_e, ceiling_quantile)) if pos_e.size > 0 else w_ceil
+                    s_ceil = (
+                        float(np.quantile(pos_e, ceiling_quantile)) if pos_e.size > 0 else w_ceil
+                    )
                     s_ceil = max(s_ceil, s_floor * 2.0)
                 elif scale_mode == "hybrid":
                     pos_e = eg[np.isfinite(eg) & (eg > 0.0)]  # type: ignore[index]
@@ -286,7 +295,9 @@ class NormalizedConformalPID:
                 grp_ceilings.append(s_ceil)
                 grp_ratios.append(float(ratio))
                 grp_channels.append(
-                    _ChannelState(q_track=q0_clamped, err_sum=0.0, ema_fast=q0_clamped, ema_slow=q0_clamped)
+                    _ChannelState(
+                        q_track=q0_clamped, err_sum=0.0, ema_fast=q0_clamped, ema_slow=q0_clamped
+                    )
                 )
 
             channels[grp] = grp_channels
@@ -462,8 +473,12 @@ class NormalizedConformalPID:
             pairs=_interval_indices(levels, nominals),
             scale_mode=str(state["scale_mode"]),
             scale_floors={str(k): [float(x) for x in v] for k, v in state["scale_floors"].items()},
-            scale_ceilings={str(k): [float(x) for x in v] for k, v in state["scale_ceilings"].items()},
-            hybrid_ratios={str(k): [float(x) for x in v] for k, v in state["hybrid_ratios"].items()},
+            scale_ceilings={
+                str(k): [float(x) for x in v] for k, v in state["scale_ceilings"].items()
+            },
+            hybrid_ratios={
+                str(k): [float(x) for x in v] for k, v in state["hybrid_ratios"].items()
+            },
             kp=float(state["kp"]),
             ki=float(state["ki"]),
             kd=float(state["kd"]),

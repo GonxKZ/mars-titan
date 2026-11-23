@@ -1,3 +1,4 @@
+# ruff: noqa: E501
 """Núcleos nativos C99/OpenMP deterministas (IEEE-754 estricto) para post-entrenamiento.
 
 Se compilan una sola vez en caché (`~/.cache/mars-titan/fast_kernels/`) con

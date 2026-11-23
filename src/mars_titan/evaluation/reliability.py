@@ -765,10 +765,15 @@ def interval_rule(item, level, rule):
 
 
 def _quarters(table):
-    instants = table.column("prediction_at").cast(pa.int64()).to_numpy().astype("datetime64[us]")
-    years = instants.astype("datetime64[Y]").astype(int) + 1970
-    quarters = (instants.astype("datetime64[M]").astype(int) % 12) // 3 + 1
-    return np.array([f"{y}T{q}" for y, q in zip(years, quarters, strict=True)])
+    inst_us = table.column("prediction_at").cast(pa.int64()).to_numpy()
+    if not len(inst_us):
+        return np.array([])
+    unique_us, inv = np.unique(inst_us, return_inverse=True)
+    dt = unique_us.astype("datetime64[us]")
+    years = dt.astype("datetime64[Y]").astype(int) + 1970
+    quarters = (dt.astype("datetime64[M]").astype(int) % 12) // 3 + 1
+    labels = np.array([f"{y}T{q}" for y, q in zip(years, quarters, strict=True)])
+    return labels[inv]
 
 
 def adaptive_intervals(parent, covariates, matures, settings):
@@ -785,7 +790,14 @@ def adaptive_intervals(parent, covariates, matures, settings):
     liquidity = ac.within_session_groups(
         covariates["evaluation"]["liquidity"], bounds["evaluation"], settings["liquidity_groups"]
     )
-    markets = np.asarray(parent["evaluation"].column("market").to_pylist())
+    n_eval = len(target["evaluation"])
+    if n_eval:
+        max_len = max((len(str(m)) for m, _, _, _ in sessions["evaluation"]), default=1)
+        markets = np.empty(n_eval, dtype=f"<U{max_len}")
+        for market, _, start, end in sessions["evaluation"]:
+            markets[start:end] = market
+    else:
+        markets = np.array([])
     quarters = _quarters(parent["evaluation"])
     maturity = np.array(
         [int(np.max(matures["evaluation"][start:end])) for start, end in bounds["evaluation"]]
@@ -884,13 +896,18 @@ def _views(mode, results, names, parent, liquidity, alpha, cap):
     views = {}
     for split in AGGREGATED:
         aligned = results["s2"]["aligned"][split]
+        aligned_ids = np.asarray(aligned["sample_id"])
         _require(
-            list(results["s1"]["aligned"][split]["sample_id"]) == list(aligned["sample_id"]),
+            np.array_equal(np.asarray(results["s1"]["aligned"][split]["sample_id"]), aligned_ids),
             f"S1 y S2 no tienen las mismas filas en {mode}/{split}",
         )
         position = {name: i for i, name in enumerate(aligned["model_names"])}
-        index = {s: i for i, s in enumerate(parent[split].column("sample_id").to_pylist())}
-        rows = np.array([index[s] for s in aligned["sample_id"]], dtype=np.int64)
+        parent_ids = parent[split].column("sample_id").to_numpy(zero_copy_only=False)
+        if len(parent_ids) == len(aligned_ids) and np.array_equal(parent_ids, aligned_ids):
+            rows = np.arange(len(aligned_ids), dtype=np.int64)
+        else:
+            index = {s: i for i, s in enumerate(parent_ids.tolist())}
+            rows = np.array([index[s] for s in aligned_ids.tolist()], dtype=np.int64)
         known = np.asarray(alpha[split], dtype=np.float64)[rows]
         if mode == "operable":
             _require(

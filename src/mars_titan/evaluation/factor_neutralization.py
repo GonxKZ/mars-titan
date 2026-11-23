@@ -3,7 +3,7 @@
 Motivación empírica (sesión 2013 `v10`, `fiabilidad/2013/resumen.md`):
 - El IC líquido diario de S2 tiene media 0,062 pero desviación estándar diaria σ = 0,091 frente
   al suelo idiosincrático 1/√N ≈ 0,034 (N ≈ 860): el ~86 % de la varianza diaria del IC proviene
-  de exposiciones factoriales no deseadas (liquidez, volatilidad, beta, momentum, factores latentes).
+  de exposiciones factoriales no deseadas (liquidez, volatilidad, beta, momentum, PCA).
 - Neutralizar ortogonalmente (con contracción Ridge) la señal contra exposiciones estrictamente
   causales conocidas en `t` reduce σ_IC y eleva el ICIR diario y la fracción de sesiones con IC > 0.
 
@@ -31,7 +31,7 @@ def _require(condition: bool, message: str) -> None:
 
 
 def _standardize_exposures(b_raw: np.ndarray) -> np.ndarray:
-    """Imputa NaN/Inf con mediana de sesión y tipifica cada columna de exposición a media 0 y std 1."""
+    """Imputa NaN/Inf con mediana de sesión y tipifica cada columna a media 0 y std 1."""
     b = np.asarray(b_raw, dtype=np.float64)
     if b.ndim == 1:
         b = b[:, None]
@@ -160,7 +160,7 @@ def causal_rolling_pca_exposures(
     """Extrae `n_components` cargas factoriales PCA estrictamente causales por sesión.
 
     `returns_panel` tiene forma `(T, N)` (NaN permitido donde un activo no cotiza).
-    Para la sesión `t`, solo usa las filas `[max(0, t - maturity_lag - window + 1) .. t - maturity_lag]`,
+    Para la sesión `t`, solo usa `[max(0, t - maturity_lag - window + 1) .. t - maturity_lag]`,
     jamás toca `t` ni ninguna sesión posterior. Devuelve array `(T, N, n_components)` finito.
     """
     r = np.asarray(returns_panel, dtype=np.float64)
@@ -186,13 +186,13 @@ def causal_rolling_pca_exposures(
         sub_valid = valid[:, active]
         means = np.sum(np.where(sub_valid, sub, 0.0), axis=0) / np.maximum(counts[active], 1)
         centered = np.where(sub_valid, sub - means[None, :], 0.0)
-        # SVD económica de la ventana (W x N_act) -> Vh[:k].T son las cargas de factores estadísticos
+        # SVD económica de la ventana (W x N_act) -> Vh[:k].T son las cargas factoriales
         try:
             _, _, vh = np.linalg.svd(centered, full_matrices=False)
         except np.linalg.LinAlgError:
             continue
         avail = min(k, vh.shape[0])
-        # Fijar signo determinista (mayor componente absoluta positiva) para estabilidad entre sesiones
+        # Fijar signo determinista (mayor componente absoluta positiva) entre sesiones
         loadings = vh[:avail].T.copy()
         for j in range(avail):
             pivot = int(np.argmax(np.abs(loadings[:, j])))
@@ -386,7 +386,9 @@ def variance_decomposition(
     raw_var, neut_var = raw_std * raw_std, neut_std * neut_std
     idio_var = idio_floor * idio_floor
     diff = neut - raw if len(neut) == len(raw) else None
-    t_hac, se_hac, _ = oa.newey_west_hac(diff) if diff is not None and len(diff) >= 2 else (None, None, 0)
+    t_hac, se_hac, _ = (
+        oa.newey_west_hac(diff) if diff is not None and len(diff) >= 2 else (None, None, 0)
+    )
     return dict(
         sessions=int(len(neut)),
         idio_floor_std=idio_floor,

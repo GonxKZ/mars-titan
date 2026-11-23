@@ -86,10 +86,19 @@ def test_multiscale_asset_memory_improves_ic_strictly_causally_and_respects_seal
     ev_bounds = [(lo - cal_end, hi - cal_end) for lo, hi in panel["bounds"][60:]]
     pred_ev = mem.predict(panel["parent"][cal_end:], features[cal_end:])
     ic_base = np.mean(
-        [oa.rank_ic_vector(panel["parent"][cal_end + lo : cal_end + hi], panel["target"][cal_end + lo : cal_end + hi]) for lo, hi in ev_bounds]
+        [
+            oa.rank_ic_vector(
+                panel["parent"][cal_end + lo : cal_end + hi],
+                panel["target"][cal_end + lo : cal_end + hi],
+            )
+            for lo, hi in ev_bounds
+        ]
     )
     ic_mem = np.mean(
-        [oa.rank_ic_vector(pred_ev[lo:hi], panel["target"][cal_end + lo : cal_end + hi]) for lo, hi in ev_bounds]
+        [
+            oa.rank_ic_vector(pred_ev[lo:hi], panel["target"][cal_end + lo : cal_end + hi])
+            for lo, hi in ev_bounds
+        ]
     )
     assert ic_mem > ic_base + 0.08
 
@@ -133,15 +142,19 @@ def test_shrinkage_icir_weights_handles_correlated_seeds_and_zeros_placebo():
     assert w.shape == (n_sess, n_models)
     np.testing.assert_allclose(w.sum(axis=1), 1.0, atol=1e-12)
     assert np.all(w >= 0.0)
-    # En la segunda mitad, el placebo debe recibir peso casi cero y el árbol ortogonal > cualquier semilla sola
+    # En la segunda mitad, el placebo recibe peso casi cero y el árbol > cualquier semilla sola
     w_late = w[80:].mean(axis=0)
     assert w_late[4] < 0.03, f"Placebo no anulado: {w_late}"
-    assert w_late[3] > w_late[0], f"Familia ortogonal debe pesar más que una semilla repetida: {w_late}"
+    assert w_late[3] > w_late[0], (
+        f"Familia ortogonal debe pesar más que una semilla repetida: {w_late}"
+    )
 
     # Causalidad estricta: mutar IC de sesiones >= 100 no cambia pesos <= 100 (lag=1)
     ics_mut = ics.copy()
     ics_mut[100:] = -1.0
-    w_mut = ep.shrinkage_icir_weights(ics_mut, covs, half_life=63.0, se_shrinkage=1.0, maturity_lag=1)
+    w_mut = ep.shrinkage_icir_weights(
+        ics_mut, covs, half_life=63.0, se_shrinkage=1.0, maturity_lag=1
+    )
     np.testing.assert_array_equal(w[:101], w_mut[:101])
 
 
@@ -184,6 +197,18 @@ def test_multiscale_rank_memory_is_strictly_causal_and_robust_to_outliers():
     assert mem.kappa > 0.0
     ev_bounds = [(lo - cal_end, hi - cal_end) for lo, hi in panel["bounds"][50:]]
     pred_ev = mem.predict(z1[cal_end:], u1[cal_end:])
-    ic_base = np.mean([oa.rank_ic_vector(z1[cal_end + lo : cal_end + hi], target_noisy[cal_end + lo : cal_end + hi]) for lo, hi in ev_bounds])
-    ic_mem = np.mean([oa.rank_ic_vector(pred_ev[lo:hi], target_noisy[cal_end + lo : cal_end + hi]) for lo, hi in ev_bounds])
+    ic_base = np.mean(
+        [
+            oa.rank_ic_vector(
+                z1[cal_end + lo : cal_end + hi], target_noisy[cal_end + lo : cal_end + hi]
+            )
+            for lo, hi in ev_bounds
+        ]
+    )
+    ic_mem = np.mean(
+        [
+            oa.rank_ic_vector(pred_ev[lo:hi], target_noisy[cal_end + lo : cal_end + hi])
+            for lo, hi in ev_bounds
+        ]
+    )
     assert ic_mem > ic_base + 0.05

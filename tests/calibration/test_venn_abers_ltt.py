@@ -10,7 +10,9 @@ import pytest
 from mars_titan.calibration import venn_abers_ltt as val
 
 
-def _naive_weighted_pav(x: np.ndarray, y: np.ndarray, w: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
+def _naive_weighted_pav(
+    x: np.ndarray, y: np.ndarray, w: np.ndarray
+) -> tuple[np.ndarray, np.ndarray]:
     """Referencia exacta O(N) de PAV ponderado con agrupación de empates."""
     uniq, inv = np.unique(x, return_inverse=True)
     wy = np.bincount(inv, weights=w * y, minlength=len(uniq))
@@ -38,7 +40,11 @@ def _naive_venn_abers(
     w_test: float = 1.0,
 ) -> tuple[np.ndarray, np.ndarray]:
     """Oráculo exacto O(N_test * N_cal) de Inductive Venn-Abers."""
-    w = np.ones(len(x_cal), dtype=np.float64) if w_cal is None else np.asarray(w_cal, dtype=np.float64)
+    w = (
+        np.ones(len(x_cal), dtype=np.float64)
+        if w_cal is None
+        else np.asarray(w_cal, dtype=np.float64)
+    )
     p0 = np.empty(len(x_test), dtype=np.float64)
     p1 = np.empty(len(x_test), dtype=np.float64)
     for i, xt in enumerate(x_test):
@@ -55,7 +61,7 @@ def _naive_venn_abers(
 @pytest.mark.parametrize("with_ties", [False, True])
 @pytest.mark.parametrize("weighted", [False, True])
 def test_fast_venn_abers_matches_naive_oracle_to_machine_precision(with_ties, weighted):
-    """El algoritmo rápido O(N log N) debe igualar al oráculo O(N^2) a < 1e-12 en todos los casos."""
+    """El algoritmo rápido O(N log^2 N) iguala al oráculo O(N^2) a < 1e-12 siempre."""
     rng = np.random.default_rng(101 + int(with_ties) * 10 + int(weighted))
     x_cal = rng.normal(size=180)
     if with_ties:
@@ -80,7 +86,9 @@ def test_fast_venn_abers_matches_naive_oracle_to_machine_precision(with_ties, we
     np.testing.assert_allclose(pred["p0"], ref_p0, rtol=0.0, atol=1e-12)
     np.testing.assert_allclose(pred["p1"], ref_p1, rtol=0.0, atol=1e-12)
     assert np.all(pred["p0"] <= pred["p1"] + 1e-15)
-    assert np.all((pred["p_minimax"] >= pred["p0"] - 1e-15) & (pred["p_minimax"] <= pred["p1"] + 1e-15))
+    assert np.all(
+        (pred["p_minimax"] >= pred["p0"] - 1e-15) & (pred["p_minimax"] <= pred["p1"] + 1e-15)
+    )
     expected_minimax = pred["p1"] / (1.0 - pred["p0"] + pred["p1"])
     np.testing.assert_allclose(pred["p_minimax"], expected_minimax, rtol=0.0, atol=1e-14)
 
@@ -96,7 +104,7 @@ def test_venn_abers_beats_raw_isotonic_on_tail_brier_and_runs_fast_at_scale():
 
     cal = val.VennAbersCalibrator.fit(x_cal, y_cal)
     pred = cal.predict(x_ev)
-    # En colas extremas, p1 - p0 > 0 (incertidumbre epistémica) y evita probabilidades degeneradas 0 o 1
+    # En colas extremas, p1 - p0 > 0 y evita probabilidades degeneradas 0 o 1
     assert float(pred["p_minimax"].min()) > 0.0
     assert float(pred["p_minimax"].max()) < 1.0
     tail = np.abs(x_ev) > 2.0
@@ -138,7 +146,7 @@ def test_venn_abers_temporal_decay_adapts_to_base_rate_drift():
 
 
 def test_session_ltt_gate_certifies_high_reliability_and_rejects_noise():
-    """SessionLTTGate certifica cobertura con FWER controlado cuando hay señal y devuelve None con ruido."""
+    """SessionLTTGate certifica con FWER controlado cuando hay señal y devuelve None con ruido."""
     rng = np.random.default_rng(2026)
     n_cal, n_ev = 250, 250
     # Gate causal: cuando gate_score > 0.5, IC es positivo 96% de las veces; si no, 55%
@@ -183,7 +191,9 @@ def test_session_ltt_gate_does_not_leak_evaluation_and_supports_block_testing():
     """El umbral de SessionLTTGate depende solo de calibración y soporta ventanas de 5 sesiones."""
     rng = np.random.default_rng(55)
     g_cal = rng.uniform(0.0, 1.0, size=200)
-    ic_cal = np.where(g_cal > 0.3, 0.06 + 0.03 * rng.standard_normal(200), -0.02 + 0.05 * rng.standard_normal(200))
+    ic_cal = np.where(
+        g_cal > 0.3, 0.06 + 0.03 * rng.standard_normal(200), -0.02 + 0.05 * rng.standard_normal(200)
+    )
     gate1 = val.SessionLTTGate.fit(g_cal, ic_cal, target_reliability=0.90, delta=0.05)
     gate2 = val.SessionLTTGate.fit(g_cal, ic_cal, target_reliability=0.90, delta=0.05)
     assert gate1.chosen_threshold == gate2.chosen_threshold

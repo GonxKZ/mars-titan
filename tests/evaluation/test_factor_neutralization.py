@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import numpy as np
-import pytest
 
 from mars_titan.evaluation import factor_neutralization as fn
 from mars_titan.evaluation import online_aggregator as oa
@@ -25,12 +24,14 @@ def _factor_contaminated_panel(
     alpha_true = rng.standard_normal(n)
     score = np.empty(n, dtype=np.float64)
     target = np.empty(n, dtype=np.float64)
-    for s, (lo, hi) in enumerate(bounds):
+    for _s, (lo, hi) in enumerate(bounds):
         b = exposures[lo:hi]
         f_ret = factor_vol * rng.standard_normal(3)
         # Señal contaminada por una inclinación fija hacia los factores de estilo
         tilt_vec = np.array([1.0, -0.8, 0.6]) * factor_tilt
-        score[lo:hi] = idio_signal * alpha_true[lo:hi] + b @ tilt_vec + 0.5 * rng.standard_normal(assets)
+        score[lo:hi] = (
+            idio_signal * alpha_true[lo:hi] + b @ tilt_vec + 0.5 * rng.standard_normal(assets)
+        )
         target[lo:hi] = 0.008 * alpha_true[lo:hi] + b @ f_ret + 0.015 * rng.standard_normal(assets)
     return dict(score=score, target=target, exposures=exposures, bounds=bounds)
 
@@ -48,14 +49,16 @@ def test_factor_neutralization_is_exact_orthogonal_projection_when_lam_zero():
         include_intercept=True,
     )
     for lo, hi in panel["bounds"]:
-        b = np.column_stack([np.ones(hi - lo), fn._standardize_exposures(panel["exposures"][lo:hi])])
+        b = np.column_stack(
+            [np.ones(hi - lo), fn._standardize_exposures(panel["exposures"][lo:hi])]
+        )
         # B^T s_neut debe ser ~0
         proj = b.T @ neut[lo:hi]
         np.testing.assert_allclose(proj, 0.0, atol=1e-10)
 
 
 def test_factor_neutralization_crushes_daily_ic_variance_and_boosts_icir_and_hit_rate():
-    """Neutralizar factores espurios debe reducir sigma_IC y elevar ICIR y P(IC > 0) fuera de muestra."""
+    """Neutralizar factores espurios reduce sigma_IC y eleva ICIR y P(IC > 0) fuera de muestra."""
     rng = np.random.default_rng(42)
     cal = _factor_contaminated_panel(rng, sessions=100, assets=300)
     ev = _factor_contaminated_panel(rng, sessions=150, assets=300)
@@ -71,9 +74,13 @@ def test_factor_neutralization_crushes_daily_ic_variance_and_boosts_icir_and_hit
     )
     assert model.gamma >= 0.5
 
-    raw_ics = np.array([oa.rank_ic_vector(ev["score"][lo:hi], ev["target"][lo:hi]) for lo, hi in ev["bounds"]])
+    raw_ics = np.array(
+        [oa.rank_ic_vector(ev["score"][lo:hi], ev["target"][lo:hi]) for lo, hi in ev["bounds"]]
+    )
     neut_score = model.transform(ev["score"], ev["exposures"], ev["bounds"])
-    neut_ics = np.array([oa.rank_ic_vector(neut_score[lo:hi], ev["target"][lo:hi]) for lo, hi in ev["bounds"]])
+    neut_ics = np.array(
+        [oa.rank_ic_vector(neut_score[lo:hi], ev["target"][lo:hi]) for lo, hi in ev["bounds"]]
+    )
 
     decomp = fn.variance_decomposition(raw_ics, neut_ics, mean_assets=300)
     assert decomp["neut_std"] < decomp["raw_std"] * 0.75

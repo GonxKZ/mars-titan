@@ -46,7 +46,9 @@ def brier_score(probabilities: np.ndarray, outcomes: np.ndarray) -> float:
     """Puntuación de Brier media `mean((p - y)^2)`."""
     p = np.asarray(probabilities, dtype=np.float64)
     y = np.asarray(outcomes, dtype=np.float64)
-    _require(len(p) == len(y) and len(p) > 0, "brier_score requiere arrays no vacíos de igual longitud")
+    _require(
+        len(p) == len(y) and len(p) > 0, "brier_score requiere arrays no vacíos de igual longitud"
+    )
     return float(np.mean((p - y) ** 2))
 
 
@@ -76,7 +78,7 @@ def _venn_abers_precompute_python(
     y_cum: np.ndarray,
     w_test: float,
 ) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
-    """Respaldo puro en Python del algoritmo exacto de envolvente convexa persistente O(U log^2 U)."""
+    """Respaldo puro en Python del algoritmo exacto de envolvente persistente O(U log^2 U)."""
     u_count = len(w_cum) - 1
     log_n = max(1, (u_count + 1).bit_length())
 
@@ -199,7 +201,7 @@ class VennAbersCalibrator:
         weights: np.ndarray | None = None,
         test_weight: float = 1.0,
     ) -> VennAbersCalibrator:
-        """Precalcula los valores exactos `[p0, p1]` para todos los intervalos y empates en O(N log^2 N)."""
+        """Precalcula `[p0, p1]` exactos para todos los intervalos y empates en O(N log^2 N)."""
         x = np.asarray(scores, dtype=np.float64)
         y = np.asarray(outcomes, dtype=np.float64)
         _require(
@@ -267,7 +269,7 @@ class VennAbersCalibrator:
         return cls.fit(scores, outcomes, weights=weights, test_weight=1.0)
 
     def predict(self, scores: np.ndarray) -> dict[str, np.ndarray]:
-        """Evalúa `[p0, p1]`, probabilidad minimax `p1 / (1 - p0 + p1)` e incertidumbre `p1 - p0`."""
+        """Evalúa `[p0, p1]`, probabilidad minimax `p1 / (1 - p0 + p1)` y anchura `p1 - p0`."""
         x = np.asarray(scores, dtype=np.float64)
         u_count = len(self.unique_x)
         pos = np.searchsorted(self.unique_x, x, side="left")
@@ -294,12 +296,14 @@ def _wilson_ci(hits: int, total: int, z: float = Z95) -> dict[str, Any] | None:
     denom = 1.0 + z * z / total
     centre = (p + z * z / (2.0 * total)) / denom
     half = z * math.sqrt(p * (1.0 - p) / total + z * z / (4.0 * total * total)) / denom
-    return dict(rate=float(p), low=float(centre - half), high=float(centre + half), hits=hits, total=total)
+    return dict(
+        rate=float(p), low=float(centre - half), high=float(centre + half), hits=hits, total=total
+    )
 
 
 @dataclass
 class SessionLTTGate:
-    """Puerta de fiabilidad a nivel de sesión con control de riesgo Learn-then-Test (FWER <= delta)."""
+    """Puerta de fiabilidad por sesión con control de riesgo Learn-then-Test (FWER <= delta)."""
 
     chosen_threshold: float | None
     target_reliability: float
@@ -324,11 +328,11 @@ class SessionLTTGate:
         block_size: int = 1,
         min_active: int = 5,
     ) -> SessionLTTGate:
-        """Elige el umbral causal más bajo que certifica `P(metric > margin | score >= lam) >= target`.
+        """Elige el umbral causal mínimo que certifica `P(metric > margin | score >= lam) >= p`.
 
         Los umbrales donde incluso el 100 % de aciertos no puede alcanzar `p <= alpha` (i.e.
         `target_reliability ** n_units > delta`, determinado SOLO por `gate_scores`, sin mirar
-        `session_metrics`) se marcan como no contrastables sin gastar error de familia (FWER exacto).
+        `session_metrics`) se marcan no contrastables sin gastar error de familia (FWER exacto).
 
         Métodos de control de FWER <= `delta`:
         - `method="holm"` (por defecto): procedimiento step-down de Holm-Bonferroni sobre los
@@ -371,7 +375,9 @@ class SessionLTTGate:
             if block_size > 1:
                 n_blk = len(active_m) // block_size
                 if n_blk > 0:
-                    blk_means = active_m[: n_blk * block_size].reshape(n_blk, block_size).mean(axis=1)
+                    blk_means = (
+                        active_m[: n_blk * block_size].reshape(n_blk, block_size).mean(axis=1)
+                    )
                     n_units = int(n_blk)
                     hits = int(np.sum(blk_means > margin))
                 else:
@@ -467,7 +473,9 @@ class SessionLTTGate:
         blk_wilson = None
         if self.block_size > 1 and n_act >= self.block_size:
             n_blk = n_act // self.block_size
-            blk_means = active_m[: n_blk * self.block_size].reshape(n_blk, self.block_size).mean(axis=1)
+            blk_means = (
+                active_m[: n_blk * self.block_size].reshape(n_blk, self.block_size).mean(axis=1)
+            )
             blk_wilson = _wilson_ci(int(np.sum(blk_means > self.margin)), n_blk)
         return dict(
             chosen_threshold=self.chosen_threshold,

@@ -278,6 +278,37 @@ def known_rows(state, origin, parent, view, tables, markets=None):
     checked_factors(manifest, markets)
     known = _screening().KnownOffset(Path(state), origin)
     maturity = pilots._maturity(manifest, view)
+    # Precalentar `known.assets` en paralelo (4 hilos) si es un KnownOffset real con muchos activos.
+    if hasattr(known, "assets") and hasattr(known, "prepared") and hasattr(known, "module"):
+        all_assets = sorted(
+            {
+                asset
+                for table in tables.values()
+                for asset in table.column("asset_id").unique().to_pylist()
+            }
+        )
+        if len(all_assets) > 4:
+            from concurrent.futures import ThreadPoolExecutor
+
+            names_tf = known.module.NAMES
+            idx_has = names_tf.index("has_market_model")
+            idx_alp = names_tf.index("alpha_percent")
+            idx_liq = names_tf.index("log_dollar_volume_21")
+
+            def _warm(asset):
+                mkt, sym = asset.split("/", 1)
+                prices, days = known._table(known.prepared / mkt / sym / "prices.parquet")
+                feats = known.module.technical_features(
+                    prices, days, *known.factors.get(mkt, (None, None))
+                )
+                ok = feats[:, idx_has] > 0
+                vals = feats[:, idx_alp].astype(np.float64) / 100
+                liq = feats[:, idx_liq].astype(np.float64)
+                return asset, (days, np.where(ok, vals, np.nan), liq)
+
+            with ThreadPoolExecutor(max_workers=4) as pool:
+                for asset, entry in pool.map(_warm, all_assets):
+                    known.assets[asset] = entry
     alpha, matures = {}, {}
     for split, table in tables.items():
         every = pq.read_table(

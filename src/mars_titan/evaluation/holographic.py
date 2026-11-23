@@ -87,15 +87,18 @@ def session_ranks(values, bounds):
     return result
 
 
-def session_ics(tool, score, target, bounds, keys, min_assets):
+def session_ics(tool, score, target, bounds, keys, min_assets, *, _target_ranks=None):
     """IC de rangos de cada sesión puntuable, por (mercado, instante)."""
     result = {}
-    for (start, end), key in zip(bounds, keys, strict=True):
+    for idx, ((start, end), key) in enumerate(zip(bounds, keys, strict=True)):
         if end - start < min_assets:
             continue
-        value = tool.correlation(
-            tool.average_ranks(score[start:end]), tool.average_ranks(target[start:end])
+        t_ranks = (
+            _target_ranks[idx]
+            if _target_ranks is not None
+            else tool.average_ranks(target[start:end])
         )
+        value = tool.correlation(tool.average_ranks(score[start:end]), t_ranks)
         if not math.isnan(value):
             result[key] = value
     return result
@@ -125,15 +128,18 @@ def ic_correlation(left, right):
     return float(np.corrcoef([left[k] for k in common], [right[k] for k in common])[0, 1])
 
 
-def within_correlation(tool, left, right, bounds, min_assets):
+def within_correlation(tool, left, right, bounds, min_assets, *, _left_ranks=None):
     """Correlación de rangos media, dentro de cada sesión, entre dos predicciones."""
     values = []
-    for start, end in bounds:
+    for idx, (start, end) in enumerate(bounds):
         if end - start < min_assets:
             continue
-        value = tool.correlation(
-            tool.average_ranks(left[start:end]), tool.average_ranks(right[start:end])
+        l_ranks = (
+            _left_ranks[idx]
+            if _left_ranks is not None
+            else tool.average_ranks(left[start:end])
         )
+        value = tool.correlation(l_ranks, tool.average_ranks(right[start:end]))
         if not math.isnan(value):
             values.append(value)
     return float(np.mean(values)) if values else None
@@ -363,76 +369,128 @@ def measure(declaration, state, organs, origin, output, *, wait_hours, poll, log
     work = Path(output) / f".{origin}.{os.getpid()}.tmp"
     try:
         work.mkdir(parents=True)
-        inputs = {}
+        raw_base = {
+            s: oa.build_raw_split_base(
+                tables[reference][s], alpha=alpha[s], matures_at=matures[s], already_sorted=True
+            )
+            for s in AGGREGATED
+        }
+        pred_map = {}
         for seed in seeds:
             for role in ("core", "secondary", "static"):
-                inputs[(role, seed)] = og._write_component(
-                    work / "entradas" / f"{role}-{seed}",
-                    tables[reference],
-                    {s: prediction(f"{role}/{seed}", s) for s in AGGREGATED},
-                    alpha,
-                    matures,
-                )
-            inputs[("signal", seed)] = og._write_component(
-                work / "entradas" / f"signal-{seed}",
-                tables[reference],
-                {
-                    s: prediction(f"organ/{seed}", s) - prediction(f"static/{seed}", s)
-                    for s in AGGREGATED
-                },
-                alpha,
-                matures,
-            )
+                pred_map[f"{role}/{seed}"] = {s: prediction(f"{role}/{seed}", s) for s in AGGREGATED}
+            pred_map[f"signal/{seed}"] = {
+                s: prediction(f"organ/{seed}", s) - prediction(f"static/{seed}", s)
+                for s in AGGREGATED
+            }
 
-        def aggregate(members, mode):
-            return oa.run_aggregation(
-                members,
-                splits=tuple(declaration["splits"]),
-                selection_split=declaration["selection_split"],
-                min_assets=min_assets,
-                align=declaration["align"],
-                operable=mode == "operable",
-                alpha_col="alpha",
-                maturity_col="matures_at",
-                placebo_seed=declaration["aggregator_placebo_seed"],
-                operable_scales=tuple(declaration["operable_scales"]),
-            )
-
+        decl_splits = tuple(declaration["splits"])
+        decl_scales = tuple(declaration["operable_scales"])
         levels, contrasts, diversity, rows, factors = {}, {}, {}, [], {}
         for mode in declaration["modes"]:
+            is_operable = mode == "operable"
+            raw_by_split = {
+                s: {
+                    key: oa.build_raw_split(raw_base[s], vals[s], include_alpha=is_operable)
+                    for key, vals in pred_map.items()
+                }
+                for s in AGGREGATED
+            }
+            cache = (
+                oa.build_shared_panel_cache(
+                    raw_by_split,
+                    splits=decl_splits,
+                    min_assets=min_assets,
+                    align=declaration["align"],
+                    operable=is_operable,
+                    operable_scales=decl_scales,
+                )
+                if declaration["align"] == "strict"
+                else None
+            )
             members = {split: {b: {} for b in BRAINS} for split in AGGREGATED}
             frames, factors[mode] = {}, {}
             for seed in seeds:
-                h = aggregate(
-                    {
-                        names["static"]: inputs[("static", seed)],
-                        og.SIGNAL: inputs[("signal", seed)],
-                    },
-                    mode,
+                # Reutilizar la caché compartida (cero Parquet temporal, 1 ajuste de k_m, 1 cálculo
+                # de rangos/IC/cov por jugador) y ejecutar solo los agregadores necesarios.
+                k_stat = f"static/{seed}"
+                k_sig = f"signal/{seed}"
+                k_core = f"core/{seed}"
+                k_sec = f"secondary/{seed}"
+                h = oa.run_aggregation(
+                    {k_stat: k_stat, k_sig: k_sig},
+                    splits=decl_splits,
+                    selection_split=declaration["selection_split"],
+                    min_assets=min_assets,
+                    align=declaration["align"],
+                    operable=is_operable,
+                    alpha_col="alpha",
+                    maturity_col="matures_at",
+                    placebo_seed=declaration["aggregator_placebo_seed"],
+                    operable_scales=decl_scales,
+                    aggregators=("rank_average", "ridge_cov_active"),
+                    include_placebos=False,
+                    include_asset_abstention=False,
+                    preloaded_raw=raw_by_split,
+                    precomputed_cache=cache,
                 )
-                c = aggregate(
-                    {
-                        names["core"]: inputs[("core", seed)],
-                        names["secondary"]: inputs[("secondary", seed)],
-                    },
-                    mode,
-                )
-                if mode == "operable":
-                    factors[mode][seed] = dict(h["operable"]["scales"], **c["operable"]["scales"])
+                if cache is not None:
+                    c_aligned = cache["aligned_all"]
+                    c_scales = (
+                        {
+                            names["core"]: cache["scales"][k_core],
+                            names["secondary"]: cache["scales"][k_sec],
+                        }
+                        if is_operable
+                        else None
+                    )
+                else:
+                    c = oa.run_aggregation(
+                        {k_core: k_core, k_sec: k_sec},
+                        splits=decl_splits,
+                        selection_split=declaration["selection_split"],
+                        min_assets=min_assets,
+                        align=declaration["align"],
+                        operable=is_operable,
+                        alpha_col="alpha",
+                        maturity_col="matures_at",
+                        placebo_seed=declaration["aggregator_placebo_seed"],
+                        operable_scales=decl_scales,
+                        aggregators=("rank_average",),
+                        include_placebos=False,
+                        include_asset_abstention=False,
+                        preloaded_raw=raw_by_split,
+                    )
+                    c_aligned = c["aligned"]
+                    c_scales = (
+                        {
+                            names["core"]: c["operable"]["scales"][k_core],
+                            names["secondary"]: c["operable"]["scales"][k_sec],
+                        }
+                        if is_operable
+                        else None
+                    )
+                if is_operable:
+                    h_scales = {
+                        names["static"]: h["operable"]["scales"][k_stat],
+                        og.SIGNAL: h["operable"]["scales"][k_sig],
+                    }
+                    factors[mode][seed] = dict(h_scales, **c_scales)
                 for split in AGGREGATED:
-                    held, core = h["aligned"][split], c["aligned"][split]
+                    held, core = h["aligned"][split], c_aligned[split]
+                    held_ids = np.asarray(held["sample_id"])
                     frame = frames.setdefault(
                         split,
                         dict(
-                            sample_id=list(held["sample_id"]),
+                            sample_id=held_ids,
                             target=np.asarray(held["target"], dtype=np.float64),
                             bounds=ac.bounds_of(held["sessions"]),
                             keys=[(str(m), int(t)) for m, t, _, _ in held["sessions"]],
                         ),
                     )
                     _require(
-                        list(held["sample_id"]) == frame["sample_id"]
-                        and list(core["sample_id"]) == frame["sample_id"],
+                        np.array_equal(held_ids, frame["sample_id"])
+                        and np.array_equal(np.asarray(core["sample_id"]), frame["sample_id"]),
                         f"Las filas alineadas de {mode}/{split} cambian entre semillas o conjuntos",
                     )
                     at_h = {n: i for i, n in enumerate(held["model_names"])}
@@ -441,15 +499,15 @@ def measure(declaration, state, organs, origin, output, *, wait_hours, poll, log
                         h["aggregators"]["ridge_cov_active"]["split_predictions"][split],
                         dtype=np.float64,
                     )
-                    members[split]["E"][seed] = held["predictions"][
-                        :, at_h[names["static"]]
-                    ].astype(np.float64)
-                    members[split]["C"][seed] = core["predictions"][:, at_c[names["core"]]].astype(
+                    members[split]["E"][seed] = held["predictions"][:, at_h[k_stat]].astype(
                         np.float64
                     )
-                    members[split]["T"][seed] = core["predictions"][
-                        :, at_c[names["secondary"]]
-                    ].astype(np.float64)
+                    members[split]["C"][seed] = core["predictions"][:, at_c[k_core]].astype(
+                        np.float64
+                    )
+                    members[split]["T"][seed] = core["predictions"][:, at_c[k_sec]].astype(
+                        np.float64
+                    )
                 say(f"{mode}: semilla {seed} agregada")
             levels[mode] = {}
             for split in AGGREGATED:
@@ -467,8 +525,20 @@ def measure(declaration, state, organs, origin, output, *, wait_hours, poll, log
                     T3H3=(brain["T"] + brain["H"]) / 2,
                     T3E3=(brain["T"] + brain["E"]) / 2,
                 )
+                target_ranks = [
+                    tool.average_ranks(frame["target"][s:e]) if (e - s) >= min_assets else None
+                    for s, e in bounds
+                ]
                 ics = {
-                    name: session_ics(tool, values, frame["target"], bounds, keys, min_assets)
+                    name: session_ics(
+                        tool,
+                        values,
+                        frame["target"],
+                        bounds,
+                        keys,
+                        min_assets,
+                        _target_ranks=target_ranks,
+                    )
                     for name, values in series.items()
                 }
                 levels[mode][split] = {name: tool.summary(v) for name, v in ics.items()}
@@ -496,21 +566,24 @@ def measure(declaration, state, organs, origin, output, *, wait_hours, poll, log
                     t3h3_vs_t3e3=paired(tool, ics["T3H3"], ics["T3E3"]),
                     **{f"c3_vs_c_{s}": paired(tool, ics["C3"], ics[f"C_{s}"]) for s in seeds},
                 )
+                c3_ranks = [
+                    tool.average_ranks(brain["C"][s:e]) if (e - s) >= min_assets else None
+                    for s, e in bounds
+                ]
                 diversity[mode] = dict(
                     ic_correlation_c3_h3=ic_correlation(ics["C3"], ics["H3"]),
                     ic_correlation_c3_e3=ic_correlation(ics["C3"], ics["E3"]),
                     ic_correlation_c3_t3=ic_correlation(ics["C3"], ics["T3"]),
                     within_c3_h3=within_correlation(
-                        tool, brain["C"], brain["H"], bounds, min_assets
+                        tool, brain["C"], brain["H"], bounds, min_assets, _left_ranks=c3_ranks
                     ),
                     within_c3_e3=within_correlation(
-                        tool, brain["C"], brain["E"], bounds, min_assets
+                        tool, brain["C"], brain["E"], bounds, min_assets, _left_ranks=c3_ranks
                     ),
                     within_c3_t3=within_correlation(
-                        tool, brain["C"], brain["T"], bounds, min_assets
+                        tool, brain["C"], brain["T"], bounds, min_assets, _left_ranks=c3_ranks
                     ),
                 )
-        shutil.rmtree(work / "entradas")
         code = og._code_identity()
         code["files"]["holographic"] = pilots._sha256(Path(__file__))
         summary = og._plain(

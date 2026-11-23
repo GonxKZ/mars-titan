@@ -373,7 +373,8 @@ def _market_rows(manifest, market, log, *, workers=4):
                     owner.append(np.full(len(d_arr), len(names), dtype=np.int32))
                     names.append(asset_name)
                 if index % 500 == 0:
-                    log(f"{market}: {index}/{len(labels)} activos, {time.monotonic() - started:.0f} s")
+                    elapsed = time.monotonic() - started
+                    log(f"{market}: {index}/{len(labels)} activos, {elapsed:.0f} s")
     else:
         for index, item in enumerate(labels):
             result = _read_price(item)
@@ -415,9 +416,10 @@ def build(manifest_path, output, *, markets=None, log=print):
         train_mask = part_all == 0
         post_mask = part_all >= 1
         _require(
-            bool(np.any(post_mask)), f"{market} no tiene filas de validación, calibración ni evaluación"
+            bool(np.any(post_mask)),
+            f"{market} no tiene filas de validación, calibración ni evaluación",
         )
-        # Comprobar separación cronológica sin ordenar 5+ millones de filas de ajuste innecesariamente:
+        # Comprobar separación cronológica sin ordenar millones de filas innecesariamente:
         # la escala robusta es invariante al orden de las filas de ajuste.
         train_count = int(np.sum(train_mask))
         if train_count > 0:

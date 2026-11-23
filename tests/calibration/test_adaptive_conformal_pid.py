@@ -21,7 +21,7 @@ def _heteroskedastic_panel(
     shift_mult: float = 2.0,
     base_scale: float = 0.015,
 ):
-    """Panel sintético heterocedástico con 10 deciles de volatilidad y cambio de régimen opcional."""
+    """Panel heterocedástico con 10 deciles de volatilidad y cambio de régimen opcional."""
     n = sessions * assets
     times = np.repeat(START + np.arange(sessions, dtype=np.int64) * DAY, assets)
     matures = times + DAY
@@ -89,7 +89,9 @@ def test_normalized_cqr_eliminates_volatility_decile_collapse():
     worst_norm = min(float(cov_norm[deciles == d].mean()) for d in range(10))
 
     assert worst_add < 0.70, f"El panel debe reproducir el colapso aditivo (fue {worst_add:.3f})"
-    assert worst_norm > 0.77, f"CQR normalizada debe estabilizar el peor decil (fue {worst_norm:.3f})"
+    assert worst_norm > 0.77, (
+        f"CQR normalizada debe estabilizar el peor decil (fue {worst_norm:.3f})"
+    )
     assert abs(float(cov_norm.mean()) - 0.80) < 0.02
     # Además, la anchura mediana (activos tranquilos) es más estrecha y el Winkler/Interval Score
     # propio (que penaliza la falta de cobertura en activos volátiles) es estrictamente menor!
@@ -98,10 +100,18 @@ def test_normalized_cqr_eliminates_volatility_decile_collapse():
     lo_n, hi_n = emitted[:, 1], emitted[:, 3]
     y = ev["target"]
     is_add = float(
-        np.mean((hi_a - lo_a) + (2.0 / alpha) * np.maximum(lo_a - y, 0.0) + (2.0 / alpha) * np.maximum(y - hi_a, 0.0))
+        np.mean(
+            (hi_a - lo_a)
+            + (2.0 / alpha) * np.maximum(lo_a - y, 0.0)
+            + (2.0 / alpha) * np.maximum(y - hi_a, 0.0)
+        )
     )
     is_norm = float(
-        np.mean((hi_n - lo_n) + (2.0 / alpha) * np.maximum(lo_n - y, 0.0) + (2.0 / alpha) * np.maximum(y - hi_n, 0.0))
+        np.mean(
+            (hi_n - lo_n)
+            + (2.0 / alpha) * np.maximum(lo_n - y, 0.0)
+            + (2.0 / alpha) * np.maximum(y - hi_n, 0.0)
+        )
     )
     # En activos tranquilos (decil 0 de vol) evita el inflado aditivo, y el Winkler/Interval Score
     # propio (que penaliza la falta de cobertura en activos volátiles) es estrictamente menor!
@@ -113,7 +123,9 @@ def test_pid_controller_recovers_coverage_after_volatility_regime_shift():
     """Ante un salto de volatilidad 2x no observado en vol_21, el PID recupera cobertura ~0.80."""
     rng = np.random.default_rng(7)
     cal = _heteroskedastic_panel(rng, sessions=30, assets=200)
-    ev = _heteroskedastic_panel(rng, sessions=120, assets=200, vol_regime_shift_at=20, shift_mult=2.0)
+    ev = _heteroskedastic_panel(
+        rng, sessions=120, assets=200, vol_regime_shift_at=20, shift_mult=2.0
+    )
 
     static_ctrl = pid.NormalizedConformalPID.start(
         cal["target"],
@@ -139,15 +151,27 @@ def test_pid_controller_recovers_coverage_after_volatility_regime_shift():
         kd=0.0,
     )
     q_static, _, _ = pid.replay_normalized_pid(
-        static_ctrl, ev["quantiles"], ev["groups"], ev["prediction_at"], ev["target"], ev["matures_at"]
+        static_ctrl,
+        ev["quantiles"],
+        ev["groups"],
+        ev["prediction_at"],
+        ev["target"],
+        ev["matures_at"],
     )
     q_pid, emissions, updates = pid.replay_normalized_pid(
-        adaptive_ctrl, ev["quantiles"], ev["groups"], ev["prediction_at"], ev["target"], ev["matures_at"]
+        adaptive_ctrl,
+        ev["quantiles"],
+        ev["groups"],
+        ev["prediction_at"],
+        ev["target"],
+        ev["matures_at"],
     )
     # Evaluar en las últimas 60 sesiones post-cambio de régimen
     post = slice(60 * 200, None)
     cov_static = float(
-        np.mean((ev["target"][post] >= q_static[post, 1]) & (ev["target"][post] <= q_static[post, 3]))
+        np.mean(
+            (ev["target"][post] >= q_static[post, 1]) & (ev["target"][post] <= q_static[post, 3])
+        )
     )
     cov_pid = float(
         np.mean((ev["target"][post] >= q_pid[post, 1]) & (ev["target"][post] <= q_pid[post, 3]))
@@ -239,7 +263,7 @@ def test_export_restore_roundtrip_is_bit_exact_and_monotonic_quantiles():
 
 
 def test_volatility_and_hybrid_scale_modes_work_causally():
-    """Los modos `volatility` y `hybrid` aceptan escala externa y respetan la invariante de cobertura."""
+    """Los modos `volatility` y `hybrid` aceptan escala externa y mantienen cobertura."""
     rng = np.random.default_rng(23)
     cal = _heteroskedastic_panel(rng, sessions=30, assets=120)
     ev = _heteroskedastic_panel(rng, sessions=30, assets=120)
@@ -273,8 +297,12 @@ def test_mondrian_stratified_normalized_pid_equalizes_all_vol_deciles():
     """Mondrian por decil de volatilidad + normalización local + PID iguala todos los deciles."""
     rng = np.random.default_rng(31)
     cal = _heteroskedastic_panel(rng, sessions=40, assets=250)
-    ev = _heteroskedastic_panel(rng, sessions=80, assets=250, vol_regime_shift_at=20, shift_mult=1.5)
-    cal_dec = np.digitize(cal["volatility"], np.quantile(cal["volatility"], np.linspace(0.1, 0.9, 9)))
+    ev = _heteroskedastic_panel(
+        rng, sessions=80, assets=250, vol_regime_shift_at=20, shift_mult=1.5
+    )
+    cal_dec = np.digitize(
+        cal["volatility"], np.quantile(cal["volatility"], np.linspace(0.1, 0.9, 9))
+    )
     ev_dec = np.digitize(ev["volatility"], np.quantile(cal["volatility"], np.linspace(0.1, 0.9, 9)))
     g_cal = pid.make_stratified_groups(cal["groups"], cal_dec)
     g_ev = pid.make_stratified_groups(ev["groups"], ev_dec)
@@ -289,9 +317,7 @@ def test_mondrian_stratified_normalized_pid_equalizes_all_vol_deciles():
     # En la segunda mitad post-shock (sesiones 40..79), el peor decil converge cerca de 0.80
     post = slice(40 * 250, None)
     worst_dec = min(
-        float(cov80[post][ev_dec[post] == d].mean())
-        for d in range(10)
-        if np.any(ev_dec[post] == d)
+        float(cov80[post][ev_dec[post] == d].mean()) for d in range(10) if np.any(ev_dec[post] == d)
     )
     assert worst_dec > 0.74, f"Peor decil Mondrian-NPID demasiado bajo: {worst_dec:.3f}"
     assert abs(float(cov80[post].mean()) - 0.80) < 0.03

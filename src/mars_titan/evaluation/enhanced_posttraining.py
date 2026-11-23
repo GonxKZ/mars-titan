@@ -4,7 +4,7 @@ Combina mejoras causales probadas sobre las emisiones de modelos existentes sin 
 1. `multiscale_asset_residual_features` + `MultiScaleAssetMemory`:
    - Memoria causal multiescala de residuos por activo con semividas simultáneas (p. ej. 5, 21 y 63
      sesiones) y contracción bayesiana `mu_a(h) = sum_w_res / (sum_w + k_h)`.
-   - Soporta tanto residuo de etiqueta (`y - p`) como residuo operable (`(y + alpha) - (k*p + alpha)`).
+   - Soporta tanto residuo de etiqueta (`y - p`) como operable (`(y + alpha) - (k*p + alpha)`).
    - Sustituye la búsqueda discreta en 80 configuraciones por un ajuste continuo regularizado
      (no negativo con contracción Ridge) en calibración sobre 3 pesos de horizonte.
 2. `oas_shrink_covariance` + `shrinkage_icir_weights`:
@@ -19,7 +19,6 @@ from __future__ import annotations
 
 import math
 from dataclasses import dataclass
-from typing import Any
 
 import numpy as np
 
@@ -173,12 +172,12 @@ class MultiScaleAssetMemory:
         if w_sum <= 1e-12:
             w_pos = np.ones(h, dtype=np.float64) / h
         else:
-            # Normalizar pesos de horizonte al símplex para que `scale` esté en unidades 1:1 del residuo
+            # Normalizar pesos al símplex para que `scale` quede en unidades 1:1 del residuo
             w_pos = w_pos / w_sum
 
         delta = f @ w_pos
 
-        # 2) Ajustar escala global en calibración por IC medio de rangos (con 0.0 como respaldo seguro)
+        # 2) Ajustar escala global en calibración por IC medio de rangos (0.0 como respaldo)
         sess_info: list[tuple[int, int, np.ndarray, float]] = []
         for lo, hi in bounds:
             if hi - lo < min_assets:
@@ -230,7 +229,7 @@ def multiscale_rank_residual_features(
     shrinkage_k: float = 5.0,
     valid_mask: np.ndarray | None = None,
 ) -> tuple[np.ndarray, np.ndarray]:
-    """Memoria multiescala causal de residuos gaussianos ortogonalizados por sesión (robusta a outliers).
+    """Memoria multiescala causal de residuos gaussianos ortogonalizados por sesión.
 
     En cada sesión `t` (con filas válidas):
     1. Emite la z-score de la predicción `z_t` y las lecturas tipificadas `u_t[:, h]` de cada
@@ -318,7 +317,7 @@ def multiscale_rank_residual_features(
 
 @dataclass
 class MultiScaleRankMemory:
-    """Fusión multiescala regularizada sobre `z_parent + kappa * (u @ w)` ajustada en calibración."""
+    """Fusión multiescala regularizada sobre `z_parent + kappa * (u @ w)` en calibración."""
 
     weights: np.ndarray
     kappa: float
@@ -336,7 +335,7 @@ class MultiScaleRankMemory:
         kappa_grid: tuple[float, ...] = (0.0, 0.025, 0.05, 0.075, 0.10, 0.15, 0.20, 0.30),
         min_assets: int = 30,
     ) -> MultiScaleRankMemory:
-        """Elige los pesos de horizonte (por IC medio positivo de cada horizonte en calibración) y `kappa`."""
+        """Elige los pesos de horizonte (por ICIR positivo en calibración) y el factor `kappa`."""
         z = np.asarray(z_parent, dtype=np.float64)
         u = np.asarray(u_features, dtype=np.float64)
         y = np.asarray(target, dtype=np.float64)
@@ -354,13 +353,10 @@ class MultiScaleRankMemory:
             if n_y > 0.0:
                 sess_info.append((lo, hi, ly, n_y))
 
-        # Pesos de horizonte por ICIR positivo en calibración (regularización natural sin sobreajuste)
+        # Pesos de horizonte por ICIR positivo en calibración (regularización sin sobreajuste)
         h_scores = np.zeros(h, dtype=np.float64)
         for h_i in range(h):
-            ics_h = [
-                oa._rank_ic_prepped(u[lo:hi, h_i], ly, n_y)
-                for lo, hi, ly, n_y in sess_info
-            ]
+            ics_h = [oa._rank_ic_prepped(u[lo:hi, h_i], ly, n_y) for lo, hi, ly, n_y in sess_info]
             ics_h = [v for v in ics_h if math.isfinite(v)]
             if len(ics_h) >= 2:
                 arr_h = np.asarray(ics_h, dtype=np.float64)
@@ -384,7 +380,9 @@ class MultiScaleRankMemory:
             if val > best_ic + 1e-12:
                 best_ic = val
                 best_kap = float(kap)
-        return cls(weights=w_pos, kappa=best_kap, calibration_ic=best_ic, base_calibration_ic=base_ic)
+        return cls(
+            weights=w_pos, kappa=best_kap, calibration_ic=best_ic, base_calibration_ic=base_ic
+        )
 
     def signal(self, u_features: np.ndarray) -> np.ndarray:
         return self.kappa * (np.asarray(u_features, dtype=np.float64) @ self.weights)
@@ -402,7 +400,7 @@ def oas_shrink_covariance(
 
     Contrae `S` hacia el objetivo esférico `mu * I` (`mu = tr(S) / p`):
         `Sigma_oas = (1 - rho) * S + rho * mu * I`
-    Garantiza simetría y buen condicionamiento incluso con `p` cercano a `n_obs` o modelos colineales.
+    Garantiza simetría y buen condicionamiento incluso con `p` cercano a `n_obs` o colinealidad.
     """
     s = np.asarray(sample_cov, dtype=np.float64)
     s = 0.5 * (s + s.T)
@@ -448,7 +446,7 @@ def shrinkage_icir_weights(
 
     En cada sesión `t` usa exclusivamente sesiones maduras `M(t)`:
     1. Estima `b_t` (media EWMA del IC) y su error estándar `SE_t` con `n_eff`.
-    2. Aplica contracción Empirical-Bayes de parte positiva: `b_adj = max(b_t - se_shrinkage * SE_t, 0)`
+    2. Aplica contracción Empirical-Bayes positiva: `b_adj = max(b_t - se_shrinkage * SE_t, 0)`
        en el conjunto activo `{m : b_adj[m] > 0}`, anulando a cero expertos sin señal (placebos).
     3. Estima la matriz de covarianza de predicciones `Sigma_t` (actual o histórica madura) y la
        contrae con OAS (`cov_shrinkage="oas"`) + regularización `lam * I`.
@@ -486,7 +484,9 @@ def shrinkage_icir_weights(
             matured = np.flatnonzero((mat_arr[:t] <= times[t]) & sc[:t])
         else:
             cutoff = t - maturity_lag
-            matured = np.flatnonzero(sc[: cutoff + 1]) if cutoff >= 0 else np.empty(0, dtype=np.int64)
+            matured = (
+                np.flatnonzero(sc[: cutoff + 1]) if cutoff >= 0 else np.empty(0, dtype=np.int64)
+            )
         if matured.size == 0:
             out[t] = uniform
             continue
