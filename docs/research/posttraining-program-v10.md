@@ -468,7 +468,7 @@ emisiones. La regla queda escrita antes:
 Encargo del coordinador del 23 de noviembre de 2026 (línea F): más del 90 % de precisión y
 fiabilidad, sin trampas ni falsear nada. Las medidas son descriptivas y secundarias, fuera de la
 familia primaria.
-- La declaración es `configs/experiments/posttraining-reliability.json` (huella 5fb27d72…).
+- La declaración es `configs/experiments/posttraining-reliability.json` (huella cdb1c511…).
 - La orden es `python -m mars_titan.evaluation.reliability medir`, con las entradas, la espera
   (código 75) y la publicación atómica de S2 y de A. Cada orden mide un mercado.
 - Se fijó en git antes de medir ningún origen.
@@ -525,8 +525,11 @@ calibración.
   - Si ningún umbral pasa, la cobertura es 0 y se dice tal cual.
 - **Reglas de entrega,** leídas mecánicamente por la orden (`verdicts`), sin juicio después de
   medir:
-  - **F1.** Una fiabilidad ≥ 0,90 está demostrada si el límite inferior de Wilson llega a 0,90.
-    Si solo llega el punto, es compatible.
+  - **F1.** Una fiabilidad por sesión ≥ 0,90 está demostrada si llegan a 0,90 dos límites
+    inferiores: el de Wilson y el del arranque estacionario por bloques (media de 5 sesiones, 2.000
+    remuestras). El segundo hace falta porque Wilson supone sesiones independientes.
+    - En ventanas basta el de Wilson.
+    - Si solo llega el punto, la fiabilidad es compatible.
   - **Atribución en lo operable.** Se atribuye al modelo si su mejora sobre el alfa solo tiene
     media > 0 y t ≥ 2. Si no, es persistencia del alfa.
   - **F2** entra como capa de confianza de S2 (operable, todas las filas) si se cumplen todas:
@@ -552,6 +555,13 @@ calibración.
     - Se entrega el primero que pasa; si ninguno pasa, se dice.
     - Los grupos de Mondrian son los mismos deciles que mira la regla. Pasarla en calibración sale
       por construcción; lo que se mide es si se sostiene en evaluación.
+  - **Intervalo de la entrega fijado con 2013.** Con la segunda lectura de 2013 (desarrollo), y de
+    acuerdo con el coordinador, se fija Mondrian con ACI como intervalo de la entrega en los
+    orígenes limpios.
+    - La regla de R-1 es su confirmación en cada origen; los demás candidatos se informan como
+      comparación.
+    - Se añade el nivel del 90 %, el que se leerá como «fiabilidad del 90 %». Se construye desde la
+      banda de los cuantiles 0,10–0,90 con el mismo método y se mide igual.
 - **Primera lectura de 2013** (desarrollo; declaración b3d399ef…, US, semilla 42):
   - **F1.** Sesiones con IC > 0 con todos los nombres:
     - S2 da 0,956 [0,923; 0,975] en la etiqueta y 0,944 [0,909; 0,966] en lo operable, con una
@@ -566,6 +576,16 @@ calibración.
     - el 80 % del núcleo cubre 0,889;
     - la CQR cubre 0,831, de 0,772 a 0,885 por decil de volatilidad;
     - al 95 %, 0,966 y 0,961.
+- **Segunda lectura de 2013** (declaración 5fb27d72…):
+  - **Confianza de signo de S2.** En evaluación su rango es [0,391; 0,570] y su confianza máxima
+    0,609, así que no hay casos al 90 %. El ECE es 0,011 en la mitad de riesgo y 0,028 en
+    evaluación.
+  - **Intervalos al 80 %:**
+    - la CQR (0,831) y Mondrian (0,830) no pasan por la cobertura total;
+    - CQR+ACI pasa con 0,803, pero su peor decil es 0,762;
+    - Mondrian+ACI pasa con 0,803 y deciles de 0,801 a 0,805.
+  - **Intervalos al 95 %:** pasan los cuatro. Mondrian+ACI cubre 0,951, con deciles de 0,950 a
+    0,952.
 - **F6, el cerebro holográfico,** con la regla acordada con el coordinador antes de medir. Se mide
   tras F1 y F2, en 2013 y sin GPU.
   1. **H, el holográfico, por semilla.** Es ridge_cov_active de {padre estático

@@ -58,7 +58,7 @@ from mars_titan.evaluation import posttraining_pilots as pilots
 
 KIND = "posttraining_reliability_v1"
 # Huella canónica de configs/experiments/posttraining-reliability.json, la declaración de F.
-REGISTERED_SHA256 = "5fb27d72d244fa1a79e3f4b92d16f58f43b267b57b085bf9913e1d6655281af6"
+REGISTERED_SHA256 = "cdb1c5111e2b1d47199f28c82cbd6f6b19f66ecda768ebe02effcbc0a8a93f15"
 SPLITS, AGGREGATED = og.SPLITS, og.AGGREGATED
 PREDICTORS = ("s1", "s2", "tree", "parent")
 # Control de lo operable: el alfa conocido solo, como puntuación. Ya ordena y + α por sí mismo
@@ -143,6 +143,35 @@ def session_measures(tool, score, target, bounds, *, min_assets, keep=None):
     return result
 
 
+def block_interval(values, keys, settings):
+    """Media (una fracción si son indicadores) con su intervalo por arranque estacionario.
+
+    Politis y Romano (1994): bloques de longitud geométrica con media `mean_block` sesiones,
+    circulares dentro de cada mercado y en el orden del tiempo, `draws` remuestras con semilla
+    fija; el intervalo son los percentiles 2,5 y 97,5. Wilson supone sesiones independientes; este
+    no.
+    """
+    values = np.asarray(values, dtype=np.float64)
+    if not len(values):
+        return None
+    rng = np.random.default_rng(settings["seed"])
+    draws, p = settings["draws"], 1.0 / settings["mean_block"]
+    total = np.zeros(draws)
+    markets = {}
+    for i, key in enumerate(keys):
+        markets.setdefault(key[0], []).append((key[1], i))
+    for market in sorted(markets):
+        x = values[[i for _, i in sorted(markets[market])]]
+        n = len(x)
+        new = rng.random((draws, n)) < p
+        new[:, 0] = True
+        first = np.maximum.accumulate(np.where(new, np.arange(n), 0), axis=1)
+        begin = np.take_along_axis(rng.integers(n, size=(draws, n)), first, axis=1)
+        total += x[(begin + np.arange(n) - first) % n].sum(axis=1)
+    low, high = np.quantile(total / len(values), [0.025, 0.975])
+    return dict(rate=float(values.mean()), low=float(low), high=float(high))
+
+
 def window_rates(measured, keys, width):
     """Ventanas de `width` sesiones puntuadas seguidas de cada mercado, sin solaparse (la última
     incompleta se descarta): fracción con IC medio > 0 y con diferencia de deciles media > 0."""
@@ -213,6 +242,7 @@ def reliability(tool, view, settings, *, min_assets, keep=None):
     ics = np.array([m[1] for m in measured])
     spreads = np.array([m[2] for m in measured])
     sessions = len(measured)
+    scored_keys = [view["keys"][i] for i, _, _ in measured]
     clean = ~view["outlier"] if keep is None else keep & ~view["outlier"]
     curve = dict(min_assets=min_assets)
     result = dict(
@@ -221,7 +251,9 @@ def reliability(tool, view, settings, *, min_assets, keep=None):
         ic_std=float(ics.std(ddof=1)) if sessions > 1 else None,
         ic_worst=float(ics.min()) if sessions else None,
         ic_positive=wilson(int((ics > 0).sum()), sessions),
+        ic_positive_block=block_interval(ics > 0, scored_keys, settings["block_interval"]),
         spread_positive=wilson(int((spreads > 0).sum()), sessions),
+        spread_positive_block=block_interval(spreads > 0, scored_keys, settings["block_interval"]),
         spread_mean_bps=1e4 * float(spreads.mean()) if sessions else None,
         windows={str(w): window_rates(measured, view["keys"], w) for w in settings["windows"]},
         selective=selective_precision(
@@ -249,7 +281,7 @@ def reliability(tool, view, settings, *, min_assets, keep=None):
     return result, rows, measured
 
 
-def improvement(tool, measured, baseline, keys, windows):
+def improvement(tool, measured, baseline, keys, windows, block):
     """Mejora por sesión de una señal sobre otra en las sesiones que puntúan las dos: diferencia de
     IC (media, t de Newey-West de la criba e intervalo al 95 %), de deciles, fracción de sesiones
     con mejora > 0 (Wilson) y ventanas con mejora media > 0."""
@@ -268,14 +300,17 @@ def improvement(tool, measured, baseline, keys, windows):
         interval=None if se is None else [stats["mean"] - Z95 * se, stats["mean"] + Z95 * se],
         spread_mean_bps=1e4 * float(np.mean([c[2] for c in common])),
         positive=wilson(int((differences > 0).sum()), len(differences)),
+        positive_block=block_interval(differences > 0, [keys[i] for i, _, _ in common], block),
         windows={str(w): window_rates(common, keys, w) for w in windows},
     )
 
 
-def _claim(entry, low):
+def _claim(entry, low, block=None):
+    """Demostrado si el límite inferior de Wilson (y el de bloques, si lo hay) llega a `low`;
+    compatible si solo llega el punto."""
     if not entry:
         return "sin datos"
-    if entry["low"] >= low:
+    if entry["low"] >= low and (block is None or block["low"] >= low):
         return "demostrado"
     return "compatible" if entry["rate"] >= low else "no"
 
@@ -293,7 +328,7 @@ def verdicts(summary, rules):
     for key, item in summary["f1"].items():
         mode, predictor, scope = key.split("/")
         reading = dict(
-            sessions=_claim(item["ic_positive"], low),
+            sessions=_claim(item["ic_positive"], low, item.get("ic_positive_block")),
             **{f"windows_{w}": _claim(v["ic"], low) for w, v in item["windows"].items()},
         )
         versus = summary["versus_alpha"].get(f"{predictor}/{scope}") if mode == "operable" else None
@@ -353,7 +388,14 @@ def verdicts(summary, rules):
                 ece={part: v["calibration_error"]["ece"] for part, v in item["parts"].items()},
             ),
         ),
-        intervals={level: entry["delivered"] for level, entry in adaptive.items()},
+        intervals={
+            level: dict(
+                delivered=entry["delivered"],
+                confirmed=entry["confirmed"],
+                reasons=entry["candidates"][entry["delivered"]]["reasons"],
+            )
+            for level, entry in adaptive.items()
+        },
     )
 
 
@@ -789,8 +831,15 @@ def adaptive_intervals(parent, covariates, matures, settings):
             item["reasons"] = interval_rule(item, level, settings["rule"])
             item["passes"] = not item["reasons"]
             candidates[name] = item
-        chosen = next((n for n in settings["candidates"] if candidates[n]["passes"]), None)
-        result[str(level)] = dict(candidates=candidates, delivered=chosen)
+        delivered = settings["delivered"]
+        result[str(level)] = dict(
+            candidates=candidates,
+            delivered=delivered,
+            confirmed=candidates[delivered]["passes"],
+            first_passing=next(
+                (n for n in settings["candidates"] if candidates[n]["passes"]), None
+            ),
+        )
     return result
 
 
@@ -1011,6 +1060,7 @@ def measure(
                             sessions_of[("alpha", scope)],
                             ev["keys"],
                             settings["windows"],
+                            settings["block_interval"],
                         )
                 if mode != "operable":
                     continue
@@ -1119,14 +1169,14 @@ def markdown(summary):
         "",
         "## F1, fiabilidad por sesión y en ventanas",
         "",
-        "| Modo / predictor / filas | Sesiones | IC medio | Peor IC | IC > 0 | Deciles > 0 | Ventanas de 5 con IC > 0 | Ventanas de 21 con IC > 0 |",
-        "|---|---|---|---|---|---|---|---|",
+        "| Modo / predictor / filas | Sesiones | IC medio | Peor IC | IC > 0 (Wilson) | IC > 0 (bloques) | Deciles > 0 | Ventanas de 5 con IC > 0 | Ventanas de 21 con IC > 0 |",
+        "|---|---|---|---|---|---|---|---|---|",
     ]
     for key, item in summary["f1"].items():
         windows = item["windows"]
         lines.append(
             f"| {key} | {item['sessions']} | {_f(item['ic_mean'])} | {_f(item['ic_worst'])} | "
-            f"{_p(item['ic_positive'])} | {_p(item['spread_positive'])} | "
+            f"{_p(item['ic_positive'])} | {_p(item['ic_positive_block'])} | {_p(item['spread_positive'])} | "
             f"{_p(windows['5']['ic'])} | {_p(windows['21']['ic'])} |"
         )
     lines += [
@@ -1229,7 +1279,10 @@ def markdown(summary):
                 f"{_f(worst, 3)} | {_f(item['aci']['alpha_mean'], 3)} | "
                 f"{'sí' if item['passes'] else 'no: ' + '; '.join(item['reasons'])} |"
             )
-        lines.append(f"| {level} / entregado | {entry['delivered'] or 'ninguno pasa'} | | | | |")
+        lines.append(
+            f"| {level} / entregado (fijo, elegido con 2013) | {entry['delivered']} | | | | "
+            + ("confirma la regla |" if entry["confirmed"] else "no confirma la regla |")
+        )
     for level, item in summary["intervals"]["zero_excluding"].items():
         for scope, part in item.items():
             lines.append(

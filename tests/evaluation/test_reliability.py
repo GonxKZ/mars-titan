@@ -259,6 +259,29 @@ def test_the_interval_rule_of_r1():
     assert rel.interval_rule(decile, 0.8, rule) == ["decil de volatilidad con 0.740"]
 
 
+def test_the_block_interval_widens_with_dependence_and_is_reproducible():
+    settings = declaration()["reliability"]["block_interval"]
+    rng = np.random.default_rng(16)
+    keys = [("US", t) for t in range(250)]
+    independent = (rng.random(250) < 0.7).astype(float)
+    first = rel.block_interval(independent, keys, settings)
+    assert first == rel.block_interval(independent, keys, settings)
+    wilson = rel.wilson(int(independent.sum()), 250)
+    ratio = (first["high"] - first["low"]) / (wilson["high"] - wilson["low"])
+    assert 0.7 < ratio < 1.4
+    runs = np.repeat(np.arange(10) % 2, 25).astype(float)
+    block, flat = rel.block_interval(runs, keys, settings), rel.wilson(int(runs.sum()), 250)
+    assert block["high"] - block["low"] > 1.5 * (flat["high"] - flat["low"])
+    two = rel.block_interval(
+        np.r_[np.ones(10), np.zeros(10)],
+        [("US", t) for t in range(10)] + [("CN", t) for t in range(10)],
+        settings,
+    )
+    assert two["rate"] == 0.5 and two["low"] <= 0.5 <= two["high"]
+    assert rel._claim(dict(rate=0.95, low=0.91), 0.9, dict(low=0.88)) == "compatible"
+    assert rel._claim(dict(rate=0.95, low=0.91), 0.9, dict(low=0.92)) == "demostrado"
+
+
 def test_clustered_precision_by_hand():
     entry = rel.clustered_precision([9, 1], [10, 10])
     assert entry["rate"] == 0.5
@@ -410,13 +433,15 @@ def test_the_improvement_pairs_the_sessions_that_both_score():
     keys = [("US", 1), ("US", 2), ("US", 3), ("US", 4)]
     measured = [(0, 0.1, 0.01), (1, 0.2, 0.02), (2, 0.05, 0.0), (3, 0.3, 0.01)]
     baseline = [(0, 0.05, 0.0), (2, 0.1, 0.0), (3, 0.1, 0.02)]
-    item = rel.improvement(tool, measured, baseline, keys, [2])
+    block = declaration()["reliability"]["block_interval"]
+    item = rel.improvement(tool, measured, baseline, keys, [2], block)
     assert item["sessions"] == 3
     assert item["mean"] == pytest.approx((0.05 - 0.05 + 0.2) / 3)
     assert item["positive"]["hits"] == 2
     assert item["spread_mean_bps"] == pytest.approx(1e4 * (0.01 + 0.0 - 0.01) / 3)
     assert item["windows"]["2"]["windows"] == 1
-    assert rel.improvement(tool, measured, [], keys, [2])["sessions"] == 0
+    assert item["positive_block"]["rate"] == pytest.approx(2 / 3)
+    assert rel.improvement(tool, measured, [], keys, [2], block)["sessions"] == 0
 
 
 def _summary_for_verdicts():
@@ -447,7 +472,17 @@ def _summary_for_verdicts():
         },
         versus_alpha={"s2/all": dict(mean=0.01, t_nw=2.5)},
         f2={"s2/all": f2(0.9, 0.01, 0.93, 0.88), "alpha/all": f2(None, None, None, None)},
-        intervals=dict(adaptive={"0.8": dict(delivered="core_mondrian")}),
+        intervals=dict(
+            adaptive={
+                "0.8": dict(
+                    delivered="core_mondrian_aci",
+                    confirmed=False,
+                    candidates={
+                        "core_mondrian_aci": dict(reasons=["decil de volatilidad con 0.740"])
+                    },
+                )
+            }
+        ),
     )
 
 
@@ -462,7 +497,17 @@ def test_the_delivery_verdicts_follow_the_declared_rules():
     assert verdict["f1"]["label/s2/all"] == dict(sessions="no")
     assert verdict["f2"]["enters"] and verdict["f2"]["reasons"] == []
     assert verdict["f2"]["confidence"]["statement"] == "no hay casos al 90 %"
-    assert verdict["intervals"] == {"0.8": "core_mondrian"}
+    assert verdict["intervals"] == {
+        "0.8": dict(
+            delivered="core_mondrian_aci",
+            confirmed=False,
+            reasons=["decil de volatilidad con 0.740"],
+        )
+    }
+    # Con el intervalo por bloques por debajo de 0,90, la fracción por sesión ya no se demuestra.
+    blocked = _summary_for_verdicts()
+    blocked["f1"]["operable/s2/all"]["ic_positive_block"] = dict(rate=0.95, low=0.88, high=0.99)
+    assert rel.verdicts(blocked, rules)["f1"]["operable/s2/all"]["sessions"] == "compatible"
     summary["versus_alpha"]["s2/all"]["t_nw"] = 1.9
     assert rel.verdicts(summary, rules)["f1"]["operable/s2/all"]["over_alpha"] is False
     summary["f2"]["alpha/all"] = summary["f2"]["s2/all"]
@@ -569,13 +614,23 @@ def test_f1_and_f2_of_an_origin(tmp_path, monkeypatch, capsys):
         probability = emitted.column("probability_up").to_numpy()
         assert probability.min() >= 0 and probability.max() <= 1
     adaptive = summary["intervals"]["adaptive"]
-    assert set(adaptive) == {"0.8", "0.95"}
+    assert set(adaptive) == {"0.8", "0.9", "0.95"}
     for level, entry in adaptive.items():
         assert list(entry["candidates"]) == declaration()["adaptive_intervals"]["candidates"]
-        static = entry["candidates"]["core_cqr"]["coverage"]
-        assert static == pytest.approx(levels[level]["systems"]["core_cqr"]["coverage"], abs=1e-12)
-        assert entry["delivered"] in (None, *entry["candidates"])
-    assert set(summary["verdicts"]["intervals"]) == {"0.8", "0.95"}
+        if level in levels:
+            static = entry["candidates"]["core_cqr"]["coverage"]
+            assert static == pytest.approx(
+                levels[level]["systems"]["core_cqr"]["coverage"], abs=1e-12
+            )
+        assert entry["delivered"] == "core_mondrian_aci"
+        assert entry["confirmed"] == entry["candidates"]["core_mondrian_aci"]["passes"]
+    # El 90 % sale de la misma banda que el 80 %, más ancha.
+    assert (
+        adaptive["0.9"]["candidates"]["core_cqr"]["width"]
+        > adaptive["0.8"]["candidates"]["core_cqr"]["width"]
+    )
+    assert set(summary["verdicts"]["intervals"]) == {"0.8", "0.9", "0.95"}
+    assert summary["f1"]["label/s2/all"]["ic_positive_block"]["low"] <= 1.0
     assert "casos al 90" in summary["verdicts"]["f2"]["confidence"]["statement"]
     assert "F2, confianza direccional" in (folder / "resumen.md").read_text(encoding="utf-8")
     assert [p.name for p in output.iterdir()] == [str(core.YEAR)]
