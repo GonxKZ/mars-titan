@@ -83,6 +83,15 @@ from .cross_sectional_rank_memory import (
     CrossSectionalRankMemoryConfig,
     parse_cross_sectional_rank_memory,
 )
+
+# --- memory_cross_sectional_surprise ---
+from .cross_sectional_surprise import (
+    CrossSectionalSurprise,
+    parse_cross_sectional_surprise,
+    session_groups,
+)
+
+# --- fin memory_cross_sectional_surprise ---
 from .differential_attention import DIFFERENTIAL_ATTENTION
 from .differential_attention import identity as differential_identity
 from .financial_inputs import (
@@ -300,6 +309,9 @@ class FinancialConfig:
     # diferencial. Sin declararlas, la identidad y el cálculo no cambian.
     memory_huber: HuberMemory | None = None
     memory_time_scales: ScaleInvariantTime | None = None
+    # --- memory_cross_sectional_surprise ---
+    memory_cross_sectional_surprise: CrossSectionalSurprise | None = None
+    # --- fin memory_cross_sectional_surprise ---
     differential_attention: str | None = None
     # #836: escalas de aprendizaje del tramo de ajuste (entradas normalizadas, precios como
     # rendimientos y salida en la escala de la etiqueta). Sin declararlas nada cambia.
@@ -379,6 +391,9 @@ class FinancialConfig:
         self._check_auxiliary_horizons()
         self._check_mature_reliability()
         self._check_cross_sectional_rank_memory()
+        # --- memory_cross_sectional_surprise ---
+        self._check_cross_sectional_surprise()
+        # --- fin memory_cross_sectional_surprise ---
         self._check_core_variants()
         self._check_learning_scale()
         self._check_technical_branch()
@@ -899,6 +914,31 @@ class FinancialConfig:
                     "contraste"
                 )
 
+    # --- memory_cross_sectional_surprise ---
+    def _check_cross_sectional_surprise(self):
+        """Sorpresa relativa transversal (CSOS) y exclusiones declaradas."""
+        from .config import FUSED_INNER_GRADIENT
+
+        object.__setattr__(
+            self,
+            "memory_cross_sectional_surprise",
+            parse_cross_sectional_surprise(self.memory_cross_sectional_surprise),
+        )
+        if self.memory_cross_sectional_surprise is not None:
+            if self.variant != "mac_online":
+                raise ValueError("La sorpresa relativa transversal (CSOS) necesita mac_online")
+            if self.memory_inner_gradient == FUSED_INNER_GRADIENT:
+                raise ValueError(
+                    "La sorpresa relativa transversal (CSOS) es incompatible con "
+                    "memory_inner_gradient='fused_v1'; declare analytic_v1 o autograd_v1"
+                )
+            if self.auxiliary_horizons is not None:
+                raise ValueError(
+                    "Las cabezas auxiliares con operaciones por sesión necesitan otro contraste"
+                )
+
+    # --- fin memory_cross_sectional_surprise ---
+
     def _check_memory_projections(self):
         """Normalización residual y proyecciones de memoria."""
         if type(self.memory_residual_layer_norm) is not bool:
@@ -1131,6 +1171,12 @@ class FinancialConfig:
             result.update(memory_huber=self.memory_huber.identity())
         if self.memory_time_scales is not None:
             result.update(memory_time_scales=self.memory_time_scales.identity())
+        # --- memory_cross_sectional_surprise ---
+        if self.memory_cross_sectional_surprise is not None:
+            result.update(
+                memory_cross_sectional_surprise=self.memory_cross_sectional_surprise.identity()
+            )
+        # --- fin memory_cross_sectional_surprise ---
         if self.differential_attention is not None:
             result.update(differential_attention=differential_identity())
         # PT4 solo aparece si se declara. El control sectorial guarda la huella del reparto.
@@ -1297,6 +1343,12 @@ class FinancialPredictor(nn.Module):
             raise ValueError("La fiabilidad madura no se combina con el control local")
         if local_control is not None and config.cross_sectional_rank_memory is not None:
             raise ValueError("La memoria transversal de rango no se combina con el control local")
+        # --- memory_cross_sectional_surprise ---
+        if local_control is not None and config.memory_cross_sectional_surprise is not None:
+            raise ValueError(
+                "La sorpresa relativa transversal (CSOS) no se combina con el control local"
+            )
+        # --- fin memory_cross_sectional_surprise ---
         # El presupuesto de C está contrastado con el núcleo sin las variantes de #786.
         if local_control is not None and (
             config.memory_huber is not None
@@ -1496,6 +1548,9 @@ class FinancialPredictor(nn.Module):
                         bank_readout=config.memory_bank_readout,
                         huber=config.memory_huber,
                         time_scales=config.memory_time_scales,
+                        # --- memory_cross_sectional_surprise ---
+                        cross_sectional_surprise=config.memory_cross_sectional_surprise,
+                        # --- fin memory_cross_sectional_surprise ---
                         inner_gradient=config.memory_inner_gradient,
                         value_normalization=config.memory_value_normalization,
                     ),
@@ -1590,6 +1645,10 @@ class FinancialPredictor(nn.Module):
     def session_level(self):
         """Si alguna operación necesita todas las filas de la sesión en el mismo bloque."""
         objective = self.output_objective
+        # --- memory_cross_sectional_surprise ---
+        if self.config.memory_cross_sectional_surprise is not None:
+            return True
+        # --- fin memory_cross_sectional_surprise ---
         return (
             self.config.session_rank_inputs is not None
             or self.cross_asset_attention is not None
@@ -2674,6 +2733,10 @@ class FinancialPredictor(nn.Module):
                 gates = dict(gate_shift=self.reliability_gates(reliability))
                 if self.config.mature_reliability.source == "titans_surprise":
                     sink = gates["surprise"] = []
+            # --- memory_cross_sectional_surprise ---
+            if self.config.memory_cross_sectional_surprise is not None:
+                gates["session_groups"] = session_groups(batch.flow_ids, batch.prediction_at)
+            # --- fin memory_cross_sectional_surprise ---
             if self.mac:
                 encoded, next_mac = self.mac(
                     observed.unsqueeze(1),

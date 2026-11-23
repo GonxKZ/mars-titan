@@ -100,6 +100,10 @@ def declared_sources(config):
         sources.append("mars_titan.models.titans.cross_sectional_rank_memory")
     if getattr(config, "session_hologram", None) is not None:
         sources.append("mars_titan.models.titans.session_hologram")
+    # --- memory_cross_sectional_surprise ---
+    if getattr(config, "memory_cross_sectional_surprise", None) is not None:
+        sources.append("mars_titan.models.titans.cross_sectional_surprise")
+    # --- fin memory_cross_sectional_surprise ---
     if getattr(config, "learning_scale", None) is not None:
         sources.append("mars_titan.models.learning_scale")
     if getattr(config, "reference_encoder", None) == "dlinear":
@@ -237,6 +241,13 @@ def _module_settings(module):
         fields = ("hidden_size",)
     elif type(module).__module__ in _KRON_MODULES:
         settings["kronlstm"] = module.configuration
+    # --- memory_cross_sectional_surprise ---
+    if (
+        type(module).__name__ == "CrossSectionalSurpriseModule"
+        and type(module).__module__ == "mars_titan.models.titans.cross_sectional_surprise"
+    ):
+        settings["cross_sectional_surprise"] = module.config.identity()
+    # --- fin memory_cross_sectional_surprise ---
     settings.update((name, getattr(module, name)) for name in fields)
     return settings
 
@@ -300,6 +311,38 @@ def _validate_session_hologram(predictor):
         raise ValueError(
             "El interferómetro holográfico no corresponde a la configuración declarada"
         )
+
+
+# --- memory_cross_sectional_surprise ---
+def _validate_cross_sectional_surprise(predictor):
+    """Comprobar que el módulo CSOS en la memoria coincide con su configuración declarada."""
+    declared = predictor.config.memory_cross_sectional_surprise
+    module = predictor.mac.memory.cross_sectional_surprise if predictor.mac is not None else None
+    if declared is None and module is None:
+        return
+    from .cross_sectional_surprise import CrossSectionalSurprise, CrossSectionalSurpriseModule
+
+    if (
+        type(declared) is not CrossSectionalSurprise
+        or type(module) is not CrossSectionalSurpriseModule
+        or type(module.config) is not CrossSectionalSurprise
+    ):
+        raise ValueError(
+            "La sorpresa relativa transversal no corresponde a la configuración declarada"
+        )
+    declared.__post_init__()
+    module.config.__post_init__()
+    if module.config != declared or any(
+        parameter.device != predictor.head.weight.device
+        or parameter.dtype != predictor.head.weight.dtype
+        for parameter in module.parameters()
+    ):
+        raise ValueError(
+            "La sorpresa relativa transversal no corresponde a la configuración declarada"
+        )
+
+
+# --- fin memory_cross_sectional_surprise ---
 
 
 def _validate_intervention(readout):
@@ -504,6 +547,9 @@ class FrozenFinancialConsumer:
         self.predictor, self.readout = predictor, readout
         _validate_cross_asset_attention(predictor)
         _validate_session_hologram(predictor)
+        # --- memory_cross_sectional_surprise ---
+        _validate_cross_sectional_surprise(predictor)
+        # --- fin memory_cross_sectional_surprise ---
         _validate_intervention(readout)
         self._models = (("predictor", predictor),) + ((("readout", readout),) if readout else ())
         self._signature, modes = _execution_signature(self._models)
@@ -594,6 +640,16 @@ class FrozenFinancialConsumer:
                 "El mezclador entre activos necesita la sesión completa en un bloque "
                 "(session_complete=True)"
             )
+        # --- memory_cross_sectional_surprise ---
+        if (
+            self.predictor.config.memory_cross_sectional_surprise is not None
+            and session_complete is not True
+        ):
+            raise ValueError(
+                "La sorpresa relativa transversal (CSOS) necesita la sesión completa en un "
+                "bloque (session_complete=True)"
+            )
+        # --- fin memory_cross_sectional_surprise ---
         options = {}
         if self.predictor.local_control is not None:
             options.update(control_selection=selection, control_context_id=context_id)

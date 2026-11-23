@@ -90,6 +90,11 @@ PREDICTOR_CHANGES = (
     "cross_sectional_rank_memory",
     # Interferómetro holográfico de sesión en fase dual (WP11).
     "session_hologram",
+    # --- memory_cross_sectional_surprise ---
+    # Ruta de gradiente interno de la memoria y sorpresa relativa transversal (CSOS).
+    "memory_inner_gradient",
+    "memory_cross_sectional_surprise",
+    # --- fin memory_cross_sectional_surprise ---
 )
 # Cambios que se declaran con un nombre en lugar de un objeto.
 NAMED_CHANGES = (
@@ -102,6 +107,9 @@ NAMED_CHANGES = (
     "reference_encoder",
     "memory_value_normalization",
     "output_query",
+    # --- memory_cross_sectional_surprise ---
+    "memory_inner_gradient",
+    # --- fin memory_cross_sectional_surprise ---
 )
 
 
@@ -133,6 +141,10 @@ def checked_predictor_changes(changes):
             "memory_value_normalization y output_query como nombres no vacíos. También admiten "
             "learning_scale, removed_modalities, technical_branch y session_hologram como objetos "
             "no vacíos"
+            # --- memory_cross_sectional_surprise ---
+            ", memory_inner_gradient como nombre no vacío y memory_cross_sectional_surprise como "
+            "objeto no vacío"
+            # --- fin memory_cross_sectional_surprise ---
         )
     return changes
 

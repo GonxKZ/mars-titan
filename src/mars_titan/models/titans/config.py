@@ -6,6 +6,11 @@ import math
 from dataclasses import asdict, dataclass
 
 from .bank_readout import BankReadoutConfig
+
+# --- memory_cross_sectional_surprise ---
+from .cross_sectional_surprise import CrossSectionalSurprise
+
+# --- fin memory_cross_sectional_surprise ---
 from .differential_attention import DIFFERENTIAL_ATTENTION
 from .differential_attention import identity as differential_identity
 from .huber_memory import HuberMemory
@@ -375,6 +380,9 @@ class MemoryConfig(FingerprintOnce):
     # R1 y U2 de #786. Sin declararlas, la identidad y el cálculo no cambian.
     huber: HuberMemory | None = None
     time_scales: ScaleInvariantTime | None = None
+    # --- memory_cross_sectional_surprise ---
+    cross_sectional_surprise: CrossSectionalSurprise | None = None
+    # --- fin memory_cross_sectional_surprise ---
     inner_gradient: str = AUTOGRAD_INNER_GRADIENT
     # Sin declararla (None), los valores objetivo de escritura no se normalizan ni entran en la
     # identidad. Con "layer_norm_v1", pasan por el mismo LayerNorm sin parámetros que la salida.
@@ -384,6 +392,20 @@ class MemoryConfig(FingerprintOnce):
         bounded_integer(self.dim, "dim", 1, 512)
         if self.inner_gradient not in INNER_GRADIENTS:
             raise ValueError("inner_gradient debe ser autograd_v1, analytic_v1 o fused_v1")
+        # --- memory_cross_sectional_surprise ---
+        if self.cross_sectional_surprise is not None and (
+            type(self.cross_sectional_surprise) is not CrossSectionalSurprise
+        ):
+            raise ValueError("cross_sectional_surprise debe ser CrossSectionalSurprise o None")
+        if (
+            self.inner_gradient == FUSED_INNER_GRADIENT
+            and self.cross_sectional_surprise is not None
+        ):
+            raise ValueError(
+                "La sorpresa relativa transversal (CSOS) es incompatible con la escritura "
+                "fusionada fused_v1; declare analytic_v1 o autograd_v1"
+            )
+        # --- fin memory_cross_sectional_surprise ---
         if self.value_normalization is not None and (
             type(self.value_normalization) is not str
             or self.value_normalization != VALUE_LAYER_NORM
@@ -522,6 +544,9 @@ class MemoryConfig(FingerprintOnce):
         fields.pop("bank_readout")
         fields.pop("huber")
         fields.pop("time_scales")
+        # --- memory_cross_sectional_surprise ---
+        fields.pop("cross_sectional_surprise")
+        # --- fin memory_cross_sectional_surprise ---
         inner_gradient = fields.pop("inner_gradient")
         value_normalization = fields.pop("value_normalization")
         # Sin bias ni residual se conserva literalmente la identidad v1 y su huella.
@@ -576,6 +601,10 @@ class MemoryConfig(FingerprintOnce):
             extension["associative_loss"] = self.huber.identity()
         if self.time_scales is not None:
             extension["alpha_time_scales"] = self.time_scales.identity()
+        # --- memory_cross_sectional_surprise ---
+        if self.cross_sectional_surprise is not None:
+            extension["cross_sectional_surprise"] = self.cross_sectional_surprise.identity()
+        # --- fin memory_cross_sectional_surprise ---
         # Sin declararla se conserva la identidad anterior y su huella.
         if inner_gradient == ANALYTIC_INNER_GRADIENT:
             extension["inner_gradient"] = {
@@ -642,6 +671,12 @@ class MACConfig(FingerprintOnce):
             raise ValueError("heads debe dividir dim")
         if self.memory_mode not in ("online", "frozen", "disabled"):
             raise ValueError("memory_mode debe ser online, frozen o disabled")
+        # --- memory_cross_sectional_surprise ---
+        if self.memory.cross_sectional_surprise is not None and self.memory_mode != "online":
+            raise ValueError(
+                "La sorpresa relativa transversal (CSOS) necesita memory_mode='online'"
+            )
+        # --- fin memory_cross_sectional_surprise ---
         if self.attention_layout not in ATTENTION_LAYOUTS:
             raise ValueError("attention_layout no pertenece a las disposiciones admitidas")
         if self.differential_attention not in (None, DIFFERENTIAL_ATTENTION):

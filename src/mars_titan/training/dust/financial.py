@@ -106,6 +106,9 @@ class FinancialDustAdapter:
             "memory_time_scales",
             "differential_attention",
             "memory_value_normalization",
+            # --- memory_cross_sectional_surprise ---
+            "memory_cross_sectional_surprise",
+            # --- fin memory_cross_sectional_surprise ---
         )
         if (
             config.variant != "transformer_direct"

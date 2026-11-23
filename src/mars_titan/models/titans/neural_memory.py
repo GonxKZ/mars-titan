@@ -18,6 +18,11 @@ from .config import (
     bounded_integer,
     require_identity,
 )
+
+# --- memory_cross_sectional_surprise ---
+from .cross_sectional_surprise import CrossSectionalSurpriseModule
+
+# --- fin memory_cross_sectional_surprise ---
 from .huber_memory import huber_elements, huber_threshold
 from .key_competition import competitive_normalize
 from .plasticity import _advance_validated as advance_plasticity
@@ -136,6 +141,13 @@ class NeuralMemory(nn.Module):
             self.huber_bias = nn.Parameter(
                 torch.full((config.dim,), config.huber.bias, dtype=dtype)
             )
+        # --- memory_cross_sectional_surprise ---
+        self.cross_sectional_surprise = (
+            CrossSectionalSurpriseModule(config.cross_sectional_surprise, dtype=dtype)
+            if config.cross_sectional_surprise is not None
+            else None
+        )
+        # --- fin memory_cross_sectional_surprise ---
         self.to(device=device)
 
     def _reference(self) -> Tensor:
@@ -660,6 +672,10 @@ class NeuralMemory(nn.Module):
             raise ValueError("inference_mode impide el gradiente interno, utilice no_grad")
         if self.config.huber is not None:
             raise ValueError("La memoria compartida de PT4 conserva la pérdida L2")
+        # --- memory_cross_sectional_surprise ---
+        if self.config.cross_sectional_surprise is not None:
+            raise ValueError("La memoria compartida de PT4 no admite sorpresa relativa transversal")
+        # --- fin memory_cross_sectional_surprise ---
         self._check_shared(observed, state)
         require_true(
             (state.steps < torch.iinfo(torch.int64).max).all(),
@@ -744,6 +760,10 @@ class NeuralMemory(nn.Module):
 
     def supports_fused_write_and_read(self) -> bool:
         """Indica si el contrato admite escritura + lectura posterior fusionadas en un kernel."""
+        # --- memory_cross_sectional_surprise ---
+        if self.config.cross_sectional_surprise is not None:
+            return False
+        # --- fin memory_cross_sectional_surprise ---
         return self.config.inner_gradient == FUSED_INNER_GRADIENT
 
     def update_and_read(
@@ -871,6 +891,9 @@ class NeuralMemory(nn.Module):
         differentiable: bool = False,
         gate_shift: dict | None = None,
         surprise: list | None = None,
+        # --- memory_cross_sectional_surprise ---
+        session_groups=None,
+        # --- fin memory_cross_sectional_surprise ---
     ) -> NeuralMemoryState:
         """Actualiza por token usando la derivada parcial con la observación fija.
 
@@ -882,6 +905,10 @@ class NeuralMemory(nn.Module):
         check_differentiable(differentiable)
         if torch.is_inference_mode_enabled():
             raise ValueError("inference_mode impide el gradiente interno, utilice no_grad")
+        # --- memory_cross_sectional_surprise ---
+        if session_groups is not None and self.cross_sectional_surprise is None:
+            raise ValueError("session_groups requiere cross_sectional_surprise declarado")
+        # --- fin memory_cross_sectional_surprise ---
         self.validate_input(observed, state)
         reference = self._reference()
         if gate_shift is not None:
@@ -1010,6 +1037,19 @@ class NeuralMemory(nn.Module):
                         surprise.append(elements.detach().sum(-1))
                     gradients = torch.autograd.grad(loss, local, create_graph=differentiable)
                 if not fused:
+                    # --- memory_cross_sectional_surprise ---
+                    if self.cross_sectional_surprise is not None:
+                        with torch.set_grad_enabled(differentiable):
+                            gradients, write_shift = self.cross_sectional_surprise(
+                                gradients,
+                                elements,
+                                session_groups,
+                                token_index=index,
+                                steps=None if session_groups is not None else state.steps + index,
+                            )
+                            theta_logits = theta_logits + write_shift
+                            theta = self.config.theta_max * theta_logits.sigmoid().unsqueeze(-1)
+                    # --- fin memory_cross_sectional_surprise ---
                     weights, momentum, levels, modulation = self._write(
                         weights,
                         momentum,

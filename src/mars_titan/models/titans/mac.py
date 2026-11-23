@@ -113,11 +113,20 @@ class TitansMAC(nn.Module):
         gate_shift: dict | None = None,
         surprise: list | None = None,
         input_slots: list[int | None] | None = None,
+        # --- memory_cross_sectional_surprise ---
+        session_groups=None,
+        # --- fin memory_cross_sectional_surprise ---
     ) -> tuple[Tensor, MACState]:
         """`gate_shift` y `surprise` llegan a la escritura de la memoria, que solo existe online."""
         check_differentiable(differentiable)
         if (gate_shift is not None or surprise is not None) and self.config.memory_mode != "online":
             raise ValueError("Las puertas moduladas necesitan la memoria online")
+        # --- memory_cross_sectional_surprise ---
+        if session_groups is not None and self.config.memory_mode != "online":
+            raise ValueError("Las puertas moduladas necesitan la memoria online")
+        if session_groups is not None and self.memory.cross_sectional_surprise is None:
+            raise ValueError("session_groups requiere cross_sectional_surprise declarado")
+        # --- fin memory_cross_sectional_surprise ---
         can_fuse_write_read = (
             self.config.memory_mode == "online"
             and self.config.memory_mode != "disabled"
@@ -237,6 +246,9 @@ class TitansMAC(nn.Module):
                         differentiable=differentiable,
                         gate_shift=gate_shift,
                         surprise=surprise,
+                        # --- memory_cross_sectional_surprise ---
+                        session_groups=session_groups,
+                        # --- fin memory_cross_sectional_surprise ---
                     )
                 else:
                     next_memory = copy_state(state.memory, differentiable=differentiable)
