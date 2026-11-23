@@ -3,7 +3,7 @@
   "kind": "comparison_campaign_v1",
   "market": "US",
   "final_test_access": false,
-  "description": "Tercera criba (v12) en EE. UU., origen 2013, sobre la base con kernels: el núcleo y, cada uno con un solo campo de diferencia respecto a su control, los candidatos implementados por encargo y verificados (conjunto eficiente en la rama densa, rangos sin filas ausentes, normalización de los valores de la memoria, consulta de salida proyectada, truncamiento 4 y 8, peso por liquidez y estabilidad en el término de IC operable, suelo de escala propio de los rasgos técnicos, compuerta de presencia, retirada de la parte visual del gráfico, arranque de la red de áreas y lectores con término de orden, más vecinos, temperatura y vía directa) y dos invenciones con sus placebos de igual capacidad: la memoria transversal de rango (CRRM) y el holograma de sesión (HSI).",
+  "description": "Tercera criba (v12) en EE. UU., origen 2013, sobre la base con kernels: el núcleo y, cada uno con un solo campo de diferencia respecto a su control, los candidatos implementados por encargo y verificados (conjunto eficiente en la rama densa, rangos sin filas ausentes, normalización de los valores de la memoria, consulta de salida proyectada, truncamiento 4 y 8, peso por liquidez y estabilidad en el término de IC operable, suelo de escala propio de los rasgos técnicos, compuerta de presencia, retirada de la parte visual del gráfico, arranque de la red de áreas y lectores con término de orden, más vecinos, temperatura y vía directa) y dos invenciones con sus placebos de igual capacidad: la memoria transversal de rango (CRRM) y el holograma de sesión (HSI). Y la regla de parada adaptativa (paciencia 5 sobre la validación suavizada, dos reducciones de la tasa de aprendizaje y emisión del promedio de las tres mejores épocas) frente a la regla de la campaña, sobre el núcleo.",
   "source_declaration_sha256": "836c79a6122fc14a1566826ece99f3708849a7d481361c334acd693383c88716",
   "cohort": {
     "size": 4198,
@@ -113,6 +113,7 @@
   ],
   "tiers": [
     "core",
+    "s3_stopping",
     "s3_inventions",
     "s3_memory",
     "s3_technical",
@@ -438,6 +439,30 @@
           "names": [
             "charts_visual"
           ]
+        }
+      }
+    },
+    "titans_mac_stop_adaptive": {
+      "machine": "mars_titan",
+      "recipe": "core",
+      "runner": "fit",
+      "tier": "s3_stopping",
+      "variant": "mac_online",
+      "stopping": {
+        "metric": "session_rank_ic",
+        "min_assets": 30,
+        "stopping": "validation_plateau",
+        "patience": 5,
+        "min_delta": 0.0,
+        "max_epochs": 48,
+        "initial_state": "reported",
+        "smoothing": 3,
+        "learning_rate_decay": {
+          "factor": 0.5,
+          "reductions": 2
+        },
+        "emit": {
+          "average": 3
         }
       }
     },
