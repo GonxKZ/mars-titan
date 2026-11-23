@@ -8,10 +8,10 @@ set -u
 year="$1"; shift
 tools=/home/gpic/.local/share/mars-titan/herramientas
 python=/home/gpic/.local/share/mars-titan/dgx-us-py312/bin/python
-a="/home/gpic/.local/state/mars-titan/dgx-titans-us-cn-v31/v11-inputs-v2/semillas-42,43,44/todos-cac92bf8"
-b="/home/gpic/.local/state/mars-titan/dgx-titans-us-cn-v31/v11-inputs-v3/semillas-42,43,44/todos-cac92bf8"
-refa="/home/gpic/.local/state/mars-titan/referencias/h9-us-cn-v2-cac92bf8"
-refb="/home/gpic/.local/state/mars-titan/referencias/h9-us-cn-v3-cac92bf8"
+a="/home/gpic/.local/state/mars-titan/dgx-titans-us-cn-v31/v11-inputs-v2/semillas-42,43,44/todos-e50b6f1e"
+b="/home/gpic/.local/state/mars-titan/dgx-titans-us-cn-v31/v11-inputs-v3/semillas-42,43,44/todos-e50b6f1e"
+refa="/home/gpic/.local/state/mars-titan/referencias/h9-us-cn-v2-e50b6f1e"
+refb="/home/gpic/.local/state/mars-titan/referencias/h9-us-cn-v3-e50b6f1e"
 out="/home/gpic/.local/state/mars-titan/informes/conjunta-h9/${year}-semillas-$(IFS=-; echo "$*")"
 mkdir -p "$(dirname "$out")"
 seeds=(); for seed in "$@"; do seeds+=(--seed "$seed"); done
