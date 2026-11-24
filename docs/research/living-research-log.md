@@ -21,24 +21,29 @@ aprendido de ellos están reunidos al final, en «Registro de fallos y lecciones
 
 ## Dónde quedó el trabajo (24 de noviembre, 12:15Z; el dueño pidió parar)
 
-Todo lo que sigue corre solo, con los planes del relevo y la guardia de producción; nadie lo vigila.
+El dueño pidió parar: lo principal es el trabajo de la sesión de Gemini y que producción funcione bien. **Los
+entrenamientos están detenidos** desde las 12:12:54Z, con parada pedida a los dos relevos; cada ajuste quedó en su
+último punto de control y los planes conservan su avance (`plan.txt.hecho` = 43, `plan-cn.txt.hecho` = 9). No queda
+ningún proceso de entrenamiento mío ni memoria de GPU ocupada por ellos.
 
-- **Carril principal (EE. UU.)**: D-9c en curso (tres semillas). Después, sin intervención: retirar sus copias, la
-  puerta que lee D-9c con su regla (D-9c-e), preparar las entradas de 2023, el núcleo final con la regla de parada
-  registrada, el núcleo con la regla robusta, las familias, las semillas 45 y 46, las dos variantes, la prueba de P-1
-  en EE. UU. y la quinta criba (plan v57, `dgx-relay-plan-20261123.txt`).
-- **Carril de China**: termina la campaña final registrada (16 de 30 ajustes) y sigue con la campaña con parada
-  robusta (CF-r), sus semillas 45 a 49 y las dos variantes (`dgx-relay-plan-cn-20261123.txt`).
-- **Sin leer todavía**: la prueba de humo de la campaña robusta de China (`humo-final-r-cn.log`; si un modelo de las
-  familias fallara, su trabajo queda marcado como fallido y los demás siguen); D-9c (`d9c-lectura.txt` cuando
-  pase la puerta); todo 2023 de EE. UU.
-- **Qué hacer al retomar**: leer la puerta de D-9c y el humo; con el núcleo robusto de EE. UU. terminado, decidir
-  con el tramo de decisión si las familias se repiten con esa regla (CF-r); pasar `informe_final.py` y
-  `mezcla_final.py` (E-2, E-2b, E-2c) por mercado; referencia de árboles de EE. UU. 2023; líneas de
-  post-entrenamiento sobre los modelos finales; avanzar `dgx-trainning` a `dgx-integracion` cuando el dueño
-  confirme la limpieza del árbol compartido.
-- **Frágil**: el túnel provisional de producción, el MPS, la guardia y los relevos son tareas de la sesión de
-  Claude. Si esa sesión se cierra, caen. Lo permanente es `sudo systemctl start user@1000.service`.
+- **Sigue en marcha, y no se toca**: el túnel provisional de producción (`cloudflared` y `tunel_provisional.sh`), el
+  MPS (sin clientes) y la guardia (sin nada que pausar). Son tareas de la sesión de Claude: si esa sesión se cierra,
+  `gaia.gpic.es` cae. Lo permanente es `sudo systemctl start user@1000.service`.
+- **Incidencia de producción**: a las 12:09:29Z el contenedor `gaia-gpic-scheduler` salió con código 0 y Docker lo
+  reinició tres segundos después (sin OOM; sano desde entonces; web y backend no se reiniciaron y `gaia.gpic.es`
+  respondió 200). Coincidió con el peor minuto de memoria del día (5 a 8 GiB disponibles, 13,6 % de presión de
+  producción), en el que mis siete ajustes ocupaban unos 40 GiB, la otra sesión de Claude unos 60 y Gemini unos 16.
+  La guardia pausó mis ajustes en ese mismo minuto, pero el pico ya estaba encima. Con los entrenamientos parados la
+  máquina sigue con 103 GiB usados: la carga que queda no es mía.
+- **Para reanudar** (solo si el dueño lo pide): `relevo_suelto.sh` (carril de EE. UU., sigue por D-9c) y
+  `lanza_relevo_cn.sh` (carril de China, sigue por su campaña final), los dos en `informes/investigacion-20261122`.
+  Antes conviene bajar el número de trabajadores si la otra sesión sigue compilando.
+- **Sin leer todavía**: D-9c (dos de sus tres ajustes a medias), el humo de la campaña robusta de China (se cortó a
+  medias: hay que repetirlo) y todo 2023 de EE. UU.
+- **Qué hacer al retomar**: lo dicho en CF-r y E-2: núcleo de EE. UU. con las dos reglas de parada, campaña robusta de
+  China, `informe_final.py` y `mezcla_final.py` por mercado, árboles de EE. UU. 2023, post-entrenamiento sobre los
+  modelos finales, y avanzar `dgx-trainning` a `dgx-integracion` cuando el dueño confirme la limpieza del árbol
+  compartido.
 
 ## Estado medido (22 de noviembre de 2026, tarde; origen 2013, semilla 42, IC de evaluación)
 
