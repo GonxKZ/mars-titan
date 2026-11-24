@@ -215,6 +215,57 @@ def _parent(folder, view, seed, control=None):
         changes.get("asset_groups", predictor.get("asset_groups")) is None,
         "El consumidor congelado aún no registra los grupos de activos de H4",
     )
+    _require(
+        changes.get("regional_execution", predictor.get("regional_execution")) is None,
+        "El consumidor congelado aún no admite el programa regional",
+    )
+    _require(
+        changes.get("mature_reliability", predictor.get("mature_reliability")) is None,
+        "El consumidor congelado aún no recibe la fiabilidad madura",
+    )
+    _require(
+        changes.get("cross_sectional_rank_memory", predictor.get("cross_sectional_rank_memory"))
+        is None,
+        "El consumidor congelado aún no recibe la memoria transversal de rango maduro",
+    )
+    # --- factor_memory ---
+    _require(
+        changes.get("factor_memory", predictor.get("factor_memory")) is None,
+        "El consumidor congelado aún no gestiona la memoria factorial",
+    )
+    # --- fin factor_memory ---
+    # --- contrastive_memory ---
+    _require(
+        changes.get("contrastive_memory", predictor.get("contrastive_memory")) is None,
+        "El consumidor congelado no gestiona el ciclo de sesión de la memoria contrastiva",
+    )
+    # --- fin contrastive_memory ---
+    # --- ic_titans_mlp ---
+    _require(
+        changes.get("ic_titans_mlp", predictor.get("ic_titans_mlp")) is None,
+        "El consumidor congelado aún no recibe la memoria neuronal IC-Titans-MLP",
+    )
+    # --- fin ic_titans_mlp ---
+    # --- lead_lag_memory ---
+    _require(
+        changes.get("lead_lag_memory", predictor.get("lead_lag_memory")) is None,
+        "El consumidor congelado aún no recibe la memoria rápida de desfase entre grupos",
+    )
+    # --- fin lead_lag_memory ---
+    # --- three_factor_consolidation ---
+    _require(
+        changes.get("three_factor_consolidation", predictor.get("three_factor_consolidation"))
+        is None,
+        "El consumidor congelado aún no recibe la consolidación sináptica de tres factores",
+    )
+    # --- fin three_factor_consolidation ---
+    # --- persistent_session_hologram ---
+    _require(
+        changes.get("persistent_session_hologram", predictor.get("persistent_session_hologram"))
+        is None,
+        "El consumidor congelado aún no gestiona el ciclo de sesión del holograma persistente",
+    )
+    # --- fin persistent_session_hologram ---
     _verify(folder, report)
     return report, digest
 
@@ -248,6 +299,54 @@ def _frozen_parent(
         options.get("asset_groups") is None,
         "El consumidor congelado aún no registra los grupos de activos de H4",
     )
+    _require(
+        options.get("regional_execution") is None,
+        "El consumidor congelado aún no admite el programa regional",
+    )
+    _require(
+        options.get("mature_reliability") is None,
+        "El consumidor congelado aún no recibe la fiabilidad madura",
+    )
+    _require(
+        options.get("cross_sectional_rank_memory") is None,
+        "El consumidor congelado aún no recibe la memoria transversal de rango maduro",
+    )
+    # --- factor_memory ---
+    _require(
+        options.get("factor_memory") is None,
+        "El consumidor congelado aún no gestiona la memoria factorial",
+    )
+    # --- fin factor_memory ---
+    # --- contrastive_memory ---
+    _require(
+        options.get("contrastive_memory") is None,
+        "El consumidor congelado no gestiona el ciclo de sesión de la memoria contrastiva",
+    )
+    # --- fin contrastive_memory ---
+    # --- ic_titans_mlp ---
+    _require(
+        options.get("ic_titans_mlp") is None,
+        "El consumidor congelado aún no recibe la memoria neuronal IC-Titans-MLP",
+    )
+    # --- fin ic_titans_mlp ---
+    # --- lead_lag_memory ---
+    _require(
+        options.get("lead_lag_memory") is None,
+        "El consumidor congelado aún no recibe la memoria rápida de desfase entre grupos",
+    )
+    # --- fin lead_lag_memory ---
+    # --- three_factor_consolidation ---
+    _require(
+        options.get("three_factor_consolidation") is None,
+        "El consumidor congelado aún no recibe la consolidación sináptica de tres factores",
+    )
+    # --- fin three_factor_consolidation ---
+    # --- persistent_session_hologram ---
+    _require(
+        options.get("persistent_session_hologram") is None,
+        "El consumidor congelado aún no gestiona el ciclo de sesión del holograma persistente",
+    )
+    # --- fin persistent_session_hologram ---
     _require(
         allow_context or options.get("session_context") is None,
         "Este consumidor todavía no recupera el contexto compartido de PT4",
@@ -318,6 +417,9 @@ def _readout(variant, codec, predictor, recipe, seed):
         max_working_bytes=recipe.max_working_bytes,
         refinement_initialization=recipe.refinement_initialization,
         familiarity_gate=recipe.familiarity_gate,
+        learned_temperature=recipe.learned_temperature,
+        label_path=recipe.label_path,
+        label_scale=recipe.label_scale,
         seed=seed,
         # El lector atiende los mismos bloques que su padre. Con 256 conserva su identidad.
         max_batch=predictor.config.max_batch,
@@ -843,7 +945,7 @@ def carry_readout(
         "El padre del ancla ha cambiado",
     )
     titans = parent_report["identity"]["recipe"]
-    options = walk_forward_options(titans)
+    options = walk_forward_options(titans, bounded_fit=True)
     readout_recipe = case_recipe(identity["recipe"], request["search_case"])
     anchor_manifest, _ = read_manifest(anchor_view, 64 * 1024**2)
     partitions = predicted_partitions(modality_ablation, regenerate)

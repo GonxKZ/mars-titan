@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "kind": "dgx_campaign_contrasts",
+  "description": "Prueba de los rasgos v3 en la conjunta: cada modelo con long_horizon_v3 frente al mismo con long_horizon_v2.",
+  "controls": {
+    "titans_mac_nogain_v3": "titans_mac_nogain",
+    "titans_mac_frozen_nogain_v3": "titans_mac_frozen_nogain",
+    "titans_mac_disabled_nogain_v3": "titans_mac_disabled_nogain",
+    "lightgbm_technical_v3": "lightgbm_technical"
+  }
+}

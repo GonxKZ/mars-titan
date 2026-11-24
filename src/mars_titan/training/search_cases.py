@@ -81,15 +81,66 @@ PREDICTOR_CHANGES = (
     "reference_encoder",
     # Rama de los rasgos técnicos del bloque del gráfico: columns, bins, embedding y hidden.
     "technical_branch",
+    # Opciones de memoria neuronal y consulta de salida de MAC (WP4).
+    "memory_value_normalization",
+    "output_query",
+    # Compuerta softmax enmascarada por presencia en la fusión común: presence_softmax_v1.
+    "modality_gating",
+    # Memoria transversal de rango y residuo maduro (CRRM).
+    "cross_sectional_rank_memory",
+    # --- ic_titans_mlp ---
+    "ic_titans_mlp",
+    # --- fin ic_titans_mlp ---
+    # --- lead_lag_memory ---
+    "lead_lag_memory",
+    # --- fin lead_lag_memory ---
+    # Interferómetro holográfico de sesión en fase dual (WP11).
+    "session_hologram",
+    # --- memory_cross_sectional_surprise ---
+    # Ruta de gradiente interno de la memoria y sorpresa relativa transversal (CSOS).
+    "memory_inner_gradient",
+    "memory_cross_sectional_surprise",
+    # --- fin memory_cross_sectional_surprise ---
+    # --- factor_memory ---
+    # Memoria rápida factorizada con blanqueo espectral de sesión (LFM-SW, Idea 4).
+    "factor_memory",
+    # --- fin factor_memory ---
+    # --- contrastive_memory ---
+    # Idea 5 (InfoNCE-Titans): memoria asociativa contrastiva transversal compartida por mercado.
+    "contrastive_memory",
+    # --- fin contrastive_memory ---
+    # --- session_resonator ---
+    # Resonador holográfico de descomposición latente transversal (CSRF, WP13-2).
+    "session_resonator",
+    # --- fin session_resonator ---
+    # --- hopfield_rank_brain ---
+    # Cerebro de atractores de Hopfield escasos con inhibición lateral de orden (RSHRB).
+    "hopfield_rank_brain",
+    # --- fin hopfield_rank_brain ---
+    # --- three_factor_consolidation ---
+    "three_factor_consolidation",
+    # --- fin three_factor_consolidation ---
+    # --- persistent_session_hologram ---
+    "persistent_session_hologram",
+    # --- fin persistent_session_hologram ---
+    # --- dual_hemisphere_brain ---
+    "dual_hemisphere_brain",
+    # --- fin dual_hemisphere_brain ---
 )
 # Cambios que se declaran con un nombre en lugar de un objeto.
 NAMED_CHANGES = (
     "presence_modulation",
+    "modality_gating",
     "attention_layout",
     "temporal_encoder",
     "session_rank_inputs",
     "differential_attention",
     "reference_encoder",
+    "memory_value_normalization",
+    "output_query",
+    # --- memory_cross_sectional_surprise ---
+    "memory_inner_gradient",
+    # --- fin memory_cross_sectional_surprise ---
 )
 
 
@@ -116,9 +167,15 @@ def checked_predictor_changes(changes):
             "cross_asset_attention, asset_groups, sector_map, laplace_scale_head, "
             "auxiliary_horizons, opponent_heads, "
             "mature_reliability, memory_huber y memory_time_scales como objetos no vacíos, y "
-            "presence_modulation, attention_layout, temporal_encoder, session_rank_inputs, "
-            "differential_attention y reference_encoder como nombres no vacíos. También "
-            "admiten learning_scale, removed_modalities y technical_branch como objetos no vacíos"
+            "presence_modulation, modality_gating, attention_layout, temporal_encoder, "
+            "session_rank_inputs, differential_attention, reference_encoder, "
+            "memory_value_normalization y output_query como nombres no vacíos. También admiten "
+            "learning_scale, removed_modalities, technical_branch y session_hologram como objetos "
+            "no vacíos"
+            # --- memory_cross_sectional_surprise ---
+            ", memory_inner_gradient como nombre no vacío y memory_cross_sectional_surprise como "
+            "objeto no vacío"
+            # --- fin memory_cross_sectional_surprise ---
         )
     return changes
 

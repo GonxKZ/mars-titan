@@ -40,6 +40,7 @@ from mars_titan.models.titans.axial_time_region import join_history_rows, map_hi
 from mars_titan.models.titans.config import MAX_BLOCK_ROWS, canonical
 from mars_titan.models.titans.financial import VARIANTS, FinancialPredictor, FinancialState
 from mars_titan.models.titans.financial_inputs import (
+    FINAL_TEST_US,
     DecisionBatch,
     device_tensor,
     validated_cpu_batches,
@@ -49,7 +50,11 @@ from mars_titan.models.titans.frozen_financial import (
     _numerics,
     declared_sources,
 )
-from mars_titan.models.titans.session_ic_objective import parse_session_ic_term
+from mars_titan.models.titans.session_ic_objective import (
+    known_offset,
+    parse_session_ic_term,
+    session_row_weights,
+)
 from mars_titan.models.titans.state import (
     deferred_checks,
     join_mac_rows,
@@ -75,22 +80,36 @@ from .horizon_labels import HorizonLabels
 from .input_pipeline import prepared
 from .kernel_policy import declared_policy, require_policy, valid_precision
 from .learning_hold import require_learning_allowed
-from .quantile_objectives import POINT_OBJECTIVES, QUANTILE_OBJECTIVES, point_objective
+from .quantile_objectives import (
+    POINT_COMPONENT,
+    POINT_OBJECTIVES,
+    QUANTILE_OBJECTIVES,
+    point_objective,
+)
 from .schedule_free import AveragedPoint, ScheduleFree, is_schedule_free
 from .selection import (
     AWAIT,
     CHRONOLOGICAL_MODES,
     COMMON_EPOCH,
+    DECAY_LR,
     FINISH,
     SESSION_RANK_IC,
     VALIDATION_PLATEAU,
     advance_selection,
+    apply_lr_decay,
     awaiting,
     bind_joint_epoch,
+    build_stopping_report,
+    canonical_selection,
+    emit_average_count,
     epoch_decision,
     initial_selection,
+    lr_decay_config,
     metric_definition,
+    retained_epochs,
+    selected_emit_epochs,
     selection_score,
+    smoothing_window,
     validate_selection,
 )
 from .shrink_perturb import ShrinkPerturb, shrink_perturb
@@ -128,6 +147,10 @@ _PREDICTOR_MODULES = dict(
 
 # Marca de una predicción del tramo cuyo grafo se recalcula al actualizar.
 _REPLAY = object()
+# --- factor_memory ---
+# Marca de estado factorial inicial todavía no capturado al principio del tramo.
+_UNSET = object()
+# --- fin factor_memory ---
 # Contadores de F5. Solo aparecen si el predictor declara las cabezas auxiliares.
 _AUXILIARY_COUNTERS = (
     "auxiliary_labels",
@@ -135,6 +158,12 @@ _AUXILIARY_COUNTERS = (
     "auxiliary_labels_discarded",
     "auxiliary_loss_sum",
 )
+# Año juliano exacto en microsegundos (365,25 días) y cotas de la semivida causal por recencia.
+RECENCY_YEAR_US = 31_557_600_000_000
+MIN_RECENCY_HALF_LIFE_YEARS = 0.25
+MAX_RECENCY_HALF_LIFE_YEARS = 100.0
+# Orden canónico de los grupos funcionales para el recorte de gradiente por rol.
+CLIP_GROUP_ORDER = ("technical_head", "mac", "backbone_fusion")
 
 
 def _default_selection():
@@ -183,16 +212,50 @@ class ChronologicalRecipe:
     # None ajusta con la pérdida declarada. Un objeto le suma el IC por sesión del punto
     # emitido, con su peso y signo contrario (`session_ic_term_v1`), sin cambiar la cabeza.
     session_ic_term: dict | None = None
+    # False conserva el recorte global único. True recorta por separado cada grupo funcional
+    # (`technical_head`, `mac`, `backbone_fusion`) al umbral `max_grad_norm`.
+    grad_clip_by_role: bool = False
+    # None pondera por igual todos los segmentos. Un positivo H (en años) modula el paso efectivo
+    # del optimizador con semivida causal H anclada en `train.phase.decision_end`.
+    recency_half_life_years: float | None = None
+    # False emite cada tramo con el grafo que la repetición descarta. True lo emite sin grafo
+    # cuando el tramo se repite (`accumulation_rows`): mismos valores con menos trabajo.
+    observe_without_graph: bool = False
 
     def __post_init__(self):
         # Los controles puntuales conservan la cabeza y validan los mismos hiperparámetros.
         validate_loss("mae" if self.loss in QUANTILE_OBJECTIVES else self.loss, self.huber_delta)
         validate_selection(
-            self.selection, epochs=self.epochs, modes=CHRONOLOGICAL_MODES, initial_reported=True
+            self.selection,
+            epochs=self.epochs,
+            modes=CHRONOLOGICAL_MODES,
+            initial_reported=True,
+            adaptive=True,
         )
         distillation.checked_weight(self.distillation_weight)
         if self.loss in POINT_OBJECTIVES and self.distillation_weight is not None:
             raise ValueError("El control de solo mediana no admite destilación de las colas")
+        if type(self.grad_clip_by_role) is not bool:
+            raise ValueError("grad_clip_by_role debe ser un booleano")
+        if self.grad_clip_by_role and self.max_grad_norm is None:
+            raise ValueError("grad_clip_by_role necesita un max_grad_norm positivo")
+        if type(self.observe_without_graph) is not bool:
+            raise ValueError("observe_without_graph debe ser un booleano")
+        if self.observe_without_graph and self.accumulation_rows is None:
+            raise ValueError("observe_without_graph solo se aplica con accumulation_rows")
+        if self.recency_half_life_years is not None:
+            if (
+                isinstance(self.recency_half_life_years, bool)
+                or not isinstance(self.recency_half_life_years, (int, float))
+                or not math.isfinite(self.recency_half_life_years)
+                or not MIN_RECENCY_HALF_LIFE_YEARS
+                <= self.recency_half_life_years
+                <= MAX_RECENCY_HALF_LIFE_YEARS
+            ):
+                raise ValueError(
+                    "recency_half_life_years debe ser None o un número finito en [0.25, 100]"
+                )
+            object.__setattr__(self, "recency_half_life_years", float(self.recency_half_life_years))
         numbers = (self.learning_rate, self.weight_decay, self.checkpoint_seconds)
         if (
             any(type(v) is not int or not 1 <= v <= m for v, m in self._bounded())
@@ -225,7 +288,11 @@ class ChronologicalRecipe:
             raise ValueError("El determinismo de la receta es None o una política admitida")
         if self.session_ic() is not None and self.distillation_weight is not None:
             raise ValueError("El término de IC por sesión no se combina con la destilación")
-        self.weight_options()
+        options = self.weight_options()
+        if self.recency_half_life_years is not None and options["schedule_free"] is not None:
+            raise ValueError("La recencia por tasa efectiva no se combina con schedule_free")
+        if lr_decay_config(self.selection) is not None and options["schedule_free"] is not None:
+            raise ValueError("La reducción de tasa no se combina con schedule_free")
 
     def session_ic(self):
         """Término de IC por sesión de la receta, o None si no lo declara."""
@@ -259,11 +326,26 @@ class ChronologicalRecipe:
 
     def identity(self):
         fields = asdict(self)
+        fields["selection"] = canonical_selection(self.selection)
+        # Las opciones nuevas de parada solo entran en la identidad cuando no valen su defecto.
+        if smoothing_window(self.selection) > 1:
+            fields["smoothing_rule"] = "centered_moving_average_truncated_at_phase_boundaries_v1"
+        if lr_decay_config(self.selection) is not None:
+            fields["learning_rate_decay_rule"] = (
+                "multiply_lr_restore_best_model_and_optimizer_reset_patience_v1"
+            )
+        if emit_average_count(self.selection) > 1:
+            fields["emit_weight_averaging"] = (
+                "shared_and_adapter_weights_float64_mean_memories_and_online_state_from_best_epoch_v1"
+            )
         # Sin acumulación se conserva literalmente la identidad anterior y su huella.
         if fields["accumulation_rows"] is None:
             fields.pop("accumulation_rows")
         else:
             fields["gradient_accumulation"] = "flow_blocks_replayed_from_segment_start_v1"
+        # Sin la opción no aparece ningún campo nuevo y la identidad anterior se conserva.
+        if fields.pop("observe_without_graph"):
+            fields["emission"] = "without_graph_when_the_segment_is_replayed_v1"
         if fields["precision"] is None:
             fields.pop("precision")
         if fields["determinism"] is None:
@@ -287,6 +369,25 @@ class ChronologicalRecipe:
                 fields.pop(name)
             else:
                 fields[name] = option.identity()
+        # Sin recorte por grupo ni recencia se conserva literalmente la identidad anterior.
+        if not fields["grad_clip_by_role"]:
+            fields.pop("grad_clip_by_role")
+        else:
+            fields["grad_clip_rule"] = (
+                "independent_l2_per_component_group_technical_head_mac_backbone_fusion_v1"
+            )
+        if fields["recency_half_life_years"] is None:
+            fields.pop("recency_half_life_years")
+        else:
+            fields["recency_weighting"] = dict(
+                schema_version=1,
+                half_life_years=float(self.recency_half_life_years),
+                year_microseconds=RECENCY_YEAR_US,
+                anchor="train_phase_decision_end",
+                normalization="closed_form_continuous_mean_over_train_phase_v1",
+                segment_timestamp="mean_weight_over_matured_label_decision_at_v1",
+                application="effective_learning_rate_after_clip_v1",
+            )
         return dict(
             schema_version=1,
             recipe=RECIPE,
@@ -339,6 +440,98 @@ def parameter_roles(predictor):
         else:
             roles["shared"].append(name)
     return roles
+
+
+def clip_parameter_groups(predictor, trainable=None):
+    """Particionar los parámetros ajustables en grupos funcionales disjuntos y exhaustivos.
+
+    Orden determinista heredado de `predictor.named_parameters()`:
+    - `technical_head`: rama técnica, cabeza y objetivos o cabezas de salida.
+    - `mac`: memoria rápida, atención MAC y puertas de fiabilidad.
+    - `backbone_fusion`: codificadores multimodales, fusión y operadores de entrada/sesión.
+    """
+    allowed = None if trainable is None else set(trainable)
+    buckets = {group: [] for group in CLIP_GROUP_ORDER}
+    for name, _ in predictor.named_parameters():
+        if allowed is not None and name not in allowed:
+            continue
+        # --- persistent_session_hologram ---
+        if name.startswith("persistent_session_hologram."):
+            buckets["mac"].append(name)
+            continue
+        # --- fin persistent_session_hologram ---
+        if name.startswith(("technical_branch.", "head.", "output_objective.", "auxiliary_heads.")):
+            buckets["technical_head"].append(name)
+        elif name.startswith(("mac.", "reliability_gates.", "cross_sectional_rank_memory.")):
+            buckets["mac"].append(name)
+        # --- factor_memory ---
+        elif name.startswith("factor_memory."):
+            buckets["mac"].append(name)
+        # --- fin factor_memory ---
+        # --- contrastive_memory ---
+        elif name.startswith("contrastive_memory."):
+            buckets["mac"].append(name)
+        # --- fin contrastive_memory ---
+        # --- ic_titans_mlp ---
+        elif name.startswith("ic_titans_mlp."):
+            buckets["mac"].append(name)
+        # --- fin ic_titans_mlp ---
+        # --- lead_lag_memory ---
+        elif name.startswith("lead_lag_memory."):
+            buckets["mac"].append(name)
+        # --- fin lead_lag_memory ---
+        # --- three_factor_consolidation ---
+        elif name.startswith("three_factor_consolidation."):
+            buckets["mac"].append(name)
+        # --- fin three_factor_consolidation ---
+        else:
+            buckets["backbone_fusion"].append(name)
+    groups = {group: names for group, names in buckets.items() if names}
+    expected = {name for name, _ in predictor.named_parameters()} if allowed is None else allowed
+    assigned = [name for names in groups.values() for name in names]
+    if len(assigned) != len(set(assigned)) or set(assigned) != expected:
+        raise ValueError("La partición de recorte por grupo debe cubrir cada parámetro una vez")
+    return groups
+
+
+def recency_segment_weight(decision_timestamps, *, decision_start, decision_end, half_life_years):
+    """Peso causal por recencia del segmento normalizado a media continua 1 en el tramo de ajuste.
+
+    Ancla estrictamente en `decision_end` del tramo de ajuste (nunca en validación, calibración
+    ni evaluación) y rechaza cualquier fecha fuera de `[decision_start, decision_end)` o en 2024+.
+    """
+    if (
+        isinstance(half_life_years, bool)
+        or not isinstance(half_life_years, (int, float))
+        or not math.isfinite(half_life_years)
+        or not MIN_RECENCY_HALF_LIFE_YEARS <= half_life_years <= MAX_RECENCY_HALF_LIFE_YEARS
+    ):
+        raise ValueError("half_life_years debe ser un número finito en [0.25, 100]")
+    if (
+        type(decision_start) is not int
+        or type(decision_end) is not int
+        or not 0 < decision_start < decision_end <= FINAL_TEST_US
+    ):
+        raise ValueError("Los límites del tramo de ajuste deben ser causales y anteriores a 2024")
+    timestamps = list(decision_timestamps)
+    if not timestamps:
+        raise ValueError("El segmento necesita al menos una etiqueta madura con fecha")
+    rate = math.log(2.0) / float(half_life_years)
+    span_years = (decision_end - decision_start) / RECENCY_YEAR_US
+    decay_span = rate * span_years
+    mean_weight = -math.expm1(-decay_span) / decay_span if decay_span > 0.0 else 1.0
+    total = 0.0
+    for at in timestamps:
+        if type(at) is not int or not decision_start <= at < decision_end or at >= FINAL_TEST_US:
+            raise ValueError(
+                "La fecha de decisión queda fuera del tramo causal de ajuste o abre 2024"
+            )
+        age_years = (decision_end - at) / RECENCY_YEAR_US
+        total += math.exp(-rate * age_years)
+    weight = (total / len(timestamps)) / mean_weight
+    if not math.isfinite(weight) or weight <= 0.0:
+        raise ValueError("El peso por recencia calculado no es finito y positivo")
+    return float(weight)
 
 
 class _Block:
@@ -477,6 +670,99 @@ class Paused(Exception):
     """Solicitud de parada atendida en una barrera ya confirmada."""
 
 
+class _SessionRankIC:
+    """Acumular el IC de rangos de Spearman por sesión durante el ajuste en O(sesiones activas).
+
+    Cada sesión se cierra en cuanto maduran todas sus predicciones pendientes del recorrido
+    (o al cierre del tramo) con exactamente la misma definición que
+    `scale_diagnostics.session_correlations(..., rank=True)`.
+    """
+
+    def __init__(self, min_assets):
+        self.min_assets = int(min_assets)
+        self.pending_counts = {}
+        self.open_sessions = {}
+        self.defined_values = []
+
+    def observe(self, market, decision_at):
+        key = (market, int(decision_at))
+        self.pending_counts[key] = self.pending_counts.get(key, 0) + 1
+
+    def _finish_session(self, key):
+        pair = self.open_sessions.pop(key, None)
+        if pair is None:
+            return
+        preds, targets = pair
+        if len(preds) < self.min_assets:
+            return
+        observed = np.asarray(targets, dtype=np.float64)
+        predicted = np.asarray(preds, dtype=np.float64)
+        if np.ptp(observed) == 0 or np.ptp(predicted) == 0:
+            return
+        from scipy.stats import rankdata
+
+        value = float(np.corrcoef(rankdata(observed), rankdata(predicted))[0, 1])
+        if math.isfinite(value):
+            self.defined_values.append(value)
+
+    def resolve(self, market, decision_at, prediction, target):
+        key = (market, int(decision_at))
+        entry = self.open_sessions.get(key)
+        if entry is None:
+            entry = ([], [])
+            self.open_sessions[key] = entry
+        entry[0].append(float(prediction))
+        entry[1].append(float(target))
+        remaining = self.pending_counts.get(key, 0) - 1
+        if remaining <= 0:
+            self.pending_counts.pop(key, None)
+            self._finish_session(key)
+        else:
+            self.pending_counts[key] = remaining
+
+    def close(self):
+        for key in sorted(self.open_sessions):
+            self._finish_session(key)
+        self.open_sessions.clear()
+        self.pending_counts.clear()
+
+    def summary(self):
+        return dict(
+            session_rank_ic=(
+                float(np.asarray(self.defined_values, dtype=np.float64).mean())
+                if self.defined_values
+                else None
+            ),
+            session_rank_ic_sessions=len(self.defined_values),
+        )
+
+    def export(self):
+        return dict(
+            defined=torch.tensor(self.defined_values, dtype=torch.float64),
+            pending=[[m, t, c] for (m, t), c in sorted(self.pending_counts.items())],
+            open=[
+                [
+                    m,
+                    t,
+                    torch.tensor(preds, dtype=torch.float64),
+                    torch.tensor(targets, dtype=torch.float64),
+                ]
+                for (m, t), (preds, targets) in sorted(self.open_sessions.items())
+            ],
+        )
+
+    @classmethod
+    def restore(cls, min_assets, payload):
+        acc = cls(min_assets)
+        acc.defined_values = [float(v) for v in payload["defined"].tolist()]
+        acc.pending_counts = {(m, int(t)): int(c) for m, t, c in payload["pending"]}
+        acc.open_sessions = {
+            (m, int(t)): (preds.tolist(), targets.tolist())
+            for m, t, preds, targets in payload["open"]
+        }
+        return acc
+
+
 @dataclass
 class _Pass:
     """Estado de un recorrido. Solo flows, pending, errores y contadores se persisten."""
@@ -520,6 +806,41 @@ class _Pass:
     horizons: object = None
     # Con #791, la señal de fiabilidad madura del recorrido.
     reliability: object = None
+    # Con CRRM, el estado de la memoria transversal de rango y su instantánea para replay.
+    rank_memory: object = None
+    rank_memory_start: object = None
+    rank_memory_labels: list = field(default_factory=list)
+    # --- factor_memory ---
+    # Con LFM-SW, la base factorial por mercado y su fotografía al inicio del tramo.
+    factor_memory: object = None
+    factor_start: object = _UNSET
+    # --- fin factor_memory ---
+    # --- contrastive_memory ---
+    # Con Idea 5 (InfoNCE-Titans), el estado por mercado y su copia al inicio del tramo.
+    contrastive: object = None
+    contrastive_start: object = None
+    # --- fin contrastive_memory ---
+    # --- ic_titans_mlp ---
+    ic_mlp_memory: object = None
+    ic_mlp_memory_start: object = None
+    ic_mlp_memory_labels: list = field(default_factory=list)
+    # --- fin ic_titans_mlp ---
+    # --- lead_lag_memory ---
+    lead_lag_memory: object = None
+    lead_lag_memory_start: object = None
+    lead_lag_memory_labels: list = field(default_factory=list)
+    # --- fin lead_lag_memory ---
+    # --- three_factor_consolidation ---
+    three_factor_state: object = None
+    three_factor_start: object = None
+    three_factor_labels: list = field(default_factory=list)
+    # --- fin three_factor_consolidation ---
+    # --- persistent_session_hologram ---
+    persistent_hologram: object = None
+    persistent_hologram_start: object = None
+    # --- fin persistent_session_hologram ---
+    # Con métrica `session_rank_ic`, acumulador en flujo del IC de rangos de entrenamiento.
+    rank_ic: object = None
 
 
 class ChronologicalInference:
@@ -561,10 +882,24 @@ class ChronologicalInference:
             raise ValueError("El término de IC por sesión no se combina con un objetivo de salida")
         # Con liquidez, cada fila lleva a la pérdida su columna del bloque del gráfico.
         self.liquidity = self.session_ic is not None and self.session_ic.weighted
-        if self.liquidity and (
+        declares_liquidity = (
+            self.session_ic is not None and self.session_ic.liquidity_column is not None
+        )
+        removed = predictor.config.removed_modalities or ()
+        if declares_liquidity and any(name in removed for name in ("charts", "charts_technical")):
+            raise ValueError("La ponderación por liquidez requiere la modalidad charts sin retirar")
+        if declares_liquidity and (
             -self.session_ic.liquidity_column > predictor.config.inputs.dimensions["charts"]
         ):
             raise ValueError("La columna de liquidez no pertenece al bloque del gráfico")
+        # Con el desplazamiento conocido, cada fila lleva además el suyo a la pérdida.
+        self.offset = self.session_ic is not None and self.session_ic.shifted
+        if self.offset and any(name in removed for name in ("charts", "charts_technical")):
+            raise ValueError("El desplazamiento conocido requiere la modalidad charts sin retirar")
+        if self.offset and (
+            -self.session_ic.offset_column > predictor.config.inputs.dimensions["charts"]
+        ):
+            raise ValueError("La columna del desplazamiento no pertenece al bloque del gráfico")
         # F1 y A4 son otros objetivos de salida. Solo se distinguen para rechazar el
         # postentrenamiento, que todavía no tiene un contraste declarado para ellos.
         self.undeclared_posttraining = (
@@ -577,6 +912,26 @@ class ChronologicalInference:
         self.horizons = predictor.config.auxiliary_horizons
         # #791 cambia el ajuste y la inferencia, así que los dos recorridos llevan su señal.
         self.reliability = predictor.config.mature_reliability
+        # CRRM cambia ajuste e inferencia y consume etiquetas maduras en ambos recorridos.
+        self.uses_rank_memory = predictor.cross_sectional_rank_memory is not None
+        # --- factor_memory ---
+        self.uses_factor_memory = predictor.factor_memory is not None
+        # --- fin factor_memory ---
+        # --- contrastive_memory ---
+        self.uses_contrastive = predictor.contrastive_memory is not None
+        # --- fin contrastive_memory ---
+        # --- ic_titans_mlp ---
+        self.uses_ic_mlp_memory = predictor.ic_titans_mlp is not None
+        # --- fin ic_titans_mlp ---
+        # --- lead_lag_memory ---
+        self.uses_lead_lag_memory = predictor.lead_lag_memory is not None
+        # --- fin lead_lag_memory ---
+        # --- three_factor_consolidation ---
+        self.uses_three_factor = predictor.three_factor_consolidation is not None
+        # --- fin three_factor_consolidation ---
+        # --- persistent_session_hologram ---
+        self.uses_persistent_hologram = predictor.persistent_session_hologram is not None
+        # --- fin persistent_session_hologram ---
         if torch.backends.mha.get_fastpath_enabled() or torch.is_inference_mode_enabled():
             raise ValueError("El recorrido exige fastpath=False declarado y sin inference_mode")
         if (
@@ -611,8 +966,9 @@ class ChronologicalInference:
         grad = differentiable and not warmup
         # La acumulación emite con el mismo cálculo y corta el grafo tras cada bloque.
         accumulate = grad and self.recipe.accumulation_rows is not None
-        if grad and run.instants == 0 and predictor.config.variant == "mac_frozen":
-            self._anchor_frozen(run.flows)
+        # Con `observe_without_graph`, la emisión de un tramo que se repite no construye el
+        # grafo que la repetición descartaría. Los valores emitidos y los estados no cambian.
+        graph = grad and not (accumulate and self.recipe.observe_without_graph)
         with nvtx_ranges.phase("titans.validate"):
             if blocks is None:
                 validated = validated_cpu_batches(event.inputs, specification)
@@ -632,8 +988,56 @@ class ChronologicalInference:
         # Las operaciones por sesión solo admiten el instante completo en un único bloque.
         complete = len(validated) == 1
         if self.uses_context and run.context is None:
-            run.context = predictor.initial_context(differentiable=grad)
+            run.context = predictor.initial_context(differentiable=graph)
+        if self.uses_rank_memory and run.rank_memory is None:
+            run.rank_memory = predictor.initial_rank_memory()
+        if self.uses_rank_memory and accumulate and run.rank_memory_start is None:
+            run.rank_memory_start = predictor.detach_rank_memory(run.rank_memory)
+        # --- ic_titans_mlp ---
+        if self.uses_ic_mlp_memory and run.ic_mlp_memory is None:
+            run.ic_mlp_memory = predictor.initial_ic_mlp_memory()
+        if self.uses_ic_mlp_memory and accumulate and run.ic_mlp_memory_start is None:
+            run.ic_mlp_memory_start = predictor.detach_ic_mlp_memory(run.ic_mlp_memory)
+        # --- fin ic_titans_mlp ---
+        # --- lead_lag_memory ---
+        if self.uses_lead_lag_memory and run.lead_lag_memory is None:
+            run.lead_lag_memory = predictor.initial_lead_lag_memory()
+        if self.uses_lead_lag_memory and accumulate and run.lead_lag_memory_start is None:
+            run.lead_lag_memory_start = predictor.detach_lead_lag_memory(run.lead_lag_memory)
+        # --- fin lead_lag_memory ---
+        # --- three_factor_consolidation ---
+        if self.uses_three_factor and run.three_factor_state is None:
+            run.three_factor_state = predictor.initial_three_factor_state()
+        if self.uses_three_factor and accumulate and run.three_factor_start is None:
+            run.three_factor_start = predictor.detach_three_factor_state(run.three_factor_state)
+        # --- fin three_factor_consolidation ---
+        # --- persistent_session_hologram ---
+        if self.uses_persistent_hologram and run.persistent_hologram is None:
+            run.persistent_hologram = predictor.initial_persistent_hologram()
+        if self.uses_persistent_hologram and accumulate and run.persistent_hologram_start is None:
+            run.persistent_hologram_start = predictor.detach_persistent_hologram(
+                run.persistent_hologram
+            )
+        staged_hologram = run.persistent_hologram if self.uses_persistent_hologram else None
+        # --- fin persistent_session_hologram ---
         context = dict(context=run.context) if self.uses_context else {}
+        # --- factor_memory ---
+        if self.uses_factor_memory:
+            if accumulate and run.factor_start is _UNSET:
+                run.factor_start = run.factor_memory
+            if run.factor_memory is None:
+                run.factor_memory = predictor.initial_factor_memory(differentiable=graph)
+        factor = dict(factor_memory=run.factor_memory) if self.uses_factor_memory else {}
+        # --- fin factor_memory ---
+        # --- contrastive_memory ---
+        contrastive = None
+        if self.uses_contrastive:
+            if run.contrastive is None:
+                run.contrastive = predictor.initial_contrastive_memory(differentiable=graph)
+            if accumulate and run.contrastive_start is None:
+                run.contrastive_start = predictor.detach_contrastive_memory(run.contrastive)
+            contrastive = run.contrastive
+        # --- fin contrastive_memory ---
         signal, surprises = self._signal(run), []
         # Las comprobaciones de finitud de todos los bloques del evento se resuelven juntas
         # al final, antes de volver al recorrido, que es el único que aplica pasos, guarda
@@ -653,7 +1057,7 @@ class ChronologicalInference:
                     )
                 new = tuple(flow for flow in batch.flow_ids if flow not in run.flows)
                 if new:
-                    run.flows.put(predictor.initial_state(new, differentiable=grad))
+                    run.flows.put(predictor.initial_state(new, differentiable=graph))
                 if accumulate:
                     for flow in batch.flow_ids:
                         if flow not in run.starts:
@@ -661,18 +1065,112 @@ class ChronologicalInference:
                             run.starts[flow] = None if flow in new else run.flows.handle(flow)
                     run.segment.append((batch, options, complete))
                 state = run.flows.gather(batch.flow_ids)
-                with nvtx_ranges.phase("titans.prepare"), torch.set_grad_enabled(grad):
+                if grad and predictor.config.variant == "mac_frozen":
+                    # Sin escrituras, cada bloque lee directamente el M0 vigente sin fragmentar
+                    # `run.flows` en cortes `SliceBackward0` de complejidad O(R·F·D²).
+                    memory = predictor.mac.initial_state(
+                        len(batch.flow_ids), differentiable=graph
+                    ).memory
+                    state = replace(state, mac=replace(state.mac, memory=memory))
+                prepare_options = (
+                    dict(options, rank_memory=run.rank_memory) if self.uses_rank_memory else options
+                )
+                # --- factor_memory ---
+                if self.uses_factor_memory:
+                    prepare_options = dict(prepare_options, **factor)
+                # --- fin factor_memory ---
+                # --- contrastive_memory ---
+                if self.uses_contrastive:
+                    prepare_options = dict(prepare_options, contrastive=contrastive)
+                # --- fin contrastive_memory ---
+                # --- ic_titans_mlp ---
+                if self.uses_ic_mlp_memory:
+                    prepare_options = dict(prepare_options, ic_mlp_memory=run.ic_mlp_memory)
+                # --- fin ic_titans_mlp ---
+                # --- lead_lag_memory ---
+                if self.uses_lead_lag_memory:
+                    prepare_options = dict(prepare_options, lead_lag_memory=run.lead_lag_memory)
+                # --- fin lead_lag_memory ---
+                # --- three_factor_consolidation ---
+                if self.uses_three_factor:
+                    prepare_options = dict(
+                        prepare_options, three_factor_state=run.three_factor_state
+                    )
+                # --- fin three_factor_consolidation ---
+                # --- persistent_session_hologram ---
+                if self.uses_persistent_hologram:
+                    prepare_options = dict(prepare_options, persistent_hologram=staged_hologram)
+                # --- fin persistent_session_hologram ---
+                with nvtx_ranges.phase("titans.prepare"), torch.set_grad_enabled(graph):
                     prepared = predictor.prepare(
                         batch,
                         state,
-                        differentiable=grad,
+                        differentiable=graph,
                         session_complete=complete,
-                        **options,
+                        **prepare_options,
                         **context,
                     )
+                if self.uses_rank_memory and not warmup:
+                    run.rank_memory = predictor.stage_rank_memory(
+                        run.rank_memory,
+                        batch.flow_ids,
+                        batch.prediction_at,
+                        prepared.rank_memory_keys,
+                        prepared.point_predictions,
+                        differentiable=graph and not accumulate,
+                    )
+                # --- ic_titans_mlp ---
+                if self.uses_ic_mlp_memory and not warmup:
+                    run.ic_mlp_memory = predictor.stage_ic_mlp_memory(
+                        run.ic_mlp_memory,
+                        batch.flow_ids,
+                        batch.prediction_at,
+                        prepared.ic_mlp_keys,
+                        differentiable=graph and not accumulate,
+                    )
+                # --- fin ic_titans_mlp ---
+                # --- lead_lag_memory ---
+                if self.uses_lead_lag_memory and not warmup:
+                    run.lead_lag_memory = predictor.stage_lead_lag_memory(
+                        run.lead_lag_memory,
+                        batch.flow_ids,
+                        batch.prediction_at,
+                        prepared.lead_lag_memberships,
+                        prepared.point_predictions,
+                        differentiable=graph and not accumulate,
+                    )
+                # --- fin lead_lag_memory ---
+                # --- three_factor_consolidation ---
+                if self.uses_three_factor:
+                    run.three_factor_state = predictor.stage_three_factor_state(
+                        run.three_factor_state,
+                        batch.flow_ids,
+                        batch.prediction_at,
+                        prepared.three_factor_emission,
+                        prepared.point_predictions,
+                        record_pending=not warmup,
+                        differentiable=graph and not accumulate,
+                    )
+                # --- fin three_factor_consolidation ---
+                # --- persistent_session_hologram ---
+                if self.uses_persistent_hologram:
+                    staged_hologram = prepared.next_persistent_hologram
+                # --- fin persistent_session_hologram ---
                 if self.uses_context:
                     # Los bloques siguientes del evento leen el mismo contexto confirmado.
                     context = dict(context=prepared.next_context)
+                # --- factor_memory ---
+                if self.uses_factor_memory:
+                    next_factor = prepared.next_factor_memory
+                    run.factor_memory = (
+                        predictor.detach_factor_memory(next_factor) if accumulate else next_factor
+                    )
+                    factor = dict(factor_memory=run.factor_memory)
+                # --- fin factor_memory ---
+                # --- contrastive_memory ---
+                if self.uses_contrastive:
+                    contrastive = prepared.next_contrastive
+                # --- fin contrastive_memory ---
                 result = prepared.local_control
                 if result is not None:
                     # Con acumulación el término emitido solo cuenta: su grafo retendría el lote.
@@ -700,8 +1198,29 @@ class ChronologicalInference:
                     ledger.remember(cpu)
             if self.uses_context:
                 # La sesión se escribe una vez, después de emitir todas sus predicciones.
-                with nvtx_ranges.phase("titans.context"), torch.set_grad_enabled(grad):
-                    run.context = predictor.commit_context(context["context"], differentiable=grad)
+                with nvtx_ranges.phase("titans.context"), torch.set_grad_enabled(graph):
+                    run.context = predictor.commit_context(context["context"], differentiable=graph)
+            # --- contrastive_memory ---
+            if self.uses_contrastive:
+                # La memoria contrastiva escribe la sesión entera tras emitir sus predicciones.
+                with nvtx_ranges.phase("titans.contrastive"), torch.set_grad_enabled(graph):
+                    committed = predictor.commit_contrastive_memory(
+                        contrastive, differentiable=graph
+                    )
+                    run.contrastive = (
+                        predictor.detach_contrastive_memory(committed) if accumulate else committed
+                    )
+            # --- fin contrastive_memory ---
+            # --- persistent_session_hologram ---
+            if self.uses_persistent_hologram:
+                with (
+                    nvtx_ranges.phase("titans.persistent_hologram"),
+                    torch.set_grad_enabled(graph and not accumulate),
+                ):
+                    run.persistent_hologram = predictor.commit_persistent_hologram(
+                        staged_hologram, differentiable=graph and not accumulate
+                    )
+            # --- fin persistent_session_hologram ---
             with nvtx_ranges.phase("titans.emit"):
                 self._emit(run, source, emitted)
             if surprises:
@@ -719,7 +1238,8 @@ class ChronologicalInference:
 
         Con el término ponderado por liquidez, cada fila añade al final su liquidez recibida,
         sin gradiente: así llega a la pérdida con su predicción, también en la repetición por
-        bloques, sin más estado que guardar.
+        bloques, sin más estado que guardar. Con el desplazamiento conocido de la etiqueta,
+        añade después el suyo, de la misma forma.
         """
         if self.quantiles:
             outputs = prepared.quantiles
@@ -727,11 +1247,22 @@ class ChronologicalInference:
             return prepared.outputs
         else:
             outputs = prepared.point_predictions
-        if not self.liquidity:
+        if not self.liquidity and not self.offset:
             return outputs
-        liquidity = batch.inputs["charts"][:, self.session_ic.liquidity_column].detach()
-        outputs = outputs if outputs.ndim == 2 else outputs.unsqueeze(1)
-        return torch.cat((outputs, liquidity.to(outputs.dtype).unsqueeze(1)), dim=1)
+        charts = batch.inputs["charts"]
+        columns = [outputs if outputs.ndim == 2 else outputs.unsqueeze(1)]
+        if self.liquidity:
+            column = charts[:, self.session_ic.liquidity_column].detach()
+            if self.session_ic.top_third_weighted:
+                # Donde falta la modalidad charts, la liquidez no es conocida y pesa 1.
+                present = batch.presence[:, MODALITIES.index("charts")]
+                column = torch.where(present, column, torch.full_like(column, float("nan")))
+            columns.append(column)
+        if self.offset:
+            term = self.session_ic
+            columns.append(known_offset(charts[:, term.offset_column], term.offset_scale))
+        columns[1:] = [column.to(outputs.dtype).unsqueeze(1) for column in columns[1:]]
+        return torch.cat(columns, dim=1)
 
     def _levels(self, prepared):
         if self.quantiles:
@@ -759,6 +1290,8 @@ class ChronologicalInference:
         ]
         for index, (flow, at) in enumerate(keys):
             run.pending[flow, at] = values[index]
+            if run.rank_ic is not None:
+                run.rank_ic.observe(flow.split("/", 1)[0], at)
             if levels is not None:
                 run.levels[flow, at] = levels[index]
             if self.audit is not None:
@@ -823,7 +1356,16 @@ class ChronologicalInference:
 
     def _labels(self, run, event, *, train):
         """Resolver etiquetas maduras contra la predicción emitida y su grafo vigente."""
-        markets, moments, errors, matured = [], [], [], []
+        markets, moments, errors, matured, rank_matured = [], [], [], [], []
+        # --- ic_titans_mlp ---
+        ic_mlp_matured = []
+        # --- fin ic_titans_mlp ---
+        # --- lead_lag_memory ---
+        lead_lag_matured = []
+        # --- fin lead_lag_memory ---
+        # --- three_factor_consolidation ---
+        three_factor_matured = []
+        # --- fin three_factor_consolidation ---
         for flow, decision_at, value in event.labels:
             key = flow, decision_at
             if key not in run.pending:
@@ -831,11 +1373,28 @@ class ChronologicalInference:
             issued = run.pending.pop(key)
             if self.reliability is not None:
                 matured.append((flow, issued, value))
+            if self.uses_rank_memory:
+                rank_matured.append((flow, decision_at, value))
+            # --- ic_titans_mlp ---
+            if self.uses_ic_mlp_memory:
+                ic_mlp_matured.append((flow, decision_at, value))
+            # --- fin ic_titans_mlp ---
+            # --- lead_lag_memory ---
+            if self.uses_lead_lag_memory:
+                lead_lag_matured.append((flow, decision_at, value))
+            # --- fin lead_lag_memory ---
+            # --- three_factor_consolidation ---
+            if self.uses_three_factor:
+                three_factor_matured.append((flow, decision_at, value))
+            # --- fin three_factor_consolidation ---
             if train and run.horizons is not None:
                 run.counters["auxiliary_labels"] += run.horizons.mature(flow, decision_at, value)
-            markets.append(flow.split("/", 1)[0])
+            market = flow.split("/", 1)[0]
+            markets.append(market)
             moments.append(decision_at)
             errors.append(issued - value)
+            if train and run.rank_ic is not None:
+                run.rank_ic.resolve(market, decision_at, issued, value)
             run.counters["labels"] += 1
             if self.audit is not None:
                 phase = "train" if train else "validation"
@@ -854,6 +1413,60 @@ class ChronologicalInference:
         signal = self._signal(run)
         if signal is not None:
             signal.settle(matured)
+        if self.uses_rank_memory and rank_matured:
+            if run.rank_memory is None:
+                run.rank_memory = self.predictor.initial_rank_memory()
+            accumulate = train and self.recipe.accumulation_rows is not None
+            if accumulate and run.segment:
+                run.rank_memory_labels.append((len(run.segment), tuple(rank_matured)))
+            run.rank_memory = self.predictor.settle_rank_memory(
+                run.rank_memory,
+                rank_matured,
+                differentiable=train and not accumulate,
+                train=train,
+            )
+        # --- ic_titans_mlp ---
+        if self.uses_ic_mlp_memory and ic_mlp_matured:
+            if run.ic_mlp_memory is None:
+                run.ic_mlp_memory = self.predictor.initial_ic_mlp_memory()
+            accumulate = train and self.recipe.accumulation_rows is not None
+            if accumulate and run.segment:
+                run.ic_mlp_memory_labels.append((len(run.segment), tuple(ic_mlp_matured)))
+            run.ic_mlp_memory = self.predictor.settle_ic_mlp_memory(
+                run.ic_mlp_memory,
+                ic_mlp_matured,
+                differentiable=train and not accumulate,
+                train=train,
+            )
+        # --- fin ic_titans_mlp ---
+        # --- lead_lag_memory ---
+        if self.uses_lead_lag_memory and lead_lag_matured:
+            if run.lead_lag_memory is None:
+                run.lead_lag_memory = self.predictor.initial_lead_lag_memory()
+            accumulate = train and self.recipe.accumulation_rows is not None
+            if accumulate and run.segment:
+                run.lead_lag_memory_labels.append((len(run.segment), tuple(lead_lag_matured)))
+            run.lead_lag_memory = self.predictor.settle_lead_lag_memory(
+                run.lead_lag_memory,
+                lead_lag_matured,
+                differentiable=train and not accumulate,
+                train=train,
+            )
+        # --- fin lead_lag_memory ---
+        # --- three_factor_consolidation ---
+        if self.uses_three_factor and three_factor_matured:
+            if run.three_factor_state is None:
+                run.three_factor_state = self.predictor.initial_three_factor_state()
+            accumulate = train and self.recipe.accumulation_rows is not None
+            if accumulate and run.segment:
+                run.three_factor_labels.append((len(run.segment), tuple(three_factor_matured)))
+            run.three_factor_state = self.predictor.settle_three_factor_state(
+                run.three_factor_state,
+                three_factor_matured,
+                differentiable=train and not accumulate,
+                train=train,
+            )
+        # --- fin three_factor_consolidation ---
         for start in range(0, len(errors), 4096):
             run.errors.update(
                 markets[start : start + 4096],
@@ -862,11 +1475,43 @@ class ChronologicalInference:
             )
 
     def _close(self, run):
+        if run.rank_ic is not None:
+            run.rank_ic.close()
         run.counters["unresolved"] = len(run.pending)
         run.flows.clear()
         run.context = None
         run.horizons = None
         run.reliability = None
+        run.rank_memory = None
+        run.rank_memory_start = None
+        run.rank_memory_labels.clear()
+        # --- factor_memory ---
+        run.factor_memory = None
+        run.factor_start = _UNSET
+        # --- fin factor_memory ---
+        # --- contrastive_memory ---
+        run.contrastive = None
+        run.contrastive_start = None
+        # --- fin contrastive_memory ---
+        # --- ic_titans_mlp ---
+        run.ic_mlp_memory = None
+        run.ic_mlp_memory_start = None
+        run.ic_mlp_memory_labels.clear()
+        # --- fin ic_titans_mlp ---
+        # --- lead_lag_memory ---
+        run.lead_lag_memory = None
+        run.lead_lag_memory_start = None
+        run.lead_lag_memory_labels.clear()
+        # --- fin lead_lag_memory ---
+        # --- three_factor_consolidation ---
+        run.three_factor_state = None
+        run.three_factor_start = None
+        run.three_factor_labels.clear()
+        # --- fin three_factor_consolidation ---
+        # --- persistent_session_hologram ---
+        run.persistent_hologram = None
+        run.persistent_hologram_start = None
+        # --- fin persistent_session_hologram ---
         run.pending.clear()
         run.graphs.clear()
         run.levels.clear()
@@ -880,13 +1525,16 @@ class ChronologicalInference:
         counters = dict(run.counters)
         labels = counters["labels_in_loss"]
         counters["mean_loss"] = counters.pop("loss_sum") / labels if labels else None
-        return dict(
+        result = dict(
             samples=summary["samples"],
             session_count=summary["session_count"],
             session_mae=summary["session_mae"],
             session_mse=summary["session_mse"],
             **counters,
         )
+        if run.rank_ic is not None:
+            result.update(run.rank_ic.summary())
+        return result
 
     def evaluate(self, source, *, stop=None, rows=None):
         """Validación temporal con parámetros congelados y memoria rápida reiniciada.
@@ -1073,6 +1721,14 @@ class ChronologicalTrainer(ChronologicalInference):
         self.averaged_point = (
             None if self.schedule_free is None else AveragedPoint(self.optimizer, self.trainable)
         )
+        self.clip_groups = (
+            clip_parameter_groups(predictor, self.trainable) if recipe.grad_clip_by_role else None
+        )
+        self._clip_param_groups = (
+            None
+            if self.clip_groups is None
+            else [[self.trainable[name] for name in names] for names in self.clip_groups.values()]
+        )
         self.identity = dict(
             schema_version=1,
             recipe=recipe.identity(),
@@ -1132,8 +1788,14 @@ class ChronologicalTrainer(ChronologicalInference):
         if anchored is not None:
             # Solo el decaimiento anclado añade su código. Sin él la identidad no cambia.
             self.identity["anchored_decay"] = anchored
+        if self.clip_groups is not None:
+            # Sin recorte por grupo, la identidad conserva literalmente su forma anterior.
+            self.identity["grad_clip_groups"] = self.clip_groups
         self.run_id = hashlib.sha256(canonical(self.identity).encode()).hexdigest()
         self.global_step, self.selection, self.history, self.train_metrics = 0, None, [], None
+        self.track_train_rank_ic = recipe.selection["metric"] == SESSION_RANK_IC
+        self.lr_decays = []
+        self.epoch_lrs = {}
 
     def _code(self):
         own = {name: sha256(Path(importlib.import_module(name).__file__)) for name in _OWN_MODULES}
@@ -1196,32 +1858,61 @@ class ChronologicalTrainer(ChronologicalInference):
         if self.objective is not None:
             sessions = [(flow.split("/", 1)[0], at) for flow, at in keys]
             return self.objective.loss(prediction, target, sessions)
-        liquidity = None
+        liquidity = offset = None
+        if self.offset:
+            # La última columna es el desplazamiento conocido de la fila.
+            offset, prediction = prediction[:, -1], prediction[:, :-1]
         if self.liquidity:
-            # La última columna es la liquidez de la fila; el resto, sus salidas.
+            # La última que queda es la liquidez de la fila; el resto, sus salidas.
             liquidity, prediction = prediction[:, -1], prediction[:, :-1]
-            if not self.quantiles:
-                prediction = prediction.squeeze(1)
-        loss = self._loss(prediction, target)
+        if (self.offset or self.liquidity) and not self.quantiles:
+            prediction = prediction.squeeze(1)
+        sessions = (
+            [(flow.split("/", 1)[0], at) for flow, at in keys]
+            if self.session_ic is not None
+            else None
+        )
+        row_weights = (
+            session_row_weights(liquidity, sessions, self.session_ic.liquidity_weight)
+            if self.session_ic is not None and self.session_ic.top_third_weighted
+            else None
+        )
+        loss = self._loss(prediction, target, weights=row_weights)
         if self.session_ic is not None:
             # El punto es el que se emite: la mediana con cuantiles o la salida escalar.
-            sessions = [(flow.split("/", 1)[0], at) for flow, at in keys]
             point = median(prediction) if self.quantiles else prediction
-            loss = loss + self.session_ic.term(point, target, sessions, liquidity)
+            loss = loss + self.session_ic.term(point, target, sessions, liquidity, offset)
         return loss
 
-    def _loss(self, prediction, target):
+    def _loss(self, prediction, target, *, weights=None):
         """Pérdida anterior sin objetivo por sesión, con su interfaz de dos tensores."""
         functional = torch.nn.functional
+        if weights is None:
+            if self.recipe.loss == PINBALL:
+                return pinball_loss(prediction, target)
+            if self.recipe.loss in POINT_OBJECTIVES:
+                return point_objective(prediction, target, self.recipe.loss)
+            if self.recipe.loss == "mae":
+                return functional.l1_loss(prediction, target)
+            if self.recipe.loss == "mse":
+                return functional.mse_loss(prediction, target)
+            return functional.huber_loss(prediction, target, delta=self.recipe.huber_delta)
         if self.recipe.loss == PINBALL:
-            return pinball_loss(prediction, target)
-        if self.recipe.loss in POINT_OBJECTIVES:
-            return point_objective(prediction, target, self.recipe.loss)
-        if self.recipe.loss == "mae":
-            return functional.l1_loss(prediction, target)
-        if self.recipe.loss == "mse":
-            return functional.mse_loss(prediction, target)
-        return functional.huber_loss(prediction, target, delta=self.recipe.huber_delta)
+            per_row = pinball_loss(prediction, target, reduction="none")
+        elif self.recipe.loss in POINT_OBJECTIVES:
+            per_row = functional.l1_loss(median(prediction), target, reduction="none")
+            if self.recipe.loss == POINT_COMPONENT:
+                per_row = per_row / 10
+        elif self.recipe.loss == "mae":
+            per_row = functional.l1_loss(prediction, target, reduction="none")
+        elif self.recipe.loss == "mse":
+            per_row = functional.mse_loss(prediction, target, reduction="none")
+        else:
+            per_row = functional.huber_loss(
+                prediction, target, reduction="none", delta=self.recipe.huber_delta
+            )
+        weights = weights.to(per_row.dtype)
+        return (weights * per_row).sum() / weights.sum()
 
     def _distilled(self, loss, prediction, keys):
         """Objetivo del tramo: la tarea o, con profesor, su mezcla con la distancia a él."""
@@ -1237,15 +1928,15 @@ class ChronologicalTrainer(ChronologicalInference):
         C, el objetivo suma la media de los términos de los grupos medidos en el tramo. La
         pérdida devuelta sigue siendo la de la tarea.
         """
-        prediction = torch.stack(run.predictions)
-        target = torch.tensor(run.targets, dtype=prediction.dtype, device=prediction.device)
-        keys = [(flow, at) for flow, at, _ in run.used]
-        loss = self._task_loss(prediction, target, keys)
-        objective = self._distilled(loss, prediction, keys)
-        if run.penalties:
-            objective = objective + torch.stack(run.penalties).mean()
-        if not torch.isfinite(objective).item():
-            raise ValueError("La pérdida del tramo no es finita")
+        with deferred_checks():
+            prediction = torch.stack(run.predictions)
+            target = torch.tensor(run.targets, dtype=prediction.dtype, device=prediction.device)
+            keys = [(flow, at) for flow, at, _ in run.used]
+            loss = self._task_loss(prediction, target, keys)
+            objective = self._distilled(loss, prediction, keys)
+            if run.penalties:
+                objective = objective + torch.stack(run.penalties).mean()
+            require_true(torch.isfinite(objective), "La pérdida del tramo no es finita")
         objective.backward()
         return loss
 
@@ -1276,14 +1967,25 @@ class ChronologicalTrainer(ChronologicalInference):
             # El término de IC por sesión necesita todas las etiquetas de cada sesión en un bloque.
             or self.session_ic is not None
         )
-        if sessions:
-            # Las operaciones por sesión repiten cada instante entero, también las filas sin
-            # etiqueta en el tramo, y su pérdida no es una suma de términos por bloque.
+        # --- contrastive_memory ---
+        if self.uses_contrastive:
+            sessions = True
+        # --- fin contrastive_memory ---
+        dropout = (
+            predictor.config.modality_dropout is not None
+            or predictor.config.fusion_dropout is not None
+        )
+        if sessions or dropout:
+            # Las operaciones por sesión y el dropout sembrado por lote repiten cada instante
+            # entero en un único bloque para conservar exactamente la huella y sus máscaras.
             order = list(
                 dict.fromkeys([*order, *(f for batch, _, _ in run.segment for f in batch.flow_ids)])
             )
             if len(order) > size:
-                raise ValueError("Las operaciones por sesión necesitan repetir todos los flujos")
+                raise ValueError(
+                    "Las operaciones por sesión y el dropout por lote necesitan repetir "
+                    "todos los flujos"
+                )
         total, replayed = 0.0, 0
         for start in range(0, len(order), size):
             group = order[start : start + size]
@@ -1292,54 +1994,272 @@ class ChronologicalTrainer(ChronologicalInference):
             )
             # Sin grafo: la repetición no reutiliza nada del cálculo emitido.
             states.detach()
-            if predictor.config.variant == "mac_frozen":
-                self._anchor_frozen(states)
             # Las comprobaciones de todos los lotes del grupo y la de su pérdida se resuelven
             # juntas antes de su backward, en lugar de esperar a la GPU tras cada lote.
             with deferred_checks():
-                members, graphs, penalties = set(group), {}, []
-                for batch, plan, whole in run.segment:
+                members, graphs, batch_outputs, penalties = set(group), {}, [], []
+                loss_to_record = None
+                rank_state = run.rank_memory_start if self.uses_rank_memory else None
+                rank_by_pos = {}
+                if self.uses_rank_memory:
+                    for position, items in run.rank_memory_labels:
+                        rank_by_pos.setdefault(position, []).append(items)
+                # --- factor_memory ---
+                factor_state = None
+                if self.uses_factor_memory:
+                    factor_state = (
+                        predictor.initial_factor_memory(differentiable=True)
+                        if run.factor_start in (None, _UNSET)
+                        else predictor.detach_factor_memory(run.factor_start)
+                    )
+                # --- fin factor_memory ---
+                # --- contrastive_memory ---
+                contrastive = (
+                    predictor.detach_contrastive_memory(
+                        run.contrastive_start, reattach_initial=True
+                    )
+                    if self.uses_contrastive
+                    else None
+                )
+                # --- fin contrastive_memory ---
+                # --- ic_titans_mlp ---
+                ic_mlp_state = run.ic_mlp_memory_start if self.uses_ic_mlp_memory else None
+                ic_mlp_by_pos = {}
+                if self.uses_ic_mlp_memory:
+                    for position, items in run.ic_mlp_memory_labels:
+                        ic_mlp_by_pos.setdefault(position, []).append(items)
+                # --- fin ic_titans_mlp ---
+                # --- lead_lag_memory ---
+                lead_lag_state = run.lead_lag_memory_start if self.uses_lead_lag_memory else None
+                lead_lag_by_pos = {}
+                if self.uses_lead_lag_memory:
+                    for position, items in run.lead_lag_memory_labels:
+                        lead_lag_by_pos.setdefault(position, []).append(items)
+                # --- fin lead_lag_memory ---
+                # --- three_factor_consolidation ---
+                three_factor_state = run.three_factor_start if self.uses_three_factor else None
+                three_factor_by_pos = {}
+                if self.uses_three_factor:
+                    for position, items in run.three_factor_labels:
+                        three_factor_by_pos.setdefault(position, []).append(items)
+                # --- fin three_factor_consolidation ---
+                # --- persistent_session_hologram ---
+                holo_state = (
+                    run.persistent_hologram_start if self.uses_persistent_hologram else None
+                )
+                # --- fin persistent_session_hologram ---
+                for seg_index, (batch, plan, whole) in enumerate(run.segment):
+                    if self.uses_rank_memory:
+                        for items in rank_by_pos.get(seg_index, ()):
+                            rank_state = predictor.settle_rank_memory(
+                                rank_state, items, differentiable=True, train=True
+                            )
+                    # --- ic_titans_mlp ---
+                    if self.uses_ic_mlp_memory:
+                        for items in ic_mlp_by_pos.get(seg_index, ()):
+                            ic_mlp_state = predictor.settle_ic_mlp_memory(
+                                ic_mlp_state, items, differentiable=True, train=True
+                            )
+                    # --- fin ic_titans_mlp ---
+                    # --- lead_lag_memory ---
+                    if self.uses_lead_lag_memory:
+                        for items in lead_lag_by_pos.get(seg_index, ()):
+                            lead_lag_state = predictor.settle_lead_lag_memory(
+                                lead_lag_state, items, differentiable=True, train=True
+                            )
+                    # --- fin lead_lag_memory ---
+                    # --- three_factor_consolidation ---
+                    if self.uses_three_factor:
+                        for items in three_factor_by_pos.get(seg_index, ()):
+                            three_factor_state = predictor.settle_three_factor_state(
+                                three_factor_state, items, differentiable=True, train=True
+                            )
+                    # --- fin three_factor_consolidation ---
                     rows = [i for i, flow in enumerate(batch.flow_ids) if flow in members]
                     if not rows:
                         continue
                     # Solo la selección de todas las filas de un instante completo lo sigue siendo.
                     complete = whole and len(rows) == len(batch.flow_ids)
-                    batch = batch.select(rows)
+                    if len(rows) != len(batch.flow_ids) or rows != list(range(len(batch.flow_ids))):
+                        batch = batch.select(rows)
                     if "reliability" in plan:
                         plan = dict(plan, reliability=plan["reliability"][rows])
                     new = tuple(flow for flow in batch.flow_ids if flow not in states)
                     if new:
                         states.put(predictor.initial_state(new, differentiable=True))
                     state = states.gather(batch.flow_ids)
+                    if predictor.config.variant == "mac_frozen":
+                        memory = predictor.mac.initial_state(
+                            len(batch.flow_ids), differentiable=True
+                        ).memory
+                        state = replace(state, mac=replace(state.mac, memory=memory))
+                    # --- contrastive_memory ---
+                    if contrastive is not None and predictor.contrastive_memory.needs_commit(
+                        contrastive, batch.flow_ids, batch.prediction_at
+                    ):
+                        contrastive = predictor.commit_contrastive_memory(
+                            contrastive, differentiable=True
+                        )
+                    # --- fin contrastive_memory ---
+                    replay_plan = (
+                        dict(plan, rank_memory=rank_state) if self.uses_rank_memory else plan
+                    )
+                    # --- factor_memory ---
+                    if self.uses_factor_memory:
+                        replay_plan = dict(replay_plan, factor_memory=factor_state)
+                    # --- fin factor_memory ---
+                    # --- contrastive_memory ---
+                    if contrastive is not None:
+                        replay_plan = dict(replay_plan, contrastive=contrastive)
+                    # --- fin contrastive_memory ---
+                    # --- ic_titans_mlp ---
+                    if self.uses_ic_mlp_memory:
+                        replay_plan = dict(replay_plan, ic_mlp_memory=ic_mlp_state)
+                    # --- fin ic_titans_mlp ---
+                    # --- lead_lag_memory ---
+                    if self.uses_lead_lag_memory:
+                        replay_plan = dict(replay_plan, lead_lag_memory=lead_lag_state)
+                    # --- fin lead_lag_memory ---
+                    # --- three_factor_consolidation ---
+                    if self.uses_three_factor:
+                        replay_plan = dict(replay_plan, three_factor_state=three_factor_state)
+                    # --- fin three_factor_consolidation ---
+                    # --- persistent_session_hologram ---
+                    if self.uses_persistent_hologram:
+                        replay_plan = dict(replay_plan, persistent_hologram=holo_state)
+                    # --- fin persistent_session_hologram ---
                     with torch.enable_grad():
                         prepared = predictor.prepare(
-                            batch, state, differentiable=True, session_complete=complete, **plan
+                            batch,
+                            state,
+                            differentiable=True,
+                            session_complete=complete,
+                            **replay_plan,
                         )
+                    if self.uses_rank_memory:
+                        rank_state = predictor.stage_rank_memory(
+                            rank_state,
+                            batch.flow_ids,
+                            batch.prediction_at,
+                            prepared.rank_memory_keys,
+                            prepared.point_predictions,
+                            differentiable=True,
+                        )
+                    # --- factor_memory ---
+                    if self.uses_factor_memory:
+                        factor_state = prepared.next_factor_memory
+                    # --- fin factor_memory ---
+                    # --- contrastive_memory ---
+                    if contrastive is not None:
+                        contrastive = prepared.next_contrastive
+                    # --- fin contrastive_memory ---
+                    # --- ic_titans_mlp ---
+                    if self.uses_ic_mlp_memory:
+                        ic_mlp_state = predictor.stage_ic_mlp_memory(
+                            ic_mlp_state,
+                            batch.flow_ids,
+                            batch.prediction_at,
+                            prepared.ic_mlp_keys,
+                            differentiable=True,
+                        )
+                    # --- fin ic_titans_mlp ---
+                    # --- lead_lag_memory ---
+                    if self.uses_lead_lag_memory:
+                        lead_lag_state = predictor.stage_lead_lag_memory(
+                            lead_lag_state,
+                            batch.flow_ids,
+                            batch.prediction_at,
+                            prepared.lead_lag_memberships,
+                            prepared.point_predictions,
+                            differentiable=True,
+                        )
+                    # --- fin lead_lag_memory ---
+                    # --- three_factor_consolidation ---
+                    if self.uses_three_factor:
+                        three_factor_state = predictor.stage_three_factor_state(
+                            three_factor_state,
+                            batch.flow_ids,
+                            batch.prediction_at,
+                            prepared.three_factor_emission,
+                            prepared.point_predictions,
+                            record_pending=True,
+                            differentiable=True,
+                        )
+                    # --- fin three_factor_consolidation ---
+                    # --- persistent_session_hologram ---
+                    if self.uses_persistent_hologram:
+                        holo_state = predictor.commit_persistent_hologram(
+                            prepared.next_persistent_hologram, differentiable=True
+                        )
+                    # --- fin persistent_session_hologram ---
                     states.put(prepared.next_state)
                     if prepared.local_control is not None:
                         penalties.append(prepared.local_control.penalty)
                         replayed += len(prepared.local_control.flow_ids)
-                    outputs = self._graphs(prepared, batch).unbind()
+                    outputs = self._graphs(prepared, batch)
+                    batch_index = len(batch_outputs)
+                    batch_outputs.append(outputs)
                     for row, key in enumerate(
                         zip(batch.flow_ids, batch.prediction_at, strict=True)
                     ):
                         if key in targets:
-                            graphs[key] = outputs[row]
+                            graphs[key] = (batch_index, row)
                 keys = [(flow, at) for flow, at, _ in run.used if flow in members]
                 if any(key not in graphs for key in keys):
                     raise ValueError("La repetición del tramo no reproduce sus predicciones")
                 terms = []
                 if keys:
-                    prediction = torch.stack([graphs[key] for key in keys])
-                    target = torch.tensor(
-                        [targets[key] for key in keys],
-                        dtype=prediction.dtype,
-                        device=prediction.device,
+                    chunks = []
+                    pos = 0
+                    n_keys = len(keys)
+                    while pos < n_keys:
+                        b_idx, first_row = graphs[keys[pos]]
+                        run_rows = [first_row]
+                        pos += 1
+                        while pos < n_keys and graphs[keys[pos]][0] == b_idx:
+                            run_rows.append(graphs[keys[pos]][1])
+                            pos += 1
+                        source = batch_outputs[b_idx]
+                        if (
+                            run_rows[0] == 0
+                            and len(run_rows) == source.shape[0]
+                            and run_rows[-1] == len(run_rows) - 1
+                            and all(
+                                run_rows[i] == i for i in range(1, len(run_rows))
+                            )
+                        ):
+                            chunks.append(source)
+                        elif (
+                            run_rows[-1] - run_rows[0] + 1 == len(run_rows)
+                            and all(
+                                run_rows[i] == run_rows[0] + i for i in range(1, len(run_rows))
+                            )
+                        ):
+                            chunks.append(source[run_rows[0] : run_rows[-1] + 1])
+                        else:
+                            index = (
+                                torch.tensor(run_rows, dtype=torch.int64, pin_memory=True).to(
+                                    device=source.device, non_blocking=True
+                                )
+                                if source.is_cuda
+                                else torch.tensor(run_rows, dtype=torch.int64, device=source.device)
+                            )
+                            chunks.append(source.index_select(0, index))
+                    prediction = chunks[0] if len(chunks) == 1 else torch.cat(chunks, dim=0)
+                    target_values = [targets[key] for key in keys]
+                    target = (
+                        torch.tensor(target_values, dtype=prediction.dtype, pin_memory=True).to(
+                            device=prediction.device, non_blocking=True
+                        )
+                        if prediction.is_cuda
+                        else torch.tensor(
+                            target_values, dtype=prediction.dtype, device=prediction.device
+                        )
                     )
                     task = self._task_loss(prediction, target, keys)
                     share = len(keys) / len(run.used)
                     loss = task * share
-                    total += float(loss.detach())
+                    loss_to_record = loss.detach()
                     if self.teacher is not None:
                         loss = self._distilled(task, prediction, keys) * share
                     terms.append(loss)
@@ -1348,6 +2268,8 @@ class ChronologicalTrainer(ChronologicalInference):
                 objective = sum(terms[1:], terms[0])
                 require_true(torch.isfinite(objective), "La pérdida del tramo no es finita")
             objective.backward()
+            if loss_to_record is not None:
+                total += float(loss_to_record)
         if replayed != len(controlled):
             raise ValueError("La repetición del tramo no reproduce los flujos medidos de C")
         return torch.tensor(total)
@@ -1401,6 +2323,52 @@ class ChronologicalTrainer(ChronologicalInference):
             total += float(term.detach())
         run.counters["auxiliary_loss_sum"] += total
 
+    def _clip_gradients(self):
+        """Recortar gradientes de forma global o por grupo funcional con finitud atómica."""
+        if not self.recipe.grad_clip_by_role:
+            return torch.nn.utils.clip_grad_norm_(
+                self.predictor.parameters(),
+                self.recipe.max_grad_norm or math.inf,
+                error_if_nonfinite=True,
+            )
+        # Comprobar finitud en todos los grupos antes de escalar ninguno in-place.
+        norms = [
+            torch.nn.utils.get_total_norm(
+                [p.grad for p in params if p.grad is not None], error_if_nonfinite=True
+            ).to(self.device)
+            for params in self._clip_param_groups
+        ]
+        for params, group_norm in zip(self._clip_param_groups, norms, strict=True):
+            torch.nn.utils.clip_grads_with_norm_(params, self.recipe.max_grad_norm, group_norm)
+        return torch.stack(norms).max()
+
+    def _recency_weight(self, used):
+        """Peso causal por recencia del segmento a partir de `decision_at`, o None si apagado."""
+        half_life = self.recipe.recency_half_life_years
+        if half_life is None:
+            return None
+        phase = self.train.phase
+        return recency_segment_weight(
+            (decision_at for _, decision_at, _ in used),
+            decision_start=phase.decision_start,
+            decision_end=phase.decision_end,
+            half_life_years=half_life,
+        )
+
+    def _step_optimizer(self, recency_weight=None):
+        """Aplicar un paso del optimizador, modulando la tasa efectiva si hay recencia activa."""
+        if recency_weight is None:
+            self.optimizer.step()
+            return
+        base_lrs = [group["lr"] for group in self.optimizer.param_groups]
+        for group, base in zip(self.optimizer.param_groups, base_lrs, strict=True):
+            group["lr"] = base * recency_weight
+        try:
+            self.optimizer.step()
+        finally:
+            for group, base in zip(self.optimizer.param_groups, base_lrs, strict=True):
+                group["lr"] = base
+
     def _update(self, run, at):
         """Un paso con las etiquetas maduras del tramo y truncamiento de todos los flujos."""
         if run.predictions:
@@ -1412,16 +2380,13 @@ class ChronologicalTrainer(ChronologicalInference):
                 run.counters["control_groups_in_objective"] = run.counters.get(
                     "control_groups_in_objective", 0
                 ) + len(run.penalties)
+            recency_weight = self._recency_weight(run.used)
             with traced_update(self.traces, self.global_step + 1, self.optimizer, loss) as probe:
                 with nvtx_ranges.phase("titans.clip"):
-                    norm = torch.nn.utils.clip_grad_norm_(
-                        self.predictor.parameters(),
-                        self.recipe.max_grad_norm or math.inf,
-                        error_if_nonfinite=True,
-                    )
+                    norm = self._clip_gradients()
                     probe.clip(norm, self.recipe.max_grad_norm)
                 with nvtx_ranges.phase("titans.optimizer"):
-                    self.optimizer.step()
+                    self._step_optimizer(recency_weight)
                     self.optimizer.zero_grad(set_to_none=True)
                     if self.shadow is not None:
                         self.shadow.update(self.trainable)
@@ -1448,6 +2413,44 @@ class ChronologicalTrainer(ChronologicalInference):
             run.flows.detach(parameter_id)
             if run.context is not None:
                 run.context = self.predictor.detach_context(run.context, parameter_id)
+            if run.rank_memory is not None:
+                run.rank_memory = self.predictor.detach_rank_memory(run.rank_memory, parameter_id)
+            # --- factor_memory ---
+            if run.factor_memory is not None:
+                run.factor_memory = self.predictor.detach_factor_memory(
+                    run.factor_memory, parameter_id
+                )
+            # --- fin factor_memory ---
+            # --- contrastive_memory ---
+            if run.contrastive is not None:
+                run.contrastive = self.predictor.detach_contrastive_memory(
+                    run.contrastive, parameter_id
+                )
+            # --- fin contrastive_memory ---
+            # --- ic_titans_mlp ---
+            if run.ic_mlp_memory is not None:
+                run.ic_mlp_memory = self.predictor.detach_ic_mlp_memory(
+                    run.ic_mlp_memory, parameter_id
+                )
+            # --- fin ic_titans_mlp ---
+            # --- lead_lag_memory ---
+            if run.lead_lag_memory is not None:
+                run.lead_lag_memory = self.predictor.detach_lead_lag_memory(
+                    run.lead_lag_memory, parameter_id
+                )
+            # --- fin lead_lag_memory ---
+            # --- three_factor_consolidation ---
+            if run.three_factor_state is not None:
+                run.three_factor_state = self.predictor.detach_three_factor_state(
+                    run.three_factor_state, parameter_id
+                )
+            # --- fin three_factor_consolidation ---
+            # --- persistent_session_hologram ---
+            if run.persistent_hologram is not None:
+                run.persistent_hologram = self.predictor.detach_persistent_hologram(
+                    run.persistent_hologram, parameter_id
+                )
+            # --- fin persistent_session_hologram ---
         run.penalties.clear()
         run.graphs.clear()
         run.predictions.clear()
@@ -1455,6 +2458,29 @@ class ChronologicalTrainer(ChronologicalInference):
         run.used.clear()
         run.segment.clear()
         run.starts.clear()
+        run.rank_memory_start = None
+        run.rank_memory_labels.clear()
+        # --- factor_memory ---
+        run.factor_start = _UNSET
+        # --- fin factor_memory ---
+        # --- contrastive_memory ---
+        run.contrastive_start = None
+        # --- fin contrastive_memory ---
+        # --- ic_titans_mlp ---
+        run.ic_mlp_memory_start = None
+        run.ic_mlp_memory_labels.clear()
+        # --- fin ic_titans_mlp ---
+        # --- lead_lag_memory ---
+        run.lead_lag_memory_start = None
+        run.lead_lag_memory_labels.clear()
+        # --- fin lead_lag_memory ---
+        # --- three_factor_consolidation ---
+        run.three_factor_start = None
+        run.three_factor_labels.clear()
+        # --- fin three_factor_consolidation ---
+        # --- persistent_session_hologram ---
+        run.persistent_hologram_start = None
+        # --- fin persistent_session_hologram ---
         run.instants = 0
         run.counters["segments"] += 1
 
@@ -1526,8 +2552,39 @@ class ChronologicalTrainer(ChronologicalInference):
         raise ValueError("El recorrido de ajuste terminó sin su cierre declarado")
 
     def _export(self, run):
-        if run.graphs or run.segment or run.starts or run.penalties:
+        # --- three_factor_consolidation ---
+        if run.three_factor_start is not None or run.three_factor_labels:
             raise ValueError("Solo se confirma un recorrido en la barrera posterior a un paso")
+        # --- fin three_factor_consolidation ---
+        if (
+            run.graphs
+            or run.segment
+            or run.starts
+            or run.penalties
+            or run.rank_memory_start is not None
+            or run.rank_memory_labels
+        ):
+            raise ValueError("Solo se confirma un recorrido en la barrera posterior a un paso")
+        # --- factor_memory ---
+        if run.factor_start is not _UNSET:
+            raise ValueError("Solo se confirma un recorrido en la barrera posterior a un paso")
+        # --- fin factor_memory ---
+        # --- contrastive_memory ---
+        if run.contrastive_start is not None:
+            raise ValueError("Solo se confirma un recorrido en la barrera posterior a un paso")
+        # --- fin contrastive_memory ---
+        # --- ic_titans_mlp ---
+        if run.ic_mlp_memory_start is not None or run.ic_mlp_memory_labels:
+            raise ValueError("Solo se confirma un recorrido en la barrera posterior a un paso")
+        # --- fin ic_titans_mlp ---
+        # --- lead_lag_memory ---
+        if run.lead_lag_memory_start is not None or run.lead_lag_memory_labels:
+            raise ValueError("Solo se confirma un recorrido en la barrera posterior a un paso")
+        # --- fin lead_lag_memory ---
+        # --- persistent_session_hologram ---
+        if run.persistent_hologram_start is not None:
+            raise ValueError("Solo se confirma un recorrido en la barrera posterior a un paso")
+        # --- fin persistent_session_hologram ---
         predictor, size = self.predictor, self.predictor.config.max_batch
         flows = sorted(run.flows)
         fast = [
@@ -1559,6 +2616,86 @@ class ChronologicalTrainer(ChronologicalInference):
                 if self.reliability is not None
                 else {}
             ),
+            **(
+                dict(
+                    rank_memory=None
+                    if run.rank_memory is None
+                    else predictor.export_rank_memory(run.rank_memory)
+                )
+                if self.uses_rank_memory
+                else {}
+            ),
+            # --- factor_memory ---
+            **(
+                dict(
+                    factor_memory=None
+                    if run.factor_memory is None
+                    else predictor.export_factor_memory(run.factor_memory)
+                )
+                if self.uses_factor_memory
+                else {}
+            ),
+            # --- fin factor_memory ---
+            # --- contrastive_memory ---
+            **(
+                dict(
+                    contrastive=None
+                    if run.contrastive is None
+                    else predictor.export_contrastive_memory(run.contrastive)
+                )
+                if self.uses_contrastive
+                else {}
+            ),
+            # --- fin contrastive_memory ---
+            # --- ic_titans_mlp ---
+            **(
+                dict(
+                    ic_mlp_memory=None
+                    if run.ic_mlp_memory is None
+                    else predictor.export_ic_mlp_memory(run.ic_mlp_memory)
+                )
+                if self.uses_ic_mlp_memory
+                else {}
+            ),
+            # --- fin ic_titans_mlp ---
+            # --- lead_lag_memory ---
+            **(
+                dict(
+                    lead_lag_memory=None
+                    if run.lead_lag_memory is None
+                    else predictor.export_lead_lag_memory(run.lead_lag_memory)
+                )
+                if self.uses_lead_lag_memory
+                else {}
+            ),
+            # --- fin lead_lag_memory ---
+            # --- three_factor_consolidation ---
+            **(
+                dict(
+                    three_factor_state=None
+                    if run.three_factor_state is None
+                    else predictor.export_three_factor_state(run.three_factor_state)
+                )
+                if self.uses_three_factor
+                else {}
+            ),
+            # --- fin three_factor_consolidation ---
+            # --- persistent_session_hologram ---
+            **(
+                dict(
+                    persistent_hologram=None
+                    if run.persistent_hologram is None
+                    else predictor.export_persistent_hologram(run.persistent_hologram)
+                )
+                if self.uses_persistent_hologram
+                else {}
+            ),
+            # --- fin persistent_session_hologram ---
+            **(
+                dict(rank_ic=None if run.rank_ic is None else run.rank_ic.export())
+                if self.track_train_rank_ic
+                else {}
+            ),
         )
 
     def _restore(self, payload):
@@ -1568,6 +2705,44 @@ class ChronologicalTrainer(ChronologicalInference):
             raise ValueError("El recorrido guardado no corresponde a las cabezas auxiliares")
         if (self.reliability is not None) != ("reliability" in payload):
             raise ValueError("El recorrido guardado no corresponde a la señal de fiabilidad")
+        if self.uses_rank_memory != ("rank_memory" in payload):
+            raise ValueError(
+                "El recorrido guardado no corresponde a la memoria transversal de rango"
+            )
+        # --- factor_memory ---
+        if self.uses_factor_memory != ("factor_memory" in payload):
+            raise ValueError("El recorrido guardado no corresponde a la memoria factorial")
+        # --- fin factor_memory ---
+        # --- contrastive_memory ---
+        if self.uses_contrastive != ("contrastive" in payload):
+            raise ValueError(
+                "El recorrido guardado no corresponde a la memoria contrastiva del predictor"
+            )
+        # --- fin contrastive_memory ---
+        # --- ic_titans_mlp ---
+        if self.uses_ic_mlp_memory != ("ic_mlp_memory" in payload):
+            raise ValueError("El recorrido guardado no corresponde a la memoria IC-Titans-MLP")
+        # --- fin ic_titans_mlp ---
+        # --- lead_lag_memory ---
+        if self.uses_lead_lag_memory != ("lead_lag_memory" in payload):
+            raise ValueError(
+                "El recorrido guardado no corresponde a la memoria rápida de desfase entre grupos"
+            )
+        # --- fin lead_lag_memory ---
+        # --- three_factor_consolidation ---
+        if self.uses_three_factor != ("three_factor_state" in payload):
+            raise ValueError(
+                "El recorrido guardado no corresponde a la consolidación de tres factores"
+            )
+        # --- fin three_factor_consolidation ---
+        # --- persistent_session_hologram ---
+        if self.uses_persistent_hologram != ("persistent_hologram" in payload):
+            raise ValueError(
+                "El recorrido guardado no corresponde al holograma persistente de sesión"
+            )
+        # --- fin persistent_session_hologram ---
+        if self.track_train_rank_ic != ("rank_ic" in payload):
+            raise ValueError("El recorrido guardado no corresponde al IC de rangos del ajuste")
         run = _Pass()
         for item in payload["fast"]:
             run.flows.put(self.predictor.restore_state(item, device=self.device))
@@ -1589,6 +2764,40 @@ class ChronologicalTrainer(ChronologicalInference):
             run.horizons = HorizonLabels.restore(self.horizons, payload["horizons"])
         if self.reliability is not None and payload["reliability"] is not None:
             run.reliability = ReliabilitySignal.restore(self.reliability, payload["reliability"])
+        if self.uses_rank_memory and payload["rank_memory"] is not None:
+            run.rank_memory = self.predictor.restore_rank_memory(payload["rank_memory"])
+        # --- factor_memory ---
+        if self.uses_factor_memory and payload["factor_memory"] is not None:
+            run.factor_memory = self.predictor.restore_factor_memory(payload["factor_memory"])
+        # --- fin factor_memory ---
+        # --- contrastive_memory ---
+        if self.uses_contrastive and payload["contrastive"] is not None:
+            run.contrastive = self.predictor.restore_contrastive_memory(payload["contrastive"])
+        # --- fin contrastive_memory ---
+        # --- ic_titans_mlp ---
+        if self.uses_ic_mlp_memory and payload["ic_mlp_memory"] is not None:
+            run.ic_mlp_memory = self.predictor.restore_ic_mlp_memory(payload["ic_mlp_memory"])
+        # --- fin ic_titans_mlp ---
+        # --- lead_lag_memory ---
+        if self.uses_lead_lag_memory and payload["lead_lag_memory"] is not None:
+            run.lead_lag_memory = self.predictor.restore_lead_lag_memory(payload["lead_lag_memory"])
+        # --- fin lead_lag_memory ---
+        # --- three_factor_consolidation ---
+        if self.uses_three_factor and payload["three_factor_state"] is not None:
+            run.three_factor_state = self.predictor.restore_three_factor_state(
+                payload["three_factor_state"]
+            )
+        # --- fin three_factor_consolidation ---
+        # --- persistent_session_hologram ---
+        if self.uses_persistent_hologram and payload["persistent_hologram"] is not None:
+            run.persistent_hologram = self.predictor.restore_persistent_hologram(
+                payload["persistent_hologram"]
+            )
+        # --- fin persistent_session_hologram ---
+        if self.track_train_rank_ic and payload["rank_ic"] is not None:
+            run.rank_ic = _SessionRankIC.restore(
+                self.recipe.selection["min_assets"], payload["rank_ic"]
+            )
         return run
 
     def _emission(self):
@@ -1650,6 +2859,15 @@ class ChronologicalTrainer(ChronologicalInference):
             if state is not None:
                 self.shadow.load_state_dict(state["weight_average"])
 
+    def _new_train_pass(self):
+        return _Pass(
+            rank_ic=(
+                _SessionRankIC(self.recipe.selection["min_assets"])
+                if self.track_train_rank_ic
+                else None
+            )
+        )
+
     def _load_best(self, report, directory=None):
         """Dejar el predictor con el estado seleccionado que acredita el informe.
 
@@ -1664,6 +2882,75 @@ class ChronologicalTrainer(ChronologicalInference):
         )
         self.predictor.load_state_dict(state["model"])
         return state
+
+    def _load_best_for_resume(self, report):
+        """Restaurar pesos de ajuste (y sombra F2 si procede) del mejor punto de control."""
+        state = load_training_state(
+            self.output / "checkpoints",
+            expected_identity=self.identity,
+            selection="best",
+            expected_sha256=report["best_checkpoint"]["sha256"],
+        )
+        trained = "trained_model" if self.emits_other_weights else "model"
+        self.predictor.load_state_dict(state[trained])
+        if self.shadow is not None:
+            self.shadow.load_state_dict(state["weight_average"])
+        return state
+
+    def _average_emitted_model(self, checkpoints, report, epochs):
+        """Promediar pesos compartidos (y adaptadores) de `epochs` manteniendo memorias de la mejor.
+
+        Los tensores en `roles["shared"]` y `roles["adapters"]` se acumulan en float64 en el
+        orden determinista de `epochs`, se dividen por `len(epochs)` y se devuelven al tipo del
+        parámetro. `mac.persistent` (`persistent_memory`), `mac.memory.initial_weights.*`
+        (`initial_fast_weights`), todos los búferes, `_extra_state` y el estado en línea se
+        toman literalmente de `epochs[0]` (la mejor época), sin promediar.
+        """
+        best_ep = epochs[0]
+        loaded = {}
+        for ep in epochs:
+            ref = report.get("epoch_states", {}).get(str(ep))
+            if ref is None:
+                raise ValueError(f"Falta el estado fijado de la época {ep} para promediar pesos")
+            loaded[ep] = load_training_state(
+                checkpoints,
+                expected_identity=self.identity,
+                selection="pinned",
+                expected_sha256=ref["sha256"],
+            )
+        averaged_roles = ["shared", *(["adapters"] if "adapters" in self.roles else [])]
+        best_only_roles = [
+            role for role in ("persistent_memory", "initial_fast_weights") if self.roles.get(role)
+        ]
+        averaged_names = {name for role in averaged_roles for name in self.roles.get(role, [])}
+        best_state = loaded[best_ep]
+        best_model = best_state["model"]
+        averaged_model = {}
+        count = len(epochs)
+        for name, value in best_model.items():
+            if name in averaged_names and isinstance(value, torch.Tensor):
+                total = torch.zeros_like(value, dtype=torch.float64)
+                for ep in epochs:
+                    total.add_(loaded[ep]["model"][name].to(dtype=torch.float64))
+                mean_value = (total / count).to(dtype=value.dtype)
+                if not torch.isfinite(mean_value).all():
+                    raise ValueError(f"El promedio de pesos produjo valores no finitos en {name}")
+                averaged_model[name] = mean_value
+            elif isinstance(value, torch.Tensor):
+                averaged_model[name] = value.detach().clone()
+            else:
+                averaged_model[name] = value
+        metadata = dict(
+            mode="average",
+            requested=emit_average_count(self.recipe.selection),
+            epochs=list(epochs),
+            best_epoch=best_ep,
+            averaged_roles=averaged_roles,
+            best_only_roles=best_only_roles,
+            memories_and_online_state_epoch=best_ep,
+            source_checkpoints={str(ep): dict(report["epoch_states"][str(ep)]) for ep in epochs},
+        )
+        return averaged_model, best_state, metadata
 
     def load_epoch(self, report, epoch):
         """Dejar cargado el estado fijado de una época evaluada con la época común."""
@@ -1681,23 +2968,43 @@ class ChronologicalTrainer(ChronologicalInference):
 
         Con la meseta conjunta, el ajuste espera en su primera meseta (`AWAIT`) hasta que se
         reanuda con la época común del grupo (`joint_epoch`). Con la época común, espera tras
-        la última época y `joint_epoch` elige el estado fijado de una de ellas.
+        la última época y `joint_epoch` elige el estado fijado de una de ellas. Con opciones
+        adaptativas (`smoothing`, `learning_rate_decay`, `emit`) conserva los estados fijados
+        necesarios, aplica reducciones deterministas y reanudables, promedia los pesos
+        compartidos de las k mejores épocas sin promediar memorias ni estado en línea, y
+        guarda el informe de parada junto a los resultados.
         """
         output, checkpoints = self.output, self.output / "checkpoints"
         if isinstance(self.optimizer, torch.optim.Optimizer):
             require_learning_allowed("ChronologicalTrainer.run de Titans-MAC")
         if type(resume) is not bool or output.is_symlink() or output.exists() != resume:
             raise ValueError("Usa una ejecución nueva o solicita continuar una existente")
-        common = self.recipe.selection.get("stopping") == COMMON_EPOCH
+        options = self.recipe.selection
+        common = options.get("stopping") == COMMON_EPOCH
         if common and self.epoch_scorer is None:
             raise ValueError("La época común necesita puntuar cada validación con su IC")
         # Con el IC de rangos como métrica, cada validación se puntúa también con él.
-        ranked = self.recipe.selection["metric"] == SESSION_RANK_IC
+        ranked = options["metric"] == SESSION_RANK_IC
         if ranked and self.epoch_scorer is None:
             raise ValueError("El IC de rangos por sesión necesita puntuar cada validación")
+        window = smoothing_window(options)
+        decay_cfg = lr_decay_config(options)
+        emit_k = emit_average_count(options)
+        keep_epoch_states = window > 1 or emit_k > 1
+        if decay_cfg is not None and any(
+            "lr" not in group
+            or type(group["lr"]) not in (int, float)
+            or not math.isfinite(group["lr"])
+            or group["lr"] <= 0
+            for group in self.optimizer.param_groups
+        ):
+            raise ValueError(
+                "learning_rate_decay requiere una tasa finita y positiva en cada grupo"
+            )
         stop = stop or StopRequest()
         report_path = output / "run.json"
         cursor, run = dict(epoch=0, phase="validation"), None
+        self.lr_decays, self.epoch_lrs = [], {}
         if resume:
             report = _read_report(report_path)
             if report["identity"] != self.identity:
@@ -1712,6 +3019,9 @@ class ChronologicalTrainer(ChronologicalInference):
             self.global_step, cursor = state["global_step"], state["cursor"]
             self.selection, self.history = state["selection"], state["history"]
             self.train_metrics = state["train_metrics"]
+            if decay_cfg is not None:
+                self.lr_decays = list(state.get("lr_decays", []))
+                self.epoch_lrs = dict(state.get("epoch_lrs", {}))
             if self.traces is not None:
                 self.traces.restore(state.get("traces"))
             if state["run"] is not None:
@@ -1740,8 +3050,20 @@ class ChronologicalTrainer(ChronologicalInference):
             bind_joint_epoch(report, joint_epoch, self.recipe.selection, self.recipe.epochs)
             self._start_weights(report)
 
-        def save(position, current=None, *, best=False, pin=None):
-            # `pin` es la época evaluada cuyo estado se conserva hasta fijar la época común.
+        def save(
+            position,
+            current=None,
+            *,
+            best=False,
+            pin=None,
+            keep_pinned=None,
+            best_sha256=None,
+            retained=None,
+            promoted_epoch=None,
+        ):
+            # `pin` es la época evaluada cuyo estado se conserva para época común, suavizado o
+            # promedio de pesos. `keep_pinned` y `best_sha256` actualizan `latest.json` de forma
+            # atómica en la misma escritura.
             self._check_runtime()
             state = dict(
                 global_step=self.global_step,
@@ -1754,17 +3076,33 @@ class ChronologicalTrainer(ChronologicalInference):
                 train_metrics=self.train_metrics,
                 run=None if current is None else self._export(current),
             )
+            if decay_cfg is not None:
+                state["lr_decays"] = list(self.lr_decays)
+                state["epoch_lrs"] = dict(self.epoch_lrs)
             if self.traces is not None:
                 state["traces"] = self.traces.checkpoint()
             path = save_training_state(
-                checkpoints, state, identity=self.identity, best=best, pin=pin is not None
+                checkpoints,
+                state,
+                identity=self.identity,
+                best=best,
+                pin=pin is not None,
+                keep_pinned=keep_pinned,
+                best_sha256=best_sha256,
             )
             reference = dict(path=str(path.relative_to(output)), sha256=sha256(path))
             report.update(recovery_checkpoint=reference, global_step=self.global_step)
             if best:
                 report["best_checkpoint"] = reference
+            elif promoted_epoch is not None:
+                report["best_checkpoint"] = dict(report["epoch_states"][str(promoted_epoch)])
             if pin is not None:
                 report.setdefault("epoch_states", {})[str(pin)] = reference
+            if retained is not None and "epoch_states" in report:
+                allowed = {str(ep) for ep in retained}
+                report["epoch_states"] = {
+                    key: value for key, value in report["epoch_states"].items() if key in allowed
+                }
             report.update(selection=self.selection, history=self.history, cursor=position)
             atomic_json(report_path, report)
 
@@ -1772,9 +3110,37 @@ class ChronologicalTrainer(ChronologicalInference):
             save(cursor)
         started = time.perf_counter()
         try:
-            options = self.recipe.selection
             while cursor["phase"] != "done":
                 epoch = cursor["epoch"]
+                if cursor["phase"] == "lr_decay":
+                    factor = decay_cfg["factor"]
+                    old_lrs = [float(group["lr"]) for group in self.optimizer.param_groups]
+                    new_lrs = [lr * factor for lr in old_lrs]
+                    if any(not math.isfinite(lr) or lr <= 0 for lr in new_lrs):
+                        raise ValueError(
+                            "La tasa de aprendizaje reducida dejó de ser finita y positiva"
+                        )
+                    best_state = self._load_best_for_resume(report)
+                    self.optimizer.load_state_dict(best_state["optimizer"])
+                    for group, lr in zip(self.optimizer.param_groups, new_lrs, strict=True):
+                        group["lr"] = lr
+                    restored_epoch = self.selection["best_epoch"]
+                    self.selection = apply_lr_decay(self.selection, options)
+                    self.lr_decays.append(
+                        dict(
+                            reduction=self.selection["reductions_done"],
+                            at_epoch=epoch,
+                            restored_epoch=restored_epoch,
+                            factor=factor,
+                            previous_learning_rate=old_lrs[0],
+                            new_learning_rate=new_lrs[0],
+                        )
+                    )
+                    cursor = dict(epoch=epoch, phase="train", event=0, stage="start")
+                    save(cursor)
+                    if stop.requested:
+                        raise Paused
+                    continue
                 if cursor["phase"] == "train" and cursor["stage"] == "start":
                     # Al empezar una época, el ajuste espera al grupo o
                     # termina si ya está en la época conjunta.
@@ -1829,41 +3195,160 @@ class ChronologicalTrainer(ChronologicalInference):
                         self.selection, options, self.recipe.epochs, joint_epoch
                     )
                     finished = decision == FINISH
-                    cursor = (
-                        dict(epoch=epoch, phase="done")
-                        if finished
-                        else dict(epoch=epoch, phase="train", event=0, stage="start")
-                    )
-                    # Con AWAIT, el cursor ya confirmado espera al grupo al empezar la época.
-                    save(
-                        cursor,
-                        best=self.selection["last_improved"],
-                        pin=epoch if common and rows is not None else None,
-                    )
+                    if finished:
+                        cursor = dict(epoch=epoch, phase="done")
+                    elif decision == DECAY_LR:
+                        cursor = dict(epoch=epoch, phase="lr_decay")
+                    else:
+                        cursor = dict(epoch=epoch, phase="train", event=0, stage="start")
+                    if keep_epoch_states:
+                        needed = retained_epochs(self.selection, options)
+                        existing = report.get("epoch_states", {})
+                        keep_digests = {
+                            existing[str(ep)]["sha256"] for ep in needed if str(ep) in existing
+                        }
+                        pin_epoch = epoch if epoch in needed else None
+                        best_ep = self.selection["best_epoch"]
+                        if self.selection["best_score"] is None or best_ep == epoch:
+                            best_flag = True
+                            promote_sha = None
+                            promoted_ep = None
+                        else:
+                            best_flag = False
+                            target_ref = existing.get(str(best_ep))
+                            current_best = report.get("best_checkpoint")
+                            if (
+                                target_ref is not None
+                                and current_best is not None
+                                and current_best["sha256"] != target_ref["sha256"]
+                            ):
+                                promote_sha = target_ref["sha256"]
+                                promoted_ep = best_ep
+                            else:
+                                promote_sha = None
+                                promoted_ep = None
+                        save(
+                            cursor,
+                            best=best_flag,
+                            pin=pin_epoch,
+                            keep_pinned=keep_digests,
+                            best_sha256=promote_sha,
+                            retained=needed,
+                            promoted_epoch=promoted_ep,
+                        )
+                    else:
+                        # Con AWAIT, el cursor ya confirmado espera al grupo al empezar la época.
+                        save(
+                            cursor,
+                            best=self.selection["last_improved"],
+                            pin=epoch if common and rows is not None else None,
+                        )
                     if stop.requested and not finished:
                         raise Paused
                     continue
-                self.train_metrics = self._train_pass(run or _Pass(), cursor, stop, save)
+                if decay_cfg is not None:
+                    self.epoch_lrs[str(epoch + 1)] = float(self.optimizer.param_groups[0]["lr"])
+                self.train_metrics = self._train_pass(
+                    run or self._new_train_pass(), cursor, stop, save
+                )
                 run = None
                 cursor = dict(epoch=epoch + 1, phase="validation")
                 save(cursor)
-            chosen = (
-                chosen_state(
+
+            emitted_epochs = selected_emit_epochs(self.selection, options)
+            if common:
+                chosen = chosen_state(
                     checkpoints, self.identity, report, self.history, self.selection, joint_epoch
                 )
-                if common
-                else dict(
-                    best_epoch=self.selection["best_epoch"],
-                    best_score=self.selection["best_score"],
+                report.update(chosen)
+                self._load_best(report)
+                emitted_epochs = [chosen["best_epoch"]]
+            elif emit_k > 1 and len(emitted_epochs) > 1:
+                averaged_model, best_state, emit_meta = self._average_emitted_model(
+                    checkpoints, report, emitted_epochs
                 )
+                self.predictor.load_state_dict(averaged_model)
+                final_state = dict(
+                    global_step=self.global_step,
+                    cursor=cursor,
+                    model=averaged_model,
+                    optimizer=best_state["optimizer"],
+                    rng=capture_rng(str(self.device)),
+                    selection=self.selection,
+                    history=self.history,
+                    train_metrics=self.train_metrics,
+                    run=None,
+                )
+                if self.emits_other_weights and "trained_model" in best_state:
+                    final_state["trained_model"] = best_state["trained_model"]
+                if self.shadow is not None and "weight_average" in best_state:
+                    final_state["weight_average"] = best_state["weight_average"]
+                if decay_cfg is not None:
+                    final_state["lr_decays"] = list(self.lr_decays)
+                    final_state["epoch_lrs"] = dict(self.epoch_lrs)
+                if self.traces is not None:
+                    final_state["traces"] = self.traces.checkpoint()
+                saved_path = save_training_state(
+                    checkpoints, final_state, identity=self.identity, best=True
+                )
+                reference = dict(
+                    path=str(saved_path.relative_to(output)), sha256=sha256(saved_path)
+                )
+                chosen = dict(
+                    best_checkpoint=reference,
+                    recovery_checkpoint=reference,
+                    best_epoch=emitted_epochs[0],
+                    best_score=self.selection["best_raw_score"],
+                    averaged_epochs=list(emitted_epochs),
+                    emit=emit_meta,
+                )
+                if window > 1:
+                    chosen["best_smoothed_score"] = self.selection["best_score"]
+                report.update(chosen)
+            else:
+                if window > 1:
+                    chosen = dict(
+                        best_epoch=self.selection["best_epoch"],
+                        best_score=self.selection["best_raw_score"],
+                        best_smoothed_score=self.selection["best_score"],
+                    )
+                else:
+                    chosen = dict(
+                        best_epoch=self.selection["best_epoch"],
+                        best_score=self.selection["best_score"],
+                    )
+                report.update(chosen)
+                self._load_best(report)
+            if decay_cfg is not None:
+                report["learning_rate_reductions"] = list(self.lr_decays)
+                lr_map = {int(k): float(v) for k, v in self.epoch_lrs.items()}
+            else:
+                lr_map = {
+                    entry["epoch"]: float(self.recipe.learning_rate)
+                    for entry in self.history
+                    if entry["epoch"] >= 1
+                }
+            stopped_early = cursor["epoch"] < self.recipe.epochs
+            stopping_report = build_stopping_report(
+                self.history,
+                self.selection,
+                options,
+                epochs=self.recipe.epochs,
+                stopped_early=stopped_early,
+                emitted_epochs=emitted_epochs,
+                lr_decays=self.lr_decays,
+                learning_rates=lr_map,
+                best_epoch=report["best_epoch"],
             )
-            report.update(chosen)
-            self._load_best(report)
+            stopping_path = output / "stopping_report.json"
+            atomic_json(stopping_path, stopping_report)
             report.update(
                 status="completed",
-                stopped_early=cursor["epoch"] < self.recipe.epochs,
+                stopped_early=stopped_early,
                 stopping=self.recipe.selection.get("stopping", VALIDATION_PLATEAU),
                 plateau_epoch=self.selection.get("plateau_epoch"),
+                stopping_report=stopping_report,
+                stopping_report_file=dict(path=stopping_path.name, sha256=sha256(stopping_path)),
                 finished_at_utc=datetime.now(UTC).isoformat(),
             )
             return report

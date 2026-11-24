@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "kind": "dgx_campaign_contrasts",
+  "description": "Prueba de los rasgos v3 en la conjunta: la memoria en línea frente a la congelada y a la ausente, en cada brazo.",
+  "controls": {
+    "titans_mac_frozen_nogain": "titans_mac_nogain",
+    "titans_mac_disabled_nogain": "titans_mac_nogain",
+    "titans_mac_frozen_nogain_v3": "titans_mac_nogain_v3",
+    "titans_mac_disabled_nogain_v3": "titans_mac_nogain_v3"
+  }
+}

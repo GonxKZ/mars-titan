@@ -249,6 +249,21 @@ class CompactPriceTransformer(nn.Module):
             raise ValueError("Esta referencia no admite autocast")
         return self.projection(prices) + self.positions.to(dtype=prices.dtype)
 
+    def _can_use_fused_last_sdpa(self, device, dtype):
+        settings = self._settings
+        context = settings["context"]
+        width = settings["hidden_size"] // settings["heads"]
+        return (
+            device.type == "cuda"
+            and dtype in (torch.float32, torch.float64)
+            and context >= 2
+            and (context & (context - 1)) == 0
+            and context <= 512
+            and width >= 2
+            and (width & (width - 1)) == 0
+            and width <= 128
+        )
+
     def _layer(self, block, encoded, *, last_only):
         """Capa con normalización previa: x + SA(LN1(x)) y después y + FFN(LN2(y)).
 
@@ -263,19 +278,107 @@ class CompactPriceTransformer(nn.Module):
         if last_only:
             residual = encoded[:, -1:]
             query = F.linear(normalized[:, -1:], weight[:hidden], bias[:hidden])
-            keys, values = F.linear(normalized, weight[hidden:], bias[hidden:]).split(
-                hidden, dim=-1
-            )
+            kv = F.linear(normalized, weight[hidden:], bias[hidden:])
+            if self._can_use_fused_last_sdpa(encoded.device, encoded.dtype):
+                from mars_titan.models.titans.fused_cuda_kernels import fused_last_token_sdpa
+
+                attended = fused_last_token_sdpa(query, kv, heads)
+            else:
+                keys, values = kv.split(hidden, dim=-1)
+                query, keys, values = (
+                    value.view(batch, -1, heads, width).transpose(1, 2)
+                    for value in (query, keys, values)
+                )
+                attended = F.scaled_dot_product_attention(query, keys, values, is_causal=False)
+                attended = attended.transpose(1, 2).reshape(batch, -1, hidden)
         else:
             residual = encoded
             query, keys, values = F.linear(normalized, weight, bias).split(hidden, dim=-1)
-        query, keys, values = (
-            value.view(batch, -1, heads, width).transpose(1, 2) for value in (query, keys, values)
-        )
-        attended = F.scaled_dot_product_attention(query, keys, values, is_causal=not last_only)
-        attended = attended.transpose(1, 2).reshape(batch, -1, hidden)
+            query, keys, values = (
+                value.view(batch, -1, heads, width).transpose(1, 2)
+                for value in (query, keys, values)
+            )
+            attended = F.scaled_dot_product_attention(query, keys, values, is_causal=True)
+            attended = attended.transpose(1, 2).reshape(batch, -1, hidden)
         token = residual + attention.out_proj(attended)
         return token + block.linear2(block.activation(block.linear1(block.norm2(token))))
+
+    def _validate_prices_meta(self, prices):
+        """Comprobar forma, presupuesto, precisión y dispositivo sin proyectar todavía."""
+        if (
+            not isinstance(prices, torch.Tensor)
+            or prices.layout != torch.strided
+            or prices.is_nested
+        ):
+            raise ValueError("La ventana de precios debe ser un tensor denso")
+        settings = self._settings
+        if prices.ndim != 3 or prices.shape[1:] != (settings["context"], settings["input_size"]):
+            raise ValueError("La ventana de precios no tiene la forma esperada")
+        validate_attention_budget(
+            prices.shape[0],
+            context=settings["context"],
+            heads=settings["heads"],
+            layers=settings["layers"],
+            max_batch=self.max_batch,
+        )
+        if (
+            prices.dtype not in (torch.float32, torch.float64)
+            or prices.dtype != self.projection.weight.dtype
+        ):
+            raise ValueError("La precisión debe ser float32 o float64 y coincidir con los pesos")
+        if prices.device != self.projection.weight.device:
+            raise ValueError("Los precios y los pesos deben compartir dispositivo")
+        if torch.is_autocast_enabled(prices.device.type):
+            raise ValueError("Esta referencia no admite autocast")
+
+    def _encode_last_single_layer_fused(self, prices, *, gate_last=False):
+        """Ruta factorizada fusionada en CUDA (layers=1): cero materialización de normalized/KV."""
+        from mars_titan.models.titans.fused_cuda_kernels import fused_price_factorized_last_attn
+
+        block = self.blocks[0]
+        attention, settings = block.self_attn, self._settings
+        hidden, heads = settings["hidden_size"], settings["heads"]
+        width = hidden // heads
+        pos = (
+            self.positions
+            if self.positions.dtype == prices.dtype
+            else self.positions.to(prices.dtype)
+        )
+        p_last = prices[:, -1]
+        if gate_last and p_last.shape[-1] == 6:
+            present = p_last[:, -1:] > 0
+            zero = torch.zeros((), dtype=prices.dtype, device=prices.device)
+            p_last = torch.cat([torch.where(present, p_last[:, :-1], zero), p_last[:, -1:]], dim=-1)
+        residual = F.linear(p_last, self.projection.weight, self.projection.bias) + pos[-1]
+        norm_last = F.layer_norm(
+            residual, (hidden,), block.norm1.weight, block.norm1.bias, block.norm1.eps
+        )
+        weight, bias = attention.in_proj_weight, attention.in_proj_bias
+        query = F.linear(norm_last, weight[:hidden], bias[:hidden]).view(-1, heads, width)
+        w_k = weight[hidden : 2 * hidden].view(heads, width, hidden)
+        b_k = bias[hidden : 2 * hidden].view(heads, width)
+        w_v = weight[2 * hidden :].view(heads, width, hidden)
+        b_v = bias[2 * hidden :].view(heads, width)
+        q_tilde = torch.einsum("bhj,hjd->bhd", query, w_k)
+        q_dot_bk = (query * b_k.unsqueeze(0)).sum(dim=-1)
+        context = fused_price_factorized_last_attn(
+            prices,
+            self.projection.weight,
+            self.projection.bias,
+            pos,
+            block.norm1.weight,
+            block.norm1.bias,
+            q_tilde,
+            q_dot_bk,
+            eps=block.norm1.eps,
+            gate_last=gate_last,
+        )
+        attended = (torch.einsum("bhd,hjd->bhj", context, w_v) + b_v.unsqueeze(0)).reshape(
+            -1, 1, hidden
+        )
+        token = residual.unsqueeze(1) + attention.out_proj(attended)
+        out = token + block.linear2(block.activation(block.linear1(block.norm2(token))))
+        return self.norm(out)[:, 0]
 
     def encode_sequence(self, prices):
         """Devolver todos los tokens para contrastar el orden de información."""
@@ -289,17 +392,35 @@ class CompactPriceTransformer(nn.Module):
         )
         return representation
 
-    def encode_last(self, prices):
+    def encode_last(self, prices, *, gate_last=False):
         """Representación del último token y sus comprobaciones de finitud pendientes.
 
         El llamante decide cuándo comprobarlas con `raise_nonfinite`, de modo que una
         referencia multimodal reúne todas las de su forward en una sola sincronización.
         """
-        encoded = self._validated(prices)
-        *complete, last = self.blocks
-        for block in complete:
-            encoded = self._layer(block, encoded, last_only=False)
-        representation = self.norm(self._layer(last, encoded, last_only=True))[:, 0]
+        self._validate_prices_meta(prices)
+        settings = self._settings
+        if (
+            len(self.blocks) == 1
+            and prices.is_cuda
+            and 1 <= settings["input_size"] <= 8
+            and (settings["hidden_size"] & (settings["hidden_size"] - 1)) == 0
+            and settings["hidden_size"] <= 128
+            and settings["heads"] in (1, 2, 4, 8)
+            and self._can_use_fused_last_sdpa(prices.device, prices.dtype)
+            and self.blocks[0].norm1.elementwise_affine
+        ):
+            representation = self._encode_last_single_layer_fused(prices, gate_last=gate_last)
+        else:
+            if gate_last:
+                from mars_titan.data.price_windows import gate_price_window
+
+                prices = gate_price_window(prices)
+            encoded = self.projection(prices) + self.positions.to(dtype=prices.dtype)
+            *complete, last = self.blocks
+            for block in complete:
+                encoded = self._layer(block, encoded, last_only=False)
+            representation = self.norm(self._layer(last, encoded, last_only=True))[:, 0]
         checks = [
             (prices, "Los precios contienen valores no finitos"),
             (representation, "La representación Transformer contiene valores no finitos"),

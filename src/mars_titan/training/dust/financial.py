@@ -94,15 +94,45 @@ class FinancialDustAdapter:
             "fractal_shared_operator",
             "cross_asset_attention",
             "asset_groups",
+            "session_hologram",
+            # --- hopfield_rank_brain ---
+            "hopfield_rank_brain",
+            # --- fin hopfield_rank_brain ---
+            # --- persistent_session_hologram ---
+            "persistent_session_hologram",
+            # --- fin persistent_session_hologram ---
             "laplace_scale_head",
             "auxiliary_horizons",
             "session_rank_inputs",
             "session_ic_objective",
             "opponent_heads",
             "mature_reliability",
+            "cross_sectional_rank_memory",
+            # --- contrastive_memory ---
+            "contrastive_memory",
+            # --- fin contrastive_memory ---
+            # --- ic_titans_mlp ---
+            "ic_titans_mlp",
+            # --- fin ic_titans_mlp ---
+            # --- lead_lag_memory ---
+            "lead_lag_memory",
+            # --- fin lead_lag_memory ---
+            # --- three_factor_consolidation ---
+            "three_factor_consolidation",
+            # --- fin three_factor_consolidation ---
             "memory_huber",
             "memory_time_scales",
             "differential_attention",
+            "memory_value_normalization",
+            # --- memory_cross_sectional_surprise ---
+            "memory_cross_sectional_surprise",
+            # --- fin memory_cross_sectional_surprise ---
+            # --- factor_memory ---
+            "factor_memory",
+            # --- fin factor_memory ---
+            # --- session_resonator ---
+            "session_resonator",
+            # --- fin session_resonator ---
         )
         if (
             config.variant != "transformer_direct"
@@ -111,6 +141,7 @@ class FinancialDustAdapter:
             or config.refinements != 1
             or config.memory_residual_layer_norm
             or config.memory_projections != "linear_v1"
+            or config.output_query != "raw"
             or predictor.local_control is not None
             or any(getattr(config, name) is not None for name in optional)
             or any(
@@ -128,8 +159,27 @@ class FinancialDustAdapter:
                     "fusion_branch",
                     "cross_asset_attention",
                     "asset_groups",
+                    "session_hologram",
+                    # --- contrastive_memory ---
+                    "contrastive_memory",
+                    # --- fin contrastive_memory ---
+                    # --- ic_titans_mlp ---
+                    "ic_titans_mlp",
+                    # --- fin ic_titans_mlp ---
+                    # --- hopfield_rank_brain ---
+                    "hopfield_rank_brain",
+                    # --- fin hopfield_rank_brain ---
+                    # --- persistent_session_hologram ---
+                    "persistent_session_hologram",
+                    # --- fin persistent_session_hologram ---
                     "output_objective",
                     "auxiliary_heads",
+                    # --- factor_memory ---
+                    "factor_memory",
+                    # --- fin factor_memory ---
+                    # --- session_resonator ---
+                    "session_resonator",
+                    # --- fin session_resonator ---
                 )
             )
             or type(predictor.price_encoder) is not CompactPriceTransformer
@@ -138,6 +188,12 @@ class FinancialDustAdapter:
             raise ValueError(
                 "La variante Dust inicial admite TransformerDirect escalar sin ampliaciones"
             )
+        # --- dual_hemisphere_brain ---
+        if config.dual_hemisphere_brain is not None or predictor.dual_hemisphere_brain is not None:
+            raise ValueError(
+                "La variante Dust inicial admite TransformerDirect escalar sin ampliaciones"
+            )
+        # --- fin dual_hemisphere_brain ---
         self.predictor = predictor
         self.device, self.dtype = predictor.head.weight.device, predictor.head.weight.dtype
         if str(self.device) not in {"cpu", "cuda:0"} or self.dtype not in (

@@ -13,10 +13,16 @@ from .config import (
     ANALYTIC_INNER_GRADIENT,
     FUSED_INNER_GRADIENT,
     LAYER_NORM_EPS,
+    VALUE_LAYER_NORM,
     MemoryConfig,
     bounded_integer,
     require_identity,
 )
+
+# --- memory_cross_sectional_surprise ---
+from .cross_sectional_surprise import CrossSectionalSurpriseModule
+
+# --- fin memory_cross_sectional_surprise ---
 from .huber_memory import huber_elements, huber_threshold
 from .key_competition import competitive_normalize
 from .plasticity import _advance_validated as advance_plasticity
@@ -26,8 +32,11 @@ from .state import (
     check_differentiable,
     check_finite,
     copy_state,
+    fulfill_finite,
+    record_finite,
     require_payload,
     require_true,
+    reserve_finite,
 )
 
 # Filas que puede escribir o leer de una vez la memoria compartida de PT4: todas las
@@ -132,6 +141,13 @@ class NeuralMemory(nn.Module):
             self.huber_bias = nn.Parameter(
                 torch.full((config.dim,), config.huber.bias, dtype=dtype)
             )
+        # --- memory_cross_sectional_surprise ---
+        self.cross_sectional_surprise = (
+            CrossSectionalSurpriseModule(config.cross_sectional_surprise, dtype=dtype)
+            if config.cross_sectional_surprise is not None
+            else None
+        )
+        # --- fin memory_cross_sectional_surprise ---
         self.to(device=device)
 
     def _reference(self) -> Tensor:
@@ -179,7 +195,18 @@ class NeuralMemory(nn.Module):
             if self.config.plasticity is not None
             else (),
         )
-        self.validate_state(state)
+        if (
+            self.config.plasticity is None
+            and not self.config.window
+            and not self.config.hidden_levels
+            and reference.is_cuda
+        ):
+            # Las copias repetidas de initial_weights y los ceros de momentum conservan exactamente
+            # la finitud de initial_weights sin barrer 4×B×D×D en DRAM.
+            for weight in self.initial_weights:
+                check_finite(weight, "El estado")
+        else:
+            self.validate_state(state)
         return state
 
     def initial_windows(self, batch_size: int, count: int) -> tuple[Tensor, ...]:
@@ -232,7 +259,13 @@ class NeuralMemory(nn.Module):
             check_finite(value, "La ventana de convolución")
         return storage_bytes
 
-    def validate_state(self, state: NeuralMemoryState, *, device=None) -> None:
+    def validate_state(
+        self,
+        state: NeuralMemoryState,
+        *,
+        device=None,
+        defer_slots: list[int | None] | None = None,
+    ) -> None:
         if not isinstance(state, NeuralMemoryState) or state.config_id != self.config.fingerprint():
             raise ValueError("El estado pertenece a otro contrato de configuración")
         if (
@@ -284,6 +317,8 @@ class NeuralMemory(nn.Module):
                 raise ValueError("El almacenamiento del estado supera el presupuesto de bytes")
             if is_steps:
                 require_true((value >= 0).all(), "Los pasos del estado no pueden ser negativos")
+            elif defer_slots is not None:
+                defer_slots.append(reserve_finite(value, "El estado"))
             else:
                 check_finite(value, "El estado")
         for index in range(self.config.depth if self.config.plasticity is not None else 0):
@@ -302,8 +337,14 @@ class NeuralMemory(nn.Module):
         if storage_bytes > self.config.max_state_bytes:
             raise ValueError("El almacenamiento del estado supera el presupuesto de bytes")
 
-    def validate_input(self, values: Tensor, state: NeuralMemoryState) -> None:
-        self.validate_state(state)
+    def validate_input(
+        self,
+        values: Tensor,
+        state: NeuralMemoryState,
+        *,
+        defer_slots: list[int | None] | None = None,
+    ) -> None:
+        self.validate_state(state, defer_slots=defer_slots)
         reference = self._reference()
         if (
             not isinstance(values, Tensor)
@@ -321,8 +362,31 @@ class NeuralMemory(nn.Module):
             raise ValueError("La secuencia supera el presupuesto de tokens")
         check_finite(values, "La entrada")
 
-    def _apply_memory(self, values: Tensor, weights: tuple[Tensor, ...]) -> Tensor:
+    def _apply_memory(
+        self,
+        values: Tensor,
+        weights: tuple[Tensor, ...],
+        *,
+        allow_fused: bool = True,
+    ) -> Tensor:
         """Aplicar la red de memoria. Con residual_layer_norm, M(x) = x + LN(MLP(x))."""
+        if (
+            allow_fused
+            and values.is_cuda
+            and values.shape[1] == 1
+            and len(weights) == 2
+            and self.config.dim == 64
+            and values.dtype in (torch.float32, torch.float64)
+            and not torch.is_autocast_enabled("cuda")
+        ):
+            from .fused_memory_write import fused_memory_read
+
+            return fused_memory_read(
+                weights,
+                values,
+                residual_layer_norm=self.config.residual_layer_norm,
+                eps=LAYER_NORM_EPS,
+            )
         result = values
         for index, weight in enumerate(weights):
             result = torch.bmm(result, weight.transpose(1, 2))
@@ -340,9 +404,17 @@ class NeuralMemory(nn.Module):
             values = F.silu(values)
         return values, window
 
-    def _read_memory(self, query, state, translation=None):
+    def _normalize_values(self, values: Tensor) -> Tensor:
+        """Normalización por capa sin parámetros sobre los valores objetivo de escritura."""
+        if self.config.value_normalization == VALUE_LAYER_NORM:
+            return F.layer_norm(values, (self.config.dim,), eps=LAYER_NORM_EPS)
+        return values
+
+    def _read_memory(self, query, state, translation=None, *, allow_fused: bool = True):
         if self.bank_readout is None:
-            return self._apply_memory(query, self.readable_weights(state))
+            return self._apply_memory(
+                query, self.readable_weights(state), allow_fused=allow_fused
+            )
         banks = self._banks(state)
         outputs = []
         for bank in banks:
@@ -351,7 +423,7 @@ class NeuralMemory(nn.Module):
                 if translation is None
                 else tuple(w + d for w, d in zip(bank, translation, strict=True))
             )
-            outputs.append(self._apply_memory(query, weights))
+            outputs.append(self._apply_memory(query, weights, allow_fused=allow_fused))
         return self.bank_readout(query, torch.stack(outputs, dim=2))
 
     def _banks(self, state):
@@ -366,7 +438,7 @@ class NeuralMemory(nn.Module):
                 (w.clone() if differentiable else w.detach().clone()).requires_grad_(True)
                 for w in self.readable_weights(state)
             )
-            return local, self._apply_memory(keys, local)
+            return local, self._apply_memory(keys, local, allow_fused=False)
         if self.config.momentum_copies == 3:
             local = tuple(
                 (w.clone() if differentiable else w.detach().clone()).requires_grad_(True)
@@ -375,7 +447,10 @@ class NeuralMemory(nn.Module):
             )
             depth = self.config.depth
             outputs = torch.stack(
-                [self._apply_memory(keys, local[r * depth : (r + 1) * depth]) for r in range(3)],
+                [
+                    self._apply_memory(keys, local[r * depth : (r + 1) * depth], allow_fused=False)
+                    for r in range(3)
+                ],
                 dim=2,
             )
             return local, self.bank_readout(keys, outputs)
@@ -388,7 +463,7 @@ class NeuralMemory(nn.Module):
                 weights=tuple(w.detach() for w in state.weights),
                 levels=tuple(w.detach() for w in state.levels),
             )
-        return local, self._read_memory(keys, state, local)
+        return local, self._read_memory(keys, state, local, allow_fused=False)
 
     def _gates(
         self, alpha_logits: Tensor, eta_logits: Tensor, theta_logits: Tensor
@@ -597,6 +672,10 @@ class NeuralMemory(nn.Module):
             raise ValueError("inference_mode impide el gradiente interno, utilice no_grad")
         if self.config.huber is not None:
             raise ValueError("La memoria compartida de PT4 conserva la pérdida L2")
+        # --- memory_cross_sectional_surprise ---
+        if self.config.cross_sectional_surprise is not None:
+            raise ValueError("La memoria compartida de PT4 no admite sorpresa relativa transversal")
+        # --- fin memory_cross_sectional_surprise ---
         self._check_shared(observed, state)
         require_true(
             (state.steps < torch.iinfo(torch.int64).max).all(),
@@ -620,6 +699,7 @@ class NeuralMemory(nn.Module):
                 keys = competitive_normalize(keys, self.config.key_competition)
             elif self.config.normalize_qk:
                 keys = F.normalize(keys, dim=-1, eps=1e-12)
+            values = self._normalize_values(values)
             gates = self._gates(*logits)
             local, prediction = self._associative_problem(keys.unsqueeze(0), state, differentiable)
             residual = prediction.squeeze(0) - values
@@ -678,6 +758,134 @@ class NeuralMemory(nn.Module):
         check_finite(result, "La lectura de memoria")
         return result
 
+    def supports_fused_write_and_read(self) -> bool:
+        """Indica si el contrato admite escritura + lectura posterior fusionadas en un kernel."""
+        # --- memory_cross_sectional_surprise ---
+        if self.config.cross_sectional_surprise is not None:
+            return False
+        # --- fin memory_cross_sectional_surprise ---
+        return self.config.inner_gradient == FUSED_INNER_GRADIENT
+
+    def update_and_read(
+        self,
+        observed: Tensor,
+        state: NeuralMemoryState,
+        post_query: Tensor,
+        *,
+        differentiable: bool = False,
+        gate_shift: dict | None = None,
+        surprise: list | None = None,
+        input_slots: list[int | None] | None = None,
+    ) -> tuple[NeuralMemoryState, Tensor]:
+        """Actualiza un token con el kernel fusionado y devuelve M(post_query; W′).
+
+        La lectura sale de la misma pasada que la escritura.
+        """
+        check_differentiable(differentiable)
+        if torch.is_inference_mode_enabled():
+            raise ValueError("inference_mode impide el gradiente interno, utilice no_grad")
+        if not self.supports_fused_write_and_read():
+            raise ValueError("update_and_read requiere inner_gradient='fused_v1'")
+        self.validate_input(observed, state)
+        if observed.shape[1] != 1:
+            raise ValueError("update_and_read requiere exactamente un token")
+        reference = self._reference()
+        if (
+            not isinstance(post_query, Tensor)
+            or post_query.layout != torch.strided
+            or post_query.shape != (observed.shape[0], self.config.dim)
+            or post_query.dtype != reference.dtype
+            or post_query.device != reference.device
+        ):
+            raise ValueError("La consulta posterior necesita [lote, dimensión] y tipo del módulo")
+        require_true(
+            (state.steps <= torch.iinfo(torch.int64).max - 1).all(),
+            "El contador de pasos desbordaría int64",
+        )
+        check_finite(post_query, "La entrada")
+        from .fused_memory_write import fused_associative_write_and_read
+
+        weights, momentum = state.weights, state.momentum
+        key_window, value_window = state.convolution or (None, None)
+        need_in_absmax = bool(input_slots) and any(slot is not None for slot in input_slots)
+        mode = torch.no_grad() if not differentiable else torch.enable_grad()
+        with mode:
+            token = observed[:, 0] if differentiable else observed[:, 0].detach()
+            pq = post_query if differentiable else post_query.detach()
+            keys = self.key_projection(token)
+            values = self.value_projection(token)
+            alpha_logits = self.alpha_projection(token)
+            eta_logits = self.eta_projection(token)
+            theta_logits = self.theta_projection(token)
+            for projected in (keys, values, alpha_logits, eta_logits, theta_logits):
+                check_finite(projected, "Las proyecciones asociativas")
+            if key_window is not None or self.config.qkv_silu:
+                keys, key_window = self.project(
+                    keys.unsqueeze(1), getattr(self, "key_convolution", None), key_window
+                )
+                values, value_window = self.project(
+                    values.unsqueeze(1), getattr(self, "value_convolution", None), value_window
+                )
+                keys, values = keys.squeeze(1), values.squeeze(1)
+            if self.config.key_competition is not None:
+                keys = competitive_normalize(keys, self.config.key_competition)
+            elif self.config.normalize_qk:
+                keys = F.normalize(keys, dim=-1, eps=1e-12)
+            values = self._normalize_values(values)
+            if gate_shift is not None:
+                if "write" in gate_shift:
+                    theta_logits = theta_logits + gate_shift["write"]
+                if "forget" in gate_shift:
+                    alpha_logits = alpha_logits + gate_shift["forget"]
+            alpha, eta, theta = self._gates(alpha_logits, eta_logits, theta_logits)
+            weights, momentum, elements, read_post, absmax = fused_associative_write_and_read(
+                weights,
+                momentum,
+                keys,
+                values,
+                (alpha, eta, theta),
+                pq,
+                residual_layer_norm=self.config.residual_layer_norm,
+                eps=LAYER_NORM_EPS,
+                return_input_absmax=need_in_absmax,
+            )
+            loss = elements.sum()
+            check_finite(loss, "La pérdida asociativa")
+            if surprise is not None:
+                surprise.append(elements.detach().sum(-1))
+            indicators = torch.linalg.vector_norm(absmax.detach(), float("inf"), dim=1)
+            if need_in_absmax:
+                for index, slot in enumerate(input_slots):
+                    fulfill_finite(slot, indicators[4 + index])
+            if not differentiable:
+                weights = tuple(w.detach() for w in weights)
+                momentum = tuple(m.detach() for m in momentum)
+            for index, value in enumerate((*weights, *momentum)):
+                record_finite(value, indicators[index], "La actualización de memoria")
+            if self.observer is not None:
+                self.observer(
+                    alpha=alpha,
+                    eta=eta,
+                    theta=theta,
+                    loss=loss,
+                    weights=weights,
+                    momentum=momentum,
+                )
+        windows = () if key_window is None else (key_window, value_window)
+        if not differentiable:
+            windows = tuple(w.detach() for w in windows)
+        check_finite(read_post, "La lectura de memoria")
+        next_state = NeuralMemoryState(
+            weights,
+            momentum,
+            state.steps + 1,
+            state.config_id,
+            windows,
+            state.levels,
+            state.modulation,
+        )
+        return next_state, read_post
+
     def update(
         self,
         observed: Tensor,
@@ -686,6 +894,9 @@ class NeuralMemory(nn.Module):
         differentiable: bool = False,
         gate_shift: dict | None = None,
         surprise: list | None = None,
+        # --- memory_cross_sectional_surprise ---
+        session_groups=None,
+        # --- fin memory_cross_sectional_surprise ---
     ) -> NeuralMemoryState:
         """Actualiza por token usando la derivada parcial con la observación fija.
 
@@ -697,7 +908,28 @@ class NeuralMemory(nn.Module):
         check_differentiable(differentiable)
         if torch.is_inference_mode_enabled():
             raise ValueError("inference_mode impide el gradiente interno, utilice no_grad")
+        # --- memory_cross_sectional_surprise ---
+        if session_groups is not None and self.cross_sectional_surprise is None:
+            raise ValueError("session_groups requiere cross_sectional_surprise declarado")
+        # --- fin memory_cross_sectional_surprise ---
         self.validate_input(observed, state)
+        reference = self._reference()
+        if gate_shift is not None:
+            if type(gate_shift) is not dict or not set(gate_shift) <= {"write", "forget"}:
+                raise ValueError("gate_shift debe ser un diccionario con claves write o forget")
+            for key, shift in gate_shift.items():
+                if (
+                    not isinstance(shift, Tensor)
+                    or shift.layout != torch.strided
+                    or shift.shape != (observed.shape[0], 1)
+                    or shift.dtype != reference.dtype
+                    or shift.device != reference.device
+                ):
+                    raise ValueError(
+                        "gate_shift debe aportar tensores [lote, 1] con el tipo y dispositivo "
+                        "de la memoria"
+                    )
+                check_finite(shift, f"gate_shift[{key}]")
         require_true(
             (state.steps <= torch.iinfo(torch.int64).max - observed.shape[1]).all(),
             "El contador de pasos desbordaría int64",
@@ -740,6 +972,7 @@ class NeuralMemory(nn.Module):
                     keys = competitive_normalize(keys, self.config.key_competition)
                 elif self.config.normalize_qk:
                     keys = F.normalize(keys, dim=-1, eps=1e-12)
+                values = self._normalize_values(values)
                 if gate_shift is not None:
                     if "write" in gate_shift:
                         theta_logits = theta_logits + gate_shift["write"]
@@ -807,6 +1040,19 @@ class NeuralMemory(nn.Module):
                         surprise.append(elements.detach().sum(-1))
                     gradients = torch.autograd.grad(loss, local, create_graph=differentiable)
                 if not fused:
+                    # --- memory_cross_sectional_surprise ---
+                    if self.cross_sectional_surprise is not None:
+                        with torch.set_grad_enabled(differentiable):
+                            gradients, write_shift = self.cross_sectional_surprise(
+                                gradients,
+                                elements,
+                                session_groups,
+                                token_index=index,
+                                steps=None if session_groups is not None else state.steps + index,
+                            )
+                            theta_logits = theta_logits + write_shift
+                            theta = self.config.theta_max * theta_logits.sigmoid().unsqueeze(-1)
+                    # --- fin memory_cross_sectional_surprise ---
                     weights, momentum, levels, modulation = self._write(
                         weights,
                         momentum,

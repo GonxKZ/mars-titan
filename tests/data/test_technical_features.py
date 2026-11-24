@@ -632,3 +632,410 @@ def test_the_third_version_reads_rounding_noise_in_an_untraded_stretch_as_no_mov
     assert (traded[263:, index["price_volume_corr_63"]] == 0).all()
     assert (traded[221:, index["volume_cv_21"]] != 0).all()
     assert (traded[263:, index["up_day_fraction_oc_63"]] == -1.0).all()
+
+
+# --- long_horizon_v4: mismas 62 columnas que v3, sin anular historia 63..251 ni días sin volumen
+
+
+def _independent_v4_volatility_features(prices):
+    """Cálculo independiente, fila a fila, de los rasgos normalizados por volatilidad en v4."""
+    import math
+
+    rows = len(prices)
+    opened, high, low, close = (prices[:, k].astype(np.float64) for k in range(4))
+    log_close = np.log(close)
+    daily = np.full(rows, np.nan)
+    daily[1:] = log_close[1:] - log_close[:-1]
+    filled = np.nan_to_num(daily)
+    intraday = np.log(close / opened)
+    overnight = np.full(rows, np.nan)
+    overnight[1:] = np.log(opened[1:] / close[:-1])
+    clean_intraday = np.where(np.isfinite(intraday), intraday, 0.0)
+    clean_overnight = np.where(np.isfinite(overnight), overnight, 0.0)
+
+    def clip32(value):
+        if not math.isfinite(value):
+            return np.float32(0.0)
+        return np.float32(min(max(value, -technical.LIMIT), technical.LIMIT))
+
+    expected = {}
+    for row in range(63, min(rows, 252)):
+        window_returns = filled[1 : row + 1]
+        vol = float(np.std(window_returns, ddof=0))
+        vol_21 = float(np.std(filled[row - 20 : row + 1], ddof=0))
+        vol_63 = float(np.std(filled[row - 62 : row + 1], ddof=0))
+        entry = {
+            "return_1": clip32(daily[row] / vol),
+            "return_5": clip32((log_close[row] - log_close[row - 5]) / (vol * math.sqrt(5))),
+            "return_21": clip32((log_close[row] - log_close[row - 21]) / (vol * math.sqrt(21))),
+            "return_63": clip32((log_close[row] - log_close[row - 63]) / (vol * math.sqrt(63))),
+            "return_126": (
+                clip32((log_close[row] - log_close[row - 126]) / (vol * math.sqrt(126)))
+                if row >= 126
+                else np.float32(0.0)
+            ),
+            "return_252": np.float32(0.0),
+            "momentum_12_1": np.float32(0.0),
+            "log_volatility_252": clip32(math.log(vol * 100.0)),
+            "volatility_21_over_252": clip32(math.log(vol_21 / vol)),
+            "volatility_63_over_252": clip32(math.log(vol_63 / vol)),
+            "intraday_1": clip32(intraday[row] / vol),
+            "overnight_1": clip32(overnight[row] / vol),
+            "range_1": clip32(math.log(high[row] / low[row]) / vol),
+            "intraday_5": clip32(clean_intraday[row - 4 : row + 1].mean() / vol * math.sqrt(5)),
+            "overnight_5": clip32(clean_overnight[row - 4 : row + 1].mean() / vol * math.sqrt(5)),
+            "intraday_21": clip32(clean_intraday[row - 20 : row + 1].mean() / vol * math.sqrt(21)),
+            "overnight_21": clip32(
+                clean_overnight[row - 20 : row + 1].mean() / vol * math.sqrt(21)
+            ),
+            "intraday_63": clip32(clean_intraday[row - 62 : row + 1].mean() / vol * math.sqrt(63)),
+            "overnight_63": clip32(
+                clean_overnight[row - 62 : row + 1].mean() / vol * math.sqrt(63)
+            ),
+            "intraday_252": (
+                clip32(clean_intraday[row - 251 : row + 1].mean() / vol * math.sqrt(252))
+                if row >= 251
+                else np.float32(0.0)
+            ),
+            "overnight_252": np.float32(0.0),
+            "maximum_return_21": clip32(float(filled[row - 20 : row + 1].max()) / vol),
+        }
+        expected[row] = entry
+    return expected
+
+
+def test_the_fourth_version_keeps_the_third_schema_and_leaves_earlier_versions_bit_identical():
+    import hashlib
+
+    assert technical.NAME_V4 == "long_horizon_v4"
+    assert technical.NAMES_V4 == technical.NAMES_V3 and len(technical.NAMES_V4) == 62
+    assert technical.VERSIONS[technical.NAME_V4] is technical.NAMES_V4
+    _, sessions, table, market = market_prices(seed=5)
+    rough, days = rough_prices()
+    # Huellas SHA-256 tomadas antes de introducir la v4: v1, v2 y v3 no cambian ni un bit.
+    baseline_digests = {
+        ("market", technical.NAME): (
+            "4c65af7fd14aa86dff7a7337387bc0b1449fea0cf2ecdbf934594a1ca4e653d4"
+        ),
+        ("market", technical.NAME_V2): (
+            "66a20474e2f2d2a8f6d0d04b8a2774810fe7e4c0ea615f83cdcb39ad20e2fe51"
+        ),
+        ("market", technical.NAME_V3): (
+            "8be412e452142868536a2cc28fdb98556d9c43d764923ebf13ca442cb274aa0c"
+        ),
+        ("rough", technical.NAME): (
+            "f11339713a1bf5152ae1c12893cdedc03576121d2083db2c964a61509fd9e57a"
+        ),
+        ("rough", technical.NAME_V2): (
+            "ae3a64003dbb0eb3f522ea3624462188d842dc48d316ebb7b5edb838456f96ca"
+        ),
+        ("rough", technical.NAME_V3): (
+            "ee57be158bd5ee40aa098b366f2448b36319c3e2c486decfaac628b8aeca2c87"
+        ),
+    }
+    for label, prices, when, factor in (
+        ("market", table, sessions, (sessions, market)),
+        ("rough", rough, days, ()),
+    ):
+        first = technical.technical_features(prices, when, *factor)
+        second = technical.technical_features(prices, when, *factor, version=technical.NAME_V2)
+        third = technical.technical_features(prices, when, *factor, version=technical.NAME_V3)
+        fourth = technical.technical_features(prices, when, *factor, version=technical.NAME_V4)
+        for ver, arr in (
+            (technical.NAME, first),
+            (technical.NAME_V2, second),
+            (technical.NAME_V3, third),
+        ):
+            assert hashlib.sha256(arr.tobytes()).hexdigest() == baseline_digests[(label, ver)], (
+                label,
+                ver,
+            )
+        assert np.array_equal(second[:, :30], first)
+        assert np.array_equal(third[:, :46], second)
+        assert fourth.shape == (len(prices), 62) and fourth.dtype == np.float32
+        assert np.isfinite(fourth).all() and np.abs(fourth).max() <= technical.LIMIT
+    # Sin factor de mercado en v4 solo se apagan las diez columnas del modelo de mercado.
+    with_factor = technical.technical_features(
+        table, sessions, sessions, market, version=technical.NAME_V4
+    )
+    without = technical.technical_features(table, sessions, version=technical.NAME_V4)
+    names = technical.NAMES_V4
+    market_cols = {
+        "alpha_percent",
+        "alpha_t",
+        "beta",
+        "log_residual_volatility",
+        "has_market_model",
+        "realized_label_1",
+        "realized_label_5",
+        "realized_label_21",
+        "alpha_21_percent",
+        "alpha_63_percent",
+    }
+    for column, name in enumerate(names):
+        if name in market_cols:
+            assert not without[:, column].any(), name
+            assert with_factor[300:, column].any(), name
+        else:
+            assert np.array_equal(without[:, column], with_factor[:, column]), name
+
+
+def test_the_fourth_version_normalizes_63_to_251_with_available_vol_and_matches_v3_from_252():
+    _, sessions, table, market = market_prices(seed=17)
+    prices, sessions, market = table[:300].copy(), sessions[:300], market[:300]
+    assert (prices[:, 4] > 0).all()
+    third = technical.technical_features(
+        prices, sessions, sessions, market, version=technical.NAME_V3
+    )
+    fourth = technical.technical_features(
+        prices, sessions, sessions, market, version=technical.NAME_V4
+    )
+    names = technical.NAMES_V4
+    idx = {name: i for i, name in enumerate(names)}
+    # Los indicadores de historia no cambian de significado.
+    flags = fourth[:, [idx["has_63_sessions"], idx["has_252_sessions"]]]
+    assert flags[62].tolist() == [0.0, 0.0] and flags[63].tolist() == [1.0, 0.0]
+    assert flags[251].tolist() == [1.0, 0.0] and flags[252].tolist() == [1.0, 1.0]
+    assert np.array_equal(fourth[:, idx["has_63_sessions"]], third[:, idx["has_63_sessions"]])
+    assert np.array_equal(fourth[:, idx["has_252_sessions"]], third[:, idx["has_252_sessions"]])
+    # Antes de la sesión 63, todos los rasgos divididos por volatilidad siguen ausentes (en cero).
+    vol_cols = (
+        "return_1",
+        "return_5",
+        "return_21",
+        "return_63",
+        "return_126",
+        "return_252",
+        "momentum_12_1",
+        "log_volatility_252",
+        "volatility_21_over_252",
+        "volatility_63_over_252",
+        "intraday_1",
+        "overnight_1",
+        "range_1",
+        "intraday_5",
+        "overnight_5",
+        "intraday_21",
+        "overnight_21",
+        "intraday_63",
+        "overnight_63",
+        "intraday_252",
+        "overnight_252",
+        "maximum_return_21",
+    )
+    for name in vol_cols:
+        assert (fourth[:63, idx[name]] == 0.0).all(), name
+    # Entre la 63 y la 251 coinciden con la cuenta independiente sobre toda la historia disponible.
+    reference = _independent_v4_volatility_features(prices)
+    for row in (63, 64, 100, 125, 126, 200, 250, 251):
+        for name, expected in reference[row].items():
+            assert fourth[row, idx[name]] == pytest.approx(float(expected), rel=2e-5, abs=2e-6), (
+                row,
+                name,
+            )
+    # En la 63 ya hay rendimientos normalizados (en v3 eran cero) y vol_63/vol_disponible == 1.
+    for name in ("return_5", "return_21", "return_63", "log_volatility_252", "intraday_21"):
+        assert fourth[63:252, idx[name]].any() and not third[63:252, idx[name]].any(), name
+    assert fourth[63, idx["volatility_63_over_252"]] == 0.0
+    assert fourth[100, idx["volatility_63_over_252"]] != 0.0
+    assert fourth[125, idx["return_126"]] == 0.0 and fourth[126, idx["return_126"]] != 0.0
+    assert fourth[250, idx["intraday_252"]] == 0.0 and fourth[251, idx["intraday_252"]] != 0.0
+    assert (fourth[:252, idx["return_252"]] == 0.0).all()
+    assert (fourth[:252, idx["momentum_12_1"]] == 0.0).all()
+    # Desde la sesión 252, sin días sin volumen, las 62 columnas coinciden bit a bit con v3.
+    assert np.array_equal(fourth[252:], third[252:])
+    # Series cortas alrededor del umbral 63 y menores que cualquier ventana.
+    at_63 = technical.technical_features(prices[:63], sessions[:63], version=technical.NAME_V4)
+    assert (at_63[:, idx["return_21"]] == 0.0).all()
+    at_64 = technical.technical_features(prices[:64], sessions[:64], version=technical.NAME_V4)
+    assert at_64[63, idx["return_21"]] == fourth[63, idx["return_21"]] != 0.0
+    for short_rows in (0, 1, 2, 4, 20):
+        short = technical.technical_features(
+            prices[:short_rows], sessions[:short_rows], version=technical.NAME_V4
+        )
+        assert short.shape == (short_rows, 62) and np.isfinite(short).all()
+    # Precio constante (volatilidad cero): todo finito y los rasgos divididos por volatilidad a 0.
+    flat = np.tile(np.array([10.0, 10.0, 10.0, 10.0, 1e5]), (300, 1))
+    quiet = technical.technical_features(flat, sessions, version=technical.NAME_V4)
+    assert np.isfinite(quiet).all()
+    for name in vol_cols:
+        assert (quiet[:, idx[name]] == 0.0).all(), name
+
+
+def test_the_fourth_version_handles_zero_volume_in_abnormal_volume_and_amihud():
+    import math
+
+    _, sessions, table, _ = market_prices(seed=23)
+    prices, sessions = table[:300].copy(), sessions[:300]
+    # Insertamos: días sin volumen en el borde de 21 sesiones (19 y 20), días sueltos, ventana
+    # con un único día negociado, ventana entera sin negociación y volúmenes inválidos.
+    prices[[10, 19, 20], 4] = 0.0
+    prices[[80, 82, 85], 4] = 0.0
+    prices[140:161, 4] = 0.0
+    prices[150, 4] = 2e5
+    prices[200:225, 4] = 0.0
+    prices[260, 4] = 0.0
+    prices[280, 4] = -10.0
+    prices[285, 4] = np.nan
+
+    third = technical.technical_features(prices, sessions, version=technical.NAME_V3)
+    fourth = technical.technical_features(prices, sessions, version=technical.NAME_V4)
+    names = technical.NAMES_V4
+    abn, amihud = names.index("abnormal_volume"), names.index("log_illiquidity_21")
+
+    # Antes de 21 sesiones (hasta la fila 19), un día sin volumen sigue ausente; desde 20, -8.
+    assert fourth[10, abn] == 0.0 and fourth[19, abn] == 0.0
+    assert fourth[20, abn] == -technical.LIMIT and third[20, abn] == 0.0
+    # En un día sin volumen con historia, abnormal_volume queda en el límite inferior del recorte.
+    for row in (80, 82, 85, 160, 260):
+        assert third[row, abn] == 0.0
+        assert fourth[row, abn] == -technical.LIMIT
+    # Incluso en una suspensión de 21+ sesiones (volume_21 == 0), sigue en el límite inferior.
+    for row in range(220, 225):
+        assert fourth[row, abn] == -technical.LIMIT
+    # Un día con volumen positivo conserva el mismo log(volume / volume_21) que v3.
+    for row in (81, 83, 86, 120, 261):
+        assert fourth[row, abn] == third[row, abn]
+    # Un volumen negativo o NaN no es un día sin negociación: queda ausente (en cero).
+    assert fourth[280, abn] == 0.0 and fourth[285, abn] == 0.0
+    # Con un volumen NaN o negativo dominante en la ventana, un día con volumen 0 tampoco da -LIMIT.
+    nan_vol = table[:300].copy()
+    nan_vol[100, 4] = np.nan
+    nan_vol[105, 4] = 0.0
+    neg_vol = table[:300].copy()
+    neg_vol[150, 4] = -1e12
+    neg_vol[155, 4] = 0.0
+    inf_vol = table[:300].copy()
+    inf_vol[180, 4] = np.inf
+    nan_v4 = technical.technical_features(nan_vol, sessions, version=technical.NAME_V4)
+    neg_v4 = technical.technical_features(neg_vol, sessions, version=technical.NAME_V4)
+    inf_v4 = technical.technical_features(inf_vol, sessions, version=technical.NAME_V4)
+    assert nan_v4[105, abn] == 0.0 and neg_v4[155, abn] == 0.0
+    assert np.isfinite(nan_v4).all() and np.isfinite(neg_v4).all() and np.isfinite(inf_v4).all()
+    # Un volumen infinito no es un día negociado válido y no diluye la media de Amihud.
+    inf_zero = inf_vol.copy()
+    inf_zero[180, 4] = 0.0
+    inf_zero_v4 = technical.technical_features(inf_zero, sessions, version=technical.NAME_V4)
+    assert inf_v4[185, amihud] == inf_zero_v4[185, amihud]
+    # Antes de la fila 20 Amihud está ausente; en la fila 20 ya usa solo los días negociados.
+    assert fourth[19, amihud] == 0.0
+
+    # Cuenta independiente del impacto de Amihud solo sobre los días con negociación (dollars > 0).
+    close, volume = prices[:, 3], prices[:, 4]
+    daily = np.zeros(len(prices), dtype=np.float64)
+    daily[1:] = np.log(close[1:] / close[:-1])
+
+    def expected_amihud(row):
+        window_close = close[row - 20 : row + 1]
+        window_vol = volume[row - 20 : row + 1]
+        window_ret = daily[row - 20 : row + 1]
+        impacts = [
+            abs(r) / (c * v)
+            for c, v, r in zip(window_close, window_vol, window_ret, strict=True)
+            if math.isfinite(c) and math.isfinite(v) and c > 0 and v > 0
+        ]
+        if not impacts:
+            return 0.0
+        mean_impact = sum(impacts) / len(impacts)
+        value = (math.log(mean_impact) - math.log(1e-9)) / 3.0
+        return float(np.float32(min(max(value, -technical.LIMIT), technical.LIMIT)))
+
+    # Con días sin negociación en la ventana, v4 promedia solo los negociados (más ilíquido que v3).
+    for row in (20, 80, 85, 95, 160, 225, 260, 280, 285):
+        assert fourth[row, amihud] == pytest.approx(expected_amihud(row), rel=2e-5, abs=2e-6), row
+    assert fourth[85, amihud] > third[85, amihud]
+    assert fourth[160, amihud] > third[160, amihud]
+    # Cuando los 21 días son negociados, coincide bit a bit con v3.
+    assert fourth[120, amihud] == third[120, amihud]
+    # Ventana sin ningún día negociado: el rasgo de Amihud queda ausente (en cero).
+    for row in range(220, 225):
+        assert fourth[row, amihud] == 0.0
+    # Desde la 252, las otras 60 columnas (todas salvo abnormal_volume y log_illiquidity_21) son
+    # idénticas bit a bit a v3 incluso cuando hay días sin negociación.
+    other = [i for i in range(len(names)) if i not in (abn, amihud)]
+    assert np.array_equal(fourth[252:, other], third[252:, other])
+
+
+def test_the_fourth_version_is_causal_across_history_regimes_and_zero_volume():
+    _, sessions, table, market = market_prices(seed=31)
+    prices, sessions, market = table[:320].copy(), sessions[:320], market[:320]
+    prices[[50, 80, 120, 260], 4] = 0.0
+    prices[180:205, 4] = 0.0
+    whole = technical.technical_features(
+        prices, sessions, sessions, market, version=technical.NAME_V4
+    )
+    for cut in (15, 20, 62, 63, 64, 150, 202, 251, 252, 270, 319):
+        changed, later = prices.copy(), market.copy()
+        rng = np.random.default_rng(cut)
+        changed[cut:] *= rng.uniform(0.5, 2.0, (len(prices) - cut, 5))
+        changed[cut:, 1] = np.maximum(changed[cut:, 1], changed[cut:, [0, 3]].max(axis=1))
+        changed[cut:, 2] = np.minimum(changed[cut:, 2], changed[cut:, [0, 3]].min(axis=1))
+        # Alternamos volúmenes futuros entre cero y positivo para comprobar su causalidad.
+        changed[cut::3, 4] = 0.0
+        changed[cut + 1 :: 3, 4] = 5e5
+        later[cut:] = -later[cut:] + 0.02
+        again = technical.technical_features(
+            changed, sessions, sessions, later, version=technical.NAME_V4
+        )
+        assert np.array_equal(again[:cut], whole[:cut]), cut
+        assert not np.array_equal(again[cut:], whole[cut:]), cut
+        prefix = technical.technical_features(
+            prices[:cut], sessions[:cut], sessions[:cut], market[:cut], version=technical.NAME_V4
+        )
+        assert np.array_equal(prefix, whole[:cut]), cut
+
+
+def test_the_fourth_version_is_deterministic_and_keeps_dense_branch_gradients_finite():
+    import torch
+
+    from mars_titan.models.titans.technical_branch import TechnicalDense, TechnicalDenseConfig
+
+    _, sessions, table, market = market_prices(seed=41)
+    prices, sessions, market = table[:300].copy(), sessions[:300], market[:300]
+    prices[[80, 150, 260], 4] = 0.0
+    prices[200:225, 4] = 0.0
+    one = technical.technical_features(
+        prices, sessions, sessions, market, version=technical.NAME_V4
+    )
+    two = technical.technical_features(
+        prices, sessions, sessions, market, version=technical.NAME_V4
+    )
+    assert np.array_equal(one, two)
+    # Comprobamos FP32 y FP64 con la capa de salida iniciada a cero (predicción constante).
+    rows = one[[10, 63, 80, 150, 220, 251, 252, 260]]
+    markets = ["US"] * len(rows)
+    config = TechnicalDenseConfig(columns=62, hidden=32, depth=2, session_ranks=True)
+    for dtype in (torch.float32, torch.float64):
+        branch = TechnicalDense(16, config, clip=technical.LIMIT, seed=7, dtype=dtype)
+        charts = torch.tensor(rows, dtype=dtype, requires_grad=True)
+        out = branch(charts, markets)
+        assert out.dtype == dtype and torch.isfinite(out).all()
+        assert torch.count_nonzero(out) == 0
+        out.sum().backward()
+        assert torch.isfinite(charts.grad).all()
+        for name, param in branch.named_parameters():
+            assert param.grad is not None and torch.isfinite(param.grad).all(), (dtype, name)
+        assert branch.outer.weight.grad.abs().sum() > 0
+        assert branch.outer.bias.grad.abs().sum() > 0
+
+
+def test_the_fifth_version_is_the_second_schema_with_the_corrections_of_the_fourth():
+    _, sessions, table, market = market_prices(seed=17)
+    prices, sessions, market = table[:300].copy(), sessions[:300], market[:300]
+    prices[40, 4] = 0.0
+    second, fourth, fifth = (
+        technical.technical_features(prices, sessions, sessions, market, version=version)
+        for version in (technical.NAME_V2, technical.NAME_V4, technical.NAME_V5)
+    )
+    assert technical.NAMES_V5 == technical.NAMES_V2
+    assert technical.VERSIONS[technical.NAME_V5] == technical.NAMES_V2
+    assert fifth.shape == second.shape == (300, 46)
+    # Son, celda a celda, las 46 primeras columnas de la cuarta versión.
+    assert np.array_equal(fifth, fourth[:, :46])
+    # Y se separan de la segunda justo donde actúan las dos correcciones.
+    idx = {name: i for i, name in enumerate(technical.NAMES_V2)}
+    changed = (fifth != second).any(axis=1)
+    assert not changed[:20].any() and changed[63:252].all()
+    assert second[100, idx["return_5"]] == 0.0 and fifth[100, idx["return_5"]] != 0.0
+    assert second[40, idx["abnormal_volume"]] == 0.0
+    assert fifth[40, idx["abnormal_volume"]] == -technical.LIMIT

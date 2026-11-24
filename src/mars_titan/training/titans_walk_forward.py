@@ -87,6 +87,7 @@ from .selection import (
     INITIAL_STATE,
     SESSION_RANK_IC,
     campaign_rule,
+    canonical_rule,
     with_rule,
 )
 from .temporal_contract import temporal_contracts
@@ -226,7 +227,9 @@ def _recipe(path, rule, search_case=None, stopping=None):
     return (
         with_rule(
             recipe,
-            campaign_rule(rule, stopping, modes=CHRONOLOGICAL_MODES, initial_reported=True),
+            campaign_rule(
+                rule, stopping, modes=CHRONOLOGICAL_MODES, initial_reported=True, adaptive=True
+            ),
         ),
         document,
         walk_forward_options(document, bounded_fit=True),
@@ -365,7 +368,7 @@ def _request(
     if local_control is not None:
         request["local_control"] = asdict(control_config(local_control))
     if stopping is not None:
-        request["stopping_rule"] = dict(stopping)
+        request["stopping_rule"] = canonical_rule(stopping)
     if predictor_changes is not None:
         request[CHANGES] = checked_predictor_changes(predictor_changes)
     if epoch_scoring is not None:
@@ -555,7 +558,9 @@ def run_titans_window(
     view, output = Path(view), Path(output)
     protocol_document, protocol_sha, rule, fold = _protocol(protocol, window, seed)
     chronological, document, options = _recipe(recipe, rule, search_case, stopping)
-    rule = campaign_rule(rule, stopping, modes=CHRONOLOGICAL_MODES, initial_reported=True)
+    rule = campaign_rule(
+        rule, stopping, modes=CHRONOLOGICAL_MODES, initial_reported=True, adaptive=True
+    )
     _require(
         initial is None or INITIAL_STATE not in rule,
         "Una continuación debe poder elegir el estado de su padre",
@@ -731,6 +736,26 @@ def run_titans_window(
             plateau_epoch=fit["plateau_epoch"],
             joint_stop_epoch=fit.get("joint_stop_epoch"),
             global_step=trainer.global_step,
+            **(
+                dict(
+                    stopping_report=dict(
+                        fit["stopping_report_file"],
+                        path="fit/" + fit["stopping_report_file"]["path"],
+                    )
+                )
+                if "stopping_report_file" in fit
+                else {}
+            ),
+            **(
+                dict(averaged_epochs=list(fit["averaged_epochs"]))
+                if "averaged_epochs" in fit
+                else {}
+            ),
+            **(
+                dict(learning_rate_reductions=list(fit["learning_rate_reductions"]))
+                if "learning_rate_reductions" in fit
+                else {}
+            ),
         )
         # Estado elegido del que salen las predicciones. Lo usa el recibo de la campaña.
         report["checkpoint"] = report["fit"]["best_checkpoint"]
@@ -744,15 +769,18 @@ def run_titans_window(
             tables = checked_tables(rows, metrics, dataset, name)
             if name == "validation":
                 best, recomputed = fit["best_score"], selected_score(rule, metrics, tables)
+                averaged = fit.get("averaged_epochs")
                 report["validation_selection_check"] = dict(
                     best_score=best,
                     recomputed=recomputed,
                     absolute_difference=abs(best - recomputed),
+                    **({"averaged_epochs": list(averaged)} if averaged is not None else {}),
                 )
-                _require(
-                    math.isclose(best, recomputed, rel_tol=1e-6, abs_tol=1e-12),
-                    "La validación del mejor estado no reproduce la puntuación seleccionada",
-                )
+                if not averaged or len(averaged) <= 1:
+                    _require(
+                        math.isclose(best, recomputed, rel_tol=1e-6, abs_tol=1e-12),
+                        "La validación del mejor estado no reproduce la puntuación seleccionada",
+                    )
             # Solo se escribe un tramo ya conciliado. Ningún archivo queda sin confirmar.
             path = output / f"{name}-predictions.parquet"
             written = atomic_parquet_batches(path, tables)
@@ -924,7 +952,7 @@ def carry_titans(
     _verify(anchor, report)
     identity = report["identity"]
     document, request = identity["recipe"], identity["request"]
-    options = walk_forward_options(document)
+    options = walk_forward_options(document, bounded_fit=True)
     # El recorrido congelado usa el truncamiento y los bloques del caso elegido en el ancla.
     chronological = case_recipe(document, request.get("search_case"))
     anchor_manifest, _ = read_manifest(anchor_view, 64 * 1024**2)

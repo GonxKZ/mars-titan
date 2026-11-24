@@ -1,0 +1,575 @@
+{
+  "schema_version": 1,
+  "kind": "comparison_campaign_v1",
+  "market": "US",
+  "final_test_access": false,
+  "description": "Tercera criba (v12) en EE. UU., origen 2013, sobre la base con kernels: el núcleo y, cada uno con un solo campo de diferencia respecto a su control, los candidatos implementados por encargo y verificados (conjunto eficiente en la rama densa, rangos sin filas ausentes, normalización de los valores de la memoria, consulta de salida proyectada, truncamiento 4 y 8, peso por liquidez y estabilidad en el término de IC operable, suelo de escala propio de los rasgos técnicos, compuerta de presencia, retirada de la parte visual del gráfico, arranque de la red de áreas y lectores con término de orden, más vecinos, temperatura y vía directa) y dos invenciones con sus placebos de igual capacidad: la memoria transversal de rango (CRRM) y el holograma de sesión (HSI). Y la regla de parada adaptativa (paciencia 5 sobre la validación suavizada, dos reducciones de la tasa de aprendizaje y emisión del promedio de las tres mejores épocas) frente a la regla de la campaña, sobre el núcleo.",
+  "source_declaration_sha256": "836c79a6122fc14a1566826ece99f3708849a7d481361c334acd693383c88716",
+  "cohort": {
+    "size": 4198,
+    "rule": "entire_source_view"
+  },
+  "seeds": [
+    42,
+    43,
+    44
+  ],
+  "origins": [
+    {
+      "fold": "fold-000",
+      "role": "development",
+      "year": 2005
+    },
+    {
+      "fold": "fold-001",
+      "role": "development",
+      "year": 2006
+    },
+    {
+      "fold": "fold-002",
+      "role": "development",
+      "year": 2007
+    },
+    {
+      "fold": "fold-003",
+      "role": "development",
+      "year": 2008
+    },
+    {
+      "fold": "fold-004",
+      "role": "development",
+      "year": 2009
+    },
+    {
+      "fold": "fold-005",
+      "role": "development",
+      "year": 2010
+    },
+    {
+      "fold": "fold-006",
+      "role": "development",
+      "year": 2011
+    },
+    {
+      "fold": "fold-007",
+      "role": "development",
+      "year": 2012
+    },
+    {
+      "fold": "fold-008",
+      "role": "development",
+      "year": 2013
+    },
+    {
+      "fold": "fold-009",
+      "role": "development",
+      "year": 2014
+    },
+    {
+      "fold": "fold-010",
+      "role": "development",
+      "year": 2015
+    },
+    {
+      "fold": "fold-011",
+      "role": "development",
+      "year": 2016
+    },
+    {
+      "fold": "fold-012",
+      "role": "development",
+      "year": 2017
+    },
+    {
+      "fold": "fold-013",
+      "role": "development",
+      "year": 2018
+    },
+    {
+      "fold": "fold-014",
+      "role": "development",
+      "year": 2019
+    },
+    {
+      "fold": "fold-015",
+      "role": "development",
+      "year": 2020
+    },
+    {
+      "fold": "fold-016",
+      "role": "development",
+      "year": 2021
+    },
+    {
+      "fold": "fold-017",
+      "role": "development",
+      "year": 2022
+    },
+    {
+      "fold": "fold-018",
+      "role": "confirmation",
+      "year": 2023
+    }
+  ],
+  "tiers": [
+    "core",
+    "s3_stopping",
+    "s3_inventions",
+    "s3_memory",
+    "s3_technical",
+    "s3_objective",
+    "s3_multimodal",
+    "s3_holographic",
+    "s3_readers"
+  ],
+  "recipes": {
+    "core": "configs/titans/dgx-us-core-u2-ic3-dense-gr-v9.json",
+    "core_u4": "configs/titans/dgx-us-core-u4-ic3-dense-gr-v9.json",
+    "core_u8": "configs/titans/dgx-us-core-u8-ic3-dense-gr-v9.json",
+    "core_icop": "configs/titans/dgx-us-core-u2-ic3-dense-gr-v9-icop-v11.json",
+    "core_icop_liqw3": "configs/titans/dgx-us-core-u2-ic3-dense-gr-v9-icop-liqw3-v12.json",
+    "core_icop_stab05": "configs/titans/dgx-us-core-u2-ic3-dense-gr-v9-icop-stab05-v12.json",
+    "reader": "configs/titans/dgx-us-reader-v2-s-v10.json",
+    "reader_ic3": "configs/titans/dgx-us-reader-v2-s-v10-ic3.json",
+    "reader_ic3_k64": "configs/titans/dgx-us-reader-v2-s-v10-ic3-k64-v12.json",
+    "reader_ic3_t01": "configs/titans/dgx-us-reader-v2-s-v10-ic3-t01-v12.json",
+    "reader_ic3_direct": "configs/titans/dgx-us-reader-v2-s-v10-ic3-direct-v12.json"
+  },
+  "stopping": {
+    "fit": {
+      "metric": "session_rank_ic",
+      "min_assets": 30,
+      "stopping": "validation_plateau",
+      "patience": 3,
+      "min_delta": 0.0,
+      "max_epochs": 48,
+      "initial_state": "reported"
+    },
+    "reader": {
+      "metric": "session_rank_ic",
+      "min_assets": 30,
+      "stopping": "validation_plateau",
+      "patience": 3,
+      "min_delta": 0.0,
+      "max_epochs": 24
+    }
+  },
+  "execution": {
+    "pipeline": {
+      "decode_workers": 4,
+      "prefetch_batches": 6,
+      "group_cache_mib": 2048,
+      "prepare_workers": 3
+    },
+    "workers": {
+      "mars_titan": 4,
+      "references": 1
+    },
+    "learning_traces": {
+      "every": 8,
+      "max_bytes": 67108864
+    },
+    "order": "seed_tier",
+    "threads": {
+      "intra": 20,
+      "interop": 20
+    }
+  },
+  "budget": {
+    "min_free_gib": 60,
+    "memory_gib": {
+      "mars_titan": 24
+    },
+    "cuda_gib": {
+      "mars_titan": 16
+    },
+    "deadline_utc": "2026-12-01T11:00:00+00:00"
+  },
+  "models": {
+    "titans_mac": {
+      "machine": "mars_titan",
+      "recipe": "core",
+      "runner": "fit",
+      "tier": "core",
+      "variant": "mac_online"
+    },
+    "titans_mac_crmm": {
+      "machine": "mars_titan",
+      "recipe": "core",
+      "runner": "fit",
+      "tier": "s3_inventions",
+      "variant": "mac_online",
+      "predictor_changes": {
+        "cross_sectional_rank_memory": {
+          "dim": 32,
+          "time_constants": [
+            5,
+            21,
+            63
+          ],
+          "ridge": 1.0,
+          "minimum_rows": 8,
+          "seed": 0,
+          "mode": "matured_rank"
+        }
+      }
+    },
+    "titans_mac_crmm_shuffled": {
+      "machine": "mars_titan",
+      "recipe": "core",
+      "runner": "fit",
+      "tier": "s3_inventions",
+      "variant": "mac_online",
+      "predictor_changes": {
+        "cross_sectional_rank_memory": {
+          "dim": 32,
+          "time_constants": [
+            5,
+            21,
+            63
+          ],
+          "ridge": 1.0,
+          "minimum_rows": 8,
+          "seed": 0,
+          "mode": "shuffled_targets"
+        }
+      }
+    },
+    "titans_mac_crmm_eval_frozen": {
+      "machine": "mars_titan",
+      "recipe": "core",
+      "runner": "fit",
+      "tier": "s3_inventions",
+      "variant": "mac_online",
+      "predictor_changes": {
+        "cross_sectional_rank_memory": {
+          "dim": 32,
+          "time_constants": [
+            5,
+            21,
+            63
+          ],
+          "ridge": 1.0,
+          "minimum_rows": 8,
+          "seed": 0,
+          "mode": "eval_frozen"
+        }
+      }
+    },
+    "titans_mac_session_hologram": {
+      "machine": "mars_titan",
+      "recipe": "core",
+      "runner": "fit",
+      "tier": "s3_inventions",
+      "variant": "mac_online",
+      "predictor_changes": {
+        "session_hologram": {
+          "bands": 4,
+          "phase_dim": 16,
+          "position": "after_technical",
+          "mode": "interferometric"
+        }
+      }
+    },
+    "titans_mac_session_hologram_self": {
+      "machine": "mars_titan",
+      "recipe": "core",
+      "runner": "fit",
+      "tier": "s3_inventions",
+      "variant": "mac_online",
+      "predictor_changes": {
+        "session_hologram": {
+          "bands": 4,
+          "phase_dim": 16,
+          "position": "after_technical",
+          "mode": "self_only"
+        }
+      }
+    },
+    "titans_mac_session_hologram_shuffled": {
+      "machine": "mars_titan",
+      "recipe": "core",
+      "runner": "fit",
+      "tier": "s3_inventions",
+      "variant": "mac_online",
+      "predictor_changes": {
+        "session_hologram": {
+          "bands": 4,
+          "phase_dim": 16,
+          "position": "after_technical",
+          "mode": "shuffled_peers"
+        }
+      }
+    },
+    "titans_mac_session_hologram_inphase": {
+      "machine": "mars_titan",
+      "recipe": "core",
+      "runner": "fit",
+      "tier": "s3_inventions",
+      "variant": "mac_online",
+      "predictor_changes": {
+        "session_hologram": {
+          "bands": 4,
+          "phase_dim": 16,
+          "position": "after_technical",
+          "mode": "in_phase_only"
+        }
+      }
+    },
+    "titans_mac_vnorm": {
+      "machine": "mars_titan",
+      "recipe": "core",
+      "runner": "fit",
+      "tier": "s3_memory",
+      "variant": "mac_online",
+      "predictor_changes": {
+        "memory_value_normalization": "layer_norm_v1"
+      }
+    },
+    "titans_mac_outq": {
+      "machine": "mars_titan",
+      "recipe": "core",
+      "runner": "fit",
+      "tier": "s3_memory",
+      "variant": "mac_online",
+      "predictor_changes": {
+        "output_query": "projected_v1"
+      }
+    },
+    "titans_mac_u4": {
+      "machine": "mars_titan",
+      "recipe": "core_u4",
+      "runner": "fit",
+      "tier": "s3_memory",
+      "variant": "mac_online"
+    },
+    "titans_mac_u8": {
+      "machine": "mars_titan",
+      "recipe": "core_u8",
+      "runner": "fit",
+      "tier": "s3_memory",
+      "variant": "mac_online"
+    },
+    "titans_mac_tabm8": {
+      "machine": "mars_titan",
+      "recipe": "core",
+      "runner": "fit",
+      "tier": "s3_technical",
+      "variant": "mac_online",
+      "predictor_changes": {
+        "technical_branch": {
+          "columns": 46,
+          "hidden": 128,
+          "depth": 2,
+          "session_ranks": true,
+          "ensemble_members": 8
+        }
+      }
+    },
+    "titans_mac_absent_masked": {
+      "machine": "mars_titan",
+      "recipe": "core",
+      "runner": "fit",
+      "tier": "s3_technical",
+      "variant": "mac_online",
+      "predictor_changes": {
+        "technical_branch": {
+          "columns": 46,
+          "hidden": 128,
+          "depth": 2,
+          "session_ranks": true,
+          "absent_rows": "masked_v1"
+        }
+      }
+    },
+    "titans_mac_icop": {
+      "machine": "mars_titan",
+      "recipe": "core_icop",
+      "runner": "fit",
+      "tier": "s3_objective",
+      "variant": "mac_online"
+    },
+    "titans_mac_icop_liqw3": {
+      "machine": "mars_titan",
+      "recipe": "core_icop_liqw3",
+      "runner": "fit",
+      "tier": "s3_objective",
+      "variant": "mac_online"
+    },
+    "titans_mac_icop_stab05": {
+      "machine": "mars_titan",
+      "recipe": "core_icop_stab05",
+      "runner": "fit",
+      "tier": "s3_objective",
+      "variant": "mac_online"
+    },
+    "titans_mac_techscale": {
+      "machine": "mars_titan",
+      "recipe": "core",
+      "runner": "fit",
+      "tier": "s3_multimodal",
+      "variant": "mac_online",
+      "predictor_changes": {
+        "learning_scale": {
+          "clip": 5,
+          "price_returns": true,
+          "zero_median": true,
+          "chart_technical_columns": 46
+        }
+      }
+    },
+    "titans_mac_mgate": {
+      "machine": "mars_titan",
+      "recipe": "core",
+      "runner": "fit",
+      "tier": "s3_multimodal",
+      "variant": "mac_online",
+      "predictor_changes": {
+        "modality_gating": "presence_softmax_v1"
+      }
+    },
+    "titans_mac_no_charts_visual": {
+      "machine": "mars_titan",
+      "recipe": "core",
+      "runner": "fit",
+      "tier": "s3_multimodal",
+      "variant": "mac_online",
+      "predictor_changes": {
+        "removed_modalities": {
+          "names": [
+            "charts_visual"
+          ]
+        }
+      }
+    },
+    "titans_mac_stop_adaptive": {
+      "machine": "mars_titan",
+      "recipe": "core",
+      "runner": "fit",
+      "tier": "s3_stopping",
+      "variant": "mac_online",
+      "stopping": {
+        "metric": "session_rank_ic",
+        "min_assets": 30,
+        "stopping": "validation_plateau",
+        "patience": 5,
+        "min_delta": 0.0,
+        "max_epochs": 48,
+        "initial_state": "reported",
+        "smoothing": 3,
+        "learning_rate_decay": {
+          "factor": 0.5,
+          "reductions": 2
+        },
+        "emit": {
+          "average": 3
+        }
+      }
+    },
+    "area_network": {
+      "machine": "mars_titan",
+      "recipe": "core",
+      "runner": "fit",
+      "tier": "s3_holographic",
+      "variant": "mac_online",
+      "predictor_changes": {
+        "holographic_network": {
+          "areas": 19,
+          "cycles": 2,
+          "hidden_groups": 4,
+          "kind": "holographic_network_v1",
+          "leakage": 0.1,
+          "levels": 1,
+          "local_gain": 0.25,
+          "local_steps": 1,
+          "rank": 4,
+          "summary": true,
+          "summary_gain": 0.25,
+          "topology": "ring"
+        }
+      }
+    },
+    "area_network_single_zero": {
+      "machine": "mars_titan",
+      "recipe": "core",
+      "runner": "fit",
+      "tier": "s3_holographic",
+      "variant": "mac_online",
+      "predictor_changes": {
+        "holographic_network": {
+          "areas": 19,
+          "cycles": 2,
+          "hidden_groups": 4,
+          "kind": "holographic_network_v1",
+          "leakage": 0.1,
+          "levels": 1,
+          "local_gain": 0.25,
+          "local_steps": 1,
+          "rank": 4,
+          "summary": true,
+          "summary_gain": 0.25,
+          "topology": "ring",
+          "initialization": "single_zero_v1"
+        }
+      }
+    },
+    "mars_titan_m3": {
+      "machine": "mars_titan",
+      "runner": "reader",
+      "parent": "titans_mac",
+      "recipe": "reader",
+      "search_case": "lr1e-3",
+      "components": {
+        "episodic_bank": "m3"
+      },
+      "tier": "s3_readers"
+    },
+    "mars_titan_m3_ic3": {
+      "machine": "mars_titan",
+      "runner": "reader",
+      "parent": "titans_mac",
+      "recipe": "reader_ic3",
+      "search_case": "lr1e-3",
+      "components": {
+        "episodic_bank": "m3"
+      },
+      "tier": "s3_readers"
+    },
+    "mars_titan_m3_ic3_k64": {
+      "machine": "mars_titan",
+      "runner": "reader",
+      "parent": "titans_mac",
+      "recipe": "reader_ic3_k64",
+      "search_case": "lr1e-3",
+      "components": {
+        "episodic_bank": "m3"
+      },
+      "tier": "s3_readers"
+    },
+    "mars_titan_m3_ic3_t01": {
+      "machine": "mars_titan",
+      "runner": "reader",
+      "parent": "titans_mac",
+      "recipe": "reader_ic3_t01",
+      "search_case": "lr1e-3",
+      "components": {
+        "episodic_bank": "m3"
+      },
+      "tier": "s3_readers"
+    },
+    "mars_titan_m3_ic3_direct": {
+      "machine": "mars_titan",
+      "runner": "reader",
+      "parent": "titans_mac",
+      "recipe": "reader_ic3_direct",
+      "search_case": "lr1e-3",
+      "components": {
+        "episodic_bank": "m3"
+      },
+      "tier": "s3_readers"
+    }
+  },
+  "inputs": {
+    "technical": "long_horizon_v2"
+  }
+}

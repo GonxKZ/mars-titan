@@ -57,8 +57,12 @@ from .config import (
     INNER_GRADIENTS,
     MAX_BLOCK_ROWS,
     MAX_STATE_BYTES,
+    OUTPUT_QUERIES,
     PAPER_CONVOLUTION_KERNEL,
     PAPER_PROJECTIONS,
+    PROJECTED_OUTPUT_QUERY,
+    RAW_OUTPUT_QUERY,
+    VALUE_LAYER_NORM,
     GateBias,
     MACConfig,
     MemoryConfig,
@@ -69,13 +73,49 @@ from .config import (
     canonical,
     require_identity,
 )
+
+# --- contrastive_memory ---
+from .contrastive_memory import (
+    ContrastiveMemory,
+    ContrastiveMemoryConfig,
+    parse_contrastive_memory,
+)
+
+# --- fin contrastive_memory ---
 from .cross_asset_attention import (
     CrossAssetAttention,
     CrossAssetAttentionConfig,
     parse_cross_asset_attention,
 )
+from .cross_sectional_rank_memory import (
+    CrossSectionalRankMemory,
+    CrossSectionalRankMemoryConfig,
+    parse_cross_sectional_rank_memory,
+)
+
+# --- memory_cross_sectional_surprise ---
+from .cross_sectional_surprise import (
+    CrossSectionalSurprise,
+    parse_cross_sectional_surprise,
+    session_groups,
+)
+
+# --- fin memory_cross_sectional_surprise ---
 from .differential_attention import DIFFERENTIAL_ATTENTION
 from .differential_attention import identity as differential_identity
+
+# --- fin factor_memory ---
+# --- dual_hemisphere_brain ---
+from .dual_hemisphere_brain import (
+    DualHemisphereBrain,
+    DualHemisphereBrainConfig,
+    parse_dual_hemisphere_brain,
+)
+
+# --- factor_memory ---
+from .factor_memory import FactorMemoryConfig, LowRankFactorMemory, parse_factor_memory
+
+# --- fin dual_hemisphere_brain ---
 from .financial_inputs import (
     FINAL_TEST_US,
     FLOW_ID,
@@ -94,23 +134,59 @@ from .holographic_network import (
     area_layout,
     parse_holographic_network,
 )
+
+# --- hopfield_rank_brain ---
+from .hopfield_rank_brain import (
+    HopfieldRankBrainConfig,
+    RepulsiveSparseHopfieldRankBrain,
+    parse_hopfield_rank_brain,
+)
+
+# --- fin hopfield_rank_brain ---
 from .huber_memory import HuberMemory
+
+# --- ic_titans_mlp ---
+from .ic_titans_mlp import ICTitansMLP, ICTitansMLPConfig, parse_ic_titans_mlp
+
+# --- fin ic_titans_mlp ---
 from .key_competition_config import KeyCompetition
 from .laplace_scale import LaplaceScaleHead
+
+# --- lead_lag_memory ---
+from .lead_lag_memory import (
+    LeadLagMemory,
+    LeadLagMemoryConfig,
+    parse_lead_lag_memory,
+)
+
+# --- fin lead_lag_memory ---
 from .local_control import MACProjectionConfig, MACProjectionControl, ProjectedMACResult
 from .mac import TitansMAC
 from .opponent_heads import OpponentHeads
 from .output_objectives import build_objective, check_objectives, objective_identity
+
+# --- persistent_session_hologram ---
+from .persistent_session_hologram import (
+    PersistentSessionHologram,
+    PersistentSessionHologramConfig,
+    parse_persistent_session_hologram,
+)
+
+# --- fin persistent_session_hologram ---
 from .presence_modulation import (
     FILM,
     MACRO_FILM,
+    MODALITY_GATINGS,
     PRESENCE_MODULATIONS,
+    PRESENCE_SOFTMAX,
     WIDE_FUSION,
     MacroFiLM,
     PresenceFiLM,
+    PresenceModalityGate,
     WideFusionBranch,
     film_parameters,
     macro_film_parameters,
+    modality_gating_parameters,
     wide_parameters_per_unit,
     wide_units,
 )
@@ -140,15 +216,30 @@ from .regional_variants import (
 from .reliability_gates import MatureReliability, ReliabilityGates
 from .scale_invariant_time import ScaleInvariantTime
 from .session_context import SECTOR_MEAN, SESSION_CONTEXTS, SessionContext
+from .session_hologram import (
+    HolographicSessionInterferometer,
+    SessionHologramConfig,
+    parse_session_hologram,
+)
 from .session_ic_objective import SessionICObjective
 from .session_ranks import SESSION_RANK_INPUTS, rank_session_inputs
 from .session_ranks import identity as session_rank_identity
+
+# --- session_resonator ---
+from .session_resonator import (
+    SessionResonator,
+    SessionResonatorConfig,
+    parse_session_resonator,
+)
+
+# --- fin session_resonator ---
 from .state import (
     MACState,
     check_differentiable,
     check_finite,
     deferred_checks,
     finite_indicator,
+    has_deferred_checks,
     is_finite,
     mac_tensors,
     map_mac_rows,
@@ -162,6 +253,15 @@ from .technical_branch import (
     parse_technical_branch,
 )
 
+# --- three_factor_consolidation ---
+from .three_factor_consolidation import (
+    ThreeFactorConsolidation,
+    ThreeFactorConsolidationConfig,
+    parse_three_factor_consolidation,
+)
+
+# --- fin three_factor_consolidation ---
+
 VARIANTS = ("transformer_direct", "mac_disabled", "mac_frozen", "mac_online")
 # Probabilidad máxima de los dropout declarados: por encima, la mitad de las activaciones o de
 # las modalidades desaparecería en cada paso y el ajuste dejaría de parecerse a la emisión.
@@ -174,6 +274,8 @@ FUSION_DROPOUTS = (0.1, 0.2)
 MODALITY_DROPOUT = "modality_dropout_v1"
 # Transformación de una modalidad retirada del predictor, en el ajuste y al emitir.
 REMOVED_MODALITIES = "removed_modalities_v1"
+CHART_SUBBLOCKS = ("charts_visual", "charts_technical")
+_REMOVABLE_ORDER = ("news", "charts", *CHART_SUBBLOCKS, "fundamentals", "macro")
 FUSION_DROPOUT = "fusion_dropout_v1"
 # Las máscaras dependen de la semilla del predictor, de la época del ajuste y de la huella del
 # lote, no del flujo del generador global: la pasada sin grafo, su repetición con grafo de la
@@ -260,6 +362,22 @@ class FinancialConfig:
     # de fuga lee el sector actual de sector_map. Sin declararla, la identidad y el cálculo
     # no cambian.
     asset_groups: AssetGroupsConfig | None = None
+    # WP11: interferómetro holográfico de sesión en fase dual (O(N), sin eco propio). Sin
+    # declararlo, la identidad y el cálculo no cambian.
+    session_hologram: SessionHologramConfig | None = None
+    # --- session_resonator ---
+    # CSRF (WP13-2): resonador holográfico de descomposición latente transversal tras la rama
+    # técnica. Sin declararlo, la identidad y el cálculo no cambian.
+    session_resonator: SessionResonatorConfig | None = None
+    # --- fin session_resonator ---
+    # --- hopfield_rank_brain ---
+    # RSHRB: cerebro de atractores de Hopfield escasos con inhibición lateral de orden.
+    # Sin declararlo, la identidad y el cálculo no cambian.
+    hopfield_rank_brain: HopfieldRankBrainConfig | None = None
+    # --- fin hopfield_rank_brain ---
+    # --- dual_hemisphere_brain ---
+    dual_hemisphere_brain: DualHemisphereBrainConfig | None = None
+    # --- fin dual_hemisphere_brain ---
     # F1 de #749: escala de Laplace, otro objetivo de salida excluyente con el de IC.
     laplace_scale_head: LaplaceScaleHead | None = None
     # F5 de #749: cabezas auxiliares de horizontes largos. Sin declararlas nada cambia.
@@ -269,10 +387,28 @@ class FinancialConfig:
     # #791: fiabilidad madura en las puertas de escritura y olvido de Titans. Sin
     # declararla, la identidad y el cálculo no cambian.
     mature_reliability: MatureReliability | None = None
+    # CRRM: memoria transversal de rango y residuo maduro (apagada por defecto). Sin
+    # declararla, la identidad y el cálculo no cambian.
+    cross_sectional_rank_memory: CrossSectionalRankMemoryConfig | None = None
+    # --- ic_titans_mlp ---
+    ic_titans_mlp: ICTitansMLPConfig | None = None
+    # --- fin ic_titans_mlp ---
+    # --- lead_lag_memory ---
+    lead_lag_memory: LeadLagMemoryConfig | None = None
+    # --- fin lead_lag_memory ---
+    # --- three_factor_consolidation ---
+    three_factor_consolidation: ThreeFactorConsolidationConfig | None = None
+    # --- fin three_factor_consolidation ---
+    # --- persistent_session_hologram ---
+    persistent_session_hologram: PersistentSessionHologramConfig | None = None
+    # --- fin persistent_session_hologram ---
     # R1, U2 y U1 de #786 sobre el núcleo: pérdida de Huber, semividas geométricas y atención
     # diferencial. Sin declararlas, la identidad y el cálculo no cambian.
     memory_huber: HuberMemory | None = None
     memory_time_scales: ScaleInvariantTime | None = None
+    # --- memory_cross_sectional_surprise ---
+    memory_cross_sectional_surprise: CrossSectionalSurprise | None = None
+    # --- fin memory_cross_sectional_surprise ---
     differential_attention: str | None = None
     # #836: escalas de aprendizaje del tramo de ajuste (entradas normalizadas, precios como
     # rendimientos y salida en la escala de la etiqueta). Sin declararlas nada cambia.
@@ -283,6 +419,10 @@ class FinancialConfig:
     # Derivada interna de la escritura de MAC. autograd_v1 conserva la identidad. analytic_v1
     # usa las derivadas cerradas de associative_gradient.py con el mismo metagradiente.
     memory_inner_gradient: str = AUTOGRAD_INNER_GRADIENT
+    # Normalización opcional de los valores objetivo de escritura (`layer_norm_v1`) y consulta
+    # de salida de MAC (`projected_v1`). Con sus valores por defecto, nada cambia.
+    memory_value_normalization: str | None = None
+    output_query: str = RAW_OUTPUT_QUERY
     # Regularización declarada de la DGX. `fusion_dropout` es la probabilidad del dropout de
     # las capas de la fusión multimodal (el nn.Dropout que la referencia ya construye).
     # `modality_dropout` retira en ajuste cada modalidad presente distinta del precio con esa
@@ -304,6 +444,19 @@ class FinancialConfig:
     # multiplica por exp de un escalar aprendido, que absorbe la escala cuando otra parte de
     # la pérdida no depende de ella.
     median_gain: str | None = None
+    # None conserva la fusión común. `presence_softmax_v1` pondera los bloques presentes con
+    # softmax enmascarado por presencia y conserva el peso total M = 5.
+    modality_gating: str | None = None
+    # --- factor_memory ---
+    # Memoria rápida factorizada con blanqueo espectral de sesión (LFM-SW, Idea 4). Sin
+    # declararla, la identidad y el cálculo no cambian.
+    factor_memory: FactorMemoryConfig | None = None
+    # --- fin factor_memory ---
+    # --- contrastive_memory ---
+    # Idea 5 (InfoNCE-Titans): memoria asociativa contrastiva transversal por mercado. Sin
+    # declararla, la identidad y el cálculo no cambian.
+    contrastive_memory: ContrastiveMemoryConfig | None = None
+    # --- fin contrastive_memory ---
 
     def __post_init__(self):
         if self.memory_inner_gradient not in INNER_GRADIENTS:
@@ -344,12 +497,45 @@ class FinancialConfig:
         self._check_session_mixers()
         self._check_auxiliary_horizons()
         self._check_mature_reliability()
+        self._check_cross_sectional_rank_memory()
+        # --- memory_cross_sectional_surprise ---
+        self._check_cross_sectional_surprise()
+        # --- fin memory_cross_sectional_surprise ---
+        # --- contrastive_memory ---
+        self._check_contrastive_memory()
+        # --- fin contrastive_memory ---
+        # --- ic_titans_mlp ---
+        self._check_ic_titans_mlp()
+        # --- fin ic_titans_mlp ---
+        # --- session_resonator ---
+        self._check_session_resonator()
+        # --- fin session_resonator ---
+        # --- lead_lag_memory ---
+        self._check_lead_lag_memory()
+        # --- fin lead_lag_memory ---
+        # --- hopfield_rank_brain ---
+        self._check_hopfield_rank_brain()
+        # --- fin hopfield_rank_brain ---
+        # --- three_factor_consolidation ---
+        self._check_three_factor_consolidation()
+        # --- fin three_factor_consolidation ---
+        # --- persistent_session_hologram ---
+        self._check_persistent_session_hologram()
+        # --- fin persistent_session_hologram ---
+        # --- dual_hemisphere_brain ---
+        self._check_dual_hemisphere_brain()
+        # --- fin dual_hemisphere_brain ---
         self._check_core_variants()
         self._check_learning_scale()
         self._check_technical_branch()
+        self._check_chart_technical_split()
+        self._check_modality_gating()
         self._check_median_gain()
         self._check_memory_projections()
         self._check_runtime_limits()
+        # --- factor_memory ---
+        self._check_factor_memory()
+        # --- fin factor_memory ---
 
     def _check_input_contract(self):
         """Entrada, codificador, cabeza y disposición de atención."""
@@ -484,11 +670,12 @@ class FinancialConfig:
             return
         names = declared.get("names") if isinstance(declared, dict) else declared
         removable = MODALITIES[1:]
+        allowed = _REMOVABLE_ORDER
         if (
             (isinstance(declared, dict) and set(declared) != {"names"})
             or not isinstance(names, (list, tuple))
             or not names
-            or any(type(name) is not str or name not in removable for name in names)
+            or any(type(name) is not str or name not in allowed for name in names)
             or len(set(names)) != len(names)
             or not masked_inputs(self.inputs.input_policy)
         ):
@@ -496,12 +683,19 @@ class FinancialConfig:
                 "removed_modalities declara en names modalidades distintas del precio, sin "
                 "repetir, con la política con máscaras"
             )
-        if len(names) == len(removable):
+        selected = set(names)
+        if ("charts" in selected and selected & set(CHART_SUBBLOCKS)) or (
+            set(CHART_SUBBLOCKS) <= selected
+        ):
+            raise ValueError(
+                "removed_modalities no admite combinar charts con charts_visual o charts_technical"
+            )
+        if set(removable) <= selected:
             raise ValueError("removed_modalities no puede retirar todas las modalidades")
         if self.auxiliary_horizons is not None:
             # F5 vuelve a calcular el token fila a fila con las entradas que recibió.
             raise ValueError("removed_modalities con horizontes auxiliares necesita otro contraste")
-        ordered = tuple(name for name in removable if name in names)
+        ordered = tuple(name for name in allowed if name in selected)
         object.__setattr__(self, "removed_modalities", ordered)
 
     def _check_presence_modulation(self):
@@ -673,11 +867,84 @@ class FinancialConfig:
         if self.removed_modalities is not None and "charts" in self.removed_modalities:
             raise ValueError("technical_branch lee el bloque del gráfico y no admite retirarlo")
 
+    def _chart_technical_columns(self):
+        """Anchura del subbloque técnico al final de `charts`, o None si no se declara."""
+        if (
+            self.learning_scale is not None
+            and self.learning_scale.chart_technical_columns is not None
+        ):
+            return self.learning_scale.chart_technical_columns
+        if self.technical_branch is not None:
+            return self.technical_branch.columns
+        return None
+
+    def _check_chart_technical_split(self):
+        """Coherencia del subbloque técnico de `charts` para escalado y supresión parcial."""
+        charts_width = self.inputs.dimensions["charts"]
+        scale_cols = (
+            None if self.learning_scale is None else self.learning_scale.chart_technical_columns
+        )
+        if scale_cols is not None:
+            if scale_cols >= charts_width:
+                raise ValueError(
+                    "chart_technical_columns debe ser menor que la anchura del bloque charts"
+                )
+            if self.technical_branch is not None and scale_cols != self.technical_branch.columns:
+                raise ValueError(
+                    "chart_technical_columns debe coincidir con columns de technical_branch"
+                )
+        removed = self.removed_modalities or ()
+        if any(name in removed for name in CHART_SUBBLOCKS):
+            columns = self._chart_technical_columns()
+            if columns is None or columns >= charts_width:
+                raise ValueError(
+                    "Retirar charts_visual o charts_technical requiere declarar "
+                    "chart_technical_columns en learning_scale o technical_branch menor que charts"
+                )
+            if "charts_technical" in removed and self.technical_branch is not None:
+                raise ValueError(
+                    "technical_branch lee los rasgos técnicos del gráfico y no admite retirarlos"
+                )
+
+    def _check_modality_gating(self):
+        """Compuerta de modalidades enmascarada por presencia en la fusión común."""
+        if self.modality_gating is None:
+            return
+        if (
+            type(self.modality_gating) is not str
+            or self.modality_gating not in MODALITY_GATINGS
+            or not masked_inputs(self.inputs.input_policy)
+        ):
+            raise ValueError(
+                "modality_gating admite presence_softmax_v1 con la política con máscaras"
+            )
+        if (
+            self.regional_fusion is not None
+            or self.regional_execution is not None
+            or self.regional_variant is not None
+            or self.holographic_network is not None
+            or self.axial_time_region is not None
+            or self.fractal_shared_operator is not None
+        ):
+            raise ValueError(
+                "modality_gating actúa en la fusión común y no se combina con operadores regionales"
+            )
+
     def _check_session_mixers(self):
         """Exclusiones entre los operadores que mezclan activos."""
         object.__setattr__(
             self, "cross_asset_attention", parse_cross_asset_attention(self.cross_asset_attention)
         )
+        declared = self.cross_asset_attention
+        if (
+            declared is not None
+            and declared.position == "after_technical"
+            and self.technical_branch is None
+        ):
+            raise ValueError(
+                "La atención entre activos después de la rama técnica necesita la rama técnica "
+                "declarada (technical_branch)"
+            )
         # H4 y C5 son dos formas de mezclar los activos de la sesión y se comparan entre sí.
         if self.asset_groups is not None and self.cross_asset_attention is not None:
             raise ValueError("H4 y C5 son alternativas y no se combinan")
@@ -687,6 +954,22 @@ class FinancialConfig:
         # H4 y C3 también mezclan las filas de la sesión, cada uno con su propia agrupación.
         if self.asset_groups is not None and self.fractal_shared_operator is not None:
             raise ValueError("H4 y C3 mezclan la sesión de dos formas y no se combinan")
+        object.__setattr__(self, "session_hologram", parse_session_hologram(self.session_hologram))
+        hologram = self.session_hologram
+        if hologram is not None:
+            if hologram.position == "after_technical" and self.technical_branch is None:
+                raise ValueError(
+                    "El interferómetro holográfico después de la rama técnica necesita la rama "
+                    "técnica declarada (technical_branch)"
+                )
+            if (
+                self.cross_asset_attention is not None
+                or self.asset_groups is not None
+                or self.fractal_shared_operator is not None
+            ):
+                raise ValueError(
+                    "El interferómetro holográfico de sesión no se combina con C5, H4 ni C3"
+                )
 
     def _check_auxiliary_horizons(self):
         """Cabezas auxiliares y operaciones que impiden recalcular su token."""
@@ -723,9 +1006,17 @@ class FinancialConfig:
                 or self.cross_asset_attention is not None
                 or self.asset_groups is not None
                 or self.fractal_shared_operator is not None
+                or self.session_hologram is not None
             ):
                 raise ValueError(
                     "Las cabezas auxiliares con operaciones por sesión necesitan otro contraste"
+                )
+            # F5 recalcula el token fuera de `_dropout_masks`: el dropout de fusión tocaría el
+            # generador global y el de modalidades no se aplicaría en `fused_tokens`.
+            if self.fusion_dropout is not None or self.modality_dropout is not None:
+                raise ValueError(
+                    "Las cabezas auxiliares con dropout de fusión o modalidades necesitan "
+                    "otro contraste"
                 )
 
     def _check_mature_reliability(self):
@@ -741,6 +1032,197 @@ class FinancialConfig:
         ):
             raise ValueError("mature_reliability necesita MatureReliability y mac_online")
 
+    def _check_cross_sectional_rank_memory(self):
+        """Memoria transversal de rango maduro y exclusiones declaradas."""
+        object.__setattr__(
+            self,
+            "cross_sectional_rank_memory",
+            parse_cross_sectional_rank_memory(self.cross_sectional_rank_memory),
+        )
+        if self.cross_sectional_rank_memory is not None:
+            if self.variant != "mac_online":
+                raise ValueError("cross_sectional_rank_memory necesita mac_online")
+            if self.auxiliary_horizons is not None:
+                raise ValueError(
+                    "Las cabezas auxiliares con memoria transversal de rango necesitan otro "
+                    "contraste"
+                )
+
+    # --- memory_cross_sectional_surprise ---
+    def _check_cross_sectional_surprise(self):
+        """Sorpresa relativa transversal (CSOS) y exclusiones declaradas."""
+        from .config import FUSED_INNER_GRADIENT
+
+        object.__setattr__(
+            self,
+            "memory_cross_sectional_surprise",
+            parse_cross_sectional_surprise(self.memory_cross_sectional_surprise),
+        )
+        if self.memory_cross_sectional_surprise is not None:
+            if self.variant != "mac_online":
+                raise ValueError("La sorpresa relativa transversal (CSOS) necesita mac_online")
+            if self.memory_inner_gradient == FUSED_INNER_GRADIENT:
+                raise ValueError(
+                    "La sorpresa relativa transversal (CSOS) es incompatible con "
+                    "memory_inner_gradient='fused_v1'; declare analytic_v1 o autograd_v1"
+                )
+            if self.auxiliary_horizons is not None:
+                raise ValueError(
+                    "Las cabezas auxiliares con operaciones por sesión necesitan otro contraste"
+                )
+
+    # --- fin memory_cross_sectional_surprise ---
+    # --- session_resonator ---
+    def _check_session_resonator(self):
+        """Resonador holográfico transversal de sesión (CSRF) y exclusiones declaradas."""
+        object.__setattr__(
+            self, "session_resonator", parse_session_resonator(self.session_resonator)
+        )
+        if self.session_resonator is not None:
+            if (
+                self.cross_asset_attention is not None
+                or self.asset_groups is not None
+                or self.fractal_shared_operator is not None
+            ):
+                raise ValueError("CSRF es una alternativa a C3, C5 y H4 y no se combina con ellos")
+            if self.auxiliary_horizons is not None:
+                raise ValueError(
+                    "Las cabezas auxiliares con operaciones por sesión necesitan otro contraste"
+                )
+
+    # --- fin session_resonator ---
+    # --- contrastive_memory ---
+    def _check_contrastive_memory(self):
+        """InfoNCE-Titans: memoria asociativa contrastiva por mercado sobre mac_online."""
+        object.__setattr__(
+            self, "contrastive_memory", parse_contrastive_memory(self.contrastive_memory)
+        )
+        if self.contrastive_memory is None:
+            return
+        if self.variant != "mac_online":
+            raise ValueError("contrastive_memory necesita mac_online")
+        if self.auxiliary_horizons is not None:
+            raise ValueError(
+                "Las cabezas auxiliares con memoria contrastiva necesitan otro contraste"
+            )
+
+    # --- fin contrastive_memory ---
+    # --- ic_titans_mlp ---
+    def _check_ic_titans_mlp(self):
+        """Memoria neuronal supervisada por IC con retención anclada y exclusiones."""
+        object.__setattr__(self, "ic_titans_mlp", parse_ic_titans_mlp(self.ic_titans_mlp))
+        if self.ic_titans_mlp is not None:
+            if self.variant != "mac_online":
+                raise ValueError("ic_titans_mlp necesita mac_online")
+            if self.auxiliary_horizons is not None:
+                raise ValueError(
+                    "Las cabezas auxiliares con IC-Titans-MLP necesitan otro contraste"
+                )
+
+    # --- fin ic_titans_mlp ---
+
+    # --- lead_lag_memory ---
+    def _check_lead_lag_memory(self):
+        """Memoria rápida de desfase dinámico entre grupos y exclusiones declaradas."""
+        object.__setattr__(
+            self,
+            "lead_lag_memory",
+            parse_lead_lag_memory(self.lead_lag_memory),
+        )
+        if self.lead_lag_memory is not None:
+            if self.variant != "mac_online":
+                raise ValueError("lead_lag_memory necesita mac_online")
+            if self.auxiliary_horizons is not None:
+                raise ValueError(
+                    "Las cabezas auxiliares con memoria rápida de desfase necesitan otro contraste"
+                )
+
+    # --- fin lead_lag_memory ---
+
+    # --- hopfield_rank_brain ---
+    def _check_hopfield_rank_brain(self):
+        """Cerebro de Hopfield escaso repulsivo y exclusiones declaradas."""
+        object.__setattr__(
+            self, "hopfield_rank_brain", parse_hopfield_rank_brain(self.hopfield_rank_brain)
+        )
+        brain = self.hopfield_rank_brain
+        if brain is not None:
+            if brain.position == "after_technical" and self.technical_branch is None:
+                raise ValueError(
+                    "hopfield_rank_brain después de la rama técnica necesita la rama técnica "
+                    "declarada (technical_branch)"
+                )
+            if (
+                self.cross_asset_attention is not None
+                or self.asset_groups is not None
+                or self.fractal_shared_operator is not None
+            ):
+                raise ValueError("hopfield_rank_brain no se combina con C5, H4 ni C3")
+            if self.auxiliary_horizons is not None:
+                raise ValueError(
+                    "Las cabezas auxiliares con hopfield_rank_brain necesitan otro contraste"
+                )
+
+    # --- fin hopfield_rank_brain ---
+
+    # --- three_factor_consolidation ---
+    def _check_three_factor_consolidation(self):
+        """Consolidación sináptica de tres factores (D3F-LR) y exclusiones declaradas."""
+        object.__setattr__(
+            self,
+            "three_factor_consolidation",
+            parse_three_factor_consolidation(self.three_factor_consolidation),
+        )
+        if self.three_factor_consolidation is not None:
+            if self.variant != "mac_online":
+                raise ValueError("three_factor_consolidation necesita mac_online")
+            if self.auxiliary_horizons is not None:
+                raise ValueError(
+                    "Las cabezas auxiliares con consolidación de tres factores necesitan otro "
+                    "contraste"
+                )
+
+    # --- fin three_factor_consolidation ---
+
+    # --- persistent_session_hologram ---
+    def _check_persistent_session_hologram(self):
+        """Campo holográfico persistente multiescala y exclusiones declaradas."""
+        object.__setattr__(
+            self,
+            "persistent_session_hologram",
+            parse_persistent_session_hologram(self.persistent_session_hologram),
+        )
+        declared = self.persistent_session_hologram
+        if declared is not None:
+            if self.variant != "mac_online":
+                raise ValueError("persistent_session_hologram necesita mac_online")
+            if declared.position == "after_technical" and self.technical_branch is None:
+                raise ValueError(
+                    "El holograma persistente después de la rama técnica necesita la rama "
+                    "técnica declarada (technical_branch)"
+                )
+            if self.auxiliary_horizons is not None:
+                raise ValueError(
+                    "Las cabezas auxiliares con holograma persistente necesitan otro contraste"
+                )
+
+    # --- fin persistent_session_hologram ---
+
+    # --- dual_hemisphere_brain ---
+    def _check_dual_hemisphere_brain(self):
+        """Cerebro holográfico de doble hemisferio con ortogonalización transversal (CODHB)."""
+        object.__setattr__(
+            self,
+            "dual_hemisphere_brain",
+            parse_dual_hemisphere_brain(self.dual_hemisphere_brain),
+        )
+        if self.dual_hemisphere_brain is not None and self.auxiliary_horizons is not None:
+            raise ValueError(
+                "Las cabezas auxiliares con cerebro de doble hemisferio necesitan otro contraste"
+            )
+
+    # --- fin dual_hemisphere_brain ---
+
     def _check_memory_projections(self):
         """Normalización residual y proyecciones de memoria."""
         if type(self.memory_residual_layer_norm) is not bool:
@@ -749,6 +1231,13 @@ class FinancialConfig:
             self.memory_projections not in MEMORY_PROJECTIONS
         ):
             raise ValueError("memory_projections debe ser linear_v1 o " + PAPER_PROJECTIONS)
+        if self.memory_value_normalization is not None and (
+            type(self.memory_value_normalization) is not str
+            or self.memory_value_normalization != VALUE_LAYER_NORM
+        ):
+            raise ValueError(f"memory_value_normalization debe ser None o {VALUE_LAYER_NORM}")
+        if type(self.output_query) is not str or self.output_query not in OUTPUT_QUERIES:
+            raise ValueError(f"output_query debe ser {RAW_OUTPUT_QUERY} o {PROJECTED_OUTPUT_QUERY}")
 
     def _check_runtime_limits(self):
         """Dimensiones, semilla, presupuesto y banco permitido."""
@@ -763,6 +1252,20 @@ class FinancialConfig:
             or self.refinements != 1
         ):
             raise ValueError("Esta pieza admite únicamente banco desactivado y K=1")
+
+    # --- factor_memory ---
+    def _check_factor_memory(self):
+        """Memoria rápida factorizada con blanqueo espectral de sesión (LFM-SW)."""
+        object.__setattr__(self, "factor_memory", parse_factor_memory(self.factor_memory))
+        if self.factor_memory is not None:
+            if self.factor_memory.factors >= self.hidden_size:
+                raise ValueError("factor_memory.factors debe ser menor que hidden_size")
+            if self.auxiliary_horizons is not None:
+                raise ValueError(
+                    "Las cabezas auxiliares con memoria factorial necesitan otro contraste"
+                )
+
+    # --- fin factor_memory ---
 
     def _check_axial_time_region(self):
         """C2 sobre mac_online, sin el operador regional, C1, C6, PT6 ni la red holográfica."""
@@ -885,6 +1388,10 @@ class FinancialConfig:
         # Igual que gate_bias: solo aparece si se declara y figura en las cuatro variantes.
         if self.memory_inner_gradient != AUTOGRAD_INNER_GRADIENT:
             result.update(memory_inner_gradient=self.memory_inner_gradient)
+        if self.memory_value_normalization is not None:
+            result.update(memory_value_normalization=self.memory_value_normalization)
+        if self.output_query != RAW_OUTPUT_QUERY:
+            result.update(output_query=self.output_query)
         if self.fusion_dropout is not None:
             result.update(dropout=float(self.fusion_dropout))
         if self.fusion_dropout is not None or self.modality_dropout is not None:
@@ -899,14 +1406,15 @@ class FinancialConfig:
                 )
             )
         if self.removed_modalities is not None:
-            result.update(
-                removed_modalities=dict(
-                    name=REMOVED_MODALITIES,
-                    names=list(self.removed_modalities),
-                    route="presence_bit_false_and_zero_inputs",
-                    phase="fit_and_emission",
-                )
+            removed = dict(
+                name=REMOVED_MODALITIES,
+                names=list(self.removed_modalities),
+                route="presence_bit_false_and_zero_inputs",
+                phase="fit_and_emission",
             )
+            if any(name in self.removed_modalities for name in CHART_SUBBLOCKS):
+                removed["chart_technical_columns"] = self._chart_technical_columns()
+            result.update(removed_modalities=removed)
         if self.technical_branch is not None:
             result.update(technical_branch=self.technical_branch.identity())
         if self.memory_projections != "linear_v1":
@@ -949,14 +1457,52 @@ class FinancialConfig:
             if self.asset_groups.mode == CURRENT_SECTOR:
                 groups.update(sectors=self.sector_map.identity())
             result.update(asset_groups=groups)
+        if self.session_hologram is not None:
+            result.update(session_hologram=self.session_hologram.identity())
+        # --- session_resonator ---
+        if self.session_resonator is not None:
+            result.update(session_resonator=self.session_resonator.identity())
+        # --- fin session_resonator ---
+        # --- hopfield_rank_brain ---
+        if self.hopfield_rank_brain is not None:
+            result.update(hopfield_rank_brain=self.hopfield_rank_brain.identity())
+        # --- fin hopfield_rank_brain ---
+        # --- dual_hemisphere_brain ---
+        if self.dual_hemisphere_brain is not None:
+            result.update(dual_hemisphere_brain=self.dual_hemisphere_brain.identity())
+        # --- fin dual_hemisphere_brain ---
         if self.auxiliary_horizons is not None:
             result.update(auxiliary_horizons=self.auxiliary_horizons.identity())
         if self.mature_reliability is not None:
             result.update(mature_reliability=self.mature_reliability.identity())
+        if self.cross_sectional_rank_memory is not None:
+            result.update(cross_sectional_rank_memory=self.cross_sectional_rank_memory.identity())
+        # --- ic_titans_mlp ---
+        if self.ic_titans_mlp is not None:
+            result.update(ic_titans_mlp=self.ic_titans_mlp.identity())
+        # --- fin ic_titans_mlp ---
+        # --- lead_lag_memory ---
+        if self.lead_lag_memory is not None:
+            result.update(lead_lag_memory=self.lead_lag_memory.identity())
+        # --- fin lead_lag_memory ---
+        # --- three_factor_consolidation ---
+        if self.three_factor_consolidation is not None:
+            result.update(three_factor_consolidation=self.three_factor_consolidation.identity())
+        # --- fin three_factor_consolidation ---
+        # --- persistent_session_hologram ---
+        if self.persistent_session_hologram is not None:
+            result.update(persistent_session_hologram=self.persistent_session_hologram.identity())
+        # --- fin persistent_session_hologram ---
         if self.memory_huber is not None:
             result.update(memory_huber=self.memory_huber.identity())
         if self.memory_time_scales is not None:
             result.update(memory_time_scales=self.memory_time_scales.identity())
+        # --- memory_cross_sectional_surprise ---
+        if self.memory_cross_sectional_surprise is not None:
+            result.update(
+                memory_cross_sectional_surprise=self.memory_cross_sectional_surprise.identity()
+            )
+        # --- fin memory_cross_sectional_surprise ---
         if self.differential_attention is not None:
             result.update(differential_attention=differential_identity())
         # PT4 solo aparece si se declara. El control sectorial guarda la huella del reparto.
@@ -995,6 +1541,15 @@ class FinancialConfig:
                     scale="one_plus_tanh_of_linear_macro_block",
                 )
             )
+        if self.modality_gating == PRESENCE_SOFTMAX:
+            result.update(
+                modality_gating=dict(
+                    name=PRESENCE_SOFTMAX,
+                    parameters=modality_gating_parameters(self.hidden_size),
+                    initial="zero_logits_uniform_over_present_modalities",
+                    scale="modality_count_times_masked_softmax",
+                )
+            )
         # #836: solo aparecen si se declaran, así que las identidades anteriores no cambian.
         if self.learning_scale is not None:
             result.update(learning_scale=self.learning_scale.identity())
@@ -1002,6 +1557,14 @@ class FinancialConfig:
             result.update(
                 reference_encoder=dict(kind=self.reference_encoder, contract=REFERENCE_CONTRACT)
             )
+        # --- factor_memory ---
+        if self.factor_memory is not None:
+            result.update(factor_memory=self.factor_memory.identity())
+        # --- fin factor_memory ---
+        # --- contrastive_memory ---
+        if self.contrastive_memory is not None:
+            result.update(contrastive_memory=self.contrastive_memory.identity())
+        # --- fin contrastive_memory ---
         return result
 
 
@@ -1035,11 +1598,44 @@ class PreparedDecisions:
     outputs: torch.Tensor | None = None
     # Solo con el control de sorpresa de #791: [flujos] pérdida asociativa sin grafo.
     surprise: torch.Tensor | None = None
+    # Solo con CRRM: claves transversales [flujos, dim] emitidas en este instante.
+    rank_memory_keys: torch.Tensor | None = None
+    # --- factor_memory ---
+    # Solo con LFM-SW: base factorial actualizada por mercado tras la sesión.
+    next_factor_memory: object = None
+    # --- fin factor_memory ---
+    # --- contrastive_memory ---
+    # Solo con memoria contrastiva transversal: estado con los tokens pendientes de su sesión.
+    next_contrastive: object = None
+    # --- fin contrastive_memory ---
+    # --- ic_titans_mlp ---
+    ic_mlp_keys: torch.Tensor | None = None
+    # --- fin ic_titans_mlp ---
+    # --- lead_lag_memory ---
+    lead_lag_memberships: torch.Tensor | None = None
+    # --- fin lead_lag_memory ---
+    # --- three_factor_consolidation ---
+    three_factor_emission: tuple[torch.Tensor, torch.Tensor, torch.Tensor] | None = None
+    # --- fin three_factor_consolidation ---
+    # --- persistent_session_hologram ---
+    next_persistent_hologram: object = None
+    # --- fin persistent_session_hologram ---
 
 
 @dataclass(frozen=True)
 class RegionalPreparedDecisions(PreparedDecisions):
     regional_trace: dict | None = None
+
+
+_DTYPE_STR_CACHE: dict[torch.dtype, str] = {}
+
+
+def _dtype_str(dtype):
+    value = _DTYPE_STR_CACHE.get(dtype)
+    if value is None:
+        value = torch.empty((), dtype=dtype).numpy().dtype.str
+        _DTYPE_STR_CACHE[dtype] = value
+    return value
 
 
 def _tensor_digest(value):
@@ -1099,6 +1695,36 @@ class FinancialPredictor(nn.Module):
         # C vuelve a calcular la escritura de MAC sin la señal de #791.
         if local_control is not None and config.mature_reliability is not None:
             raise ValueError("La fiabilidad madura no se combina con el control local")
+        if local_control is not None and config.cross_sectional_rank_memory is not None:
+            raise ValueError("La memoria transversal de rango no se combina con el control local")
+        # --- memory_cross_sectional_surprise ---
+        if local_control is not None and config.memory_cross_sectional_surprise is not None:
+            raise ValueError(
+                "La sorpresa relativa transversal (CSOS) no se combina con el control local"
+            )
+        # --- fin memory_cross_sectional_surprise ---
+        # --- contrastive_memory ---
+        if local_control is not None and config.contrastive_memory is not None:
+            raise ValueError("La memoria contrastiva no se combina con el control local C")
+        # --- fin contrastive_memory ---
+        # --- ic_titans_mlp ---
+        if local_control is not None and config.ic_titans_mlp is not None:
+            raise ValueError("IC-Titans-MLP no se combina con el control local")
+        # --- fin ic_titans_mlp ---
+        # --- lead_lag_memory ---
+        if local_control is not None and config.lead_lag_memory is not None:
+            raise ValueError(
+                "La memoria rápida de desfase entre grupos no se combina con el control local"
+            )
+        # --- fin lead_lag_memory ---
+        # --- three_factor_consolidation ---
+        if local_control is not None and config.three_factor_consolidation is not None:
+            raise ValueError("La consolidación de tres factores no se combina con el control local")
+        # --- fin three_factor_consolidation ---
+        # --- persistent_session_hologram ---
+        if local_control is not None and config.persistent_session_hologram is not None:
+            raise ValueError("El holograma persistente no se combina con el control local")
+        # --- fin persistent_session_hologram ---
         # El presupuesto de C está contrastado con el núcleo sin las variantes de #786.
         if local_control is not None and (
             config.memory_huber is not None
@@ -1194,6 +1820,12 @@ class FinancialPredictor(nn.Module):
             if config.presence_modulation == WIDE_FUSION
             else None
         )
+        # Compuerta de modalidades enmascarada por presencia: arranca en cero sin consumir RNG.
+        self.modality_gating = (
+            PresenceModalityGate(config.hidden_size, dtype=dtype)
+            if config.modality_gating == PRESENCE_SOFTMAX
+            else None
+        )
         self.regional_fusion = (
             RegionalFusion(
                 config.hidden_size,
@@ -1260,6 +1892,7 @@ class FinancialPredictor(nn.Module):
                     gate_bias=config.gate_bias,
                     residual_layer_norm=config.memory_residual_layer_norm,
                     key_competition=config.memory_key_competition,
+                    value_normalization=config.memory_value_normalization,
                 ),
                 sector_map=config.sector_map,
             )
@@ -1291,7 +1924,11 @@ class FinancialPredictor(nn.Module):
                         bank_readout=config.memory_bank_readout,
                         huber=config.memory_huber,
                         time_scales=config.memory_time_scales,
+                        # --- memory_cross_sectional_surprise ---
+                        cross_sectional_surprise=config.memory_cross_sectional_surprise,
+                        # --- fin memory_cross_sectional_surprise ---
                         inner_gradient=config.memory_inner_gradient,
+                        value_normalization=config.memory_value_normalization,
                     ),
                     heads=4,
                     persistent_tokens=config.persistent_tokens,
@@ -1300,6 +1937,7 @@ class FinancialPredictor(nn.Module):
                     parameter_seed=config.seed,
                     attention_layout=config.attention_layout,
                     differential_attention=config.differential_attention,
+                    output_query=config.output_query,
                 ),
                 dtype=dtype,
             )
@@ -1342,12 +1980,112 @@ class FinancialPredictor(nn.Module):
             if config.technical_branch is not None
             else None
         )
+        # WP11: usa su propio generador derivado y puerta inicial a cero sobre W_out no nula.
+        self.session_hologram = (
+            HolographicSessionInterferometer(
+                config.hidden_size, config.session_hologram, seed=config.seed, dtype=dtype
+            )
+            if config.session_hologram is not None
+            else None
+        )
+        # --- session_resonator ---
+        # CSRF usa su propio generador derivado de la semilla y arranca con ganancia nula.
+        self.session_resonator = (
+            SessionResonator(
+                config.hidden_size, config.session_resonator, seed=config.seed, dtype=dtype
+            )
+            if config.session_resonator is not None
+            else None
+        )
+        # --- fin session_resonator ---
+        # --- hopfield_rank_brain ---
+        # RSHRB usa su propio generador derivado y puerta inicial a cero sobre W_out no nula.
+        self.hopfield_rank_brain = (
+            RepulsiveSparseHopfieldRankBrain(
+                config.hidden_size, config.hopfield_rank_brain, seed=config.seed, dtype=dtype
+            )
+            if config.hopfield_rank_brain is not None
+            else None
+        )
+        # --- fin hopfield_rank_brain ---
+        # --- persistent_session_hologram ---
+        self.persistent_session_hologram = (
+            PersistentSessionHologram(
+                config.hidden_size,
+                config.persistent_session_hologram,
+                seed=config.seed,
+                dtype=dtype,
+            )
+            if config.persistent_session_hologram is not None
+            else None
+        )
+        # --- fin persistent_session_hologram ---
+        # --- dual_hemisphere_brain ---
+        self.dual_hemisphere_brain = (
+            DualHemisphereBrain(
+                config.hidden_size,
+                config.inputs.dimensions,
+                config.dual_hemisphere_brain,
+                seed=config.seed,
+                dtype=dtype,
+            )
+            if config.dual_hemisphere_brain is not None
+            else None
+        )
+        # --- fin dual_hemisphere_brain ---
         # #791 empieza con pesos nulos y no consume ningún generador.
         self.reliability_gates = (
             ReliabilityGates(config.mature_reliability, dtype=dtype)
             if config.mature_reliability is not None
             else None
         )
+        # CRRM usa su propio generador derivado y empieza con salida nula.
+        self.cross_sectional_rank_memory = (
+            CrossSectionalRankMemory(
+                config.hidden_size,
+                config.cross_sectional_rank_memory,
+                seed=config.seed,
+                dtype=dtype,
+            )
+            if config.cross_sectional_rank_memory is not None
+            else None
+        )
+        # --- ic_titans_mlp ---
+        self.ic_titans_mlp = (
+            ICTitansMLP(
+                config.hidden_size,
+                config.ic_titans_mlp,
+                seed=config.seed,
+                dtype=dtype,
+            )
+            if config.ic_titans_mlp is not None
+            else None
+        )
+        # --- fin ic_titans_mlp ---
+        # --- lead_lag_memory ---
+        self.lead_lag_memory = (
+            LeadLagMemory(
+                config.hidden_size,
+                config.lead_lag_memory,
+                seed=config.seed,
+                dtype=dtype,
+            )
+            if config.lead_lag_memory is not None
+            else None
+        )
+        # --- fin lead_lag_memory ---
+        # --- three_factor_consolidation ---
+        self.three_factor_consolidation = (
+            ThreeFactorConsolidation(
+                config.hidden_size,
+                config.three_factor_consolidation,
+                seed=config.seed,
+                dtype=dtype,
+            )
+            if config.three_factor_consolidation is not None
+            else None
+        )
+        # --- fin three_factor_consolidation ---
         # F5 usa su propio generador derivado de la semilla, como PT6.
         self.auxiliary_heads = (
             AuxiliaryHeads(
@@ -1356,6 +2094,26 @@ class FinancialPredictor(nn.Module):
             if config.auxiliary_horizons is not None
             else None
         )
+        # --- factor_memory ---
+        # LFM-SW deriva su semilla de la del predictor y arranca con proyección de salida nula.
+        self.factor_memory = (
+            LowRankFactorMemory(
+                config.hidden_size, config.factor_memory, seed=config.seed, dtype=dtype
+            )
+            if config.factor_memory is not None
+            else None
+        )
+        # --- fin factor_memory ---
+        # --- contrastive_memory ---
+        # Idea 5 deriva su semilla de la del predictor y no consume el generador global.
+        self.contrastive_memory = (
+            ContrastiveMemory(
+                config.hidden_size, config.contrastive_memory, seed=config.seed, dtype=dtype
+            )
+            if config.contrastive_memory is not None
+            else None
+        )
+        # --- fin contrastive_memory ---
         self.to(device=device, dtype=dtype)
         self._seal_parameters()
         self.register_load_state_dict_post_hook(self._after_load)
@@ -1363,12 +2121,50 @@ class FinancialPredictor(nn.Module):
     @property
     def session_level(self):
         """Si alguna operación necesita todas las filas de la sesión en el mismo bloque."""
+        # --- factor_memory ---
+        if self.factor_memory is not None:
+            return True
+        # --- fin factor_memory ---
+        # --- ic_titans_mlp ---
+        if self.ic_titans_mlp is not None:
+            return True
+        # --- fin ic_titans_mlp ---
+        # --- session_resonator ---
+        if self.session_resonator is not None:
+            return True
+        # --- fin session_resonator ---
+        # --- lead_lag_memory ---
+        if self.lead_lag_memory is not None:
+            return True
+        # --- fin lead_lag_memory ---
+        # --- hopfield_rank_brain ---
+        if self.hopfield_rank_brain is not None:
+            return True
+        # --- fin hopfield_rank_brain ---
+        # --- three_factor_consolidation ---
+        if self.three_factor_consolidation is not None:
+            return True
+        # --- fin three_factor_consolidation ---
+        # --- persistent_session_hologram ---
+        if self.persistent_session_hologram is not None:
+            return True
+        # --- fin persistent_session_hologram ---
         objective = self.output_objective
+        # --- memory_cross_sectional_surprise ---
+        if self.config.memory_cross_sectional_surprise is not None:
+            return True
+        # --- fin memory_cross_sectional_surprise ---
+        # --- dual_hemisphere_brain ---
+        if self.dual_hemisphere_brain is not None:
+            return True
+        # --- fin dual_hemisphere_brain ---
         return (
             self.config.session_rank_inputs is not None
             or self.cross_asset_attention is not None
+            or self.cross_sectional_rank_memory is not None
             or self.asset_groups is not None
             or self.fractal_shared_operator is not None
+            or self.session_hologram is not None
             or (objective is not None and objective.session_level)
             or (self.technical_branch is not None and self.technical_branch.session_level)
         )
@@ -1424,6 +2220,9 @@ class FinancialPredictor(nn.Module):
         self._holographic_component()
         self._axial_component()
         self._fractal_component()
+        # --- contrastive_memory ---
+        self._contrastive_component()
+        # --- fin contrastive_memory ---
         execution = self._regional_execution_component()
         if type(execution) is RegionalHierarchy:
             execution.validate_payload(execution.state_dict(), "")
@@ -1497,11 +2296,51 @@ class FinancialPredictor(nn.Module):
             raise ValueError("C3 no corresponde a la configuración declarada")
         return module
 
+    # --- contrastive_memory ---
+    def _contrastive_component(self):
+        declared, module = self.config.contrastive_memory, self.contrastive_memory
+        if declared is None and module is None:
+            return None
+        if (
+            declared is None
+            or type(module) is not ContrastiveMemory
+            or module.config != declared
+            or module.hidden_size != self.config.hidden_size
+            or module.out_projection.weight.device != self.head.weight.device
+            or module.out_projection.weight.dtype != self.head.weight.dtype
+        ):
+            raise ValueError("La memoria contrastiva no corresponde a la configuración declarada")
+        return module
+
+    # --- fin contrastive_memory ---
+
     def _parameter_digest(self):
-        fingerprints = {
-            name: _tensor_digest(value)
-            for name, value in (*self.named_parameters(), *self.named_buffers())
-        }
+        items = (*self.named_parameters(), *self.named_buffers())
+        by_device: dict[torch.device, list] = {}
+        fingerprints = {}
+        for name, value in items:
+            if value.is_cuda and value.numel() > 0:
+                flat = value.detach().contiguous().reshape(-1).view(torch.uint8)
+                by_device.setdefault(value.device, []).append(
+                    (name, tuple(value.shape), _dtype_str(value.dtype), flat)
+                )
+            else:
+                fingerprints[name] = _tensor_digest(value)
+        for device, entries in by_device.items():
+            # Empaquetar todos los parámetros CUDA en un único búfer reduce 63 llamadas
+            # cudaMemcpyAsync (que serializan por IPC bajo MPS) a 1 sola copia D2H.
+            packed = entries[0][3] if len(entries) == 1 else torch.cat([e[3] for e in entries])
+            buf = torch.empty(packed.numel(), dtype=torch.uint8, pin_memory=True)
+            buf.copy_(packed, non_blocking=True)
+            torch.cuda.current_stream(device).synchronize()
+            raw = memoryview(buf.numpy())
+            offset = 0
+            for name, shape, dtype_str, flat in entries:
+                nbytes = flat.numel()
+                digest = hashlib.sha256(str((shape, dtype_str)).encode())
+                digest.update(raw[offset : offset + nbytes])
+                fingerprints[name] = digest.hexdigest()
+                offset += nbytes
         return hashlib.sha256(canonical(fingerprints).encode()).hexdigest()
 
     def _regional_execution_component(self):
@@ -1832,12 +2671,14 @@ class FinancialPredictor(nn.Module):
         ):
             raise ValueError("Los flujos deben ser identificadores únicos de mercado y activo")
 
-    def _validate_state(self, state, *, device=None):
+    def _validate_state(self, state, *, device=None, defer_slots=None):
         self._validate_cursor(state)
         if self.mac:
             if not isinstance(state.mac, MACState):
                 raise ValueError("Falta el estado MAC identificado")
-            self.mac.memory.validate_state(state.mac.memory, device=device)
+            self.mac.memory.validate_state(
+                state.mac.memory, device=device, defer_slots=defer_slots
+            )
             if state.mac.config_id != self.mac.config.fingerprint():
                 raise ValueError("El contrato MAC del estado no coincide")
             self.mac.validate_query_window(state.mac, device=device)
@@ -1953,6 +2794,313 @@ class FinancialPredictor(nn.Module):
         if self.session_context is None:
             raise ValueError("El predictor no declara contexto de sesión")
 
+    def _require_rank_memory(self):
+        if self.cross_sectional_rank_memory is None:
+            raise ValueError("El predictor no declara memoria transversal de rango")
+
+    def initial_rank_memory(self):
+        """Estado inicial vacío de CRRM al empezar un recorrido."""
+        self._require_rank_memory()
+        return self.cross_sectional_rank_memory.initial_state(self._parameter_id)
+
+    def stage_rank_memory(
+        self, state, flow_ids, prediction_at, keys, issued_predictions, *, differentiable=False
+    ):
+        """Registrar claves emitidas y predicciones pendientes de maduración."""
+        self._require_rank_memory()
+        self.cross_sectional_rank_memory.validate_state(state, self._parameter_id)
+        return self.cross_sectional_rank_memory.stage(
+            state, flow_ids, prediction_at, keys, issued_predictions, differentiable=differentiable
+        )
+
+    def settle_rank_memory(self, state, matured, *, differentiable=False, train=True):
+        """Actualizar CRRM con etiquetas ya maduras en orden canónico."""
+        self._require_rank_memory()
+        self.cross_sectional_rank_memory.validate_state(state, self._parameter_id)
+        return self.cross_sectional_rank_memory.settle(
+            state, matured, differentiable=differentiable, train=train
+        )
+
+    def detach_rank_memory(self, state, parameter_id=None):
+        """Cortar el grafo de CRRM en la barrera de truncamiento y actualizar huella."""
+        self._require_rank_memory()
+        return self.cross_sectional_rank_memory.detach_state(
+            state, parameter_id or self._parameter_id
+        )
+
+    def export_rank_memory(self, state):
+        self._require_rank_memory()
+        self.cross_sectional_rank_memory.validate_state(state, self._parameter_id)
+        return self.cross_sectional_rank_memory.export_state(state)
+
+    def restore_rank_memory(self, payload):
+        self._require_rank_memory()
+        return self.cross_sectional_rank_memory.restore_state(
+            payload, self._parameter_id, device=self.head.weight.device
+        )
+
+    # --- factor_memory ---
+    def initial_factor_memory(self, *, differentiable=False):
+        """Estado factorial inicial por mercado de LFM-SW al empezar un recorrido."""
+        self._require_factor_memory()
+        return self.factor_memory.initial_state(self._parameter_id, differentiable=differentiable)
+
+    def detach_factor_memory(self, factor_memory, parameter_id=None):
+        """Cortar el grafo de la base factorial en una barrera de truncamiento."""
+        self._require_factor_memory()
+        return self.factor_memory.detach_state(factor_memory, parameter_id or self._parameter_id)
+
+    def export_factor_memory(self, factor_memory):
+        """Exportar copias CPU sin grafo del estado factorial para puntos de control."""
+        self._require_factor_memory()
+        return self.factor_memory.export_state(factor_memory, self._parameter_id)
+
+    def restore_factor_memory(self, payload):
+        """Restaurar el estado factorial validado en el dispositivo del predictor."""
+        self._require_factor_memory()
+        return self.factor_memory.restore_state(
+            payload, self._parameter_id, device=self.head.weight.device
+        )
+
+    def _require_factor_memory(self):
+        if self.factor_memory is None:
+            raise ValueError("El predictor no declara memoria factorial")
+
+    # --- fin factor_memory ---
+    # --- contrastive_memory ---
+    def initial_contrastive_memory(self, *, differentiable=False):
+        """Estado inicial por mercado de la memoria contrastiva InfoNCE-Titans."""
+        self._require_contrastive()
+        return self.contrastive_memory.initial_state(
+            self._parameter_id, differentiable=differentiable
+        )
+
+    def commit_contrastive_memory(self, state, *, differentiable=False):
+        """Confirmar las sesiones pendientes de la memoria contrastiva tras emitirlas."""
+        self._require_contrastive()
+        self.contrastive_memory.validate(state, self._parameter_id)
+        return self.contrastive_memory.commit(state, differentiable=differentiable)
+
+    def detach_contrastive_memory(self, state, parameter_id=None, *, reattach_initial=False):
+        self._require_contrastive()
+        return self.contrastive_memory.detach(
+            state, parameter_id or self._parameter_id, reattach_initial=reattach_initial
+        )
+
+    def export_contrastive_memory(self, state):
+        self._require_contrastive()
+        self.contrastive_memory.validate(state, self._parameter_id)
+        return self.contrastive_memory.export_state(state)
+
+    def restore_contrastive_memory(self, payload):
+        self._require_contrastive()
+        return self.contrastive_memory.restore_state(
+            payload, self._parameter_id, device=self.head.weight.device
+        )
+
+    def _require_contrastive(self):
+        if self.contrastive_memory is None:
+            raise ValueError("El predictor no declara memoria contrastiva")
+
+    # --- fin contrastive_memory ---
+    # --- ic_titans_mlp ---
+    def _require_ic_mlp_memory(self):
+        if self.ic_titans_mlp is None:
+            raise ValueError("El predictor no declara memoria IC-Titans-MLP")
+
+    def initial_ic_mlp_memory(self):
+        """Estado inicial vacío de IC-Titans-MLP al empezar un recorrido."""
+        self._require_ic_mlp_memory()
+        return self.ic_titans_mlp.initial_state(self._parameter_id)
+
+    def stage_ic_mlp_memory(self, state, flow_ids, prediction_at, keys, *, differentiable=False):
+        """Registrar claves emitidas pendientes de maduración para IC-Titans-MLP."""
+        self._require_ic_mlp_memory()
+        self.ic_titans_mlp.validate_state(state, self._parameter_id)
+        return self.ic_titans_mlp.stage(
+            state, flow_ids, prediction_at, keys, differentiable=differentiable
+        )
+
+    def settle_ic_mlp_memory(self, state, matured, *, differentiable=False, train=True):
+        """Actualizar IC-Titans-MLP con etiquetas ya maduras en orden canónico."""
+        self._require_ic_mlp_memory()
+        self.ic_titans_mlp.validate_state(state, self._parameter_id)
+        return self.ic_titans_mlp.settle(state, matured, differentiable=differentiable, train=train)
+
+    def detach_ic_mlp_memory(self, state, parameter_id=None):
+        """Cortar el grafo de IC-Titans-MLP en la barrera de truncamiento."""
+        self._require_ic_mlp_memory()
+        return self.ic_titans_mlp.detach_state(state, parameter_id or self._parameter_id)
+
+    def export_ic_mlp_memory(self, state):
+        self._require_ic_mlp_memory()
+        self.ic_titans_mlp.validate_state(state, self._parameter_id)
+        return self.ic_titans_mlp.export_state(state)
+
+    def restore_ic_mlp_memory(self, payload):
+        self._require_ic_mlp_memory()
+        return self.ic_titans_mlp.restore_state(
+            payload, self._parameter_id, device=self.head.weight.device
+        )
+
+    # --- fin ic_titans_mlp ---
+
+    # --- lead_lag_memory ---
+    def _require_lead_lag_memory(self):
+        if self.lead_lag_memory is None:
+            raise ValueError("El predictor no declara memoria rápida de desfase entre grupos")
+
+    def initial_lead_lag_memory(self):
+        """Estado inicial vacío de LL-FM al empezar un recorrido."""
+        self._require_lead_lag_memory()
+        return self.lead_lag_memory.initial_state(self._parameter_id)
+
+    def stage_lead_lag_memory(
+        self,
+        state,
+        flow_ids,
+        prediction_at,
+        memberships,
+        issued_predictions,
+        *,
+        differentiable=False,
+    ):
+        """Registrar pertenencias emitidas y predicciones pendientes de maduración."""
+        self._require_lead_lag_memory()
+        self.lead_lag_memory.validate_state(state, self._parameter_id)
+        return self.lead_lag_memory.stage(
+            state,
+            flow_ids,
+            prediction_at,
+            memberships,
+            issued_predictions,
+            differentiable=differentiable,
+        )
+
+    def settle_lead_lag_memory(self, state, matured, *, differentiable=False, train=True):
+        """Actualizar LL-FM con etiquetas ya maduras en orden canónico."""
+        self._require_lead_lag_memory()
+        self.lead_lag_memory.validate_state(state, self._parameter_id)
+        return self.lead_lag_memory.settle(
+            state, matured, differentiable=differentiable, train=train
+        )
+
+    def detach_lead_lag_memory(self, state, parameter_id=None):
+        """Cortar el grafo de LL-FM en la barrera de truncamiento y actualizar huella."""
+        self._require_lead_lag_memory()
+        return self.lead_lag_memory.detach_state(state, parameter_id or self._parameter_id)
+
+    def export_lead_lag_memory(self, state):
+        self._require_lead_lag_memory()
+        self.lead_lag_memory.validate_state(state, self._parameter_id)
+        return self.lead_lag_memory.export_state(state)
+
+    def restore_lead_lag_memory(self, payload):
+        self._require_lead_lag_memory()
+        return self.lead_lag_memory.restore_state(
+            payload, self._parameter_id, device=self.head.weight.device
+        )
+
+    # --- fin lead_lag_memory ---
+
+    # --- three_factor_consolidation ---
+    def _require_three_factor(self):
+        if self.three_factor_consolidation is None:
+            raise ValueError("El predictor no declara consolidación de tres factores")
+
+    def initial_three_factor_state(self):
+        """Estado inicial vacío de D3F-LR al empezar un recorrido."""
+        self._require_three_factor()
+        return self.three_factor_consolidation.initial_state(self._parameter_id)
+
+    def stage_three_factor_state(
+        self,
+        state,
+        flow_ids,
+        prediction_at,
+        emission,
+        issued_predictions,
+        *,
+        record_pending=True,
+        differentiable=False,
+    ):
+        """Avanzar trazas de elegibilidad y registrar emisiones pendientes de maduración."""
+        self._require_three_factor()
+        self.three_factor_consolidation.validate_state(state, self._parameter_id)
+        return self.three_factor_consolidation.stage(
+            state,
+            flow_ids,
+            prediction_at,
+            emission,
+            issued_predictions,
+            record_pending=record_pending,
+            differentiable=differentiable,
+        )
+
+    def settle_three_factor_state(self, state, matured, *, differentiable=False, train=True):
+        """Consolidar D3F-LR con etiquetas ya maduras en orden canónico."""
+        self._require_three_factor()
+        self.three_factor_consolidation.validate_state(state, self._parameter_id)
+        return self.three_factor_consolidation.settle(
+            state, matured, differentiable=differentiable, train=train
+        )
+
+    def detach_three_factor_state(self, state, parameter_id=None):
+        """Cortar el grafo de D3F-LR en la barrera de truncamiento y actualizar huella."""
+        self._require_three_factor()
+        return self.three_factor_consolidation.detach_state(
+            state, parameter_id or self._parameter_id
+        )
+
+    def export_three_factor_state(self, state):
+        self._require_three_factor()
+        self.three_factor_consolidation.validate_state(state, self._parameter_id)
+        return self.three_factor_consolidation.export_state(state)
+
+    def restore_three_factor_state(self, payload):
+        self._require_three_factor()
+        return self.three_factor_consolidation.restore_state(
+            payload, self._parameter_id, device=self.head.weight.device
+        )
+
+    # --- fin three_factor_consolidation ---
+
+    # --- persistent_session_hologram ---
+    def _require_persistent_hologram(self):
+        if self.persistent_session_hologram is None:
+            raise ValueError("El predictor no declara holograma persistente de sesión")
+
+    def initial_persistent_hologram(self):
+        """Estado inicial vacío de MPSH al empezar un recorrido o una fase."""
+        self._require_persistent_hologram()
+        return self.persistent_session_hologram.initial_state(self._parameter_id)
+
+    def commit_persistent_hologram(self, state, *, differentiable=False):
+        """Confirmar las sesiones pendientes de MPSH al cerrar su emisión."""
+        self._require_persistent_hologram()
+        self.persistent_session_hologram.validate_state(state, self._parameter_id)
+        return self.persistent_session_hologram.commit(state, differentiable=differentiable)
+
+    def detach_persistent_hologram(self, state, parameter_id=None):
+        """Cortar el grafo de MPSH en la barrera de truncamiento y actualizar huella."""
+        self._require_persistent_hologram()
+        return self.persistent_session_hologram.detach_state(
+            state, parameter_id or self._parameter_id
+        )
+
+    def export_persistent_hologram(self, state):
+        self._require_persistent_hologram()
+        self.persistent_session_hologram.validate_state(state, self._parameter_id)
+        return self.persistent_session_hologram.export_state(state)
+
+    def restore_persistent_hologram(self, payload):
+        self._require_persistent_hologram()
+        return self.persistent_session_hologram.restore_state(
+            payload, self._parameter_id, device=self.head.weight.device
+        )
+
+    # --- fin persistent_session_hologram ---
+
     def _program_fusion(self, price, batch, context, selection):
         """Consultar el prefijo confirmado y preparar una sola escritura del token final."""
         execution = None
@@ -2016,6 +3164,14 @@ class FinancialPredictor(nn.Module):
             # Los bloques por familia leen las entradas y los codificadores de la referencia.
             def modulation(blocks, presence):
                 return self.holographic_network(blocks, presence, inputs, self.encoders)
+        elif self.modality_gating is not None:
+            if modulation is None:
+                modulation = self.modality_gating
+            else:
+                inner = modulation
+
+                def modulation(blocks, presence):
+                    return self.modality_gating(inner(blocks, presence), presence)
 
         return fuse_modalities(
             price,
@@ -2090,6 +3246,13 @@ class FinancialPredictor(nn.Module):
             raise ValueError(
                 "Los horizontes auxiliares con modalidades retiradas necesitan otro contraste"
             )
+        if self.training and (
+            self.config.fusion_dropout is not None or self.config.modality_dropout is not None
+        ):
+            raise ValueError(
+                "Los horizontes auxiliares con dropout de fusión o modalidades no se calculan "
+                "fila a fila"
+            )
         if self.learning_scaler is not None:
             inputs = self.learning_scaler(inputs, presence)
         price, checks = self.price_encoder.encode_last(gate_price_window(inputs["prices"]))
@@ -2111,6 +3274,25 @@ class FinancialPredictor(nn.Module):
         context_selection=None,
         session_complete=False,
         reliability=None,
+        rank_memory=None,
+        # --- factor_memory ---
+        factor_memory=None,
+        # --- fin factor_memory ---
+        # --- contrastive_memory ---
+        contrastive=None,
+        # --- fin contrastive_memory ---
+        # --- ic_titans_mlp ---
+        ic_mlp_memory=None,
+        # --- fin ic_titans_mlp ---
+        # --- lead_lag_memory ---
+        lead_lag_memory=None,
+        # --- fin lead_lag_memory ---
+        # --- three_factor_consolidation ---
+        three_factor_state=None,
+        # --- fin three_factor_consolidation ---
+        # --- persistent_session_hologram ---
+        persistent_hologram=None,
+        # --- fin persistent_session_hologram ---
     ):
         """Predecir un bloque desde el estado de sus flujos y proponer el estado siguiente.
 
@@ -2131,6 +3313,25 @@ class FinancialPredictor(nn.Module):
                 context_selection=context_selection,
                 session_complete=session_complete,
                 reliability=reliability,
+                rank_memory=rank_memory,
+                # --- factor_memory ---
+                factor_memory=factor_memory,
+                # --- fin factor_memory ---
+                # --- contrastive_memory ---
+                contrastive=contrastive,
+                # --- fin contrastive_memory ---
+                # --- ic_titans_mlp ---
+                ic_mlp_memory=ic_mlp_memory,
+                # --- fin ic_titans_mlp ---
+                # --- lead_lag_memory ---
+                lead_lag_memory=lead_lag_memory,
+                # --- fin lead_lag_memory ---
+                # --- three_factor_consolidation ---
+                three_factor_state=three_factor_state,
+                # --- fin three_factor_consolidation ---
+                # --- persistent_session_hologram ---
+                persistent_hologram=persistent_hologram,
+                # --- fin persistent_session_hologram ---
             )
 
     def _prepare(
@@ -2145,11 +3346,41 @@ class FinancialPredictor(nn.Module):
         context_selection=None,
         session_complete=False,
         reliability=None,
+        rank_memory=None,
+        # --- factor_memory ---
+        factor_memory=None,
+        # --- fin factor_memory ---
+        # --- contrastive_memory ---
+        contrastive=None,
+        # --- fin contrastive_memory ---
+        # --- ic_titans_mlp ---
+        ic_mlp_memory=None,
+        # --- fin ic_titans_mlp ---
+        # --- lead_lag_memory ---
+        lead_lag_memory=None,
+        # --- fin lead_lag_memory ---
+        # --- three_factor_consolidation ---
+        three_factor_state=None,
+        # --- fin three_factor_consolidation ---
+        # --- persistent_session_hologram ---
+        persistent_hologram=None,
+        # --- fin persistent_session_hologram ---
     ):
         check_differentiable(differentiable)
         if torch.is_inference_mode_enabled():
             raise ValueError("inference_mode impide la actualización asociativa, utilice no_grad")
-        self._validate_state(state)
+        defer_slots = (
+            []
+            if (
+                self.mac is not None
+                and self.mac.config.memory_mode == "online"
+                and self.head.weight.is_cuda
+                and self.mac.memory.supports_fused_write_and_read()
+                and has_deferred_checks()
+            )
+            else None
+        )
+        self._validate_state(state, defer_slots=defer_slots)
         if (
             not isinstance(batch, DecisionBatch)
             or batch.input_contract_id != self.config.inputs.fingerprint()
@@ -2174,12 +3405,26 @@ class FinancialPredictor(nn.Module):
         if self.session_level and session_complete is not True:
             raise ValueError("Las operaciones por sesión necesitan la sesión completa en un bloque")
         markets = tuple(flow.split("/", 1)[0] for flow in batch.flow_ids)
+        chart_keep = None
         if self.config.removed_modalities is not None:
             # Antes de cualquier otra transformación: el predictor no ve nunca la modalidad.
-            keep = torch.ones_like(batch.presence)
-            for name in self.config.removed_modalities:
-                keep[:, MODALITIES.index(name)] = False
-            batch = batch.with_absences(keep, REMOVED_MODALITIES)
+            whole = [name for name in self.config.removed_modalities if name in MODALITIES[1:]]
+            if whole:
+                keep = torch.ones_like(batch.presence)
+                for name in whole:
+                    keep[:, MODALITIES.index(name)] = False
+                batch = batch.with_absences(keep, REMOVED_MODALITIES)
+            subblocks = [name for name in self.config.removed_modalities if name in CHART_SUBBLOCKS]
+            if subblocks:
+                charts = batch.inputs["charts"]
+                split = charts.shape[1] - self.config._chart_technical_columns()
+                chart_keep = torch.ones_like(charts, dtype=torch.bool)
+                if "charts_visual" in subblocks:
+                    chart_keep[:, :split] = False
+                if "charts_technical" in subblocks:
+                    chart_keep[:, split:] = False
+                masked_charts = torch.where(chart_keep, charts, torch.zeros_like(charts))
+                batch = batch.derived(dict(batch.inputs, charts=masked_charts), REMOVED_MODALITIES)
         if self.training and self.config.modality_dropout is not None:
             # Antes de los rangos y de la escala: la ausencia añadida es idéntica a una real.
             with self._dropout_masks(batch, MODALITY_DROPOUT):
@@ -2188,7 +3433,25 @@ class FinancialPredictor(nn.Module):
                     >= self.config.modality_dropout
                 )
             keep[:, MODALITIES.index("prices")] = True
-            batch = batch.with_absences(keep, MODALITY_DROPOUT)
+            split_cols = (
+                None
+                if self.config.learning_scale is None
+                else self.config.learning_scale.chart_technical_columns
+            )
+            if split_cols is not None:
+                charts_idx = MODALITIES.index("charts")
+                keep_visual = keep[:, charts_idx].clone()
+                keep[:, charts_idx] = True
+                batch = batch.with_absences(keep, MODALITY_DROPOUT)
+                charts = batch.inputs["charts"]
+                split = charts.shape[1] - split_cols
+                drop_mask = torch.ones_like(charts, dtype=torch.bool)
+                drop_mask[:, :split] = keep_visual.unsqueeze(1)
+                chart_keep = drop_mask if chart_keep is None else (chart_keep & drop_mask)
+                masked_charts = torch.where(chart_keep, charts, torch.zeros_like(charts))
+                batch = batch.derived(dict(batch.inputs, charts=masked_charts), MODALITY_DROPOUT)
+            else:
+                batch = batch.with_absences(keep, MODALITY_DROPOUT)
         received = batch
         if self.config.session_rank_inputs is not None:
             # Rangos entre las filas del bloque, que son todas las de su instante y mercado.
@@ -2198,9 +3461,12 @@ class FinancialPredictor(nn.Module):
         if self.learning_scaler is not None:
             # Todo lo posterior lee las entradas normalizadas. Los grupos de H4 siguen leyendo
             # la ventana recibida, sin transformar.
-            batch = batch.derived(
-                self.learning_scaler(batch.inputs, batch.presence), LEARNING_TRANSFORM
-            )
+            scaled_inputs = self.learning_scaler(batch.inputs, batch.presence)
+            if chart_keep is not None:
+                scaled_inputs["charts"] = torch.where(
+                    chart_keep, scaled_inputs["charts"], torch.zeros_like(scaled_inputs["charts"])
+                )
+            batch = batch.derived(scaled_inputs, LEARNING_TRANSFORM)
         if self.local_control is None:
             if control_selection is not None or control_context_id is not None:
                 raise ValueError("El predictor anterior no admite una selección de C")
@@ -2215,10 +3481,81 @@ class FinancialPredictor(nn.Module):
             raise ValueError("El predictor declara la fiabilidad madura y necesita su señal")
         else:
             self.reliability_gates.validate(reliability, len(batch.flow_ids))
+        if self.cross_sectional_rank_memory is None:
+            if rank_memory is not None:
+                raise ValueError("El predictor no declara la memoria transversal de rango")
+        elif rank_memory is None:
+            raise ValueError(
+                "El predictor declara la memoria transversal de rango y necesita su estado de "
+                "memoria transversal"
+            )
+        else:
+            self.cross_sectional_rank_memory.validate_state(rank_memory, self._parameter_id)
+        # --- ic_titans_mlp ---
+        if self.ic_titans_mlp is None:
+            if ic_mlp_memory is not None:
+                raise ValueError("El predictor no declara memoria IC-Titans-MLP")
+        elif ic_mlp_memory is None:
+            raise ValueError("El predictor declara IC-Titans-MLP y necesita su estado de memoria")
+        else:
+            self.ic_titans_mlp.validate_state(ic_mlp_memory, self._parameter_id)
+        # --- fin ic_titans_mlp ---
+        # --- lead_lag_memory ---
+        if self.lead_lag_memory is None:
+            if lead_lag_memory is not None:
+                raise ValueError(
+                    "El predictor no declara la memoria rápida de desfase entre grupos"
+                )
+        elif lead_lag_memory is None:
+            raise ValueError(
+                "El predictor declara la memoria rápida de desfase y necesita su estado"
+            )
+        else:
+            self.lead_lag_memory.validate_state(lead_lag_memory, self._parameter_id)
+        # --- fin lead_lag_memory ---
+        # --- three_factor_consolidation ---
+        if self.three_factor_consolidation is None:
+            if three_factor_state is not None:
+                raise ValueError("El predictor no declara la consolidación de tres factores")
+        elif three_factor_state is None:
+            raise ValueError(
+                "El predictor declara la consolidación de tres factores y necesita su estado "
+                "de consolidación"
+            )
+        else:
+            self.three_factor_consolidation.validate_state(three_factor_state, self._parameter_id)
+        # --- fin three_factor_consolidation ---
+        # --- persistent_session_hologram ---
+        if self.persistent_session_hologram is None:
+            if persistent_hologram is not None:
+                raise ValueError("El predictor no declara el holograma persistente de sesión")
+        elif persistent_hologram is None:
+            raise ValueError(
+                "El predictor declara el holograma persistente de sesión y necesita su estado"
+            )
+        else:
+            self.persistent_session_hologram.validate_state(persistent_hologram, self._parameter_id)
+        # --- fin persistent_session_hologram ---
         if (self.session_context is None) != (context is None):
             raise ValueError("PT4 recibe su contexto de sesión y el núcleo no admite ninguno")
         if context is not None:
             self.session_context.validate(context, self._parameter_id)
+        # --- factor_memory ---
+        if (self.factor_memory is None) != (factor_memory is None):
+            raise ValueError(
+                "LFM-SW exige su estado de memoria factorial y el núcleo sin ella no admite ninguno"
+            )
+        if factor_memory is not None:
+            self.factor_memory.validate_state(factor_memory, self._parameter_id)
+        # --- fin factor_memory ---
+        # --- contrastive_memory ---
+        if (self.contrastive_memory is None) != (contrastive is None):
+            raise ValueError(
+                "La memoria contrastiva recibe su estado de sesión solo cuando se declara"
+            )
+        if contrastive is not None:
+            self.contrastive_memory.validate(contrastive, self._parameter_id)
+        # --- fin contrastive_memory ---
         if context_selection is not None:
             if context is None:
                 raise ValueError("La selección de contexto necesita un padre con PT4")
@@ -2236,9 +3573,20 @@ class FinancialPredictor(nn.Module):
             # El relleno de una sesión ausente en todo el mercado no llega al codificador. Sus
             # dos comprobaciones de finitud se difieren con las demás, en el mismo orden, en
             # lugar de esperar a la GPU antes de lanzar el resto de la emisión.
-            price, encoder_checks = self.price_encoder.encode_last(
-                gate_price_window(batch.inputs["prices"])
-            )
+            raw_prices = batch.inputs["prices"]
+            if self.learning_scaler is not None:
+                # `learning_scaler` ya deja en +0.0 las sesiones ausentes del bloque de precios.
+                price, encoder_checks = self.price_encoder.encode_last(raw_prices)
+            elif (
+                raw_prices.is_cuda
+                and raw_prices.shape[-1] == len(PRICE_WINDOW_CHANNELS)
+                and type(self.price_encoder).__name__ == "CompactPriceTransformer"
+            ):
+                price, encoder_checks = self.price_encoder.encode_last(raw_prices, gate_last=True)
+            else:
+                price, encoder_checks = self.price_encoder.encode_last(
+                    gate_price_window(raw_prices)
+                )
             for value, message in encoder_checks:
                 require_finite(value, message)
             next_regions = None
@@ -2292,15 +3640,45 @@ class FinancialPredictor(nn.Module):
                 gates = dict(gate_shift=self.reliability_gates(reliability))
                 if self.config.mature_reliability.source == "titans_surprise":
                     sink = gates["surprise"] = []
+            # --- memory_cross_sectional_surprise ---
+            if self.config.memory_cross_sectional_surprise is not None:
+                gates["session_groups"] = session_groups(batch.flow_ids, batch.prediction_at)
+            # --- fin memory_cross_sectional_surprise ---
             if self.mac:
                 encoded, next_mac = self.mac(
-                    observed.unsqueeze(1), state.mac, differentiable=differentiable, **gates
+                    observed.unsqueeze(1),
+                    state.mac,
+                    differentiable=differentiable,
+                    input_slots=defer_slots,
+                    **gates,
                 )
             else:
                 encoded, next_mac = token, None
-            if self.cross_asset_attention is not None:
+            mixer = self.cross_asset_attention
+            if mixer is not None and mixer.config.position == "after_mac":
                 # Mezcla las filas de cada mercado e instante del bloque, que es la sesión entera.
-                encoded = self.cross_asset_attention(encoded, markets, batch.prediction_at)
+                encoded = mixer(encoded, markets, batch.prediction_at)
+            hologram = self.session_hologram
+            if hologram is not None and hologram.config.position == "after_mac":
+                encoded = hologram(encoded, markets, batch.prediction_at)
+            # --- hopfield_rank_brain ---
+            if (
+                self.hopfield_rank_brain is not None
+                and self.hopfield_rank_brain.config.position == "after_mac"
+            ):
+                encoded = self.hopfield_rank_brain(encoded, markets, batch.prediction_at)
+            # --- fin hopfield_rank_brain ---
+            # --- persistent_session_hologram ---
+            next_persistent_hologram = None
+            persistent_hologram_mod = self.persistent_session_hologram
+            if (
+                persistent_hologram_mod is not None
+                and persistent_hologram_mod.config.position == "after_mac"
+            ):
+                encoded, next_persistent_hologram = persistent_hologram_mod(
+                    encoded, markets, batch.prediction_at, persistent_hologram
+                )
+            # --- fin persistent_session_hologram ---
             if self.asset_groups is not None:
                 # Los grupos salen de la ventana recibida, sin los rangos de F4.
                 encoded = self.asset_groups(
@@ -2315,8 +3693,112 @@ class FinancialPredictor(nn.Module):
                 branch = self.technical_branch
                 charts = batch.inputs["charts"]
                 # Con rangos por sesión, entre las filas del bloque de cada mercado.
-                residual = branch(charts, markets) if branch.session_level else branch(charts)
+                if branch.uses_raw_charts:
+                    # Los indicadores de ausencia se leen sin escalar (`received`), antes de
+                    # que `learning_scaler` desplace el 1 a 0 cuando la mediana es 1.
+                    residual = branch(charts, markets, raw_charts=received.inputs["charts"])
+                elif branch.session_level:
+                    residual = branch(charts, markets)
+                else:
+                    residual = branch(charts)
                 encoded = encoded + residual
+            if mixer is not None and mixer.config.position == "after_technical":
+                # La mezcla lee la representación con su residuo técnico, la que ve la cabeza.
+                encoded = mixer(encoded, markets, batch.prediction_at)
+            if hologram is not None and hologram.config.position == "after_technical":
+                encoded = hologram(encoded, markets, batch.prediction_at)
+            # --- factor_memory ---
+            next_factor_memory = None
+            if self.factor_memory is not None:
+                encoded, next_factor_memory = self.factor_memory.step(
+                    encoded,
+                    batch.flow_ids,
+                    markets,
+                    batch.prediction_at,
+                    factor_memory,
+                    differentiable=differentiable,
+                )
+            # --- fin factor_memory ---
+            # --- contrastive_memory ---
+            # Orden antes de la cabeza: lecturas de sesión (holograma) -> memorias no supervisadas
+            # (memoria contrastiva transversal) -> memorias de etiquetas maduras (CRRM) -> cabeza.
+            next_contrastive = None
+            if self.contrastive_memory is not None:
+                extra, next_contrastive = self.contrastive_memory.read(
+                    encoded, batch.flow_ids, batch.prediction_at, contrastive
+                )
+                encoded = encoded + extra
+                check_finite(encoded, "La representación con memoria contrastiva")
+            # --- fin contrastive_memory ---
+            # --- session_resonator ---
+            if self.session_resonator is not None:
+                # CSRF descompone la representación completa en la sesión tras la rama
+                # técnica y tras el holograma de sesión, antes de CRRM y la cabeza.
+                encoded = self.session_resonator(encoded, markets, batch.prediction_at)
+            # --- fin session_resonator ---
+            # --- hopfield_rank_brain ---
+            if (
+                self.hopfield_rank_brain is not None
+                and self.hopfield_rank_brain.config.position == "after_technical"
+            ):
+                encoded = self.hopfield_rank_brain(encoded, markets, batch.prediction_at)
+            # --- fin hopfield_rank_brain ---
+            # --- persistent_session_hologram ---
+            if (
+                persistent_hologram_mod is not None
+                and persistent_hologram_mod.config.position == "after_technical"
+            ):
+                encoded, next_persistent_hologram = persistent_hologram_mod(
+                    encoded, markets, batch.prediction_at, persistent_hologram
+                )
+            # --- fin persistent_session_hologram ---
+            # --- dual_hemisphere_brain ---
+            if self.dual_hemisphere_brain is not None:
+                encoded = self.dual_hemisphere_brain(
+                    encoded,
+                    received.inputs["prices"],
+                    batch.inputs["news"],
+                    batch.inputs["fundamentals"],
+                    batch.inputs["macro"],
+                    batch.presence,
+                    markets,
+                    batch.prediction_at,
+                )
+            # --- fin dual_hemisphere_brain ---
+            rank_memory_keys = None
+            if self.cross_sectional_rank_memory is not None:
+                # Claves transversales centradas sobre la representación previa a CRRM y lectura
+                # asociativa exclusivamente desde las sesiones ya maduras de `rank_memory`.
+                rank_memory_keys = self.cross_sectional_rank_memory.keys(
+                    encoded, markets, batch.prediction_at
+                )
+                encoded = encoded + self.cross_sectional_rank_memory.read(
+                    rank_memory_keys, markets, rank_memory
+                )
+            # --- ic_titans_mlp ---
+            ic_mlp_keys = None
+            if self.ic_titans_mlp is not None:
+                ic_mlp_keys = self.ic_titans_mlp.keys(encoded, markets, batch.prediction_at)
+                encoded = encoded + self.ic_titans_mlp.read(ic_mlp_keys, markets, ic_mlp_memory)
+            # --- fin ic_titans_mlp ---
+            # --- lead_lag_memory ---
+            lead_lag_memberships = None
+            if self.lead_lag_memory is not None:
+                lead_lag_memberships = self.lead_lag_memory.memberships(
+                    encoded, markets, batch.prediction_at
+                )
+                encoded = encoded + self.lead_lag_memory.read(
+                    encoded, lead_lag_memberships, markets, batch.prediction_at, lead_lag_memory
+                )
+            # --- fin lead_lag_memory ---
+            # --- three_factor_consolidation ---
+            three_factor_emission = None
+            if self.three_factor_consolidation is not None:
+                d3f_delta, three_factor_emission = self.three_factor_consolidation.read_and_trace(
+                    encoded, batch.flow_ids, markets, batch.prediction_at, three_factor_state
+                )
+                encoded = encoded + d3f_delta
+            # --- fin three_factor_consolidation ---
             if self.local_control is not None:
                 local_result = self.local_control(
                     self.mac,
@@ -2363,6 +3845,25 @@ class FinancialPredictor(nn.Module):
             next_context,
             outputs,
             surprise=None if sink is None else sink[0],
+            rank_memory_keys=rank_memory_keys,
+            # --- factor_memory ---
+            next_factor_memory=next_factor_memory,
+            # --- fin factor_memory ---
+            # --- contrastive_memory ---
+            next_contrastive=next_contrastive,
+            # --- fin contrastive_memory ---
+            # --- ic_titans_mlp ---
+            ic_mlp_keys=ic_mlp_keys,
+            # --- fin ic_titans_mlp ---
+            # --- lead_lag_memory ---
+            lead_lag_memberships=lead_lag_memberships,
+            # --- fin lead_lag_memory ---
+            # --- three_factor_consolidation ---
+            three_factor_emission=three_factor_emission,
+            # --- fin three_factor_consolidation ---
+            # --- persistent_session_hologram ---
+            next_persistent_hologram=next_persistent_hologram,
+            # --- fin persistent_session_hologram ---
             **({"regional_trace": regional_trace} if regional_trace is not None else {}),
         )
 
@@ -2378,6 +3879,11 @@ class FinancialPredictor(nn.Module):
         scale = statistics.get("label_scale") if isinstance(statistics, dict) else None
         if type(scale) is not float or not math.isfinite(scale) or scale <= 0:
             raise ValueError("Las estadísticas necesitan una escala positiva de la etiqueta")
+        scaled_value = torch.tensor(scale, dtype=self.head.output_scale.dtype)
+        if not torch.isfinite(scaled_value) or not (scaled_value > 0):
+            raise ValueError(
+                "La escala de la etiqueta desborda o se anula en la precisión del predictor"
+            )
         self.learning_scaler.load(statistics)
         with torch.no_grad():
             self.head.output_scale.fill_(scale)
@@ -2485,9 +3991,35 @@ def copy_paired_parameters(source, target):
             raise ValueError("Los parámetros emparejados tienen formas o precisiones diferentes")
         check_finite(original[name], "Los parámetros de origen")
     before = target._parameter_id
+    scale_buffers = []
+    if source.learning_scaler is not None:
+        if bool(source.learning_scaler.fitted):
+            src_buffers = dict(source.named_buffers())
+            dst_buffers = dict(target.named_buffers())
+            scale_buffers = sorted(
+                name
+                for name in (src_buffers.keys() & dst_buffers.keys())
+                if name.startswith("learning_scaler.") or name == "head.output_scale"
+            )
+            for name in scale_buffers:
+                if (
+                    src_buffers[name].shape != dst_buffers[name].shape
+                    or src_buffers[name].dtype != dst_buffers[name].dtype
+                ):
+                    raise ValueError(
+                        "Los buffers de escala emparejados tienen formas o precisiones diferentes"
+                    )
+                if src_buffers[name].is_floating_point():
+                    check_finite(src_buffers[name], "Los buffers de escala de origen")
+        elif bool(target.learning_scaler.fitted):
+            raise ValueError(
+                "El predictor de origen no tiene estadísticas de learning_scale cargadas"
+            )
     with torch.no_grad():
         for name in copied:
             destination[name].copy_(original[name])
+        for name in scale_buffers:
+            dst_buffers[name].copy_(src_buffers[name])
     transfers = {
         name: dict(
             source_sha256=_tensor_digest(original[name]),
@@ -2499,6 +4031,9 @@ def copy_paired_parameters(source, target):
     }
     if any(record["source_sha256"] != record["target_sha256"] for record in transfers.values()):
         raise ValueError("La copia emparejada no conserva los bytes de origen")
+    for name in scale_buffers:
+        if _tensor_digest(src_buffers[name]) != _tensor_digest(dst_buffers[name]):
+            raise ValueError("La copia emparejada no conserva los buffers de escala de origen")
     target._seal_parameters()
     receipt = dict(
         schema_version=1,

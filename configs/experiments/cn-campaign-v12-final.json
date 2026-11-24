@@ -1,0 +1,313 @@
+{
+  "schema_version": 1,
+  "kind": "comparison_campaign_v1",
+  "market": "CN",
+  "final_test_access": false,
+  "description": "Campaña final de la v12 en CN: ajuste de 2006 a marzo de 2022, validación de abril a septiembre de 2022, calibración de octubre a diciembre de 2022 y evaluación en 2023 (origen 2023). Tres semillas para todo (42, 43 y 44) y las semillas 45 a 49 para ampliar el conjunto de semillas del núcleo. Las cuatro familias: Titans (el núcleo, sus controles de memoria congelada y sin memoria, sin ganancia, solo pinball y la receta original), el cerebro holográfico (red de áreas y holograma de sesión), MMARRS-TITAN (lector con banco episódico) y el núcleo agéntico (lector cognitivo). Rasgos técnicos long_horizon_v4. El test final de 2024 sigue cerrado.",
+  "cohort": {
+    "size": 810,
+    "rule": "entire_source_view"
+  },
+  "seeds": [
+    42,
+    43,
+    44,
+    45,
+    46,
+    47,
+    48,
+    49
+  ],
+  "origins": [
+    {
+      "year": 2011,
+      "fold": "fold-000",
+      "role": "development"
+    },
+    {
+      "year": 2012,
+      "fold": "fold-001",
+      "role": "development"
+    },
+    {
+      "year": 2013,
+      "fold": "fold-002",
+      "role": "development"
+    },
+    {
+      "year": 2014,
+      "fold": "fold-003",
+      "role": "development"
+    },
+    {
+      "year": 2015,
+      "fold": "fold-004",
+      "role": "development"
+    },
+    {
+      "year": 2016,
+      "fold": "fold-005",
+      "role": "development"
+    },
+    {
+      "year": 2017,
+      "fold": "fold-006",
+      "role": "development"
+    },
+    {
+      "year": 2018,
+      "fold": "fold-007",
+      "role": "development"
+    },
+    {
+      "year": 2019,
+      "fold": "fold-008",
+      "role": "development"
+    },
+    {
+      "year": 2020,
+      "fold": "fold-009",
+      "role": "development"
+    },
+    {
+      "year": 2021,
+      "fold": "fold-010",
+      "role": "development"
+    },
+    {
+      "year": 2022,
+      "fold": "fold-011",
+      "role": "development"
+    },
+    {
+      "year": 2023,
+      "fold": "fold-012",
+      "role": "confirmation"
+    }
+  ],
+  "tiers": [
+    "core",
+    "f1_titans",
+    "f2_holographic",
+    "f3_mmarrs",
+    "f4_agentic"
+  ],
+  "recipes": {
+    "core": "configs/titans/dgx-us-core-u2-ic3-dense-gr-v9.json",
+    "core_nogain": "configs/titans/dgx-us-core-u2-ic3-dense-ranks-v6.json",
+    "core_noic": "configs/titans/dgx-us-core-u2-dense-gr-v9.json",
+    "core_original": "configs/titans/dgx-us-core-v2.json",
+    "reader": "configs/titans/dgx-us-reader-v2-s-v10.json",
+    "reader_cognitive": "configs/titans/dgx-us-reader-cognitive-v2-s-v10.json"
+  },
+  "stopping": {
+    "fit": {
+      "metric": "session_rank_ic",
+      "min_assets": 30,
+      "stopping": "validation_plateau",
+      "patience": 3,
+      "min_delta": 0.0,
+      "max_epochs": 48,
+      "initial_state": "reported"
+    },
+    "reader": {
+      "metric": "session_rank_ic",
+      "min_assets": 30,
+      "stopping": "validation_plateau",
+      "patience": 3,
+      "min_delta": 0.0,
+      "max_epochs": 24
+    }
+  },
+  "execution": {
+    "pipeline": {
+      "decode_workers": 4,
+      "prefetch_batches": 6,
+      "group_cache_mib": 2048,
+      "prepare_workers": 3
+    },
+    "workers": {
+      "mars_titan": 3,
+      "references": 1
+    },
+    "learning_traces": {
+      "every": 8,
+      "max_bytes": 67108864
+    },
+    "order": "seed_tier",
+    "threads": {
+      "intra": 20,
+      "interop": 20
+    }
+  },
+  "budget": {
+    "min_free_gib": 60,
+    "memory_gib": {
+      "mars_titan": 10
+    },
+    "cuda_gib": {
+      "mars_titan": 8
+    },
+    "deadline_utc": "2026-12-01T11:00:00+00:00"
+  },
+  "models": {
+    "titans_mac": {
+      "machine": "mars_titan",
+      "recipe": "core",
+      "runner": "fit",
+      "tier": "core",
+      "variant": "mac_online",
+      "predictor_changes": {
+        "technical_branch": {
+          "columns": 62,
+          "hidden": 128,
+          "depth": 2,
+          "session_ranks": true
+        }
+      }
+    },
+    "titans_mac_frozen": {
+      "machine": "mars_titan",
+      "recipe": "core",
+      "runner": "fit",
+      "tier": "f1_titans",
+      "variant": "mac_frozen",
+      "predictor_changes": {
+        "technical_branch": {
+          "columns": 62,
+          "hidden": 128,
+          "depth": 2,
+          "session_ranks": true
+        }
+      }
+    },
+    "titans_mac_disabled": {
+      "machine": "mars_titan",
+      "recipe": "core",
+      "runner": "fit",
+      "tier": "f1_titans",
+      "variant": "mac_disabled",
+      "predictor_changes": {
+        "technical_branch": {
+          "columns": 62,
+          "hidden": 128,
+          "depth": 2,
+          "session_ranks": true
+        }
+      }
+    },
+    "titans_mac_nogain": {
+      "machine": "mars_titan",
+      "recipe": "core_nogain",
+      "runner": "fit",
+      "tier": "f1_titans",
+      "variant": "mac_online",
+      "predictor_changes": {
+        "technical_branch": {
+          "columns": 62,
+          "hidden": 128,
+          "depth": 2,
+          "session_ranks": true
+        }
+      }
+    },
+    "titans_mac_noic": {
+      "machine": "mars_titan",
+      "recipe": "core_noic",
+      "runner": "fit",
+      "tier": "f1_titans",
+      "variant": "mac_online",
+      "predictor_changes": {
+        "technical_branch": {
+          "columns": 62,
+          "hidden": 128,
+          "depth": 2,
+          "session_ranks": true
+        }
+      }
+    },
+    "titans_mac_original": {
+      "machine": "mars_titan",
+      "recipe": "core_original",
+      "runner": "fit",
+      "tier": "f1_titans",
+      "variant": "mac_online"
+    },
+    "area_network": {
+      "machine": "mars_titan",
+      "recipe": "core",
+      "runner": "fit",
+      "tier": "f2_holographic",
+      "variant": "mac_online",
+      "predictor_changes": {
+        "holographic_network": {
+          "areas": 19,
+          "cycles": 2,
+          "hidden_groups": 4,
+          "kind": "holographic_network_v1",
+          "leakage": 0.1,
+          "levels": 1,
+          "local_gain": 0.25,
+          "local_steps": 1,
+          "rank": 4,
+          "summary": true,
+          "summary_gain": 0.25,
+          "topology": "ring"
+        },
+        "technical_branch": {
+          "columns": 62,
+          "hidden": 128,
+          "depth": 2,
+          "session_ranks": true
+        }
+      }
+    },
+    "titans_mac_session_hologram": {
+      "machine": "mars_titan",
+      "recipe": "core",
+      "runner": "fit",
+      "tier": "f2_holographic",
+      "variant": "mac_online",
+      "predictor_changes": {
+        "session_hologram": {
+          "bands": 4,
+          "phase_dim": 16,
+          "position": "after_technical",
+          "mode": "interferometric"
+        },
+        "technical_branch": {
+          "columns": 62,
+          "hidden": 128,
+          "depth": 2,
+          "session_ranks": true
+        }
+      }
+    },
+    "mars_titan_m3": {
+      "machine": "mars_titan",
+      "runner": "reader",
+      "parent": "titans_mac",
+      "recipe": "reader",
+      "search_case": "lr1e-3",
+      "components": {
+        "episodic_bank": "m3"
+      },
+      "tier": "f3_mmarrs"
+    },
+    "mars_titan_cognitive": {
+      "machine": "mars_titan",
+      "runner": "reader",
+      "parent": "titans_mac",
+      "recipe": "reader_cognitive",
+      "search_case": "lr1e-3",
+      "components": {
+        "episodic_bank": "m3",
+        "refinements": 4
+      },
+      "tier": "f4_agentic"
+    }
+  },
+  "inputs": {
+    "technical": "long_horizon_v4"
+  }
+}

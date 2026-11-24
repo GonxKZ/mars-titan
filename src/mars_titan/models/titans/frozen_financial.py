@@ -9,24 +9,42 @@ from pathlib import Path
 
 import torch
 
-from mars_titan.models.quantile_head import QuantileHead
+from mars_titan.models.learning_scale import LearningScaler
+from mars_titan.models.quantile_head import QuantileHead, ScaledLinear
 from mars_titan.models.quantile_routing import QuantileRouting
 
 from .bank_readout import BankReadout
 from .config import canonical
 from .cross_asset_attention import CrossAssetAttention, CrossAssetAttentionConfig
+
+# --- dual_hemisphere_brain ---
+from .dual_hemisphere_brain import DualHemisphereBrain, DualHemisphereBrainConfig
+
+# --- fin dual_hemisphere_brain ---
 from .episodic_readout import EpisodicReadout, apply_episodic_readout
 from .episodic_snapshot import EpisodeSnapshot
 from .evidence_bridge import SharedEvidenceBridge
 from .financial import FinancialPredictor, _tensor_digest
+
+# --- hopfield_rank_brain ---
+from .hopfield_rank_brain import HopfieldRankBrainConfig, RepulsiveSparseHopfieldRankBrain
+
+# --- fin hopfield_rank_brain ---
 from .laplace_scale import LaplaceScale
 from .local_control import MACProjectionControl
 from .opponent_heads import OpponentSpread
 from .output_objectives import reads_scalar_point
+from .presence_modulation import PresenceModalityGate
 from .regional_execution import RegionalExecution
 from .regional_fusion import RegionalFusion
 from .regional_hierarchy import RegionalHierarchy
+from .session_hologram import HolographicSessionInterferometer, SessionHologramConfig
 from .session_ic_objective import SessionScale
+
+# --- session_resonator ---
+from .session_resonator import SessionResonator, SessionResonatorConfig
+
+# --- fin session_resonator ---
 
 _TRANSFORMER_ACTIVATION = torch.nn.functional.gelu
 
@@ -93,6 +111,54 @@ def declared_sources(config):
         sources.append("mars_titan.models.titans.technical_branch")
     if getattr(config, "cross_asset_attention", None) is not None:
         sources.append("mars_titan.models.titans.cross_asset_attention")
+    if getattr(config, "cross_sectional_rank_memory", None) is not None:
+        sources.append("mars_titan.models.titans.cross_sectional_rank_memory")
+    # --- ic_titans_mlp ---
+    if getattr(config, "ic_titans_mlp", None) is not None:
+        sources.append("mars_titan.models.titans.ic_titans_mlp")
+    # --- fin ic_titans_mlp ---
+    # --- lead_lag_memory ---
+    if getattr(config, "lead_lag_memory", None) is not None:
+        sources.append("mars_titan.models.titans.lead_lag_memory")
+    # --- fin lead_lag_memory ---
+    if getattr(config, "session_hologram", None) is not None:
+        sources.append("mars_titan.models.titans.session_hologram")
+    # --- memory_cross_sectional_surprise ---
+    if getattr(config, "memory_cross_sectional_surprise", None) is not None:
+        sources.append("mars_titan.models.titans.cross_sectional_surprise")
+    # --- fin memory_cross_sectional_surprise ---
+    # --- factor_memory ---
+    if getattr(config, "factor_memory", None) is not None:
+        sources.append("mars_titan.models.titans.factor_memory")
+    # --- fin factor_memory ---
+    # --- contrastive_memory ---
+    if getattr(config, "contrastive_memory", None) is not None:
+        sources.append("mars_titan.models.titans.contrastive_memory")
+    # --- fin contrastive_memory ---
+    # --- session_resonator ---
+    if getattr(config, "session_resonator", None) is not None:
+        sources.append("mars_titan.models.titans.session_resonator")
+    # --- fin session_resonator ---
+    # --- hopfield_rank_brain ---
+    if getattr(config, "hopfield_rank_brain", None) is not None:
+        sources.append("mars_titan.models.titans.hopfield_rank_brain")
+    # --- fin hopfield_rank_brain ---
+    # --- three_factor_consolidation ---
+    if getattr(config, "three_factor_consolidation", None) is not None:
+        sources.append("mars_titan.models.titans.three_factor_consolidation")
+    # --- fin three_factor_consolidation ---
+    # --- persistent_session_hologram ---
+    if getattr(config, "persistent_session_hologram", None) is not None:
+        sources.append("mars_titan.models.titans.persistent_session_hologram")
+    # --- fin persistent_session_hologram ---
+    # --- dual_hemisphere_brain ---
+    if getattr(config, "dual_hemisphere_brain", None) is not None:
+        sources.append("mars_titan.models.titans.dual_hemisphere_brain")
+    # --- fin dual_hemisphere_brain ---
+    if getattr(config, "learning_scale", None) is not None:
+        sources.append("mars_titan.models.learning_scale")
+    if getattr(config, "reference_encoder", None) == "dlinear":
+        sources.append("mars_titan.models.baselines.dlinear")
     return tuple(sources)
 
 
@@ -142,6 +208,10 @@ def _module_settings(module):
             settings["quantile_routing"] = module.routing.identity()
         if isinstance(module, QuantileHead) and module.median_gain is not None:
             settings["median_gain"] = "learned_median_gain_v1"
+        if isinstance(module, QuantileHead) and module.scaled:
+            settings["scaled"] = True
+        elif isinstance(module, ScaledLinear):
+            settings["scaled"] = True
     elif isinstance(module, nn.LayerNorm):
         fields = ("normalized_shape", "eps", "elementwise_affine")
         settings["bias"] = module.bias is not None
@@ -195,6 +265,14 @@ def _module_settings(module):
         module.config.__post_init__()
         fields = ("hidden_size", "head_dim")
         settings["cross_asset_attention"] = module.config.identity()
+    elif type(module) is HolographicSessionInterferometer:
+        if type(module.config) is not SessionHologramConfig:
+            raise ValueError(
+                "El interferómetro holográfico no conserva su configuración identificada"
+            )
+        module.config.__post_init__()
+        fields = ("hidden_size", "band_dim", "readout_dim")
+        settings["session_hologram"] = module.config.identity()
     elif type(module) in (SessionScale, LaplaceScale, OpponentSpread):
         settings["output_objective"] = module.config.identity()
     elif type(module) is RegionalFusion:
@@ -208,8 +286,45 @@ def _module_settings(module):
         settings["bank_readout"] = module.config.identity()
     elif type(module) is SharedEvidenceBridge:
         settings["evidence_bridge"] = module.config.identity()
+    elif type(module) is LearningScaler:
+        settings["learning_scale"] = module.config.identity()
+    elif type(module) is PresenceModalityGate:
+        fields = ("hidden_size",)
     elif type(module).__module__ in _KRON_MODULES:
         settings["kronlstm"] = module.configuration
+    # --- memory_cross_sectional_surprise ---
+    if (
+        type(module).__name__ == "CrossSectionalSurpriseModule"
+        and type(module).__module__ == "mars_titan.models.titans.cross_sectional_surprise"
+    ):
+        settings["cross_sectional_surprise"] = module.config.identity()
+    # --- fin memory_cross_sectional_surprise ---
+    # --- session_resonator ---
+    if type(module) is SessionResonator:
+        if type(module.config) is not SessionResonatorConfig:
+            raise ValueError("El resonador de sesión no conserva su configuración identificada")
+        module.config.__post_init__()
+        fields = ("hidden_size",)
+        settings["session_resonator"] = module.config.identity()
+    # --- fin session_resonator ---
+    # --- hopfield_rank_brain ---
+    if type(module) is RepulsiveSparseHopfieldRankBrain:
+        if type(module.config) is not HopfieldRankBrainConfig:
+            raise ValueError("hopfield_rank_brain no conserva su configuración identificada")
+        module.config.__post_init__()
+        fields = ("hidden_size", "prototypes_count", "steps")
+        settings["hopfield_rank_brain"] = module.config.identity()
+    # --- fin hopfield_rank_brain ---
+    # --- dual_hemisphere_brain ---
+    if type(module) is DualHemisphereBrain:
+        if type(module.config) is not DualHemisphereBrainConfig:
+            raise ValueError(
+                "El cerebro de doble hemisferio no conserva su configuración identificada"
+            )
+        module.config.__post_init__()
+        fields = ("hidden_size", "news_dim", "fundamentals_dim", "macro_dim")
+        settings["dual_hemisphere_brain"] = module.config.identity()
+    # --- fin dual_hemisphere_brain ---
     settings.update((name, getattr(module, name)) for name in fields)
     return settings
 
@@ -240,6 +355,169 @@ def _validate_cross_asset_attention(predictor):
         )
     ):
         raise ValueError("La atención entre activos no corresponde a la configuración declarada")
+
+
+def _validate_session_hologram(predictor):
+    """Comprobar que el interferómetro holográfico coincide con su configuración."""
+    declared, module = predictor.config.session_hologram, predictor.session_hologram
+    if declared is None and module is None:
+        return
+    if (
+        type(declared) is not SessionHologramConfig
+        or type(module) is not HolographicSessionInterferometer
+        or type(module.config) is not SessionHologramConfig
+    ):
+        raise ValueError(
+            "El interferómetro holográfico no corresponde a la configuración declarada"
+        )
+    declared.__post_init__()
+    module.config.__post_init__()
+    if (
+        module.config != declared
+        or module.hidden_size != predictor.config.hidden_size
+        or predictor.config.hidden_size % declared.bands != 0
+        or module.band_dim != predictor.config.hidden_size // declared.bands
+        or module.readout_dim != 2 * predictor.config.hidden_size + 2 * declared.bands
+        or not isinstance(getattr(module, "out", None), torch.nn.Linear)
+        or any(
+            parameter.device != predictor.head.weight.device
+            or parameter.dtype != predictor.head.weight.dtype
+            for parameter in module.parameters()
+        )
+    ):
+        raise ValueError(
+            "El interferómetro holográfico no corresponde a la configuración declarada"
+        )
+
+
+# --- memory_cross_sectional_surprise ---
+def _validate_cross_sectional_surprise(predictor):
+    """Comprobar que el módulo CSOS en la memoria coincide con su configuración declarada."""
+    declared = predictor.config.memory_cross_sectional_surprise
+    module = predictor.mac.memory.cross_sectional_surprise if predictor.mac is not None else None
+    if declared is None and module is None:
+        return
+    from .cross_sectional_surprise import CrossSectionalSurprise, CrossSectionalSurpriseModule
+
+    if (
+        type(declared) is not CrossSectionalSurprise
+        or type(module) is not CrossSectionalSurpriseModule
+        or type(module.config) is not CrossSectionalSurprise
+    ):
+        raise ValueError(
+            "La sorpresa relativa transversal no corresponde a la configuración declarada"
+        )
+    declared.__post_init__()
+    module.config.__post_init__()
+    if module.config != declared or any(
+        parameter.device != predictor.head.weight.device
+        or parameter.dtype != predictor.head.weight.dtype
+        for parameter in module.parameters()
+    ):
+        raise ValueError(
+            "La sorpresa relativa transversal no corresponde a la configuración declarada"
+        )
+
+
+# --- fin memory_cross_sectional_surprise ---
+# --- session_resonator ---
+def _validate_session_resonator(predictor):
+    """Comprobar que el resonador de sesión coincide con su configuración."""
+    declared, module = predictor.config.session_resonator, predictor.session_resonator
+    if declared is None and module is None:
+        return
+    if (
+        type(declared) is not SessionResonatorConfig
+        or type(module) is not SessionResonator
+        or type(module.config) is not SessionResonatorConfig
+    ):
+        raise ValueError("El resonador de sesión no corresponde a la configuración declarada")
+    declared.__post_init__()
+    module.config.__post_init__()
+    if (
+        module.config != declared
+        or module.hidden_size != predictor.config.hidden_size
+        or not isinstance(getattr(module, "out_proj", None), torch.nn.Linear)
+        or any(
+            tensor.device != predictor.head.weight.device
+            or tensor.dtype != predictor.head.weight.dtype
+            for tensor in (*module.parameters(), *module.buffers())
+        )
+    ):
+        raise ValueError("El resonador de sesión no corresponde a la configuración declarada")
+
+
+# --- fin session_resonator ---
+
+
+# --- hopfield_rank_brain ---
+def _validate_hopfield_rank_brain(predictor):
+    """Comprobar que hopfield_rank_brain coincide con su configuración."""
+    declared, module = predictor.config.hopfield_rank_brain, predictor.hopfield_rank_brain
+    if declared is None and module is None:
+        return
+    if (
+        type(declared) is not HopfieldRankBrainConfig
+        or type(module) is not RepulsiveSparseHopfieldRankBrain
+        or type(module.config) is not HopfieldRankBrainConfig
+    ):
+        raise ValueError("hopfield_rank_brain no corresponde a la configuración declarada")
+    declared.__post_init__()
+    module.config.__post_init__()
+    if (
+        module.config != declared
+        or module.hidden_size != predictor.config.hidden_size
+        or module.prototypes_count != declared.prototypes
+        or module.steps != declared.steps
+        or not isinstance(getattr(module, "out", None), torch.nn.Linear)
+        or any(
+            parameter.device != predictor.head.weight.device
+            or parameter.dtype != predictor.head.weight.dtype
+            for parameter in module.parameters()
+        )
+    ):
+        raise ValueError("hopfield_rank_brain no corresponde a la configuración declarada")
+
+
+# --- fin hopfield_rank_brain ---
+
+
+# --- dual_hemisphere_brain ---
+def _validate_dual_hemisphere_brain(predictor):
+    """Comprobar que el cerebro de doble hemisferio coincide con su configuración."""
+    declared, module = predictor.config.dual_hemisphere_brain, predictor.dual_hemisphere_brain
+    if declared is None and module is None:
+        return
+    if (
+        type(declared) is not DualHemisphereBrainConfig
+        or type(module) is not DualHemisphereBrain
+        or type(module.config) is not DualHemisphereBrainConfig
+    ):
+        raise ValueError(
+            "El cerebro de doble hemisferio no corresponde a la configuración declarada"
+        )
+    declared.__post_init__()
+    module.config.__post_init__()
+    dims = predictor.config.inputs.dimensions
+    if (
+        module.config != declared
+        or module.hidden_size != predictor.config.hidden_size
+        or module.news_dim != dims["news"]
+        or module.fundamentals_dim != dims["fundamentals"]
+        or module.macro_dim != dims["macro"]
+        or not isinstance(getattr(module, "out", None), torch.nn.Linear)
+        or any(
+            parameter.device != predictor.head.weight.device
+            or parameter.dtype != predictor.head.weight.dtype
+            for parameter in module.parameters()
+        )
+    ):
+        raise ValueError(
+            "El cerebro de doble hemisferio no corresponde a la configuración declarada"
+        )
+
+
+# --- fin dual_hemisphere_brain ---
 
 
 def _validate_intervention(readout):
@@ -428,6 +706,47 @@ class FrozenFinancialConsumer:
         # Ni recibe la señal de fiabilidad madura de #791, que sus puertas necesitan.
         if predictor.reliability_gates is not None:
             raise ValueError("El consumidor congelado aún no recibe la fiabilidad madura")
+        # Ni la memoria transversal de rango maduro (CRRM), que se actualiza con etiquetas maduras.
+        if predictor.cross_sectional_rank_memory is not None:
+            raise ValueError(
+                "El consumidor congelado aún no recibe la memoria transversal de rango maduro"
+            )
+        # --- factor_memory ---
+        # Ni gestiona el estado por mercado de la memoria rápida factorizada LFM-SW.
+        if predictor.factor_memory is not None:
+            raise ValueError("El consumidor congelado aún no gestiona la memoria factorial")
+        # --- fin factor_memory ---
+        # --- contrastive_memory ---
+        if predictor.contrastive_memory is not None:
+            raise ValueError(
+                "El consumidor congelado no gestiona el ciclo de sesión de la memoria contrastiva"
+            )
+        # --- fin contrastive_memory ---
+        # --- ic_titans_mlp ---
+        if predictor.ic_titans_mlp is not None:
+            raise ValueError(
+                "El consumidor congelado aún no recibe la memoria neuronal IC-Titans-MLP"
+            )
+        # --- fin ic_titans_mlp ---
+        # --- lead_lag_memory ---
+        if predictor.lead_lag_memory is not None:
+            raise ValueError(
+                "El consumidor congelado aún no recibe la memoria rápida de desfase entre grupos"
+            )
+        # --- fin lead_lag_memory ---
+        # --- three_factor_consolidation ---
+        if predictor.three_factor_consolidation is not None:
+            raise ValueError(
+                "El consumidor congelado aún no recibe la consolidación sináptica de tres factores"
+            )
+        # --- fin three_factor_consolidation ---
+        # --- persistent_session_hologram ---
+        if predictor.persistent_session_hologram is not None:
+            raise ValueError(
+                "El consumidor congelado aún no gestiona el ciclo de sesión del holograma "
+                "persistente"
+            )
+        # --- fin persistent_session_hologram ---
         if readout is not None and (
             readout.config.hidden_size != predictor.config.hidden_size
             or readout.step_logit.device != predictor.head.weight.device
@@ -438,6 +757,19 @@ class FrozenFinancialConsumer:
             )
         self.predictor, self.readout = predictor, readout
         _validate_cross_asset_attention(predictor)
+        _validate_session_hologram(predictor)
+        # --- memory_cross_sectional_surprise ---
+        _validate_cross_sectional_surprise(predictor)
+        # --- fin memory_cross_sectional_surprise ---
+        # --- session_resonator ---
+        _validate_session_resonator(predictor)
+        # --- fin session_resonator ---
+        # --- hopfield_rank_brain ---
+        _validate_hopfield_rank_brain(predictor)
+        # --- fin hopfield_rank_brain ---
+        # --- dual_hemisphere_brain ---
+        _validate_dual_hemisphere_brain(predictor)
+        # --- fin dual_hemisphere_brain ---
         _validate_intervention(readout)
         self._models = (("predictor", predictor),) + ((("readout", readout),) if readout else ())
         self._signature, modes = _execution_signature(self._models)
@@ -520,11 +852,45 @@ class FrozenFinancialConsumer:
             raise ValueError("La preparación necesita un evento y corte únicos")
         if warmup and snapshot is not None:
             raise ValueError("El calentamiento no consulta un banco episódico")
-        if self.predictor.cross_asset_attention is not None and session_complete is not True:
+        if (
+            self.predictor.cross_asset_attention is not None
+            or self.predictor.session_hologram is not None
+        ) and session_complete is not True:
             raise ValueError(
-                "La atención entre activos necesita la sesión completa en un bloque "
+                "El mezclador entre activos necesita la sesión completa en un bloque "
                 "(session_complete=True)"
             )
+        # --- memory_cross_sectional_surprise ---
+        if (
+            self.predictor.config.memory_cross_sectional_surprise is not None
+            and session_complete is not True
+        ):
+            raise ValueError(
+                "La sorpresa relativa transversal (CSOS) necesita la sesión completa en un "
+                "bloque (session_complete=True)"
+            )
+        # --- fin memory_cross_sectional_surprise ---
+        # --- session_resonator ---
+        if self.predictor.session_resonator is not None and session_complete is not True:
+            raise ValueError(
+                "El resonador de sesión necesita la sesión completa en un bloque "
+                "(session_complete=True)"
+            )
+        # --- fin session_resonator ---
+        # --- hopfield_rank_brain ---
+        if self.predictor.hopfield_rank_brain is not None and session_complete is not True:
+            raise ValueError(
+                "El mezclador entre activos necesita la sesión completa en un bloque "
+                "(session_complete=True)"
+            )
+        # --- fin hopfield_rank_brain ---
+        # --- dual_hemisphere_brain ---
+        if self.predictor.dual_hemisphere_brain is not None and session_complete is not True:
+            raise ValueError(
+                "El cerebro de doble hemisferio necesita la sesión completa en un bloque "
+                "(session_complete=True)"
+            )
+        # --- fin dual_hemisphere_brain ---
         options = {}
         if self.predictor.local_control is not None:
             options.update(control_selection=selection, control_context_id=context_id)

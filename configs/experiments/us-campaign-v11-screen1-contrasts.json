@@ -1,0 +1,43 @@
+{
+  "schema_version": 1,
+  "kind": "dgx_campaign_contrasts",
+  "description": "Control de cada modelo de la primera criba de la base nueva para el contraste pareado: cada variante se compara con el modelo del que solo la separa un campo de la receta.",
+  "controls": {
+    "titans_mac_frozen": "titans_mac",
+    "titans_mac_disabled": "titans_mac",
+    "titans_mac_nogain": "titans_mac",
+    "titans_mac_frozen_nogain": "titans_mac_frozen",
+    "titans_mac_disabled_nogain": "titans_mac_disabled",
+    "titans_mac_ln": "titans_mac",
+    "titans_mac_cliprole": "titans_mac",
+    "titans_mac_clip10": "titans_mac",
+    "titans_mac_rec5": "titans_mac",
+    "titans_mac_rec10": "titans_mac",
+    "titans_mac_smooth": "titans_mac",
+    "titans_mac_fscale": "titans_mac",
+    "titans_mac_nograph": "titans_mac",
+    "titans_mac_frozen_nograph": "titans_mac_frozen",
+    "titans_mac_disabled_nograph": "titans_mac_disabled",
+    "titans_mac_icop": "titans_mac",
+    "titans_mac_frozen_icop": "titans_mac_frozen",
+    "titans_mac_disabled_icop": "titans_mac_disabled",
+    "titans_mac_nogain_icop": "titans_mac_nogain",
+    "titans_mac_frozen_nogain_icop": "titans_mac_frozen_nogain",
+    "titans_mac_disabled_nogain_icop": "titans_mac_disabled_nogain",
+    "cross_asset_attention": "titans_mac",
+    "cross_asset_attention_self": "cross_asset_attention",
+    "cross_asset_attention_late": "cross_asset_attention",
+    "cross_asset_attention_late_self": "cross_asset_attention_late",
+    "cross_asset_attention_nogain": "titans_mac_nogain",
+    "cross_asset_attention_nogain_self": "cross_asset_attention_nogain",
+    "cross_asset_attention_frozen_nogain": "cross_asset_attention_nogain",
+    "cross_asset_attention_disabled_nogain": "cross_asset_attention_nogain"
+  },
+  "always_kept": [
+    "titans_mac_macro",
+    "titans_mac_no_charts",
+    "titans_mac_no_macro",
+    "titans_mac_no_news",
+    "titans_mac_no_fundamentals"
+  ]
+}

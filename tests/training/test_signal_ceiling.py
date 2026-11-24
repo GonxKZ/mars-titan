@@ -596,7 +596,9 @@ def test_an_origin_refuses_another_window_an_undeclared_origin_or_an_output_insi
     assert not (tmp_path / "a").exists() and not (tmp_path / "b").exists()
 
 
-def test_the_hold_stops_an_origin_before_reading_the_view(tmp_path):
+def test_the_hold_stops_an_origin_before_reading_the_view(tmp_path, learning_hold):
+    # La protección la pone la prueba: no depende de la que haya o no en la máquina.
+    learning_hold(False)
     with pytest.raises(LearningHoldError, match="Bloqueo de aprendizaje vigente"):
         sc.run_origin(tmp_path / "absent.json", ORIGIN, {}, tmp_path / "out")
     assert not (tmp_path / "out").exists()

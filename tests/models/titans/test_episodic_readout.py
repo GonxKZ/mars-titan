@@ -10,6 +10,7 @@ import torch
 from test_financial_adapter import setup, synchronizations
 
 from mars_titan.models.titans.config import MAX_BLOCK_ROWS
+from mars_titan.models.titans.episodic_readout import MAX_NEIGHBORS
 
 CODEC = "a" * 64
 CONTEXT = "b" * 64
@@ -410,7 +411,7 @@ def test_recovery_with_the_same_contract_preserves_all_refinement_outputs():
     [
         dict(refinements=3),
         dict(refinements=True),
-        dict(neighbors=9),
+        dict(neighbors=MAX_NEIGHBORS + 1),
         dict(temperature=float("nan")),
         dict(temperature=0),
         dict(mode="M3"),

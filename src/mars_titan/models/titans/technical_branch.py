@@ -50,23 +50,158 @@ La transformación solo lee filas del bloque, que tiene un único instante y ent
 en él. Como los rangos de un subconjunto serían otros, el predictor la exige con la sesión
 completa, igual que `session_rank_inputs_v1`.
 
+Con `absent_rows="masked_v1"`, los valores ausentes (deducidos de las columnas indicadoras
+`has_market_model`, `has_63_sessions` y `has_252_sessions` del bloque sin escalar según la
+tabla explícita de dependencias de `long_horizon_v2` y `long_horizon_v3`) no entran en el orden
+de su columna y su rango vale 0; las columnas indicadoras y las independientes no cambian. Con
+el valor por defecto `absent_rows="ranked"` se conserva bit a bit el cálculo anterior.
+
 Las ramas no tienen estado y solo leen entradas disponibles en la emisión. Sin `session_ranks`
 no mezclan filas. El residuo queda en la representación de trabajo, así que un lector ajustado
 sobre el núcleo lo recibe sin cambios.
+
+Con `ensemble_members` en `{4, 8, 16}`, las capas lineales de `technical_branch_v2` pasan a ser
+capas BatchEnsemble (Wen, Tran y Ba, ICLR 2020, https://arxiv.org/abs/2002.06715) con la
+inicialización de TabM (Gorishniy, Kotelnikov y Babenko, ICLR 2025,
+https://arxiv.org/abs/2410.24210): cada capa comparte su matriz W y añade por miembro i un vector
+multiplicativo de entrada r_i, uno de salida s_i y un sesgo b_i,
+
+    y_i = ((x_i ∘ r_i) Wᵀ) ∘ s_i + b_i,
+
+ejecutando los K miembros en paralelo sobre una dimensión de miembros [filas, K, dimensión] y
+devolviendo al final la media de los K miembros con la misma forma que hoy. Solo los vectores de
+entrada r de la primera capa se inicializan aleatoriamente en ±1 (con un generador derivado de la
+semilla e idéntico en FP32 y FP64) y todos los demás vectores multiplicativos empiezan en 1, de
+modo que al arrancar la rama se comporta como TabM-mini; los pesos compartidos conservan la misma
+inicialización que con K = 1 y la última capa sigue arrancando en cero. Desviación declarada
+frente a TabM: allí cada miembro recibe su propia pérdida y se promedia solo al inferir; aquí la
+rama emite un residuo interno sumado a la representación de trabajo, por lo que la media sobre los
+K miembros se toma a la salida de la rama antes de la cabeza.
 """
 
 import hashlib
 from dataclasses import dataclass
+from types import MappingProxyType
 
 import torch
 from torch import nn
 
-from .config import bounded_integer, require_identity
+from mars_titan.data.technical_features import NAME_V2, NAME_V3, VERSIONS
+
+from .config import LAYER_NORM_EPS, bounded_integer, require_identity
 from .session_ranks import gaussian_ranks
-from .state import check_finite
+from .state import check_finite, require_finite
 
 TECHNICAL_BRANCH = "technical_branch_v1"
 TECHNICAL_DENSE = "technical_branch_v2"
+ENSEMBLE_MEMBERS = (1, 4, 8, 16)
+ABSENT_RANKED = "ranked"
+ABSENT_MASKED = "masked_v1"
+ABSENT_ROWS = (ABSENT_RANKED, ABSENT_MASKED)
+INDICATORS = ("has_market_model", "has_63_sessions", "has_252_sessions")
+
+# Dependencias explícitas entre cada indicador de presencia y los rasgos técnicos que
+# `mars_titan.data.technical_features` deja en NaN (y luego rellena con 0) cuando falta el
+# modelo de mercado o la historia requerida. Las columnas indicadoras y las de horizonte corto
+# (<= 21 sesiones) no figuran aquí y nunca se enmascaran.
+_MARKET_MODEL_FEATURES = (
+    "alpha_percent",
+    "alpha_t",
+    "beta",
+    "log_residual_volatility",
+    "realized_label_1",
+    "realized_label_5",
+    "realized_label_21",
+    "alpha_21_percent",
+    "alpha_63_percent",
+)
+_HISTORY_63_V2_FEATURES = (
+    "dollar_volume_5_over_63",
+    "untraded_63",
+)
+_HISTORY_63_V3_ADDED = (
+    "days_since_high_63",
+    "days_since_low_63",
+    "up_day_fraction_cc_63",
+    "up_day_fraction_oc_63",
+    "price_volume_corr_63",
+)
+_HISTORY_252_V2_FEATURES = (
+    "return_5",
+    "return_21",
+    "return_63",
+    "return_126",
+    "return_252",
+    "momentum_12_1",
+    "log_volatility_252",
+    "volatility_21_over_252",
+    "volatility_63_over_252",
+    "distance_to_high_252",
+    "distance_to_low_252",
+    "dollar_volume_21_over_252",
+    "return_1",
+    "intraday_1",
+    "overnight_1",
+    "range_1",
+    "intraday_21",
+    "overnight_21",
+    "maximum_return_21",
+    "intraday_mean_252_percent",
+    "overnight_mean_252_percent",
+    "intraday_5",
+    "intraday_63",
+    "intraday_252",
+    "overnight_5",
+    "overnight_63",
+    "overnight_252",
+)
+_HISTORY_252_V3_ADDED = (
+    "days_since_high_252",
+    "days_since_low_252",
+)
+
+ABSENT_DEPENDENCIES = MappingProxyType(
+    {
+        NAME_V2: MappingProxyType(
+            {
+                "has_market_model": _MARKET_MODEL_FEATURES,
+                "has_63_sessions": _HISTORY_63_V2_FEATURES,
+                "has_252_sessions": _HISTORY_252_V2_FEATURES,
+            }
+        ),
+        NAME_V3: MappingProxyType(
+            {
+                "has_market_model": _MARKET_MODEL_FEATURES,
+                "has_63_sessions": (*_HISTORY_63_V2_FEATURES, *_HISTORY_63_V3_ADDED),
+                "has_252_sessions": (*_HISTORY_252_V2_FEATURES, *_HISTORY_252_V3_ADDED),
+            }
+        ),
+    }
+)
+ABSENT_VERSION_BY_COLUMNS = MappingProxyType(
+    {len(VERSIONS[version]): version for version in ABSENT_DEPENDENCIES}
+)
+
+
+def _presence_tables(columns):
+    """Tablas de índices en dispositivo para construir la máscara booleana de `masked_v1`."""
+    version = ABSENT_VERSION_BY_COLUMNS[columns]
+    names = VERSIONS[version]
+    index_by_name = {name: index for index, name in enumerate(names)}
+    indicator_index = [0] * columns
+    has_indicator = [False] * columns
+    for indicator, dependents in ABSENT_DEPENDENCIES[version].items():
+        source = index_by_name[indicator]
+        for name in dependents:
+            column = index_by_name[name]
+            indicator_index[column] = source
+            has_indicator[column] = True
+    indicator_columns = [index_by_name[name] for name in INDICATORS]
+    return (
+        torch.tensor(indicator_index, dtype=torch.int64),
+        torch.tensor(has_indicator, dtype=torch.bool),
+        torch.tensor(indicator_columns, dtype=torch.int64),
+    )
 
 
 @dataclass(frozen=True)
@@ -111,6 +246,14 @@ class TechnicalDenseConfig:
     depth: int = 2
     # Añadir a cada rasgo la puntuación normal de su rango entre las filas de su sesión.
     session_ranks: bool = False
+    # Aplicar LayerNorm antes de SiLU en cada capa oculta (desactivado por defecto).
+    layer_norm: bool = False
+    # Multiplicar cada entrada de la red por una escala aprendida que empieza en uno.
+    feature_scaling: bool = False
+    # Miembros del conjunto eficiente BatchEnsemble tipo TabM (1 = red simple; 4, 8 o 16).
+    ensemble_members: int = 1
+    # Cómo entran en los rangos las filas ausentes del rasgo: `"ranked"` (hoy) o `"masked_v1"`.
+    absent_rows: str = ABSENT_RANKED
 
     def __post_init__(self):
         bounded_integer(self.columns, "columnas de la rama técnica", 1, 512)
@@ -118,6 +261,24 @@ class TechnicalDenseConfig:
         bounded_integer(self.depth, "capas ocultas de la rama técnica", 1, 8)
         if type(self.session_ranks) is not bool:
             raise ValueError("session_ranks de la rama técnica debe ser un booleano")
+        if type(self.layer_norm) is not bool:
+            raise ValueError("layer_norm de la rama técnica debe ser un booleano")
+        if type(self.feature_scaling) is not bool:
+            raise ValueError("feature_scaling de la rama técnica debe ser un booleano")
+        if self.layer_norm and self.hidden < 2:
+            raise ValueError("LayerNorm en la rama técnica necesita hidden >= 2")
+        if type(self.ensemble_members) is not int or self.ensemble_members not in ENSEMBLE_MEMBERS:
+            raise ValueError("ensemble_members de la rama técnica debe ser 1, 4, 8 o 16")
+        if type(self.absent_rows) is not str or self.absent_rows not in ABSENT_ROWS:
+            raise ValueError("absent_rows de la rama técnica debe ser ranked o masked_v1")
+        if self.absent_rows == ABSENT_MASKED:
+            if not self.session_ranks:
+                raise ValueError("absent_rows='masked_v1' necesita session_ranks=True")
+            if self.columns not in ABSENT_VERSION_BY_COLUMNS:
+                raise ValueError(
+                    "absent_rows='masked_v1' requiere las columnas de long_horizon_v2 (46) o "
+                    "long_horizon_v3 (62)"
+                )
 
     def identity(self):
         result = dict(
@@ -141,6 +302,34 @@ class TechnicalDenseConfig:
                 session="rows_of_one_market_and_decision_instant_in_one_complete_block",
                 normal_scores="inverse_normal_of_average_rank_minus_half_over_the_rows",
             )
+        # Sin enmascarar filas ausentes se conserva literalmente la identidad anterior.
+        if self.absent_rows != ABSENT_RANKED:
+            version = ABSENT_VERSION_BY_COLUMNS[self.columns]
+            result.update(
+                absent_rows=self.absent_rows,
+                absent_feature_version=version,
+                absent_value=0.0,
+                normal_scores="inverse_normal_of_average_rank_minus_half_over_present_rows",
+            )
+        # Sin LayerNorm se conserva literalmente la identidad anterior.
+        if self.layer_norm:
+            result.update(
+                layer_norm=True,
+                normalization="layer_norm_before_silu_on_each_hidden_layer",
+                layer_norm_eps=LAYER_NORM_EPS,
+                layer_norm_affine=True,
+            )
+        # Sin la escala por entrada se conserva literalmente la identidad anterior.
+        if self.feature_scaling:
+            result["feature_scaling"] = "learned_scale_per_input_initialized_at_one_v1"
+        # Sin conjunto se conserva literalmente la identidad anterior.
+        if self.ensemble_members > 1:
+            result.update(
+                ensemble_members=self.ensemble_members,
+                ensemble="batch_ensemble_tabm_v1",
+                ensemble_initialization="first_input_random_signs_rest_ones",
+                ensemble_aggregation="mean_over_members",
+            )
         return result
 
 
@@ -153,14 +342,21 @@ def parse_technical_branch(raw):
         return raw
     if isinstance(raw, dict) and set(raw) == {"columns", "bins", "embedding", "hidden"}:
         return TechnicalBranchConfig(**raw)
-    if isinstance(raw, dict) and set(raw) in (
-        {"columns", "hidden", "depth"},
-        {"columns", "hidden", "depth", "session_ranks"},
-    ):
+    if isinstance(raw, dict) and {"columns", "hidden", "depth"} <= set(raw) <= {
+        "columns",
+        "hidden",
+        "depth",
+        "session_ranks",
+        "layer_norm",
+        "feature_scaling",
+        "ensemble_members",
+        "absent_rows",
+    }:
         return TechnicalDenseConfig(**raw)
     raise ValueError(
         "technical_branch debe declarar columns, bins, embedding y hidden, o columns, hidden y "
-        "depth (y session_ranks), o ser None"
+        "depth (y opcionalmente session_ranks, layer_norm, feature_scaling, ensemble_members y "
+        "absent_rows), o ser None"
     )
 
 
@@ -187,6 +383,7 @@ class TechnicalBranch(nn.Module):
 
     # No mezcla filas: no necesita la sesión completa en un bloque.
     session_level = False
+    uses_raw_charts = False
 
     def __init__(self, hidden_size, config, *, clip, seed, dtype=torch.float32):
         super().__init__()
@@ -251,6 +448,44 @@ class TechnicalBranch(nn.Module):
         return residual
 
 
+class BatchEnsembleLinear(nn.Module):
+    """Capa lineal BatchEnsemble vectorizada: ((x ∘ r_i) Wᵀ) ∘ s_i + b_i para K miembros."""
+
+    def __init__(self, in_features, out_features, members, *, dtype=torch.float32):
+        super().__init__()
+        bounded_integer(in_features, "entradas de BatchEnsembleLinear", 1, 4096)
+        bounded_integer(out_features, "salidas de BatchEnsembleLinear", 1, 4096)
+        if type(members) is not int or members not in ENSEMBLE_MEMBERS or members < 2:
+            raise ValueError("BatchEnsembleLinear necesita 4, 8 o 16 miembros")
+        if dtype not in (torch.float32, torch.float64):
+            raise ValueError("BatchEnsembleLinear necesita precisión FP32 o FP64")
+        self.in_features = in_features
+        self.out_features = out_features
+        self.members = members
+        # Usa nn.Linear con el generador activo para heredar exactamente su inicialización.
+        base = nn.Linear(in_features, out_features, dtype=dtype)
+        device = base.weight.device
+        self.weight = nn.Parameter(base.weight.detach().clone())
+        self.r = nn.Parameter(torch.ones((members, in_features), device=device, dtype=dtype))
+        self.s = nn.Parameter(torch.ones((members, out_features), device=device, dtype=dtype))
+        self.bias = nn.Parameter(base.bias.detach().unsqueeze(0).expand(members, -1).clone())
+
+    def forward(self, values):
+        """Aplicar los K miembros en paralelo sobre [filas, miembros, entradas]."""
+        if (
+            not isinstance(values, torch.Tensor)
+            or values.ndim != 3
+            or values.shape[1] != self.members
+            or values.shape[2] != self.in_features
+            or values.dtype != self.weight.dtype
+        ):
+            raise ValueError(
+                "BatchEnsembleLinear necesita un tensor [filas, miembros, entradas] compatible"
+            )
+        projected = nn.functional.linear(values * self.r, self.weight)
+        return projected * self.s + self.bias
+
+
 class TechnicalDense(nn.Module):
     """Residuo de la representación de cada flujo: red densa sobre sus rasgos técnicos."""
 
@@ -271,16 +506,64 @@ class TechnicalDense(nn.Module):
         widths = [first, *([config.hidden] * config.depth)]
         with torch.device("cpu"), torch.random.fork_rng(devices=[]):
             torch.random.default_generator.manual_seed(int.from_bytes(derived[:7], "little"))
-            self.layers = nn.ModuleList(
-                nn.Linear(before, after, dtype=dtype)
-                for before, after in zip(widths[:-1], widths[1:], strict=True)
-            )
-            # Se crea con el generador derivado para no consumir el global.
-            self.outer = nn.Linear(config.hidden, hidden_size, dtype=dtype)
+            if config.ensemble_members == 1:
+                self.layers = nn.ModuleList(
+                    nn.Linear(before, after, dtype=dtype)
+                    for before, after in zip(widths[:-1], widths[1:], strict=True)
+                )
+                # Se crea con el generador derivado para no consumir el global.
+                self.outer = nn.Linear(config.hidden, hidden_size, dtype=dtype)
+            else:
+                members = config.ensemble_members
+                self.layers = nn.ModuleList(
+                    BatchEnsembleLinear(before, after, members, dtype=dtype)
+                    for before, after in zip(widths[:-1], widths[1:], strict=True)
+                )
+                self.outer = BatchEnsembleLinear(config.hidden, hidden_size, members, dtype=dtype)
         # La salida empieza en cero: el predictor emite lo mismo que sin la rama.
         with torch.no_grad():
             self.outer.weight.zero_()
             self.outer.bias.zero_()
+        if config.ensemble_members > 1:
+            # Inicialización estilo TabM-mini: solo los vectores r de la primera capa arrancan
+            # aleatorios en ±1; los demás r y s empiezan en 1.
+            ensemble_derived = hashlib.sha256(
+                f"{TECHNICAL_DENSE}/ensemble/{seed}".encode()
+            ).digest()
+            with torch.device("cpu"), torch.random.fork_rng(devices=[]):
+                torch.random.default_generator.manual_seed(
+                    int.from_bytes(ensemble_derived[:7], "little")
+                )
+                with torch.no_grad():
+                    signs = (
+                        torch.randint(0, 2, self.layers[0].r.shape, dtype=torch.int64).to(dtype)
+                        * 2.0
+                        - 1.0
+                    )
+                    self.layers[0].r.copy_(signs)
+        # LayerNorm se construye fuera del generador derivado (pesos 1, sesgo 0, sin consumo RNG).
+        self.norms = (
+            nn.ModuleList(
+                nn.LayerNorm(config.hidden, eps=LAYER_NORM_EPS, dtype=dtype)
+                for _ in range(config.depth)
+            )
+            if config.layer_norm
+            else None
+        )
+        # La escala por entrada empieza en uno: la rama calcula lo mismo hasta que se ajusta.
+        self.input_scale = (
+            nn.Parameter(torch.ones(first, dtype=dtype)) if config.feature_scaling else None
+        )
+        # Tablas de índices en dispositivo solo con `masked_v1`; con `ranked` no hay buffers.
+        if config.absent_rows == ABSENT_MASKED:
+            indicator_index, has_indicator, indicator_columns = _presence_tables(config.columns)
+            self.register_buffer("indicator_index", indicator_index)
+            self.register_buffer("has_indicator", has_indicator)
+            self.register_buffer("indicator_columns", indicator_columns)
+        else:
+            self.indicator_index = None
+            self.has_indicator = None
+            self.indicator_columns = None
 
     def get_extra_state(self):
         return dict(
@@ -295,26 +578,101 @@ class TechnicalDense(nn.Module):
         """Si la rama necesita todas las filas de la sesión en el mismo bloque."""
         return self.config.session_ranks
 
-    def ranks(self, features, markets):
+    @property
+    def uses_raw_charts(self):
+        """Si la rama lee los indicadores de ausencia en el bloque del gráfico sin escalar."""
+        return self.config.absent_rows == ABSENT_MASKED
+
+    def presence(self, indicators):
+        """Máscara booleana [filas, columnas] de valores presentes según `absent_rows`."""
+        if (
+            not isinstance(indicators, torch.Tensor)
+            or indicators.ndim != 2
+            or indicators.shape[1] != self.config.columns
+            or indicators.dtype not in (torch.float32, torch.float64)
+        ):
+            raise ValueError(
+                "La presencia de la rama técnica necesita rasgos [filas, columnas] en FP32 o FP64"
+            )
+        if self.config.absent_rows == ABSENT_RANKED:
+            return torch.ones_like(indicators, dtype=torch.bool)
+        if (
+            self.indicator_index is None
+            or self.has_indicator is None
+            or self.indicator_columns is None
+        ):
+            raise ValueError(
+                "La máscara de ausencias de la rama técnica no coincide con su configuración"
+            )
+        if indicators.device != self.indicator_index.device:
+            raise ValueError("Los indicadores de ausencia necesitan el mismo dispositivo")
+        if len(indicators) == 0:
+            return torch.ones_like(indicators, dtype=torch.bool)
+        require_finite(
+            indicators.index_select(1, self.indicator_columns),
+            "Los indicadores de ausencia de la rama técnica deben ser finitos",
+        )
+        return (~self.has_indicator).unsqueeze(0) | (
+            indicators.index_select(1, self.indicator_index) > 0
+        )
+
+    def ranks(self, features, markets, *, indicators=None):
         """Puntuaciones normales del rango de cada rasgo entre las filas de su mercado."""
         if markets is None or len(markets) != len(features):
             raise ValueError("Los rangos de la rama técnica necesitan el mercado de cada fila")
+        if indicators is not None and (
+            not isinstance(indicators, torch.Tensor)
+            or indicators.shape != features.shape
+            or indicators.device != features.device
+            or indicators.dtype != features.dtype
+        ):
+            raise ValueError(
+                "Los indicadores de ausencia deben tener la misma forma, dispositivo y precisión"
+            )
+        if len(features) == 0:
+            return torch.zeros_like(features)
+        mask = (
+            self.presence(features if indicators is None else indicators)
+            if self.config.absent_rows == ABSENT_MASKED
+            else None
+        )
+        first = markets[0]
+        if all(value == first for value in markets):
+            present = torch.ones_like(features, dtype=torch.bool) if mask is None else mask
+            return gaussian_ranks(features, present)
         result = torch.zeros_like(features)
         for market in sorted(set(markets)):
-            rows = torch.tensor(
-                [index for index, value in enumerate(markets) if value == market],
-                dtype=torch.int64,
-                device=features.device,
-            )
-            values = features.index_select(0, rows)
-            present = torch.ones_like(values, dtype=torch.bool)
-            result = result.index_copy(0, rows, gaussian_ranks(values, present))
+            positions = [index for index, value in enumerate(markets) if value == market]
+            if positions[-1] - positions[0] + 1 == len(positions):
+                start, stop = positions[0], positions[-1] + 1
+                values = features[start:stop]
+                present = (
+                    torch.ones_like(values, dtype=torch.bool) if mask is None else mask[start:stop]
+                )
+                result = result.clone()
+                result[start:stop] = gaussian_ranks(values, present)
+            else:
+                rows = (
+                    torch.tensor(positions, dtype=torch.int64, pin_memory=True).to(
+                        device=features.device, non_blocking=True
+                    )
+                    if features.is_cuda
+                    else torch.tensor(positions, dtype=torch.int64, device=features.device)
+                )
+                values = features.index_select(0, rows)
+                present = (
+                    torch.ones_like(values, dtype=torch.bool)
+                    if mask is None
+                    else mask.index_select(0, rows)
+                )
+                result = result.index_copy(0, rows, gaussian_ranks(values, present))
         return result
 
-    def forward(self, charts, markets=None):
+    def forward(self, charts, markets=None, *, raw_charts=None):
         """Residuo [filas, dimensión] a partir del bloque del gráfico ya normalizado.
 
         `markets` es el mercado de cada fila del bloque y solo se usa con `session_ranks`.
+        `raw_charts` es el bloque del gráfico sin escalar cuando `absent_rows="masked_v1"`.
         """
         config = self.config
         if (
@@ -324,13 +682,55 @@ class TechnicalDense(nn.Module):
             or charts.dtype != self.outer.weight.dtype
         ):
             raise ValueError("La rama técnica necesita el bloque del gráfico con sus columnas")
+        if bool(config.layer_norm) != (self.norms is not None):
+            raise ValueError("La normalización de la rama técnica no coincide con su configuración")
+        actual_members = self.outer.members if isinstance(self.outer, BatchEnsembleLinear) else 1
+        if actual_members != config.ensemble_members:
+            raise ValueError("El conjunto de la rama técnica no coincide con su configuración")
+        if (config.absent_rows == ABSENT_MASKED) != (
+            self.indicator_index is not None
+            and self.has_indicator is not None
+            and self.indicator_columns is not None
+        ):
+            raise ValueError(
+                "La máscara de ausencias de la rama técnica no coincide con su configuración"
+            )
+        if raw_charts is not None and (
+            not isinstance(raw_charts, torch.Tensor)
+            or raw_charts.ndim != 2
+            or raw_charts.shape[0] != charts.shape[0]
+            or raw_charts.shape[1] < config.columns
+            or raw_charts.device != charts.device
+            or raw_charts.dtype != charts.dtype
+        ):
+            raise ValueError(
+                "Los rasgos sin escalar de la rama técnica necesitan el mismo lote, dispositivo y "
+                "precisión"
+            )
         hidden = charts[:, charts.shape[1] - config.columns :]
         if config.session_ranks:
             # Los rangos no llevan gradiente hacia las entradas: son una función a trozos constante.
-            hidden = torch.cat((hidden, self.ranks(hidden.detach(), markets)), dim=1)
-        for layer in self.layers:
-            hidden = nn.functional.silu(layer(hidden))
+            indicators = (
+                None
+                if raw_charts is None
+                else raw_charts[:, raw_charts.shape[1] - config.columns :].detach()
+            )
+            hidden = torch.cat(
+                (hidden, self.ranks(hidden.detach(), markets, indicators=indicators)), dim=1
+            )
+        if self.input_scale is not None:
+            hidden = hidden * self.input_scale
+        if config.ensemble_members > 1:
+            hidden = hidden.unsqueeze(1).expand(-1, config.ensemble_members, -1)
+        if self.norms is not None:
+            for layer, norm in zip(self.layers, self.norms, strict=True):
+                hidden = nn.functional.silu(norm(layer(hidden)))
+        else:
+            for layer in self.layers:
+                hidden = nn.functional.silu(layer(hidden))
         residual = self.outer(hidden)
+        if config.ensemble_members > 1:
+            residual = residual.mean(dim=1)
         check_finite(residual, "El residuo de la rama técnica")
         return residual
 

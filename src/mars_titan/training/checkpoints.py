@@ -85,6 +85,7 @@ def _index(directory):
     if (
         not isinstance(index, dict)
         or set(index) != {"schema_version", "latest", "best", "pinned"}
+        or type(index["schema_version"]) is not int
         or index["schema_version"] != 1
         or not isinstance(index["latest"], list)
         or not 1 <= len(index["latest"]) <= 2
@@ -166,6 +167,7 @@ def _read_payload(path, identity, step):
         raise ValueError("El estado no admite una carga restringida íntegra") from error
     if (
         not isinstance(payload, dict)
+        or type(payload.get("schema_version")) is not int
         or payload.get("schema_version") != 1
         or payload.get("identity") != identity
         or not isinstance(payload.get("state"), dict)
@@ -203,9 +205,34 @@ class _CheckpointWriter:
 
 
 def save_training_state(
-    directory: Path, state: dict, *, identity: dict, best: bool = False, pin: bool = False
+    directory: Path,
+    state: dict,
+    *,
+    identity: dict,
+    best: bool = False,
+    pin: bool = False,
+    keep_pinned=None,
+    best_sha256: str | None = None,
 ) -> Path:
-    """Confirmar un estado tras la actualización y conservar sus referencias necesarias."""
+    """Confirmar un estado tras la actualización y conservar sus referencias necesarias.
+
+    `keep_pinned`, si se indica, sustituye los fijados retenidos por el subconjunto cuyas
+    huellas aparecen en la colección (más el nuevo si `pin=True`), en la misma escritura
+    atómica de `latest.json`. `best_sha256`, mutuamente excluyente con `best=True`, marca
+    como elegido un estado ya fijado e íntegro en esa misma escritura atómica.
+    """
+    if best and best_sha256 is not None:
+        raise ValueError("best=True y best_sha256 son mutuamente excluyentes")
+    if best_sha256 is not None and (
+        not isinstance(best_sha256, str) or not re.fullmatch(r"[a-f0-9]{64}", best_sha256)
+    ):
+        raise ValueError("La identidad explícita del punto de control no es válida")
+    if keep_pinned is not None:
+        keep_set = set(keep_pinned)
+        if not all(isinstance(h, str) and re.fullmatch(r"[a-f0-9]{64}", h) for h in keep_set):
+            raise ValueError("Las huellas de estados fijados retenidos no son válidas")
+    else:
+        keep_set = None
     if (
         not isinstance(state, dict)
         or type(state.get("global_step")) is not int
@@ -217,6 +244,7 @@ def save_training_state(
         raise ValueError(f"El estado excede el presupuesto de {MAX_STATE_BYTES // 1024**2} MiB")
     with _locked(directory, identity, create=True) as (directory, canonical):
         index = _index(directory)
+        promoted = _pinned(directory, index, best_sha256) if best_sha256 is not None else None
         previous = [r for r in index["latest"] if _intact(directory, r)]
         if previous and state["global_step"] < previous[0]["global_step"]:
             raise ValueError("El estado retrocede respecto al último paso confirmado")
@@ -248,15 +276,23 @@ def save_training_state(
                 size=size,
                 global_step=state["global_step"],
             )
+            pinned = (
+                list(index["pinned"])
+                if keep_set is None
+                else [r for r in index["pinned"] if r["sha256"] in keep_set]
+            )
+            if pin and record not in pinned and len(pinned) >= 64:
+                raise ValueError("Se ha alcanzado el límite de estados referenciados")
             destination = directory / record["name"]
             os.replace(pending, destination)
             index["latest"] = [record] + [r for r in previous if r["name"] != record["name"]][:1]
             if best:
                 index["best"] = record
-            if pin and record not in index["pinned"]:
-                if len(index["pinned"]) >= 64:
-                    raise ValueError("Se ha alcanzado el límite de estados referenciados")
-                index["pinned"].append(record)
+            elif promoted is not None:
+                index["best"] = promoted
+            if pin and record not in pinned:
+                pinned.append(record)
+            index["pinned"] = pinned
             atomic_json(directory / "latest.json", index)
             keep = {r["name"] for r in index["latest"] + index["pinned"]}
             if index["best"]:

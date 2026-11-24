@@ -1,0 +1,31 @@
+{
+  "schema_version": 1,
+  "kind": "dgx_campaign_contrasts",
+  "description": "Control de cada modelo de la cuarta criba para el contraste pareado. Los placebos de las invenciones se comparan con el mismo control que su invención; el contraste de cada invención con su placebo se calcula aparte.",
+  "controls": {
+    "titans_mac_analytic": "titans_mac",
+    "titans_mac_csos": "titans_mac_analytic",
+    "titans_mac_csos_shuffled": "titans_mac_analytic",
+    "titans_mac_lfmsw": "titans_mac",
+    "titans_mac_lfmsw_random": "titans_mac",
+    "titans_mac_infonce": "titans_mac",
+    "titans_mac_infonce_shuffled": "titans_mac",
+    "titans_mac_ic_mlp": "titans_mac",
+    "titans_mac_ic_mlp_shuffled": "titans_mac",
+    "titans_mac_session_resonator": "titans_mac",
+    "titans_mac_session_resonator_shuffled": "titans_mac",
+    "titans_mac_lfmsw_eval_frozen": "titans_mac",
+    "titans_mac_infonce_eval_frozen": "titans_mac",
+    "titans_mac_infonce_l2_shared": "titans_mac",
+    "titans_mac_ic_mlp_eval_frozen": "titans_mac",
+    "titans_mac_ic_mlp_unanchored": "titans_mac",
+    "titans_mac_session_resonator_t0": "titans_mac",
+    "mars_titan_cognitive": "titans_mac",
+    "mars_titan_cognitive_constant_gate": "mars_titan_cognitive",
+    "mars_titan_cognitive_ic": "mars_titan_cognitive",
+    "mars_titan_cognitive_ic_k64": "mars_titan_cognitive_ic",
+    "mars_titan_cognitive_ic_t01": "mars_titan_cognitive_ic",
+    "mars_titan_cognitive_ic_direct": "mars_titan_cognitive_ic"
+  },
+  "always_kept": []
+}

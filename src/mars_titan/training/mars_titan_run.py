@@ -48,6 +48,11 @@ from mars_titan.models.quantile_head import PINBALL, QUANTILE_HEAD, pinball_loss
 from mars_titan.models.titans.config import MAX_BLOCK_ROWS, MAX_STATE_BYTES, canonical
 from mars_titan.models.titans.episodic_readout import (
     FAMILIARITY_GATES,
+    LABEL_PATHS,
+    LEARNED_TEMPERATURE_MAX,
+    LEARNED_TEMPERATURE_MIN,
+    MAX_LABEL_SCALE,
+    MAX_NEIGHBORS,
     REFINEMENT_INITIALIZATIONS,
     EpisodicReadout,
     apply_episodic_readout,
@@ -167,13 +172,17 @@ class ReadoutRecipe:
     # None ajusta con la pérdida declarada. Un objeto le suma el IC por sesión del punto
     # emitido por el lector (`session_ic_term_v1`), como en la receta del núcleo.
     session_ic_term: dict | None = None
+    # WP8: temperatura aprendida en [0.02, 1.0] y vía directa de etiquetas maduras.
+    learned_temperature: bool = False
+    label_path: str = "concatenated"
+    label_scale: float = 1.0
 
     def session_ic(self):
         """Término de IC por sesión de la receta, o None si no lo declara."""
         if self.session_ic_term is not None and type(self.session_ic_term) is not dict:
             raise ValueError("session_ic_term debe declarar weight y minimum_rows, o ser None")
         term = parse_session_ic_term(self.session_ic_term)
-        if term is not None and term.weighted:
+        if term is not None and (term.weighted or term.liquidity_column is not None):
             # El lector repite bloques ya emitidos y no conserva sus entradas.
             raise ValueError("El término del lector no pondera por liquidez")
         return term
@@ -195,7 +204,7 @@ class ReadoutRecipe:
             (self.update_instants, 1, 256),
             (self.epochs, 1, 1000),
             (self.block_rows, 1, MAX_BLOCK_ROWS),
-            (self.neighbors, 1, 8),
+            (self.neighbors, 1, MAX_NEIGHBORS),
             (self.bank_capacity, 8, 1024),
             (self.bank_seed, 0, 2**64 - 1),
             (self.max_working_bytes, 1024, MAX_STATE_BYTES),
@@ -206,6 +215,7 @@ class ReadoutRecipe:
             self.weight_decay,
             self.temperature,
             self.checkpoint_seconds,
+            self.label_scale,
         )
         clip = self.max_grad_norm
         if (
@@ -216,6 +226,15 @@ class ReadoutRecipe:
             or self.weight_decay < 0
             or not 1e-4 <= self.temperature <= 100
             or self.checkpoint_seconds <= 0
+            or type(self.learned_temperature) is not bool
+            or (
+                self.learned_temperature
+                and not LEARNED_TEMPERATURE_MIN < self.temperature < LEARNED_TEMPERATURE_MAX
+            )
+            or type(self.label_path) is not str
+            or self.label_path not in LABEL_PATHS
+            or not 0 < self.label_scale <= MAX_LABEL_SCALE
+            or (self.label_path == "concatenated" and self.label_scale != 1.0)
             or not valid_precision(self.precision)
             or self.weight_decay_anchor not in ANCHORS
             or type(self.refinement_initialization) is not str
@@ -236,6 +255,7 @@ class ReadoutRecipe:
                 "La receta del lector necesita pérdida, tramo, banco, presupuesto, "
                 "optimizador y checkpoints válidos"
             )
+        object.__setattr__(self, "label_scale", float(self.label_scale))
         if not valid_determinism(self.determinism):
             raise ValueError("El determinismo de la receta es None o una política admitida")
 
@@ -253,6 +273,11 @@ class ReadoutRecipe:
             fields.pop("determinism")
         if fields["familiarity_gate"] is None:
             fields.pop("familiarity_gate")
+        if not fields["learned_temperature"]:
+            fields.pop("learned_temperature")
+        if fields["label_path"] == "concatenated":
+            fields.pop("label_path")
+            fields.pop("label_scale")
         term = self.session_ic()
         if term is None:
             fields.pop("session_ic_term")
@@ -337,7 +362,9 @@ def parameter_roles(readout, admission):
     """Separar parámetros del lector. Con M0 la lectura de episodios no recibe gradiente."""
     roles = dict(episodic_read=[], refiner=[])
     for name, _ in readout.named_parameters():
-        if name.startswith(("query_projection.", "value_projection.", "evidence_bridge.")):
+        if name.startswith(("query_projection.", "value_projection.", "evidence_bridge.")) or (
+            name in ("temperature_logit", "label_gain")
+        ):
             roles["episodic_read"].append(name)
         else:
             roles["refiner"].append(name)
@@ -461,6 +488,10 @@ class MarsTitanInference:
         config = predictor.config
         if not reads_scalar_point(predictor.output_objective):
             raise ValueError("El lector necesita una integración propia del objetivo de salida")
+        if predictor.regional_execution is not None:
+            raise ValueError("El lector aún no admite el programa regional")
+        if predictor.reliability_gates is not None:
+            raise ValueError("El lector aún no recibe la fiabilidad madura")
         self.uses_context = config.session_context is not None
         self._check_parent(predictor)
         if torch.backends.mha.get_fastpath_enabled() or torch.is_inference_mode_enabled():
@@ -499,6 +530,9 @@ class MarsTitanInference:
             or readout.config.max_working_bytes != recipe.max_working_bytes
             or readout.config.refinement_initialization != recipe.refinement_initialization
             or readout.config.familiarity_gate != recipe.familiarity_gate
+            or readout.config.learned_temperature != recipe.learned_temperature
+            or readout.config.label_path != recipe.label_path
+            or readout.config.label_scale != recipe.label_scale
             or recipe.block_rows > min(config.max_batch, readout.config.max_batch)
         ):
             raise ValueError("El lector no corresponde al padre o a la receta declarada")
@@ -844,7 +878,7 @@ class MarsTitanInference:
         return self._pass(source.phase, events, stop=stop, rows=rows)
 
 
-def readout_loss(result, head, index, target, *, loss, supervised=None):
+def readout_loss(result, head, index, target, *, loss, supervised=None, extension=None):
     """Pérdida de las filas `index` con pinball de cinco niveles o L1 de la salida escalar.
 
     Sin `supervised` se evalúa solo la predicción emitida. Con una lista de refinamientos,
@@ -863,7 +897,14 @@ def readout_loss(result, head, index, target, *, loss, supervised=None):
     states = result.readout.states
     if supervised[-1] != len(states):
         raise ValueError("La supervisión por refinamientos debe acabar en el K del lector")
-    losses = [single(*head_predictions(head, states[k - 1])) for k in supervised[:-1]]
+    losses = []
+    for k in supervised[:-1]:
+        point, quantiles = head_predictions(head, states[k - 1])
+        if extension is not None and extension.config.label_path == "direct_v1":
+            point, quantiles = extension.apply_direct_label(
+                point, quantiles, result.readout.reads[k - 1]
+            )
+        losses.append(single(point, quantiles))
     return torch.stack([*losses, final]).mean()
 
 
@@ -1048,6 +1089,7 @@ class ReadoutTrainer(MarsTitanInference):
             target,
             loss=self.recipe.loss,
             supervised=self.recipe.supervised_refinements,
+            extension=self.readout,
         )
 
     def _session_gradients(self, run, matured):

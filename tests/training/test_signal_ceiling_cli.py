@@ -34,7 +34,11 @@ def test_without_run_the_cli_checks_the_declaration_and_prints_its_plan(capsys, 
     assert capsys.readouterr().out == ""
 
 
-def test_a_run_needs_cohorts_and_output_and_the_hold_stops_it_before_reading(tmp_path):
+def test_a_run_needs_cohorts_and_output_and_the_hold_stops_it_before_reading(
+    tmp_path, learning_hold
+):
+    # La protección la pone la prueba: no depende de la que haya o no en la máquina.
+    learning_hold(False)
     with pytest.raises(SystemExit, match="--cohorts y --output"):
         cli()(["--run", "--output", str(tmp_path / "out")])
     # La declaración no existe: la protección se comprueba antes de leerla.

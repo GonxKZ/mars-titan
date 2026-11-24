@@ -40,10 +40,12 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 from mars_titan.data.cohort_files import read_manifest, safe_destination
+from mars_titan.data.panel_signals import PANELS
 from mars_titan.data.storage import atomic_json
 
 from .comparison_cohorts import (
     FULL_VIEW_RULE,
+    TECHNICAL,
     checked_extensions,
     write_cohort,
     write_full_view,
@@ -58,7 +60,7 @@ ROOT = Path(__file__).resolve().parents[3]
 DECLARATION = "configs/experiments/comparison-campaign-gpu-v1.json"
 KIND = "comparison_campaign_v1"
 # Una campaña es de EE. UU. o de la vista conjunta de EE. UU. y China.
-MARKETS = ("US", "US+CN")
+MARKETS = ("US", "CN", "US+CN")
 MACHINES = ("references", "mars_titan")
 # Los orígenes `history` son años anteriores que amplían la evidencia. Forman una segunda
 # etapa, que empieza cuando la primera ha recorrido todos sus niveles.
@@ -150,8 +152,37 @@ def _checked_rule(rule, runner):
         epochs=rule["max_epochs"],
         modes=CHRONOLOGICAL_MODES,
         initial_reported=runner == "fit",
+        adaptive=runner == "fit",
     )
     return rule
+
+
+# Columnas de los rasgos técnicos que el término de IC lee por su posición contada desde el
+# final del bloque: el alfa conocido de la fila, que suma el término de lo operable, y el
+# volumen negociado, que pondera el término de lo líquido.
+NAMED_COLUMNS = dict(
+    offset_column=("alpha_percent", "El desplazamiento conocido"),
+    liquidity_column=("log_dollar_volume_21", "La columna de liquidez"),
+)
+
+
+def _technical_reading(root, path, model, read):
+    """Columnas que lee la rama técnica de un modelo y las que su término de IC lee por posición.
+
+    Todas se cuentan desde el final del bloque del gráfico, así que dependen de cuántas
+    columnas añade la versión de rasgos de la campaña. `read` guarda las recetas ya leídas.
+    """
+    if path not in read:
+        read[path] = json.loads((Path(root) / path).read_text(encoding="utf-8"))
+    recipe = read[path]
+    predictor = dict(recipe.get("predictor") or {}) | dict(model.get("predictor_changes") or {})
+    branch = predictor.get("technical_branch")
+    term = (recipe.get("recipe") or {}).get("session_ic_term")
+    return (
+        # Una rama declarada sin columnas cuenta como una que lee cero: no pasa la regla.
+        branch.get("columns", 0) if isinstance(branch, dict) else None,
+        {key: term[key] for key in NAMED_COLUMNS if key in term} if isinstance(term, dict) else {},
+    )
 
 
 def job_rule(declaration, model):
@@ -283,7 +314,8 @@ def checked_declaration(document, *, root=ROOT, check_recipe_files=True):
         and document.get("kind") == KIND
         and document.get("final_test_access") is False
         and document.get("market") in MARKETS,
-        "La declaración no es la campaña de comparación de US o de US+CN con el test final cerrado",
+        "La declaración no es la campaña de comparación de US, de CN o de US+CN con el test final "
+        "cerrado",
     )
     origins = document.get("origins")
     _require(
@@ -320,10 +352,11 @@ def checked_declaration(document, *, root=ROOT, check_recipe_files=True):
         and cohort.get("rule", FULL_VIEW_RULE) == FULL_VIEW_RULE,
         "La cohorte declara su tamaño y, si usa la vista completa de cada origen, su regla",
     )
-    # La cohorte por huella solo existe para US: la conjunta usa todos los activos de la vista.
+    # La cohorte por huella solo existe para US: China sola y la conjunta usan todos los activos
+    # de la vista.
     _require(
         document["market"] == "US" or cohort.get("rule") == FULL_VIEW_RULE,
-        "Una campaña conjunta usa la vista completa de cada origen",
+        "Una campaña de China o conjunta usa la vista completa de cada origen",
     )
     stopping = document.get("stopping")
     _require(
@@ -377,7 +410,11 @@ def checked_declaration(document, *, root=ROOT, check_recipe_files=True):
     )
     # Extensión de entradas de toda la campaña: la declaran sus cohortes, no cada modelo, para
     # que todos sus trabajos compartan índices y copias empaquetadas.
-    checked_extensions(document.get("inputs"))
+    inputs = checked_extensions(document.get("inputs"), markets=document["market"].split("+"))
+    technical = () if inputs is None else TECHNICAL[inputs["technical"]]
+    panel = () if not inputs or "panel" not in inputs else PANELS[inputs["panel"]["name"]]
+    branch_columns = len(technical) + len(panel)
+    read = {}
     if "analysis" in document:
         from mars_titan.evaluation.comparison_protocol import checked
 
@@ -397,6 +434,28 @@ def checked_declaration(document, *, root=ROOT, check_recipe_files=True):
         )
         if runner in GPU_RUNNERS:
             job_rule(document, model)
+        if runner in GPU_RUNNERS and check_recipe_files:
+            # La rama y las columnas del término de IC se cuentan desde el final del bloque:
+            # con otra versión de rasgos leerían otras columnas sin que nada fallara.
+            columns, placed = _technical_reading(root, recipes[model["recipe"]], model, read)
+            _require(
+                columns is None or columns == branch_columns,
+                (
+                    f"La rama técnica del modelo {name} lee {columns} columnas y con el panel "
+                    f"declarado ({len(panel)}) más los rasgos técnicos ({len(technical)}) debe "
+                    f"leer exactamente {branch_columns}"
+                    if panel
+                    else f"La rama técnica del modelo {name} lee {columns} columnas y los rasgos "
+                    f"declarados por la campaña tienen {len(technical)}"
+                ),
+            )
+            for key, position in placed.items():
+                wanted, label = NAMED_COLUMNS[key]
+                _require(
+                    wanted in technical and position == technical.index(wanted) - len(technical),
+                    f"{label} del modelo {name} lee la columna {position} y la de {wanted} "
+                    "es otra con los rasgos declarados por la campaña",
+                )
         if "continuation" in model:
             _require(
                 model["continuation"] == CONTINUATION,

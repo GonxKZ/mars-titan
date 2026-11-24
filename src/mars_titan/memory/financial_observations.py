@@ -13,6 +13,7 @@ import pyarrow as pa
 import pyarrow.parquet as pq
 
 from mars_titan import nvtx_ranges
+from mars_titan.data import panel_signals
 from mars_titan.data.batches import atomic_parquet_batches
 from mars_titan.data.cohort_files import read_manifest, safe_destination
 from mars_titan.data.price_windows import PRICE_FEATURES, window_rows
@@ -74,7 +75,12 @@ def _identity(dataset, phase):
             raise ValueError("La fase no conserva los límites de la supervisión")
     if phase.warmup_start < 946_684_800_000_000:
         raise ValueError("La edición histórica comienza en 2000")
-    return dict(
+    code = {
+        "financial_observations": sha256(Path(__file__)),
+        "corpus_inputs": sha256(Path(corpus_inputs.__file__)),
+        "external_order": sha256(Path(corpus_source.__file__)),
+    }
+    identity = dict(
         schema_version=1,
         recipe="financial_observation_positions_v2",
         source_sha256=dataset.identity,
@@ -87,12 +93,15 @@ def _identity(dataset, phase):
         pyarrow=pa.__version__,
         numpy=np.__version__,
         duckdb=duckdb.__version__,
-        code={
-            "financial_observations": sha256(Path(__file__)),
-            "corpus_inputs": sha256(Path(corpus_inputs.__file__)),
-            "external_order": sha256(Path(corpus_source.__file__)),
-        },
+        code=code,
     )
+    if dataset.panel is not None:
+        code["panel_signals"] = sha256(Path(panel_signals.__file__))
+        identity["panel"] = dict(
+            name=dataset.panel["name"],
+            sha256=dict(sorted(dataset.panel["sha256"].items())),
+        )
+    return identity
 
 
 def index_identity(dataset, phase):
@@ -668,6 +677,7 @@ class FinancialObservationSource:
         for asset in self._assets:
             for kind in ("prices", "samples", "labels"):
                 self.dataset._file(asset, kind)
+        self.dataset.verify_panels()
         return path
 
     def _input(self, identity, group, row, at):

@@ -21,6 +21,11 @@ Cada activo solo se atiende a sí mismo y la mezcla se reduce a W_o W_v n_i. As�
 información de los demás activos del efecto de añadir una capa residual.
 
 C5 necesita todas las filas de la sesión en el mismo bloque (`session_level`).
+
+Por defecto (`position="after_mac"`) mezcla la salida de MAC, antes de que la rama técnica
+sume su residuo, así que no ve esa señal. Con `position="after_technical"` mezcla después de
+la rama técnica: e_i es entonces la representación completa que lee la cabeza. Es otra
+identidad y necesita que la rama técnica esté declarada.
 """
 
 import hashlib
@@ -36,18 +41,27 @@ from .state import check_finite
 CROSS_ASSET_ATTENTION = "cross_asset_attention_v1"
 MODES = ("same_session", "self_only")
 HEADS = (1, 2, 4, 8)
+# Posición declarada y el nombre con el que entra en la identidad. El de la posición de
+# partida es el de siempre: una declaración sin `position` conserva su identidad.
+POSITIONS = dict(
+    after_mac="after_mac_before_head",
+    after_technical="after_technical_branch_before_head",
+)
 
 
 @dataclass(frozen=True)
 class CrossAssetAttentionConfig:
     heads: int = 4
     mode: str = "same_session"
+    position: str = "after_mac"
 
     def __post_init__(self):
         if type(self.heads) is not int or self.heads not in HEADS:
             raise ValueError(f"C5 admite {HEADS} cabezas")
         if type(self.mode) is not str or self.mode not in MODES:
             raise ValueError("El modo de C5 debe ser same_session o self_only")
+        if type(self.position) is not str or self.position not in POSITIONS:
+            raise ValueError("La posición de C5 debe ser after_mac o after_technical")
 
     def identity(self):
         return dict(
@@ -58,7 +72,7 @@ class CrossAssetAttentionConfig:
             groups="same_market_and_prediction_instant_in_the_block"
             if self.mode == "same_session"
             else "each_row_with_itself",
-            position="after_mac_before_head",
+            position=POSITIONS[self.position],
             normalization="layer_norm_before_projections",
             output="residual_with_zero_initialized_projection",
             state="none",
@@ -73,9 +87,12 @@ def parse_cross_asset_attention(raw):
     if type(raw) is CrossAssetAttentionConfig:
         raw.__post_init__()
         return raw
-    if isinstance(raw, dict) and set(raw) == {"heads", "mode"}:
+    if isinstance(raw, dict) and {"heads", "mode"} <= set(raw) <= {"heads", "mode", "position"}:
         return CrossAssetAttentionConfig(**raw)
-    raise ValueError("cross_asset_attention debe declarar heads y mode, o ser None")
+    raise ValueError(
+        "cross_asset_attention debe declarar heads y mode, con position si no es la de partida, "
+        "o ser None"
+    )
 
 
 class CrossAssetAttention(nn.Module):
@@ -136,22 +153,59 @@ class CrossAssetAttention(nn.Module):
             raise ValueError("C5 exige FP32 o FP64 explícitos, sin autocast")
         rows = len(encoded)
         heads, width = self.config.heads, self.head_dim
-        q, k, v = self.qkv(self.norm(encoded)).view(rows, 3, heads, width).permute(1, 2, 0, 3)
-        mixed = torch.zeros_like(encoded)
-        for members in self.groups(markets, prediction_at):
-            index = torch.tensor(members, dtype=torch.int64, device=encoded.device)
-            size = len(members)
-            # Con self_only se calcula la misma matriz y la máscara solo deja la diagonal.
-            allowed = (
-                torch.ones(size, size, dtype=torch.bool, device=encoded.device)
-                if self.config.mode == "same_session"
-                else torch.eye(size, dtype=torch.bool, device=encoded.device)
-            )
-            query, key, value = (part.index_select(1, index) for part in (q, k, v))
-            logits = query @ key.transpose(-1, -2) / math.sqrt(width)
-            weights = torch.softmax(logits.masked_fill(~allowed, -math.inf), dim=-1)
-            part = (weights @ value).transpose(0, 1).reshape(size, self.hidden_size)
-            mixed = mixed.index_copy(0, index, part)
+        projected = self.qkv(self.norm(encoded))
+        if self.config.mode == "self_only":
+            # Con G(i) = {i} el peso softmax es exactamente 1 y la mezcla es V_i, con gradiente
+            # nulo en Q y K. Evita construir matrices N×N y es idéntico bit a bit.
+            mixed = projected[:, 2 * self.hidden_size :]
+            result = encoded + self.out(mixed)
+            check_finite(result, "La representación con atención entre activos")
+            return result
+        q, k, v = projected.view(rows, 3, heads, width).permute(1, 2, 0, 3)
+        use_flash = (
+            encoded.is_cuda
+            and width >= 16
+            and (width & (width - 1)) == 0
+            and width <= 128
+        )
+        if use_flash:
+            from .fused_cuda_kernels import fused_flash_cross_asset
+
+        groups = self.groups(markets, prediction_at)
+        if len(groups) == 1:
+            if use_flash:
+                part = fused_flash_cross_asset(q, k, v)
+            else:
+                logits = q @ k.transpose(-1, -2) / math.sqrt(width)
+                part = torch.softmax(logits, dim=-1) @ v
+            mixed = part.transpose(0, 1).reshape(rows, self.hidden_size)
+        else:
+            mixed = torch.zeros_like(encoded)
+            for members in groups:
+                size = len(members)
+                contiguous = members[-1] - members[0] + 1 == size and members == list(
+                    range(members[0], members[0] + size)
+                )
+                if contiguous:
+                    start, stop = members[0], members[0] + size
+                    query, key, value = q[:, start:stop], k[:, start:stop], v[:, start:stop]
+                else:
+                    if encoded.is_cuda:
+                        pinned = torch.tensor(members, dtype=torch.int64, pin_memory=True)
+                        index = pinned.to(device=encoded.device, non_blocking=True)
+                    else:
+                        index = torch.tensor(members, dtype=torch.int64, device=encoded.device)
+                    query, key, value = (part.index_select(1, index) for part in (q, k, v))
+                if use_flash:
+                    part = fused_flash_cross_asset(query, key, value)
+                else:
+                    logits = query @ key.transpose(-1, -2) / math.sqrt(width)
+                    part = torch.softmax(logits, dim=-1) @ value
+                part = part.transpose(0, 1).reshape(size, self.hidden_size)
+                if contiguous:
+                    mixed[start:stop] = part
+                else:
+                    mixed = mixed.index_copy(0, index, part)
         result = encoded + self.out(mixed)
         check_finite(result, "La representación con atención entre activos")
         return result

@@ -290,4 +290,10 @@ EXEMPT_SITES = {
         "inferencia. No cambia parámetros compartidos y sus reglas delta y proximal hacen la "
         "misma escritura sin resolver un sistema"
     ),
+    "mars_titan.models.titans.cross_sectional_rank_memory:CrossSectionalRankMemory.read_features": (
+        "La memoria transversal de rango resuelve en cada lectura la regresión contraída de su "
+        "estado, que solo acumula etiquetas ya maduras. No cambia parámetros compartidos: los "
+        "suyos (proyecciones y regularización) solo los mueve el optimizador, que sí pasa por "
+        "la guarda"
+    ),
 }

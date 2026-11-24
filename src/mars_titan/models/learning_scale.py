@@ -21,7 +21,7 @@ Ninguna estadística usa filas de validación, calibración ni evaluación. Sin 
 import hashlib
 import json
 import math
-from dataclasses import asdict, dataclass
+from dataclasses import dataclass
 
 import numpy as np
 import torch
@@ -56,6 +56,12 @@ class LearningScale:
     clip: float = 5.0
     price_returns: bool = True
     zero_median: bool = True
+    # False recorta en seco en ±clip. True usa z / sqrt(1 + (z / clip)^2), que queda dentro
+    # del mismo intervalo y conserva el orden y el gradiente de los valores extremos.
+    smooth_clip: bool = False
+    # None aplica `_floored` al bloque `charts` completo. Un entero k separa las últimas k
+    # columnas (rasgos técnicos) del prefijo visual para calcular su suelo relativo aparte.
+    chart_technical_columns: int | None = None
 
     def __post_init__(self):
         if (
@@ -64,13 +70,19 @@ class LearningScale:
             or not 1 <= self.clip <= 100
             or type(self.price_returns) is not bool
             or type(self.zero_median) is not bool
+            or type(self.smooth_clip) is not bool
         ):
             raise ValueError(
                 "learning_scale necesita clip entre 1 y 100 y dos opciones booleanas explícitas"
             )
+        if self.chart_technical_columns is not None and (
+            type(self.chart_technical_columns) is not int
+            or not 1 <= self.chart_technical_columns <= 512
+        ):
+            raise ValueError("chart_technical_columns debe ser None o un entero entre 1 y 512")
 
     def identity(self):
-        return dict(
+        result = dict(
             name=TRANSFORM,
             clip=float(self.clip),
             price_window="session_returns_v1" if self.price_returns else "anchored_logs",
@@ -82,13 +94,35 @@ class LearningScale:
             absent_values="zero_after_scaling",
             output="head_output_times_the_10_90_interval_of_the_fit_labels_over_2_ln_2",
         )
+        # Sin el recorte suave la identidad anterior se conserva literalmente.
+        if self.smooth_clip:
+            result["clip_shape"] = "z_over_sqrt_of_one_plus_z_over_clip_squared_v1"
+        # Sin separar el subbloque técnico la identidad anterior se conserva literalmente.
+        if self.chart_technical_columns is not None:
+            result["chart_technical_block"] = dict(
+                columns=self.chart_technical_columns,
+                position="last_columns_of_charts",
+                floor="independent_relative_floor_per_subblock_v1",
+            )
+        return result
+
+
+# Campos que toda receta declara y los que puede añadir.
+_REQUIRED_FIELDS = frozenset({"clip", "price_returns", "zero_median"})
+_OPTIONAL_FIELDS = frozenset({"smooth_clip", "chart_technical_columns"})
+# Más allá de este múltiplo del recorte, el recorte suave ya vale el propio recorte en FP32.
+# Acotar ahí evita que el cuadrado desborde y anule la salida.
+_SMOOTH_LIMIT = 1e6
 
 
 def parse_learning_scale(value):
     """Aceptar la declaración JSON de una receta, con sus tres campos explícitos."""
     if value is None or isinstance(value, LearningScale):
         return value
-    if not isinstance(value, dict) or set(value) != set(asdict(LearningScale())):
+    if (
+        not isinstance(value, dict)
+        or not _REQUIRED_FIELDS <= set(value) <= _REQUIRED_FIELDS | _OPTIONAL_FIELDS
+    ):
         raise ValueError("learning_scale debe declarar clip, price_returns y zero_median")
     return LearningScale(**value)
 
@@ -142,12 +176,15 @@ def _robust(values):
     return center, np.maximum((upper - lower) / 2, STD_FRACTION * values.std(axis=0))
 
 
+_MIN_FP32_SCALE = float(np.finfo(np.float32).tiny)
+
+
 def _floored(scale):
     """Aplicar el suelo relativo del bloque. Sin ninguna columna con dispersión, la unidad."""
-    positive = scale[scale > 0]
+    positive = scale[scale >= _MIN_FP32_SCALE]
     if not len(positive):
         return np.ones_like(scale)
-    return np.maximum(scale, RELATIVE_FLOOR * np.median(positive))
+    return np.maximum(scale, max(RELATIVE_FLOOR * float(np.median(positive)), _MIN_FP32_SCALE))
 
 
 def _masked_columns(values, observed):
@@ -200,10 +237,19 @@ def fit_statistics(config, inputs, presence, targets):
     )
     # Los canales de precios tienen unidades distintas, así que cada uno es su propio bloque.
     center, scale = _robust(window[..., :channels][present])
-    result["prices"] = center, np.where(scale > 0, scale, 1.0)
+    result["prices"] = center, np.where(scale >= _MIN_FP32_SCALE, scale, 1.0)
     for name in DENSE:
         center, scale = _robust(inputs[name][presence[:, PRESENCE_BIT[name]]])
-        result[name] = center, _floored(scale)
+        if name == "charts" and config.chart_technical_columns is not None:
+            split = len(scale) - config.chart_technical_columns
+            if split <= 0:
+                raise ValueError(
+                    "chart_technical_columns debe ser menor que la anchura del bloque charts"
+                )
+            floored = np.concatenate([_floored(scale[:split]), _floored(scale[split:])])
+            result[name] = center, floored
+        else:
+            result[name] = center, _floored(scale)
     for name in NUMERIC:
         values = inputs[name]
         third, remainder = divmod(values.shape[1], 3)
@@ -220,21 +266,27 @@ def fit_statistics(config, inputs, presence, targets):
         )
     lower, upper = np.quantile(targets, (0.1, 0.9))
     label = float((upper - lower) / INITIAL_INTERVAL)
-    if not label > 0:
-        raise ValueError("Las etiquetas del ajuste no tienen dispersión")
+    label_f32 = float(np.float32(label))
+    if not label > 0 or not math.isfinite(label_f32) or label_f32 <= 0:
+        raise ValueError("Las etiquetas del ajuste no tienen dispersión representable en FP32")
+    modalities = {}
+    for name, (center, scale) in result.items():
+        center_f32 = np.asarray(center, dtype=np.float32)
+        scale_f32 = np.asarray(scale, dtype=np.float32)
+        if (
+            not np.isfinite(center_f32).all()
+            or not np.isfinite(scale_f32).all()
+            or not (scale_f32 >= _MIN_FP32_SCALE).all()
+        ):
+            raise ValueError(f"Las estadísticas de {name} desbordan FP32")
+        modalities[name] = dict(center=center_f32.tolist(), scale=scale_f32.tolist())
     return dict(
         schema_version=1,
         transform=config.identity(),
         rows=rows,
         labels=len(targets),
         label_scale=label,
-        modalities={
-            name: dict(
-                center=np.asarray(center, dtype=np.float32).tolist(),
-                scale=np.asarray(scale, dtype=np.float32).tolist(),
-            )
-            for name, (center, scale) in result.items()
-        },
+        modalities=modalities,
     )
 
 
@@ -262,33 +314,65 @@ class LearningScaler(nn.Module):
         }
         if any(self.widths[name] % 3 for name in NUMERIC):
             raise ValueError("Una modalidad numérica necesita valores, presencia y antigüedad")
+        if (
+            config.chart_technical_columns is not None
+            and config.chart_technical_columns >= self.widths["charts"]
+        ):
+            raise ValueError(
+                "chart_technical_columns debe ser menor que la anchura del bloque charts"
+            )
         for name, width in self.widths.items():
             self.register_buffer(f"{name}_center", torch.zeros(width, dtype=dtype))
             self.register_buffer(f"{name}_inverse", torch.ones(width, dtype=dtype))
         self.register_buffer("fitted", torch.zeros((), dtype=torch.bool))
+        self._fitted_cache = None
+
+    def _is_fitted(self):
+        """Comprobar `self.fitted` sin sincronizar CUDA mientras el buffer no cambie."""
+        flag = self.fitted
+        if flag.device.type != "cuda":
+            return bool(flag)
+        key = (id(flag), flag._version)
+        cached = self._fitted_cache
+        if cached is not None and cached[0] == key:
+            return cached[1]
+        value = bool(flag)
+        self._fitted_cache = (key, value)
+        return value
 
     def load(self, statistics):
         """Copiar las estadísticas de `fit_statistics` tras comprobar su forma y su rango."""
         if (
             not isinstance(statistics, dict)
+            or type(statistics.get("schema_version")) is not int
             or statistics.get("schema_version") != 1
             or statistics.get("transform") != self.config.identity()
-            or set(statistics.get("modalities", ())) != set(MODALITIES)
+            or not isinstance(statistics.get("modalities"), dict)
+            or set(statistics["modalities"]) != set(MODALITIES)
         ):
             raise ValueError("Las estadísticas no corresponden a esta declaración de escalas")
         values = {}
         for name, width in self.widths.items():
-            center = torch.tensor(statistics["modalities"][name]["center"], dtype=torch.float64)
-            scale = torch.tensor(statistics["modalities"][name]["scale"], dtype=torch.float64)
+            entry = statistics["modalities"][name]
+            if not isinstance(entry, dict) or "center" not in entry or "scale" not in entry:
+                raise ValueError(f"Las estadísticas de {name} no tienen forma o rango válidos")
+            center = torch.tensor(entry["center"], dtype=torch.float64)
+            scale = torch.tensor(entry["scale"], dtype=torch.float64)
+            target_dtype = getattr(self, f"{name}_center").dtype
+            center_cast = center.to(dtype=target_dtype)
+            inverse_cast = scale.reciprocal().to(dtype=target_dtype)
             if (
                 center.shape != (width,)
                 or scale.shape != (width,)
                 or not torch.isfinite(center).all()
                 or not torch.isfinite(scale).all()
                 or not (scale > 0).all()
+                or not torch.isfinite(center_cast).all()
+                or not torch.isfinite(inverse_cast).all()
+                or not (inverse_cast > 0).all()
             ):
                 raise ValueError(f"Las estadísticas de {name} no tienen forma o rango válidos")
-            values[name] = center, scale.reciprocal()
+            values[name] = center_cast, inverse_cast
         with torch.no_grad():
             for name, (center, inverse) in values.items():
                 getattr(self, f"{name}_center").copy_(center)
@@ -297,7 +381,13 @@ class LearningScaler(nn.Module):
 
     def _scale(self, name, values):
         center, inverse = getattr(self, f"{name}_center"), getattr(self, f"{name}_inverse")
-        return ((values - center) * inverse).clamp(-self.config.clip, self.config.clip)
+        clip = self.config.clip
+        if self.config.smooth_clip:
+            scaled = ((values - center) * inverse).clamp(
+                -_SMOOTH_LIMIT * clip, _SMOOTH_LIMIT * clip
+            )
+            return scaled * torch.rsqrt(1.0 + (scaled / clip).square())
+        return ((values - center) * inverse).clamp(-clip, clip)
 
     def forward(self, inputs, presence):
         """Devolver las mismas modalidades, con la misma forma, tipo y dispositivo.
@@ -306,30 +396,90 @@ class LearningScaler(nn.Module):
         después de escalar: una sesión sin mercado, un bloque denso sin dato y un valor
         numérico no observado.
         """
-        if not bool(self.fitted):
+        if not self._is_fitted():
             raise ValueError("Faltan las estadísticas del tramo de ajuste de learning_scale")
         result = {}
         window = inputs["prices"]
-        if self.config.price_returns:
-            window = price_returns(window)
         channels = len(PRICE_FEATURES)
-        scaled = self._scale("prices", window[..., :channels])
-        zero = torch.zeros((), dtype=scaled.dtype, device=scaled.device)
-        if window.shape[-1] > channels:
-            scaled = torch.where(window[..., -1:] > 0, scaled, zero)
-        result["prices"] = torch.cat([scaled, window[..., channels:]], dim=-1)
-        for name, bit in PRESENCE_BIT.items():
-            result[name] = torch.where(
-                presence[:, bit : bit + 1], self._scale(name, inputs[name]), zero
+        use_cuda_fused = (
+            window.is_cuda
+            and window.dtype in (torch.float32, torch.float64)
+            and not (torch.is_grad_enabled() and window.requires_grad)
+            # Los kernels fusionados solo implementan el recorte duro.
+            and not self.config.smooth_clip
+        )
+        if use_cuda_fused:
+            from mars_titan.models.titans.fused_cuda_kernels import (
+                fused_price_returns_and_scale,
+                fused_scale_numeric_triple,
+                fused_scale_presence,
             )
+        if (
+            use_cuda_fused
+            and window.ndim == 3
+            and window.shape[1] == 64
+            and window.shape[2] in (channels, channels + 1)
+        ):
+            result["prices"] = fused_price_returns_and_scale(
+                window,
+                self.prices_center,
+                self.prices_inverse,
+                do_returns=self.config.price_returns,
+                do_scale=True,
+                clip=self.config.clip,
+            )
+        else:
+            if self.config.price_returns:
+                window = price_returns(window)
+            scaled = self._scale("prices", window[..., :channels])
+            zero = torch.zeros((), dtype=scaled.dtype, device=scaled.device)
+            if window.shape[-1] > channels:
+                scaled = torch.where(window[..., -1:] > 0, scaled, zero)
+            result["prices"] = torch.cat([scaled, window[..., channels:]], dim=-1)
+        zero = torch.zeros((), dtype=result["prices"].dtype, device=result["prices"].device)
+        for name, bit in PRESENCE_BIT.items():
+            values = inputs[name]
+            if (
+                use_cuda_fused
+                and values.is_cuda
+                and values.ndim == 2
+                and not (torch.is_grad_enabled() and values.requires_grad)
+            ):
+                result[name] = fused_scale_presence(
+                    values,
+                    getattr(self, f"{name}_center"),
+                    getattr(self, f"{name}_inverse"),
+                    presence,
+                    bit,
+                    clip=self.config.clip,
+                )
+            else:
+                result[name] = torch.where(
+                    presence[:, bit : bit + 1], self._scale(name, values), zero
+                )
         for name in NUMERIC:
             values = inputs[name]
             third = self.widths[name] // 3
-            observed = values[..., third : 2 * third]
-            scaled = self._scale(name, values)
-            # Un valor no observado se queda en cero, igual que en la edición.
-            result[name] = torch.cat(
-                [scaled[..., :third] * observed, observed, scaled[..., 2 * third :] * observed],
-                dim=-1,
-            )
+            if (
+                use_cuda_fused
+                and values.is_cuda
+                and values.ndim == 2
+                and third > 0
+                and not (torch.is_grad_enabled() and values.requires_grad)
+            ):
+                result[name] = fused_scale_numeric_triple(
+                    values,
+                    getattr(self, f"{name}_center"),
+                    getattr(self, f"{name}_inverse"),
+                    third=third,
+                    clip=self.config.clip,
+                )
+            else:
+                observed = values[..., third : 2 * third]
+                scaled = self._scale(name, values)
+                # Un valor no observado se queda en cero, igual que en la edición.
+                result[name] = torch.cat(
+                    [scaled[..., :third] * observed, observed, scaled[..., 2 * third :] * observed],
+                    dim=-1,
+                )
         return result

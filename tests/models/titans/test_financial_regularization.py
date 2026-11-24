@@ -155,7 +155,9 @@ def chronological(tmp_path_factory):
     return corpus(tmp_path_factory.mktemp("regularized"))
 
 
-@pytest.mark.parametrize("accumulation", [None, 1], ids=["segment_graph", "flow_block_replay"])
+# Con dropout, la repetición por bloques necesita el instante entero en un bloque: las máscaras
+# se sortean con la huella del lote y un bloque parcial tendría otras. El corpus tiene tres flujos.
+@pytest.mark.parametrize("accumulation", [None, 8], ids=["segment_graph", "flow_block_replay"])
 def test_resume_with_dropout_reproduces_the_continuous_run(
     chronological, tmp_path, monkeypatch, accumulation
 ):
@@ -205,4 +207,57 @@ def test_resume_with_dropout_reproduces_the_continuous_run(
             else:
                 torch.testing.assert_close(left[key], right[key], rtol=0, atol=0)
     assert resumed["history"] == expected["history"]
+    torch.backends.mha.set_fastpath_enabled(previous)
+
+
+def _regularized_trainer(streams, output, monkeypatch, **options):
+    from mars_titan.models.titans.financial import FinancialConfig, FinancialPredictor
+    from tests.training.test_financial_run import trainer
+
+    monkeypatch.setattr(torch.backends.mha, "get_fastpath_enabled", lambda: False)
+    config = FinancialConfig(
+        streams["train"].specification(),
+        variant="mac_online",
+        hidden_size=32,
+        seed=42,
+        fusion_dropout=0.1,
+        modality_dropout=0.3,
+    )
+    model = FinancialPredictor(config, dtype=torch.float64)
+    return trainer(streams, output, model=model, epochs=2, fixed=True, **options)
+
+
+def test_the_replay_with_dropout_uses_the_masks_of_the_emission(
+    chronological, tmp_path, monkeypatch
+):
+    from tests.training.test_financial_run import named_records
+
+    previous = torch.backends.mha.get_fastpath_enabled()
+    torch.backends.mha.set_fastpath_enabled(False)
+    _, streams = chronological
+    full = _regularized_trainer(streams, tmp_path / "full", monkeypatch)
+    expected = full.run()
+    blocks = _regularized_trainer(streams, tmp_path / "blocks", monkeypatch, accumulation_rows=8)
+    report = blocks.run()
+    # Mismas predicciones y, con las mismas máscaras, el mismo gradiente que el tramo entero.
+    assert blocks.audit == full.audit
+    assert [h["validation"] for h in report["history"]] == [
+        h["validation"] for h in expected["history"]
+    ]
+    for left, right in zip(named_records(blocks), named_records(full), strict=True):
+        for key, value in right.items():
+            if value is None:
+                assert left[key] is None, key
+            else:
+                torch.testing.assert_close(left[key], value, rtol=1e-10, atol=1e-13)
+    torch.backends.mha.set_fastpath_enabled(previous)
+
+
+def test_a_partial_block_with_dropout_is_rejected(chronological, tmp_path, monkeypatch):
+    previous = torch.backends.mha.get_fastpath_enabled()
+    torch.backends.mha.set_fastpath_enabled(False)
+    _, streams = chronological
+    engine = _regularized_trainer(streams, tmp_path / "partial", monkeypatch, accumulation_rows=1)
+    with pytest.raises(ValueError, match="dropout por lote"):
+        engine.run()
     torch.backends.mha.set_fastpath_enabled(previous)

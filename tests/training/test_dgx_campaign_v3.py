@@ -7,6 +7,7 @@ from pathlib import Path
 import pytest
 
 from mars_titan.data import technical_features
+from mars_titan.models.titans.cross_asset_attention import parse_cross_asset_attention
 from mars_titan.training import comparison_campaign as campaign
 from mars_titan.training import mars_titan_run as readout
 from mars_titan.training.comparison_cohorts import FULL_VIEW_RULE
@@ -921,3 +922,495 @@ def test_the_extension_of_v10_changes_one_recipe_field_per_model():
     assert set(declared.values()) == {"titans_mac"}
     jobs = campaign.plan(document, "mars_titan")
     assert len({job.model for job in jobs if job.tier.startswith("x1_")}) == 7
+
+
+def test_the_first_screen_of_the_new_base_changes_one_recipe_field_per_model():
+    path = ROOT / "configs/experiments/us-campaign-v11-screen1.json"
+    source = ROOT / "configs/experiments/dgx-us-campaign-v10.json"
+    document, previous = campaign.load_declaration(path)[0], json.loads(source.read_text())
+    own = {"description", "source_declaration_sha256", "models", "tiers", "recipes"}
+    assert set(document) == set(previous)
+    for key in set(previous) - own:
+        assert document[key] == previous[key], key
+    assert document["source_declaration_sha256"] == hashlib.sha256(source.read_bytes()).hexdigest()
+    tiers = ["core", "controls", "y1_norm", "y1_clip", "y1_recency", "y1_scale", "y1_speed"]
+    assert document["tiers"] == [
+        *tiers[:2],
+        "r4_nogain",
+        *tiers[2:],
+        "y1_operable",
+        "y1_operable_nogain",
+        "y1_xattn",
+        "y1_xattn_late",
+        "y1_xattn_nogain",
+        "y1_xattn_nogain_controls",
+    ]
+    # El núcleo y sus controles son los de la v10, campo a campo: la base nueva los reproduce.
+    cores = ("titans_mac", "titans_mac_frozen", "titans_mac_disabled")
+    # El trío sin ganancia de la mediana entra también tal como está en la v10.
+    nogain = ("titans_mac_nogain", "titans_mac_frozen_nogain", "titans_mac_disabled_nogain")
+    for model in (*cores, *nogain):
+        assert document["models"][model] == previous["models"][model]
+    for key in ("core", "core_nogain"):
+        assert document["recipes"][key] == previous["recipes"][key]
+
+    def changed(left, right):
+        one, two = flat_specification(document, left), flat_specification(document, right)
+        keys = (one.keys() | two.keys()) - {"predictor_changes"}
+        return {key for key in keys if one.get(key) != two.get(key)}
+
+    base = flat_specification(document, "titans_mac")
+    branch, scale = base["predictor.technical_branch"], base["predictor.learning_scale"]
+    assert base["recipe.max_grad_norm"] == 1.0 and base["recipe.accumulation_rows"] == 8192
+    expected = {
+        "titans_mac_ln": (
+            "titans_mac",
+            "y1_norm",
+            "predictor.technical_branch",
+            {**branch, "layer_norm": True},
+        ),
+        "titans_mac_cliprole": ("titans_mac", "y1_clip", "recipe.grad_clip_by_role", True),
+        "titans_mac_clip10": ("titans_mac", "y1_clip", "recipe.max_grad_norm", 10.0),
+        "titans_mac_rec5": ("titans_mac", "y1_recency", "recipe.recency_half_life_years", 5.0),
+        "titans_mac_rec10": ("titans_mac", "y1_recency", "recipe.recency_half_life_years", 10.0),
+        "titans_mac_smooth": (
+            "titans_mac",
+            "y1_scale",
+            "predictor.learning_scale",
+            {**scale, "smooth_clip": True},
+        ),
+        "titans_mac_fscale": (
+            "titans_mac",
+            "y1_scale",
+            "predictor.technical_branch",
+            {**branch, "feature_scaling": True},
+        ),
+        "titans_mac_nograph": ("titans_mac", "y1_speed", "recipe.observe_without_graph", True),
+        "titans_mac_frozen_nograph": (
+            "titans_mac_frozen",
+            "y1_speed",
+            "recipe.observe_without_graph",
+            True,
+        ),
+        "titans_mac_disabled_nograph": (
+            "titans_mac_disabled",
+            "y1_speed",
+            "recipe.observe_without_graph",
+            True,
+        ),
+    }
+    # El término de IC sobre lo operable, en los tres modos de memoria: el alfa conocido es la
+    # primera de las 46 columnas técnicas del bloque del gráfico, en tanto por ciento.
+    assert branch["columns"] == 46 and technical_features.NAMES[0] == "alpha_percent"
+    operable = {**base["recipe.session_ic_term"], "offset_column": -46, "offset_scale": 0.01}
+    assert set(base["recipe.session_ic_term"]) == {"weight", "minimum_rows"}
+    for parent in cores:
+        expected[f"{parent}_icop"] = (parent, "y1_operable", "recipe.session_ic_term", operable)
+    # Y sobre el trío sin ganancia: allí el término ajusta la escala de la mediana él solo.
+    for parent in nogain:
+        assert (
+            flat_specification(document, parent)["recipe.session_ic_term"]
+            == (base["recipe.session_ic_term"])
+        )
+        assert "predictor.median_gain" not in flat_specification(document, parent)
+        expected[f"{parent}_icop"] = (
+            parent,
+            "y1_operable_nogain",
+            "recipe.session_ic_term",
+            operable,
+        )
+    # La atención entre activos en sus dos posiciones, cada una con su control self_only. Las
+    # dos de la v10 se declaran como allí; las tardías solo añaden la posición.
+    late = dict(position="after_technical")
+    mixed, alone = dict(heads=4, mode="same_session"), dict(heads=4, mode="self_only")
+    # Por modelo: la atención declarada, su control, el modelo del que toma la receta y su nivel.
+    mixers = {
+        "cross_asset_attention": (mixed, "titans_mac", "titans_mac", "y1_xattn"),
+        "cross_asset_attention_self": (alone, "cross_asset_attention", "titans_mac", "y1_xattn"),
+        "cross_asset_attention_late": (
+            {**mixed, **late},
+            "cross_asset_attention",
+            "titans_mac",
+            "y1_xattn_late",
+        ),
+        "cross_asset_attention_late_self": (
+            {**alone, **late},
+            "cross_asset_attention_late",
+            "titans_mac",
+            "y1_xattn_late",
+        ),
+        # La atención sobre el trío sin ganancia de la mediana, el mejor núcleo medido en 2013:
+        # la mezcla y su control self_only, y los dos modos de memoria que la acompañan.
+        "cross_asset_attention_nogain": (
+            mixed,
+            "titans_mac_nogain",
+            "titans_mac_nogain",
+            "y1_xattn_nogain",
+        ),
+        "cross_asset_attention_nogain_self": (
+            alone,
+            "cross_asset_attention_nogain",
+            "titans_mac_nogain",
+            "y1_xattn_nogain",
+        ),
+        "cross_asset_attention_frozen_nogain": (
+            mixed,
+            "cross_asset_attention_nogain",
+            "titans_mac_frozen_nogain",
+            "y1_xattn_nogain_controls",
+        ),
+        "cross_asset_attention_disabled_nogain": (
+            mixed,
+            "cross_asset_attention_nogain",
+            "titans_mac_disabled_nogain",
+            "y1_xattn_nogain_controls",
+        ),
+    }
+    positions = {}
+    for model, (declared, _control, parent, tier) in mixers.items():
+        entry = document["models"][model]
+        assert entry == {
+            **previous["models"][parent],
+            "predictor_changes": dict(cross_asset_attention=declared),
+            "tier": tier,
+        }
+        if model in previous["models"]:
+            assert entry == {**previous["models"][model], "tier": "y1_xattn"}
+        # Fuera de la atención, cada uno es su modelo de origen campo a campo.
+        assert changed(model, parent) <= {"predictor.cross_asset_attention"}, model
+        positions[model] = parse_cross_asset_attention(declared).identity()["position"]
+    assert set(previous["models"]) & set(mixers) == {
+        "cross_asset_attention",
+        "cross_asset_attention_self",
+    }
+    assert positions == {
+        **{model: "after_mac_before_head" for model in mixers if "_late" not in model},
+        "cross_asset_attention_late": "after_technical_branch_before_head",
+        "cross_asset_attention_late_self": "after_technical_branch_before_head",
+    }
+    assert set(document["models"]) == set(cores) | set(nogain) | set(expected) | set(mixers)
+    for model, (parent, tier, field, value) in expected.items():
+        entry = document["models"][model]
+        assert entry == {**previous["models"][parent], "recipe": entry["recipe"], "tier": tier}
+        assert changed(model, parent) == {field}, model
+        assert flat_specification(document, model)[field] == value
+        # La receta de cada variante se construye con el código de esta rama.
+        ChronologicalRecipe(**_recipe(document, model))
+    declared = json.loads(
+        (ROOT / "configs/experiments/us-campaign-v11-screen1-contrasts.json").read_text()
+    )["controls"]
+    controls = {model: parent for model, (parent, *_rest) in expected.items()}
+    controls.update(titans_mac_frozen="titans_mac", titans_mac_disabled="titans_mac")
+    controls.update(zip(nogain, cores, strict=True))
+    controls.update({model: control for model, (_declared, control, *_rest) in mixers.items()})
+    assert declared == controls
+    jobs = campaign.plan(document, "mars_titan")
+    assert len({job.model for job in jobs if job.tier.startswith("y1_")}) == 24
+    # Los modos de memoria de la atención sin ganancia tienen su nivel: se ajustan si esta gana.
+    assert {job.model for job in jobs if job.tier == "y1_xattn_nogain_controls"} == {
+        "cross_asset_attention_frozen_nogain",
+        "cross_asset_attention_disabled_nogain",
+    }
+
+
+def test_the_second_screen_of_the_new_base_adds_the_two_terms_and_the_weight_decay():
+    path = ROOT / "configs/experiments/us-campaign-v11-screen2.json"
+    source = ROOT / "configs/experiments/dgx-us-campaign-v10.json"
+    document, previous = campaign.load_declaration(path)[0], json.loads(source.read_text())
+    own = {"description", "source_declaration_sha256", "models", "tiers", "recipes"}
+    assert set(document) == set(previous)
+    for key in set(previous) - own:
+        assert document[key] == previous[key], key
+    assert document["source_declaration_sha256"] == hashlib.sha256(source.read_bytes()).hexdigest()
+    assert document["tiers"] == [
+        "core",
+        "controls",
+        "r4_nogain",
+        "y2_both",
+        "y2_both_controls",
+        "y2_wd",
+        "y2_wd_controls",
+        "y2_combo",
+    ]
+    cores = ("titans_mac", "titans_mac_frozen", "titans_mac_disabled")
+    nogain = ("titans_mac_nogain", "titans_mac_frozen_nogain", "titans_mac_disabled_nogain")
+    # Los dos tríos entran como en la v10: son el control de cada variante con el mismo código.
+    for model in (*cores, *nogain):
+        assert document["models"][model] == previous["models"][model]
+    for key in ("core", "core_nogain"):
+        assert document["recipes"][key] == previous["recipes"][key]
+
+    def changed(left, right):
+        one, two = flat_specification(document, left), flat_specification(document, right)
+        keys = (one.keys() | two.keys()) - {"predictor_changes"}
+        return {key for key in keys if one.get(key) != two.get(key)}
+
+    base = flat_specification(document, "titans_mac")
+    assert set(base["recipe.session_ic_term"]) == {"weight", "minimum_rows"}
+    assert base["recipe.weight_decay"] == 0 and technical_features.NAMES[0] == "alpha_percent"
+    # Los dos términos de IC: el de lo operable, con el alfa conocido, y el de la etiqueta con
+    # el mismo peso.
+    both = {
+        **base["recipe.session_ic_term"],
+        "offset_column": -46,
+        "offset_scale": 0.01,
+        "plain_weight": base["recipe.session_ic_term"]["weight"],
+    }
+    expected = {}
+    for parent in (*cores, *nogain):
+        online = parent in ("titans_mac", "titans_mac_nogain")
+        tier = "y2_both" if online else "y2_both_controls"
+        expected[f"{parent}_icboth"] = (parent, tier, "recipe.session_ic_term", both)
+    # El decaimiento de pesos de 0,01: con la ganancia en los tres modos, y sin ella en línea.
+    for parent in (*cores, "titans_mac_nogain"):
+        online = parent in ("titans_mac", "titans_mac_nogain")
+        tier = "y2_wd" if online else "y2_wd_controls"
+        expected[f"{parent}_wd1e2"] = (parent, tier, "recipe.weight_decay", 0.01)
+    # La candidata a receta final de un solo modelo: sin ganancia, con los dos términos y con la
+    # atención entre activos de la v10. De su control solo la separa la atención.
+    combo, mixed = "cross_asset_attention_nogain_icboth", dict(heads=4, mode="same_session")
+    assert set(document["models"]) == set(cores) | set(nogain) | set(expected) | {combo}
+    assert document["models"][combo] == {
+        **document["models"]["titans_mac_nogain_icboth"],
+        "predictor_changes": dict(cross_asset_attention=mixed),
+        "tier": "y2_combo",
+    }
+    assert changed(combo, "titans_mac_nogain_icboth") == {"predictor.cross_asset_attention"}
+    for model, (parent, tier, field, value) in expected.items():
+        entry = document["models"][model]
+        assert entry == {**previous["models"][parent], "recipe": entry["recipe"], "tier": tier}
+        assert changed(model, parent) == {field}, model
+        assert flat_specification(document, model)[field] == value
+        ChronologicalRecipe(**_recipe(document, model))
+    declared = json.loads(
+        (ROOT / "configs/experiments/us-campaign-v11-screen2-contrasts.json").read_text()
+    )["controls"]
+    controls = {model: parent for model, (parent, *_rest) in expected.items()}
+    controls[combo] = "titans_mac_nogain_icboth"
+    controls.update(titans_mac_frozen="titans_mac", titans_mac_disabled="titans_mac")
+    controls.update(zip(nogain, cores, strict=True))
+    assert declared == controls
+    jobs = campaign.plan(document, "mars_titan")
+    by_tier = {}
+    for job in jobs:
+        by_tier.setdefault(job.tier, set()).add(job.model)
+    assert by_tier["y2_both"] == {"titans_mac_icboth", "titans_mac_nogain_icboth"}
+    assert by_tier["y2_wd"] == {"titans_mac_wd1e2", "titans_mac_nogain_wd1e2"}
+    assert len(by_tier["y2_both_controls"]) == 4 and len(by_tier["y2_wd_controls"]) == 2
+    assert by_tier["y2_combo"] == {combo}
+
+
+INPUT_TRIO = ("titans_mac_nogain", "titans_mac_frozen_nogain", "titans_mac_disabled_nogain")
+
+
+def test_the_joint_input_arms_differ_only_in_the_technical_version():
+    experiments = ROOT / "configs/experiments"
+    source_path = experiments / "dgx-us-cn-campaign-v9.json"
+    control_path = experiments / "us-cn-campaign-v11-inputs-v2.json"
+    control = campaign.load_declaration(control_path)[0]
+    wide = campaign.load_declaration(experiments / "us-cn-campaign-v11-inputs-v3.json")[0]
+    source = json.loads(source_path.read_text())
+    assert control["inputs"] == dict(technical=technical_features.NAME_V2)
+    assert wide["inputs"] == dict(technical=technical_features.NAME_V3)
+    assert control["final_test_access"] is False and wide["final_test_access"] is False
+    # El control es la conjunta v9 con solo el trío sin ganancia de la mediana.
+    assert set(control) == set(source)
+    assert control["models"] == {name: source["models"][name] for name in INPUT_TRIO}
+    assert control["tiers"] == ["r4_nogain"] and list(control["recipes"]) == ["core_nogain"]
+    assert control["recipes"]["core_nogain"] == source["recipes"]["core_nogain"]
+    own = {"models", "recipes", "tiers", "description", "source_declaration_sha256"}
+    for key in set(source) - own:
+        assert control[key] == source[key], key
+    digest = hashlib.sha256(source_path.read_bytes()).hexdigest()
+    assert control["source_declaration_sha256"] == digest
+    # La candidata solo cambia la versión de rasgos y el ancho que lee la rama técnica.
+    assert set(wide) == set(control)
+    for key in set(control) - {"inputs", "models", "description", "source_declaration_sha256"}:
+        assert wide[key] == control[key], key
+    digest = hashlib.sha256(control_path.read_bytes()).hexdigest()
+    assert wide["source_declaration_sha256"] == digest
+    assert list(wide["models"]) == [f"{name}_v3" for name in INPUT_TRIO]
+    recipe = json.loads((ROOT / control["recipes"]["core_nogain"]).read_text())
+    branch = recipe["predictor"]["technical_branch"]
+    assert branch["columns"] == len(technical_features.NAMES_V2) == 46
+    assert "offset_column" not in recipe["recipe"]["session_ic_term"]
+    for name in INPUT_TRIO:
+        model, base = wide["models"][f"{name}_v3"], control["models"][name]
+        assert {key: value for key, value in model.items() if key != "predictor_changes"} == base
+        assert model["predictor_changes"] == dict(
+            technical_branch=dict(branch, columns=len(technical_features.NAMES_V3))
+        )
+    # Los contrastes declarados: cada modelo con su pareja de la otra versión, la memoria dentro
+    # de cada brazo y el modelo en línea frente a los árboles con sus mismos rasgos.
+    read = {
+        tag: json.loads((experiments / f"us-cn-campaign-v11-inputs-{tag}.json").read_text())
+        for tag in ("contrasts", "memory", "trees")
+    }
+    assert all(item["kind"] == "dgx_campaign_contrasts" for item in read.values())
+    assert read["contrasts"]["controls"] == {f"{name}_v3": name for name in INPUT_TRIO} | {
+        "lightgbm_technical_v3": "lightgbm_technical"
+    }
+    online = INPUT_TRIO[0]
+    assert read["memory"]["controls"] == {
+        f"{other}{tag}": f"{online}{tag}" for tag in ("", "_v3") for other in INPUT_TRIO[1:]
+    }
+    assert read["trees"]["controls"] == {
+        online: "lightgbm_technical",
+        f"{online}_v3": "lightgbm_technical_v3",
+    }
+
+
+def test_the_branch_and_the_known_offset_follow_the_declared_technical_version():
+    experiments = ROOT / "configs/experiments"
+    wide = json.loads((experiments / "us-cn-campaign-v11-inputs-v3.json").read_text())
+    campaign.checked_declaration(wide, root=ROOT)
+    # La rama lee las últimas columnas del bloque: con otra versión leería otras sin avisar.
+    for inputs in (dict(technical=technical_features.NAME_V2), None):
+        changed = {key: value for key, value in wide.items() if key != "inputs"}
+        if inputs is not None:
+            changed["inputs"] = inputs
+        with pytest.raises(ValueError, match="rama técnica"):
+            campaign.checked_declaration(changed, root=ROOT)
+    # Una rama declarada sin su número de columnas tampoco pasa: no se sabría qué lee.
+    loose = dict(
+        wide,
+        models={
+            name: dict(model, predictor_changes=dict(technical_branch=dict(hidden=128, depth=2)))
+            for name, model in wide["models"].items()
+        },
+    )
+    with pytest.raises(ValueError, match="rama técnica"):
+        campaign.checked_declaration(loose, root=ROOT)
+    # Sin leer las recetas no se puede comprobar, y la declaración sigue siendo válida.
+    narrow = dict(wide, inputs=dict(technical=technical_features.NAME_V2))
+    campaign.checked_declaration(narrow, root=ROOT, check_recipe_files=False)
+    # El desplazamiento conocido es la columna del alfa, la primera de los rasgos técnicos: al
+    # añadir columnas detrás, su posición contada desde el final cambia.
+    screen = json.loads((experiments / "us-campaign-v11-screen2.json").read_text())
+    campaign.checked_declaration(screen, root=ROOT)
+    branch = dict(columns=62, hidden=128, depth=2, session_ranks=True)
+    moved = dict(
+        screen,
+        inputs=dict(technical=technical_features.NAME_V3),
+        models={
+            name: dict(
+                model,
+                predictor_changes=dict(
+                    model.get("predictor_changes") or {}, technical_branch=branch
+                ),
+            )
+            for name, model in screen["models"].items()
+        },
+    )
+    with pytest.raises(ValueError, match="desplazamiento conocido"):
+        campaign.checked_declaration(moved, root=ROOT)
+    plain = {
+        name: model
+        for name, model in moved["models"].items()
+        if "offset_column"
+        not in json.loads((ROOT / screen["recipes"][model["recipe"]]).read_text())["recipe"][
+            "session_ic_term"
+        ]
+    }
+    assert 0 < len(plain) < len(moved["models"])
+    campaign.checked_declaration(
+        dict(moved, models=plain, tiers=sorted({model["tier"] for model in plain.values()})),
+        root=ROOT,
+    )
+
+
+def test_the_liquidity_column_follows_the_declared_technical_version():
+    experiments = ROOT / "configs/experiments"
+    source = json.loads((experiments / "dgx-us-campaign-v10.json").read_text())
+    liquid = {name: model for name, model in source["models"].items() if "liq" in name}
+    assert len(liquid) == 4 and {model["tier"] for model in liquid.values()} == {"r4_liquid"}
+    document = {key: value for key, value in source.items() if key != "analysis"}
+    document.update(models=liquid, tiers=["r4_liquid"])
+    campaign.checked_declaration(document, root=ROOT)
+    # El término de IC ponderado lee el volumen negociado, contado desde el final del bloque.
+    recipe = json.loads((ROOT / source["recipes"]["core_liq1"]).read_text())
+    assert recipe["recipe"]["session_ic_term"]["liquidity_column"] == -29
+    assert technical_features.NAMES_V2[-29] == "log_dollar_volume_21"
+    assert technical_features.NAMES_V3[-29] != "log_dollar_volume_21"
+    branch = dict(columns=62, hidden=128, depth=2, session_ranks=True)
+    moved = dict(
+        document,
+        inputs=dict(technical=technical_features.NAME_V3),
+        models={
+            name: dict(model, predictor_changes=dict(technical_branch=branch))
+            for name, model in liquid.items()
+        },
+    )
+    with pytest.raises(ValueError, match="columna de liquidez"):
+        campaign.checked_declaration(moved, root=ROOT)
+
+
+def test_long_horizon_v4_campaign_declaration_validates_like_v3():
+    experiments = ROOT / "configs/experiments"
+    wide = json.loads((experiments / "us-cn-campaign-v11-inputs-v3.json").read_text())
+    v4 = dict(wide, inputs=dict(technical=technical_features.NAME_V4))
+    campaign.checked_declaration(v4, root=ROOT)
+    # Con una rama técnica de 46 columnas se rechaza porque v4 tiene 62.
+    narrow_branch = dict(columns=46, hidden=128, depth=2, session_ranks=True)
+    wrong_width = dict(
+        v4,
+        models={
+            name: dict(model, predictor_changes=dict(technical_branch=narrow_branch))
+            for name, model in v4["models"].items()
+        },
+    )
+    with pytest.raises(ValueError, match="rama técnica"):
+        campaign.checked_declaration(wrong_width, root=ROOT)
+    # Sobre us-campaign-v11-screen1.json, declarar long_horizon_v4 exige 62 columnas en la rama
+    # y protege también offset_column (-46 ya no es alpha_percent en 62 columnas).
+    screen1 = json.loads((experiments / "us-campaign-v11-screen1.json").read_text())
+    branch_62 = dict(columns=62, hidden=128, depth=2, session_ranks=True)
+    candidate = dict(
+        screen1,
+        inputs=dict(technical=technical_features.NAME_V4),
+        tiers=["core"],
+        recipes=dict(core=screen1["recipes"]["core"]),
+        models=dict(
+            titans_mac_v4=dict(
+                screen1["models"]["titans_mac"],
+                predictor_changes=dict(technical_branch=branch_62),
+            )
+        ),
+    )
+    campaign.checked_declaration(candidate, root=ROOT)
+    icop_moved = dict(
+        screen1,
+        inputs=dict(technical=technical_features.NAME_V4),
+        tiers=["y1_operable"],
+        recipes=dict(core_icop=screen1["recipes"]["core_icop"]),
+        models=dict(
+            titans_mac_icop_v4=dict(
+                screen1["models"]["titans_mac_icop"],
+                predictor_changes=dict(technical_branch=branch_62),
+            )
+        ),
+    )
+    with pytest.raises(ValueError, match="desplazamiento conocido"):
+        campaign.checked_declaration(icop_moved, root=ROOT)
+
+
+def test_long_horizon_v5_keeps_the_46_columns_and_the_known_offset_of_the_second_version():
+    experiments = ROOT / "configs/experiments"
+    screen1 = json.loads((experiments / "us-campaign-v11-screen1.json").read_text())
+    v5 = dict(screen1, inputs=dict(technical=technical_features.NAME_V5))
+    # La misma declaración vale tal cual: 46 columnas y alpha_percent en la columna -46.
+    campaign.checked_declaration(v5, root=ROOT)
+    branch_62 = dict(columns=62, hidden=128, depth=2, session_ranks=True)
+    wide_branch = dict(
+        v5,
+        tiers=["core"],
+        recipes=dict(core=screen1["recipes"]["core"]),
+        models=dict(
+            titans_mac_wide=dict(
+                screen1["models"]["titans_mac"],
+                predictor_changes=dict(technical_branch=branch_62),
+            )
+        ),
+    )
+    with pytest.raises(ValueError, match="rama técnica"):
+        campaign.checked_declaration(wide_branch, root=ROOT)

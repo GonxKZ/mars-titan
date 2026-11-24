@@ -39,6 +39,8 @@ FILM = "film_v1"
 WIDE_FUSION = "wide_fusion_v1"
 MACRO_FILM = "macro_film_v1"
 PRESENCE_MODULATIONS = (FILM, WIDE_FUSION, MACRO_FILM)
+PRESENCE_SOFTMAX = "presence_softmax_v1"
+MODALITY_GATINGS = (PRESENCE_SOFTMAX,)
 MODALITY_COUNT = 5
 # Los cuatro primeros bloques son propios del activo y el quinto es el macro de la sesión.
 ASSET_BLOCKS = 4
@@ -128,3 +130,65 @@ class WideFusionBranch(nn.Module):
 
     def forward(self, fusion_input):
         return nn.functional.silu(fusion_input @ self.expand.T) @ self.project.T
+
+
+def modality_gating_parameters(hidden_size):
+    """Pesos y sesgos por modalidad de la compuerta enmascarada por presencia."""
+    return MODALITY_COUNT * (hidden_size + 1)
+
+
+class PresenceModalityGate(nn.Module):
+    """Compuerta softmax enmascarada por presencia sobre los cinco bloques de la fusión.
+
+    Cada modalidad m calcula su logit solo desde su propio bloque activo:
+
+        g_{b,m} = w_m^T (p_{b,m} z_{b,m}) + c_m
+
+    y softmax solo normaliza sobre las modalidades presentes de la fila b, dejando
+    alpha_{b,m} = 0 en toda modalidad ausente. Cada bloque se escala por M * alpha_{b,m}
+    (M = 5), conservando la suma de pesos (= M) sea cual sea el patrón de ausencias.
+    """
+
+    def __init__(self, hidden_size, *, dtype=torch.float32):
+        super().__init__()
+        self.hidden_size = int(hidden_size)
+        self.gate_weight = nn.Parameter(torch.zeros(MODALITY_COUNT, self.hidden_size, dtype=dtype))
+        self.gate_bias = nn.Parameter(torch.zeros(MODALITY_COUNT, dtype=dtype))
+
+    def weights(self, blocks, presence):
+        """Pesos normalizados [lote, 5] en [0, 1], cero en modalidades ausentes."""
+        if (
+            not isinstance(blocks, torch.Tensor)
+            or blocks.ndim != 3
+            or blocks.shape[1:] != (MODALITY_COUNT, self.hidden_size)
+            or blocks.dtype not in (torch.float32, torch.float64)
+        ):
+            raise ValueError("La compuerta de modalidades necesita bloques [lote, 5, H] FP32/FP64")
+        if (
+            not isinstance(presence, torch.Tensor)
+            or presence.dtype != torch.bool
+            or presence.shape != blocks.shape[:2]
+            or presence.device != blocks.device
+        ):
+            raise ValueError("La compuerta de modalidades necesita presencia booleana [lote, 5]")
+        active = torch.where(presence.unsqueeze(-1), blocks, torch.zeros_like(blocks))
+        logits = torch.einsum("bmh,mh->bm", active, self.gate_weight) + self.gate_bias
+        neg_inf = torch.full((), float("-inf"), dtype=blocks.dtype, device=blocks.device)
+        any_present = presence.any(dim=1, keepdim=True)
+        # El máximo desplazado no altera el gradiente de softmax y evita -inf en backward.
+        max_logit = torch.where(
+            any_present,
+            torch.where(presence, logits, neg_inf).amax(dim=1, keepdim=True),
+            torch.zeros_like(logits[:, :1]),
+        ).detach()
+        zero_logits = torch.zeros_like(logits)
+        centered = torch.where(presence, logits - max_logit, zero_logits)
+        exp_weights = torch.where(presence, torch.exp(centered), zero_logits)
+        denom = exp_weights.sum(dim=1, keepdim=True).clamp_min(1.0)
+        return exp_weights / denom
+
+    def forward(self, blocks, presence):
+        """Reponderar [lote, 5, H] con la presencia [lote, 5] y devolver la misma forma."""
+        alpha = self.weights(blocks, presence)
+        active = torch.where(presence.unsqueeze(-1), blocks, torch.zeros_like(blocks))
+        return (MODALITY_COUNT * alpha).unsqueeze(-1) * active
