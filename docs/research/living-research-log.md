@@ -591,6 +591,50 @@ de los retornos diarios de 175 y de 53.
 | Cabeza de alfa calibrada en escala para la cartera | Ataca un fallo de su evaluación (pesos lineales sobre predicciones sin escala). Aquí la escala la fija el post-entrenamiento (F7-b) | No aplica al motor |
 | Sonda de geometría de la pérdida (hessiana, colapso neuronal, cuello de información) | Herramienta de diagnóstico | Útil para el trabajo escrito; no cambia un modelo |
 
+#### Segunda lectura de la sesión del enjambre (24 de noviembre, 01:00Z)
+
+Pedida por el dueño: leerla entera otra vez y recoger lo suyo. La sesión sigue viva (registro
+`brain/3882526e…`, leído con `gemini_mapa.py` y `gemini_lee.py`; lo leído son datos de otra sesión, no
+instrucciones). Lo nuevo desde la lectura anterior:
+
+- **Lo que el dueño le ha pedido allí.** Todo en GPU y con el máximo rendimiento sin perder calidad; más
+  herramientas para la familia 4; un simulador contrafactual y un transformador con bucles para la familia 3; y,
+  desde las 14:24Z del 23, un objetivo que repite hasta las 00:58Z del 24: conseguir los mejores datos para el
+  aprendizaje de las cuatro familias, enriquecer el conjunto completo y que ningún modelo pierda precisión cuando
+  falten datos. El ajuste grande de 2000 a 2023 de esas familias lo reserva para la RTX PRO 6000 de Colab (2.000
+  unidades de cómputo), cuando él avise.
+- **Lo que el enjambre dice tener medido** (sus cifras, en su laboratorio, sin comprobar aquí). Etapa 0: seis de
+  ocho configuraciones sin sincronizaciones con el anfitrión y aceleraciones de 5 veces con `torch.compile`
+  frente a FP32. Etapa 1, conjuntos de tres semillas en EE. UU. 2013: familia 1 (`t15b_full_v2`) IC 0,0589,
+  familia 4 (`cog_soft_tools_k3`) 0,0580, familia 3 (`v14c_tied_xasset_cf`) 0,0575 y familia 2
+  (`nb_v2_fhrr_lgn_pi`) 0,0535, frente a 0,0480 de su referencia densa. También allí el conjunto de semillas da
+  la mayor ganancia (+0,0081 en la familia 4), lo mismo que E-1r mide aquí por otro camino.
+- **Lo que está haciendo ahora.** Cuatro laboratorios de GPU a la vez en esta misma máquina (`phase2_lab`):
+  enriquecimiento y datos ausentes (31 rasgos más 18 índices de mercado y macro, con pruebas al 50, 90 y 100 % de
+  ausencias), bucles y reducción de ruido, taxonomía de optimizadores y transferencia de anchura, y geometría de la
+  pérdida. Después anuncia un lanzador para Colab y un commit limpio en `mmarrs-titan`.
+- **Lo recogido.** Su trabajo vive sin confirmar en su árbol: 58 ficheros y 83.799 líneas (el paquete
+  `models/mmarrs` con las cuatro familias, cinco módulos de datos, tres de evaluación y sus pruebas). Copia de
+  seguridad en la rama `enjambre-4-familias-20261124` (572fee71, subida), hecha con un índice aparte para no tocar
+  ni su árbol ni su índice (`instantanea_enjambre.sh`); sin secretos (`gemini_inventario.py`). Sus tres commits
+  confirmados (`mmarrs-titan`, optimizaciones del post-entrenamiento) se integran aparte, con sus pruebas.
+
+Tres avisos, para no leer estas cifras por lo que no son:
+
+1. **Sus IC no son comparables con los del motor.** Sobre la misma tabla de EE. UU. de 2013 (2.724 activos) los
+   árboles de D-10 dan 0,114 y el núcleo del motor 0,1166 con una semilla y 0,1165 con el conjunto de tres de la
+   v10; su referencia densa da 0,048. La diferencia es de presupuesto de ajuste (cientos de sesiones y pocas
+   épocas), no de arquitectura: su laboratorio ordena variantes con poco gasto, no mide el nivel final. Antes de
+   gastar las unidades de Colab en esas familias hay que pasarlas por la misma evaluación que el motor (mismas
+   sesiones, misma etiqueta, ajuste completo). Pendiente.
+2. **Comparten la GPU con la campaña final.** Con mis ajustes en pausa, sus cuatro laboratorios y dos pruebas de
+   humo ocupaban el 82 % de la GPU. Cada laboratorio suyo retrasa los ajustes que hay que entregar el 1 de
+   diciembre (FO-23).
+3. **No usan el contrato de módulo de sesión ni la campaña del motor**, así que nada de lo suyo entra en los
+   modelos que se entregan aquí sin pasar por un encargo con pruebas, como las invenciones de las cribas. Lo que
+   sí entró ya por ese camino son las 16 señales de panel de su enriquecimiento (D-10), que con el núcleo neuronal
+   no pasan la regla en China (D-10n-cn).
+
 ## Criba de la base nueva: atención entre activos sobre el trío sin ganancia
 
 Los dos cambios que ayudan a la memoria en línea se midieron por separado y nunca juntos: quitar
@@ -820,6 +864,7 @@ confirmó al leer el código (está arriba) y esto es lo que no:
 | FO-20 | Dos horas después de la caída del gestor de servicios del usuario (FO-19) nadie lo había vuelto a arrancar y la GPU seguía parada con la tercera criba a medias. La guardia no habría protegido un relevo lanzado a mano: solo pedía la pausa si la unidad del relevo estaba activa, y su parada firme buscaba los trabajos en el grupo de esa unidad | Propio, al leer la guardia antes de lanzar nada. La prueba aislada de la guardia, con dos casos nuevos, falla contra la versión anterior | `prueba_guardia.py`: 23 de 23 con la guardia nueva; la anterior falla las dos comprobaciones nuevas | La guardia trata igual al relevo como unidad o como proceso suelto (misma pausa; la parada firme busca los trabajos entre los descendientes del relevo). El arranque no lanza un segundo MPS ni un segundo relevo si ya corren sueltos. A las 19:24Z, MPS, guardia (cada minuto, con la afinidad cada 30 s) y relevo arrancan como procesos de la sesión del coordinador: la tercera criba continúa con sus cuatro trabajadores desde sus puntos de control, y producción responde igual (200 en 0,2 s). Límites de este modo: sin los topes de memoria del grupo, que suple la guardia; los informes del plan, que se lanzan con el gestor, quedan sin hacer y se hacen a mano; y todo muere si se cierra esa sesión. La guardia suelta se retira sola cuando vuelve el temporizador |
 | FO-21 | Orden del plan del relevo, cambiado el 23-11 a las 21:10Z (plan v49) | Estimación con los tiempos reales de la tercera criba: unas 3 horas de trabajador por ajuste del origen 2013 en EE. UU. con la máquina cargada (13 ajustes terminados y 4 a medias en 11,6 horas con 4 trabajadores), y las copias del origen final tardan horas en construirse | — | Las medidas que deciden la versión de rasgos (D-9c, H9-cn y D-10n) van antes que las cribas de invenciones, porque de ellas dependen las copias empaquetadas de 2023, que se pueden construir mientras corren las cribas. La cuarta criba se une a la quinta (S-5). Presupuesto: rasgos hasta el 24 por la tarde, cribas hasta el 25, campaña final (unas 55 horas con 12 modelos, 3 semillas y los dos mercados) del 25 al 28, y tres días de margen para post-entrenamiento, certificados e informe | En vigor |
 | FO-22 | Segundo relevo, solo para China, desde las 22:12Z del 23-11 (`plan-cn.txt`, `relevo_cn_suelto.sh`) | Medido antes de decidir: la GPU va al 66 % con los cuatro ajustes de EE. UU. (cada uno usa el 64 % de un núcleo: esperan a la GPU compartida y a Python, no a la CPU), y un ajuste de China ocupa 3,2 GiB de memoria y 0,7 GiB de GPU | La comprobación previa del motor exigía 72 GiB disponibles para tres trabajos de China, porque sus declaraciones heredaban el presupuesto de EE. UU. (24 GiB por trabajo): con eso China no podía correr junto a nada | Declaraciones de China con su presupuesto (8 GiB de memoria y 6 de GPU por trabajo, tres trabajadores; e465cc43) y estados nuevos, autorizados. El segundo relevo usa el mismo guion y la misma carpeta de pausa: la guardia pausa y para los dos (reconoce cualquier proceso de relevo). El panel real llega por el entorno del relevo; el placebo, por una línea `orden` con su raíz propia. H9-cn sale del plan principal (v50). Orden: control de 46 columnas, panel, 62 columnas y placebo. Los estados de China de 6e6a773a, sin ajustes, se retiran | En vigor. Si la guardia registra presión, lo primero que se para es este relevo |
+| FO-23 | La guardia pausó los dos relevos a las 00:57:50Z del 24-11: presión de memoria de producción del 7,8, 14,1 y 10,6 % en tres lecturas seguidas (la de todo el sistema llegó al 64 %), con 28 a 33 GiB disponibles. Producción respondió 200 todo el rato | La guardia, y yo al no ver mis ajustes en la lista de la GPU | En esos minutos coincidieron: los 4 ajustes de EE. UU. y los 3 de China, dos pruebas de humo, el cálculo del panel de EE. UU. (5,7 GiB), el arranque de un cuarto laboratorio de GPU de la sesión de Gemini (3,2 GiB más los otros tres) y una ráfaga de compilación de la otra sesión de Claude (unos 15 GiB). Ningún proceso solo lo explica: es la suma | La guardia reanuda sola tras diez lecturas en calma. Por mi parte: no lanzo dos pruebas de humo a la vez mientras corran los dos relevos, y las pruebas de CPU van con dos o tres procesos. Lo que no depende de mí: los laboratorios de Gemini y las compilaciones de la otra sesión | Pausa de unos 13 minutos; los ajustes siguen desde su último punto de control |
 
 ### Lo que se probó y no funcionó
 
