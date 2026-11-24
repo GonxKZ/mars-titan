@@ -55,6 +55,7 @@ from mars_titan.evaluation import agent_core as ac
 from mars_titan.evaluation import online_aggregator as oa
 from mars_titan.evaluation import organ_aggregation as og
 from mars_titan.evaluation import posttraining_pilots as pilots
+from mars_titan.training.learning_hold import require_learning_allowed
 
 KIND = "posttraining_reliability_v1"
 # Huella canónica de configs/experiments/posttraining-reliability.json, la declaración de F.
@@ -946,6 +947,7 @@ def measure(
     declaration, state, reference, organs, origin, output, *, wait_hours, poll, log, markets=None
 ):
     """F1 y F2 de un origen, publicados en `<output>/<origen>` (o `<origen>-<mercados>`)."""
+    require_learning_allowed("la medida de fiabilidad F1 y F2")
     declaration, digest = checked_declaration(declaration)
     sources = og.folders(declaration, state, reference, organs, origin)
     manifest = Path(state) / "cohorts" / str(origin) / "manifest.json"

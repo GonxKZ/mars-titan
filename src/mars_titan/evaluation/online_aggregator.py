@@ -57,6 +57,8 @@ import numpy as np
 import pyarrow as pa
 import pyarrow.parquet as pq
 
+from mars_titan.training.learning_hold import require_learning_allowed
+
 SPLITS = ("validation", "calibration", "evaluation")
 DECISION_SPLITS = ("validation", "calibration")
 CALIBRATION_SPLIT = ("calibration",)
@@ -1963,6 +1965,7 @@ def run_aggregation(
     - Evalúa todos los agregadores y placebos en `evaluation` con contrastes pareados HAC
       Newey-West frente al mejor componente individual y frente a la media simple de rangos.
     """
+    require_learning_allowed("la agregación en línea de modelos")
     _require(
         selection_split in ("calibration", "validation", "pooled"),
         f"selection_split no puede usar evaluación; se recibió {selection_split!r}",

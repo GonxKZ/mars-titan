@@ -23,6 +23,7 @@ from typing import Any
 import numpy as np
 
 from mars_titan.evaluation import online_aggregator as oa
+from mars_titan.training.learning_hold import require_learning_allowed
 
 
 def _require(condition: bool, message: str) -> None:
@@ -231,6 +232,7 @@ class CausalFactorNeutralizer:
         keep_mask: np.ndarray | None = None,
     ) -> CausalFactorNeutralizer:
         """Elige `(gamma, ridge_lambda)` en calibración maximizando ICIR, P(IC>0) o media."""
+        require_learning_allowed("el ajuste en calibración del neutralizador de factores")
         _require(
             objective in ("icir", "mean", "positive_rate", "icir_with_floor"),
             f"Objetivo desconocido: {objective!r}",

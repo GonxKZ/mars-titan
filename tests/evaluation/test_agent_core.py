@@ -357,6 +357,26 @@ def test_the_four_measures_of_an_origin(tmp_path, monkeypatch, capsys):
     assert "ya calculado" in capsys.readouterr().out
 
 
+def test_the_hold_stops_the_measure_before_reading_sources_or_writing(tmp_path, learning_hold):
+    """A2 ajusta regresiones cuantílicas: con el bloqueo vigente la medida no abre ni escribe."""
+    from mars_titan.training.learning_hold import LearningHoldError
+
+    learning_hold(False)
+    with pytest.raises(LearningHoldError):
+        ac.measure(
+            tmp_path / "no-existe.json",
+            tmp_path / "estado",
+            tmp_path / "referencia",
+            tmp_path / "organos",
+            2013,
+            tmp_path / "salida",
+            wait_hours=0,
+            poll=1,
+            log=lambda text: None,
+        )
+    assert not (tmp_path / "salida").exists()
+
+
 def test_known_rows_reads_the_screening_features_of_the_decision_day(tmp_path, monkeypatch):
     names = [
         "has_market_model",

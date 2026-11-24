@@ -25,6 +25,7 @@ import numpy as np
 from mars_titan.environments.cohorts import FINAL_TEST_START_US
 from mars_titan.evaluation import online_aggregator as oa
 from mars_titan.memory import asset_residual_memory as arm
+from mars_titan.training.learning_hold import require_learning_allowed
 
 DEFAULT_HALF_LIVES = (5.0, 21.0, 63.0)
 
@@ -148,6 +149,7 @@ class MultiScaleAssetMemory:
         min_assets: int = 30,
     ) -> MultiScaleAssetMemory:
         """Ajusta los pesos de horizonte y la escala global EXCLUSIVAMENTE en calibración."""
+        require_learning_allowed("el ajuste en calibración de la memoria multiescala por activo")
         p = np.asarray(parent_pred, dtype=np.float64)
         y = np.asarray(target, dtype=np.float64)
         f = np.asarray(features, dtype=np.float64)
@@ -453,6 +455,7 @@ def shrinkage_icir_weights(
     4. Resuelve el problema cuadrático con restricción de no negatividad sobre el conjunto activo
        y normaliza en el símplex.
     """
+    require_learning_allowed("los pesos de ICIR contraído")
     ics = np.asarray(session_ics, dtype=np.float64)
     covs = np.asarray(session_covs, dtype=np.float64)
     n_sessions, n_models = ics.shape

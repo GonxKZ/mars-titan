@@ -74,6 +74,7 @@ from mars_titan.evaluation import online_aggregator as oa
 from mars_titan.evaluation import online_arbiters as arbiters
 from mars_titan.evaluation import organ_aggregation as og
 from mars_titan.evaluation import posttraining_pilots as pilots
+from mars_titan.training.learning_hold import require_learning_allowed
 
 KIND = "posttraining_tool_arbiters_v1"
 # Huellas canónicas de las declaraciones registradas (programa §5.15).
@@ -1234,6 +1235,7 @@ def measure(
     declaration, state, reference, organs, origin, output, *, wait_hours, poll, log, markets=None
 ):
     """Los árbitros de un origen, publicados en `<output>/<origen>`."""
+    require_learning_allowed("la medida de los árbitros de herramientas")
     declaration, digest = checked_declaration(declaration)
     seeds = list(declaration["seeds"])
     _require(

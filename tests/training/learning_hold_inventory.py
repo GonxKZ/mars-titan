@@ -82,6 +82,48 @@ GUARDS = {
             "test_hold_precedes_every_report_and_output_access",
         ),
     ),
+    "mars_titan.evaluation.agent_core:measure": (
+        node(
+            "evaluation/test_agent_core.py",
+            "test_the_hold_stops_the_measure_before_reading_sources_or_writing",
+        ),
+    ),
+    "mars_titan.evaluation.reliability:measure": (
+        node(
+            "evaluation/test_posttraining_learning_hold.py",
+            "test_the_hold_stops_the_reliability_measure_before_reading_or_writing",
+        ),
+    ),
+    "mars_titan.evaluation.tool_arbiters:measure": (
+        node(
+            "evaluation/test_posttraining_learning_hold.py",
+            "test_the_hold_stops_the_tool_arbiters_before_reading_or_writing",
+        ),
+    ),
+    "mars_titan.evaluation.online_aggregator:run_aggregation": (
+        node(
+            "evaluation/test_posttraining_learning_hold.py",
+            "test_the_hold_stops_the_online_aggregation_before_loading_any_model",
+        ),
+    ),
+    "mars_titan.evaluation.enhanced_posttraining:MultiScaleAssetMemory.fit_calibration": (
+        node(
+            "evaluation/test_posttraining_learning_hold.py",
+            "test_the_hold_stops_the_multiscale_asset_memory_fit",
+        ),
+    ),
+    "mars_titan.evaluation.enhanced_posttraining:shrinkage_icir_weights": (
+        node(
+            "evaluation/test_posttraining_learning_hold.py",
+            "test_the_hold_stops_the_shrinkage_icir_weights",
+        ),
+    ),
+    "mars_titan.evaluation.factor_neutralization:CausalFactorNeutralizer.fit_calibration": (
+        node(
+            "evaluation/test_posttraining_learning_hold.py",
+            "test_the_hold_stops_the_factor_neutralizer_fit",
+        ),
+    ),
     "mars_titan.training.mechanism_policy_fit:fit_policy": (
         node(
             "training/test_mechanism_policy_fit.py",
@@ -285,6 +327,18 @@ NO_STEP_HOOKS = {
 
 # Sitios que ajustan en sentido amplio pero forman parte de la predicción en línea.
 EXEMPT_SITES = {
+    "mars_titan.evaluation.factor_neutralization:neutralize_sessions": (
+        "Resta a las puntuaciones de cada sesión su proyección sobre las exposiciones de esa "
+        "misma sesión, una regresión contraída transversal con constantes ya fijadas. No guarda "
+        "nada entre sesiones ni cambia parámetros compartidos; la elección de esas constantes en "
+        "calibración (`CausalFactorNeutralizer.fit_calibration`) sí pasa por la guarda"
+    ),
+    "mars_titan.calibration.venn_abers_ltt:VennAbersCalibrator.fit_with_decay": (
+        "Llama, a través de `cls`, al `fit` de su propia clase: la regresión isótona de "
+        "Venn-Abers escrita en el proyecto, sin estimadores externos ni soluciones cerradas. El "
+        "grafo sigue las estadísticas propias como llamadas normales, pero no resuelve `cls` al "
+        "decidir si un `fit` es propio. Ningún punto de entrada la usa todavía"
+    ),
     "mars_titan.memory.associative_memory:AssociativeMemory._kalman": (
         "La memoria asociativa de B6 escribe en su estado los resultados ya maduros durante la "
         "inferencia. No cambia parámetros compartidos y sus reglas delta y proximal hacen la "

@@ -59,6 +59,7 @@ from scipy.stats import norm, rankdata
 from mars_titan.evaluation import online_aggregator as oa
 from mars_titan.evaluation import organ_aggregation as og
 from mars_titan.evaluation import posttraining_pilots as pilots
+from mars_titan.training.learning_hold import require_learning_allowed
 
 KIND = "posttraining_agent_core_v1"
 # Huella canónica de configs/experiments/posttraining-agent-core.json, la declaración del núcleo.
@@ -998,6 +999,8 @@ def measure(
     `markets` limita la medida a esos mercados (`<output>/<origen>-<mercados>`). Un estado con
     varios mercados exige elegirlos: la lectura es por mercado.
     """
+    # A2 ajusta regresiones cuantílicas: con el bloqueo de aprendizaje vigente no se abre nada.
+    require_learning_allowed("la medida A1–A4 del núcleo agéntico")
     declaration, digest = checked_declaration(declaration)
     sources = og.folders(declaration, state, reference, organs, origin)
     manifest = Path(state) / "cohorts" / str(origin) / "manifest.json"
