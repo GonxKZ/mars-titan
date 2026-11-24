@@ -258,4 +258,10 @@ limpia|/home/gpic/.local/state/mars-titan/dgx-titans-us-v31/v12-rasgos-v5/semill
 #~ limpia|/home/gpic/.local/state/mars-titan/dgx-titans-us-cn-v31/v9/semillas-42,43,44/todos-3d10a30f/packed-inputs/2013
 # v51 (24-11 02:55Z): campaña final de EE. UU. (CF-us) detrás de D-9c. La orden lee D-9c con su regla y, si falla o no se puede leer, aparca las fases de la final.
 orden|/home/gpic/.local/state/mars-titan/informes/investigacion-20261122/puerta_d9c.sh|
+# v52 (24-11 03:35Z): preparación de respaldo de las entradas de 2023; si la adelantada ya terminó, reutiliza lo construido.
+prepara|/home/gpic/TITANS-IA/MARS-TITAN-campana-0b5b44df|/home/gpic/.local/state/mars-titan/dgx-titans-us-v31/v12-final/semillas-42-46/todos-0b5b44df|configs/titans/dgx-us-core-u2-ic3-dense-gr-v9.json|2023
 /home/gpic/TITANS-IA/MARS-TITAN-campana-0b5b44df|/home/gpic/.local/state/mars-titan/dgx-titans-us-v31/v12-final/semillas-42-46/todos-0b5b44df|/home/gonzalo/.local/state/mars-titan/campaign-a-v2-views-v31-20261013/views/US|configs/experiments/us-campaign-v12-final.json|4 --seed 42 --seed 43 --seed 44 --origin 2023
+# v53 (24-11 03:55Z): quinta criba (S-5), etapa A, detrás de la campaña final de EE. UU.; al final, las semillas que amplían el conjunto del núcleo (E-1r).
+orden|/home/gpic/.local/share/mars-titan/guardia/traer-entradas.sh|/home/gpic/.local/state/mars-titan/dgx-titans-us-v31/v12/semillas-42/todos-22c95322 /home/gpic/.local/state/mars-titan/dgx-titans-us-v31/v12/semillas-42/todos-1bf06965 2013
+/home/gpic/TITANS-IA/MARS-TITAN-campana-1bf06965|/home/gpic/.local/state/mars-titan/dgx-titans-us-v31/v12/semillas-42/todos-1bf06965|/home/gonzalo/.local/state/mars-titan/campaign-a-v2-views-v31-20261013/views/US|configs/experiments/us-campaign-v12-screen5.json|4 --seed 42 --origin 2013 --tier core --tier s5_candidates --tier s5_agentic
+/home/gpic/TITANS-IA/MARS-TITAN-campana-0b5b44df|/home/gpic/.local/state/mars-titan/dgx-titans-us-v31/v12-final/semillas-42-46/todos-0b5b44df|/home/gonzalo/.local/state/mars-titan/campaign-a-v2-views-v31-20261013/views/US|configs/experiments/us-campaign-v12-final.json|2 --seed 45 --seed 46 --origin 2023 --tier core
