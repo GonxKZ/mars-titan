@@ -19,6 +19,27 @@ aprendido de ellos están reunidos al final, en «Registro de fallos y lecciones
 - Lo que propone un modelo externo se anota como propuesta hasta que una medida propia lo
   confirme.
 
+## Dónde quedó el trabajo (24 de noviembre, 12:15Z; el dueño pidió parar)
+
+Todo lo que sigue corre solo, con los planes del relevo y la guardia de producción; nadie lo vigila.
+
+- **Carril principal (EE. UU.)**: D-9c en curso (tres semillas). Después, sin intervención: retirar sus copias, la
+  puerta que lee D-9c con su regla (D-9c-e), preparar las entradas de 2023, el núcleo final con la regla de parada
+  registrada, el núcleo con la regla robusta, las familias, las semillas 45 y 46, las dos variantes, la prueba de P-1
+  en EE. UU. y la quinta criba (plan v57, `dgx-relay-plan-20261123.txt`).
+- **Carril de China**: termina la campaña final registrada (16 de 30 ajustes) y sigue con la campaña con parada
+  robusta (CF-r), sus semillas 45 a 49 y las dos variantes (`dgx-relay-plan-cn-20261123.txt`).
+- **Sin leer todavía**: la prueba de humo de la campaña robusta de China (`humo-final-r-cn.log`; si un modelo de las
+  familias fallara, su trabajo queda marcado como fallido y los demás siguen); D-9c (`d9c-lectura.txt` cuando
+  pase la puerta); todo 2023 de EE. UU.
+- **Qué hacer al retomar**: leer la puerta de D-9c y el humo; con el núcleo robusto de EE. UU. terminado, decidir
+  con el tramo de decisión si las familias se repiten con esa regla (CF-r); pasar `informe_final.py` y
+  `mezcla_final.py` (E-2, E-2b, E-2c) por mercado; referencia de árboles de EE. UU. 2023; líneas de
+  post-entrenamiento sobre los modelos finales; avanzar `dgx-trainning` a `dgx-integracion` cuando el dueño
+  confirme la limpieza del árbol compartido.
+- **Frágil**: el túnel provisional de producción, el MPS, la guardia y los relevos son tareas de la sesión de
+  Claude. Si esa sesión se cierra, caen. Lo permanente es `sudo systemctl start user@1000.service`.
+
 ## Estado medido (22 de noviembre de 2026, tarde; origen 2013, semilla 42, IC de evaluación)
 
 | Pieza | Medida | Lectura |
