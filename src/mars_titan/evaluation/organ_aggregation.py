@@ -278,6 +278,37 @@ def known_rows(state, origin, parent, view, tables, markets=None):
     checked_factors(manifest, markets)
     known = _screening().KnownOffset(Path(state), origin)
     maturity = pilots._maturity(manifest, view)
+    # Precalentar `known.assets` en paralelo (4 hilos) si es un KnownOffset real con muchos activos.
+    if hasattr(known, "assets") and hasattr(known, "prepared") and hasattr(known, "module"):
+        all_assets = sorted(
+            {
+                asset
+                for table in tables.values()
+                for asset in table.column("asset_id").unique().to_pylist()
+            }
+        )
+        if len(all_assets) > 4:
+            from concurrent.futures import ThreadPoolExecutor
+
+            names_tf = known.module.NAMES
+            idx_has = names_tf.index("has_market_model")
+            idx_alp = names_tf.index("alpha_percent")
+            idx_liq = names_tf.index("log_dollar_volume_21")
+
+            def _warm(asset):
+                mkt, sym = asset.split("/", 1)
+                prices, days = known._table(known.prepared / mkt / sym / "prices.parquet")
+                feats = known.module.technical_features(
+                    prices, days, *known.factors.get(mkt, (None, None))
+                )
+                ok = feats[:, idx_has] > 0
+                vals = feats[:, idx_alp].astype(np.float64) / 100
+                liq = feats[:, idx_liq].astype(np.float64)
+                return asset, (days, np.where(ok, vals, np.nan), liq)
+
+            with ThreadPoolExecutor(max_workers=4) as pool:
+                for asset, entry in pool.map(_warm, all_assets):
+                    known.assets[asset] = entry
     alpha, matures = {}, {}
     for split, table in tables.items():
         every = pq.read_table(
@@ -412,28 +443,42 @@ def _write_component(folder, tables, prediction, alpha, matures):
     return folder
 
 
-def _measure(declaration, tool, inputs, names, best, decision, mode, work):
+def _measure(
+    declaration, tool, inputs, names, best, decision, mode, work, *, raw_by_split=None, cache=None
+):
     runs = {}
+    is_operable = mode == "operable"
+    decl_splits = tuple(declaration["splits"])
+    decl_scales = tuple(declaration["operable_scales"])
     for config, members in CONFIGS.items():
         runs[config] = oa.run_aggregation(
             {names[role]: inputs[role] for role in members},
-            splits=tuple(declaration["splits"]),
+            splits=decl_splits,
             selection_split=declaration["selection_split"],
             min_assets=declaration["min_assets"],
             align=declaration["align"],
-            operable=mode == "operable",
+            operable=is_operable,
             alpha_col="alpha",
             maturity_col="matures_at",
             placebo_seed=declaration["aggregator_placebo_seed"],
-            operable_scales=tuple(declaration["operable_scales"]),
+            operable_scales=decl_scales,
+            aggregators=("rank_average", "ridge_cov_active"),
+            include_placebos=(config == "senal"),
+            include_asset_abstention=False,
+            preloaded_raw=raw_by_split,
+            precomputed_cache=cache,
         )
         report = oa.render_markdown(oa._json_safe_report(runs[config]))
         (work / "informes" / f"{mode}-{config}.md").write_text(report, encoding="utf-8")
     two = runs["dos"]
     evaluation = two["aligned"]["evaluation"]
     ics = {
-        name: oa.session_rank_ic(
-            evaluation, evaluation["predictions"][:, i], min_assets=declaration["min_assets"]
+        name: (
+            cache["individual_ics"][name]["evaluation"]
+            if cache is not None
+            else oa.session_rank_ic(
+                evaluation, evaluation["predictions"][:, i], min_assets=declaration["min_assets"]
+            )
         )
         for i, name in enumerate(two["model_names"])
     }
@@ -674,19 +719,52 @@ def aggregate(
     work = Path(output) / f".{origin}.{os.getpid()}.tmp"
     try:
         (work / "informes").mkdir(parents=True)
-        inputs = {
-            role: _write_component(
-                work / "entradas" / names[role], tables["parent"], values, alpha, matures
+        raw_base = {
+            s: oa.build_raw_split_base(
+                tables["parent"][s], alpha=alpha[s], matures_at=matures[s], already_sorted=True
             )
-            for role, values in predictions.items()
+            for s in AGGREGATED
         }
+        inputs = {role: names[role] for role in predictions}
         modes, series = {}, {}
+        decl_splits = tuple(declaration["splits"])
+        decl_scales = tuple(declaration["operable_scales"])
         for mode in declaration["modes"]:
+            is_operable = mode == "operable"
+            raw_by_split = {
+                s: {
+                    names[role]: oa.build_raw_split(
+                        raw_base[s], values[s], include_alpha=is_operable
+                    )
+                    for role, values in predictions.items()
+                }
+                for s in AGGREGATED
+            }
+            cache = (
+                oa.build_shared_panel_cache(
+                    raw_by_split,
+                    splits=decl_splits,
+                    min_assets=declaration["min_assets"],
+                    align=declaration["align"],
+                    operable=is_operable,
+                    operable_scales=decl_scales,
+                )
+                if declaration["align"] == "strict"
+                else None
+            )
             modes[mode], series[mode] = _measure(
-                declaration, tool, inputs, names, best, decision, mode, work
+                declaration,
+                tool,
+                inputs,
+                names,
+                best,
+                decision,
+                mode,
+                work,
+                raw_by_split=raw_by_split,
+                cache=cache,
             )
             say(f"{MODE_NAMES[mode]}: S2 − S1 {modes[mode]['s2']['vs_s1']['mean']}")
-        shutil.rmtree(work / "entradas")
         summary = _plain(
             dict(
                 schema_version=1,

@@ -766,10 +766,15 @@ def interval_rule(item, level, rule):
 
 
 def _quarters(table):
-    instants = table.column("prediction_at").cast(pa.int64()).to_numpy().astype("datetime64[us]")
-    years = instants.astype("datetime64[Y]").astype(int) + 1970
-    quarters = (instants.astype("datetime64[M]").astype(int) % 12) // 3 + 1
-    return np.array([f"{y}T{q}" for y, q in zip(years, quarters, strict=True)])
+    inst_us = table.column("prediction_at").cast(pa.int64()).to_numpy()
+    if not len(inst_us):
+        return np.array([])
+    unique_us, inv = np.unique(inst_us, return_inverse=True)
+    dt = unique_us.astype("datetime64[us]")
+    years = dt.astype("datetime64[Y]").astype(int) + 1970
+    quarters = (dt.astype("datetime64[M]").astype(int) % 12) // 3 + 1
+    labels = np.array([f"{y}T{q}" for y, q in zip(years, quarters, strict=True)])
+    return labels[inv]
 
 
 def adaptive_intervals(parent, covariates, matures, settings):
@@ -786,7 +791,14 @@ def adaptive_intervals(parent, covariates, matures, settings):
     liquidity = ac.within_session_groups(
         covariates["evaluation"]["liquidity"], bounds["evaluation"], settings["liquidity_groups"]
     )
-    markets = np.asarray(parent["evaluation"].column("market").to_pylist())
+    n_eval = len(target["evaluation"])
+    if n_eval:
+        max_len = max((len(str(m)) for m, _, _, _ in sessions["evaluation"]), default=1)
+        markets = np.empty(n_eval, dtype=f"<U{max_len}")
+        for market, _, start, end in sessions["evaluation"]:
+            markets[start:end] = market
+    else:
+        markets = np.array([])
     quarters = _quarters(parent["evaluation"])
     maturity = np.array(
         [int(np.max(matures["evaluation"][start:end])) for start, end in bounds["evaluation"]]
@@ -885,13 +897,18 @@ def _views(mode, results, names, parent, liquidity, alpha, cap):
     views = {}
     for split in AGGREGATED:
         aligned = results["s2"]["aligned"][split]
+        aligned_ids = np.asarray(aligned["sample_id"])
         _require(
-            list(results["s1"]["aligned"][split]["sample_id"]) == list(aligned["sample_id"]),
+            np.array_equal(np.asarray(results["s1"]["aligned"][split]["sample_id"]), aligned_ids),
             f"S1 y S2 no tienen las mismas filas en {mode}/{split}",
         )
         position = {name: i for i, name in enumerate(aligned["model_names"])}
-        index = {s: i for i, s in enumerate(parent[split].column("sample_id").to_pylist())}
-        rows = np.array([index[s] for s in aligned["sample_id"]], dtype=np.int64)
+        parent_ids = parent[split].column("sample_id").to_numpy(zero_copy_only=False)
+        if len(parent_ids) == len(aligned_ids) and np.array_equal(parent_ids, aligned_ids):
+            rows = np.arange(len(aligned_ids), dtype=np.int64)
+        else:
+            index = {s: i for i, s in enumerate(parent_ids.tolist())}
+            rows = np.array([index[s] for s in aligned_ids.tolist()], dtype=np.int64)
         known = np.asarray(alpha[split], dtype=np.float64)[rows]
         if mode == "operable":
             _require(
@@ -1005,26 +1022,55 @@ def measure(
     work = Path(output) / f".{origin}.{os.getpid()}.tmp"
     try:
         work.mkdir(parents=True)
-        inputs = {
-            p: og._write_component(
-                work / "entradas" / names[p], parent, predictions[p], alpha, matures
+        raw_base = {
+            s: oa.build_raw_split_base(
+                parent[s], alpha=alpha[s], matures_at=matures[s], already_sorted=True
             )
-            for p in names
+            for s in AGGREGATED
         }
         f1, f1_rows, f2, versus, factors = {}, [], {}, {}, None
+        decl_splits = tuple(declaration["splits"])
+        decl_scales = tuple(declaration["operable_scales"])
         for mode in declaration["modes"]:
+            is_operable = mode == "operable"
+            raw_by_split = {
+                s: {
+                    names[p]: oa.build_raw_split(
+                        raw_base[s], predictions[p][s], include_alpha=is_operable
+                    )
+                    for p in names
+                }
+                for s in AGGREGATED
+            }
+            cache = (
+                oa.build_shared_panel_cache(
+                    raw_by_split,
+                    splits=decl_splits,
+                    min_assets=min_assets,
+                    align=declaration["align"],
+                    operable=is_operable,
+                    operable_scales=decl_scales,
+                )
+                if declaration["align"] == "strict"
+                else None
+            )
             results = {
                 system: oa.run_aggregation(
-                    {names[p]: inputs[p] for p in members},
-                    splits=tuple(declaration["splits"]),
+                    {names[p]: names[p] for p in members},
+                    splits=decl_splits,
                     selection_split=declaration["selection_split"],
                     min_assets=min_assets,
                     align=declaration["align"],
-                    operable=mode == "operable",
+                    operable=is_operable,
                     alpha_col="alpha",
                     maturity_col="matures_at",
                     placebo_seed=declaration["aggregator_placebo_seed"],
-                    operable_scales=tuple(declaration["operable_scales"]),
+                    operable_scales=decl_scales,
+                    aggregators=("rank_average", "ridge_cov_active"),
+                    include_placebos=False,
+                    include_asset_abstention=False,
+                    preloaded_raw=raw_by_split,
+                    precomputed_cache=cache,
                 )
                 for system, members in SYSTEMS
             }
@@ -1040,12 +1086,22 @@ def measure(
             views = _views(mode, results, names, parent, liquidity, alpha, cap)
             say(f"{mode}: S1 y S2 agregados")
             sessions_of = {}
+            ordered_predictors = CONTROLS.get(mode, ()) + PREDICTORS
+            first_ev = views[(ordered_predictors[0], "evaluation")]
+            first_cal = views[(ordered_predictors[0], "calibration")]
+            liquid_shared = dict(
+                evaluation=liquid_rows(first_ev["liquidity"], first_ev["bounds"]),
+                calibration=(
+                    liquid_rows(first_cal["liquidity"], first_cal["bounds"])
+                    if mode == "operable"
+                    else None
+                ),
+            )
             # Los controles van primero: la mejora de cada predictor se mide frente a ellos.
-            for predictor in CONTROLS.get(mode, ()) + PREDICTORS:
+            for predictor in ordered_predictors:
                 ev, cal = views[(predictor, "evaluation")], views[(predictor, "calibration")]
-                liquid = dict(evaluation=liquid_rows(ev["liquidity"], ev["bounds"]))
                 for scope in SCOPES:
-                    keep = None if scope == "all" else liquid["evaluation"]
+                    keep = None if scope == "all" else liquid_shared["evaluation"]
                     item, rows, scored = reliability(
                         tool, ev, settings, min_assets=min_assets, keep=keep
                     )
@@ -1065,13 +1121,12 @@ def measure(
                         )
                 if mode != "operable":
                     continue
-                liquid["calibration"] = liquid_rows(cal["liquidity"], cal["bounds"])
                 for scope in SCOPES:
                     pair = []
                     for split, item in (("calibration", cal), ("evaluation", ev)):
                         keep = ~item["outlier"]
                         if scope == "liquid":
-                            keep &= liquid[split]
+                            keep &= liquid_shared[split]
                         pair.append(restricted(item, keep))
                     f2[f"{predictor}/{scope}"] = directional(*pair, declaration["directional"])
                 emit = declaration["directional"]["emit"]
@@ -1101,7 +1156,6 @@ def measure(
                 without_alpha_outliers=zero_excluding(low, high, y, keep=clean),
             )
         say("intervalos")
-        shutil.rmtree(work / "entradas")
         code = og._code_identity()
         code["files"]["reliability"] = pilots._sha256(Path(__file__))
         code["files"]["agent_core"] = pilots._sha256(Path(ac.__file__))

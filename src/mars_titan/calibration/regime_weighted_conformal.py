@@ -37,6 +37,7 @@ import numpy as np
 from mars_titan.calibration import conformal_quantiles as cqr
 from mars_titan.environments.cohorts import FINAL_TEST_START_US
 from mars_titan.evaluation.forecast_panel import ForecastPanel, central_intervals
+from mars_titan.memory import _fast_kernels as fk
 
 IDENTITY = "regime_weighted_conformal_v1"
 SCHEMA_VERSION = 1
@@ -134,11 +135,20 @@ def market_regime(markets, prediction_at, history, *, days):
         order = np.argsort(matures_at[own], kind="stable")
         moments, values = matures_at[own][order], target[own][order]
         selected = np.flatnonzero(markets == name)
-        for at in np.unique(prediction_at[selected]):
-            low = np.searchsorted(moments, at - days * DAY_US, side="right")
-            high = np.searchsorted(moments, at, side="right")
+        sel_times = prediction_at[selected]
+        t_order = np.argsort(sel_times, kind="mergesort")
+        sel_sorted = selected[t_order]
+        times_sorted = sel_times[t_order]
+        change = np.r_[True, times_sorted[1:] != times_sorted[:-1]]
+        starts = np.flatnonzero(change)
+        ends = np.r_[starts[1:], len(times_sorted)]
+        unique_at = times_sorted[starts]
+        lows = np.searchsorted(moments, unique_at - days * DAY_US, side="right")
+        highs = np.searchsorted(moments, unique_at, side="right")
+        for s_idx, (s, e) in enumerate(zip(starts, ends, strict=True)):
+            low, high = int(lows[s_idx]), int(highs[s_idx])
             if high > low:
-                result[selected[prediction_at[selected] == at]] = _rms(values[low:high])
+                result[sel_sorted[s:e]] = _rms(values[low:high])
     return result
 
 
@@ -316,34 +326,85 @@ def replay(record, calibration, evaluation, history, *, weighting):
     effective = np.empty(panel.rows)
     sizes = []
     lookback = config["lookback_days"] * DAY_US
+    nominals_arr = np.array([nominal for nominal, _, _ in pairs], dtype=np.float64)
+    inv_2h2 = 1.0 / (2.0 * config["bandwidth"] * config["bandwidth"])
+    use_native = fk.load_library() is not None
     for code, name in enumerate(panel.markets):
-        own = (pool["market"] == name) & defined
+        own_idx = np.flatnonzero((pool["market"] == name) & defined)
+        own_matures = pool["matures_at"][own_idx]
+        own_pred = pool["prediction_at"][own_idx]
+        own_ctx = pool["context"][own_idx]
+        own_scores = pool["scores"][own_idx]
+
         selected = np.flatnonzero(panel.market == code)
-        for session, at in enumerate(np.unique(panel.prediction_at[selected])):
-            now = selected[panel.prediction_at[selected] == at]
+        if selected.size == 0:
+            continue
+        sel_times = panel.prediction_at[selected]
+        t_order = np.argsort(sel_times, kind="mergesort")
+        sel_sorted = selected[t_order]
+        times_sorted = sel_times[t_order]
+        change = np.r_[True, times_sorted[1:] != times_sorted[:-1]]
+        starts = np.flatnonzero(change)
+        ends = np.r_[starts[1:], len(times_sorted)]
+        for session, (s_start, s_end) in enumerate(zip(starts, ends, strict=True)):
+            at = int(times_sorted[s_start])
+            now = sel_sorted[s_start:s_end]
+            now_ctx = current["context"][now]
             _require(
-                not np.isnan(current["context"][now]).any(),
+                not np.isnan(now_ctx).any(),
                 "Una fila evaluada no tiene contexto definido en su emisión",
             )
-            mask = own & (pool["matures_at"] <= at) & (pool["prediction_at"] >= at - lookback)
-            count = int(np.count_nonzero(mask))
+            local_mask = (own_matures <= at) & (own_pred >= at - lookback)
+            count = int(np.count_nonzero(local_mask))
             _require(
                 count >= config["min_rows"],
                 f"{name} no tiene {config['min_rows']} errores maduros antes de {at}",
             )
             sizes.append(count)
-            keys = pool["context"][mask]
+            keys = own_ctx[local_mask]
             if weighting == "shuffled":
                 sequence = np.random.SeedSequence([config["seed"], code, session])
                 keys = keys[np.random.default_rng(sequence).permutation(count)]
-            orders = [np.argsort(pool["scores"][mask, k], kind="stable") for k in range(len(pairs))]
-            sorted_scores = [pool["scores"][mask, k][order] for k, order in enumerate(orders)]
+            sess_scores = own_scores[local_mask]
+            orders = [np.argsort(sess_scores[:, k], kind="stable") for k in range(len(pairs))]
+            sorted_scores = [sess_scores[order, k] for k, order in enumerate(orders)]
             if weighting == "uniform":
                 weights = np.full((count, 1), 1.0 / count)
                 for k, (nominal, _, _) in enumerate(pairs):
                     corrections[now, k] = _sorted_quantile(sorted_scores[k], weights, nominal)[0]
                 effective[now] = count
                 continue
+            if (
+                use_native
+                and keys.shape[1] == 2
+                and len(pairs) >= 1
+                and bool(np.all(now_ctx[:, 1] == now_ctx[0, 1]))
+            ):
+                ord0 = orders[0]
+                inv_ord0 = np.empty(count, dtype=np.int64)
+                inv_ord0[ord0] = np.arange(count, dtype=np.int64)
+                remap = np.empty((len(pairs), count), dtype=np.int64)
+                remap[0] = np.arange(count, dtype=np.int64)
+                for k in range(1, len(pairs)):
+                    remap[k] = inv_ord0[orders[k]]
+                sorted_mat = np.ascontiguousarray(np.vstack(sorted_scores), dtype=np.float64)
+                past_x = np.ascontiguousarray(keys[ord0, 0], dtype=np.float64)
+                past_c = np.ascontiguousarray(
+                    -np.square(keys[ord0, 1] - now_ctx[0, 1]) * inv_2h2, dtype=np.float64
+                )
+                fast_out = fk.rwc_session_1d(
+                    now_ctx[:, 0],
+                    past_x,
+                    past_c,
+                    inv_2h2,
+                    remap,
+                    sorted_mat,
+                    nominals_arr,
+                    TOLERANCE,
+                )
+                if fast_out is not None:
+                    corrections[now], effective[now] = fast_out
+                    continue
             block = max(1, MAX_BLOCK // count)
             for start in range(0, len(now), block):
                 rows = now[start : start + block]

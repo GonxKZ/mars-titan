@@ -90,7 +90,7 @@ def _window_sum(values, window):
     return total[index] - total[np.maximum(index - window, 0)]
 
 
-def lab_extra(prices, sessions, calendar=None, market=None):
+def lab_extra(prices, sessions, calendar=None, market=None, *, _precomputed_market=None):
     """Las 16 columnas añadidas por el laboratorio, en FP64, con NaN donde falta historia.
 
     `prices` es la tabla OHLCV de un activo, `sessions` el día de cada fila y `calendar` y
@@ -133,17 +133,16 @@ def lab_extra(prices, sessions, calendar=None, market=None):
         untraded = _window_sum(stale, 63) / 63
         untraded[:62] = np.nan
         found["zero_volume_63"] = untraded
-        if calendar is not None and market is not None:
-            calendar = np.asarray(calendar, dtype="datetime64[D]")
-            market = np.asarray(market, dtype=np.float64)
-            sessions = np.asarray(sessions, dtype="datetime64[D]")
-            position = np.searchsorted(calendar, sessions)
-            inside = position < len(calendar)
-            inside[inside] = calendar[position[inside]] == sessions[inside]
-            ratio = np.where((opened > 0) & (close > 0), close / opened - 1, np.nan)
-            aligned = np.full(len(calendar), np.nan)
-            aligned[position[inside]] = ratio[inside]
-            alpha, beta, residual, _ = tf.market_model(aligned, market)
+        if _precomputed_market is not None or (calendar is not None and market is not None):
+            if _precomputed_market is not None:
+                calendar, market, position, inside, aligned, alpha, beta, residual, _ = (
+                    _precomputed_market
+                )
+            else:
+                sessions = np.asarray(sessions, dtype="datetime64[D]")
+                calendar, market, position, inside, aligned, alpha, beta, residual, _ = (
+                    tf._aligned_market_model(opened, close, sessions, calendar, market)
+                )
             # Etiqueta de la sesión anterior, ya realizada al cierre de esta, en desviaciones
             # residuales de la anterior (NaN si falta), y su suma en 5 y 21 sesiones.
             realized = np.full(len(calendar), np.nan)
@@ -166,19 +165,66 @@ def lab_extra(prices, sessions, calendar=None, market=None):
 
 def lab_columns(prices, sessions, calendar=None, market=None):
     """Las 46 columnas en bruto del laboratorio para cada fila de precios, en FP32."""
-    base = tf.technical_features(prices, sessions, calendar, market)
-    extra = lab_extra(prices, sessions, calendar, market).astype(np.float32)
+    pre = None
+    if calendar is not None and market is not None:
+        prices_arr = np.asarray(prices, dtype=np.float64)
+        sessions_arr = np.asarray(sessions, dtype="datetime64[D]")
+        if (
+            prices_arr.ndim == 2
+            and prices_arr.shape[1] == 5
+            and len(sessions_arr) == len(prices_arr)
+        ):
+            with np.errstate(divide="ignore", invalid="ignore", over="ignore"):
+                pre = tf._aligned_market_model(
+                    prices_arr[:, 0], prices_arr[:, 3], sessions_arr, calendar, market
+                )
+    base = tf.technical_features(prices, sessions, calendar, market, _precomputed_market=pre)
+    extra = lab_extra(prices, sessions, calendar, market, _precomputed_market=pre).astype(
+        np.float32
+    )
     return np.hstack([base, extra])
 
 
+def _fast_median_1d(arr):
+    """Mediana exacta de un vector 1D finito (idéntica a np.median con np.partition O(n))."""
+    n = len(arr)
+    if n == 0:
+        return np.float32(np.nan)
+    mid = n // 2
+    if n % 2 == 1:
+        return np.partition(arr, mid)[mid]
+    part = np.partition(arr, (mid - 1, mid))
+    return (part[mid - 1] + part[mid]) * np.asarray(0.5, dtype=arr.dtype)
+
+
 def robust_scale(raw, train):
-    """Centro y escala de cada columna con las filas de ajuste, como el laboratorio (FP32)."""
-    fit = np.where(np.isfinite(raw[train]), raw[train], np.nan)
-    _require(len(fit) > 0, "La escala necesita filas de ajuste")
-    center = np.nanmedian(fit, axis=0)
-    spread = 1.4826 * np.nanmedian(np.abs(fit - center), axis=0)
-    wide = np.nanstd(fit, axis=0)
-    spread = np.where(spread > 0, spread, np.where(wide > 0, wide, 1.0))
+    """Centro y escala de cada columna con las filas de ajuste, como el laboratorio (FP32).
+
+    Calcula columna a columna con `np.partition` O(n) en lugar de copiar y ordenar la matriz
+    completa (ahorra ~4,5 GiB de RAM y ~30x de tiempo en 6,5 M filas).
+    """
+    train_idx = np.flatnonzero(train) if np.asarray(train).dtype == bool else np.asarray(train)
+    _require(len(train_idx) > 0, "La escala necesita filas de ajuste")
+    cols = raw.shape[1]
+    dtype = raw.dtype if np.issubdtype(raw.dtype, np.floating) else np.float32
+    center = np.empty(cols, dtype=dtype)
+    spread = np.empty(cols, dtype=np.float64)
+    for j in range(cols):
+        col = raw[train_idx, j]
+        finite = col[np.isfinite(col)]
+        if finite.size == 0:
+            center[j] = np.nan
+            spread[j] = 1.0
+            continue
+        med = _fast_median_1d(finite)
+        center[j] = med
+        dev = np.abs(finite - med)
+        mad = 1.4826 * float(_fast_median_1d(dev))
+        if mad > 0.0:
+            spread[j] = mad
+        else:
+            wide = float(np.std(finite))
+            spread[j] = wide if wide > 0.0 else 1.0
     return center, spread
 
 
@@ -189,13 +235,18 @@ def scaled(raw, center, spread):
     return np.clip(values, -LIMIT, LIMIT).astype(np.float32)
 
 
-def session_ranks(values, bounds):
+def session_ranks(values, bounds, *, workers=1):
     """Rangos gaussianos de cada columna en cada sesión [inicio, fin), en FP32 y a ±5."""
+    from concurrent.futures import ThreadPoolExecutor
+
     import torch
 
     values = np.asarray(values, dtype=np.float32)
     result = np.empty_like(values)
-    for start, end in zip(bounds[:-1], bounds[1:], strict=True):
+    pairs = list(zip(bounds[:-1], bounds[1:], strict=True))
+
+    def _one(pair):
+        start, end = int(pair[0]), int(pair[1])
         block = values[start:end]
         order = np.argsort(block, axis=0, kind="stable")
         ranks = np.empty(block.shape, dtype=np.float32)
@@ -206,6 +257,14 @@ def session_ranks(values, bounds):
         inverse = np.float32(1.0) / np.float32(end - start)
         level = torch.from_numpy((ranks - np.float32(0.5)) * inverse)
         result[start:end] = torch.special.ndtri(level).clamp(-LIMIT, LIMIT).numpy()
+
+    if workers > 1 and len(pairs) > 4:
+        with ThreadPoolExecutor(max_workers=min(workers, len(pairs))) as pool:
+            for _ in pool.map(_one, pairs):
+                pass
+    else:
+        for pair in pairs:
+            _one(pair)
     return result
 
 
@@ -236,12 +295,14 @@ def _factor(declared, last_day):
     return days[keep], returns, declared["prices_sha256"]
 
 
-def _market_rows(manifest, market, log):
+def _market_rows(manifest, market, log, *, workers=4):
     """Filas en bruto de un mercado, en el orden de los activos de la vista y de sus etiquetas."""
+    from concurrent.futures import ThreadPoolExecutor
+
     prepared, labels_root = Path(manifest["roots"]["prepared"]), Path(manifest["roots"]["labels"])
     assets = [a for a in manifest["assets"] if a["market"] == market]
-    labels, last_day = [], None
-    for asset in assets:
+
+    def _read_label(asset):
         path = labels_root / market / asset["symbol"] / "labels.parquet"
         table = _verified(path, asset["labels_sha256"], "archivo de etiquetas")
         names = table["partition"].to_pylist()
@@ -250,23 +311,36 @@ def _market_rows(manifest, market, log):
         code = np.array([PARTS.get(p, -1) for p in names], dtype=np.int8)
         keep = code >= 0
         moments, days = _days(table["prediction_at"])
+        newest = None
         if keep.any():
             _require(
                 int(moments[keep].max()) < FINAL_TEST_START_US,
                 f"La vista de {market}/{asset['symbol']} llega al test final",
             )
             newest = days[keep].max()
+        return asset, days[keep], code[keep], newest
+
+    use_pool = workers > 1 and len(assets) > 4
+    if use_pool:
+        with ThreadPoolExecutor(max_workers=min(workers, len(assets))) as pool:
+            label_results = list(pool.map(_read_label, assets))
+    else:
+        label_results = [_read_label(asset) for asset in assets]
+
+    labels, last_day = [], None
+    for asset, kept_days, kept_code, newest in label_results:
+        if newest is not None:
             last_day = newest if last_day is None else max(last_day, newest)
-        labels.append((asset, days[keep], code[keep]))
+        labels.append((asset, kept_days, kept_code))
     _require(last_day is not None, f"La vista no tiene filas de {market} en sus tramos")
     calendar, factor, factor_sha = _factor(
         (manifest.get("market_factors") or {}).get(market), last_day
     )
-    raw, day, part, owner, names = [], [], [], [], []
-    started = time.monotonic()
-    for index, (asset, at, code) in enumerate(labels):
+
+    def _read_price(item):
+        asset, at, code = item
         if not len(at):
-            continue
+            return None
         path = prepared / market / asset["symbol"] / "prices.parquet"
         table = _verified(path, asset["prices_sha256"], "archivo de precios")
         _, days = _days(table["available_at"])
@@ -277,15 +351,42 @@ def _market_rows(manifest, market, log):
         good = position < len(days)
         good[good] = days[position[good]] == at[good]
         if not good.any():
-            continue
+            return None
         values = lab_columns(prices, days, calendar, factor)
-        raw.append(values[position[good]])
-        day.append(at[good].astype(np.int64).astype(np.int32))
-        part.append(code[good])
-        owner.append(np.full(int(good.sum()), len(names), dtype=np.int32))
-        names.append(f"{market}/{asset['symbol']}")
-        if index % 500 == 0:
-            log(f"{market}: {index}/{len(labels)} activos, {time.monotonic() - started:.0f} s")
+        return (
+            values[position[good]],
+            at[good].astype(np.int64).astype(np.int32),
+            code[good],
+            f"{market}/{asset['symbol']}",
+        )
+
+    raw, day, part, owner, names = [], [], [], [], []
+    started = time.monotonic()
+    if use_pool:
+        with ThreadPoolExecutor(max_workers=min(workers, len(labels))) as pool:
+            for index, result in enumerate(pool.map(_read_price, labels)):
+                if result is not None:
+                    vals, d_arr, p_arr, asset_name = result
+                    raw.append(vals)
+                    day.append(d_arr)
+                    part.append(p_arr)
+                    owner.append(np.full(len(d_arr), len(names), dtype=np.int32))
+                    names.append(asset_name)
+                if index % 500 == 0:
+                    elapsed = time.monotonic() - started
+                    log(f"{market}: {index}/{len(labels)} activos, {elapsed:.0f} s")
+    else:
+        for index, item in enumerate(labels):
+            result = _read_price(item)
+            if result is not None:
+                vals, d_arr, p_arr, asset_name = result
+                raw.append(vals)
+                day.append(d_arr)
+                part.append(p_arr)
+                owner.append(np.full(len(d_arr), len(names), dtype=np.int32))
+                names.append(asset_name)
+            if index % 500 == 0:
+                log(f"{market}: {index}/{len(labels)} activos, {time.monotonic() - started:.0f} s")
     return dict(
         raw=np.concatenate(raw),
         day=np.concatenate(day),
@@ -311,26 +412,45 @@ def build(manifest_path, output, *, markets=None, log=print):
     blocks, names, receipt_markets = [], [], {}
     for market in markets:
         rows = _market_rows(manifest, market, log)
-        order = np.argsort(rows["day"], kind="mergesort")
-        raw = rows.pop("raw")[order]
-        day, part, asset = rows["day"][order], rows["part"][order], rows["asset"][order]
-        center, spread = robust_scale(raw, part == 0)
-        post = np.flatnonzero(part >= 1)
-        _require(post.size > 0, f"{market} no tiene filas de validación, calibración ni evaluación")
+        day_all, part_all, asset_all = rows["day"], rows["part"], rows["asset"]
+        train_mask = part_all == 0
+        post_mask = part_all >= 1
         _require(
-            np.all(part[post[0] :] >= 1),
-            f"Las filas posteriores al ajuste de {market} no son las últimas",
+            bool(np.any(post_mask)),
+            f"{market} no tiene filas de validación, calibración ni evaluación",
         )
-        values = scaled(raw[post[0] :], center, spread)
-        del raw
-        day, part, asset = day[post[0] :], part[post[0] :], asset[post[0] :]
+        # Comprobar separación cronológica sin ordenar millones de filas innecesariamente:
+        # la escala robusta es invariante al orden de las filas de ajuste.
+        train_count = int(np.sum(train_mask))
+        if train_count > 0:
+            max_train_day = int(day_all[train_mask].max())
+            min_post_day = int(day_all[post_mask].min())
+            if max_train_day >= min_post_day:
+                # Respaldo exacto para detectar filas intercaladas en el mismo orden que antes.
+                order_all = np.argsort(day_all, kind="mergesort")
+                part_sorted = part_all[order_all]
+                post_pos = np.flatnonzero(part_sorted >= 1)
+                _require(
+                    np.all(part_sorted[post_pos[0] :] >= 1),
+                    f"Las filas posteriores al ajuste de {market} no son las últimas",
+                )
+        raw_all = rows.pop("raw")
+        center, spread = robust_scale(raw_all, train_mask)
+        post_idx = np.flatnonzero(post_mask)
+        post_day = day_all[post_idx]
+        # mergesort sobre post_idx (ya en orden creciente del manifiesto) da exactamente el mismo
+        # orden estable por (day, orden original) que ordenar todas las filas y cortar [post[0]:].
+        post_order = post_idx[np.argsort(post_day, kind="mergesort")]
+        values = scaled(raw_all[post_order], center, spread)
+        del raw_all
+        day, part, asset = day_all[post_order], part_all[post_order], asset_all[post_order]
         change = np.flatnonzero(day[1:] != day[:-1]) + 1
         bounds = np.r_[0, change, len(day)].astype(np.int64)
-        ranks = session_ranks(values, bounds)
+        ranks = session_ranks(values, bounds, workers=4)
         blocks.append((values, ranks, asset + len(names), day, bounds, part[bounds[:-1]]))
         receipt_markets[market] = dict(
-            rows=int(len(order)),
-            train_rows=int(np.sum(rows["part"] == 0)),
+            rows=int(len(day_all)),
+            train_rows=train_count,
             rows_after_fit=int(len(day)),
             sessions_after_fit=int(len(bounds) - 1),
             assets=len(rows["names"]),

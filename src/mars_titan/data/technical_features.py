@@ -324,7 +324,23 @@ def market_model(intraday, market):
     return alpha, beta, residual, pairs
 
 
-def technical_features(prices, sessions, calendar=None, market=None, version=NAME):
+def _aligned_market_model(opened, close, sessions, calendar, market):
+    """Alinea las rentabilidades intradía al calendario del factor y calcula el OLS de mercado."""
+    calendar = np.asarray(calendar, dtype="datetime64[D]")
+    market = np.asarray(market, dtype=np.float64)
+    position = np.searchsorted(calendar, sessions)
+    inside = position < len(calendar)
+    inside[inside] = calendar[position[inside]] == sessions[inside]
+    ratio = np.where((opened > 0) & (close > 0), close / opened - 1, np.nan)
+    aligned = np.full(len(calendar), np.nan)
+    aligned[position[inside]] = ratio[inside]
+    alpha, beta, residual, pairs = market_model(aligned, market)
+    return calendar, market, position, inside, aligned, alpha, beta, residual, pairs
+
+
+def technical_features(
+    prices, sessions, calendar=None, market=None, version=NAME, *, _precomputed_market=None
+):
     """Rasgos de cada fila de `prices` (apertura, máximo, mínimo, cierre y volumen).
 
     `sessions` es el día de cada fila. `calendar` y `market` son los días del factor de mercado
@@ -489,16 +505,15 @@ def technical_features(prices, sessions, calendar=None, market=None, version=NAM
                     _window_mean(shadow, window) - 0.25
                 )
         features["has_market_model"] = np.zeros(rows)
-        if calendar is not None and market is not None:
-            calendar = np.asarray(calendar, dtype="datetime64[D]")
-            market = np.asarray(market, dtype=np.float64)
-            position = np.searchsorted(calendar, sessions)
-            inside = position < len(calendar)
-            inside[inside] = calendar[position[inside]] == sessions[inside]
-            ratio = np.where((opened > 0) & (close > 0), close / opened - 1, np.nan)
-            aligned = np.full(len(calendar), np.nan)
-            aligned[position[inside]] = ratio[inside]
-            alpha, beta, residual, pairs = market_model(aligned, market)
+        if _precomputed_market is not None or (calendar is not None and market is not None):
+            if _precomputed_market is not None:
+                calendar, market, position, inside, aligned, alpha, beta, residual, pairs = (
+                    _precomputed_market
+                )
+            else:
+                calendar, market, position, inside, aligned, alpha, beta, residual, pairs = (
+                    _aligned_market_model(opened, close, sessions, calendar, market)
+                )
             for name, values in (
                 ("alpha_percent", alpha * 100),
                 ("alpha_t", alpha / (residual / np.sqrt(pairs))),
