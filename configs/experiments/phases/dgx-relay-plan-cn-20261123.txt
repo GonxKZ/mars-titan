@@ -9,3 +9,5 @@ limpia|/home/gpic/.local/state/mars-titan/dgx-titans-us-cn-v31/v12-cn/rasgos-v5/
 limpia|/home/gpic/.local/state/mars-titan/dgx-titans-us-cn-v31/v12-cn/panel/semillas-42,43,44/todos-e465cc43/packed-inputs/2013
 limpia|/home/gpic/.local/state/mars-titan/dgx-titans-us-cn-v31/v12-cn/rasgos-v4/semillas-42,43,44/todos-e465cc43/packed-inputs/2013
 limpia|/home/gpic/.local/state/mars-titan/dgx-titans-us-cn-v31/v12-cn/panel-placebo/semillas-42,43,44/todos-e465cc43/packed-inputs/2013
+# CF-cn (24-11): campaña final de China. Primero el núcleo, que ya corrió con estas 62 columnas en H9-cn; el resto de las familias se añade cuando su prueba de humo pase.
+/home/gpic/TITANS-IA/MARS-TITAN-campana-f6946247|/home/gpic/.local/state/mars-titan/dgx-titans-us-cn-v31/v12-cn/final/semillas-42-49/todos-f6946247|/home/gonzalo/.local/state/mars-titan/campaign-a-v2-views-v31-20261013/views/CN|configs/experiments/cn-campaign-v12-final.json|3 --seed 42 --seed 43 --seed 44 --origin 2023 --tier core
