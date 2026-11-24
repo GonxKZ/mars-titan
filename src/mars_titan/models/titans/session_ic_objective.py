@@ -253,18 +253,33 @@ def weighted_standardized(values, weights):
     return centered / torch.sqrt((weights * centered.square()).sum() + floor)
 
 
+def _row_index(rows, device):
+    if device.type != "cuda":
+        return torch.tensor(rows, dtype=torch.int64, device=device)
+    return torch.tensor(rows, dtype=torch.int64, pin_memory=True).to(
+        device=device, non_blocking=True
+    )
+
+
 def standardized_scores(scores, markets):
     """Centrar y escalar las puntuaciones de cada mercado del lote, que es una sesión."""
     if scores.ndim != 1 or len(markets) != len(scores):
         raise ValueError("Las puntuaciones necesitan un mercado por fila")
+    if len(scores) == 0:
+        return torch.zeros_like(scores)
+    first = markets[0]
+    if all(value == first for value in markets):
+        return standardized(scores)
     result = torch.zeros_like(scores)
     for market in sorted(set(markets)):
-        rows = torch.tensor(
-            [i for i, value in enumerate(markets) if value == market],
-            dtype=torch.int64,
-            device=scores.device,
-        )
-        result = result.index_copy(0, rows, standardized(scores.index_select(0, rows)))
+        positions = [i for i, value in enumerate(markets) if value == market]
+        if positions[-1] - positions[0] + 1 == len(positions):
+            start, stop = positions[0], positions[-1] + 1
+            result = result.clone()
+            result[start:stop] = standardized(scores[start:stop])
+        else:
+            rows = _row_index(positions, scores.device)
+            result = result.index_copy(0, rows, standardized(scores.index_select(0, rows)))
     return result
 
 
@@ -293,14 +308,21 @@ def session_correlations(scores, target, sessions, minimum_rows, *, liquidity=No
     for rows in groups.values():
         if len(rows) < minimum_rows:
             continue
-        index = torch.tensor(rows, dtype=torch.int64, device=scores.device)
-        score = scores.index_select(0, index)
-        labels = target.index_select(0, index).unsqueeze(-1)
+        if rows[-1] - rows[0] + 1 == len(rows):
+            start, stop = rows[0], rows[-1] + 1
+            score = scores[start:stop]
+            labels = target[start:stop].unsqueeze(-1)
+            liq = None if liquidity is None else liquidity.detach()[start:stop]
+        else:
+            index = _row_index(rows, scores.device)
+            score = scores.index_select(0, index)
+            labels = target.index_select(0, index).unsqueeze(-1)
+            liq = None if liquidity is None else liquidity.detach().index_select(0, index)
         normal = gaussian_ranks(labels, torch.ones_like(labels, dtype=torch.bool)).squeeze(-1)
-        if liquidity is None:
+        if liq is None:
             values.append((standardized(score) * standardized(normal)).mean())
             continue
-        weights = liquidity_weights(liquidity.detach().index_select(0, index), power)
+        weights = liquidity_weights(liq, power)
         product = weighted_standardized(score, weights) * weighted_standardized(normal, weights)
         values.append((weights * product).sum())
     if not values:

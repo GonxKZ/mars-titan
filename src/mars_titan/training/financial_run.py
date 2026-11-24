@@ -1297,7 +1297,8 @@ class ChronologicalTrainer(ChronologicalInference):
             # Las comprobaciones de todos los lotes del grupo y la de su pérdida se resuelven
             # juntas antes de su backward, en lugar de esperar a la GPU tras cada lote.
             with deferred_checks():
-                members, graphs, penalties = set(group), {}, []
+                members, graphs, batch_outputs, penalties = set(group), {}, [], []
+                loss_to_record = None
                 for batch, plan, whole in run.segment:
                     rows = [i for i, flow in enumerate(batch.flow_ids) if flow in members]
                     if not rows:
@@ -1319,27 +1320,70 @@ class ChronologicalTrainer(ChronologicalInference):
                     if prepared.local_control is not None:
                         penalties.append(prepared.local_control.penalty)
                         replayed += len(prepared.local_control.flow_ids)
-                    outputs = self._graphs(prepared, batch).unbind()
+                    outputs = self._graphs(prepared, batch)
+                    batch_index = len(batch_outputs)
+                    batch_outputs.append(outputs)
                     for row, key in enumerate(
                         zip(batch.flow_ids, batch.prediction_at, strict=True)
                     ):
                         if key in targets:
-                            graphs[key] = outputs[row]
+                            graphs[key] = (batch_index, row)
                 keys = [(flow, at) for flow, at, _ in run.used if flow in members]
                 if any(key not in graphs for key in keys):
                     raise ValueError("La repetición del tramo no reproduce sus predicciones")
                 terms = []
                 if keys:
-                    prediction = torch.stack([graphs[key] for key in keys])
-                    target = torch.tensor(
-                        [targets[key] for key in keys],
-                        dtype=prediction.dtype,
-                        device=prediction.device,
+                    chunks = []
+                    pos = 0
+                    n_keys = len(keys)
+                    while pos < n_keys:
+                        b_idx, first_row = graphs[keys[pos]]
+                        run_rows = [first_row]
+                        pos += 1
+                        while pos < n_keys and graphs[keys[pos]][0] == b_idx:
+                            run_rows.append(graphs[keys[pos]][1])
+                            pos += 1
+                        source = batch_outputs[b_idx]
+                        if (
+                            run_rows[0] == 0
+                            and len(run_rows) == source.shape[0]
+                            and run_rows[-1] == len(run_rows) - 1
+                            and all(
+                                run_rows[i] == i for i in range(1, len(run_rows))
+                            )
+                        ):
+                            chunks.append(source)
+                        elif (
+                            run_rows[-1] - run_rows[0] + 1 == len(run_rows)
+                            and all(
+                                run_rows[i] == run_rows[0] + i for i in range(1, len(run_rows))
+                            )
+                        ):
+                            chunks.append(source[run_rows[0] : run_rows[-1] + 1])
+                        else:
+                            index = (
+                                torch.tensor(run_rows, dtype=torch.int64, pin_memory=True).to(
+                                    device=source.device, non_blocking=True
+                                )
+                                if source.is_cuda
+                                else torch.tensor(run_rows, dtype=torch.int64, device=source.device)
+                            )
+                            chunks.append(source.index_select(0, index))
+                    prediction = chunks[0] if len(chunks) == 1 else torch.cat(chunks, dim=0)
+                    target_values = [targets[key] for key in keys]
+                    target = (
+                        torch.tensor(target_values, dtype=prediction.dtype, pin_memory=True).to(
+                            device=prediction.device, non_blocking=True
+                        )
+                        if prediction.is_cuda
+                        else torch.tensor(
+                            target_values, dtype=prediction.dtype, device=prediction.device
+                        )
                     )
                     task = self._task_loss(prediction, target, keys)
                     share = len(keys) / len(run.used)
                     loss = task * share
-                    total += float(loss.detach())
+                    loss_to_record = loss.detach()
                     if self.teacher is not None:
                         loss = self._distilled(task, prediction, keys) * share
                     terms.append(loss)
@@ -1348,6 +1392,8 @@ class ChronologicalTrainer(ChronologicalInference):
                 objective = sum(terms[1:], terms[0])
                 require_true(torch.isfinite(objective), "La pérdida del tramo no es finita")
             objective.backward()
+            if loss_to_record is not None:
+                total += float(loss_to_record)
         if replayed != len(controlled):
             raise ValueError("La repetición del tramo no reproduce los flujos medidos de C")
         return torch.tensor(total)

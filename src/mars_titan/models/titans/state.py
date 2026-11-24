@@ -52,13 +52,33 @@ class _PendingChecks:
     """
 
     def __init__(self) -> None:
-        self.flags: list[Tensor] = []
+        self.flags: list[Tensor | None] = []
         self.messages: list[str] = []
-        self.seen: dict[tuple[int, int], Tensor] = {}
+        self.seen: dict[tuple, Tensor] = {}
+        self._deferred: dict[int, Tensor] = {}
 
     def add(self, flag: Tensor, message: str) -> None:
         self.flags.append(flag)
         self.messages.append(message)
+
+    def reserve(self, value: Tensor, message: str) -> int:
+        slot = len(self.flags)
+        self.flags.append(None)
+        self.messages.append(message)
+        self._deferred[slot] = value
+        return slot
+
+    def fulfill(self, slot: int, indicator: Tensor) -> None:
+        if slot in self._deferred:
+            del self._deferred[slot]
+            self.flags[slot] = indicator
+
+    def _materialize_deferred(self) -> None:
+        if not self._deferred:
+            return
+        for slot, value in list(self._deferred.items()):
+            self.flags[slot] = finite_indicator(value)
+        self._deferred.clear()
 
     def first_failure(self) -> str | None:
         """Mensaje de la primera comprobación fallida en orden de programa, o None.
@@ -69,6 +89,7 @@ class _PendingChecks:
         """
         if not self.flags:
             return None
+        self._materialize_deferred()
         groups: dict[torch.dtype, list[int]] = {}
         for index, flag in enumerate(self.flags):
             groups.setdefault(flag.dtype, []).append(index)
@@ -96,6 +117,7 @@ class _PendingChecks:
     def resolve(self) -> None:
         message = self.first_failure()
         self.flags, self.messages = [], []
+        self._deferred.clear()
         if message is not None:
             raise ValueError(message)
 
@@ -112,16 +134,17 @@ def deferred_checks():
     Si el tramo lanza otro error, antes se resuelven las comprobaciones previas, como si se
     hubieran hecho en su sitio. Dentro de otro tramo diferido no abre uno nuevo: sus
     comprobaciones se resuelven al final del exterior. Los tensores que recuerda para no
-    repetirlas solo se conservan mientras dura el tramo interior, así que un recorrido largo
-    no retiene los temporales de cada paso hasta el final.
+    repetirlas se acotan al salir del tramo interior, así que un recorrido largo no retiene
+    todos los temporales mientras conserva los tensores de estado entre pasos consecutivos.
     """
     outer = _PENDING.get()
     if outer is not None:
-        seen, outer.seen = outer.seen, {}
         try:
             yield
         finally:
-            outer.seen = seen
+            if len(outer.seen) > 128:
+                keep = list(outer.seen.items())[-64:]
+                outer.seen = dict(keep)
         return
     pending = _PendingChecks()
     token = _PENDING.set(pending)
@@ -173,8 +196,67 @@ def is_finite(indicator: Tensor) -> bool:
     return math.isfinite(indicator.item())
 
 
+def _seen_key(value: Tensor) -> tuple:
+    """Clave por vista y versión de almacenamiento para no releer vistas `.detach()` en el tramo."""
+    return (
+        value.untyped_storage().data_ptr(),
+        value.storage_offset(),
+        value.shape,
+        value.stride(),
+        value.dtype,
+        value._version,
+    )
+
+
 def check_finite(value: Tensor, name: str) -> None:
     require_finite(value, f"{name} contiene NaN o infinito")
+
+
+def record_finite(value: Tensor, indicator: Tensor, name: str) -> None:
+    """Registrar un indicador de finitud ya calculado (p. ej. max|x| fusionado en un kernel)."""
+    message = f"{name} contiene NaN o infinito"
+    pending = _PENDING.get()
+    if pending is not None and value.device.type == "cuda":
+        if not value.is_inference():
+            key = _seen_key(value)
+            if key in pending.seen:
+                return
+            pending.seen[key] = value
+        pending.add(indicator, message)
+        return
+    if not is_finite(indicator):
+        if pending is not None:
+            pending.resolve()
+        raise ValueError(message)
+
+
+def has_deferred_checks() -> bool:
+    """Indica si hay un bloque `deferred_checks()` activo en el contexto actual."""
+    return _PENDING.get() is not None
+
+
+def reserve_finite(value: Tensor, name: str) -> int | None:
+    """Reservar un hueco en orden de programa para rellenarlo con un indicador fusionado."""
+    message = f"{name} contiene NaN o infinito"
+    pending = _PENDING.get()
+    if pending is not None and value.device.type == "cuda":
+        if not value.is_inference():
+            key = _seen_key(value)
+            if key in pending.seen:
+                return None
+            pending.seen[key] = value
+        return pending.reserve(value, message)
+    require_finite(value, message)
+    return None
+
+
+def fulfill_finite(slot: int | None, indicator: Tensor) -> None:
+    """Rellenar un hueco reservado con `reserve_finite` con el indicador max|x| ya calculado."""
+    if slot is None:
+        return
+    pending = _PENDING.get()
+    if pending is not None:
+        pending.fulfill(slot, indicator)
 
 
 def require_finite(value: Tensor, message: str) -> None:
@@ -187,7 +269,7 @@ def require_finite(value: Tensor, message: str) -> None:
     pending = _PENDING.get()
     if pending is not None and value.device.type == "cuda":
         if not value.is_inference():
-            key = (id(value), value._version)
+            key = _seen_key(value)
             if key in pending.seen:
                 return
             pending.seen[key] = value

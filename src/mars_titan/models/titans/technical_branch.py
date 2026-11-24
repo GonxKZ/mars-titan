@@ -299,16 +299,31 @@ class TechnicalDense(nn.Module):
         """Puntuaciones normales del rango de cada rasgo entre las filas de su mercado."""
         if markets is None or len(markets) != len(features):
             raise ValueError("Los rangos de la rama técnica necesitan el mercado de cada fila")
+        if len(features) == 0:
+            return torch.zeros_like(features)
+        first = markets[0]
+        if all(value == first for value in markets):
+            return gaussian_ranks(features, torch.ones_like(features, dtype=torch.bool))
         result = torch.zeros_like(features)
         for market in sorted(set(markets)):
-            rows = torch.tensor(
-                [index for index, value in enumerate(markets) if value == market],
-                dtype=torch.int64,
-                device=features.device,
-            )
-            values = features.index_select(0, rows)
-            present = torch.ones_like(values, dtype=torch.bool)
-            result = result.index_copy(0, rows, gaussian_ranks(values, present))
+            positions = [index for index, value in enumerate(markets) if value == market]
+            if positions[-1] - positions[0] + 1 == len(positions):
+                start, stop = positions[0], positions[-1] + 1
+                values = features[start:stop]
+                present = torch.ones_like(values, dtype=torch.bool)
+                result = result.clone()
+                result[start:stop] = gaussian_ranks(values, present)
+            else:
+                rows = (
+                    torch.tensor(positions, dtype=torch.int64, pin_memory=True).to(
+                        device=features.device, non_blocking=True
+                    )
+                    if features.is_cuda
+                    else torch.tensor(positions, dtype=torch.int64, device=features.device)
+                )
+                values = features.index_select(0, rows)
+                present = torch.ones_like(values, dtype=torch.bool)
+                result = result.index_copy(0, rows, gaussian_ranks(values, present))
         return result
 
     def forward(self, charts, markets=None):

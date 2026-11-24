@@ -136,22 +136,59 @@ class CrossAssetAttention(nn.Module):
             raise ValueError("C5 exige FP32 o FP64 explícitos, sin autocast")
         rows = len(encoded)
         heads, width = self.config.heads, self.head_dim
-        q, k, v = self.qkv(self.norm(encoded)).view(rows, 3, heads, width).permute(1, 2, 0, 3)
-        mixed = torch.zeros_like(encoded)
-        for members in self.groups(markets, prediction_at):
-            index = torch.tensor(members, dtype=torch.int64, device=encoded.device)
-            size = len(members)
-            # Con self_only se calcula la misma matriz y la máscara solo deja la diagonal.
-            allowed = (
-                torch.ones(size, size, dtype=torch.bool, device=encoded.device)
-                if self.config.mode == "same_session"
-                else torch.eye(size, dtype=torch.bool, device=encoded.device)
-            )
-            query, key, value = (part.index_select(1, index) for part in (q, k, v))
-            logits = query @ key.transpose(-1, -2) / math.sqrt(width)
-            weights = torch.softmax(logits.masked_fill(~allowed, -math.inf), dim=-1)
-            part = (weights @ value).transpose(0, 1).reshape(size, self.hidden_size)
-            mixed = mixed.index_copy(0, index, part)
+        projected = self.qkv(self.norm(encoded))
+        if self.config.mode == "self_only":
+            # Con G(i) = {i} el peso softmax es exactamente 1 y la mezcla es V_i, con gradiente
+            # nulo en Q y K. Evita construir matrices N×N y es idéntico bit a bit.
+            mixed = projected[:, 2 * self.hidden_size :]
+            result = encoded + self.out(mixed)
+            check_finite(result, "La representación con atención entre activos")
+            return result
+        q, k, v = projected.view(rows, 3, heads, width).permute(1, 2, 0, 3)
+        use_flash = (
+            encoded.is_cuda
+            and width >= 16
+            and (width & (width - 1)) == 0
+            and width <= 128
+        )
+        if use_flash:
+            from .fused_cuda_kernels import fused_flash_cross_asset
+
+        groups = self.groups(markets, prediction_at)
+        if len(groups) == 1:
+            if use_flash:
+                part = fused_flash_cross_asset(q, k, v)
+            else:
+                logits = q @ k.transpose(-1, -2) / math.sqrt(width)
+                part = torch.softmax(logits, dim=-1) @ v
+            mixed = part.transpose(0, 1).reshape(rows, self.hidden_size)
+        else:
+            mixed = torch.zeros_like(encoded)
+            for members in groups:
+                size = len(members)
+                contiguous = members[-1] - members[0] + 1 == size and members == list(
+                    range(members[0], members[0] + size)
+                )
+                if contiguous:
+                    start, stop = members[0], members[0] + size
+                    query, key, value = q[:, start:stop], k[:, start:stop], v[:, start:stop]
+                else:
+                    if encoded.is_cuda:
+                        pinned = torch.tensor(members, dtype=torch.int64, pin_memory=True)
+                        index = pinned.to(device=encoded.device, non_blocking=True)
+                    else:
+                        index = torch.tensor(members, dtype=torch.int64, device=encoded.device)
+                    query, key, value = (part.index_select(1, index) for part in (q, k, v))
+                if use_flash:
+                    part = fused_flash_cross_asset(query, key, value)
+                else:
+                    logits = query @ key.transpose(-1, -2) / math.sqrt(width)
+                    part = torch.softmax(logits, dim=-1) @ value
+                part = part.transpose(0, 1).reshape(size, self.hidden_size)
+                if contiguous:
+                    mixed[start:stop] = part
+                else:
+                    mixed = mixed.index_copy(0, index, part)
         result = encoded + self.out(mixed)
         check_finite(result, "La representación con atención entre activos")
         return result
