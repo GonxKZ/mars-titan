@@ -71,3 +71,4 @@ limpia|/home/gpic/.local/state/mars-titan/dgx-titans-us-v31/v12-final/semillas-4
 limpia|/home/gpic/.local/state/mars-titan/dgx-titans-us-v31/v12-final-variantes/semillas-42,43,44/todos-cade11b4/packed-inputs/2023
 prepara|/home/gpic/TITANS-IA/MARS-TITAN-campana-1bf06965|/home/gpic/.local/state/mars-titan/dgx-titans-us-v31/v12/semillas-42/todos-1bf06965|configs/titans/dgx-us-core-u2-ic3-dense-gr-v9.json|2013
 /home/gpic/TITANS-IA/MARS-TITAN-campana-1bf06965|/home/gpic/.local/state/mars-titan/dgx-titans-us-v31/v12/semillas-42/todos-1bf06965|/home/gonzalo/.local/state/mars-titan/campaign-a-v2-views-v31-20261013/views/US|configs/experiments/us-campaign-v12-screen5.json|4 --seed 42 --origin 2013 --tier core --tier s5_candidates --tier s5_agentic
+# Nota (v55): al reordenar se retiraron de este fichero las líneas aparcadas con «#~» (el programa antiguo y las fases sustituidas). No se ejecutaban; siguen en plan.txt.antes-de-v55 y en la historia de git de la copia del plan.
