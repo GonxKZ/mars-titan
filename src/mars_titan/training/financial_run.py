@@ -763,6 +763,34 @@ class _SessionRankIC:
         return acc
 
 
+@dataclass(frozen=True)
+class MemoryReset:
+    """Reinicio de la memoria rápida en la inferencia de un tramo medido (brazos R0 y R63).
+
+    El tramo empieza su decisión desde el estado inicial de cada flujo (pesos rápidos, momentos y
+    cola) y del contexto de mercado. El calentamiento no se calcula: todo lo que escribiría se
+    descartaría al abrirse la decisión. Con `every`, el tramo vuelve a ese estado antes de cada
+    `every` instantes medidos. Las predicciones pendientes, sus niveles y la señal de fiabilidad
+    madura se conservan: no son escrituras de la memoria, y lo que madura no cambia.
+    """
+
+    every: int | None = None
+
+    def __post_init__(self):
+        if self.every is not None and (type(self.every) is not int or self.every < 1):
+            raise ValueError("El periodo del reinicio es un entero positivo de instantes medidos")
+
+    def record(self):
+        return dict(
+            schema_version=1,
+            name="initial_fast_state_at_decision_start_v1",
+            every=self.every,
+            reset="fast_weights_moments_queue_and_market_context",
+            warmup="not_computed_its_writes_would_be_discarded",
+            kept="pending_predictions_levels_and_mature_reliability",
+        )
+
+
 @dataclass
 class _Pass:
     """Estado de un recorrido. Solo flows, pending, errores y contadores se persisten."""
@@ -851,9 +879,13 @@ class ChronologicalInference:
     añade a este recorrido el grafo, la pérdida y el paso del optimizador.
     """
 
-    def __init__(self, predictor, recipe, *, audit=False):
+    def __init__(self, predictor, recipe, *, audit=False, memory_reset=None):
         if type(predictor) is not FinancialPredictor or type(recipe) is not ChronologicalRecipe:
             raise ValueError("El entrenador necesita el predictor financiero y su receta")
+        if memory_reset is not None and type(memory_reset) is not MemoryReset:
+            raise ValueError("El reinicio de la memoria se declara con MemoryReset")
+        # Solo la inferencia lo aplica; sin él, el recorrido es el de siempre bit a bit.
+        self.memory_reset = memory_reset
         control = predictor.local_control
         if control is not None and control.config.mode == "diagnostic":
             raise ValueError("El diagnóstico C pertenece a la sesión congelada, no al ajuste")
@@ -1474,6 +1506,22 @@ class ChronologicalInference:
                 errors[start : start + 4096],
             )
 
+    def _reset(self, run, source, event):
+        """Aplicar el reinicio declarado antes de observar un evento. False en el calentamiento.
+
+        Antes del primer instante medido, y de cada `every` siguientes, cada flujo y el contexto
+        de mercado vuelven a su estado inicial. `run.instants` cuenta los instantes medidos.
+        """
+        if event.at < source.phase.decision_start:
+            run.counters["warmup_events_skipped"] += 1
+            return False
+        every = self.memory_reset.every
+        if run.instants == 0 or (every is not None and run.instants % every == 0):
+            run.flows.clear()
+            run.context = None
+            run.counters["memory_resets"] += 1
+        return True
+
     def _close(self, run):
         if run.rank_ic is not None:
             run.rank_ic.close()
@@ -1555,17 +1603,22 @@ class ChronologicalInference:
                 source.dataset.pipeline.prepare_workers,
             ),
         )
+        reset = self.memory_reset
+        if reset is not None:
+            run.counters.update(memory_resets=0, warmup_events_skipped=0)
         with torch.no_grad(), closing(events):
             for event, blocks in events:
                 if stop is not None and stop.requested:
                     raise Paused
                 self._labels(run, event, train=False)
-                if event.inputs:
+                if event.inputs and (reset is None or self._reset(run, source, event)):
                     self._observe(run, source, event, differentiable=False, blocks=blocks)
                 if event.close_phase:
                     self._close(run)
         if run.counters["labels"] == 0:
             raise ValueError("La validación no contiene etiquetas maduras")
+        if reset is not None:
+            run.counters["measured_instants"] = run.instants
         return self._metrics(run)
 
     def predict(self, source, rows, *, stop=None):

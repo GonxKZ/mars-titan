@@ -1,0 +1,137 @@
+{
+  "schema_version": 1,
+  "kind": "comparison_campaign_v1",
+  "market": "US",
+  "final_test_access": false,
+  "description": "Extensión de post-entrenamiento de la campaña DGX v10 en EE. UU. (GB10), fase 4 del programa de post-entrenamiento v10 (docs/research/posttraining-program-v10.md). Pregunta: si continuar desde el padre del origen anterior mejora al ajuste desde cero del mismo origen, y con qué regularización. El padre es titans_mac de la v10 (la receta de su núcleo en 3d10a30f, con accumulation_rows de 8192); se vuelve a ajustar en 2012 en este estado porque la herencia trasladaría la campaña entera y cerraría su permiso. Cuatro brazos parten del mismo estado elegido del padre en 2012 con la misma semilla y se ajustan en 2013 con la parada de la v10, que puede volver a elegir el estado del padre si ninguna época lo mejora: la receta del núcleo sin cambios, decaimiento 0,1 hacia cero, decaimiento 0,1 anclado al padre (L2-SP) y contracción 0,6 con ruido 0,01. Contrastes pareados por sesión: cada brazo frente a titans_mac/2013 de la v10 (desde cero) y L2-SP frente al decaimiento hacia cero (una sola variable: el destino del decaimiento). La medición anterior (búsqueda, 2006 y 2007, criterio MAE) eligió el estado heredado y quedó un 0,066 % detrás del ajuste desde cero; esta repite la pregunta con la parada por IC de rangos de la v10. Un origen; nada se generaliza sin más orígenes. Test final de 2024 cerrado.",
+  "source_declaration_sha256": "836c79a6122fc14a1566826ece99f3708849a7d481361c334acd693383c88716",
+  "cohort": {
+    "size": 4198,
+    "rule": "entire_source_view"
+  },
+  "seeds": [
+    42,
+    43,
+    44
+  ],
+  "origins": [
+    {
+      "fold": "fold-007",
+      "role": "development",
+      "year": 2012
+    },
+    {
+      "fold": "fold-008",
+      "role": "development",
+      "year": 2013
+    }
+  ],
+  "tiers": [
+    "core",
+    "post"
+  ],
+  "recipes": {
+    "core": "configs/titans/dgx-us-core-u2-ic3-dense-gr-v9.json",
+    "cont_wd": "configs/titans/dgx-us-cont-wd-u2-ic3-dense-gr-v10.json",
+    "cont_l2sp": "configs/titans/dgx-us-cont-l2sp-u2-ic3-dense-gr-v10.json",
+    "cont_sp": "configs/titans/dgx-us-cont-sp-u2-ic3-dense-gr-v10.json"
+  },
+  "stopping": {
+    "fit": {
+      "metric": "session_rank_ic",
+      "min_assets": 30,
+      "stopping": "validation_plateau",
+      "patience": 3,
+      "min_delta": 0.0,
+      "max_epochs": 48,
+      "initial_state": "reported"
+    },
+    "reader": {
+      "metric": "session_rank_ic",
+      "min_assets": 30,
+      "stopping": "validation_plateau",
+      "patience": 3,
+      "min_delta": 0.0,
+      "max_epochs": 24
+    }
+  },
+  "execution": {
+    "pipeline": {
+      "decode_workers": 4,
+      "prefetch_batches": 6,
+      "group_cache_mib": 2048,
+      "prepare_workers": 3
+    },
+    "workers": {
+      "mars_titan": 1,
+      "references": 1
+    },
+    "learning_traces": {
+      "every": 8,
+      "max_bytes": 67108864
+    },
+    "order": "seed_tier",
+    "threads": {
+      "intra": 20,
+      "interop": 20
+    }
+  },
+  "budget": {
+    "min_free_gib": 60,
+    "memory_gib": {
+      "mars_titan": 24
+    },
+    "cuda_gib": {
+      "mars_titan": 16
+    },
+    "deadline_utc": "2026-12-02T18:00:00+00:00"
+  },
+  "models": {
+    "titans_mac": {
+      "machine": "mars_titan",
+      "recipe": "core",
+      "runner": "fit",
+      "tier": "core",
+      "variant": "mac_online"
+    },
+    "titans_mac_cont": {
+      "machine": "mars_titan",
+      "recipe": "core",
+      "runner": "fit",
+      "tier": "post",
+      "variant": "mac_online",
+      "continuation": "previous_origin",
+      "continues": "titans_mac"
+    },
+    "titans_mac_cont_wd": {
+      "machine": "mars_titan",
+      "recipe": "cont_wd",
+      "runner": "fit",
+      "tier": "post",
+      "variant": "mac_online",
+      "continuation": "previous_origin",
+      "continues": "titans_mac"
+    },
+    "titans_mac_cont_l2sp": {
+      "machine": "mars_titan",
+      "recipe": "cont_l2sp",
+      "runner": "fit",
+      "tier": "post",
+      "variant": "mac_online",
+      "continuation": "previous_origin",
+      "continues": "titans_mac"
+    },
+    "titans_mac_cont_sp": {
+      "machine": "mars_titan",
+      "recipe": "cont_sp",
+      "runner": "fit",
+      "tier": "post",
+      "variant": "mac_online",
+      "continuation": "previous_origin",
+      "continues": "titans_mac"
+    }
+  },
+  "inputs": {
+    "technical": "long_horizon_v2"
+  }
+}

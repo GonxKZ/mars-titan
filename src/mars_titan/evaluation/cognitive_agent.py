@@ -34,7 +34,8 @@ Variantes por origen y semilla, todas sobre las mismas filas:
   régimen (los expertos especialistas de Freund, Schapire, Singer y Warmuth, 1997, con la
   extensión de AdaNormalHedge para opciones que duermen). El régimen de una sesión se calcula
   solo con sesiones ya maduras: dispersión transversal reciente alta o baja frente a la mediana
-  de las maduras, y mercado reciente al alza o a la baja. La mezcla compite así con la mejor
+  de las maduras, y residuo medio reciente positivo («al alza») o no («a la baja»). La etiqueta
+  ya resta β̂·r_m, así que ese eje no es la dirección del mercado. La mezcla compite así con la mejor
   política que elige herramienta según el régimen, con la misma garantía de arrepentimiento.
 - `shapley/<subconjunto>`: el núcleo con cada subconjunto de herramientas, sin abstención, si se
   declara `shapley`. El valor de Shapley de cada herramienta (Shapley, 1953) reparte
@@ -93,7 +94,8 @@ SUBSET = "shapley/"
 MODALITY = "modality/"
 FULL = "full"
 MAX_MODALITY_MODELS = 8
-# Regímenes: dispersión transversal reciente alta o baja y mercado reciente al alza o a la baja.
+# Regímenes: dispersión transversal reciente alta o baja y residuo medio reciente de la etiqueta
+# positivo (up) o no (down). La etiqueta resta β̂·r_m: up/down no es la dirección del mercado.
 REGIMES = ("low_dispersion_down", "low_dispersion_up", "high_dispersion_down", "high_dispersion_up")
 UNKNOWN_REGIME = -1
 # Shapley exacto enumera 2^T subconjuntos por origen y semilla: con 8 herramientas son 256
@@ -184,6 +186,15 @@ def checked_declaration(document):
         ),
         "El contexto declara solo la ventana de sesiones maduras del régimen, o no se declara",
     )
+    if context is not None:
+        # La mezcla por régimen da a AdaNormalHedge.TV 1 + len(REGIMES) copias de cada opción.
+        options = 1 + sum(len(models) for models in tools.values())
+        copies = options * (1 + len(REGIMES))
+        _require(
+            copies <= arbiters.MAX_OPTIONS,
+            f"Con contexto, las {options} opciones del agente dan {copies} copias y la mezcla "
+            f"admite {arbiters.MAX_OPTIONS}",
+        )
     _require(
         type(document.get("shapley")) is bool
         and (not document["shapley"] or len(tools) <= MAX_SHAPLEY_TOOLS),
@@ -422,7 +433,7 @@ class Options:
     operaciones que `online_arbiters.online_mixture`.
     """
 
-    def __init__(self, named, maturity, min_assets):
+    def __init__(self, named, maturity, min_assets, *, rank=False):
         names = [name for name, _ in named]
         _require(len(set(names)) == len(names), "Cada opción tiene un nombre distinto")
         emissions = [emission for _, emission in named]
@@ -449,8 +460,9 @@ class Options:
                 for column in range(len(names))
             ]
         )
+        # La realimentación usa la misma correlación que la métrica declarada.
         self.losses, self.scored = arbiters.session_losses(
-            self.panel, predictions, min_assets=min_assets
+            self.panel, predictions, min_assets=min_assets, rank=rank
         )
         self.ic = 1.0 - 2.0 * self.losses
         self.session_matures = np.maximum.reduceat(matures_at, self.panel.session_starts)
@@ -540,7 +552,11 @@ def regimes(panel, session_matures, window):
 
     Con las últimas `window` sesiones maduras del mismo mercado (por instante de decisión), la
     sesión es de dispersión alta si su dispersión transversal media supera la mediana de las
-    dispersiones de todas las sesiones maduras, y al alza si su rendimiento medio es positivo.
+    dispersiones de todas las sesiones maduras, y al alza si la media de su etiqueta es
+    positiva. La etiqueta es el residuo y − α̂ − β̂·r_m, así que ese eje es el signo del residuo
+    medio de los activos del panel en las sesiones recientes y no la dirección del mercado. Con
+    `window` sesiones maduras justas, su dispersión se compara con la mediana de esas mismas
+    sesiones.
     Mientras no haya `window` sesiones maduras el régimen es desconocido y solo despiertan los
     generalistas. Devuelve el índice de `REGIMES` o `UNKNOWN_REGIME` de cada sesión.
     """
@@ -646,7 +662,9 @@ def variants(declaration, emissions, maturity):
     named += [(model, emissions[model]) for models in tools.values() for model in models]
     if declaration["placebo"] is not None:
         named.append((PLACEBO_OPTION, permuted(emissions[core], declaration["placebo"]["seed"])))
-    options = Options(named, maturity, feedback["min_assets"])
+    options = Options(
+        named, maturity, feedback["min_assets"], rank=declaration["metric"] == "session_rank_ic"
+    )
     cache = {}
 
     def chosen(selected, extra=()):

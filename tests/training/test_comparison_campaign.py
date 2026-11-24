@@ -2308,3 +2308,136 @@ def test_the_prepare_command_reports_fingerprint_cohorts_and_full_views(tmp_path
         "2019: vista completa de CN, 301 activos",
         "2023: vista completa de CN, 301 activos",
     ]
+
+
+def continued(document, name="titans_mac_continued", **fields):
+    """Continuación de `titans_mac` que parte de su estado elegido en el origen anterior."""
+    document["models"][name] = (
+        dict(document["models"]["titans_mac"], continuation=campaign.CONTINUATION)
+        | dict(continues="titans_mac")
+        | fields
+    )
+    return document
+
+
+def test_a_continuation_of_another_model_starts_from_its_parent_at_the_previous_origin(tmp_path):
+    origins = [
+        dict(year=2016, fold="fold-011", role="history"),
+        dict(year=2019, fold="fold-014", role="development"),
+        dict(year=2017, fold="fold-012", role="history"),
+        dict(year=2023, fold="fold-018", role="confirmation"),
+    ]
+    document = campaign.checked_declaration(continued(declaration(origins=origins)))
+    jobs = campaign.plan(document, "mars_titan")
+    chained = [(job.key, job.needs) for job in jobs if job.model == "titans_mac_continued"]
+    # El primer origen de cada etapa no tiene un estado anterior del padre: no hay trabajo, y
+    # una receta con contracción no puede fallar en él por no tener de qué partir.
+    assert chained == [
+        ("titans_mac_continued/2023/seed-42", "titans_mac/2019/seed-42"),
+        ("titans_mac_continued/2023/seed-43", "titans_mac/2019/seed-43"),
+        ("titans_mac_continued/2017/seed-42", "titans_mac/2016/seed-42"),
+        ("titans_mac_continued/2017/seed-43", "titans_mac/2016/seed-43"),
+    ]
+    # El padre se planifica en su origen antes que la continuación que lo necesita.
+    keys = [job.key for job in jobs]
+    assert all(keys.index(needs) < keys.index(key) for key, needs in chained)
+    # La cola la retiene hasta que su padre termina, como a un lector.
+    place = layout(tmp_path)
+    job = next(job for job in jobs if job.key == "titans_mac_continued/2023/seed-42")
+    assert campaign.job_state(place, job) == campaign.BLOCKED
+    # Un bloque de orígenes que no lleva el del padre se rechaza.
+    with pytest.raises(ValueError, match="deja fuera al padre"):
+        campaign.Queue(document, place, "mars_titan", origins=[2023])
+    assert campaign.Queue(document, place, "mars_titan", origins=[2019, 2023]).jobs
+    # Sin `continues`, la cadena sigue partiendo del mismo modelo en el origen anterior.
+    own = declaration()
+    own["models"]["titans_mac_chain"] = dict(
+        own["models"]["titans_mac"], continuation=campaign.CONTINUATION
+    )
+    chain = [
+        (job.key, job.needs)
+        for job in campaign.plan(campaign.checked_declaration(own), "mars_titan")
+        if job.model == "titans_mac_chain" and job.seed == 42
+    ]
+    assert chain == [
+        ("titans_mac_chain/2019/seed-42", None),
+        ("titans_mac_chain/2023/seed-42", "titans_mac_chain/2019/seed-42"),
+    ]
+
+
+def test_a_continuation_of_another_model_needs_a_mac_online_fit_with_its_architecture():
+    campaign.checked_declaration(continued(declaration()))
+    bad = []
+    alone = continued(declaration())
+    alone["models"]["titans_mac_continued"].pop("continuation")
+    bad.append(alone)
+    for fields in (
+        dict(continues="missing"),
+        dict(continues="mars_titan_m1"),
+        dict(continues="transformer"),
+        dict(continues="titans_mac_continued"),
+        dict(variant="mac_frozen"),
+        dict(tier="core", continues="area_network"),
+        dict(predictor_changes=dict(holographic_network=dict(areas=19))),
+    ):
+        bad.append(continued(declaration(), **fields))
+    # Un padre de un nivel posterior o de otro equipo, aunque tenga la misma arquitectura.
+    for fields in (dict(tier="areas"), dict(machine="references")):
+        document = continued(declaration())
+        document["models"]["titans_mac_other"] = dict(document["models"]["titans_mac"], **fields)
+        document["models"]["titans_mac_continued"]["continues"] = "titans_mac_other"
+        bad.append(document)
+    # Una continuación de una continuación encadenaría padres que el plan no ordena.
+    nested = continued(continued(declaration()), name="titans_mac_twice")
+    nested["models"]["titans_mac_twice"]["continues"] = "titans_mac_continued"
+    bad.append(nested)
+    for document in bad:
+        with pytest.raises(ValueError, match="continuación|modelo"):
+            campaign.checked_declaration(document)
+
+
+def test_a_continuation_of_another_model_keeps_the_predictor_of_its_parent_recipe(tmp_path):
+    other = tmp_path / "other.json"
+    recipe = json.loads((campaign.ROOT / RECIPE).read_text())
+    recipe["predictor"] = dict(recipe["predictor"], width_marker=1)
+    other.write_text(json.dumps(recipe))
+    document = continued(declaration())
+    document["recipes"]["other"] = str(other)
+    document["models"]["titans_mac_continued"]["recipe"] = "other"
+    # Con las recetas comprobadas, otra arquitectura falla al declarar y no tras esperar al padre.
+    with pytest.raises(ValueError, match="arquitectura"):
+        campaign.checked_declaration(document)
+    # La misma arquitectura con otro ajuste (decaimiento, contracción) se admite.
+    recipe = json.loads((campaign.ROOT / RECIPE).read_text())
+    recipe["recipe"] = dict(recipe["recipe"], weight_decay=0.1)
+    other.write_text(json.dumps(recipe))
+    campaign.checked_declaration(document)
+
+
+def test_execute_job_starts_a_continuation_of_another_model_from_its_parent(tmp_path, monkeypatch):
+    from mars_titan.training import titans_walk_forward
+
+    calls = []
+
+    def fit(*arguments, **options):
+        calls.append((arguments, options))
+        return dict(status="completed")
+
+    monkeypatch.setattr(titans_walk_forward, "view_protocol", lambda view: dict(view=str(view)))
+    monkeypatch.setattr(titans_walk_forward, "run_titans_window", fit)
+    document, place = campaign.checked_declaration(continued(declaration())), layout(tmp_path)
+    for year in (2019, 2023):
+        place.cohort(year).mkdir(parents=True)
+        (place.cohort(year) / "manifest.json").write_text("{}")
+    (job,) = [
+        job
+        for job in campaign.plan(document, "mars_titan")
+        if job.key == "titans_mac_continued/2023/seed-43"
+    ]
+    campaign.execute_job(document, place, job, device="cpu")
+    ((arguments, options),) = calls
+    assert arguments[2] == "fold-018" and options["seed"] == 43
+    assert options["variant"] == "mac_online"
+    assert options["initial"] == place.output("titans_mac/2019/seed-43").resolve()
+    # Puede volver a elegir el estado del padre: su regla no lleva el estado inicial sin emitir.
+    assert options["stopping"] == dict(RULE)

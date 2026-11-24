@@ -1,0 +1,535 @@
+"""Núcleo agéntico sobre las emisiones: abstención, intervalos conformes, Shapley y costes."""
+
+import json
+import math
+from pathlib import Path
+
+import numpy as np
+import pyarrow as pa
+import pyarrow.parquet as pq
+import pytest
+
+from mars_titan.evaluation import agent_core as ac
+from mars_titan.evaluation import organ_aggregation as og
+from mars_titan.evaluation import posttraining_pilots as pilots
+
+ROOT = Path(__file__).resolve().parents[2]
+DECLARATION = ROOT / "configs" / "experiments" / "posttraining-agent-core.json"
+YEAR = 2018
+DAY = 86_400_000_000
+START = 1_514_851_200_000_000  # 2 de enero de 2018, 00:00 UTC
+SESSIONS = dict(validation=30, calibration=40, evaluation=60)
+ASSETS = 40
+
+
+def declaration():
+    return json.loads(DECLARATION.read_text(encoding="utf-8"))
+
+
+def test_the_declaration_is_the_registered_one():
+    document, digest = ac.checked_declaration(declaration())
+    assert digest == ac.REGISTERED_SHA256
+    assert document["abstention"]["coverages"][-1] == 1.0
+
+
+@pytest.mark.parametrize(
+    "change",
+    [
+        lambda d: d["abstention"].update(coverages=[0.9, 1.0]),
+        lambda d: d["conformal"].update(levels=[0.9]),
+        lambda d: d["costs"].update(base_cost_bps=1.0),
+        lambda d: d.update(final_test_access=True),
+    ],
+    ids=["coberturas", "niveles", "coste-base", "test-final"],
+)
+def test_any_change_of_the_declared_rules_is_refused(change):
+    document = declaration()
+    change(document)
+    with pytest.raises(ValueError, match="no es la registrada"):
+        ac.checked_declaration(document)
+
+
+def _game(players, weights, rng):
+    """Juego aditivo con interacción por pares; el jugador «p» no aporta nada."""
+    pairs = {
+        frozenset(pair): rng.normal() for pair in __import__("itertools").combinations(players, 2)
+    }
+    values = {}
+    for size in range(len(players) + 1):
+        for coalition in __import__("itertools").combinations(players, size):
+            members = frozenset(coalition) - {"p"}
+            value = sum(weights[m] for m in members)
+            value = value + sum(v for pair, v in pairs.items() if pair <= members)
+            values[frozenset(coalition)] = np.array([value, 2 * value])
+    return values
+
+
+def test_exact_shapley_equals_the_mean_over_orderings_is_efficient_and_ignores_a_null_player():
+    players = ("a", "b", "c", "p")
+    values = _game(players, dict(a=1.0, b=0.5, c=-0.25), np.random.default_rng(3))
+    phi = ac.shapley(players, values)
+    check = ac.shapley_by_orderings(players, values)
+    for player in players:
+        np.testing.assert_allclose(phi[player], check[player], rtol=0, atol=1e-12)
+    np.testing.assert_allclose(phi["p"], 0.0, atol=1e-12)
+    np.testing.assert_allclose(sum(phi.values()), values[frozenset(players)], atol=1e-12)
+
+
+def test_the_conformal_correction_is_the_finite_sample_quantile_of_the_scores():
+    scores = np.arange(19, 0, -1, dtype=float)
+    assert ac.conformal_correction(scores, 0.8) == 16.0
+    assert ac.conformal_correction(scores, 0.95) == 19.0
+    assert ac.conformal_correction(scores[:5], 0.95) == math.inf
+    assert ac.conformal_correction(np.arange(1.0, 11.0), 0.8) == 9.0
+
+
+def test_conformalized_intervals_reach_their_coverage_where_raw_quantiles_do_not():
+    rng = np.random.default_rng(4)
+    scale = rng.uniform(0.5, 2.0, size=40_000)
+    target = scale * rng.standard_normal(40_000)
+    lower, upper = -0.6 * scale, 0.6 * scale
+    calibration, evaluation = slice(0, 20_000), slice(20_000, None)
+    correction = ac.conformal_correction(
+        ac.conformity(lower[calibration], upper[calibration], target[calibration]), 0.8
+    )
+    raw = ac.interval_summary(lower[evaluation], upper[evaluation], target[evaluation])
+    fixed = ac.interval_summary(
+        lower[evaluation] - correction, upper[evaluation] + correction, target[evaluation]
+    )
+    assert raw["coverage"] < 0.6
+    assert abs(fixed["coverage"] - 0.8) < 0.01
+
+
+def _panel(rng, sessions, assets=ASSETS):
+    bounds = [(s * assets, (s + 1) * assets) for s in range(sessions)]
+    keys = [("US", s) for s in range(sessions)]
+    parent, tree = rng.standard_normal((2, sessions * assets))
+    target = parent + tree + rng.standard_normal(sessions * assets)
+    return bounds, keys, parent, tree, target
+
+
+def test_the_coverage_is_chosen_with_calibration_alone():
+    rng = np.random.default_rng(5)
+    bounds, keys, parent, tree, target = _panel(rng, 30)
+    score = ac.session_z(parent + tree, bounds)
+    confidence = ac.asset_confidence(parent, tree, bounds)
+    coverages = (0.5, 0.7, 0.9, 1.0)
+    first = ac.choose_asset_coverage(
+        confidence, score, target, bounds, keys, coverages, min_assets=10
+    )
+    assert first["coverage"] in coverages
+    again = ac.choose_asset_coverage(
+        confidence, score, target.copy(), bounds, keys, coverages, min_assets=10
+    )
+    assert first == again
+    if first["coverage"] < 1:
+        assert np.isclose((confidence >= first["threshold"]).mean(), first["coverage"], atol=0.01)
+
+
+def test_controls_abstain_as_many_rows_as_the_rule_in_every_session():
+    rng = np.random.default_rng(6)
+    bounds, keys, parent, tree, target = _panel(rng, 12)
+    score = ac.session_z(parent + tree, bounds)
+    keep = rng.random(len(score)) < 0.7
+    magnitude, random = ac.equal_count_controls(score, keep, bounds, draws=5, seed=1)
+    for start, end in bounds:
+        dropped = int((~keep[start:end]).sum())
+        assert int((~magnitude[start:end]).sum()) == dropped
+        assert all(int((~draw[start:end]).sum()) == dropped for draw in random)
+        if dropped:
+            largest_dropped = np.abs(score[start:end][~magnitude[start:end]]).max()
+            assert largest_dropped <= np.abs(score[start:end][magnitude[start:end]]).min()
+    again, again_random = ac.equal_count_controls(score, keep, bounds, draws=5, seed=1)
+    assert np.array_equal(magnitude, again) and np.array_equal(random, again_random)
+
+
+def test_groups_are_quantiles_within_each_session():
+    values = np.r_[np.arange(9.0), np.arange(9.0)[::-1], [np.nan, 1.0, 2.0, 3.0]]
+    groups = ac.within_session_groups(values, [(0, 9), (9, 18), (18, 22)], 3)
+    assert groups[:9].tolist() == [0, 0, 0, 1, 1, 1, 2, 2, 2]
+    assert groups[9:18].tolist() == [2, 2, 2, 1, 1, 1, 0, 0, 0]
+    assert groups[18] == -1 and groups[19:].tolist() == [0, 1, 2]
+
+
+def test_turnover_break_even_and_risk_on_a_hand_computed_book():
+    assets = ["a", "b", "c", "d"] * 3
+    score = np.array([1.0, 2.0, 3.0, 4.0, 4.0, 3.0, 2.0, 1.0, 3.0, 1.0, 4.0, 2.0])
+    bounds = [(0, 4), (4, 8), (8, 12)]
+    books = ac.tail_book(score, assets, bounds, 0.25)
+    assert books[0] == {"a": -1.0, "d": 1.0} and books[1] == {"d": -1.0, "a": 1.0}
+    assert books[2] == {"b": -1.0, "c": 1.0}
+    returns = [
+        dict(a=-0.01, b=0.0, c=0.0, d=0.02),
+        dict(a=0.01, b=0.0, c=0.0, d=-0.01),
+        dict(a=0.0, b=0.0, c=0.0, d=0.0),
+    ]
+    gross, turnover = ac.book_series(books, returns)
+    np.testing.assert_allclose(gross, [0.03, 0.02, 0.0])
+    assert math.isnan(turnover[0]) and turnover[1] == 4.0 and turnover[2] == 4.0
+    risk = ac.risk_metrics(np.array([0.01, -0.02, 0.01, -0.01, 0.03]), annualization=252, cvar=0.2)
+    assert risk["max_drawdown"] == pytest.approx(0.02)
+    assert risk["cvar"] == pytest.approx(-0.02) and risk["hit_rate"] == pytest.approx(0.6)
+
+
+def test_a_deflated_sharpe_falls_with_more_trials():
+    daily = np.random.default_rng(7).normal(0.001, 0.01, 500)
+    sharpes = [0.1, 0.05, 0.08, 0.02]
+    one = ac.deflated_sharpe(daily, sharpes[:1], trials=1)
+    four = ac.deflated_sharpe(daily, sharpes, trials=4)
+    assert 0 < four < one < 1
+
+
+def _write(folder, split, rows, prediction, quantiles=None):
+    folder.mkdir(parents=True, exist_ok=True)
+    columns = dict(
+        sample_id=pa.array(rows["sample_id"]),
+        asset_id=pa.array(rows["asset_id"]),
+        market=pa.array([a.split("/", 1)[0] for a in rows["asset_id"]]),
+        prediction_at=pa.array(rows["prediction_at"], pa.timestamp("us", "UTC")),
+        target=pa.array(rows["target"], pa.float32()),
+        prediction=pa.array(prediction, pa.float32()),
+    )
+    for name, values in (quantiles or {}).items():
+        columns[name] = pa.array(values, pa.float32())
+    pq.write_table(pa.table(columns), folder / f"{split}-predictions.parquet")
+
+
+def campaign(tmp_path, *, tree=True, markets=("US",)):
+    """Padre con cuantiles estrechos, árboles y órgano sintéticos; la señal ve un tercer factor."""
+    rng = np.random.default_rng(8)
+    state, reference, organs = tmp_path / "estado", tmp_path / "referencia", tmp_path / "organos"
+    parent = state / "runs" / "titans_mac_nogain" / str(YEAR) / "seed-42"
+    trees = reference / "runs" / "lightgbm_technical" / str(YEAR) / "seed-42"
+    combined = organs / "runs" / "titans_mac_nogain__combined" / str(YEAR) / "seed-42"
+    known = dict(alpha={}, liquidity={}, volatility={}, matures={})
+    day = 0
+    for split, count in SESSIONS.items():
+        rows = {name: [] for name in ("sample_id", "asset_id", "prediction_at", "target")}
+        own, other, organ, alpha, quantiles = [], [], [], [], {q: [] for q in ac.QUANTILES}
+        for session in range(count):
+            instant = START + (day + session) * DAY
+            for market in markets:
+                prefix = "" if market == "US" else market
+                z1, z2, z3, noise, n1, n2, n3 = rng.standard_normal((7, ASSETS))
+                scale = rng.uniform(0.5, 1.5, ASSETS)
+                rows["sample_id"] += [
+                    f"{prefix}{split[0]}{session:03d}-{a:02d}" for a in range(ASSETS)
+                ]
+                rows["asset_id"] += [f"{market}/A{a:02d}" for a in range(ASSETS)]
+                rows["prediction_at"] += [instant] * ASSETS
+                rows["target"] += list(0.3 * z1 + 0.2 * z2 + 0.3 * z3 + scale * noise)
+                own += list(z1 + 0.7 * n1)
+                other += list(z2 + 0.7 * n2)
+                organ += list(z1 + 0.7 * n1 + 0.05 * (z3 + 0.5 * n3))
+                alpha += list(0.002 * rng.standard_normal(ASSETS))
+                for q, half in zip(ac.QUANTILES, (-0.9, -0.5, 0.0, 0.5, 0.9), strict=True):
+                    quantiles[q] += list(0.3 * (z1 + 0.7 * n1) + half * scale)
+        day += count + 2
+        _write(parent, split, rows, own, quantiles)
+        if tree:
+            _write(trees, split, rows, other)
+        if split != "validation":
+            _write(combined, split, rows, organ)
+        size = count * ASSETS * len(markets)
+        ids = rows["sample_id"]
+        known["alpha"][split] = dict(zip(ids, alpha, strict=True))
+        known["liquidity"][split] = dict(zip(ids, rng.normal(15, 2, size), strict=True))
+        known["volatility"][split] = dict(zip(ids, rng.normal(3, 0.5, size), strict=True))
+        known["matures"][split] = dict(
+            zip(ids, np.asarray(rows["prediction_at"], dtype=np.int64) + DAY, strict=True)
+        )
+    (parent / "run.json").write_text(
+        json.dumps(
+            dict(
+                status="completed",
+                final_test_opened=False,
+                run_id="padre-1",
+                request=dict(view_sha256="f" * 64),
+            )
+        )
+    )
+    if tree:
+        (trees / "run.json").write_text(
+            json.dumps(dict(model="lightgbm_technical", seed=42, final_test_access=False))
+        )
+    (combined / "run.json").write_text(
+        json.dumps(
+            dict(
+                status="completed",
+                final_test_opened=False,
+                model="titans_mac_nogain__combined",
+                origin=YEAR,
+                seed=42,
+                parent=dict(model="titans_mac_nogain", state=str(state), run_id="padre-1"),
+                arm="combined",
+                inputs=dict(
+                    emissions={
+                        s: pilots._sha256(parent / f"{s}-predictions.parquet") for s in SESSIONS
+                    }
+                ),
+                outputs={
+                    s: pilots._sha256(combined / f"{s}-predictions.parquet") for s in og.AGGREGATED
+                },
+            )
+        )
+    )
+    manifest = state / "cohorts" / str(YEAR) / "manifest.json"
+    manifest.parent.mkdir(parents=True)
+    manifest.write_text("{}")
+    return dict(state=state, reference=reference, organs=organs, known=known)
+
+
+def _arguments(paths, output, *extra):
+    return [
+        "medir",
+        "--declaration",
+        str(DECLARATION),
+        "--state",
+        str(paths["state"]),
+        "--reference",
+        str(paths["reference"]),
+        "--organs",
+        str(paths["organs"]),
+        "--origin",
+        str(YEAR),
+        "--output",
+        str(output),
+        *extra,
+    ]
+
+
+def _known(paths):
+    def known_rows(state, origin, tables, view):
+        k = paths["known"]
+
+        def column(name, split):
+            values = k[name][split]
+            return np.asarray([values[i] for i in tables[split].column("sample_id").to_pylist()])
+
+        return tuple(
+            {s: column(name, s) for s in tables}
+            for name in ("alpha", "liquidity", "volatility", "matures")
+        )
+
+    return known_rows
+
+
+def test_without_the_trees_it_waits_and_exits_with_code_75(tmp_path, capsys):
+    paths = campaign(tmp_path, tree=False)
+    assert ac.main(_arguments(paths, tmp_path / "nucleo", "--wait-hours", "0")) == og.MISSING_EXIT
+    assert "lightgbm_technical" in capsys.readouterr().err
+
+
+def test_the_four_measures_of_an_origin(tmp_path, monkeypatch, capsys):
+    paths = campaign(tmp_path)
+    monkeypatch.setattr(ac, "known_rows", _known(paths))
+    output = tmp_path / "nucleo"
+    assert ac.main(_arguments(paths, output)) == 0
+    folder = output / str(YEAR)
+    summary = json.loads((folder / "resumen.json").read_text(encoding="utf-8"))
+    assert summary["status"] == "completed" and summary["players"] == list(ac.PLAYERS)
+    for key in ("label/s1", "label/s2", "operable/s1", "operable/s2"):
+        asset = summary["a1"][key]["asset"]
+        assert asset["choice"]["coverage"] in declaration()["abstention"]["coverages"]
+        assert len(asset["curve"]) == 6 and len(asset["liquidity_terciles"]) == 3
+    level = summary["a2"]["levels"]["0.8"]["systems"]
+    assert level["core_raw"]["coverage"] < 0.75
+    assert abs(level["core_cqr"]["coverage"] - 0.8) < 0.05
+    assert abs(level["combined_cqr"]["coverage"] - 0.8) < 0.05
+    for key, game in summary["a3"].items():
+        placebo = game["players"]["placebo"]
+        if key.endswith("ridge_cov_active"):
+            # Un combinador que aprende pesos puede ignorar al placebo: su Shapley sale en cero.
+            assert abs(placebo["mean"]) < 0.01, key
+        else:
+            # En la media de rangos todo miembro pesa igual: el placebo diluye y resta.
+            assert placebo["mean"] < 0, key
+        total = sum(p["mean"] for p in game["players"].values())
+        assert total == pytest.approx(game["whole"], abs=1e-9)
+    books = summary["a4"]["books"]
+    assert set(books) == {"s1", "s2", "parent", "tree"}
+    assert books["s1"]["turnover"] > 0 and len(books["s1"]["deciles_bps"]) == 10
+    for name in ("a1-sesiones.parquet", "a3-sesiones.parquet", "a4-dias.parquet", "resumen.md"):
+        assert (folder / name).is_file()
+    assert [p.name for p in output.iterdir()] == [str(YEAR)]
+    capsys.readouterr()
+    assert ac.main(_arguments(paths, output)) == 0
+    assert "ya calculado" in capsys.readouterr().out
+
+
+def test_known_rows_reads_the_screening_features_of_the_decision_day(tmp_path, monkeypatch):
+    names = [
+        "has_market_model",
+        "alpha_percent",
+        "log_dollar_volume_21",
+        "log_volatility_252",
+        "volatility_21_over_252",
+    ]
+    days = np.array(["2018-01-02", "2018-01-03", "2018-01-04"], dtype="datetime64[D]")
+    features = {
+        "US/A": np.array(
+            [[1, 2.0, 10.0, -3.0, 0.5], [0, 4.0, 11.0, -3.1, 0.4], [1, -1.0, 12.0, -3.2, 0.3]]
+        ),
+        "US/B": np.array(
+            [[1, 1.0, 20.0, -2.0, 0.1], [1, 3.0, 21.0, -2.1, 0.2], [1, 5.0, 22.0, -2.2, 0.3]]
+        ),
+    }
+    hour = 21 * 3_600_000_000
+    instant = {d: START + i * DAY + hour for i, d in enumerate(("d0", "d1", "d2"))}
+    instant["fuera"] = START + 9 * DAY + hour
+    alpha_of = {
+        ("US/A", "d0"): 0.02,
+        ("US/A", "d1"): np.nan,
+        ("US/A", "d2"): -0.01,
+        ("US/B", "d0"): 0.01,
+        ("US/B", "d1"): 0.03,
+        ("US/B", "d2"): 0.05,
+    }
+    by_instant = {(a, instant[d]): v for (a, d), v in alpha_of.items()}
+
+    class Module:
+        NAMES = names
+
+        @staticmethod
+        def technical_features(prices, days_, *factors):
+            return prices
+
+    class Base:
+        def __init__(self, state, origin):
+            self.module, self.prepared, self.factors = Module, tmp_path, {}
+
+        def _table(self, path):
+            return features[f"{path.parent.parent.name}/{path.parent.name}"], days
+
+        def known(self, asset, instants):
+            return np.array([by_instant.get((asset, int(t)), np.nan) for t in instants]), None
+
+    rows = dict(
+        validation=[("US/A", "d0"), ("US/B", "d1")],
+        calibration=[("US/A", "d1"), ("US/B", "d2"), ("US/A", "fuera")],
+        evaluation=[("US/B", "d0"), ("US/A", "d2")],
+    )
+    tables = {
+        split: pa.table(
+            dict(
+                asset_id=[a for a, _ in items],
+                prediction_at=pa.array([instant[d] for _, d in items], pa.timestamp("us", "UTC")),
+                market=[a.split("/", 1)[0] for a, _ in items],
+            )
+        )
+        for split, items in rows.items()
+    }
+    maturity = {
+        split: pa.table(
+            dict(
+                asset_id=table.column("asset_id"),
+                prediction_at=table.column("prediction_at"),
+                matures_at=pa.array(
+                    [t + DAY for t in table.column("prediction_at").cast(pa.int64()).to_pylist()],
+                    pa.timestamp("us", "UTC"),
+                ),
+            )
+        )
+        for split, table in tables.items()
+    }
+    monkeypatch.setattr(og, "_screening", lambda: type("Tool", (), dict(KnownOffset=Base)))
+    monkeypatch.setattr(pilots, "_maturity", lambda manifest, view: maturity)
+    factor = tmp_path / "spy.parquet"
+    pq.write_table(pa.table(dict(close=[1.0])), factor)
+    manifest = tmp_path / "cohorts" / str(YEAR) / "manifest.json"
+    manifest.parent.mkdir(parents=True)
+    declared = dict(
+        US=dict(prices_path=str(factor), prices_sha256=pilots._sha256(factor)),
+        CN=dict(prices_path=str(tmp_path / "csi300.parquet"), prices_sha256="b" * 64),
+    )
+    manifest.write_text(json.dumps(dict(market_factors=declared)))
+    chinese = dict(
+        evaluation=pa.table(
+            dict(
+                asset_id=["CN/X"],
+                prediction_at=pa.array([instant["d0"]], pa.timestamp("us", "UTC")),
+                market=["CN"],
+            )
+        )
+    )
+    with pytest.raises(ValueError, match="No está el factor de mercado de CN"):
+        ac.known_rows(tmp_path, YEAR, chinese, "v" * 64)
+    alpha, liquidity, volatility, matures = ac.known_rows(tmp_path, YEAR, tables, "v" * 64)
+    np.testing.assert_array_equal(alpha["validation"], [0.02, 0.03])
+    np.testing.assert_array_equal(alpha["calibration"], [np.nan, 0.05, np.nan])
+    np.testing.assert_array_equal(alpha["evaluation"], [0.01, -0.01])
+    np.testing.assert_array_equal(liquidity["calibration"], [11.0, 22.0, np.nan])
+    np.testing.assert_allclose(volatility["validation"], [-2.5, -1.9])
+    np.testing.assert_allclose(volatility["evaluation"], [-1.9, -2.9])
+    assert np.isnan(volatility["calibration"][2])
+    assert matures["evaluation"].tolist() == [instant["d0"] + DAY, instant["d2"] + DAY]
+    del maturity["evaluation"]
+    with pytest.raises(ValueError, match="no da la madurez de evaluation"):
+        ac.known_rows(tmp_path, YEAR, tables, "v" * 64)
+
+
+def test_gross_and_net_risk_use_the_same_days():
+    settings = dict(annualization=252, cvar=0.2, base_cost_bps=5.0, multipliers=[1.0, 2.0])
+    # El primer día no tiene cartera anterior ni rotación: queda fuera de las dos cuentas.
+    gross = np.array([0.5, 0.01, -0.02, 0.01, 0.03, -0.01])
+    idle = ac.cost_table(gross, np.r_[np.nan, np.zeros(5)], settings)
+    assert idle["mean_bps"] == pytest.approx(40.0)
+    assert idle["net_sharpe"]["1.0"] == pytest.approx(idle["risk"]["sharpe"])
+    busy = ac.cost_table(gross, np.r_[np.nan, np.full(5, 2.0)], settings)
+    assert busy["turnover"] == pytest.approx(2.0)
+    assert busy["breakeven_bps"] == pytest.approx(20.0)
+    assert busy["safety_margin"] == pytest.approx(4.0)
+    net = ac.risk_metrics(gross[1:] - 5e-4 * 2.0, annualization=252, cvar=0.2)["sharpe"]
+    assert busy["net_sharpe"]["1.0"] == pytest.approx(net)
+    assert busy["net_sharpe"]["2.0"] < busy["net_sharpe"]["1.0"] < busy["risk"]["sharpe"]
+
+
+def test_a_joint_state_needs_its_market_and_measures_only_that_one(tmp_path, monkeypatch, capsys):
+    paths = campaign(tmp_path, markets=("CN", "US"))
+    monkeypatch.setattr(ac, "known_rows", _known(paths))
+    output = tmp_path / "nucleo"
+    assert ac.main(_arguments(paths, output)) == 1
+    assert "indica --market" in capsys.readouterr().err
+    assert ac.main(_arguments(paths, output, "--market", "US")) == 0
+    folder = output / f"{YEAR}-US"
+    summary = json.loads((folder / "resumen.json").read_text(encoding="utf-8"))
+    assert summary["markets"] == ["US"]
+    assert {game["sessions"] for game in summary["a3"].values()} == {SESSIONS["evaluation"]}
+    days = pq.read_table(folder / "a4-dias.parquet")
+    assert days.column("market").unique().to_pylist() == ["US"]
+
+
+def test_the_v3_variant_renames_only_the_models_and_is_registered():
+    base = json.loads(DECLARATION.read_text())
+    variant = json.loads((DECLARATION.parent / "posttraining-agent-core-v3.json").read_text())
+    assert set(variant) == set(base)
+    assert {key for key in base if base[key] != variant[key]} == {
+        "parent",
+        "tree",
+        "organ",
+        "description",
+    }
+    assert variant["parent"] == base["parent"] + "_v3"
+    assert variant["tree"] == base["tree"] + "_v3"
+    assert variant["organ"] == variant["parent"] + "__combined"
+    _, digest = ac.checked_declaration(variant)
+    assert digest in ac.VARIANT_SHA256 and digest != ac.REGISTERED_SHA256
+    # Cualquier otro cambio sobre la variante sigue rechazado.
+    with pytest.raises(ValueError, match="no es la registrada"):
+        ac.checked_declaration(dict(variant, seed=43))
+
+
+def test_the_random_control_is_summed_in_session_order_whatever_the_hash_seed():
+    # Las claves de sesión llevan el mercado como texto: el orden de un conjunto depende de la
+    # semilla de hash del proceso y, con él, el último bit de la media y el orden de a1-sesiones.
+    rng = np.random.default_rng(3)
+    sizes = [35] * 40
+    bounds = list(zip(np.cumsum([0] + sizes[:-1]), np.cumsum(sizes), strict=True))
+    keys = [("CN" if i % 2 else "US", 1_000 + i) for i in range(len(sizes))]
+    rows = sum(sizes)
+    score, target = rng.normal(size=rows), rng.normal(size=rows)
+    keep = rng.random(rows) > 0.3
+    _, random = ac.equal_count_controls(score, keep, bounds, draws=4, seed=7)
+    for covered in (False, True):
+        result = ac._random_mean(score, target, bounds, keys, random, covered=covered, min_assets=5)
+        assert list(result) == sorted(result)

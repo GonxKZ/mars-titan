@@ -1,0 +1,92 @@
+{
+  "schema_version": 1,
+  "kind": "posttraining_error_metrics_v1",
+  "final_test_access": false,
+  "description": "F7, las métricas de error de las emisiones y su calibración. Encargo del dueño por el coordinador (23 de noviembre de 2026): que todas las métricas de error que se calculan siempre sean las menores. Se miden con forecast_scores.score_sessions (cada sesión con el mismo peso) en evaluación: MAE, RMSE, pinball de cada cuantil y su media, error de cobertura de los intervalos del 80 y del 95 % y ECE de la probabilidad de subida implícita en los cuantiles. Predictores: el padre de S2, la media de sus tres semillas, S1 y S2 y, como referencias, el núcleo de la criba y el modelo entrenado solo con pinball (noic), en la etiqueta y en lo operable, con los controles cero (cuantiles de climatología) y, en lo operable, alfa solo. La calibración se ajusta en calibración con etiquetas maduras y no toca el orden de la sesión: el punto pasa a λ·s con el factor LAD del repositorio, y los cuantiles se centran en λ·s con las anchuras de la cabeza por un factor por nivel que minimiza la pinball. Regla: una versión calibrada entra si en evaluación no empeora ninguna métrica de la regla frente a la sin calibrar; se entrega la más completa que pase, elegida con 2013 y confirmada en los orígenes limpios. El noic da el mejor nivel con estos datos: si la versión entregada del modelo de orden lo iguala sin perder IC, es la entrega. Con un IC de Pearson de 0,14 el margen sobre predecir cero es del orden del 1 %, y el informe lo dice así.",
+  "seed": 42,
+  "min_assets": 30,
+  "parent": "titans_mac_nogain",
+  "tree": "lightgbm_technical",
+  "organ": "titans_mac_nogain__combined",
+  "splits": ["calibration", "evaluation"],
+  "selection_split": "calibration",
+  "align": "strict",
+  "aggregator": {"name": "ridge_cov_active", "lambdas": [2.0, 1.0, 0.5, 0.1], "half_lives": [null, 63.0, 21.0]},
+  "aggregator_placebo_seed": 20261122,
+  "operable_scales": [0.001, 0.002, 0.005, 0.01, 0.02, 0.03, 0.05, 0.07, 0.1, 0.15, 0.2, 0.3, 0.5, 0.7, 1.0, 1.5, 2.0, 3.0, 5.0, 10.0, 30.0, 100.0],
+  "predictors": {
+    "parent": {"model": "titans_mac_nogain", "seeds": [42], "quantiles": "own_head"},
+    "seeds": {"model": "titans_mac_nogain", "seeds": [42, 43, 44], "combination": "seed_mean_v1", "quantiles": "vincent_mean_of_the_heads"},
+    "core": {"model": "titans_mac", "seeds": [42], "quantiles": "own_head", "role": "reference_of_the_screening_report", "optional": true},
+    "noic": {"model": "titans_mac_noic", "seeds": [42], "quantiles": "own_head", "role": "reference_of_the_best_level_trained_only_with_pinball", "optional": true},
+    "s1": {"game": "rank_average", "members": ["parent", "tree"], "quantiles": "none_dimensionless_session_score"},
+    "s2": {"game": "ridge_cov_active", "members": ["parent", "tree", "signal"], "quantiles": "none_dimensionless_session_score"}
+  },
+  "modes": ["label", "operable"],
+  "operable": {
+    "point": "k_times_p_plus_alpha_with_k_from_the_aggregator_criterion_on_calibration",
+    "quantiles": "alpha_plus_label_quantiles",
+    "rows": "rows_of_s2_with_finite_alpha"
+  },
+  "metrics": {
+    "scorer": "forecast_scores.score_sessions",
+    "market_weighting": "session",
+    "levels": [0.025, 0.1, 0.5, 0.9, 0.975],
+    "intervals": [0.8, 0.95],
+    "sign_probability": "piecewise_linear_cdf_at_zero_flat_beyond_extreme_levels_v1",
+    "rule_metrics": ["mae", "rmse", "pinball_each_level", "mean_pinball", "coverage_error_each_interval", "sign_ece"],
+    "informative": ["interval_score_each_interval", "sign_brier", "level_frequency_gap", "rank_ic"]
+  },
+  "controls": {
+    "label": ["zero"],
+    "operable": ["zero", "alpha"],
+    "zero": "point_zero_quantiles_calibration_climatology_of_the_target_by_market_session_weighted",
+    "alpha": "point_alpha_quantiles_alpha_plus_calibration_climatology_of_the_label"
+  },
+  "relative": {
+    "losses": "one_minus_ratio_to_control",
+    "calibration_errors": "difference_to_control"
+  },
+  "calibration": {
+    "split": "calibration",
+    "rows": "labels_matured_before_the_first_evaluation_session_of_their_market",
+    "point": "lad_scale_of_scale_diagnostics_market_shrinkage_session_weighted_in_0_1",
+    "zero_scale": "not_delivered_it_would_break_the_order",
+    "quantiles": "centre_at_the_calibrated_point_and_head_widths_times_a_pinball_optimal_scale_per_level",
+    "level_scale": "exact_minimiser_weighted_quantile_of_residual_over_width_with_weights_session_times_abs_width_at_least_zero",
+    "crossing": "rows_sorted_monotone_rearrangement",
+    "widths": {"parent": "own_head", "seeds": "own_head", "core": "own_head", "noic": "own_head", "s1": "parent_head", "s2": "parent_head"},
+    "isotonic": "not_used_its_blocks_tie_the_order_of_the_session_and_would_lose_ic"
+  },
+  "versions": ["raw", "point", "full"],
+  "rule": {
+    "comparison": "strict_no_rule_metric_worse_than_the_uncalibrated",
+    "ladder": ["full", "point", "raw"],
+    "without_uncalibrated": {"label": "zero", "operable": "alpha"},
+    "chosen_with": "2013_development",
+    "clean_origins": "confirmation_only",
+    "paired": "newey_west_t_of_session_differences_for_mae_mse_and_mean_pinball",
+    "reaches_reference": "delivered_mae_and_mean_pinball_at_most_those_of_noic_as_emitted_with_the_rank_ic_of_the_ranking_model_unchanged"
+  },
+  "references": {
+    "roles": ["core", "noic"],
+    "when": "included_if_completed_with_its_three_splits_when_the_required_inputs_are_complete_otherwise_reported_absent"
+  },
+  "honesty": {
+    "rmse_bound": "one_minus_sqrt_one_minus_rho_squared_with_rho_the_mean_session_pearson_ic"
+  },
+  "delivery": {
+    "name": "f7b_order_of_s2_level_lad_widths_of_the_pinball_model",
+    "mode": "label_for_intervals_and_pinball_operable_only_for_the_sign_ece",
+    "system": "s2",
+    "point": "lad_scale_of_s2_as_in_f7",
+    "widths_source": ["noic", "core"],
+    "widths": "first_emitted_reference_head_minus_its_median_times_the_pinball_optimal_level_scale_centred_at_the_lad_point_rows_sorted",
+    "incumbent": "point_lad_of_s2_quantiles_of_the_parent_head_as_emitted_intervals_mondrian_aci_of_f_over_the_parent_head",
+    "coverage_layer": {"method": "mondrian_by_volatility_deciles_within_each_session_with_aci_per_session_market_and_group", "levels": [0.8, 0.9, 0.95], "bands": {"0.8": ["quantile_0100", "quantile_0900"], "0.9": ["quantile_0100", "quantile_0900"], "0.95": ["quantile_0025", "quantile_0975"]}, "aci_gamma": 0.05, "volatility_groups": 10, "rule": {"total_tolerance": 0.02, "group_shortfall": 0.05}, "same_as": "posttraining-reliability.json_adaptive_intervals_core_mondrian_aci"},
+    "decision": {"split": "calibration_halves_in_time_first_half_fits_second_half_scores", "metrics": ["mean_pinball", "coverage_error@0.8", "coverage_error@0.9", "coverage_error@0.95"], "comparison": "strict_candidate_no_worse_than_the_incumbent"},
+    "evaluation_rule": "refit_on_the_whole_calibration_and_no_f7_metric_worse_than_the_incumbent_pinball_each_level_mean_pinball_sign_ece_label_and_operable_and_coverage_error_of_the_delivered_intervals_at_0.8_0.9_0.95",
+    "layer_superfluous": "raw_bands_of_the_candidate_no_worse_in_coverage_error_at_0.8_and_0.95_than_with_the_layer_in_the_calibration_half_and_in_evaluation_0.9_always_needs_the_layer",
+    "provenance": {"order": "s2", "level": "lad_scale_of_s2", "widths": "noic_or_core_as_fallback", "coverage": "mondrian_aci_of_f"}
+  }
+}

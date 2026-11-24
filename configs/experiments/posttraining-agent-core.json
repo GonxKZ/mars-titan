@@ -1,0 +1,43 @@
+{
+  "schema_version": 1,
+  "kind": "posttraining_agent_core_v1",
+  "final_test_access": false,
+  "description": "Núcleo agéntico sobre las emisiones (punto A del encargo del coordinador del 22 de noviembre de 2026, 20:50 UTC), declarado a las 21:40 UTC, antes de calcular ninguna de sus medidas en ningún origen. Descriptivo y secundario: no entra en la familia primaria del registro confirmatorio. Sistemas: S1 (media de rangos de titans_mac_nogain y lightgbm_technical) y S2 (ridge_cov_active con la señal del brazo combinado de los órganos), con la configuración de S2. A1, abstención selectiva: por activo, el agente se abstiene donde más discrepan los rangos tipificados de la red y de los árboles; por sesión, donde menos se parecen sus órdenes (correlación de rangos). La cobertura se elige en calibración entre las declaradas por el IC medio con los abstenidos a cero; en evaluación se compara con dos controles a igual cobertura en cada sesión (menor magnitud y azar, con 20 sorteos) y se informa por tercio de liquidez. A2, intervalos al 80 % y al 95 % (solo en la etiqueta): cuantiles del núcleo tal cual, esos mismos conformalizados en calibración y los del sistema combinado (regresión cuantílica lineal ajustada en validación sobre 1, s·w y w, con s la media de rangos y w la anchura del 80 % del núcleo, conformalizada en calibración); cobertura y anchura en evaluación, global, por tercio de liquidez, por decil de volatilidad y por trimestre. A3, Shapley exacto del IC medio de evaluación entre los componentes (padre, árboles, señal, placebo y la atención si existe en el origen), en los juegos de media de rangos y de ridge_cov_active, sesión a sesión. A4, costes en lo operable: carteras largas y cortas de los deciles extremos con pesos iguales de S1, S2 y cada modelo solo; rotación diaria, coste de equilibrio por unidad negociada, medidas de riesgo y Sharpe neto a 1, 2 y 3 veces un coste base de 5 pb por unidad negociada. Nada se elige en evaluación.",
+  "seed": 42,
+  "min_assets": 30,
+  "parent": "titans_mac_nogain",
+  "tree": "lightgbm_technical",
+  "organ": "titans_mac_nogain__combined",
+  "attention": "cross_asset_attention",
+  "splits": ["calibration", "evaluation"],
+  "selection_split": "calibration",
+  "align": "strict",
+  "aggregator": {"name": "ridge_cov_active", "lambdas": [2.0, 1.0, 0.5, 0.1], "half_lives": [null, 63.0, 21.0]},
+  "placebo": {"kind": "signal_shuffled_within_session", "seed": 20261122},
+  "aggregator_placebo_seed": 20261122,
+  "operable_scales": [0.001, 0.002, 0.005, 0.01, 0.02, 0.03, 0.05, 0.07, 0.1, 0.15, 0.2, 0.3, 0.5, 0.7, 1.0, 1.5, 2.0, 3.0, 5.0, 10.0, 30.0, 100.0],
+  "modes": ["label", "operable"],
+  "abstention": {
+    "coverages": [0.5, 0.6, 0.7, 0.8, 0.9, 1.0],
+    "asset_confidence": "minus_abs_difference_of_session_z_ranks_of_parent_and_tree",
+    "session_confidence": "rank_correlation_of_parent_and_tree",
+    "criterion": "calibration_mean_session_ic_with_abstained_at_zero",
+    "asset_magnitude_control": "smallest_abs_session_z_rank_of_the_system",
+    "session_magnitude_control": "smallest_cross_sectional_std_of_the_parent_prediction",
+    "random_draws": 20,
+    "random_seed": 20261122,
+    "liquidity_groups": 3
+  },
+  "conformal": {
+    "levels": [0.8, 0.95],
+    "core": {"0.8": ["quantile_0100", "quantile_0900"], "0.95": ["quantile_0025", "quantile_0975"]},
+    "fit_split": "validation",
+    "conformal_split": "calibration",
+    "max_fit_rows": 300000,
+    "fit_seed": 20261122,
+    "liquidity_groups": 3,
+    "volatility_groups": 10
+  },
+  "shapley": {"games": ["rank_average", "ridge_cov_active"]},
+  "costs": {"tail": 0.1, "base_cost_bps": 5.0, "multipliers": [1.0, 2.0, 3.0], "annualization": 252, "cvar": 0.05}
+}

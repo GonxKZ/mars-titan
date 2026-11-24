@@ -156,6 +156,30 @@ def test_sampled_median_keeps_the_drawn_head_and_only_scales_its_output():
     assert torch.equal(scalar.head.bias, reference.head.bias)
 
 
+def test_the_paired_copy_moves_parameters_and_the_fitted_scales_of_its_source():
+    """Afirmación del enjambre 2: `copy_paired_parameters` no copiaba los buffers de
+    `learning_scale` ni `head.output_scale`. Era cierta en la base v10 y allí no cambiaba nada,
+    porque en la campaña cada predictor recibe las mismas estadísticas antes de emparejarse. La
+    base endurecida (54aedbad) cierra el hueco: con el origen ya ajustado, la copia emparejada
+    lleva también sus escalas, de modo que dos controles emparejados no pueden quedar con escalas
+    distintas. Un gemelo de un estado ya ajustado sigue cargando el estado completo
+    (`titans_walk_forward._switched_parameters`)."""
+    declared = dict(DECLARED, zero_median=False)
+    source, _ = build(learning_scale=declared, fitted=False)
+    target, _ = build("mac_frozen", learning_scale=declared, fitted=False)
+    config = source.config.learning_scale
+    source.set_learning_statistics(statistics(config, label=0.02))
+    target.set_learning_statistics(statistics(config, label=0.06, seed=4))
+    receipt = copy_paired_parameters(source.eval(), target.eval())
+    parameters = dict(target.named_parameters())
+    assert all(torch.equal(value, parameters[name]) for name, value in source.named_parameters())
+    mine, theirs = dict(source.named_buffers()), dict(target.named_buffers())
+    differing = sorted(name for name in mine if not torch.equal(mine[name], theirs[name]))
+    assert "head.output_scale" not in differing
+    assert not any(name.startswith("learning_scaler.") for name in differing)
+    assert not set(differing) & set(receipt["copied_parameters"])
+
+
 def test_prepare_refuses_until_the_fit_statistics_arrive():
     model, batch = build(fitted=False)
     with pytest.raises(ValueError, match="Faltan las estadísticas"):

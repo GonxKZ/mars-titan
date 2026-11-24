@@ -1,0 +1,63 @@
+{
+  "schema_version": 1,
+  "kind": "posttraining_memory_organs_v1",
+  "final_test_access": false,
+  "description": "Órganos de memoria v2, declarados el 22 de noviembre de 2026 a las 18:45 UTC por encargo del coordinador, antes de emitir ninguno con esta declaración: los cuatro modelos de posttraining-memory-organs-v1.json (el núcleo titans_mac, sus controles congelado y desactivado y la atención entre activos) más el trío sin ganancia de la mediana (titans_mac_nogain, el modelo confirmado, y sus controles congelado y desactivado), en una sola pasada por origen y semilla. Todo lo demás es idéntico a la v1: los dos brazos (combined con h, κa y κv elegidos en la calibración del propio origen; asset_lab fijo con h = 21 y κ = 0,1), las rejillas, la semilla del placebo, las claves de la vista (92 columnas proyectadas a 64 con la semilla 53) y la emisión fila a fila. Va en una raíz propia: una raíz pertenece a una sola declaración. La evaluación no interviene en ninguna elección.",
+  "min_assets": 30,
+  "models": [
+    "titans_mac",
+    "titans_mac_frozen",
+    "titans_mac_disabled",
+    "cross_asset_attention",
+    "titans_mac_nogain",
+    "titans_mac_frozen_nogain",
+    "titans_mac_disabled_nogain"
+  ],
+  "inputs": {
+    "source": "view_memory_keys_v1",
+    "columns": 92,
+    "projection_dim": 64,
+    "projection_seed": 53
+  },
+  "asset": {
+    "half_lives": [
+      5,
+      10,
+      21,
+      63,
+      126
+    ],
+    "kappas": [
+      0.03,
+      0.05,
+      0.1,
+      0.2,
+      0.3
+    ],
+    "lab": {
+      "half_life": 21,
+      "kappa": 0.1
+    }
+  },
+  "neighbours": {
+    "window": 63,
+    "k": 256,
+    "tau": 0.2,
+    "clip": 3,
+    "kappas": [
+      0.05,
+      0.1,
+      0.2,
+      0.4
+    ]
+  },
+  "combination": {
+    "kappas": [
+      0,
+      0.05,
+      0.1,
+      0.2
+    ]
+  },
+  "placebo_seed": 20261122
+}

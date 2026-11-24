@@ -5,6 +5,7 @@ proceden de un corpus técnico con máscaras preparado con el contrato temporal 
 """
 
 import copy
+import hashlib
 import json
 from contextlib import contextmanager
 from pathlib import Path
@@ -1271,6 +1272,87 @@ def test_the_shrink_of_f3_only_runs_as_a_continuation_of_mac_online(tmp_path):
             initial=tmp_path / "absent",
         )
     assert not (tmp_path / "alone").exists() and not (tmp_path / "frozen").exists()
+
+
+def anchored_recipe(root):
+    """Receta del ajuste con el decaimiento anclado al estado inicial (L2-SP, #444)."""
+    document = json.loads(recipe(root).read_text())
+    document["recipe"].update(weight_decay=0.1, weight_decay_anchor="initial_parameters")
+    path = root / "anchored.json"
+    path.write_text(json.dumps(document))
+    return path
+
+
+def _digests(values):
+    """Huellas de los tensores de una colección, sin el estado extra del predictor."""
+    return {
+        hashlib.sha256(value.detach().cpu().contiguous().numpy().tobytes()).hexdigest()
+        for value in values
+        if isinstance(value, torch.Tensor)
+    }
+
+
+def test_an_anchored_continuation_decays_towards_the_chosen_state_of_its_parent(
+    tmp_path, monkeypatch
+):
+    """Con una continuación, las anclas del decaimiento son los pesos elegidos del padre.
+
+    Es la ruta de los brazos L2-SP de la extensión de post-entrenamiento de la v10: el padre
+    parte de unos pesos fijados a mano, distintos de una inicialización nueva, y el hijo se
+    ajusta con el optimizador real de la receta.
+    """
+    views, protocol = two_windows(tmp_path)
+    build = wf._predictor
+
+    def scaled(*args, **kwargs):
+        predictor, pairing = build(*args, **kwargs)
+        with torch.no_grad():
+            for value in predictor.parameters():
+                value.mul_(0.875)
+        predictor._seal_parameters()
+        return predictor, pairing
+
+    with monkeypatch.context() as patch, unfused_attention():
+        patch.setattr(wf, "_predictor", scaled)
+        parent = stage(views, protocol, "fold-000", recipe(tmp_path), tmp_path / "parent")
+    assert parent["status"] == "completed"
+    with unfused_attention():
+        child = wf.run_titans_window(
+            views / "fold-001" / "manifest.json",
+            protocol,
+            "fold-001",
+            anchored_recipe(tmp_path),
+            variant="mac_online",
+            seed=42,
+            output=tmp_path / "child",
+            device="cpu",
+            indices=tmp_path / "child-indices",
+            initial=tmp_path / "parent",
+        )
+    assert child["status"] == "completed"
+    parent_fit = json.loads((tmp_path / "parent" / "fit" / "run.json").read_text())
+    child_fit = json.loads((tmp_path / "child" / "fit" / "run.json").read_text())
+    assert child_fit["identity"]["anchored_decay"]["anchor"] == "initial_parameters"
+    start = parent_fit["identity"]["initial_parameters_sha256"]
+    assert child_fit["identity"]["initial_parameters_sha256"] == start
+    from mars_titan.training.checkpoints import load_training_state
+
+    chosen = load_training_state(
+        tmp_path / "parent" / "fit" / "checkpoints",
+        expected_identity=parent_fit["identity"],
+        selection="best",
+    )["model"]
+    saved = load_training_state(
+        tmp_path / "child" / "fit" / "checkpoints", expected_identity=child_fit["identity"]
+    )
+    groups = saved["optimizer"]["param_groups"]
+    anchors = [anchor for group in groups for anchor in group["anchors"]]
+    # Cada ancla es un tensor del estado elegido del padre, multiplicado a mano por 0,875: una
+    # inicialización nueva no coincidiría en sus tensores no nulos.
+    assert any(bool(anchor.abs().sum() > 0) for anchor in anchors)
+    assert _digests(anchors) <= _digests(chosen.values())
+    # El ajuste se ha movido: los pesos del hijo ya no son sus anclas.
+    assert not _digests(saved["model"].values()) >= _digests(anchors)
 
 
 # Escalas de aprendizaje de #836, con las tres opciones explícitas que declara la campaña.

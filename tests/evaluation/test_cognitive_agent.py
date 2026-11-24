@@ -10,6 +10,8 @@ import pytest
 from mars_titan.data.modality_ablation import ablation_identity
 from mars_titan.data.storage import atomic_json, sha256
 from mars_titan.evaluation import cognitive_agent as agent
+from mars_titan.evaluation import online_arbiters as arbiters
+from mars_titan.evaluation import scale_diagnostics as sd
 from mars_titan.evaluation import variant_screening_analysis as analysis
 from mars_titan.evaluation.arbiter_analysis import joined, stage_metric
 from mars_titan.evaluation.forecast_panel import DAY_MICROSECONDS, ForecastPanel
@@ -119,6 +121,24 @@ def test_declaration_rejects_designs_outside_the_contract(changes):
         declaration(**changes)
 
 
+def test_a_context_is_declared_only_if_the_copies_of_its_options_fit_in_the_arbiter():
+    """Con contexto, cada opción del agente (núcleo y modelos de las herramientas) aporta
+    1 + len(REGIMES) copias a AdaNormalHedge.TV. Si no caben en `MAX_OPTIONS`, la declaración se
+    rechaza antes de leer ninguna predicción y no al llegar a la mezcla por régimen."""
+    copies = 1 + len(agent.REGIMES)
+    fit = arbiters.MAX_OPTIONS // copies - 1
+
+    def tools(count):
+        names = [f"m{i}" for i in range(count)]
+        size = agent.MAX_TOOL_MODELS
+        return {f"t{j}": names[j * size : (j + 1) * size] for j in range(-(-count // size))}
+
+    declaration(context=dict(window=10), tools=tools(fit))
+    with pytest.raises(ValueError, match="copias"):
+        declaration(context=dict(window=10), tools=tools(fit + 1))
+    declaration(context=None, tools=tools(fit + 1))
+
+
 def test_the_loop_learns_to_trust_the_informative_tool_and_ignores_the_placebo():
     emissions, maturity = world()
     outcomes = agent.variants(declaration(), emissions, maturity)
@@ -159,6 +179,42 @@ def test_each_session_decides_only_with_labels_that_already_matured():
     )
     np.testing.assert_array_equal(base["weights"][: changed + 1], other["weights"][: changed + 1])
     assert not np.array_equal(base["weights"][changed + 2 :], other["weights"][changed + 2 :])
+
+
+def _spiked(emissions):
+    """Una herramienta con IC de Pearson alto y de rangos negativo: ordena al revés todos los
+    activos salvo el de mayor objetivo, al que da un valor enorme."""
+    core = emissions["core"]
+
+    def spike(panel):
+        values = np.empty(panel.rows)
+        for start, count in zip(panel.session_starts, panel.session_samples, strict=True):
+            target = panel.target[start : start + count]
+            values[start : start + count] = -target
+            values[start + int(np.argmax(target))] = 1e3 * float(np.max(np.abs(target)))
+        return values
+
+    def table(panel, offset):
+        return _panel(spike(panel), panel.target, panel.sessions, 40, offset)
+
+    s, c = table(core.panel, 60), table(core.calibration, 0)
+    return dict(emissions, spike=analysis.Emission(s, s.prediction, c))
+
+
+def test_the_loop_learns_from_the_declared_rank_metric_and_not_from_pearson():
+    emissions, maturity = world()
+    emissions = _spiked(emissions)
+    tools = {"strong_tool": ["strong"], "spike_tool": ["spike"]}
+    document = declaration(tools=tools, metric="session_rank_ic")
+    panel = emissions["spike"].panel
+    pearson = sd.session_correlations(panel, panel.prediction, min_assets=10)[0]
+    ranks = sd.session_correlations(panel, panel.prediction, rank=True, min_assets=10)[0]
+    # La herramienta engaña a Pearson y no a los rangos.
+    assert pearson.mean() > 0.2 and ranks.mean() < -0.5
+    outcomes = agent.variants(document, emissions, maturity)
+    weights = agent.tool_weights(document, outcomes[agent.AGENT])["overall"]
+    assert weights["spike_tool"] < 0.05 < weights["strong_tool"]
+    assert _mean(outcomes[agent.AGENT]) > _mean(outcomes[agent.CORE])
 
 
 def _options(emissions, maturity, names=("core", "strong", "noise")):

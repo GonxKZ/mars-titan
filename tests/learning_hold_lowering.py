@@ -490,6 +490,7 @@ DOUBLES = {
     "tests/training/test_masked_reference_cuda.py": (1, _RECORDER),
     "tests/training/test_masked_reference_run.py": (2, _RECORDER),
     "tests/training/test_masked_tabular.py": (2, _ESTIMATOR),
+    "tests/training/test_memory_reset.py": (1, _RECORDER),
     "tests/training/test_modality_ablation_carry.py": (1, _RECORDER),
     "tests/training/test_modality_ablation_native.py": (1, _RECORDER),
     "tests/training/test_modality_ablation_stage.py": (1, _CAMPAIGN),
@@ -500,6 +501,8 @@ DOUBLES = {
     "tests/training/test_tabular_retention.py": (2, _ESTIMATOR),
     "tests/training/test_titans_campaign.py": (1, _RECORDER),
     "tests/training/test_titans_walk_forward.py": (6, _RECORDER),
+    "tests/training/test_write_policy_twin.py": (1, _RECORDER),
+    "tests/training/test_write_twins.py": (1, _RECORDER),
 }
 REDIRECTIONS = {
     "tests/memory/test_lesion_inference.py": (1, _CLOSES),

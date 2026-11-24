@@ -1,0 +1,49 @@
+{
+  "schema_version": 1,
+  "kind": "cognitive_agent_v1",
+  "final_test_access": false,
+  "description": "Piloto de combinación en línea del programa de post-entrenamiento v10, declarado el 22 de noviembre de 2026 antes de ejecutarlo. Agente cognitivo sobre las emisiones terminadas de la v8 en el origen 2013 con la semilla 42 (un solo origen y una sola semilla: la potencia es baja y nada se generaliza sin más orígenes). Núcleo: titans_mac. Herramientas con emisión en la v8: recuperación episódica (mars_titan_m3), núcleo cognitivo (mars_titan_cognitive), pares entre activos (cross_asset_attention) y rangos por sesión de los rasgos (titans_mac_xrank, el mejor ajuste aislado de la v8, que mide si el bucle encuentra en línea la opción mejor). Mismos controles y criterio que la declaración v1 del agente: media uniforme, realimentación desordenada, placebo, enrutado por régimen, Shapley exacto y Romano y Wolf con bootstrap circular por bloques de 21 días. Sin modalidades: la v8 no tiene ablaciones guardadas.",
+  "campaign": "configs/experiments/dgx-us-campaign-v8.json",
+  "core": "titans_mac",
+  "tools": {
+    "episodic_retrieval": [
+      "mars_titan_m3"
+    ],
+    "cognitive_core": [
+      "mars_titan_cognitive"
+    ],
+    "cross_asset_peers": [
+      "cross_asset_attention"
+    ],
+    "session_ranks": [
+      "titans_mac_xrank"
+    ]
+  },
+  "feedback": {
+    "window": 63,
+    "min_assets": 30,
+    "margin": 0,
+    "shuffled_seed": 20261120
+  },
+  "placebo": {
+    "seed": 7
+  },
+  "context": {
+    "window": 21
+  },
+  "shapley": true,
+  "metric": "session_rank_ic",
+  "inference": {
+    "block_days": 21,
+    "replicates": 4000,
+    "seed": 2026,
+    "confidence": 0.95
+  },
+  "origins": [
+    2013
+  ],
+  "seeds": [
+    42
+  ],
+  "modalities": null
+}

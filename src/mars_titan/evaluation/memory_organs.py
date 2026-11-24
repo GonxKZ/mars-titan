@@ -1,0 +1,882 @@
+"""Órganos de memoria: la memoria por activo y por vecinos emitidas fila a fila sobre un modelo.
+
+El estudio de memorias (`posttraining_pilots.memory_study`) mide cuánto suman la memoria por
+activo, la memoria por vecinos y su combinación sobre las emisiones de un modelo. Los órganos
+emiten esas lecturas como un modelo más, con dos brazos por modelo y semilla:
+
+- `combined`: la puntuación z + κₐ·u_activo + κᵥ·u_vecinos, con la semivida y los dos pesos
+  elegidos por el IC de la calibración del propio origen;
+- `asset_lab`: la memoria por activo fija del laboratorio (h = 21, κ = 0,1), sin ruido de
+  selección.
+
+La lectura pasa a unidades de retorno con la dispersión de la predicción en su sesión: la
+predicción y sus cinco cuantiles se mueven lo mismo (σ_sesión · lectura), así que el orden de cada
+sesión es el de la puntuación que midió el estudio y los cuantiles no se cruzan. Se emiten la
+calibración y la evaluación (la validación no: los pesos se eligen con la calibración, que es
+posterior) en una raíz propia con la forma de un estado de campaña,
+`runs/<modelo>__<brazo>/<origen>/seed-<s>/` y `queue/`, que `dgx_screening_report.py` lee como
+un estado más (`--reference <raíz> --decision-split calibration`). Los placebos se miden y se
+informan en `studies/`; no se emiten.
+
+Nada se escribe dentro del estado de la campaña. Las claves de la memoria por vecinos salen de la
+vista del origen (`view_keys`), se construyen una vez por vista en un proceso aparte y se
+comprueban contra la vista de los trabajos y contra las huellas de su recibo.
+"""
+
+import argparse
+import hashlib
+import json
+import os
+import re
+import shutil
+import subprocess
+import sys
+import time
+import uuid
+from pathlib import Path
+
+import numpy as np
+import pyarrow as pa
+import pyarrow.compute as pc
+import pyarrow.parquet as pq
+
+from mars_titan.evaluation import posttraining_pilots as pilots
+from mars_titan.memory import episodic_organs as eo
+from mars_titan.memory import neighbour_residual_memory as nrm
+from mars_titan.memory import view_keys as vk
+
+KIND = "posttraining_memory_organs_v1"
+RUN_KIND = "posttraining_memory_organ_run_v1"
+SCHEMA_VERSION = 1
+SOURCE = "view_memory_keys_v1"
+ARMS = ("combined", "asset_lab")
+EPISODIC_ARMS = eo.EPISODIC_ARMS
+EMITTED = ("calibration", "evaluation")
+DECLARATION = Path("configs") / "experiments" / "posttraining-memory-organs-v1.json"
+SYSTEMD_RUN = "/usr/bin/systemd-run"
+_FIELDS = {
+    "schema_version",
+    "kind",
+    "final_test_access",
+    "description",
+    "min_assets",
+    "models",
+    "inputs",
+    "asset",
+    "neighbours",
+    "combination",
+    "placebo_seed",
+}
+_OPTIONAL_FIELDS = {"episodic_organs"}
+_LABEL = re.compile(r"[a-z0-9][a-z0-9_.-]*")
+
+
+def _require(condition, message):
+    if not condition:
+        raise ValueError(message)
+
+
+def checked_organs(document):
+    """Validar la declaración de los órganos antes de leer ninguna emisión."""
+    _require(isinstance(document, dict), "La declaración de los órganos es un objeto JSON")
+    _require(
+        document.get("kind") == KIND and document.get("schema_version") == SCHEMA_VERSION,
+        f"La declaración debe ser {KIND} con schema_version {SCHEMA_VERSION}",
+    )
+    _require(
+        _FIELDS <= set(document) <= _FIELDS | _OPTIONAL_FIELDS,
+        f"Los órganos declaran exactamente los campos {sorted(_FIELDS)}"
+        " y, opcionalmente, episodic_organs",
+    )
+    _require(document["final_test_access"] is False, "Los órganos no abren el test final")
+    minimum = pilots.screening().MIN_ASSETS
+    _require(
+        document["min_assets"] == minimum,
+        f"El mínimo de activos por sesión es el del informe de criba ({minimum})",
+    )
+    pilots.checked_memories(document, SOURCE, "la vista de cada origen")
+    if "episodic_organs" in document:
+        eo.checked_episodic_organs(document["episodic_organs"])
+    return document
+
+
+# --- estados exportados ---------------------------------------------------------------------------
+
+
+def _plain(value, arrays):
+    if isinstance(value, np.ndarray):
+        name = f"a{len(arrays)}"
+        arrays[name] = value
+        return {"__array__": name}
+    if isinstance(value, dict):
+        _require(
+            all(isinstance(key, str) and key != "__array__" for key in value),
+            "Un estado exportado solo tiene claves de texto",
+        )
+        return {key: _plain(item, arrays) for key, item in value.items()}
+    if isinstance(value, list | tuple):
+        return [_plain(item, arrays) for item in value]
+    _require(
+        value is None or isinstance(value, bool | int | float | str),
+        f"Un estado exportado no puede guardar un {type(value).__name__}",
+    )
+    return value
+
+
+def save_state(payload, path):
+    """Guardar el estado exportado de una memoria (con su huella) en un .npz sin objetos."""
+    path = Path(path)
+    arrays = {}
+    structure = json.dumps(_plain(payload, arrays), sort_keys=True, allow_nan=False)
+    arrays["structure"] = np.frombuffer(structure.encode(), dtype=np.uint8)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    temporary = _temporary(path)
+    try:
+        with open(temporary, "wb") as handle:
+            np.savez(handle, **arrays)
+        os.replace(temporary, path)
+    finally:
+        temporary.unlink(missing_ok=True)
+
+
+def load_state(path):
+    """Leer un estado guardado con `save_state`; la memoria comprueba su huella al restaurarlo."""
+    with np.load(path, allow_pickle=False) as data:
+
+        def build(value):
+            if isinstance(value, dict):
+                if set(value) == {"__array__"}:
+                    return np.array(data[value["__array__"]])
+                return {key: build(item) for key, item in value.items()}
+            if isinstance(value, list):
+                return [build(item) for item in value]
+            return value
+
+        return build(json.loads(bytes(data["structure"]).decode()))
+
+
+# --- emisión --------------------------------------------------------------------------------------
+
+
+def shifted(sessions, prediction, quantiles, dispersion, signal):
+    """La predicción y sus cinco cuantiles movidos por la lectura del brazo en unidades de retorno.
+
+    Cada fila se mueve σ·lectura, con σ la desviación poblacional de la predicción en su sesión:
+    el orden de la sesión es el de z + lectura, el que midió el estudio. Una sesión con la
+    predicción constante (σ = 0) no admite una lectura distinta de cero y falla con su nombre.
+    """
+    prediction = np.asarray(prediction, dtype=np.float64)
+    dispersion = np.asarray(dispersion, dtype=np.float64)
+    signal = np.asarray(signal, dtype=np.float64)
+    for market, instant, start, end in sessions:
+        _require(
+            bool(np.all(dispersion[start:end] > 0)) or not np.any(signal[start:end]),
+            f"La predicción es constante en la sesión {market} {instant} y el brazo la movería:"
+            " su orden no cabe en unidades de retorno",
+        )
+    return prediction + dispersion * signal, pilots.shift_quantiles(quantiles, dispersion, signal)
+
+
+def _temporary(path):
+    """Un temporal propio junto a su destino: dos procesos no comparten nunca el mismo nombre."""
+    return path.with_name(f".{path.name}.{os.getpid()}.{uuid.uuid4().hex}.tmp")
+
+
+def _atomic_json(path, document):
+    path.parent.mkdir(parents=True, exist_ok=True)
+    temporary = _temporary(path)
+    try:
+        temporary.write_text(
+            json.dumps(document, indent=2, ensure_ascii=False) + "\n", encoding="utf-8"
+        )
+        os.replace(temporary, path)
+    finally:
+        temporary.unlink(missing_ok=True)
+
+
+def _parent(state, model, origin, seed):
+    return state / "runs" / model / str(origin) / f"seed-{seed}"
+
+
+def _finished(folder):
+    """El recibo de un trabajo terminado con sus tres tramos emitidos, o None."""
+    complete = (folder / "run.json").is_file() and all(
+        (folder / f"{name}-predictions.parquet").is_file() for name in pilots.SPLITS
+    )
+    if not complete:
+        return None
+    record = json.loads((folder / "run.json").read_text(encoding="utf-8"))
+    return record if record.get("status") == "completed" else None
+
+
+def _claim(output, declaration, digest, markets=None):
+    """Una raíz de órganos pertenece a una sola declaración y a una sola elección de mercados."""
+    saved = output / "declaration.json"
+    if saved.is_file():
+        previous = json.loads(saved.read_text(encoding="utf-8"))
+        _require(
+            hashlib.sha256(pilots._canonical(previous).encode()).hexdigest() == digest,
+            f"{output} pertenece a otra declaración",
+        )
+    else:
+        _atomic_json(saved, declaration)
+    chosen = output / "markets.json"
+    if chosen.is_file():
+        previous = json.loads(chosen.read_text(encoding="utf-8")).get("markets")
+        _require(
+            previous == markets,
+            f"{output} es de los mercados {previous or 'todos'}, no de {markets or 'todos'}",
+        )
+    else:
+        _atomic_json(chosen, dict(markets=markets))
+
+
+def _only_markets(table, markets):
+    """Las filas de unos mercados (todas sin elección), en el mismo orden."""
+    if not markets:
+        return table
+    return table.filter(pc.is_in(table["market"], value_set=pa.array(list(markets))))
+
+
+def _keys(manifest, view, root, log, markets=None):
+    """Las claves de la vista (construidas en un proceso aparte si faltan) y su recibo.
+
+    Con `markets`, solo las de esos mercados, en su propia carpeta (`<vista>-<mercados>`).
+    """
+    folder = root / (view if not markets else f"{view}-{'+'.join(markets)}")
+    if not folder.exists():
+        partial = folder.with_name(folder.name + ".tmp")
+        if partial.exists():
+            log(f"claves de {view[:8]}: se retira una construcción a medias")
+            shutil.rmtree(partial)
+        root.mkdir(parents=True, exist_ok=True)
+        log(f"claves de {view[:8]}: se construyen desde {manifest}")
+        source = str(Path(vk.__file__).resolve().parents[2])
+        paths = [source, *filter(None, [os.environ.get("PYTHONPATH")])]
+        command = [sys.executable, "-m", "mars_titan.memory.view_keys", "construir"]
+        command += ["--manifest", str(manifest), "--output", str(folder)]
+        for market in markets or ():
+            command += ["--market", market]
+        # Un proceso aparte devuelve su memoria al terminar: la de los órganos tiene tope.
+        done = subprocess.run(
+            command, env=dict(os.environ, PYTHONPATH=os.pathsep.join(paths)), check=False
+        )
+        _require(
+            done.returncode == 0,
+            f"No se pudieron construir las claves de {manifest} en {folder}"
+            f" (el proceso terminó con código {done.returncode})",
+        )
+    receipt = json.loads((folder / "keys.json").read_text(encoding="utf-8"))
+    _require(
+        receipt.get("kind") == vk.KIND and receipt.get("view_sha256") == view,
+        f"Las claves de {folder} son de otra vista ({receipt.get('view_sha256')} ≠ {view})",
+    )
+    _require(
+        not markets or sorted(receipt.get("markets") or {}) == list(markets),
+        f"Las claves de {folder} no son de los mercados {markets}",
+    )
+    return folder, receipt
+
+
+def emit(
+    declaration,
+    state,
+    origin,
+    seeds,
+    keys,
+    output,
+    *,
+    threads=1,
+    log=print,
+    maturity=None,
+    markets=None,
+    sector_map=None,
+):
+    """Emitir los brazos de cada modelo declarado en un origen, semilla a semilla.
+
+    `keys` es la carpeta de claves por vista y `output` la raíz propia de los órganos; ninguna
+    puede estar dentro del estado. Un modelo sin trabajo terminado se anota y se emiten los demás.
+    Una semilla ya emitida (con su informe en `studies/`) no se rehace, salvo que haya terminado
+    un modelo que faltaba: entonces se emite entera otra vez. `maturity` lee la
+    madurez de las etiquetas de la vista (por omisión, el lector de la campaña). `markets`
+    limita las claves y las emisiones a esos mercados: en un estado conjunto sin el factor de un
+    mercado (D-7), `markets=["US"]` emite solo EE. UU. Con `episodic_organs` declarado se emiten
+    además los órganos nuevos seleccionados; sin él no cambia ni un bit del comportamiento base.
+    """
+    declaration = checked_organs(declaration)
+    episodic = declaration.get("episodic_organs")
+    if (
+        episodic is not None
+        and "holographic_delta" in episodic
+        and episodic["holographic_delta"]["entity"] == "sector"
+    ):
+        _require(
+            sector_map is not None or bool(episodic["holographic_delta"].get("sector_source")),
+            "El modo entity='sector' necesita sector_source en la declaración o sector_map",
+        )
+    state, keys, output = (Path(path).resolve() for path in (state, keys, output))
+    _require(state.is_dir(), f"No está el estado {state}")
+    for path, what in ((output, "La raíz de los órganos"), (keys, "La carpeta de claves")):
+        _require(
+            not path.is_relative_to(state),
+            f"{what} {path} queda dentro del estado {state}: los órganos no escriben en él",
+        )
+    _require(type(origin) is int and 2000 <= origin <= 2023, "El origen es un año de 2000 a 2023")
+    seeds = list(seeds)
+    _require(
+        seeds and all(type(seed) is int for seed in seeds) and len(set(seeds)) == len(seeds),
+        "Las semillas son enteros distintos",
+    )
+    if markets is not None:
+        markets = sorted(set(markets))
+        _require(
+            markets and all(isinstance(m, str) and m.isalnum() for m in markets),
+            f"Los mercados {markets} no son códigos válidos",
+        )
+    digest = hashlib.sha256(pilots._canonical(declaration).encode()).hexdigest()
+    _claim(output, declaration, digest, markets)
+    context = dict(
+        declaration=declaration,
+        digest=digest,
+        state=state,
+        origin=origin,
+        manifest=state / "cohorts" / str(origin) / "manifest.json",
+        keys=keys,
+        output=output,
+        maturity=pilots._maturity if maturity is None else maturity,
+        threads=threads,
+        log=log,
+        views={},
+        markets=markets,
+        sector_map=sector_map,
+    )
+    runs = [_emit_seed(context, seed) for seed in seeds]
+    return dict(origin=origin, state=str(state), output=str(output), runs=runs)
+
+
+def _emit_seed(context, seed):
+    started = time.monotonic()
+    declaration, state, origin = context["declaration"], context["state"], context["origin"]
+    output, log = context["output"], context["log"]
+    stem = f"{origin}--seed-{seed}"
+    report_path = output / "studies" / f"{stem}.json"
+    records = {}
+    for model in declaration["models"]:
+        record = _finished(_parent(state, model, origin, seed))
+        if record is not None:
+            records[model] = record
+    if report_path.is_file():
+        done = json.loads(report_path.read_text(encoding="utf-8"))
+        finished = [model for model in done["missing_models"] if model in records]
+        if not finished:
+            log(f"{stem}: ya emitido")
+            return dict(
+                seed=seed,
+                models=list(done["models"]),
+                missing=done["missing_models"],
+                skipped=True,
+                seconds=0.0,
+            )
+        # Una semilla emitida a medias se emite entera otra vez en cuanto termina un modelo que
+        # faltaba: la lectura por vecinos es conjunta y el informe nuevo sustituye al anterior.
+        log(f"{stem}: ya terminó {', '.join(finished)}, que faltaba; se emite de nuevo")
+    present = [model for model in declaration["models"] if model in records]
+    missing = [model for model in declaration["models"] if model not in records]
+    _require(
+        present,
+        f"Ningún modelo declarado tiene terminado su trabajo de {origin} con la semilla {seed}"
+        f" en {state}",
+    )
+    if missing:
+        log(f"{stem}: sin trabajo terminado {', '.join(missing)}; se anotan y se emiten los demás")
+    views = {records[model]["request"]["view_sha256"] for model in present}
+    _require(
+        len(views) == 1,
+        f"Los trabajos de {origin} con la semilla {seed} no comparten vista: {sorted(views)}",
+    )
+    view = views.pop()
+    if view not in context["views"]:
+        tables = context["maturity"](context["manifest"], view)
+        tables = {name: _only_markets(table, context["markets"]) for name, table in tables.items()}
+        context["views"][view] = (
+            tables,
+            *_keys(context["manifest"], view, context["keys"], log, context["markets"]),
+        )
+    tables, folder, receipt = context["views"][view]
+    reference, predictions, emissions = None, {}, {}
+    for model in present:
+        parent = _parent(state, model, origin, seed)
+        splits, emissions[model] = {}, {}
+        for name in pilots.SPLITS:
+            path = parent / f"{name}-predictions.parquet"
+            emissions[model][name] = pilots._sha256(path)
+            table = _only_markets(pq.read_table(path), context["markets"])
+            _require(table.num_rows > 0, f"{path} no tiene filas de {context['markets']}")
+            splits[name] = pilots.load_split(table, tables[name], name)
+        reference = reference or splits
+        for name in pilots.SPLITS:
+            same = all(
+                np.array_equal(getattr(splits[name], field), getattr(reference[name], field))
+                for field in ("market", "asset", "prediction_at", "target")
+            )
+            _require(same, f"Las filas de {name} de {model} no son las de {present[0]}")
+        predictions[model] = np.concatenate([splits[name].prediction for name in pilots.SPLITS])
+        log(f"{stem}: cargado {model}")
+    assets = np.concatenate([reference[name].asset for name in pilots.SPLITS])
+    days = np.concatenate([reference[name].prediction_at for name in pilots.SPLITS])
+    raw, files = pilots.lab_inputs(folder, folder / "names.json", assets, days // pilots.DAY_US)
+    changed = sorted(name for name, value in receipt["outputs"].items() if files.get(name) != value)
+    _require(
+        not changed and set(files) == set(receipt["outputs"]),
+        f"Las claves de {folder} no coinciden con su recibo: {', '.join(changed) or 'archivos'}",
+    )
+    inputs = declaration["inputs"]
+    _require(
+        raw.shape[1] == inputs["columns"],
+        f"Las claves de {folder} no tienen {inputs['columns']} columnas",
+    )
+    matrix = nrm.projection(raw.shape[1], inputs["projection_dim"], seed=inputs["projection_seed"])
+    keys = nrm.keys_from_inputs(raw, matrix)
+    episodic_cfg = declaration.get("episodic_organs")
+    regimes = None
+    if episodic_cfg is not None and "holographic_delta" in episodic_cfg:
+        regimes = eo.session_regimes_from_inputs(
+            raw, pilots._session_slices(reference), min_assets=declaration["min_assets"]
+        )
+    del raw
+    results, table, organs = pilots.memory_study(
+        reference,
+        predictions,
+        keys,
+        declaration,
+        threads=context["threads"],
+        log=log,
+        organs=True,
+    )
+    episodic_results = episodic_organs = episodic_states = None
+    if episodic_cfg is not None:
+        episodic_results, episodic_table, episodic_organs = eo.episodic_study(
+            reference,
+            predictions,
+            keys,
+            episodic_cfg,
+            placebo_seed=declaration["placebo_seed"],
+            regimes=regimes,
+            sector_map=context["sector_map"],
+            threads=context["threads"],
+            log=log,
+        )
+        table = pa.concat_tables([table, episodic_table])
+    del keys
+    bounds = np.cumsum([0] + [reference[name].rows for name in pilots.SPLITS])
+    position = {name: slice(bounds[i], bounds[i + 1]) for i, name in enumerate(pilots.SPLITS)}
+    near_file = Path("states") / str(origin) / f"seed-{seed}" / "neighbours.npz"
+    save_state(organs["neighbours"], output / near_file)
+    near = dict(
+        file=str(near_file),
+        sha256=pilots._sha256(output / near_file),
+        state_sha256=organs["neighbours"]["state_sha256"],
+        models=list(organs["order"]),
+    )
+    if episodic_organs is not None:
+        episodic_states = {}
+        filenames = dict(dense_bank="dense-bank.npz", holographic_delta="holographic-delta.npz")
+        for organ_name, payload in episodic_organs["shared_states"].items():
+            rel = Path("states") / str(origin) / f"seed-{seed}" / filenames[organ_name]
+            save_state(payload, output / rel)
+            episodic_states[organ_name] = dict(
+                file=str(rel),
+                sha256=pilots._sha256(output / rel),
+                state_sha256=payload["state_sha256"],
+                models=list(episodic_organs["order"]),
+            )
+    shared = dict(
+        view=view,
+        keys=dict(folder=str(folder), view_sha256=view, files=files),
+        near=near,
+        position=position,
+        reference=reference,
+        results=results,
+        seconds=time.monotonic() - started,
+        episodic_states=episodic_states or {},
+    )
+    for model in present:
+        for name in ARMS:
+            _write_arm(context, seed, model, name, records[model], emissions[model], organs, shared)
+        if episodic_organs is not None:
+            for name in episodic_organs["arms"]:
+                _write_episodic_arm(
+                    context,
+                    seed,
+                    model,
+                    name,
+                    records[model],
+                    emissions[model],
+                    episodic_organs,
+                    shared,
+                )
+    report = dict(
+        schema_version=SCHEMA_VERSION,
+        kind=f"{KIND}_report",
+        final_test_opened=False,
+        declaration_sha256=context["digest"],
+        state=str(state),
+        origin=origin,
+        seed=seed,
+        view_sha256=view,
+        arms=list(ARMS) if episodic_organs is None else [*ARMS, *episodic_organs["arms"]],
+        models=results,
+        missing_models=missing,
+        inputs=dict(emissions=emissions, keys=shared["keys"]),
+        rows={name: reference[name].rows for name in pilots.SPLITS},
+        sessions={name: len(reference[name].sessions) for name in pilots.SPLITS},
+        neighbours=near,
+        seconds=round(time.monotonic() - started, 1),
+    )
+    if episodic_organs is not None:
+        report["episodic_organs"] = episodic_results
+        report["episodic_states"] = episodic_states
+    (output / "studies").mkdir(parents=True, exist_ok=True)
+    pq.write_table(table, output / "studies" / f"{stem}.parquet")
+    # El informe va el último: con él la semilla queda emitida.
+    _atomic_json(report_path, report)
+    log(f"{stem}: emitido en {report['seconds']:.0f} s")
+    return dict(
+        seed=seed, models=present, missing=missing, skipped=False, seconds=report["seconds"]
+    )
+
+
+def _write_arm(context, seed, model, name, record, emissions, organs, shared):
+    state, origin, output = context["state"], context["origin"], context["output"]
+    organ = organs["models"][model]
+    chosen = organ["arms"][name]
+    label = f"{model}__{name}"
+    queue = output / "queue" / f"{label}--{origin}--seed-{seed}.json"
+    # Sin registro en la cola, el informe de criba no lee una emisión a medias.
+    queue.unlink(missing_ok=True)
+    folder = output / "runs" / label / str(origin) / f"seed-{seed}"
+    temporary = folder.with_name(folder.name + ".tmp")
+    if temporary.exists():
+        shutil.rmtree(temporary)
+    temporary.mkdir(parents=True)
+    parent = _parent(state, model, origin, seed)
+    outputs = {}
+    for split in EMITTED:
+        path = parent / f"{split}-predictions.parquet"
+        _require(pilots._sha256(path) == emissions[split], f"{path} cambió mientras se medía")
+        table = _only_markets(pq.read_table(path), context["markets"])
+        _require(
+            all(column in table.column_names for column in pilots.QUANTILE_COLUMNS),
+            f"{path} no tiene los cinco cuantiles",
+        )
+        order = pilots.emission_order(table)[3]
+        rows = shared["position"][split]
+        moved, quantiles = shifted(
+            shared["reference"][split].sessions,
+            table["prediction"].to_numpy()[order],
+            np.column_stack([table[c].to_numpy() for c in pilots.QUANTILE_COLUMNS])[order],
+            organ["dispersion"][rows],
+            chosen["signal"][rows],
+        )
+        for column, values in (
+            ("prediction", moved),
+            *zip(pilots.QUANTILE_COLUMNS, quantiles.T, strict=True),
+        ):
+            index = table.schema.get_field_index(column)
+            field = table.schema.field(index)
+            restored = np.empty(len(values))
+            restored[order] = values
+            table = table.set_column(index, field, pa.array(restored, type=field.type))
+        pq.write_table(table, temporary / f"{split}-predictions.parquet")
+        outputs[split] = pilots._sha256(temporary / f"{split}-predictions.parquet")
+    save_state(chosen["state"], temporary / "asset-memory.npz")
+    states = dict(
+        asset=dict(
+            file=str(folder.relative_to(output) / "asset-memory.npz"),
+            sha256=pilots._sha256(temporary / "asset-memory.npz"),
+            state_sha256=chosen["state"]["state_sha256"],
+        )
+    )
+    if name == "combined":
+        states["neighbours"] = shared["near"]
+    receipt = dict(
+        schema_version=SCHEMA_VERSION,
+        kind=RUN_KIND,
+        status="completed",
+        model=label,
+        arm=name,
+        parent=dict(model=model, state=str(state), run_id=record.get("run_id")),
+        origin=origin,
+        seed=seed,
+        request=dict(view_sha256=shared["view"], window=record["request"].get("window"), seed=seed),
+        markets=context["markets"],
+        selection=chosen["selection"],
+        ic={split: shared["results"][model][split][name] for split in EMITTED},
+        inputs=dict(declaration_sha256=context["digest"], emissions=emissions, keys=shared["keys"]),
+        outputs=outputs,
+        state=states,
+        code=dict(
+            memory_organs=pilots._sha256(Path(__file__)),
+            posttraining_pilots=pilots._sha256(Path(pilots.__file__)),
+        ),
+        final_test_opened=False,
+    )
+    _atomic_json(temporary / "run.json", receipt)
+    if folder.exists():
+        context["log"](f"{label}: se rehace una emisión a medias")
+        shutil.rmtree(folder)
+    os.replace(temporary, folder)
+    record = dict(
+        status="completed",
+        model=label,
+        tier="memory_organ",
+        year=origin,
+        seed=seed,
+        parent=model,
+        arm=name,
+        attempts=[dict(seconds=round(shared["seconds"], 1))],
+        result=dict(best_epoch=None, best_score=None),
+    )
+    _atomic_json(queue, record)
+
+
+def _write_episodic_arm(context, seed, model, name, record, emissions, organs, shared):
+    """Emitir un órgano episódico nuevo (dense_bank, holographic_delta o asset_trace)."""
+    state, origin, output = context["state"], context["origin"], context["output"]
+    organ = organs["models"][model]
+    chosen = organ["arms"][name]
+    label = f"{model}__{name}"
+    queue = output / "queue" / f"{label}--{origin}--seed-{seed}.json"
+    queue.unlink(missing_ok=True)
+    folder = output / "runs" / label / str(origin) / f"seed-{seed}"
+    temporary = folder.with_name(folder.name + ".tmp")
+    if temporary.exists():
+        shutil.rmtree(temporary)
+    temporary.mkdir(parents=True)
+    parent = _parent(state, model, origin, seed)
+    outputs = {}
+    extra_columns = chosen.get("extra_columns") or {}
+    for split in EMITTED:
+        path = parent / f"{split}-predictions.parquet"
+        _require(pilots._sha256(path) == emissions[split], f"{path} cambió mientras se medía")
+        table = _only_markets(pq.read_table(path), context["markets"])
+        _require(
+            all(column in table.column_names for column in pilots.QUANTILE_COLUMNS),
+            f"{path} no tiene los cinco cuantiles",
+        )
+        order = pilots.emission_order(table)[3]
+        rows = shared["position"][split]
+        moved, quantiles = shifted(
+            shared["reference"][split].sessions,
+            table["prediction"].to_numpy()[order],
+            np.column_stack([table[c].to_numpy() for c in pilots.QUANTILE_COLUMNS])[order],
+            organ["dispersion"][rows],
+            chosen["signal"][rows],
+        )
+        for column, values in (
+            ("prediction", moved),
+            *zip(pilots.QUANTILE_COLUMNS, quantiles.T, strict=True),
+        ):
+            index = table.schema.get_field_index(column)
+            field = table.schema.field(index)
+            restored = np.empty(len(values))
+            restored[order] = values
+            table = table.set_column(index, field, pa.array(restored, type=field.type))
+        for col_name, col_values in extra_columns.items():
+            _require(
+                col_name not in table.column_names,
+                f"{path} ya contiene la columna adicional {col_name}",
+            )
+            slice_vals = col_values[rows]
+            restored = np.empty(len(slice_vals), dtype=np.float64)
+            restored[order] = slice_vals
+            table = table.append_column(col_name, pa.array(restored, type=pa.float64()))
+        pq.write_table(table, temporary / f"{split}-predictions.parquet")
+        outputs[split] = pilots._sha256(temporary / f"{split}-predictions.parquet")
+    states = {}
+    if "state" in chosen:
+        state_file = f"{name.replace('_', '-')}.npz"
+        save_state(chosen["state"], temporary / state_file)
+        states[name] = dict(
+            file=str(folder.relative_to(output) / state_file),
+            sha256=pilots._sha256(temporary / state_file),
+            state_sha256=chosen["state"]["state_sha256"],
+        )
+    elif name in shared["episodic_states"]:
+        states[name] = shared["episodic_states"][name]
+    receipt = dict(
+        schema_version=SCHEMA_VERSION,
+        kind=RUN_KIND,
+        status="completed",
+        model=label,
+        arm=name,
+        parent=dict(model=model, state=str(state), run_id=record.get("run_id")),
+        origin=origin,
+        seed=seed,
+        request=dict(view_sha256=shared["view"], window=record["request"].get("window"), seed=seed),
+        markets=context["markets"],
+        selection=chosen["selection"],
+        ic=chosen["ic"],
+        placebo_ic=chosen["placebo_ic"],
+        inputs=dict(declaration_sha256=context["digest"], emissions=emissions, keys=shared["keys"]),
+        outputs=outputs,
+        state=states,
+        code=dict(
+            memory_organs=pilots._sha256(Path(__file__)),
+            posttraining_pilots=pilots._sha256(Path(pilots.__file__)),
+            episodic_organs=pilots._sha256(Path(eo.__file__)),
+        ),
+        final_test_opened=False,
+    )
+    if "uncertainty_column" in chosen:
+        receipt["uncertainty_column"] = chosen["uncertainty_column"]
+    _atomic_json(temporary / "run.json", receipt)
+    if folder.exists():
+        context["log"](f"{label}: se rehace una emisión a medias")
+        shutil.rmtree(folder)
+    os.replace(temporary, folder)
+    queue_record = dict(
+        status="completed",
+        model=label,
+        tier="memory_organ",
+        year=origin,
+        seed=seed,
+        parent=model,
+        arm=name,
+        attempts=[dict(seconds=round(shared["seconds"], 1))],
+        result=dict(best_epoch=None, best_score=None),
+    )
+    _atomic_json(queue, queue_record)
+
+
+# --- la orden del relevo -------------------------------------------------------------------------
+
+
+def relay_line(
+    *,
+    label,
+    state,
+    origin,
+    seeds,
+    tree,
+    python,
+    keys,
+    output,
+    declaration=None,
+    threads=3,
+    markets=None,
+):
+    """La línea `orden|…` del plan del relevo que emite los órganos de un origen.
+
+    systemd-run sin --wait arranca la unidad y vuelve enseguida: el relevo sigue con la fase
+    siguiente sin esperar a la memoria y un fallo de la memoria no lo detiene (queda en el diario
+    de la unidad, `journalctl --user -u mars-titan-memorias-<estado>-<origen>`). El relevo parte
+    los argumentos por espacios, así que ninguna ruta puede llevarlos.
+    """
+    declaration = Path(tree) / DECLARATION if declaration is None else Path(declaration)
+    _require(
+        isinstance(label, str) and _LABEL.fullmatch(label) is not None,
+        f"La etiqueta {label!r} del estado va en el nombre de la unidad: minúsculas, cifras, - _ .",
+    )
+    _require(type(origin) is int and 2000 <= origin <= 2023, "El origen es un año de 2000 a 2023")
+    seeds = list(seeds)
+    _require(
+        seeds and all(type(seed) is int for seed in seeds) and len(set(seeds)) == len(seeds),
+        "Las semillas son enteros distintos",
+    )
+    paths = dict(
+        state=state, tree=tree, python=python, keys=keys, output=output, declaration=declaration
+    )
+    for name, path in paths.items():
+        text = str(path)
+        _require(
+            Path(text).is_absolute() and not any(c.isspace() or c == "|" for c in text),
+            f"La ruta {name} ({text}) debe ser absoluta y sin espacio ni '|': el relevo parte la"
+            " línea por '|' y los argumentos por espacios",
+        )
+    words = ["--user", "--collect", "--unit", f"mars-titan-memorias-{label}-{origin}"]
+    words += ["--slice=mars-titan.slice", "-p", "CPUWeight=10", "-p", "Nice=15"]
+    words += ["-p", "MemoryMax=8G", "-p", "MemorySwapMax=0", f"--working-directory={tree}"]
+    for variable in (
+        f"PYTHONPATH={Path(tree) / 'src'}",
+        "PYTHONUNBUFFERED=1",
+        "CUDA_VISIBLE_DEVICES=",
+        "OMP_NUM_THREADS=1",
+        "OPENBLAS_NUM_THREADS=1",
+        "MKL_NUM_THREADS=1",
+    ):
+        words += ["-E", variable]
+    words += [str(python), "-m", "mars_titan.evaluation.memory_organs", "emitir"]
+    words += ["--declaration", str(declaration), "--state", str(state), "--origin", str(origin)]
+    for seed in seeds:
+        words += ["--seed", str(seed)]
+    words += ["--keys", str(keys), "--output", str(output), "--threads", str(threads)]
+    for market in sorted(set(markets or ())):
+        _require(market.isalnum(), f"El mercado {market!r} no es un código válido")
+        words += ["--market", market]
+    return f"orden|{SYSTEMD_RUN}|{' '.join(words)}"
+
+
+def parser():
+    parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    commands = parser.add_subparsers(dest="command", required=True)
+    emitting = commands.add_parser("emitir", help="Emitir los órganos de un origen")
+    emitting.add_argument("--declaration", type=Path, required=True)
+    emitting.add_argument("--state", type=Path, required=True, help="Estado de la campaña")
+    emitting.add_argument("--origin", type=int, required=True)
+    emitting.add_argument("--seed", type=int, action="append", required=True)
+    emitting.add_argument("--keys", type=Path, required=True, help="Carpeta de claves por vista")
+    emitting.add_argument("--output", type=Path, required=True, help="Raíz propia de los órganos")
+    emitting.add_argument("--threads", type=int, default=3)
+    emitting.add_argument(
+        "--market",
+        action="append",
+        dest="markets",
+        metavar="MERCADO",
+        help="Emitir solo este mercado (repetible); todos si se omite",
+    )
+    line = commands.add_parser("linea", help="Línea del plan del relevo para un origen")
+    line.add_argument("--label", required=True, help="Nombre corto del estado (v11)")
+    line.add_argument("--state", type=Path, required=True)
+    line.add_argument("--origin", type=int, required=True)
+    line.add_argument("--seed", type=int, action="append", required=True)
+    line.add_argument("--tree", type=Path, required=True, help="Copia fija del repositorio")
+    line.add_argument("--python", type=Path, required=True)
+    line.add_argument("--keys", type=Path, required=True)
+    line.add_argument("--output", type=Path, required=True)
+    line.add_argument("--declaration", type=Path)
+    line.add_argument("--threads", type=int, default=3)
+    line.add_argument("--market", action="append", dest="markets", metavar="MERCADO")
+    return parser
+
+
+def main(argv=None):
+    args = parser().parse_args(argv)
+    if args.command == "linea":
+        options = dict(vars(args), seeds=args.seed)
+        for name in ("command", "seed"):
+            options.pop(name)
+        print(relay_line(**options))
+        return 0
+
+    def log(line):
+        print(f"{time.strftime('%H:%M:%SZ', time.gmtime())} {line}", flush=True)
+
+    declaration = json.loads(args.declaration.read_text(encoding="utf-8"))
+    summary = emit(
+        declaration,
+        args.state,
+        args.origin,
+        args.seed,
+        args.keys,
+        args.output,
+        threads=args.threads,
+        log=log,
+        markets=args.markets,
+    )
+    print(json.dumps(summary, ensure_ascii=False, indent=1), flush=True)
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

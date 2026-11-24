@@ -1,0 +1,84 @@
+{
+  "schema_version": 1,
+  "kind": "posttraining_memories_v1",
+  "final_test_access": false,
+  "description": "Adenda del estudio de memorias del programa de post-entrenamiento v10 (posttraining-memories-v10.json), declarada el 22 de noviembre de 2026 antes de leer ningún resultado de ese estudio ni de esta adenda: la primera ejecución se detuvo a las 05:21 UTC sin terminar la pasada por vecinos (la selección con np.argpartition era demasiado lenta) y no escribió ningún informe. Mismas emisiones (v8, origen 2013, semilla 42: un origen y una semilla, nada se generaliza sin más orígenes), modelos, claves, rejillas, selección en calibración y placebos que el estudio original, con el método de vecinos v2 (mismos vecinos salvo empates, que van a la fila más antigua del banco). Añade tres mediciones: (1) vecinos de otros activos, la misma lectura sin las filas del propio activo de la consulta, con su placebo de valores permutados, su κ elegido en calibración y su combinación con la memoria por activo, para separar la historia del mismo activo de la de activos parecidos; (2) corrección en unidades de retorno: la puntuación de la memoria multiplicada por la dispersión de la predicción en la sesión se suma a los cinco cuantiles a la vez (no cambia su orden ni los rangos de la sesión), con la recalibración estática de escala y CQR ajustada solo con la calibración (al menos 1.000 filas), para medir la pérdida pinball, las coberturas y la puntuación de intervalo frente al padre; (3) arranque en frío: la memoria por activo elegida empieza vacía en la primera sesión de evaluación, como empezaría una memoria integrada en el modelo cuyas filas de calentamiento no se emiten. La evaluación se mira una vez; contrastes pareados por sesión con t HAC de Newey-West del informe de criba.",
+  "market": "US",
+  "min_assets": 30,
+  "runs": [
+    {
+      "state": "v8",
+      "origin": 2013,
+      "seed": 42
+    }
+  ],
+  "models": [
+    "titans_mac",
+    "titans_mac_frozen",
+    "titans_mac_disabled",
+    "titans_mac_xrank",
+    "titans_mac_frozen_xrank",
+    "titans_mac_disabled_xrank",
+    "titans_mac_noic",
+    "mars_titan_m0",
+    "mars_titan_m3",
+    "mars_titan_cognitive",
+    "mars_titan_m0_u2",
+    "mars_titan_m0_noic",
+    "mars_titan_m3_noic"
+  ],
+  "inputs": {
+    "source": "tabular_lab_cache_v1",
+    "columns": 92,
+    "projection_dim": 64,
+    "projection_seed": 53
+  },
+  "asset": {
+    "half_lives": [
+      5,
+      10,
+      21,
+      63,
+      126
+    ],
+    "kappas": [
+      0.03,
+      0.05,
+      0.1,
+      0.2,
+      0.3
+    ],
+    "lab": {
+      "half_life": 21,
+      "kappa": 0.1
+    }
+  },
+  "neighbours": {
+    "window": 63,
+    "k": 256,
+    "tau": 0.2,
+    "clip": 3,
+    "kappas": [
+      0.05,
+      0.1,
+      0.2,
+      0.4
+    ]
+  },
+  "combination": {
+    "kappas": [
+      0,
+      0.05,
+      0.1,
+      0.2
+    ]
+  },
+  "placebo_seed": 20261122,
+  "addendum": {
+    "exclude_own": true,
+    "quantile_shift": {
+      "min_rows": 1000
+    },
+    "cold_start": true
+  }
+}
